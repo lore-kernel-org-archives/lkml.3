@@ -1,75 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab3EXDOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 23:14:52 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:43786 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759888Ab3EXDOu (ORCPT
+	id S932097Ab3EXDTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 23:19:46 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:61671 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759888Ab3EXDTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 23:14:50 -0400
-Message-ID: <519EDB22.1050509@ozlabs.ru>
-Date: Fri, 24 May 2013 13:14:42 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Thu, 23 May 2013 23:19:44 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5 v2] VFIO PPC64: add VFIO support on POWERPC64
-References: <1369107191-28547-1-git-send-email-aik@ozlabs.ru> <1369320984.2646.135.camel@ul30vt.home>
-In-Reply-To: <1369320984.2646.135.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1369310405-21112-1-git-send-email-libo.chen@huawei.com>
+References: <1369310405-21112-1-git-send-email-libo.chen@huawei.com>
+Date: Fri, 24 May 2013 08:49:43 +0530
+Message-ID: <CAK9yfHx7ifnWjKCVc0Oju-28PdosF81OpVC5S5Vdj6hDSnfQfw@mail.gmail.com>
+Subject: Re: [PATCH RFC v3 1/3] i2c: i2c-bfin-twi: convert to devm_* API
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: wsa@the-dreams.de, guz.fnst@cn.fujitsu.com, sonic.zhang@analog.com,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 12:56 AM, Alex Williamson wrote:
-> On Tue, 2013-05-21 at 13:33 +1000, Alexey Kardashevskiy wrote:
->> The series adds support for VFIO on POWERPC in user space (such as QEMU).
->> The in-kernel real mode IOMMU support is added by another series posted
->> separately.
->>
->> As the first and main aim of this series is the POWERNV platform support,
->> the "Enable on POWERNV platform" patch goes first and introduces an API
->> to be used by the VFIO IOMMU driver. The "Enable on pSeries platform" patch
->> simply registers PHBs in the IOMMU subsystem and expects the API to be present,
->> it enables VFIO support in fully emulated QEMU guests.
->>
->> The main change is that this series was changed and tested against v3.10-rc1.
->> It also contains some bugfixes which are mentioned (if any) in the patch messages.
->>
->> Alexey Kardashevskiy (3):
->>   powerpc/vfio: Enable on POWERNV platform
->>   powerpc/vfio: Implement IOMMU driver for VFIO
->>   powerpc/vfio: Enable on pSeries platform
->>
->>  Documentation/vfio.txt                      |   63 +++++
->>  arch/powerpc/include/asm/iommu.h            |   26 ++
->>  arch/powerpc/kernel/iommu.c                 |  323 +++++++++++++++++++++++
->>  arch/powerpc/platforms/powernv/pci-ioda.c   |    1 +
->>  arch/powerpc/platforms/powernv/pci-p5ioc2.c |    5 +-
->>  arch/powerpc/platforms/powernv/pci.c        |    2 +
->>  arch/powerpc/platforms/pseries/iommu.c      |    4 +
->>  drivers/iommu/Kconfig                       |    8 +
->>  drivers/vfio/Kconfig                        |    6 +
->>  drivers/vfio/Makefile                       |    1 +
->>  drivers/vfio/vfio.c                         |    1 +
->>  drivers/vfio/vfio_iommu_spapr_tce.c         |  377 +++++++++++++++++++++++++++
->>  include/uapi/linux/vfio.h                   |   34 +++
->>  13 files changed, 850 insertions(+), 1 deletion(-)
->>  create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
->>
-> 
-> These look ok to me, how do you want to integrate them?  Should I
-> provide Acks on patches 2 & 3 and let them get pushed through the ppc
-> tree or should I wait for patch 1 then push 2 & 3 through my tree?
+On 23 May 2013 17:30, Libo Chen <libo.chen@huawei.com> wrote:
+> peripheral_request_list has got free if any one faild, so no need to free again in err case.
+> aovid this, convert them to devm_* API
+>
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
 
-Please ack on 2 & 3 and Ben will merge all three into his tree. Thanks!
+It is a good practice to include changelog while submitting revised
+versions of the patch.
 
+> ---
+>  drivers/i2c/busses/i2c-bfin-twi.c |   38 +++++++++---------------------------
+>  1 files changed, 10 insertions(+), 28 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+> index 05080c4..2b99c48 100644
+> --- a/drivers/i2c/busses/i2c-bfin-twi.c
+> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
+> @@ -621,35 +621,27 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
+>         int rc;
+>         unsigned int clkhilow;
+>
+> -       iface = kzalloc(sizeof(struct bfin_twi_iface), GFP_KERNEL);
+> +       iface = devm_kzalloc(&pdev->dev, sizeof(struct bfin_twi_iface),
+> +                       GFP_KERNEL);
+>         if (!iface) {
+>                 dev_err(&pdev->dev, "Cannot allocate memory\n");
+
+This error message is not really required.
+
+> -               rc = -ENOMEM;
+> -               goto out_error_nomem;
+> +               return -ENOMEM;
+>         }
+>
+>         spin_lock_init(&(iface->lock));
+>
+>         /* Find and map our resources */
+>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -       if (res == NULL) {
+> -               dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
+> -               rc = -ENOENT;
+> -               goto out_error_get_res;
+> -       }
+> -
+> -       iface->regs_base = ioremap(res->start, resource_size(res));
+> -       if (iface->regs_base == NULL) {
+> +       iface->regs_base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(iface->regs_base)) {
+>                 dev_err(&pdev->dev, "Cannot map IO\n");
+
+devm_ioremap_resource prints out the error messages. So the above line
+is redundant.
+
+> -               rc = -ENXIO;
+> -               goto out_error_ioremap;
+> +               return -ENXIO;
+
+Why not return PTR_ERR(iface->regs_base)?
+
+>         }
+>
+>         iface->irq = platform_get_irq(pdev, 0);
+>         if (iface->irq < 0) {
+>                 dev_err(&pdev->dev, "No IRQ specified\n");
+> -               rc = -ENOENT;
+> -               goto out_error_no_irq;
+> +               return -ENOENT;
+>         }
+>
+>         p_adap = &iface->adap;
+> @@ -666,10 +658,10 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
+>                                         "i2c-bfin-twi");
+>         if (rc) {
+>                 dev_err(&pdev->dev, "Can't setup pin mux!\n");
+> -               goto out_error_pin_mux;
+> +               return rc;
+>         }
+>
+> -       rc = request_irq(iface->irq, bfin_twi_interrupt_entry,
+> +       rc = devm_request_irq(&pdev->dev, iface->irq, bfin_twi_interrupt_entry,
+>                 0, pdev->name, iface);
+>         if (rc) {
+>                 dev_err(&pdev->dev, "Can't get IRQ %d !\n", iface->irq);
+> @@ -707,16 +699,9 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
+>         return 0;
+>
+>  out_error_add_adapter:
+> -       free_irq(iface->irq, iface);
+>  out_error_req_irq:
+> -out_error_no_irq:
+>         peripheral_free_list((unsigned short *)pdev->dev.platform_data);
+> -out_error_pin_mux:
+> -       iounmap(iface->regs_base);
+> -out_error_ioremap:
+> -out_error_get_res:
+> -       kfree(iface);
+> -out_error_nomem:
+> +
+
+Empty line not required.
+
+You could probably combine all the empty labels into one meaningful label above.
+
+>         return rc;
 
 
 -- 
-Alexey
+With warm regards,
+Sachin
