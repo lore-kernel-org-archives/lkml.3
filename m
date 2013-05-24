@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759993Ab3EXHgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 03:36:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37881 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756887Ab3EXHgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 03:36:11 -0400
-Message-ID: <1369380965.1945.10.camel@dabdike>
-Subject: Re: [PATCH v3 part1 1/4] sg_io: pass request_queue to
- blk_verify_command
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, stable@gnu.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Date: Fri, 24 May 2013 11:36:05 +0400
-In-Reply-To: <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
-	 <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760021Ab3EXHlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 03:41:32 -0400
+Received: from mail.southpole.se ([37.247.8.11]:41550 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759496Ab3EXHlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 03:41:31 -0400
+From: Jonas Bonn <jonas@southpole.se>
+To: geert@linux-m68k.org
+Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [PATCH 1/1] cris: remove unused current_regs
+Date: Fri, 24 May 2013 09:41:27 +0200
+Message-Id: <1369381287-3923-1-git-send-email-jonas@southpole.se>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-23 at 15:58 +0200, Paolo Bonzini wrote:
-> Adjust the blk_verify_command function to let it look at per-queue
-> data.  This will be done in the next patch.
+CC: Mikael Starvik <starvik@axis.com>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
+CC: linux-cris-kernel@axis.com
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
+---
 
-This is not a bug fix.  This is an enabler for your complex and to my
-mind dubious rework of the SG_IO command filter.  I'm running out of
-ways to say please don't mix bug fixes with features, because this
-redesignating of the original patch set as part 1 and parts 2,3 doesn't
-satisfy the requirement.
+Hi Geert,
 
-Does anyone in the real world actually care about this bug?  because if
-not perhaps we can just remove the confusion and consider this as a
-feature set.  If there's someone who actually cares, please lets just do
-the bug fix first and argue about the feature later.
+As your 'exotic' branch seems to show you're doing some work on CRIS, how
+about taking this rather trivial patch into your branch as well.  I sent
+this to the CRIS maintainers/mailing list six months ago but never got
+any response back.
 
-James
+Thanks,
+Jonas
 
+
+ arch/cris/include/asm/processor.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/cris/include/asm/processor.h b/arch/cris/include/asm/processor.h
+index c0a29b9..15b815d 100644
+--- a/arch/cris/include/asm/processor.h
++++ b/arch/cris/include/asm/processor.h
+@@ -47,7 +47,6 @@ struct task_struct;
+  */
+ 
+ #define task_pt_regs(task) user_regs(task_thread_info(task))
+-#define current_regs() task_pt_regs(current)
+ 
+ unsigned long get_wchan(struct task_struct *p);
+ 
+-- 
+1.8.1.2
 
