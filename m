@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3EXOSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:18:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65253 "EHLO mx1.redhat.com"
+	id S1756512Ab3EXOTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:19:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20628 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512Ab3EXOSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:18:20 -0400
-Date: Fri, 24 May 2013 17:18:41 +0300
+	id S1756485Ab3EXOSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 10:18:12 -0400
+Date: Fri, 24 May 2013 17:18:20 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
-Subject: [PATCH v3 11/11] kernel: uaccess in atomic with pagefault_disable
-Message-ID: <1369404522-12927-11-git-send-email-mst@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v3 07/11] powerpc: uaccess s/might_sleep/might_fault/
+Message-ID: <1369404522-12927-7-git-send-email-mst@redhat.com>
 References: <cover.1368702323.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,92 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes might_fault so that it does not
-trigger a false positive diagnostic for e.g. the following
-sequence:
-	spin_lock_irqsave
-	pagefault_disable
-	copy_to_user
-	pagefault_enable
-	spin_unlock_irqrestore
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
-In particular vhost wants to do this, to call
-socket ops from under a lock.
+Arnd Bergmann suggested that the following code
+	if (!is_kernel_addr((unsigned long)__pu_addr))
+		might_fault();
+can be further simplified by adding a version of might_fault
+that includes the kernel addr check.
 
-There are 3 cases to consider:
-CONFIG_PROVE_LOCKING - might_fault is non-inline
-so it's easy to move the in_atomic test to fix
-up the false positive warning.
-
-CONFIG_DEBUG_ATOMIC_SLEEP - might_fault
-is currently inline, but we are calling a
-non-inline __might_sleep anyway,
-so let's use the non-line version of might_fault
-that does the right thing.
-
-!CONFIG_DEBUG_ATOMIC_SLEEP && !CONFIG_PROVE_LOCKING
-__might_sleep is a nop so might_fault is a nop.
-Make this explicit.
+Will be considered as a further optimization in future.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/kernel.h |  7 ++-----
- mm/memory.c            | 11 +++++++----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ arch/powerpc/include/asm/uaccess.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index c514c06..0153be1 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -193,13 +193,10 @@ extern int _cond_resched(void);
- 		(__x < 0) ? -__x : __x;		\
- 	})
- 
--#ifdef CONFIG_PROVE_LOCKING
-+#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
- void might_fault(void);
- #else
--static inline void might_fault(void)
--{
--	__might_sleep(__FILE__, __LINE__, 0);
--}
-+static inline void might_fault(void) { }
- #endif
- 
- extern struct atomic_notifier_head panic_notifier_list;
-diff --git a/mm/memory.c b/mm/memory.c
-index c1f190f..d7d54a1 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4210,7 +4210,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
- 	up_read(&mm->mmap_sem);
- }
- 
--#ifdef CONFIG_PROVE_LOCKING
-+#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
- void might_fault(void)
+diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
+index 4db4959..9485b43 100644
+--- a/arch/powerpc/include/asm/uaccess.h
++++ b/arch/powerpc/include/asm/uaccess.h
+@@ -178,7 +178,7 @@ do {								\
+ 	long __pu_err;						\
+ 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);		\
+ 	if (!is_kernel_addr((unsigned long)__pu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__chk_user_ptr(ptr);					\
+ 	__put_user_size((x), __pu_addr, (size), __pu_err);	\
+ 	__pu_err;						\
+@@ -188,7 +188,7 @@ do {								\
+ ({									\
+ 	long __pu_err = -EFAULT;					\
+ 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
+-	might_sleep();							\
++	might_fault();							\
+ 	if (access_ok(VERIFY_WRITE, __pu_addr, size))			\
+ 		__put_user_size((x), __pu_addr, (size), __pu_err);	\
+ 	__pu_err;							\
+@@ -268,7 +268,7 @@ do {								\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+ 	__chk_user_ptr(ptr);					\
+ 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;			\
+ 	__gu_err;						\
+@@ -282,7 +282,7 @@ do {								\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+ 	__chk_user_ptr(ptr);					\
+ 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;			\
+ 	__gu_err;						\
+@@ -294,7 +294,7 @@ do {								\
+ 	long __gu_err = -EFAULT;					\
+ 	unsigned long  __gu_val = 0;					\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
+-	might_sleep();							\
++	might_fault();							\
+ 	if (access_ok(VERIFY_READ, __gu_addr, (size)))			\
+ 		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;				\
+@@ -419,14 +419,14 @@ static inline unsigned long __copy_to_user_inatomic(void __user *to,
+ static inline unsigned long __copy_from_user(void *to,
+ 		const void __user *from, unsigned long size)
  {
- 	/*
-@@ -4222,14 +4222,17 @@ void might_fault(void)
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return;
- 
--	__might_sleep(__FILE__, __LINE__, 0);
--
- 	/*
- 	 * it would be nicer only to annotate paths which are not under
- 	 * pagefault_disable, however that requires a larger audit and
- 	 * providing helpers like get_user_atomic.
- 	 */
--	if (!in_atomic() && current->mm)
-+	if (in_atomic())
-+		return;
-+
-+	__might_sleep(__FILE__, __LINE__, 0);
-+
-+	if (current->mm)
- 		might_lock_read(&current->mm->mmap_sem);
+-	might_sleep();
++	might_fault();
+ 	return __copy_from_user_inatomic(to, from, size);
  }
- EXPORT_SYMBOL(might_fault);
+ 
+ static inline unsigned long __copy_to_user(void __user *to,
+ 		const void *from, unsigned long size)
+ {
+-	might_sleep();
++	might_fault();
+ 	return __copy_to_user_inatomic(to, from, size);
+ }
+ 
+@@ -434,7 +434,7 @@ extern unsigned long __clear_user(void __user *addr, unsigned long size);
+ 
+ static inline unsigned long clear_user(void __user *addr, unsigned long size)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (likely(access_ok(VERIFY_WRITE, addr, size)))
+ 		return __clear_user(addr, size);
+ 	if ((unsigned long)addr < TASK_SIZE) {
 -- 
 MST
