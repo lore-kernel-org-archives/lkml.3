@@ -1,125 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3EXFhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:37:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3EXFhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:37:05 -0400
-Message-ID: <519EFC72.1010405@redhat.com>
-Date: Fri, 24 May 2013 13:36:50 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753152Ab3EXFjq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:39:46 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51693 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab3EXFjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 01:39:45 -0400
+Message-ID: <519EFD15.2080109@linux.vnet.ibm.com>
+Date: Fri, 24 May 2013 13:39:33 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC 6/8] macvtap: allow TUNSETIFF to create multiqueue
- device
-References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-7-git-send-email-jasowang@redhat.com> <20130523114556.GC17993@redhat.com>
-In-Reply-To: <20130523114556.GC17993@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
+References: <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com> <519DB7D3.7030101@linux.vnet.ibm.com> <20130523073708.GE26157@redhat.com> <519DCA38.30200@linux.vnet.ibm.com> <20130523080922.GG26157@redhat.com> <519DF9F6.1060902@linux.vnet.ibm.com> <20130523123947.GO4725@redhat.com> <519E13B6.7060807@linux.vnet.ibm.com> <20130523155722.GJ26157@redhat.com>
+In-Reply-To: <20130523155722.GJ26157@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052405-5564-0000-0000-0000080F1A68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 07:45 PM, Michael S. Tsirkin wrote:
-> On Thu, May 23, 2013 at 11:12:31AM +0800, Jason Wang wrote:
->> Though the queue were in fact created by open(), we still need to add this check
->> to be compatible with tuntap which can let mgmt software use a single API to
->> manage queues. This patch only validates the device name and moves the TUNSETIFF
->> to a helper.
+On 05/23/2013 11:57 PM, Gleb Natapov wrote:
+> On Thu, May 23, 2013 at 09:03:50PM +0800, Xiao Guangrong wrote:
+>> On 05/23/2013 08:39 PM, Gleb Natapov wrote:
+>>> On Thu, May 23, 2013 at 07:13:58PM +0800, Xiao Guangrong wrote:
+>>>> On 05/23/2013 04:09 PM, Gleb Natapov wrote:
+>>>>> On Thu, May 23, 2013 at 03:50:16PM +0800, Xiao Guangrong wrote:
+>>>>>> On 05/23/2013 03:37 PM, Gleb Natapov wrote:
+>>>>>>> On Thu, May 23, 2013 at 02:31:47PM +0800, Xiao Guangrong wrote:
+>>>>>>>> On 05/23/2013 02:18 PM, Gleb Natapov wrote:
+>>>>>>>>> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
+>>>>>>>>>> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
+>>>>>>>>>>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+>>>>>>>>>>>> It is only used to zap the obsolete page. Since the obsolete page
+>>>>>>>>>>>> will not be used, we need not spend time to find its unsync children
+>>>>>>>>>>>> out. Also, we delete the page from shadow page cache so that the page
+>>>>>>>>>>>> is completely isolated after call this function.
+>>>>>>>>>>>>
+>>>>>>>>>>>> The later patch will use it to collapse tlb flushes
+>>>>>>>>>>>>
+>>>>>>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>>>>>>>>> ---
+>>>>>>>>>>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+>>>>>>>>>>>>  1 files changed, 41 insertions(+), 5 deletions(-)
+>>>>>>>>>>>>
+>>>>>>>>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>>>>>>>>>>> index 9b57faa..e676356 100644
+>>>>>>>>>>>> --- a/arch/x86/kvm/mmu.c
+>>>>>>>>>>>> +++ b/arch/x86/kvm/mmu.c
+>>>>>>>>>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>>>>>>>>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>>>>>>>>>>>  {
+>>>>>>>>>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>>>>>>>>>>>> -	hlist_del(&sp->hash_link);
+>>>>>>>>>>>> +	hlist_del_init(&sp->hash_link);
+>>>>>>>>>>> Why do you need hlist_del_init() here? Why not move it into
+>>>>>>>>>>
+>>>>>>>>>> Since the hlist will be double freed. We will it like this:
+>>>>>>>>>>
+>>>>>>>>>> kvm_mmu_prepare_zap_obsolete_page(page, list);
+>>>>>>>>>> kvm_mmu_commit_zap_page(list);
+>>>>>>>>>>    kvm_mmu_free_page(page);
+>>>>>>>>>>
+>>>>>>>>>> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
+>>>>>>>>>> deleted the hash list.
+>>>>>>>>>>
+>>>>>>>>>>> kvm_mmu_prepare_zap_page() like we discussed it here:
+>>>>>>>>>>> https://patchwork.kernel.org/patch/2580351/ instead of doing
+>>>>>>>>>>> it differently for obsolete and non obsolete pages?
+>>>>>>>>>>
+>>>>>>>>>> It is can break the hash-list walking: we should rescan the
+>>>>>>>>>> hash list once the page is prepared-ly zapped.
+>>>>>>>>>>
+>>>>>>>>>> I mentioned it in the changelog:
+>>>>>>>>>>
+>>>>>>>>>>   4): drop the patch which deleted page from hash list at the "prepare"
+>>>>>>>>>>       time since it can break the walk based on hash list.
+>>>>>>>>> Can you elaborate on how this can happen?
+>>>>>>>>
+>>>>>>>> There is a example:
+>>>>>>>>
+>>>>>>>> int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+>>>>>>>> {
+>>>>>>>> 	struct kvm_mmu_page *sp;
+>>>>>>>> 	LIST_HEAD(invalid_list);
+>>>>>>>> 	int r;
+>>>>>>>>
+>>>>>>>> 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
+>>>>>>>> 	r = 0;
+>>>>>>>> 	spin_lock(&kvm->mmu_lock);
+>>>>>>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>>>>>>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>>>>>>>> 			 sp->role.word);
+>>>>>>>> 		r = 1;
+>>>>>>>> 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+>>>>>>>> 	}
+>>>>>>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>>>>>>> 	spin_unlock(&kvm->mmu_lock);
+>>>>>>>>
+>>>>>>>> 	return r;
+>>>>>>>> }
+>>>>>>>>
+>>>>>>>> It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
+>>>>>>>> If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
+>>>>>>>> be changed to:
+>>>>>>>>
+>>>>>>>> restart:
+>>>>>>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>>>>>>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>>>>>>>> 			 sp->role.word);
+>>>>>>>> 		r = 1;
+>>>>>>>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+>>>>>>>> 			goto restart;
+>>>>>>>> 	}
+>>>>>>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>>>>>>>
+>>>>>>> Hmm, yes. So lets leave it as is and always commit invalid_list before
+>>>>>>
+>>>>>> So, you mean drop this patch and the patch of
+>>>>>> KVM: MMU: collapse TLB flushes when zap all pages?
+>>>>>>
+>>>>> We still want to add kvm_reload_remote_mmus() to
+>>>>> kvm_mmu_invalidate_zap_all_pages(). But yes, we disable a nice
+>>>>> optimization here. So may be skipping obsolete pages while walking
+>>>>> hashtable is better solution.
+>>>>
+>>>> I am willing to use this way instead, but it looks worse than this
+>>>> patch:
+>>>>
+>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>>> index 9b57faa..810410c 100644
+>>>> --- a/arch/x86/kvm/mmu.c
+>>>> +++ b/arch/x86/kvm/mmu.c
+>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>>>  {
+>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>>>> -	hlist_del(&sp->hash_link);
+>>>> +	hlist_del_init(&sp->hash_link);
+>>> Why not drop this
+>>>
+>>>>  	list_del(&sp->link);
+>>>>  	free_page((unsigned long)sp->spt);
+>>>>  	if (!sp->role.direct)
+>>>> @@ -1648,14 +1648,20 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>>>>  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>>>>  				    struct list_head *invalid_list);
+>>>>
+>>>> +static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+>>>> +{
+>>>> +	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+>>>> +}
+>>>> +
+>>>>  #define for_each_gfn_sp(_kvm, _sp, _gfn)				\
+>>>>  	hlist_for_each_entry(_sp,					\
+>>>>  	  &(_kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(_gfn)], hash_link) \
+>>>> -		if ((_sp)->gfn != (_gfn)) {} else
+>>>> +		if ((_sp)->gfn != (_gfn) || is_obsolete_sp(_kvm, _sp)) {} else
+>>>>
+>>>>  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
+>>>>  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
+>>>> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
+>>>> +		if ((_sp)->role.direct ||				\
+>>>> +		      (_sp)->role.invalid || is_obsolete_sp(_kvm, _sp)) {} else
+>>>>
+>>>>  /* @sp->gfn should be write-protected at the call site */
+>>>>  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>>>> @@ -1838,11 +1844,6 @@ static void clear_sp_write_flooding_count(u64 *spte)
+>>>>  	__clear_sp_write_flooding_count(sp);
+>>>>  }
+>>>>
+>>>> -static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+>>>> -{
+>>>> -	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+>>>> -}
+>>>> -
+>>>>  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>>>>  					     gfn_t gfn,
+>>>>  					     gva_t gaddr,
+>>>> @@ -2085,11 +2086,15 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>>>>
+>>>>  	if (sp->unsync)
+>>>>  		kvm_unlink_unsync_page(kvm, sp);
+>>>> +
+>>>>  	if (!sp->root_count) {
+>>>>  		/* Count self */
+>>>>  		ret++;
+>>>>  		list_move(&sp->link, invalid_list);
+>>>>  		kvm_mod_used_mmu_pages(kvm, -1);
+>>>> +
+>>>> +		if (unlikely(is_obsolete_sp(kvm, sp)))
+>>>> +			hlist_del_init(&sp->hash_link);
+>>> and this.
+>>>
+>>> Since we check for obsolete while searching hashtable why delete it
+>>> here?
 >>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/macvtap.c |   50 ++++++++++++++++++++++++++++++++++++++----------
->>  1 files changed, 39 insertions(+), 11 deletions(-)
+>> In order to zap obsolete pages without tlb flush, we should delete them from
+>> hash list at the "prepare" time. Here, we only delete the obsolete pages so
+>> that the hashtable walking functions, like kvm_mmu_unprotect_page(), can work
+>> properly by skipping obsolete page.
 >>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index 5fd341c..e3f9344 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -867,6 +867,7 @@ out:
->>  	return ret;
->>  }
->>  
->> +
-> Please don't add empty lines like this :).
+> Why we have to delete them from the hash at "prepare" time? I hash walk
+> ignores them they are as good as deleted, no?
+> 
+>> And, kvm_mmu_prepare_zap_page() is a recursion function:
+>> kvm_mmu_prepare_zap_page() -> zap_unsync_children -> kvm_mmu_prepare_zap_page().
+>> It seems it is the only place to do this thing. For example, below code is not
+>> allowed in kvm_zap_obsolete_pages():
+>>
+>> if (kvm_mmu_prepare_zap_page(sp, list))
+>> 	hlist_del(sp->hlist);
+>>
+>> Or, i missed your suggestion?
+> My assumption is that we can leave obsolete shadow pages on hashtable
+> till commit_zap time.
 
-Sure.
->
->>  static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
->>  {
->>  	struct macvlan_dev *vlan;
->> @@ -884,6 +885,43 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
->>  	dev_put(vlan->dev);
->>  }
->>  
->> +static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
->> +{
->> +	struct macvtap_queue *q = file->private_data;
->> +	struct net *net = current->nsproxy->net_ns;
->> +	struct inode *inode = file_inode(file);
->> +	struct net_device *dev, *dev2;
->> +	struct ifreq ifr;
->> +
->> +	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
->> +		return -EFAULT;
->> +
->> +	if (ifr.ifr_flags & IFF_MULTI_QUEUE) {
-> So why do we validate the name?
-> Pls add a comment.
+Ah, i see.
 
-Ok. The validation is to prevent the userspace create the queues on the
-wrong device. Not sure whether or not this is needed for single queue case.
->
->> +		dev = __dev_get_by_name(net, ifr.ifr_name);
->> +		if (!dev)
->> +			return -EINVAL;
->> +
->> +		dev2 = dev_get_by_macvtap_minor(iminor(inode));
->> +		if (!dev2)
->> +			return -EINVAL;
->> +
->> +		if (dev != dev2) {
->> +			dev_put(dev2);
->> +			return -EINVAL;
->> +		}
->> +
->> +		dev_put(dev2);
->> +	}
->> +
->> +	if ((ifr.ifr_flags & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
->> +	    (IFF_NO_PI | IFF_TAP))
->> +		return -EINVAL;
->> +	else
->> +		q->flags = ifr.ifr_flags;
->> +
->> +	return 0;
->> +}
->> +
->>  /*
->>   * provide compatibility with generic tun/tap interface
->>   */
->> @@ -902,17 +940,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->>  
->>  	switch (cmd) {
->>  	case TUNSETIFF:
->> -		/* ignore the name, just look at flags */
->> -		if (get_user(u, &ifr->ifr_flags))
->> -			return -EFAULT;
->> -
->> -		ret = 0;
->> -		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
->> -			ret = -EINVAL;
->> -		else
->> -			q->flags = u;
->> -
->> -		return ret;
->> +		return macvtap_set_iff(file, ifr);
->>  
->>  	case TUNGETIFF:
->>  		vlan = macvtap_get_vlan(q);
->> -- 
->> 1.7.1
+Yes, i agree with your idea. I think we can only skip the obsolete-and-invalid
+page since the obsolete-but-unzapped page still affects the mmu's behaviour,
+for example, it can cause page write-protect, kvm_mmu_unprotect_page()
+can not work by skipping unzapped-obsolete pages.
+
+> 
+> BTW is it such a good idea to call kvm_mmu_commit_zap_page() once on all
+
+If other choices are available, we can try.
+
+> obsolete pages? We basically loop over all of them under the lock
+> without lock break.
+
+It seems no. :)
+Since we have reloaded mmu before zapping the obsolete pages, the mmu-lock
+is easily contended. I did the simple track:
+
++       int num = 0;
+ restart:
+        list_for_each_entry_safe_reverse(sp, node,
+              &kvm->arch.active_mmu_pages, link) {
+@@ -4265,6 +4265,7 @@ restart:
+                if (batch >= BATCH_ZAP_PAGES &&
+                      cond_resched_lock(&kvm->mmu_lock)) {
+                        batch = 0;
++                       num++;
+                        goto restart;
+                }
+
+@@ -4277,6 +4278,7 @@ restart:
+         * may use the pages.
+         */
+        kvm_mmu_commit_zap_page(kvm, &invalid_list);
++       printk("lock-break: %d.\n", num);
+ }
+
+I do read pci rom when doing kernel building in the guest which
+has 1G memory and 4vcpus with ept enabled, this is the normal
+workload and normal configuration.
+
+# dmesg
+[ 2338.759099] lock-break: 8.
+[ 2339.732442] lock-break: 5.
+[ 2340.904446] lock-break: 3.
+[ 2342.513514] lock-break: 3.
+[ 2343.452229] lock-break: 3.
+[ 2344.981599] lock-break: 4.
+
+Basically, we need to break many times.
+
 
