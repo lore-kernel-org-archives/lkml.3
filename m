@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab3EXNvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 09:51:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49336 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753210Ab3EXNvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 09:51:20 -0400
-Date: Fri, 24 May 2013 09:51:19 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Federico Manzan <f.manzan@gmail.com>
-cc: gregkh@linuxfoundation.org, <sarah.a.sharp@linux.intel.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbfs: Increase arbitrary limit for USB 3 isopkt length
-In-Reply-To: <1369385249-15624-1-git-send-email-f.manzan@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1305240946410.1238-100000@iolanthe.rowland.org>
+	id S1756060Ab3EXNz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 09:55:58 -0400
+Received: from www.meduna.org ([92.240.244.38]:52324 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab3EXNz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 09:55:57 -0400
+Message-ID: <519F7159.5010009@meduna.org>
+Date: Fri, 24 May 2013 15:55:37 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rik van Riel <riel@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org> <519F65DB.2020305@redhat.com>
+In-Reply-To: <519F65DB.2020305@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2013-05-24 15:55:42
+X-Connected-IP: 95.105.165.4:7450
+X-Message-Linecount: 44
+X-Body-Linecount: 22
+X-Message-Size: 1992
+X-Body-Size: 542
+X-Received-Count: 1
+X-Recipient-Count: 10
+X-Local-Recipient-Count: 10
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 May 2013, Federico Manzan wrote:
+On 24.05.2013 15:06, Rik van Riel wrote:
 
-> Increase the current arbitrary limit for isocronous packet size to a
-> value large enough to account for USB 3.0 super bandwidth streams,
-> bMaxBurst (0~15 allowed, 1~16 packets)
-> bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-> so the size max for one USB 3 isocronous transfer is
-> 1024 byte * 16 * 3 = 49152 byte
-> 
-> Signed-off-by: Federico Manzan <f.manzan@gmail.com>
+> Just to rule something out, are you using
+> transparent huge pages on those systems?
 
-So you decided to take matters into your own hands.  Good for you!
+On my present test system they are configured in, but I am
+not using them.
 
-> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-> index caefc80..7ac137e 100644
-> --- a/drivers/usb/core/devio.c
-> +++ b/drivers/usb/core/devio.c
-> @@ -1287,9 +1287,11 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
->  			goto error;
->  		}
->  		for (totlen = u = 0; u < uurb->number_of_packets; u++) {
-> -			/* arbitrary limit,
-> -			 * sufficient for USB 2.0 high-bandwidth iso */
-> -			if (isopkt[u].length > 8192) {
-> +			/* arbitrary limit need for USB 3.0
-> +			 * bMaxBurst (0~15 allowed, 1~16 packets)
-> +			 * bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-> +			 * sizemax: 1024 * 16 * 3 = 49152*/
-> +			if (isopkt[u].length > 65536) {
->  				ret = -EINVAL;
->  				goto error;
->  			}
+# cat /proc/meminfo | grep Huge
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       4096 kB
 
-A couple of suggestions for improvements:
+However during my (many) previous experiments the problem
+also happened with kernels that did not have it configured.
 
-First, new or updated multi-line comments should follow the accepted
-formatting standard:
-
-	/*
-	 * Start comment here...
-	 * and end here.
-	 */
-
-Second, it's confusing for the comment to mention that the limit is
-49152 and the code to set the limit to 65536.  They should agree on a
-single value (probably 49152).
-
-If you make those two changes, you can add
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-Alan Stern
+Thanks
+-- 
+                                      Stano
 
