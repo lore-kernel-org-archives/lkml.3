@@ -1,51 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3EXFx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:53:56 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50019 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab3EXFxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:53:54 -0400
-Message-ID: <519F0068.5090403@linux.vnet.ibm.com>
-Date: Fri, 24 May 2013 13:53:44 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754525Ab3EXFyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:54:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42528 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab3EXFyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 01:54:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,732,1363158000"; 
+   d="scan'208";a="342441768"
+Date: Fri, 24 May 2013 10:44:20 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
+        Li Yang <leoli@freescale.com>, "'Zhang Wei'" <zw@zh-kernel.org>
+Subject: Re: [PATCH] dma: use platform_{get,set}_drvdata()
+Message-ID: <20130524051420.GO30200@intel.com>
+References: <000301ce581b$720da060$5628e120$@samsung.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com, mtosatti@redhat.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
-References: <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com> <519DB7D3.7030101@linux.vnet.ibm.com> <20130523073708.GE26157@redhat.com> <519DCA38.30200@linux.vnet.ibm.com> <20130523080922.GG26157@redhat.com> <519DF9F6.1060902@linux.vnet.ibm.com> <20130523123947.GO4725@redhat.com> <519E13B6.7060807@linux.vnet.ibm.com> <20130523155722.GJ26157@redhat.com> <519EFD15.2080109@linux.vnet.ibm.com>
-In-Reply-To: <519EFD15.2080109@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052405-5816-0000-0000-0000081CDC8C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000301ce581b$720da060$5628e120$@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 01:39 PM, Xiao Guangrong wrote:
-
->>> if (kvm_mmu_prepare_zap_page(sp, list))
->>> 	hlist_del(sp->hlist);
->>>
->>> Or, i missed your suggestion?
->> My assumption is that we can leave obsolete shadow pages on hashtable
->> till commit_zap time.
+On Fri, May 24, 2013 at 10:10:13AM +0900, Jingoo Han wrote:
+> Use the wrapper functions for getting and setting the driver data using
+> platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+> so we can directly pass a struct platform_device.
 > 
-> Ah, i see.
+> Also, unnecessary dev_set_drvdata() is removed, because the driver core
+> clears the driver data to NULL after device_release or on probe failure.
 > 
-> Yes, i agree with your idea. I think we can only skip the obsolete-and-invalid
-> page since the obsolete-but-unzapped page still affects the mmu's behaviour,
-> for example, it can cause page write-protect, kvm_mmu_unprotect_page()
-> can not work by skipping unzapped-obsolete pages.
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Applied thanks
 
-kvm_mmu_unprotect_page() can work, we can skip obsolete pages too when detect
-whether need to write-protect a page, it is easier to make the page become
-writable when zapping obsolete pages.
-
-Will update it following your idea, sorry for my noise.
-
+--
+~Vinod
+> ---
+>  drivers/dma/fsldma.c      |    5 ++---
+>  drivers/dma/ppc4xx/adma.c |    5 ++---
+>  2 files changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 4fc2980..49e8fbd 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -1368,7 +1368,7 @@ static int fsldma_of_probe(struct platform_device *op)
+>  
+>  	dma_set_mask(&(op->dev), DMA_BIT_MASK(36));
+>  
+> -	dev_set_drvdata(&op->dev, fdev);
+> +	platform_set_drvdata(op, fdev);
+>  
+>  	/*
+>  	 * We cannot use of_platform_bus_probe() because there is no
+> @@ -1417,7 +1417,7 @@ static int fsldma_of_remove(struct platform_device *op)
+>  	struct fsldma_device *fdev;
+>  	unsigned int i;
+>  
+> -	fdev = dev_get_drvdata(&op->dev);
+> +	fdev = platform_get_drvdata(op);
+>  	dma_async_device_unregister(&fdev->common);
+>  
+>  	fsldma_free_irqs(fdev);
+> @@ -1428,7 +1428,6 @@ static int fsldma_of_remove(struct platform_device *op)
+>  	}
+>  
+>  	iounmap(fdev->regs);
+> -	dev_set_drvdata(&op->dev, NULL);
+>  	kfree(fdev);
+>  
+>  	return 0;
+> diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+> index 5d3d955..e68c51d 100644
+> --- a/drivers/dma/ppc4xx/adma.c
+> +++ b/drivers/dma/ppc4xx/adma.c
+> @@ -4481,7 +4481,7 @@ static int ppc440spe_adma_probe(struct platform_device *ofdev)
+>  	adev->dev = &ofdev->dev;
+>  	adev->common.dev = &ofdev->dev;
+>  	INIT_LIST_HEAD(&adev->common.channels);
+> -	dev_set_drvdata(&ofdev->dev, adev);
+> +	platform_set_drvdata(ofdev, adev);
+>  
+>  	/* create a channel */
+>  	chan = kzalloc(sizeof(*chan), GFP_KERNEL);
+> @@ -4594,14 +4594,13 @@ out:
+>   */
+>  static int ppc440spe_adma_remove(struct platform_device *ofdev)
+>  {
+> -	struct ppc440spe_adma_device *adev = dev_get_drvdata(&ofdev->dev);
+> +	struct ppc440spe_adma_device *adev = platform_get_drvdata(ofdev);
+>  	struct device_node *np = ofdev->dev.of_node;
+>  	struct resource res;
+>  	struct dma_chan *chan, *_chan;
+>  	struct ppc_dma_chan_ref *ref, *_ref;
+>  	struct ppc440spe_adma_chan *ppc440spe_chan;
+>  
+> -	dev_set_drvdata(&ofdev->dev, NULL);
+>  	if (adev->id < PPC440SPE_ADMA_ENGINES_NUM)
+>  		ppc440spe_adma_devices[adev->id] = -1;
+>  
+> -- 
+> 1.7.10.4
+> 
+> 
