@@ -1,203 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab3EXTaB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 15:30:01 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:23217 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab3EXT37 (ORCPT
+	id S1755292Ab3EXTgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 15:36:37 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:37936 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240Ab3EXTgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 15:29:59 -0400
-Subject: [PATCH] cciss: fix broken mutex usage in ioctl
-To: axboe@kernel.dk
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
-        thenzl@redhat.com
-Date: Fri, 24 May 2013 14:28:41 -0500
-Message-ID: <20130524192841.21256.51523.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Fri, 24 May 2013 15:36:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
+References: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 24 May 2013 13:36:14 -0600
+Message-ID: <CAErSpo4_h+yrjGTEpJ-Q=nwfcd3xi0qa0z6NQad1EQDZom8kUQ@mail.gmail.com>
+Subject: Re: [PATCH v2] aerdrv: Move cper_print_aer() call out of interrupt context
+To: Lance Ortiz <lance.ortiz@hp.com>
+Cc: "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Thu, May 9, 2013 at 1:51 PM, Lance Ortiz <lance.ortiz@hp.com> wrote:
+> The following warning was seen on 3.9 when a corrected PCIe error was being
+> handled by the AER subsystem.
+>
+> WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
+>
+> This occurred because a call to pci_get_domain_bus_and_slot() was added to
+> cper_print_pcie() to setup for the call to cper_print_aer().  The warning
+> showed up because cper_print_pcie() is called in an interrupt context and
+> pci_get* functions are not supposed to be called in that context.
+>
+> The solution is to move the cper_print_aer() call out of the interrupt
+> context and into aer_recover_work_func() to avoid any warnings when calling
+> pci_get* functions.
+>
+> v2 - Re-worded header text.  Removed prefix arg from cper_print_aer().
+>      Added TODO message in cper_print_aer().
+>
+> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+> Acked-by: Borislav Petkov <bp@suse.de>
+> ---
+>
+>  drivers/acpi/apei/cper.c               |   18 ------------------
+>  drivers/acpi/apei/ghes.c               |    3 ++-
+>  drivers/pci/pcie/aer/aerdrv_core.c     |    6 +++++-
+>  drivers/pci/pcie/aer/aerdrv_errprint.c |   10 ++++++++--
+>  include/linux/aer.h                    |    4 ++--
+>  5 files changed, 17 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index 1e5d8a4..8713229 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -250,10 +250,6 @@ static const char *cper_pcie_port_type_strs[] = {
+>  static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+>                             const struct acpi_hest_generic_data *gdata)
+>  {
+> -#ifdef CONFIG_ACPI_APEI_PCIEAER
+> -       struct pci_dev *dev;
+> -#endif
+> -
+>         if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
+>                 printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
+>                        pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
+> @@ -285,20 +281,6 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+>                 printk(
+>         "%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
+>         pfx, pcie->bridge.secondary_status, pcie->bridge.control);
+> -#ifdef CONFIG_ACPI_APEI_PCIEAER
+> -       dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
+> -                       pcie->device_id.bus, pcie->device_id.function);
+> -       if (!dev) {
+> -               pr_err("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
+> -                       pcie->device_id.segment, pcie->device_id.bus,
+> -                       pcie->device_id.slot, pcie->device_id.function);
+> -               return;
+> -       }
+> -       if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
+> -               cper_print_aer(pfx, dev, gdata->error_severity,
+> -                               (struct aer_capability_regs *) pcie->aer_info);
+> -       pci_dev_put(dev);
+> -#endif
+>  }
+>
+>  static const char *apei_estatus_section_flag_strs[] = {
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index d668a8a..f2084b5 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -454,7 +454,8 @@ static void ghes_do_proc(struct ghes *ghes,
+>                                 aer_severity = cper_severity_to_aer(sev);
+>                                 aer_recover_queue(pcie_err->device_id.segment,
+>                                                   pcie_err->device_id.bus,
+> -                                                 devfn, aer_severity);
+> +                                                 devfn, aer_severity,
+> +                                                 pcie_err->aer_info);
+>                         }
+>
+>                 }
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index 564d97f..ceba124 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -582,6 +582,7 @@ struct aer_recover_entry
+>         u8      devfn;
+>         u16     domain;
+>         int     severity;
+> +       u8      *regs;
+>  };
+>
+>  static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
+> @@ -595,7 +596,7 @@ static DEFINE_SPINLOCK(aer_recover_ring_lock);
+>  static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
+>
+>  void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+> -                      int severity)
+> +                      int severity, u8 *aer_regs)
+>  {
+>         unsigned long flags;
+>         struct aer_recover_entry entry = {
+> @@ -603,6 +604,7 @@ void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+>                 .devfn          = devfn,
+>                 .domain         = domain,
+>                 .severity       = severity,
+> +               .regs           = aer_regs,
+>         };
+>
+>         spin_lock_irqsave(&aer_recover_ring_lock, flags);
+> @@ -629,6 +631,8 @@ static void aer_recover_work_func(struct work_struct *work)
+>                                PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
+>                         continue;
+>                 }
+> +               cper_print_aer(pdev, entry.severity,
+> +                               (struct aer_capability_regs *)entry.regs);
 
-If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
-(as is normal with the Array Configuration Utility) the process
-will hang as below.  It attempts to acquire the same mutex twice, once
-in do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
-the mutex isn't.
+I like this change a lot because pci_get_domain_bus_and_slot() is sort
+of a dubious interface to begin with, and we were using it twice in
+this path -- once in cper_print_pcie() and then again (for the exact
+same device) here in aer_recover_work_func() -- and this patch gets
+rid of the first one.
 
-Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
-[...]
-acu             D 0000000000000001     0  3246   3191 0x00000080
- ffff8800da833a18 0000000000000086 ffff8800da833fd8 0000000000012d00
- ffff8800da832010 0000000000012d00 0000000000012d00 0000000000012d00
- ffff8800da833fd8 0000000000012d00 ffff8800da8294e0 ffff8800db50eb10
-Call Trace:
- [<ffffffff8153a2d9>] schedule+0x29/0x70
- [<ffffffff8153a5de>] schedule_preempt_disabled+0xe/0x10
- [<ffffffff81538e0b>] __mutex_lock_slowpath+0x17b/0x220
- [<ffffffff81538c6b>] mutex_lock+0x2b/0x50
- [<ffffffffa0002bdf>] cciss_unlocked_open+0x2f/0x110 [cciss]
- [<ffffffff811a06f3>] __blkdev_get+0xd3/0x470
- [<ffffffff811a0aec>] blkdev_get+0x5c/0x1e0
- [<ffffffff8123cd42>] register_disk+0x182/0x1a0
- [<ffffffff8123cedc>] add_disk+0x17c/0x310
- [<ffffffffa0002dfa>] cciss_add_disk+0x13a/0x170 [cciss]
- [<ffffffffa000adfb>] cciss_update_drive_info+0x39b/0x480 [cciss]
- [<ffffffffa000b818>] rebuild_lun_table+0x258/0x370 [cciss]
- [<ffffffffa000bc7f>] cciss_ioctl+0x34f/0x470 [cciss]
- [<ffffffff81538c5e>] ? mutex_lock+0x1e/0x50
- [<ffffffffa000bde9>] do_ioctl+0x49/0x70 [cciss]
- [<ffffffff81239e48>] __blkdev_driver_ioctl+0x28/0x30
- [<ffffffff8123a4e0>] blkdev_ioctl+0x200/0x7b0
- [<ffffffff81186633>] ? mntput+0x23/0x40
- [<ffffffff8119ef0c>] block_ioctl+0x3c/0x40
- [<ffffffff8117a309>] do_vfs_ioctl+0x89/0x350
- [<ffffffff8116a12e>] ? ____fput+0xe/0x10
- [<ffffffff81063ae4>] ? task_work_run+0x94/0xf0
- [<ffffffff8117a671>] SyS_ioctl+0xa1/0xb0
- [<ffffffff81544102>] system_call_fastpath+0x16/0x1b
+Normally we shouldn't have to look up a pci_dev from a bus
+number/device number.  This is an exception because there's no
+connection between the life of a pci_dev in the kernel and the
+information from firmware, so there's not really a better way to do
+it.
 
-This mutex usage was added into the ioctl path when the big kernel
-lock was removed.  As it turns out, these paths are all thread
-safe anyway (or can easily be made so) and we don't want ioctl()
-to be single threaded in any case.
+>                 do_recovery(pdev, entry.severity);
+>                 pci_dev_put(pdev);
+>         }
+> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> index 5ab1425..f277dc3 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> @@ -220,13 +220,19 @@ int cper_severity_to_aer(int cper_severity)
+>  }
+>  EXPORT_SYMBOL_GPL(cper_severity_to_aer);
+>
+> -void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
+> +void cper_print_aer(struct pci_dev *dev, int cper_severity,
+>                     struct aer_capability_regs *aer)
+>  {
+>         int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
+>         u32 status, mask;
+>         const char **status_strs;
+>
+> +       /*
+> +        * TODO: This function needs to be re-written so that it's output
+> +        * matches the output of aer_print_error().  Right now, the output
+> +        * is formatted very differently.
+> +        */
+> +
+>         aer_severity = cper_severity_to_aer(cper_severity);
+>         if (aer_severity == AER_CORRECTABLE) {
+>                 status = aer->cor_status;
+> @@ -244,7 +250,7 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
+>         agent = AER_GET_AGENT(aer_severity, status);
+>         dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
+>                status, mask);
+> -       cper_print_bits(prefix, status, status_strs, status_strs_size);
+> +       cper_print_bits("", status, status_strs, status_strs_size);
+>         dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
+>                aer_error_layer[layer], aer_agent_string[agent]);
+>         if (aer_severity != AER_CORRECTABLE)
+> diff --git a/include/linux/aer.h b/include/linux/aer.h
+> index ec10e1b..d8cf12b 100644
+> --- a/include/linux/aer.h
+> +++ b/include/linux/aer.h
+> @@ -49,10 +49,10 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+>  }
+>  #endif
+>
+> -extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
+> +extern void cper_print_aer(struct pci_dev *dev,
+>                            int cper_severity, struct aer_capability_regs *aer);
+>  extern int cper_severity_to_aer(int cper_severity);
+>  extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+> -                             int severity);
+> +                             int severity,  u8 *aer_regs);
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Can the aer_regs type be made "struct aer_capability_regs *"?  It'd be
+nice if we could avoid the casting when passing the pointer around.
+We might still need a cast in ghes_do_proc() when calling
+aer_recover_queue(), but I *think* everyplace else would be OK with
+keeping the exact type.
 
-Cc: stable@vger.kernel.org
----
- drivers/block/cciss.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 6374dc1..62b6c2c 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -168,8 +168,6 @@ static irqreturn_t do_cciss_msix_intr(int irq, void *dev_id);
- static int cciss_open(struct block_device *bdev, fmode_t mode);
- static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
- static void cciss_release(struct gendisk *disk, fmode_t mode);
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned int cmd, unsigned long arg);
- static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 		       unsigned int cmd, unsigned long arg);
- static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
-@@ -235,7 +233,7 @@ static const struct block_device_operations cciss_fops = {
- 	.owner = THIS_MODULE,
- 	.open = cciss_unlocked_open,
- 	.release = cciss_release,
--	.ioctl = do_ioctl,
-+	.ioctl = cciss_ioctl,
- 	.getgeo = cciss_getgeo,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = cciss_compat_ioctl,
-@@ -1143,16 +1141,6 @@ static void cciss_release(struct gendisk *disk, fmode_t mode)
- 	mutex_unlock(&cciss_mutex);
- }
- 
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned cmd, unsigned long arg)
--{
--	int ret;
--	mutex_lock(&cciss_mutex);
--	ret = cciss_ioctl(bdev, mode, cmd, arg);
--	mutex_unlock(&cciss_mutex);
--	return ret;
--}
--
- #ifdef CONFIG_COMPAT
- 
- static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
-@@ -1179,7 +1167,7 @@ static int cciss_compat_ioctl(struct block_device *bdev, fmode_t mode,
- 	case CCISS_REGNEWD:
- 	case CCISS_RESCANDISK:
- 	case CCISS_GETLUNINFO:
--		return do_ioctl(bdev, mode, cmd, arg);
-+		return cciss_ioctl(bdev, mode, cmd, arg);
- 
- 	case CCISS_PASSTHRU32:
- 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
-@@ -1219,7 +1207,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
- 	if (err)
- 		return -EFAULT;
- 
--	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1261,7 +1249,7 @@ static int cciss_ioctl32_big_passthru(struct block_device *bdev, fmode_t mode,
- 	if (err)
- 		return -EFAULT;
- 
--	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1311,11 +1299,14 @@ static int cciss_getpciinfo(ctlr_info_t *h, void __user *argp)
- static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
- {
- 	cciss_coalint_struct intinfo;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
- 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user
- 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
- 		return -EFAULT;
-@@ -1356,12 +1347,15 @@ static int cciss_setintinfo(ctlr_info_t *h, void __user *argp)
- static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
- {
- 	NodeName_type NodeName;
-+	unsigned long flags;
- 	int i;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	for (i = 0; i < 16; i++)
- 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1398,10 +1392,13 @@ static int cciss_setnodename(ctlr_info_t *h, void __user *argp)
- static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
- {
- 	Heartbeat_type heartbeat;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	heartbeat = readl(&h->cfgtable->HeartBeat);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1410,10 +1407,13 @@ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
- static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
- {
- 	BusTypes_type BusTypes;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	BusTypes = readl(&h->cfgtable->BusTypes);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
- 		return -EFAULT;
- 	return 0;
-
+Bjorn
