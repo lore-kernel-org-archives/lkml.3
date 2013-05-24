@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3EXNIQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 09:08:16 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:58070 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3EXNIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 09:08:14 -0400
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH 2/2] s390/kdump/mmap: Implement arch_oldmem_remap_pfn_range() for s390
-Date: Fri, 24 May 2013 15:08:09 +0200
-Message-Id: <1369400889-11064-3-git-send-email-holzheu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.6
-In-Reply-To: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052413-3548-0000-0000-0000057CA38D
+	id S1755690Ab3EXNM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 09:12:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab3EXNMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 09:12:24 -0400
+Date: Fri, 24 May 2013 16:11:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-am33-list@redhat.com, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 07/10] powerpc: uaccess s/might_sleep/might_fault/
+Message-ID: <20130524131104.GA11462@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+ <2aa6c3da21a28120126732b5e0b4ecd6cba8ca3b.1368702323.git.mst@redhat.com>
+ <201305221559.01806.arnd@arndb.de>
+ <20130524130032.GA10167@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524130032.GA10167@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Willeke <willeke@de.ibm.com>
+On Fri, May 24, 2013 at 04:00:32PM +0300, Michael S. Tsirkin wrote:
+> On Wed, May 22, 2013 at 03:59:01PM +0200, Arnd Bergmann wrote:
+> > On Thursday 16 May 2013, Michael S. Tsirkin wrote:
+> > > @@ -178,7 +178,7 @@ do {                                                                \
+> > >         long __pu_err;                                          \
+> > >         __typeof__(*(ptr)) __user *__pu_addr = (ptr);           \
+> > >         if (!is_kernel_addr((unsigned long)__pu_addr))          \
+> > > -               might_sleep();                                  \
+> > > +               might_fault();                                  \
+> > >         __chk_user_ptr(ptr);                                    \
+> > >         __put_user_size((x), __pu_addr, (size), __pu_err);      \
+> > >         __pu_err;                                               \
+> > > 
+> > 
+> > Another observation:
+> > 
+> > 	if (!is_kernel_addr((unsigned long)__pu_addr))
+> > 		might_sleep();
+> > 
+> > is almost the same as
+> > 
+> > 	might_fault();
+> > 
+> > except that it does not call might_lock_read().
+> > 
+> > The version above may have been put there intentionally and correctly, but
+> > if you want to replace it with might_fault(), you should remove the
+> > "if ()" condition.
+> > 
+> > 	Arnd
+> 
+> Well not exactly. The non-inline might_fault checks the
+> current segment, not the address.
+> I'm guessing this is trying to do the same just without
+> pulling in segment_eq, but I'd like a confirmation
+> from more PPC maintainers.
+> 
+> Guys would you ack
+> 
+> - 	if (!is_kernel_addr((unsigned long)__pu_addr))
+> - 		might_fault();
+> + 	might_fault();
+> 
+> on top of this patch?
 
-This patch introduced the S390 specific way to map pages from oldmem.
-The memory area below OLDMEM_SIZE is mapped with offset OLDMEM_BASE.
-The other old memory is mapped directly.
+OK I spoke too fast: I found this:
 
-Signed-off-by: Jan Willeke <willeke@de.ibm.com>
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- arch/s390/kernel/crash_dump.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+    powerpc: Fix incorrect might_sleep in __get_user/__put_user on kernel addresses
+    
+    We have a case where __get_user and __put_user can validly be used
+    on kernel addresses in interrupt context - namely, the alignment
+    exception handler, as our get/put_unaligned just do a single access
+    and rely on the alignment exception handler to fix things up in the
+    rare cases where the cpu can't handle it in hardware.  Thus we can
+    get alignment exceptions in the network stack at interrupt level.
+    The alignment exception handler does a __get_user to read the
+    instruction and blows up in might_sleep().
+    
+    Since a __get_user on a kernel address won't actually ever sleep,
+    this makes the might_sleep conditional on the address being less
+    than PAGE_OFFSET.
+    
+    Signed-off-by: Paul Mackerras <paulus@samba.org>
 
-diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
-index f703d91..f524eb2 100644
---- a/arch/s390/kernel/crash_dump.c
-+++ b/arch/s390/kernel/crash_dump.c
-@@ -51,6 +51,33 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- }
- 
- /*
-+ * Remap "oldmem"
-+ *
-+ * For the kdump reserved memory this functions performs a swap operation:
-+ * [0 - OLDMEM_SIZE] is mapped to [OLDMEM_BASE - OLDMEM_BASE + OLDMEM_SIZE]
-+ */
-+int arch_oldmem_remap_pfn_range(struct vm_area_struct *vma, unsigned long from,
-+				unsigned long pfn, unsigned long size,
-+				pgprot_t prot)
-+{
-+	unsigned long size_old;
-+	int rc;
-+
-+	if (pfn < OLDMEM_SIZE >> PAGE_SHIFT) {
-+		size_old = min(size, OLDMEM_SIZE - (pfn << PAGE_SHIFT));
-+		rc = remap_pfn_range(vma, from,
-+				     pfn + (OLDMEM_BASE >> PAGE_SHIFT),
-+				     size_old, prot);
-+		if (rc || size == size_old)
-+			return rc;
-+		size -= size_old;
-+		from += size_old;
-+		pfn += size_old >> PAGE_SHIFT;
-+	}
-+	return remap_pfn_range(vma, from, pfn, size, prot);
-+}
-+
-+/*
-  * Copy memory from old kernel
-  */
- int copy_from_oldmem(void *dest, void *src, size_t count)
--- 
-1.8.1.6
+So this won't work, unless we add the is_kernel_addr check
+to might_fault. That will become possible on top of this patchset
+but let's consider this carefully, and make this a separate
+patchset, OK?
 
+> Also, any volunteer to test this (not just test-build)?
+> 
+> -- 
+> MST
