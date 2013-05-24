@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab3EXUQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 16:16:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58018 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756705Ab3EXUQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 16:16:54 -0400
-Date: Fri, 24 May 2013 13:16:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: torvalds@linux-foundation.org, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/11] ipc: move locking out of ipcctl_pre_down_nolock
-Message-Id: <20130524131652.e21bff6b6c6a214b19b299a9@linux-foundation.org>
-In-Reply-To: <1368666490-29055-5-git-send-email-davidlohr.bueso@hp.com>
-References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
-	<1368666490-29055-5-git-send-email-davidlohr.bueso@hp.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757576Ab3EXURH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 16:17:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756705Ab3EXURE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 16:17:04 -0400
+Date: Fri, 24 May 2013 16:16:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: XFS assertion from truncate. (3.10-rc2)
+Message-ID: <20130524201655.GA23086@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+References: <20130522052938.GA2573@redhat.com>
+ <20130522055147.GI29466@dastard>
+ <20130522215454.GL29466@dastard>
+ <20130523184948.GA11151@redhat.com>
+ <20130523223038.GB24543@dastard>
+ <20130524004906.GA21171@redhat.com>
+ <20130524012625.GH24543@dastard>
+ <20130524015219.GA28486@redhat.com>
+ <20130524030300.GA30760@redhat.com>
+ <20130524080300.GI24543@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524080300.GI24543@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013 18:08:03 -0700 Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+On Fri, May 24, 2013 at 06:03:00PM +1000, Dave Chinner wrote:
 
-> This function currently acquires both the rw_mutex and the rcu lock on
-> successful lookups, leaving the callers to explicitly unlock them, creating
-> another two level locking situation.
-> 
-> Make the callers (including those that still use ipcctl_pre_down()) explicitly
-> lock and unlock the rwsem and rcu lock.
-> 
-> ...
->
-> @@ -409,31 +409,38 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
->  			return -EFAULT;
->  	}
->  
-> +	down_write(&msg_ids(ns).rw_mutex);
-> +	rcu_read_lock();
-> +
->  	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
->  			       &msqid64.msg_perm, msqid64.msg_qbytes);
-> -	if (IS_ERR(ipcp))
-> -		return PTR_ERR(ipcp);
-> +	if (IS_ERR(ipcp)) {
-> +		err = PTR_ERR(ipcp);
-> +		/* the ipc lock is not held upon failure */
+ > xfstest generic/193 is *supposed* to test behaviour of suid/sgid bits
+ > and clearing them is various situations.
+ > 
+ > You know what I'm about to say, don't you? The test doesn't test
+ > what it thinks it is testing. it puts the destination file in root
+ > directory of the xfstests harness, not in the filesystems being
+ > tested.
 
-Terms like "the ipc lock" are unnecessarily vague.  It's better to
-identify the lock by name, eg msg_queue.q_perm.lock.
+awesome, two bugs for the price of one!
 
-Where should readers go to understand the overall locking scheme?  A
-description of the overall object hierarchy and the role which the
-various locks play?
+ > So, on all my machines, it runs on ext3 filesystems, never on the
+ > ext4, btrfs, xfs, etc filesystems that I'm actually testing.
+ > 
+ > That's beside the point, because it doesn't test truncate behaviour.
+ > But at least I know now why my attempts to reproduce the problem
+ > didn't work...
+ > 
+ > Right, patch below should fix the problem.
 
-Have you done any performance testing of this patchset?  Just from
-squinting at it, I'd expect the effects to be small...
+Haven't seen anything out of the ordinary since I applied that,
+so I'd call it good.
+ 
+ > What a frustrating bug. Now, where's my bottle of scotch?
+
+heh, enjoy the weekend.
+
+	Dave
 
