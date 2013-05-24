@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760103Ab3EXIq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:46:58 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:37025 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab3EXIq4 (ORCPT
+	id S1760124Ab3EXIvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:51:35 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:49509 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759956Ab3EXIvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:46:56 -0400
-From: Federico Manzan <f.manzan@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: sarah.a.sharp@linux.intel.com, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Federico Manzan <f.manzan@gmail.com>
-Subject: [PATCH] usbfs: Increase arbitrary limit for USB 3 isopkt length
-Date: Fri, 24 May 2013 10:47:29 +0200
-Message-Id: <1369385249-15624-1-git-send-email-f.manzan@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 24 May 2013 04:51:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130524103007.7bb206ee@amdc308.digital.local>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
+	<20130522122700.104ca5cd@amdc308.digital.local>
+	<CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
+	<20130522164453.29cd3a7d@amdc308.digital.local>
+	<20130524075640.0a5b80ff@amdc308.digital.local>
+	<CAKohpoksymD76rDvg_+PwU7r3JXp1oydHBbJE4-y6TBHOomZHg@mail.gmail.com>
+	<20130524103007.7bb206ee@amdc308.digital.local>
+Date: Fri, 24 May 2013 14:21:30 +0530
+Message-ID: <CAKohponbX7u_k9ZYQ7KyBeyKh93Qu+niGZj60t9c1n+AmaA6pg@mail.gmail.com>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
+ governor - tests results
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the current arbitrary limit for isocronous packet size to a
-value large enough to account for USB 3.0 super bandwidth streams,
-bMaxBurst (0~15 allowed, 1~16 packets)
-bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-so the size max for one USB 3 isocronous transfer is
-1024 byte * 16 * 3 = 49152 byte
+On 24 May 2013 14:00, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> The overclock frequency (1.5 GHz) is possible to set as an ordinary,
+> available frequency (policy->max) for ondemand.
+>
+> Unfortunately with our load patterns, this frequency rapidly increases
+> internal chip temperature (chip goes out of available power/thermal
+> dissipation range), and consumes extra power when not needed.
+>
+> The core idea with overclock is to increase ("boost") the frequency
+> when conditions allow to do it (for example load is affined to a single
+> core, other are idle). Then we will not exceed power/thermal budget, but
+> increase performance (and even save power).
+>
+>
+> Overclocking is efficiently utilized by LAB, which relies on a number of
+> idle cpus. Thus, we can easily asses if we can enable it.
+>
+> I also foresee potential use of overclocking, when scheduler will take a
+> major role of power saver for mobile (ARM) linux. Since it will try to
+> pack as much tasks as possible to a single core - it will need a
+> framework/API to "boost" their execution.
 
-Signed-off-by: Federico Manzan <f.manzan@gmail.com>
----
- drivers/usb/core/devio.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Okay.. so its exactly what I thought the reason would be.
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index caefc80..7ac137e 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1287,9 +1287,11 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 			goto error;
- 		}
- 		for (totlen = u = 0; u < uurb->number_of_packets; u++) {
--			/* arbitrary limit,
--			 * sufficient for USB 2.0 high-bandwidth iso */
--			if (isopkt[u].length > 8192) {
-+			/* arbitrary limit need for USB 3.0
-+			 * bMaxBurst (0~15 allowed, 1~16 packets)
-+			 * bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-+			 * sizemax: 1024 * 16 * 3 = 49152*/
-+			if (isopkt[u].length > 65536) {
- 				ret = -EINVAL;
- 				goto error;
- 			}
--- 
-1.7.10.4
+What I would have done if I was in your place is:
 
+Add following sysfs tunables to ondemand governor:
+
+- overdrive_freq: We will go over this frequency only when
+number of busy cores is <= overdrive_cores..
+For your case it will be 1.4 GHz
+
+- overdrive_cores: We will enable overdrive frequencies only if no. of
+busy cores is <= overdrive_cores. Zero by default (So, that this feature
+is disabled by default) and 1 for your case.
+
+And your driver will include all the available frequencies in the freq
+table.
+
+I hope this will be the most generic solution to your problem..
+
+What do you say?
+
+--
+viresh
