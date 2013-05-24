@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3EXDBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 23:01:47 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:52458 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759937Ab3EXDBp (ORCPT
+	id S1759986Ab3EXDDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 23:03:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759771Ab3EXDDI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 23:01:45 -0400
+	Thu, 23 May 2013 23:03:08 -0400
+Date: Thu, 23 May 2013 23:03:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: XFS assertion from truncate. (3.10-rc2)
+Message-ID: <20130524030300.GA30760@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+References: <20130522041521.GA1837@redhat.com>
+ <20130522051243.GH29466@dastard>
+ <20130522052938.GA2573@redhat.com>
+ <20130522055147.GI29466@dastard>
+ <20130522215454.GL29466@dastard>
+ <20130523184948.GA11151@redhat.com>
+ <20130523223038.GB24543@dastard>
+ <20130524004906.GA21171@redhat.com>
+ <20130524012625.GH24543@dastard>
+ <20130524015219.GA28486@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130522161422.GP1627@sirena.org.uk>
-References: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
-	<20130522161422.GP1627@sirena.org.uk>
-Date: Fri, 24 May 2013 11:01:45 +0800
-Message-ID: <CAK=oMXepj7tmZJ3=b9ja+E1N9eAPmsPhBefAzoswVyGWBXwNOA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: 88pm800: add regulator driver
-From: yi zhang <yizhang.mrvl@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, cxie4@marvell.com, jett.zhou@marvell.com,
-        linux-kernel@vger.kernel.org, Yi Zhang <yizhang@marvell.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130524015219.GA28486@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Brown:
+On Thu, May 23, 2013 at 09:52:19PM -0400, Dave Jones wrote:
+ > On Fri, May 24, 2013 at 11:26:25AM +1000, Dave Chinner wrote:
+ >  
+ >  > You want to print the debug output if the masked value != 0.
+ > 
+ > XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
 
-2013/5/23 Mark Brown <broonie@kernel.org>:
-> On Wed, May 22, 2013 at 08:10:53PM +0800, yizhang.mrvl@gmail.com wrote:
->
-> You need a DT binding document for any new DT bindings like this one.
->
-Thanks for your comments, I'll do it;
+ah, sneaky. There's some unprintable characters there that didn't show up in my terminal when I cut-n-pasted.
+They made it to the logs though..
 
->> +static const unsigned int BUCK1_table[] = {
->> +     /* 0x00-0x4F: from 0.6 to 1.5875V with step 0.0125V */
->> +     /* 0x50-0x7F: from 1.6 to 1.8V with step 0.05V */
->
-> Write this out as code, don't use a big table for large sets of
-> voltages.
+XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
 
-     The voltage table is "const", if we write it out as code, seems
-it's hard for us
-     to keep this attribute;
-     And the voltage of this BUCK is not linear(it's separated as two parts),
-     seems I shouldn't use the framework helpers to implement it; Right?
-      what do you think?
+Hexdump: of that part.. 706d 352e 012f 0a01 
+So filename is 0x01 0x01
 
->> +static int pm800_list_voltage(struct regulator_dev *rdev, unsigned index)
->> +{
->> +     struct pm800_regulator_info *info = rdev_get_drvdata(rdev);
->> +     int ret = -EINVAL;
->> +
->> +     if (info->vol_table && (index < rdev->desc->n_voltages))
->> +             ret = info->vol_table[index];
->> +
->> +     return ret;
->> +}
->
-> For things that are just table lookups use the framework helpers.
->
-   OK, I'll change it; thanks for your comments;
->> +static int choose_voltage(struct regulator_dev *rdev, int min_uv, int max_uv)
->> +{
->
-> Similarly here.
->
-    OK, copy that; thanks;
+Don't know if that's relevant to the bug or not..
 
->> +static int pm800_set_voltage(struct regulator_dev *rdev,
->> +                          int min_uv, int max_uv, unsigned *sel)
->> +{
->> +     *sel = choose_voltage(rdev, min_uv, max_uv);
->> +     if (*sel < 0)
->> +             return -EINVAL;
->> +     return regulator_set_voltage_sel_regmap(rdev, *sel);
->> +}
->
-> Implement map_voltage.
->
->> +     for_each_child_of_node(nproot, np) {
->> +             if (!of_node_cmp(np->name, info->desc.name)) {
->> +                     config->init_data =
->> +                             of_get_regulator_init_data(&pdev->dev, np);
->> +                     config->of_node = np;
->> +                     break;
->> +             }
->> +     }
->
-> Use of_regulator_match().
+	Dave
 
-    Copy that, thanks for your comment; I'll change it;
