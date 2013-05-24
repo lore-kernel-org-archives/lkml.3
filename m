@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3EXSbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 14:31:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53640 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757350Ab3EXSbV (ORCPT
+	id S1757371Ab3EXSc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 14:32:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25652 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3EXSc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 14:31:21 -0400
+	Fri, 24 May 2013 14:32:27 -0400
 X-IronPort-AV: E=Sophos;i="4.87,736,1363158000"; 
-   d="scan'208";a="50557350"
+   d="scan'208";a="50454277"
 From: Rohit Vaswani <rvaswani@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>,
         Linus Walleij <linus.walleij@linaro.org>
@@ -18,9 +18,9 @@ Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
         Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 0/3] Cleanup MSM_GPIOMUX and add DT support for gpio-msm
-Date: Fri, 24 May 2013 11:30:56 -0700
-Message-Id: <1369420259-26271-1-git-send-email-rvaswani@codeaurora.org>
+Subject: [PATCHv3 0/3] Cleanup MSM_GPIOMUX and add DT support for gpio-msm
+Date: Fri, 24 May 2013 11:32:19 -0700
+Message-Id: <1369420342-27085-1-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
