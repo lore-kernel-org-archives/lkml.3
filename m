@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3EXVFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 17:05:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57928 "EHLO mga09.intel.com"
+	id S1755891Ab3EXVGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 17:06:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12480 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab3EXVFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 17:05:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,737,1363158000"; 
-   d="scan'208";a="319164159"
-Date: Fri, 24 May 2013 14:05:03 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Shawn Nematbakhsh <shawnn@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
- controllers.
-Message-ID: <20130524210503.GC15788@xanatos>
-References: <1369419177-23281-1-git-send-email-shawnn@chromium.org>
+	id S1755564Ab3EXVGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 17:06:10 -0400
+Date: Fri, 24 May 2013 17:05:34 -0400
+From: Dave Jones <davej@redhat.com>
+To: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Message-ID: <20130524210534.GA15466@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Russ Anderson <rja@sgi.com>, Robin Holt <holt@sgi.com>,
+	Matt Fleming <matt@console-pimps.org>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	Borislav Petkov <bp@alien8.de>
+References: <20130522162747.GA20816@sgi.com>
+ <20130523115801.GJ14575@console-pimps.org>
+ <20130523203234.GD20913@sgi.com>
+ <20130524074331.GL14575@console-pimps.org>
+ <20130524161111.GE3672@sgi.com>
+ <20130524170214.GA30179@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369419177-23281-1-git-send-email-shawnn@chromium.org>
+In-Reply-To: <20130524170214.GA30179@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 11:12:57AM -0700, Shawn Nematbakhsh wrote:
-> If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
-> a reset will be performed upon runtime resume. Any previously suspended
-> devices attached to the controller will be re-enumerated at this time.
-> This will cause problems, for example, if an open system call on the
-> device triggered the resume (the open call will fail).
+On Fri, May 24, 2013 at 12:02:15PM -0500, Russ Anderson wrote:
+ > On Fri, May 24, 2013 at 11:11:11AM -0500, Robin Holt wrote:
+ > > Russ,
+ > > 
+ > > Can we open a bug for the BIOS folks and see if we can get this addressed?
+ > 
+ > I already talked with them.  It is not in an area that we
+ > normally change, so if there is a bug may be in the Intel
+ > reference code.  More investigation is needed to track down
+ > the actual problem, and that could take help from Intel.
+ > 
+ > Regardless of that, it is a kernel patch that triggers the
+ > problem.  This isn't the first time a kernel change does
+ > the "right thing" but trips across questionable bios/EFI/bootloader
+ > implementation.  That still makes it a kernel bug.
+ > 
+ > I'm still digging to better understand the root problem.
+ 
+When we rebased the Fedora 18 kernel to 3.9 we had a bunch of reports
+from people who can no longer boot with what looks like similar symptoms.
 
-That's ugly, but disabling runtime PM is going to have a big impact on
-the power consumption of those systems.
+https://bugzilla.redhat.com/show_bug.cgi?id=964335
 
-Alan, do you think this is really the right thing to be doing here?  It
-feels like userspace should just be able to deal with devices
-disconnecting on resume.  After all, there are lots of USB devices that
-can't handle USB device suspend at all.
+	Dave
 
-Shouldn't userspace just disable runtime PM for the USB device classes
-that don't have a reset resume callback?
-
-> Note that this change is only relevant when persist_enabled is not set
-> for USB devices.
-
-Could we at least wrap the call in an ifdef CONFIG_USB_DEFAULT_PERSIST?
-That way if people have USB persist turned off in their configuration,
-their host will still be able to suspend.
-
-Sarah Sharp
-
-> 
-> Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
-> ---
->  drivers/usb/host/xhci.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index b4aa79d..7455156 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -4687,6 +4687,12 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
->  
->  	get_quirks(dev, xhci);
->  
-> +	/* If we are resetting upon resume, we must disable runtime PM.
-> +	 * Otherwise, an open() syscall to a device on our runtime suspended
-> +	 * controller will trigger controller reset and device re-enumeration */
-> +	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-> +		pm_runtime_get_noresume(dev);
-> +
->  	/* Make sure the HC is halted. */
->  	retval = xhci_halt(xhci);
->  	if (retval)
-> -- 
-> 1.7.12.4
-> 
