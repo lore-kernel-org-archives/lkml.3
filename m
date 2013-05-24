@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760312Ab3EXKBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 06:01:17 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38998 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760017Ab3EXKBQ (ORCPT
+	id S1760318Ab3EXKE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 06:04:58 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37860
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759561Ab3EXKE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 06:01:16 -0400
-Date: Fri, 24 May 2013 12:01:14 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Eric Blake <eblake@redhat.com>
-Cc: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: RFC: allow empty symlink targets
-Message-ID: <20130524100114.GB14554@amd.pavel.ucw.cz>
-References: <1358427833-3847-1-git-send-email-P@draigBrady.com>
- <50F8252C.2060404@draigBrady.com>
- <519381D8.5080206@draigBrady.com>
- <51939E49.1040209@redhat.com>
+	Fri, 24 May 2013 06:04:56 -0400
+Date: Fri, 24 May 2013 06:04:52 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Philippe De Muyter <phdm@macqel.be>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Karel Zak <kzak@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
+Message-ID: <20130524100452.GA15570@infradead.org>
+References: <1367270313-18871-1-git-send-email-phdm@macqel.be>
+ <1367270313-18871-3-git-send-email-phdm@macqel.be>
+ <20130520163927.8e4c2fe753b60a02c368ceb5@linux-foundation.org>
+ <20130521072754.GB19266@frolo.macqel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51939E49.1040209@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130521072754.GB19266@frolo.macqel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, May 21, 2013 at 09:27:54AM +0200, Philippe De Muyter wrote:
+> AIX LVM permits to make "logical volumes" which are made of multiple slices
+> of multiple disks.  The new code allows only access to the "logical volumes"
+> which are made of one slice on the probed disk, a slice being a contiguous
+> disk area.  The code also detects "logical volumes" made of multiple slices
+> on the probed disk, but can not describe them to the partition layer, because
+> the partition layer generic code does not support that.  When such
+> non-contiguous "logical volumes" are detected, a diagnostic message is
+> printed.
 
-> > Following up from http://austingroupbugs.net/view.php?id=649
-> > It seems POSIX will now allow the current Linux behavior of returning ENOENT,
-> 
-> Huh?  Linux currently doesn't allow the creation of an empty symlink.
-> That link mentions the current BSD behavior of returning ENOENT when
-> resolving such a symlink (that is, what stat() does when chasing through
-> an empty symlink, provided such a symlink is first created).
-> 
-> > or the Solaris behavior of allowing empty symlink targets.
-> 
-> The point made in that bug report is that Linux is buggy for not
-> allowing symlink() to create an empty symlink in the first place; once
-> you allow the creation of an empty symlink, then how to handle such a
-> symlink in stat() is up to you whether to copy Solaris' or BSD's example.
+This very much screams like it should be implemented in the lvm2
+userspace package using the dm kernel driver.
 
-What happens when Linux tries to follow symlink created by
-BSD/Solaris? I'm sure BSDs can write ext2 and we can read some BSD
-filesystems...
-									Pavel
-									
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
