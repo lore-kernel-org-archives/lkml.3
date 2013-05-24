@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab3EXDDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 23:03:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5583 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759771Ab3EXDDI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 23:03:08 -0400
-Date: Thu, 23 May 2013 23:03:00 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS assertion from truncate. (3.10-rc2)
-Message-ID: <20130524030300.GA30760@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20130522041521.GA1837@redhat.com>
- <20130522051243.GH29466@dastard>
- <20130522052938.GA2573@redhat.com>
- <20130522055147.GI29466@dastard>
- <20130522215454.GL29466@dastard>
- <20130523184948.GA11151@redhat.com>
- <20130523223038.GB24543@dastard>
- <20130524004906.GA21171@redhat.com>
- <20130524012625.GH24543@dastard>
- <20130524015219.GA28486@redhat.com>
+	id S1759990Ab3EXDFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 23:05:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20133 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759771Ab3EXDFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 23:05:54 -0400
+X-IronPort-AV: E=Sophos;i="4.87,731,1363104000"; 
+   d="scan'208";a="7351504"
+Message-ID: <519ED883.9060903@cn.fujitsu.com>
+Date: Fri, 24 May 2013 11:03:31 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130524015219.GA28486@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Mell <sub.atomic.fusion@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: move proc mount options out of pid_namespace
+References: <3342521.NtikuogILA@pegasus> <519DED89.9000409@cn.fujitsu.com> <2515335.Kvy7Q1OKc4@pegasus>
+In-Reply-To: <2515335.Kvy7Q1OKc4@pegasus>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/24 11:04:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/24 11:04:32,
+	Serialize complete at 2013/05/24 11:04:32
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 09:52:19PM -0400, Dave Jones wrote:
- > On Fri, May 24, 2013 at 11:26:25AM +1000, Dave Chinner wrote:
- >  
- >  > You want to print the debug output if the masked value != 0.
- > 
- > XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
+Hi Stephen,
 
-ah, sneaky. There's some unprintable characters there that didn't show up in my terminal when I cut-n-pasted.
-They made it to the logs though..
+On 05/24/2013 07:32 AM, Stephen Mell wrote:
 
-XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
+> On Thursday, May 23, 2013 18:20:57 Gu Zheng wrote:
+> 
+>> Here it'll create a new proc sb instance which holds the same context as the old ones
+>> each time we mount proc though in the same PID namespace, won't it?
+> I believe so. But this is the point, right? 
 
-Hexdump: of that part.. 706d 352e 012f 0a01 
-So filename is 0x01 0x01
+Yes, but I think it's also the problem.
 
-Don't know if that's relevant to the bug or not..
+>They won't be identical if different mount options are used, I don't think.
 
-	Dave
+If different mount options are used, we'll create different super block instance, and they have
+the same context, only the difference is each one holds different proc_sb_info.
+But I think what we really want is only one proc sb instance and create different proc_sb_info
+if different mount options are used.
+
+> 
+>> Here the pre-check seems needless.
+> Is that new with my patch, or has it always been needless?
+
+Yeah, it's always needless.
+
+Thanks,
+Gu
+
+> 
+> Thanks,
+> Stephen
+> 
+
 
