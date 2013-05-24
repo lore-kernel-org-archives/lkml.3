@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab3EXPmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 11:42:51 -0400
-Received: from 1.mo4.mail-out.ovh.net ([178.33.248.196]:52091 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756664Ab3EXPmu (ORCPT
+	id S1756514Ab3EXPpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 11:45:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59143 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab3EXPpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 11:42:50 -0400
-X-Greylist: delayed 94980 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 11:42:50 EDT
-Date: Fri, 24 May 2013 17:38:35 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-fbdev@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [RFC] Add co-maintainer for fbdev
-Message-ID: <20130524153835.GF15839@game.jcrosoft.org>
+	Fri, 24 May 2013 11:45:10 -0400
+Message-ID: <519F8B02.1080000@wwwdotorg.org>
+Date: Fri, 24 May 2013 09:45:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 9977162025138039582
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: ext Tony Lindgren <tony@atomide.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>
+Subject: Re: [PATCH] pinctrl: sink pinctrldev_list_mutex
+References: <1368690525-32252-1-git-send-email-linus.walleij@stericsson.com> <519A8A57.9060007@wwwdotorg.org> <CACRpkdZieCmFnHCGUkv8EqcAtb3DA7dSZpimSdB4P81tZPJRoQ@mail.gmail.com>
+In-Reply-To: <CACRpkdZieCmFnHCGUkv8EqcAtb3DA7dSZpimSdB4P81tZPJRoQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On 05/24/2013 02:04 AM, Linus Walleij wrote:
+> On Mon, May 20, 2013 at 10:40 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>> This seems fine on the surface, but I do have one question:
+>>
+>> I think the pinctrl lock serves a couple of purposes:
+>>
+>> 1) Basic protection for accesses to the pinctrldev_list itself.
+>>
+>> This patch seems just fine w.r.t. this point.
+>>
+>> 2) Preventing pinctrl drivers from being unregistered (and their modules
+>> unloaded) when some operation is being performed on/to them.
+> 
+> Prevention of module unloading of pin controllers has never
+> been working properly, as there is no way to release the
+> pinctrl handles taken by different drivers.
+> 
+> I think that is why most pin controller drivers are bool rather
+> than tristate.
 
-	As you seems very busy I'd like to propose the help you to handle the
-	fbdev subsystem to easier the rich of the fbdev patch to Linus
+Once we get to multi-platform distro kernels, we will probably want all
+the pinctrl drivers to be modules so only the correct one gets loaded
+from an initrd. Hence, we'll want to move things to tristate rather than
+away from it.
 
-	As I'm working on fbdev on at91 and others and already Co-Maintain the
-	at91 mach on ARM
+If we know the pinctrl subsystem doesn't yet work correctly with module
+unloads, should we modify pinctrl_register() to simply take a lock on
+the driver module and never drop it, so that we guarantee we don't try
+to unload the module later? Or, is this effectively already in place?
 
-	And if you are not willing to continue I could take over
-
-Best Regards,
-J.
+In other words, I can accept that we know that we can't unload pinctrl
+drivers, but given that, I think the kernel should make sure the user
+/actually/ can't unload them.
