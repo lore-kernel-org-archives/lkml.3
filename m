@@ -1,52 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3EXFbi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:31:38 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:38654 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab3EXFbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:31:36 -0400
+	id S1753579Ab3EXFde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:33:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779Ab3EXFdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 01:33:32 -0400
+Message-ID: <519EFB9D.8070607@redhat.com>
+Date: Fri, 24 May 2013 13:33:17 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <519D8287.5020004@marvell.com>
-References: <1368442050-16548-1-git-send-email-chenxg@marvell.com>
-	<51947935.50607@marvell.com>
-	<CAKohpokR0igX3Z4P9eyoJikmBwnG90eN003wAaJW-Ynu7zU7Aw@mail.gmail.com>
-	<519D8287.5020004@marvell.com>
-Date: Fri, 24 May 2013 11:01:35 +0530
-Message-ID: <CAKohpok_7pQHD3T+r2us0xOmKRQpm-0azEVbh4osFjWiO0nS9w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: fix governor start/stop race condition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Xiaoguang Chen <chenxg@marvell.com>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ning Jiang <njiang1@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Zhoujie Wu <zjwu@marvell.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next RFC 5/8] macvtap: eliminate linear search
+References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-6-git-send-email-jasowang@redhat.com> <20130523114109.GB17993@redhat.com>
+In-Reply-To: <20130523114109.GB17993@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2013 08:14, Xiaoguang Chen <chenxg@marvell.com> wrote:
-> Do you mean my patch will cause deadlock? I once tried to add another lock
-> to protect the GOV_STOP/START sequence instead of using the rwsem in this
-> patch.
-> But I saw deadlock indeed.
-> In cpufreq_add_policy_cpu, the lock has to be added before the rwsem since
-> GOV_STOP is
-> before lock_policy_rwsem_write, but in cpufreq_update_policy, it will first
-> get the rwsem, and then
-> call __cpufreq_set_policy which will contain GOV_STOP again, if we add the
-> new lock before this GOV_STOP,
-> then we may get deadlock in below sequence:
-> 1) hotplug in one cpu by calling cpufreq_add_policy_cpu in which new lock is
-> locked first then rwsem is locked.
-> 2) governor change in cpufreq_update_policy in which rwsem is locked first
-> then new lock is locked.
-> this is a deadlock issue if above two steps interleaves
+On 05/23/2013 07:41 PM, Michael S. Tsirkin wrote:
+> On Thu, May 23, 2013 at 11:12:30AM +0800, Jason Wang wrote:
+>> Linear search were used in both get_slot() and macvtap_get_queue(), this is
+>> because:
+>>
+>> - macvtap didn't reshuffle the array of taps when create or destroy a queue, so
+>>   when adding a new queue, macvtap must do linear search to find a location for
+>>   the new queue. This will also complicate the TUNSETQUEUE implementation for
+>>   multiqueue API.
+>> - the queue itself didn't track the queue index, so the we must do a linear
+>>   search in the array to find the location of a existed queue.
+>>
+>> The solution is straightforward: reshuffle the array and introduce a queue_index
+>> to macvtap_queue.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/net/macvtap.c |   63 +++++++++++++++---------------------------------
+>>  1 files changed, 20 insertions(+), 43 deletions(-)
+>>
+>> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+>> index a36e49e..5fd341c 100644
+>> --- a/drivers/net/macvtap.c
+>> +++ b/drivers/net/macvtap.c
+>> @@ -44,6 +44,7 @@ struct macvtap_queue {
+>>  	struct macvlan_dev __rcu *vlan;
+>>  	struct file *file;
+>>  	unsigned int flags;
+>> +	u16 queue_index;
+>>  };
+>>  
+>>  static struct proto macvtap_proto = {
+>> @@ -84,30 +85,10 @@ static const struct proto_ops macvtap_socket_ops;
+>>   */
+>>  static DEFINE_SPINLOCK(macvtap_lock);
+>>  
+>> -/*
+>> - * get_slot: return a [unused/occupied] slot in vlan->taps[]:
+>> - *	- if 'q' is NULL, return the first empty slot;
+>> - *	- otherwise, return the slot this pointer occupies.
+>> - */
+>> -static int get_slot(struct macvlan_dev *vlan, struct macvtap_queue *q)
+>> -{
+>> -	int i;
+>> -
+>> -	for (i = 0; i < MAX_MACVTAP_QUEUES; i++) {
+>> -		if (rcu_dereference_protected(vlan->taps[i],
+>> -					      lockdep_is_held(&macvtap_lock)) == q)
+>> -			return i;
+>> -	}
+>> -
+>> -	/* Should never happen */
+>> -	BUG_ON(1);
+>> -}
+>> -
+>>  static int macvtap_set_queue(struct net_device *dev, struct file *file,
+>>  				struct macvtap_queue *q)
+>>  {
+>>  	struct macvlan_dev *vlan = netdev_priv(dev);
+>> -	int index;
+>>  	int err = -EBUSY;
+>>  
+>>  	spin_lock(&macvtap_lock);
+>> @@ -115,12 +96,12 @@ static int macvtap_set_queue(struct net_device *dev, struct file *file,
+>>  		goto out;
+>>  
+>>  	err = 0;
+>> -	index = get_slot(vlan, NULL);
+>>  	rcu_assign_pointer(q->vlan, vlan);
+>> -	rcu_assign_pointer(vlan->taps[index], q);
+>> +	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
+>>  	sock_hold(&q->sk);
+>>  
+>>  	q->file = file;
+>> +	q->queue_index = vlan->numvtaps;
+>>  	file->private_data = q;
+>>  
+>>  	vlan->numvtaps++;
+>> @@ -140,16 +121,23 @@ out:
+>>   */
+>>  static void macvtap_put_queue(struct macvtap_queue *q)
+>>  {
+>> +	struct macvtap_queue *nq;
+>>  	struct macvlan_dev *vlan;
+>>  
+>>  	spin_lock(&macvtap_lock);
+>>  	vlan = rcu_dereference_protected(q->vlan,
+>>  					 lockdep_is_held(&macvtap_lock));
+>>  	if (vlan) {
+>> -		int index = get_slot(vlan, q);
+>> +		int index = q->queue_index;
+>> +		BUG_ON(index >= vlan->numvtaps);
+>>  
+>> -		RCU_INIT_POINTER(vlan->taps[index], NULL);
+>> +		rcu_assign_pointer(vlan->taps[index],
+>> +				   vlan->taps[vlan->numvtaps - 1]);
+>>  		RCU_INIT_POINTER(q->vlan, NULL);
+>> +		nq = rcu_dereference_protected(vlan->taps[index],
+>> +					       lockdep_is_held(&macvtap_lock));
+>> +		nq->queue_index = index;
+>> +
+>>  		sock_put(&q->sk);
+> Hmm this looks like a bug BTW: sock_put should be after
+> no one uses this tap, so must be after synchronize_rcu.
+> No?
 
-Check this patch.
+Two refcnts were held, one is the socket itself (and we can safely put
+it here), another is held by device when doing macvtap_set_queue(), it
+was released by another sock_put() after synchronize_rcu().
+>
+>>  		--vlan->numvtaps;
+>>  	}
+> So:
+> 		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
+> 					       lockdep_is_held(&macvtap_lock));
+> 		rcu_assign_pointer(vlan->taps[index], nq);
+>
+> same thing?
 
-https://patchwork-mail.kernel.org/patch/2575231/
+Same and cleaner, thanks.
+>
+>> @@ -182,8 +170,7 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+>>  	rxq = skb_get_rxhash(skb);
+>>  	if (rxq) {
+>>  		tap = rcu_dereference(vlan->taps[rxq % numvtaps]);
+>> -		if (tap)
+>> -			goto out;
+>> +		goto out;
+>>  	}
+>>  
+>>  	if (likely(skb_rx_queue_recorded(skb))) {
+>> @@ -193,17 +180,10 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+>>  			rxq -= numvtaps;
+>>  
+>>  		tap = rcu_dereference(vlan->taps[rxq]);
+>> -		if (tap)
+>> -			goto out;
+>> -	}
+>> -
+>> -	/* Everything failed - find first available queue */
+>> -	for (rxq = 0; rxq < MAX_MACVTAP_QUEUES; rxq++) {
+>> -		tap = rcu_dereference(vlan->taps[rxq]);
+>> -		if (tap)
+>> -			break;
+>> +		goto out;
+>>  	}
+>>  
+>> +	tap = rcu_dereference(vlan->taps[0]);
+>>  out:
+>>  	return tap;
+>>  }
+>> @@ -221,17 +201,14 @@ static void macvtap_del_queues(struct net_device *dev)
+>>  
+>>  	/* macvtap_put_queue can free some slots, so go through all slots */
+>>  	spin_lock(&macvtap_lock);
+>> -	for (i = 0; i < MAX_MACVTAP_QUEUES && vlan->numvtaps; i++) {
+>> +	for (i = 0; i < vlan->numvtaps; i++) {
+>>  		q = rcu_dereference_protected(vlan->taps[i],
+>>  					      lockdep_is_held(&macvtap_lock));
+>> -		if (q) {
+>> -			qlist[j++] = q;
+>> -			RCU_INIT_POINTER(vlan->taps[i], NULL);
+>> -			RCU_INIT_POINTER(q->vlan, NULL);
+>> -			vlan->numvtaps--;
+>> -		}
+>> +		BUG_ON(q == NULL);
+>> +		qlist[j++] = q;
+>> +		RCU_INIT_POINTER(vlan->taps[i], NULL);
+>> +		RCU_INIT_POINTER(q->vlan, NULL);
+>>  	}
+>> -	BUG_ON(vlan->numvtaps != 0);
+>>  	/* guarantee that any future macvtap_set_queue will fail */
+>>  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
+>>  	spin_unlock(&macvtap_lock);
+>> -- 
+>> 1.7.1
+
