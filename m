@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab3EXRTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:19:05 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.101]:50029 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751406Ab3EXRTE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:19:04 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-160.messagelabs.com!1369415911!8384935!27
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-CC: "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Fri, 24 May 2013 12:16:40 -0500
-Subject: RE: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
-Thread-Topic: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
-Thread-Index: Ac5WlU267lM8AZbBS9KX9aDYJjQmkwCDJYkw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DA656FEA0@AUSP01VMBX24.collaborationhost.net>
-References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org>
- <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756239Ab3EXRV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:21:26 -0400
+Received: from 19.mo4.mail-out.ovh.net ([87.98.179.66]:55802 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751406Ab3EXRVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 13:21:25 -0400
+X-Greylist: delayed 11207 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 13:21:25 EDT
+Date: Fri, 24 May 2013 19:17:09 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        b.brezillon@overkiz.com,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [GIT PULL] at91: fixes for 3.10 #2
+Message-ID: <20130524171709.GH24476@game.jcrosoft.org>
+References: <1369410151-7837-1-git-send-email-nicolas.ferre@atmel.com>
+ <CAOesGMjvKhVKZf9A70K7VzXikY902KVyKR==4ivnb-gxhyRCPQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMjvKhVKZf9A70K7VzXikY902KVyKR==4ivnb-gxhyRCPQ@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 11641523563632896815
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 21, 2013 7:37 PM, Stephen Warren wrote:
->
-> Fill in the recently added spi_master.bits_per_word_mask field in as
-> many drivers as possible. Make related cleanups, such as removing any
-> redundant error-checking, or empty setup callbacks.
->
-> Cc: device-drivers-devel@blackfin.uclinux.org
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
+On 10:11 Fri 24 May     , Olof Johansson wrote:
+> Hi,
+> 
+> I'll pull this for now, but...
+> 
+> 
+> > Jean-Christophe PLAGNIOL-VILLARD (1):
+> >       ARM: at91: at91sam9n12: move external irq declatation to DT
+> 
+> This one is not a fix. While OK this time, please stick to only
+> sending true fixes for 3.10 from here on out.
 
-<snip>
+it's as you must specify them via DT, the C code is not event use in case of
+DT
+I should have put fix in the commit
 
->  drivers/spi/spi-ep93xx.c        |   11 +----------
-
-<snip>
-
-> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-> index d7bac60..f1b1497 100644
-> --- a/drivers/spi/spi-ep93xx.c
-> +++ b/drivers/spi/spi-ep93xx.c
-> @@ -296,12 +296,6 @@ static int ep93xx_spi_setup(struct spi_device *spi)
->  	struct ep93xx_spi *espi = spi_master_get_devdata(spi->master);
->  	struct ep93xx_spi_chip *chip;
->  
-> -	if (spi->bits_per_word < 4 || spi->bits_per_word > 16) {
-> -		dev_err(&espi->pdev->dev, "invalid bits per word %d\n",
-> -			spi->bits_per_word);
-> -		return -EINVAL;
-> -	}
-> -
->  	chip = spi_get_ctldata(spi);
->  	if (!chip) {
->  		dev_dbg(&espi->pdev->dev, "initial setup for %s\n",
-> @@ -365,10 +359,6 @@ static int ep93xx_spi_transfer(struct spi_device *spi, struct spi_message *msg)
->  
->  	/* first validate each transfer */
->  	list_for_each_entry(t, &msg->transfers, transfer_list) {
-> -		if (t->bits_per_word) {
-> -			if (t->bits_per_word < 4 || t->bits_per_word > 16)
-> -				return -EINVAL;
-> -		}
->  		if (t->speed_hz && t->speed_hz < espi->min_rate)
->  				return -EINVAL;
->  	}
-> @@ -1046,6 +1036,7 @@ static int ep93xx_spi_probe(struct platform_device *pdev)
->  	master->bus_num = pdev->id;
->  	master->num_chipselect = info->num_chipselect;
->  	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
-> +	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 16);
->  
->  	platform_set_drvdata(pdev, master);
-
-Seems reasonable. For the spi-ep93xx driver:
-
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
-
+Best Regards,
+J.
+> 
+> 
+> -Olof
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
