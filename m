@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab3EXRGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:06:12 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64778 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab3EXRGI (ORCPT
+	id S1757031Ab3EXRG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:06:59 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56636 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756757Ab3EXRG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:06:08 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial]doc:networking: Fix typo in documentation/networking
-Date: Sat, 25 May 2013 02:05:59 +0900
-Message-Id: <1369415159-22856-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.3.rc3
+	Fri, 24 May 2013 13:06:58 -0400
+Date: Fri, 24 May 2013 18:06:44 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: majianpeng <majianpeng@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm/kmemleak.c: Merge the consecutive scan-areas.
+Message-ID: <20130524170644.GB22600@arm.com>
+References: <519224DF.3070807@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519224DF.3070807@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo
+On Tue, May 14, 2013 at 12:49:51PM +0100, majianpeng wrote:
+> If the scan-areas are adjacent,it can merge in order to reduce memomy.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Have you found any significant reduction in the memory size?
 
----
- Documentation/networking/ifenslave.c      |  2 +-
- Documentation/networking/ip-sysctl.txt    |  2 +-
- Documentation/networking/netlink_mmap.txt | 14 +++++++-------
- 3 files changed, 9 insertions(+), 9 deletions(-)
+What we miss though is removing an area (and I found a use-case for it).
 
-diff --git a/Documentation/networking/ifenslave.c b/Documentation/networking/ifenslave.c
-index ac5debb..9f6a8ff 100644
---- a/Documentation/networking/ifenslave.c
-+++ b/Documentation/networking/ifenslave.c
-@@ -501,7 +501,7 @@ out:
- 
- static short mif_flags;
- 
--/* Get the inteface configuration from the kernel. */
-+/* Get the interface configuration from the kernel. */
- static int if_getconfig(char *ifname)
- {
- 	struct ifreq ifr;
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index f98ca63..398d0fb 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -183,7 +183,7 @@ tcp_early_retrans - INTEGER
- 	for triggering fast retransmit when the amount of outstanding data is
- 	small and when no previously unsent data can be transmitted (such
- 	that limited transmit could be used). Also controls the use of
--	Tail loss probe (TLP) that converts RTOs occuring due to tail
-+	Tail loss probe (TLP) that converts RTOs occurring due to tail
- 	losses into fast recovery (draft-dukkipati-tcpm-tcp-loss-probe-01).
- 	Possible values:
- 		0 disables ER
-diff --git a/Documentation/networking/netlink_mmap.txt b/Documentation/networking/netlink_mmap.txt
-index 1c2dab4..e6088ba 100644
---- a/Documentation/networking/netlink_mmap.txt
-+++ b/Documentation/networking/netlink_mmap.txt
-@@ -54,7 +54,7 @@ it will use an allocated socket buffer as usual and the contents will be
-  copied to the ring on transmission, nullifying most of the performance gains.
- Dumps of kernel databases automatically support memory mapped I/O.
- 
--Conversion of the transmit path involves changing message contruction to
-+Conversion of the transmit path involves changing message construction to
- use memory from the TX ring instead of (usually) a buffer declared on the
- stack and setting up the frame header approriately. Optionally poll() can
- be used to wait for free frames in the TX ring.
-@@ -65,8 +65,8 @@ Structured and definitions for using memory mapped I/O are contained in
- RX and TX rings
- ----------------
- 
--Each ring contains a number of continous memory blocks, containing frames of
--fixed size dependant on the parameters used for ring setup.
-+Each ring contains a number of continuous memory blocks, containing frames of
-+fixed size dependent on the parameters used for ring setup.
- 
- Ring:	[ block 0 ]
- 		[ frame 0 ]
-@@ -80,7 +80,7 @@ Ring:	[ block 0 ]
- 		[ frame 2 * n + 1 ]
- 
- The blocks are only visible to the kernel, from the point of view of user-space
--the ring just contains the frames in a continous memory zone.
-+the ring just contains the frames in a continuous memory zone.
- 
- The ring parameters used for setting up the ring are defined as follows:
- 
-@@ -91,7 +91,7 @@ struct nl_mmap_req {
- 	unsigned int	nm_frame_nr;
- };
- 
--Frames are grouped into blocks, where each block is a continous region of memory
-+Frames are grouped into blocks, where each block is a continuous region of memory
- and holds nm_block_size / nm_frame_size frames. The total number of frames in
- the ring is nm_frame_nr. The following invariants hold:
- 
-@@ -113,8 +113,8 @@ Some parameters are constrained, specifically:
- 
- - nm_frame_nr must equal the actual number of frames as specified above.
- 
--When the kernel can't allocate phsyically continous memory for a ring block,
--it will fall back to use physically discontinous memory. This might affect
-+When the kernel can't allocate phsyically continuous memory for a ring block,
-+it will fall back to use physically discontinuous memory. This might affect
- performance negatively, in order to avoid this the nm_frame_size parameter
- should be chosen to be as small as possible for the required frame size and
- the number of blocks should be increased instead.
+> +    hlist_for_each_entry(area, &object->area_list, node) {
+> +        if (ptr + size == area->start) {
+> +            area->start = ptr;
+> +            area->size += size;
+> +            goto out_unlock;
+> +        } else if (ptr == area->start + area->size) {
+> +            area->size += size;
+> +            goto out_unlock;
+
+I prefer to keep 'goto' only for the error path. You could add a 'bool
+merged' and another 'if' block for area allocation.
+
+I'll pick the other too patches.
+
+Thanks.
+
 -- 
-1.8.3.rc3
-
+Catalin
