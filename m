@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3EXSNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 14:13:32 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:47920 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab3EXSNb (ORCPT
+	id S1757340Ab3EXSXt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 14:23:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57549 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab3EXSXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 14:13:31 -0400
-From: Shawn Nematbakhsh <shawnn@chromium.org>
-To: linux-usb@vger.kernel.org
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>,
-        Shawn Nematbakhsh <shawnn@chromium.org>
-Subject: [PATCH] usb: xhci: Disable runtime PM suspend for quirky controllers.
-Date: Fri, 24 May 2013 11:12:57 -0700
-Message-Id: <1369419177-23281-1-git-send-email-shawnn@chromium.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 24 May 2013 14:23:48 -0400
+Date: Fri, 24 May 2013 11:23:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.80
+Message-ID: <20130524182347.GA3110@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
-a reset will be performed upon runtime resume. Any previously suspended
-devices attached to the controller will be re-enumerated at this time.
-This will cause problems, for example, if an open system call on the
-device triggered the resume (the open call will fail).
 
-Note that this change is only relevant when persist_enabled is not set
-for USB devices.
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
----
- drivers/usb/host/xhci.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+I'm announcing the release of the 3.0.80 kernel.
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index b4aa79d..7455156 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4687,6 +4687,12 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
- 
- 	get_quirks(dev, xhci);
- 
-+	/* If we are resetting upon resume, we must disable runtime PM.
-+	 * Otherwise, an open() syscall to a device on our runtime suspended
-+	 * controller will trigger controller reset and device re-enumeration */
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		pm_runtime_get_noresume(dev);
-+
- 	/* Make sure the HC is halted. */
- 	retval = xhci_halt(xhci);
- 	if (retval)
--- 
-1.7.12.4
+All users of the 3.0 kernel series must upgrade.
 
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                              |    2 +-
+ drivers/hwmon/abituguru.c             |   16 ++++++++++------
+ drivers/media/dvb/mantis/mantis_dvb.c |    6 ++++--
+ fs/btrfs/ioctl.c                      |   10 +++++-----
+ 4 files changed, 20 insertions(+), 14 deletions(-)
+
+Alan Cox (1):
+      media: mantis: fix silly crash case
+
+Gabriel de Perthuis (1):
+      btrfs: don't stop searching after encountering the wrong item
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.80
+
+Wei Yongjun (1):
+      hwmon: fix error return code in abituguru_probe()
+
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRn7AyAAoJEDjbvchgkmk+CB4P/024tJrsn2R0AqMpdyrStEVZ
+oMFdoCv1imDocRZcDH9TzRGxscTkBayONya0s3pWu8hiNbv++rS4RS59ny96Qrnk
+xwL/Di5zEgmZNKXhx2SZq4kmG7IVmdj9H3DGI66GlTa04mr/McL+YvMX+rrJCpnH
+ZWqlxvc8RtFq+T/OQ4PXINC/n2ZtG9QiCcsq+TSiiqaTAHXfxVO3skij8Xtq+hLd
+8Derfpftiqqu6pkAbIYnljDBmeKr+jZjpkTlciICUK/mYJG2R/96h6HzRVgZ+rKv
+rptySWMUXYK06Kwn+eCUtFioKjG5kp39Je+BOIx4CKpHGg3uxx+BsQHIzEhhFkl0
+ayUofmCuEc9b5udi53Mh8NbCl1asN4vgPWLpj0u4oM2+lsNh73kswlxmzAmk2iNn
+UHHmZNoghP5FDyK+Lwxl5c1OCfZBl4PXN0n19U+xwazmJVASyqqfLmD/mp2glcNj
+tiaf+kMr1KG2AlPzXMrB/IJpKhxbDo+kLoLRfr94+pY9pwy5PGWk351wN+BWRs9p
+TQoThGbG+sAQNrV7oZwA8Q6fnhvPqCBd4S5PLQr/gsQKvjdr0/R3sjtLtICxYdNs
+iWPVeGqebR8SnhX9ehEKMMmTtTEFC7Jhy6vmdT2Gu318u1vcJ4eES43KoMUdFX5F
+AK2SGD02X4Rp2bRGaNGc
+=Ukl7
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
