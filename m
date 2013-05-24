@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760191Ab3EXI5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:57:45 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:43768 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760087Ab3EXI5n (ORCPT
+	id S1760101Ab3EXJDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:03:39 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:57346 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059Ab3EXJDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:57:43 -0400
-From: Vahram Martirosyan <vmartirosyan@gmail.com>
-To: Dave Kleikamp <shaggy@kernel.org>
-Cc: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
-        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        spruce-project@linuxtesting.org, Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH 2/2] jfs: Log shutdown error in jfs_freeze() function
-Date: Fri, 24 May 2013 13:57:13 +0500
-Message-Id: <1369385833-6852-2-git-send-email-vahram.martirosyan@linuxtesting.org>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org>
-References: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org>
+	Fri, 24 May 2013 05:03:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369145282-14419-1-git-send-email-prakash.pm@ti.com>
+References: <1369145282-14419-1-git-send-email-prakash.pm@ti.com>
+Date: Fri, 24 May 2013 11:03:36 +0200
+Message-ID: <CACRpkdZEsRaaE9dJLDNMzJZSLZ35pqS6XVj5KgCzJGG5nnvPQg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] pinctrl: pinctrl-single: Add full fledge support to
+ configure multiple pins of different modules
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In function jfs_freeze() the log is shut down through lmLogShutdown() call.
-When the "nointegrity" mount option is enabled, the log is actually not
-initialized. As a result the freeze operation in that case brings to a
-kernel OOPS.
+On Tue, May 21, 2013 at 4:07 PM, Manjunathappa, Prakash
+<prakash.pm@ti.com> wrote:
 
-The solution is to check if the "nointegrity" option is enabled and if it is not
-then shut the log down. 
+> Based function-mask and submask preoperties patch allocates and registers pins.
+> Patch is fixes the issue reported and discussed here:
+> http://www.spinics.net/lists/arm-kernel/msg235213.html
 
-May be this is not the best solution, but at least it fixes the OOPS.
+I'd like Tony to ACK this, and Haojian to have a look at it before applying.
 
-Found by Linux File System Verification project (linuxtesting.org)
-
-Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
----
- fs/jfs/super.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-index a3d424d..9788970 100644
---- a/fs/jfs/super.c
-+++ b/fs/jfs/super.c
-@@ -615,10 +615,12 @@ static int jfs_freeze(struct super_block *sb)
- 
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		txQuiesce(sb);
--		rc = lmLogShutdown(log);
--		if (rc != 0) {
--			jfs_err("lmLogShutdown failed with return code %d", rc);
--			return rc;
-+		if (!log->no_integrity) {
-+			rc = lmLogShutdown(log);
-+			if (rc != 0) {
-+				jfs_err("lmLogShutdown failed with return code %d", rc);
-+				return rc;
-+			}
- 		}
- 		rc = updateSuper(sb, FM_CLEAN);
- 		if (rc != 0) {
--- 
-1.8.2.3
-
+Yours,
+Linus Walleij
