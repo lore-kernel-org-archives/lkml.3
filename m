@@ -1,170 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3EXXb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 19:31:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37388 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab3EXXbr (ORCPT
+	id S1755108Ab3EXXeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 19:34:31 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.8]:9480 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752185Ab3EXXea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 19:31:47 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] PCI: Don't let mmio fallback to must-only, if ioport fails with must+optional
-Date: Fri, 24 May 2013 16:31:23 -0700
-Message-Id: <1369438283-6208-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <CAErSpo6pT2iTMx6U50AeScCjmPu53MOj6-TCnATRj_+EUNz46w@mail.gmail.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 24 May 2013 19:34:30 -0400
+X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 19:34:30 EDT
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-127.messagelabs.com!1369438042!2500264!1
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 09/14] misc/ep93xx_pwm: remove ep93xx_pwm_normal() inline function
+Date: Fri, 24 May 2013 16:26:11 -0700
+User-Agent: KMail/1.9.9
+CC: <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
+        Ryan Mallon <rmallon@gmail.com>, <mcrapet@gmail.com>,
+        <hsweeten@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201305241626.12351.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BenH reported that there is some assign unassigned resource problem
-in powerpc.
+This is a simple wrapper around writel(), remove it.
 
-It turns out after
-| commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
-| Date:   Thu Feb 23 19:23:29 2012 -0800
-|
-|    PCI: Retry on IORESOURCE_IO type allocations
-
-even the root bus does not have io port range, it will keep retrying
-to realloc with mmio.
-
-Current retry logic is : try with must+optional at first, and if
-it fails with any ioport or mmio, it will try must then try to extend
-must with optional. The reassign will put extended mmio or pref mmio
-in the middle of parent resource range.
-That will prevent other sibling resources to get must-have resources
-or get extended properly.
-
-We can check fail type to see if can we need fall back to must-have
-only, that will keep not needed release resource to be must+optional.
-
-Separate three resource type checking if we need to release
-assigned resource after requested + add_size try.
-1. if there is io port assign fail, will release assigned io port.
-2. if there is pref mmio assign fail, release assigned pref mmio.
-   if assigned pref mmio's parent is non-pref mmio and there
-   is non-pref mmio assign fail, will release that assigned pref mmio.
-3. if there is non-pref mmio assign fail or pref mmio assigned fail,
-   will release assigned non-pref mmio.
-
-This will be become more often when we have x86 8 sockets or 32 sockets
-system, and those system will have one root bus per socket.
-They will have some root buses do not have ioport range.
-
--v2: need to remove assigned entries from optional list too.
--v3: not just checking ioport related, requested by Bjorn.
-
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ryan Mallon <rmallon@gmail.com>
+Cc: Matthieu Crapet <mcrapet@gmail.com>
 ---
- drivers/pci/setup-bus.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 69 insertions(+), 1 deletion(-)
+ drivers/misc/ep93xx_pwm.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Index: linux-2.6/drivers/pci/setup-bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/setup-bus.c
-+++ linux-2.6/drivers/pci/setup-bus.c
-@@ -300,6 +300,48 @@ static void assign_requested_resources_s
- 	}
+diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
+index 5193faf..cdc2ffc 100644
+--- a/drivers/misc/ep93xx_pwm.c
++++ b/drivers/misc/ep93xx_pwm.c
+@@ -49,11 +49,6 @@ static inline int ep93xx_pwm_is_enabled(struct ep93xx_pwm *pwm)
+ 	return readl(pwm->mmio_base + EP93XX_PWMx_ENABLE) & 0x1;
  }
  
-+static unsigned long pci_fail_res_type_mask(struct list_head *fail_head)
-+{
-+	struct pci_dev_resource *fail_res;
-+	unsigned long mask = 0;
-+
-+	/* check failed type */
-+	list_for_each_entry(fail_res, fail_head, list)
-+		mask |= fail_res->flags;
-+
-+	/*
-+	 * one pref failed resource will set IORESOURCE_MEM,
-+	 * as we can allocate pref in non-pref range.
-+	 * Will release all asssigned non-pref sibling resources
-+	 * according to that bit.
-+	 */
-+	return mask & (IORESOURCE_IO | IORESOURCE_MEM | IORESOURCE_PREFETCH);
-+}
-+
-+static bool pci_need_to_release(unsigned long mask, struct resource *res)
-+{
-+	if (res->flags & IORESOURCE_IO)
-+		return !!(mask & IORESOURCE_IO);
-+
-+	/* check pref at first */
-+	if (res->flags & IORESOURCE_PREFETCH) {
-+		if (mask & IORESOURCE_PREFETCH)
-+			return true;
-+		/* count pref if its parent is non-pref */
-+		else if ((mask & IORESOURCE_MEM) &&
-+			 !(res->parent->flags & IORESOURCE_PREFETCH))
-+			return true;
-+		else
-+			return false;
-+	}
-+
-+	if (res->flags & IORESOURCE_MEM)
-+		return !!(mask & IORESOURCE_MEM);
-+
-+	/* should not get here */
-+	return false;
-+}
-+
- static void __assign_resources_sorted(struct list_head *head,
- 				 struct list_head *realloc_head,
- 				 struct list_head *fail_head)
-@@ -312,11 +354,24 @@ static void __assign_resources_sorted(st
- 	 *  if could do that, could get out early.
- 	 *  if could not do that, we still try to assign requested at first,
- 	 *    then try to reassign add_size for some resources.
-+	 *
-+	 * Separate three resource type checking if we need to release
-+	 *  assigned resource after requested + add_size try.
-+	 *	1. if there is io port assign fail, will release assigned
-+	 *	   io port.
-+	 *	2. if there is pref mmio assign fail, release assigned
-+	 *	   pref mmio.
-+	 *	   if assigned pref mmio's parent is non-pref mmio and there
-+	 *	   is non-pref mmio assign fail, will release that assigned
-+	 *	   pref mmio.
-+	 *	3. if there is non-pref mmio assign fail or pref mmio
-+	 *	   assigned fail, will release assigned non-pref mmio.
- 	 */
- 	LIST_HEAD(save_head);
- 	LIST_HEAD(local_fail_head);
- 	struct pci_dev_resource *save_res;
--	struct pci_dev_resource *dev_res;
-+	struct pci_dev_resource *dev_res, *tmp_res;
-+	unsigned long fail_type;
+-static inline void ep93xx_pwm_normal(struct ep93xx_pwm *pwm)
+-{
+-	writel(0x0, pwm->mmio_base + EP93XX_PWMx_INVERT);
+-}
+-
+ static inline int ep93xx_pwm_is_inverted(struct ep93xx_pwm *pwm)
+ {
+ 	return readl(pwm->mmio_base + EP93XX_PWMx_INVERT) & 0x1;
+@@ -203,7 +198,7 @@ static ssize_t ep93xx_pwm_set_invert(struct device *dev,
+ 		return -EINVAL;
  
- 	/* Check if optional add_size is there */
- 	if (!realloc_head || list_empty(realloc_head))
-@@ -348,6 +403,19 @@ static void __assign_resources_sorted(st
- 		return;
- 	}
- 
-+	/* check failed type */
-+	fail_type = pci_fail_res_type_mask(&local_fail_head);
-+	/* remove not need to be released assigned res from head list etc */
-+	list_for_each_entry_safe(dev_res, tmp_res, head, list)
-+		if (dev_res->res->parent &&
-+		    !pci_need_to_release(fail_type, dev_res->res)) {
-+			/* remove it from realloc_head list */
-+			remove_from_list(realloc_head, dev_res->res);
-+			remove_from_list(&save_head, dev_res->res);
-+			list_del(&dev_res->list);
-+			kfree(dev_res);
-+		}
-+
- 	free_list(&local_fail_head);
- 	/* Release assigned resource */
- 	list_for_each_entry(dev_res, head, list)
+ 	if (val == 0)
+-		ep93xx_pwm_normal(pwm);
++		writel(0x0, pwm->mmio_base + EP93XX_PWMx_INVERT);
+ 	else if (val == 1)
+ 		writel(0x1, pwm->mmio_base + EP93XX_PWMx_INVERT);
+ 	else
+-- 
+1.8.1.4
+
