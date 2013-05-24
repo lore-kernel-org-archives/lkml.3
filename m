@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab3EXUtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 16:49:43 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59369 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753787Ab3EXUtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 16:49:42 -0400
-Date: Fri, 24 May 2013 15:49:38 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Message-ID: <20130524204937.GB3322@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130522162747.GA20816@sgi.com>
- <20130523115801.GJ14575@console-pimps.org>
- <20130523203234.GD20913@sgi.com>
- <20130524074331.GL14575@console-pimps.org>
- <20130524200539.GA3322@sgi.com>
- <1369426255.2217.9.camel@x230>
+	id S1755675Ab3EXVBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 17:01:43 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41417 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab3EXVBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 17:01:42 -0400
+Message-ID: <519FD520.1010705@oracle.com>
+Date: Fri, 24 May 2013 16:01:20 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369426255.2217.9.camel@x230>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Vahram Martirosyan <vmartirosyan@gmail.com>
+CC: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, spruce-project@linuxtesting.org
+Subject: [PATCH] jfs: Several bugs in jfs_freeze() and jfs_unfreeze()
+References: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org> <519F9D63.8000305@oracle.com>
+In-Reply-To: <519F9D63.8000305@oracle.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 08:11:01PM +0000, Matthew Garrett wrote:
-> On Fri, 2013-05-24 at 15:05 -0500, Russ Anderson wrote:
-> 
-> > One other data point is if the query_variable_info call is hacked to
-> > remove one of the EFI flags (ie comment out EFI_VARIABLE_BOOTSERVICE_ACCESS)
-> > the efi_call_phys4() call fails with EFI_INVALID_PARAMETER and
-> > the system boots.  Of course it does not create /sys/firmware/efivars
-> > entries and complains "[Firmware Bug]: efi: Inconsistent initial sizes".
-> > But at least it boots.
-> 
-> EFI_VARIABLE_RUNTIME_ACCESS is only legal if
-> EFI_VARIABLE_BOOTSERVICE_ACCESS is set, so it's correct to throw
-> EFI_INVALID_PARAMETER there.
+Vahram,
+This is your first patch modified to be a little more robust. If there is
+no objection, I'll push it to linux-next along with Gu's nointegrity
+patch.
 
-Yes.  The point of the experiment was to see if it returned a
-valid failure status (which it did) and see if the boot still
-failed (which it didn't).  So something about going deeper
-into that call seems to trigger the failure.
+From: Vahram Martirosyan <vmartirosyan@gmail.com>
+Date: Fri, 24 May 2013 13:57:12 +0500
 
-Why does the kernel still try to create /sys/firmware/efivars/
-entries in the original failure even though efi_call_phys4()
-failed?  Or does it always try to create those entries
-and GetNextVariable() blows up in the original failure
-but not in my experiment?
+The mentioned functions do not pay attention to the error codes returned
+by the functions updateSuper(), lmLogInit() and lmLogShutdown(). It brings
+to system crash later when writing to log.
 
-Thanks,
+The patch adds corresponding code to check and return the error codes
+and to print correct error messages in case of errors.
+
+Found by Linux File System Verification project (linuxtesting.org).
+
+Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ fs/jfs/super.c | 38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
+
+diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+index 2003e83..788e0a9 100644
+--- a/fs/jfs/super.c
++++ b/fs/jfs/super.c
+@@ -611,11 +611,28 @@ static int jfs_freeze(struct super_block *sb)
+ {
+ 	struct jfs_sb_info *sbi = JFS_SBI(sb);
+ 	struct jfs_log *log = sbi->log;
++	int rc = 0;
+ 
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		txQuiesce(sb);
+-		lmLogShutdown(log);
+-		updateSuper(sb, FM_CLEAN);
++		rc = lmLogShutdown(log);
++		if (rc) {
++			jfs_error(sb, "jfs_freeze: lmLogShutdown failed");
++
++			/* let operations fail rather than hang */
++			txResume(sb);
++
++			return rc;
++		}
++		rc = updateSuper(sb, FM_CLEAN);
++		if (rc) {
++			jfs_err("jfs_freeze: updateSuper failed\n");
++			/*
++			 * Don't fail here. Everything succeeded except
++			 * marking the superblock clean, so there's really
++			 * no harm in leaving it frozen for now.
++			 */
++		}
+ 	}
+ 	return 0;
+ }
+@@ -627,13 +644,18 @@ static int jfs_unfreeze(struct super_block *sb)
+ 	int rc = 0;
+ 
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+-		updateSuper(sb, FM_MOUNT);
+-		if ((rc = lmLogInit(log)))
+-			jfs_err("jfs_unlock failed with return code %d", rc);
+-		else
+-			txResume(sb);
++		rc = updateSuper(sb, FM_MOUNT);
++		if (rc) {
++			jfs_error(sb, "jfs_unfreeze: updateSuper failed");
++			goto out;
++		}
++		rc = lmLogInit(log);
++		if (rc)
++			jfs_error(sb, "jfs_unfreeze: lmLogInit failed");
++out:
++		txResume(sb);
+ 	}
+-	return 0;
++	return rc;
+ }
+ 
+ static struct dentry *jfs_do_mount(struct file_system_type *fs_type,
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+1.8.2.3
