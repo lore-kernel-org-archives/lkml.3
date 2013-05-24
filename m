@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760164Ab3EXJN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:13:57 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:41276 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760088Ab3EXJNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:13:54 -0400
+	id S1760075Ab3EXJQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:16:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:46343 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755873Ab3EXJQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 05:16:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
+   d="scan'208";a="7355014"
+Message-ID: <519F2F65.4000400@cn.fujitsu.com>
+Date: Fri, 24 May 2013 17:14:13 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <519F2D89.5030602@linaro.org>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-	<CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
-	<20130522122700.104ca5cd@amdc308.digital.local>
-	<CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
-	<20130522164453.29cd3a7d@amdc308.digital.local>
-	<20130524075640.0a5b80ff@amdc308.digital.local>
-	<CAKohpoksymD76rDvg_+PwU7r3JXp1oydHBbJE4-y6TBHOomZHg@mail.gmail.com>
-	<20130524103007.7bb206ee@amdc308.digital.local>
-	<CAKohponbX7u_k9ZYQ7KyBeyKh93Qu+niGZj60t9c1n+AmaA6pg@mail.gmail.com>
-	<519F2D89.5030602@linaro.org>
-Date: Fri, 24 May 2013 14:43:53 +0530
-Message-ID: <CAKohpom+wsGj=1nurNtoiRaZCD7KRbx0BO+tNXpoqO+FmmzehA@mail.gmail.com>
-Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
- governor - tests results
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "Rafael J. Wysocky" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Vicent Guittot <vincent.guittot@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
+To: Stephen Mell <sub.atomic.fusion@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: move proc mount options out of pid_namespace
+References: <3342521.NtikuogILA@pegasus> <2515335.Kvy7Q1OKc4@pegasus> <519ED883.9060903@cn.fujitsu.com> <24900395.sMN6olMGRM@pegasus>
+In-Reply-To: <24900395.sMN6olMGRM@pegasus>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/24 17:15:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/24 17:15:16,
+	Serialize complete at 2013/05/24 17:15:16
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 May 2013 14:36, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> I agree with Viresh, a new governor is not necessary here for that.
+Hi Stephen,
 
-Their patchset had two parts.. One is LAB and other is overclocking.
-We are trying to solve overclocking for which they never wanted a
-new governor. :)
+On 05/24/2013 12:29 PM, Stephen Mell wrote:
 
-> There is the /sys/devices/system/cpufreq/boost option existing for x86
-> platform, why do not reuse it ? It is supposed to do exactly what you
-> want to achieve.
+> Gu,
+> 
+> On Friday, May 24, 2013 11:03:31 Gu Zheng wrote:
+>> Hi Stephen,
+>>
+>> On 05/24/2013 07:32 AM, Stephen Mell wrote:
+>>
+>>> On Thursday, May 23, 2013 18:20:57 Gu Zheng wrote:
+>>>
+>>>> Here it'll create a new proc sb instance which holds the same context as the old ones
+>>>> each time we mount proc though in the same PID namespace, won't it?
+>>> I believe so. But this is the point, right? 
+> 
+>> Yes, but I think it's also the problem.
+>>
+>>> They won't be identical if different mount options are used, I don't think.
+>>
+>> If different mount options are used, we'll create different super block instance, and they have
+>> the same context, only the difference is each one holds different proc_sb_info.
+>> But I think what we really want is only one proc sb instance and create different proc_sb_info
+>> if different mount options are used.
+> 
+> Will having several different superblocks cause problems, or is it merely inefficient? 
 
-The problem is that it was added at the wrong place.. It should have
-been at cpu/cpuX/cpufreq/boost...
+Not only inefficient.
 
-Consider how will we achieve it for big LITTLE.. We know we can
-go to overdrive only for a single core in big but for two cores in
-LITTLE at the same time.. So, we need that in the location I just
-mentioned...
+>I freely admit to not really knowing what I'm doing, and I thank you for your assistance.
+> How is this situation distinct from that of ramfs? It appears to have a superblock for each mount.
 
-Over that.. I believe it is governor specific too.. It shouldn't be part
-of conservative as it should be conservative rather then aggressive :)
+They're different, each ramfs uses a split superblock to manage it's infos, e.g. the usage, and each ramfs mount instance should not affect others.
+But proc is a common interface, each mount instance holds the same context, so there's no need to create a new superblock instance each time mount if we in
+the same PID namespace. 
 
-> IMO, the logic of boosting one core when the other are idle should be in
-> the driver itself and certainly not setup by the user, except if we
-> consider acceptable the user can burn its board ... :)
+> It would seem to me as though one cannot have different sb_infos with the same superblock, making storing the mount options in sb_info effectively the same as storing them in the superblock itself, for the purposes of this discussion. Where would the mount options be stored, if not in the superblock?
+> 
 
-I didn't get it completely.. So, with the options I gave user can only
-say.. boost if required and only when few cores are active. User
-can't just set max freq continuously if he wishes..
+One fuzzy way in my mind, I'm not sure whether it's OK, but we can discuss it.
+Split hide_pid, pid_gid, and proc_self from pid_namespace, and create struct proc_sb_info(maybe the name "proc_mount_info" is better). 
+And create a new list domain in the pid_namespace to contain the proc_sb_info instances. Each time we mount proc in a new directory only
+create a new proc_sb_info instance, and added it to the list in pid_namespace. 
+But this leads to another problem, how to get the right proc_sb_info instance in proc permission checking routine, do you have any idea?
+what do you think of this way?
+
+
+Thanks,
+Gu
+
+>>>
+>>>> Here the pre-check seems needless.
+>>> Is that new with my patch, or has it always been needless?
+>>
+>> Yeah, it's always needless.
+>>
+>> Thanks,
+>> Gu
+>>
+>>>
+>>> Thanks,
+>>> Stephen
+> 
+> Thanks again,
+> Stephen
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
