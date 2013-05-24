@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759794Ab3EXBoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 21:44:21 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:41918 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426Ab3EXBoT (ORCPT
+	id S1759788Ab3EXBpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 21:45:33 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:31066 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758134Ab3EXBpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 21:44:19 -0400
-Date: Fri, 24 May 2013 10:44:05 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130524014405.GB16882@mtj.dyndns.org>
-References: <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522143019.GA18541@mtj.dyndns.org>
- <519CDDA4.2050100@redhat.com>
- <20130522193009.GA23845@mtj.dyndns.org>
- <519D360D.4050309@redhat.com>
- <20130522221737.GA12339@mtj.dyndns.org>
- <519DC926.4000106@redhat.com>
- <20130523090222.GA26592@mtj.dyndns.org>
- <519DE5AD.7080303@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519DE5AD.7080303@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 May 2013 21:45:32 -0400
+Message-ID: <1369359930.1770.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 00/11] sysv mqueue: do not hold the ipc lock
+ unnecessarily
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: akpm@linux-foundation.org
+Cc: torvalds@linux-foundation.org, riel@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 23 May 2013 18:45:30 -0700
+In-Reply-To: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:47:25AM +0200, Paolo Bonzini wrote:
-> > No no, I'm not talking about it not working for the users - it's just
-> > passing the commands, it of course works.  I'm doubting about it being
-> > a worthy security isolation layer.  cdb filtering (of any form really)
-> > has always been something on the border.  It always was something we
-> > got stuck with due to lack of other immediate options.
+ping, Andrew?
+
+On Wed, 2013-05-15 at 18:07 -0700, Davidlohr Bueso wrote:
+> This patchset continues the work that began in the sysv ipc semaphore scaling 
+> series: https://lkml.org/lkml/2013/3/20/546
 > 
-> I understood correctly then. :)  I agree it's not the best, but it's not
-> completely broken either.  It has bugs, and that's what these patches
-> try to fix.
-
-The same filtering table being applied to different classes of
-hardware is a software bug, but my point is that the practive
-essentially entrusts non-insignificant part of security enforcement to
-the hardware itself.  The variety of hardware in question is very wide
-and significant portion has historically been known to be flaky.
-
-> > I'm wondering whether combining 3 into 4 would be good enough.
+> Just like semaphores used to be, sysv shared memory and msg queues also abuse the ipc
+> lock, unnecessarily holding it for operations such as permission and security checks. This
+> patchset mostly deals with mqueues, and while shared mem can be done in a very similar way,
+> I want to get these patches out in the open first. It also does some pending cleanups,
+> mostly focused on the two level locking we have in ipc code, taking care of ipc_addid() 
+> and ipcctl_pre_down_nolock() - yes there are still functions that need to be updated as well.
 > 
-> No, it wouldn't.  I learnt it the hard way (by having a patch nacked :))
-> at http://thread.gmane.org/gmane.linux.kernel/1311887.
-
-Of course you can't do that by adding dangerous commands to the
-existing filtering table which is allowed by default.  I'm saying
-"count me out" knob could be good enough.  Neither is perfect but at
-least the latter doesn't affect the default cases.
-
-> > Hmmm?  Somebody has to give out the access rights anyway, be it a udev
-> > rule or polkit.  While not having to depend on them could be nice, I
-> > don't think involving userland is a big deal.  It's already involved
-> > in closely related capacities anyway.
+> I have tried to split each patch to be as readable and specific as possible, specially when
+> shortening the critical regions, going one function at a time.
 > 
-> Polkit need not do anything to give out the access rights, it only has
-> to just confirm the credentials.  A helper setgid-disk can consult
-> polkit, open the file, pass the file descriptor back, and exit.  We
-> already do something similar for tap devices.
-
-I see.  It really just comes down to plumbing and doesn't seem like a
-particularly challenging one at that.
-
-> Yes, I understand that.  But I don't believe it is a serious concern.
-> In the case of tapes, for example, you're not talking about 10 dollar
-> USB pendrives whose firmware was written in fire-and-forget mode.
-> Firmware bugs would be updated by the manufacturers.
-
-This is being applied to all block devices by default and it's a part
-of a vicious circle which is being reinforced by this change.  We
-added flawed security mechanism to work around deficiency in software
-stack.  The mechanism could be mis-used for other purposed which in
-turn developed into other use cases, which then pushes the expansion
-of the existing flawed mechanism.  This is a process with postive feed
-back built into it.
-
-> I cannot exclude there will _never_ be a bug like this, of course.  But
-> even if there will be one, IMHO it would be exceptional enough that we
-> can afford fixing it with a per-device quirk.
->
-> Scanners have never had any CDB filtering done on them; I searched for
-> this kind of bug, and I couldn't find any report.
+> Patch 1 moves the locking to be explicitly done by the callers of ipc_addid.
+> It updates msg, sem and shm.
 > 
-> What I am trying to do is to reach a compromise.  The one I'm proposing
-> is to forbid reserved or vendor-specific commands, while at the same
-> time opening the doors on more standardized commands.
+> Patches 2-3: are just wrappers around the ipc lock, initially suggested by Linus.
+> 
+> Patch 4 is similar to patch 1, moving the rcu and rw_mutex locking out of
+> ipcctl_pre_down_nolock so that the callers explicitly deals with them. It updates msg, sem
+> and shm.
+> 
+> Patch 5 shortens the critical region in msgctl_down(), using the lockless
+> ipcctl_pre_down() function and only acquiring the ipc lock for RMID and SET commands.
+> 
+> Patch 6 simply moves the what-should-be lockless logic of *_INFO and *_STAT commands
+> out of msgctl() into a new function, msgctl_lockless().
+> 
+> Patch 7 introduces the necessary wrappers around ipc_obtain_object[_check]()
+> that will later enable us to separately lookup the ipc object without holding the lock.
+> 
+> Patch 8 updates the previously added msgctl_nolock() to actually be lockless, reducing
+> the critical region for the STAT commands.
+> 
+> Patch 9 redoes the locking for msgsend().
+> 
+> Patch 10 redoes the locking for msgrcv().
+> 
+> Patch 11 removes the now unused msg_lock and msg_lock_check functions, replaced by
+> a smarter combination of rcu, ipc_obtain_object and ipc_object_lock.
+> 
+> Davidlohr Bueso (11):
+>   ipc: move rcu lock out of ipc_addid
+>   ipc: introduce ipc object locking helpers
+>   ipc: close open coded spin lock calls
+>   ipc: move locking out of ipcctl_pre_down_nolock
+>   ipc,msg: shorten critical region in semctl_down
+>   ipc,msg: introduce msgctl_nolock
+>   ipc,msg: introduce lockless functions to obtain the ipc object
+>   ipc,msg: make msgctl_nolock lockless
+>   ipc,msg: reduce critical region in msgsnd
+>   ipc,msg: make shorten critical region in msgrcv
+>   ipc: remove unused functions
+> 
+>  ipc/msg.c  | 227 ++++++++++++++++++++++++++++++++++++++-----------------------
+>  ipc/sem.c  |  42 +++++++-----
+>  ipc/shm.c  |  32 ++++++---
+>  ipc/util.c |  25 ++-----
+>  ipc/util.h |  22 ++++--
+>  5 files changed, 211 insertions(+), 137 deletions(-)
+> 
+> Thanks,
+> Davidlohr
+> 
 
-I feel pretty uncomfortable about the direction and think we should
-reach compromise from the other direction.  If VMs need raw device
-access, just entrust the device to those VMs and enforce whatever
-extra restriction from hypervisor side.  It sure isn't perfect but
-neither is the other compromise and the risk is taken by the ones
-wanting to do (relatively) exotic stuff rather than forced on all
-others.
 
--- 
-tejun
