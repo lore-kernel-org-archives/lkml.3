@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3EXQSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 12:18:21 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:36492 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab3EXQST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 12:18:19 -0400
-From: Federico Manzan <f.manzan@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: sarah.a.sharp@linux.intel.com, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Federico Manzan <f.manzan@gmail.com>
-Subject: [PATCH v2] usbfs: Increase arbitrary limit for USB 3 isopkt length
-Date: Fri, 24 May 2013 18:18:48 +0200
-Message-Id: <1369412328-28722-1-git-send-email-f.manzan@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756714Ab3EXQWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 12:22:20 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:59958 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755097Ab3EXQWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 12:22:19 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2 4/9] pinconf-generic: add drive strength to debugfs output
+Date: Fri, 24 May 2013 17:21:11 +0100
+Message-ID: <1369412476-14245-5-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_05_24_17_22_17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the current arbitrary limit for isocronous packet size to a
-value large enough to account for USB 3.0 super bandwidth streams,
-bMaxBurst (0~15 allowed, 1~16 packets)
-bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-so the size max for one USB 3 isocronous transfer is
-1024 byte * 16 * 3 = 49152 byte
+Add the drive strength pinconf to debugfs output (with the unit "mA").
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Federico Manzan <f.manzan@gmail.com>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
-Changes from v1:
-  - fixed comment style
-  - changed length value according to the comment
+Changes in v2:
+ - add drive strength to generic pinconf debugfs output (patch 4)
 
- drivers/usb/core/devio.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/pinctrl/pinconf-generic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index caefc80..c88c4fb 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1287,9 +1287,13 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 			goto error;
- 		}
- 		for (totlen = u = 0; u < uurb->number_of_packets; u++) {
--			/* arbitrary limit,
--			 * sufficient for USB 2.0 high-bandwidth iso */
--			if (isopkt[u].length > 8192) {
-+			/*
-+			 * arbitrary limit need for USB 3.0
-+			 * bMaxBurst (0~15 allowed, 1~16 packets)
-+			 * bmAttributes (bit 1:0, mult 0~2, 1~3 packets)
-+			 * sizemax: 1024 * 16 * 3 = 49152
-+			 */
-+			if (isopkt[u].length > 49152) {
- 				ret = -EINVAL;
- 				goto error;
- 			}
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index 2ad5a8d..33a5392 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -42,6 +42,7 @@ static struct pin_config_item conf_items[] = {
+ 	PCONFDUMP(PIN_CONFIG_DRIVE_PUSH_PULL, "output drive push pull", NULL),
+ 	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_DRAIN, "output drive open drain", NULL),
+ 	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_SOURCE, "output drive open source", NULL),
++	PCONFDUMP(PIN_CONFIG_DRIVE_STRENGTH, "output drive strength", "mA"),
+ 	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT_ENABLE, "input schmitt enabled", NULL),
+ 	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT, "input schmitt trigger", NULL),
+ 	PCONFDUMP(PIN_CONFIG_INPUT_DEBOUNCE, "input debounce", "time units"),
 -- 
-1.7.10.4
+1.8.1.2
+
 
