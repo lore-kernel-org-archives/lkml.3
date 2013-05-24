@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3EXSY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 14:24:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57558 "EHLO
+	id S1757430Ab3EXSYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 14:24:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3EXSY0 (ORCPT
+	with ESMTP id S1757368Ab3EXSYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 14:24:26 -0400
-Date: Fri, 24 May 2013 11:24:25 -0700
+	Fri, 24 May 2013 14:24:35 -0400
+Date: Fri, 24 May 2013 11:24:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.47
-Message-ID: <20130524182425.GA3173@kroah.com>
+Subject: Re: Linux 3.4.47
+Message-ID: <20130524182434.GB3173@kroah.com>
+References: <20130524182425.GA3173@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130524182425.GA3173@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.4.47 kernel.
-
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                 |    2 +-
- drivers/gpu/drm/radeon/evergreen.c       |    4 ++--
- drivers/gpu/drm/radeon/radeon_ttm.c      |    2 +-
- drivers/gpu/drm/radeon/si.c              |    4 ++--
- drivers/hwmon/abituguru.c                |   16 ++++++++++------
- drivers/i2c/busses/i2c-designware-core.c |    3 ++-
- drivers/media/dvb/mantis/mantis_dvb.c    |    6 ++++--
- fs/btrfs/ioctl.c                         |   10 +++++-----
- 8 files changed, 27 insertions(+), 20 deletions(-)
-
-Alan Cox (1):
-      media: mantis: fix silly crash case
-
-Gabriel de Perthuis (1):
-      btrfs: don't stop searching after encountering the wrong item
-
-Greg Kroah-Hartman (1):
-      Linux 3.4.47
-
-Mika Westerberg (1):
-      i2c: designware: always clear interrupts before enabling them
-
-Niels Ole Salscheider (1):
-      drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
-
-Wei Yongjun (1):
-      hwmon: fix error return code in abituguru_probe()
-
-
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRn7BZAAoJEDjbvchgkmk+KYsP/153C2f7rmoN9IpOySPswIGi
-uKy77gvNKO0RUiAPFWAvmj4Vij0MbvqgYLbDMtvCJ5wc7Z17TYcjBjrXr/fPP42b
-aLg3/WaYK+Q0ZUfvHWmtji+i1GRnPzX6v8d4imbOuHb8HdyUsw2cUOFBOAjkC2VV
-GV/+z3/hmG8i3uvJ9QjoCQn0JXgWWtLWq51yUP/o7EdcArs5qd/DnMyE/kRyu4GN
-S5A4fhDbVtRgsYAAts246gXjoblPq82vDa6AP9Cu8ZfRu4bVPZ2iOcEulTs+TGfR
-Z7mRJh1vXSKI/+wZyyC/zyrZjXxx2h0/1lo4+dgvywDs7xGiesz/OmFZHHt9SLRX
-H/Y6m8rWoR8xeYE+LTe9N1t4S3GnB8rfebiSrQe2oX2NFebVy6jWNnaaaM1B0Oih
-t2br/EgW3UhAEvaT+LreKHaBZ1Sbh69xyI41dULxrR1aB3MiSMrIdES9zrWdkx7o
-NorlAWtal/sr20HuCZ4/N5s6ef0E0ypTunVmPjtgFocx9hfYb67Ag0y6oF7uw4Aj
-iCji4srYZUplDyDpCrqr48cU1zKHfMwiNU09N39WYhK83p0FY73tNQZhllQ9V33B
-RtIaZ/UTOHHShks3gckZEY3QSL/A27rr8bUNx44BBDpk9vtE1XveJbQ3PgmZVXfb
-lhtXmDZo+Rcf4X78vdkA
-=Gfso
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
+diff --git a/Makefile b/Makefile
+index 3d88eb8..a85d4eb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 46
++SUBLEVEL = 47
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index e458acb..6a8776e 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2443,8 +2443,8 @@ int evergreen_mc_init(struct radeon_device *rdev)
+ 		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE);
+ 	} else {
+ 		/* size in MB on evergreen/cayman/tn */
+-		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	}
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	r700_vram_gtt_location(rdev, &rdev->mc);
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index f493c64..49b55ed 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -744,7 +744,7 @@ int radeon_ttm_init(struct radeon_device *rdev)
+ 		return r;
+ 	}
+ 	DRM_INFO("radeon: %uM of VRAM memory ready\n",
+-		 (unsigned)rdev->mc.real_vram_size / (1024 * 1024));
++		 (unsigned) (rdev->mc.real_vram_size / (1024 * 1024)));
+ 	r = ttm_bo_init_mm(&rdev->mman.bdev, TTM_PL_TT,
+ 				rdev->mc.gtt_size >> PAGE_SHIFT);
+ 	if (r) {
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 5508ad7..2dbd585 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2464,8 +2464,8 @@ static int si_mc_init(struct radeon_device *rdev)
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
+diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
+index a72bf25..56b178a 100644
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1410,14 +1410,18 @@ static int __devinit abituguru_probe(struct platform_device *pdev)
+ 	pr_info("found Abit uGuru\n");
+ 
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 6193349..3c2812f 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -349,7 +349,8 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ 	/* Enable the adapter */
+ 	dw_writel(dev, 1, DW_IC_ENABLE);
+ 
+-	/* Enable interrupts */
++	/* Clear and enable interrupts */
++	i2c_dw_clear_int(dev);
+ 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
+ }
+ 
+diff --git a/drivers/media/dvb/mantis/mantis_dvb.c b/drivers/media/dvb/mantis/mantis_dvb.c
+index e5180e4..5d15c6b 100644
+--- a/drivers/media/dvb/mantis/mantis_dvb.c
++++ b/drivers/media/dvb/mantis/mantis_dvb.c
+@@ -248,8 +248,10 @@ int __devinit mantis_dvb_init(struct mantis_pci *mantis)
+ err5:
+ 	tasklet_kill(&mantis->tasklet);
+ 	dvb_net_release(&mantis->dvbnet);
+-	dvb_unregister_frontend(mantis->fe);
+-	dvb_frontend_detach(mantis->fe);
++	if (mantis->fe) {
++		dvb_unregister_frontend(mantis->fe);
++		dvb_frontend_detach(mantis->fe);
++	}
+ err4:
+ 	mantis->demux.dmx.remove_frontend(&mantis->demux.dmx, &mantis->fe_mem);
+ 
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 14f8e1f..3a65f43 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1653,7 +1653,11 @@ static noinline int copy_to_sk(struct btrfs_root *root,
+ 		item_off = btrfs_item_ptr_offset(leaf, i);
+ 		item_len = btrfs_item_size_nr(leaf, i);
+ 
+-		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
++		btrfs_item_key_to_cpu(leaf, key, i);
++		if (!key_in_sk(key, sk))
++			continue;
++
++		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
+ 			item_len = 0;
+ 
+ 		if (sizeof(sh) + item_len + *sk_offset >
+@@ -1662,10 +1666,6 @@ static noinline int copy_to_sk(struct btrfs_root *root,
+ 			goto overflow;
+ 		}
+ 
+-		btrfs_item_key_to_cpu(leaf, key, i);
+-		if (!key_in_sk(key, sk))
+-			continue;
+-
+ 		sh.objectid = key->objectid;
+ 		sh.offset = key->offset;
+ 		sh.type = key->type;
