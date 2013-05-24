@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab3EXPWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 11:22:34 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:41951 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3EXPWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 11:22:32 -0400
+	id S1755033Ab3EXP3i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 11:29:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32078 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752105Ab3EXP3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 11:29:37 -0400
+Date: Fri, 24 May 2013 11:28:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+Message-ID: <20130524152849.GF18218@redhat.com>
+References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <20130524143644.GD18218@redhat.com>
+ <20130524170626.2ac06efe@holzheu>
 MIME-Version: 1.0
-X-Originating-IP: [87.194.181.195]
-In-Reply-To: <1366988907-13485-1-git-send-email-linus.walleij@stericsson.com>
-References: <1366988907-13485-1-git-send-email-linus.walleij@stericsson.com>
-Date: Fri, 24 May 2013 16:22:31 +0100
-X-Google-Sender-Auth: 1NHbem3O49AXqPsig3_F3bGv59s
-Message-ID: <CAAG0J990rqDdG5WdOrVGqZ9tFgJmnmP18S=c6o9JNygTLHS6=g@mail.gmail.com>
-Subject: Re: [PATCH v3] pinctrl: move subsystem mutex to pinctrl_dev struct
-From: James Hogan <james.hogan@imgtec.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Patrice Chotard <patrice.chotard@st.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Meunier <laurent.meunier@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524170626.2ac06efe@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2013 16:08, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> @@ -608,7 +610,7 @@ static int pinconf_dbg_config_print(struct seq_file *s, void *d)
->         bool found = false;
->         unsigned long config;
->
-> -       mutex_lock(&pinctrl_mutex);
-> +       mutex_lock(&pctldev->mutex);
->
->         /* Parse the pinctrl map and look for the elected pin/state */
->         for_each_maps(maps_node, i, map) {
+On Fri, May 24, 2013 at 05:06:26PM +0200, Michael Holzheu wrote:
+> Hello Vivek,
+> 
+> On Fri, 24 May 2013 10:36:44 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> [snip]
+> 
+> > Sorry, I don't understand the problem. If we swapped low memory and
+> > crash reserved memory, that should have been taken care by prepared
+> > ELF headers so that we map the right pfns. In x86 we swap 640K of low
+> > memory with 640K of memory in reserved and we take care of this by
+> > preparing elf headers accordingly.
+> > 
+> > So why s390 can't do the same thing?
+> 
+> I am not sure if I understand this. Currently we create the ELF
+> header in a way that we have virtual=real. In the copy_oldmem_page() we
+> do the swap so that for the /proc/vmcore code it looks like contiguous
+> non-swapped memory.
+> 
+> One reason why I thought this was necessary was that /dev/oldmem
+> also uses the function and it should provide linear memory access like
+> it is on the live system with /dev/mem.
+> 
+> Is that implementation incorrect?
 
-This change causes an oops on v3.10-rc2 when you read pinconf-config
-because pctldev is initialised to NULL and not set until inside the
-loop. I considered initialising pctldev to s->private, but I'm
-concerned that if pctldev is altered in the loop it could end up
-unlocking a different mutex to the one it locked. If this debugfs file
-isn't meant to be specific to a pinctrl device should it be in the
-root pinctrl directory instead of in each pinctrl device's directory?
+[ CC Andrew. Keep him in loop for all kernel kdump patches as all kdump
+  patches are routed through him ].
 
-Cheers
-James
+[ CC Eric Biederman ]
+
+Looking at the code, looks like /dev/oldmem is broken. It does not know
+anything about swap of any of the memory areas and it will simply
+return the contents of page frame asked. And this has been like this
+since the beginning.
+
+I have always questioned the utility of /dev/oldmem. Atleast I am not
+aware of any tool making use of it.
+
+If we want to fix it, then somebow all the swapped memory region info
+needs to be communicated to second kernel so that read_oldmem() can
+do the mapping correctly and we really don't have any mechanism for
+that. (I am assuming that in s390 you must have hardcoded the regions
+of memory which are always swapped).
+
+As /proc/vmcore is the most used and useful interface, I prefer that
+we swap memory and put that info in elf headers. For /dev/oldme, I
+don't mind if we leave it as it is. If somebody really cares, then
+I guess we need to write a new command line option which /dev/mem
+can parse and which tells it about swaps so that /dev/oldmem can
+map things correctly. (This is better than hardcoding things).
+
+Eric, do you have any thoughts on this.
+
+Thanks
+Vivek
