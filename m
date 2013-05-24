@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab3EXSce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 14:32:34 -0400
+	id S1757476Ab3EXSci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 14:32:38 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:25652 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab3EXScc (ORCPT
+	with ESMTP id S1757394Ab3EXScf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 14:32:32 -0400
+	Fri, 24 May 2013 14:32:35 -0400
 X-IronPort-AV: E=Sophos;i="4.87,736,1363158000"; 
-   d="scan'208";a="50454287"
+   d="scan'208";a="50454299"
 From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
         Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ARM: msm: Remove gpiomux-v2 and re-organize MSM_GPIOMUX configs
-Date: Fri, 24 May 2013 11:32:20 -0700
-Message-Id: <1369420342-27085-2-git-send-email-rvaswani@codeaurora.org>
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCHv3 3/3] gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+Date: Fri, 24 May 2013 11:32:22 -0700
+Message-Id: <1369420342-27085-4-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1369420342-27085-1-git-send-email-rvaswani@codeaurora.org>
 References: <1369420342-27085-1-git-send-email-rvaswani@codeaurora.org>
@@ -28,273 +28,383 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove gpiomux-v2 as it's not being used and make way for future improvements.
+This cleans up the gpio-msm-v2 driver of all the global define usage.
+The number of gpios are now defined in the device tree. This enables
+adding irqdomain support as well.
 
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig        |   13 +++-----
- arch/arm/mach-msm/Makefile       |    6 +--
- arch/arm/mach-msm/gpiomux-8x60.c |   19 ------------
- arch/arm/mach-msm/gpiomux-v2.c   |   25 ---------------
- arch/arm/mach-msm/gpiomux-v2.h   |   61 --------------------------------------
- arch/arm/mach-msm/gpiomux.c      |   15 +++++++++
- arch/arm/mach-msm/gpiomux.h      |    5 ---
- drivers/gpio/gpio-msm-v2.c       |    5 +--
- 8 files changed, 24 insertions(+), 125 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpiomux-8x60.c
- delete mode 100644 arch/arm/mach-msm/gpiomux-v2.c
- delete mode 100644 arch/arm/mach-msm/gpiomux-v2.h
+ .../devicetree/bindings/gpio/gpio-msm.txt          |   26 +++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   11 ++
+ arch/arm/boot/dts/msm8960-cdp.dts                  |   11 ++
+ drivers/gpio/Kconfig                               |    2 +-
+ drivers/gpio/gpio-msm-v2.c                         |  165 ++++++++++++--------
+ 5 files changed, 152 insertions(+), 63 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-msm.txt
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index fceb093..614e41e 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -48,9 +48,7 @@ config ARCH_MSM8X60
- 	select CPU_V7
- 	select GPIO_MSM_V2
- 	select HAVE_SMP
--	select MSM_GPIOMUX
- 	select MSM_SCM if SMP
--	select MSM_V2_TLMM
- 	select USE_OF
- 
- config ARCH_MSM8960
-@@ -58,9 +56,8 @@ config ARCH_MSM8960
- 	select ARM_GIC
- 	select CPU_V7
- 	select HAVE_SMP
--	select MSM_GPIOMUX
-+	select GPIO_MSM_V2
- 	select MSM_SCM if SMP
--	select MSM_V2_TLMM
- 	select USE_OF
- 
- config MSM_HAS_DEBUG_UART_HS
-@@ -124,10 +121,10 @@ config MSM_SMD
- 	bool
- 
- config MSM_GPIOMUX
--	bool
--
--config MSM_V2_TLMM
--	bool
-+	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
-+	bool "MSM V1 TLMM GPIOMUX architecture"
-+	help
-+	  Support for MSM V1 TLMM GPIOMUX architecture.
- 
- config MSM_SCM
- 	bool
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 17519fa..1a26d04 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -27,7 +27,5 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
- obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
--
--obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
--obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
--obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
-+obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
-+obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
-diff --git a/arch/arm/mach-msm/gpiomux-8x60.c b/arch/arm/mach-msm/gpiomux-8x60.c
-deleted file mode 100644
-index 7b380b3..0000000
---- a/arch/arm/mach-msm/gpiomux-8x60.c
-+++ /dev/null
-@@ -1,19 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#include "gpiomux.h"
--
--struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {};
-diff --git a/arch/arm/mach-msm/gpiomux-v2.c b/arch/arm/mach-msm/gpiomux-v2.c
-deleted file mode 100644
-index 273396d..0000000
---- a/arch/arm/mach-msm/gpiomux-v2.c
-+++ /dev/null
-@@ -1,25 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#include <linux/io.h>
--#include <mach/msm_iomap.h>
--#include "gpiomux.h"
--
--void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
--{
--	writel(val & ~GPIOMUX_CTL_MASK,
--	       MSM_TLMM_BASE + 0x1000 + (0x10 * gpio));
--}
-diff --git a/arch/arm/mach-msm/gpiomux-v2.h b/arch/arm/mach-msm/gpiomux-v2.h
-deleted file mode 100644
-index 3bf10e7..0000000
---- a/arch/arm/mach-msm/gpiomux-v2.h
-+++ /dev/null
-@@ -1,61 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#ifndef __ARCH_ARM_MACH_MSM_GPIOMUX_V2_H
--#define __ARCH_ARM_MACH_MSM_GPIOMUX_V2_H
--
--#define GPIOMUX_NGPIOS 173
--
--typedef u16 gpiomux_config_t;
--
--enum {
--	GPIOMUX_DRV_2MA  = 0UL << 6,
--	GPIOMUX_DRV_4MA  = 1UL << 6,
--	GPIOMUX_DRV_6MA  = 2UL << 6,
--	GPIOMUX_DRV_8MA  = 3UL << 6,
--	GPIOMUX_DRV_10MA = 4UL << 6,
--	GPIOMUX_DRV_12MA = 5UL << 6,
--	GPIOMUX_DRV_14MA = 6UL << 6,
--	GPIOMUX_DRV_16MA = 7UL << 6,
--};
--
--enum {
--	GPIOMUX_FUNC_GPIO = 0UL  << 2,
--	GPIOMUX_FUNC_1    = 1UL  << 2,
--	GPIOMUX_FUNC_2    = 2UL  << 2,
--	GPIOMUX_FUNC_3    = 3UL  << 2,
--	GPIOMUX_FUNC_4    = 4UL  << 2,
--	GPIOMUX_FUNC_5    = 5UL  << 2,
--	GPIOMUX_FUNC_6    = 6UL  << 2,
--	GPIOMUX_FUNC_7    = 7UL  << 2,
--	GPIOMUX_FUNC_8    = 8UL  << 2,
--	GPIOMUX_FUNC_9    = 9UL  << 2,
--	GPIOMUX_FUNC_A    = 10UL << 2,
--	GPIOMUX_FUNC_B    = 11UL << 2,
--	GPIOMUX_FUNC_C    = 12UL << 2,
--	GPIOMUX_FUNC_D    = 13UL << 2,
--	GPIOMUX_FUNC_E    = 14UL << 2,
--	GPIOMUX_FUNC_F    = 15UL << 2,
--};
--
--enum {
--	GPIOMUX_PULL_NONE   = 0UL,
--	GPIOMUX_PULL_DOWN   = 1UL,
--	GPIOMUX_PULL_KEEPER = 2UL,
--	GPIOMUX_PULL_UP     = 3UL,
--};
--
--#endif
-diff --git a/arch/arm/mach-msm/gpiomux.c b/arch/arm/mach-msm/gpiomux.c
-index 53af21a..2b8e2d2 100644
---- a/arch/arm/mach-msm/gpiomux.c
-+++ b/arch/arm/mach-msm/gpiomux.c
-@@ -17,9 +17,24 @@
- #include <linux/module.h>
- #include <linux/spinlock.h>
- #include "gpiomux.h"
-+#include "proc_comm.h"
- 
- static DEFINE_SPINLOCK(gpiomux_lock);
- 
-+static void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
-+{
-+	unsigned tlmm_config  = (val & ~GPIOMUX_CTL_MASK) |
-+				((gpio & 0x3ff) << 4);
-+	unsigned tlmm_disable = 0;
-+	int rc;
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-msm.txt b/Documentation/devicetree/bindings/gpio/gpio-msm.txt
+new file mode 100644
+index 0000000..ac20e68
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-msm.txt
+@@ -0,0 +1,26 @@
++MSM GPIO controller bindings
 +
-+	rc = msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX,
-+			   &tlmm_config, &tlmm_disable);
-+	if (rc)
-+		pr_err("%s: unexpected proc_comm failure %d: %08x %08x\n",
-+		       __func__, rc, tlmm_config, tlmm_disable);
-+}
++Required properties:
++- compatible:
++  - "qcom,msm-gpio" for MSM controllers
++- #gpio-cells : Should be two.
++  - first cell is the pin number
++  - second cell is used to specify optional parameters (unused)
++- gpio-controller : Marks the device node as a GPIO controller.
++- #interrupt-cells : Should be 2.
++- interrupt-controller: Mark the device node as an interrupt controller
++- interrupts : Specify the TLMM summary interrupt number
++- ngpio : Specify the number of MSM GPIOs
 +
- int msm_gpiomux_write(unsigned gpio,
- 		      gpiomux_config_t active,
- 		      gpiomux_config_t suspended)
-diff --git a/arch/arm/mach-msm/gpiomux.h b/arch/arm/mach-msm/gpiomux.h
-index 00459f6..8e82f41 100644
---- a/arch/arm/mach-msm/gpiomux.h
-+++ b/arch/arm/mach-msm/gpiomux.h
-@@ -20,12 +20,7 @@
- #include <linux/bitops.h>
- #include <linux/errno.h>
- #include <mach/msm_gpiomux.h>
--
--#if defined(CONFIG_MSM_V2_TLMM)
--#include "gpiomux-v2.h"
--#else
- #include "gpiomux-v1.h"
--#endif
++Example:
++
++	msmgpio: gpio@fd510000 {
++		compatible = "qcom,msm-gpio";
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		reg = <0xfd510000 0x4000>;
++		interrupts = <0 208 0>;
++		ngpio = <150>;
++	};
+diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+index 9bf49b3..8931906 100644
+--- a/arch/arm/boot/dts/msm8660-surf.dts
++++ b/arch/arm/boot/dts/msm8660-surf.dts
+@@ -26,6 +26,17 @@
+ 		cpu-offset = <0x40000>;
+ 	};
  
- /**
-  * struct msm_gpiomux_config: gpiomux settings for one gpio line.
++	msmgpio: gpio@800000 {
++		compatible = "qcom,msm-gpio";
++		reg = <0x00800000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		ngpio = <173>;
++		interrupts = <0 32 0x4>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
++
+ 	serial@19c400000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x19c40000 0x1000>,
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index 2e4d87a..52fe253 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -26,6 +26,17 @@
+ 		cpu-offset = <0x80000>;
+ 	};
+ 
++	msmgpio: gpio@fd510000 {
++		compatible = "qcom,msm-gpio";
++		gpio-controller;
++		#gpio-cells = <2>;
++		ngpio = <150>;
++		interrupts = <0 32 0x4>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		reg = <0xfd510000 0x4000>;
++	};
++
+ 	serial@19c400000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x16440000 0x1000>,
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 87d5670..9ef3b04 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -165,7 +165,7 @@ config GPIO_MSM_V1
+ 
+ config GPIO_MSM_V2
+ 	tristate "Qualcomm MSM GPIO v2"
+-	depends on GPIOLIB && ARCH_MSM
++	depends on GPIOLIB && OF
+ 	help
+ 	  Say yes here to support the GPIO interface on ARM v7 based
+ 	  Qualcomm MSM chips.  Most of the pins on the MSM can be
 diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
-index dd2edde..75cc821 100644
+index 75cc821..2081f23 100644
 --- a/drivers/gpio/gpio-msm-v2.c
 +++ b/drivers/gpio/gpio-msm-v2.c
-@@ -29,7 +29,6 @@
+@@ -19,17 +19,22 @@
+ 
+ #include <linux/bitmap.h>
+ #include <linux/bitops.h>
++#include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/irq.h>
++#include <linux/irqdomain.h>
+ #include <linux/module.h>
++#include <linux/of_address.h>
  #include <linux/platform_device.h>
  #include <linux/spinlock.h>
++#include <linux/slab.h>
  
--#include <mach/msm_gpiomux.h>
- #include <mach/msm_iomap.h>
+-#include <mach/msm_iomap.h>
++static int summary_irq;
++void __iomem *msm_tlmm_base;
  
  /* Bits of interest in the GPIO_IN_OUT register.
-@@ -159,12 +158,12 @@ static int msm_gpio_direction_output(struct gpio_chip *chip,
+  */
+@@ -77,11 +82,11 @@ enum {
+ };
  
- static int msm_gpio_request(struct gpio_chip *chip, unsigned offset)
- {
--	return msm_gpiomux_get(chip->base + offset);
-+	return 0;
- }
  
- static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
- {
--	msm_gpiomux_put(chip->base + offset);
-+	return;
- }
+-#define GPIO_INTR_CFG_SU(gpio)    (MSM_TLMM_BASE + 0x0400 + (0x04 * (gpio)))
+-#define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
+-#define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
+-#define GPIO_INTR_CFG(gpio)       (MSM_TLMM_BASE + 0x1008 + (0x10 * (gpio)))
+-#define GPIO_INTR_STATUS(gpio)    (MSM_TLMM_BASE + 0x100c + (0x10 * (gpio)))
++#define GPIO_INTR_CFG_SU(gpio)    (msm_tlmm_base + 0x0400 + (0x04 * (gpio)))
++#define GPIO_CONFIG(gpio)         (msm_tlmm_base + 0x1000 + (0x10 * (gpio)))
++#define GPIO_IN_OUT(gpio)         (msm_tlmm_base + 0x1004 + (0x10 * (gpio)))
++#define GPIO_INTR_CFG(gpio)       (msm_tlmm_base + 0x1008 + (0x10 * (gpio)))
++#define GPIO_INTR_STATUS(gpio)    (msm_tlmm_base + 0x100c + (0x10 * (gpio)))
+ 
+ /**
+  * struct msm_gpio_dev: the MSM8660 SoC GPIO device structure
+@@ -101,9 +106,10 @@ enum {
+  */
+ struct msm_gpio_dev {
+ 	struct gpio_chip gpio_chip;
+-	DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
+-	DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
+-	DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
++	unsigned long *enabled_irqs;
++	unsigned long *wake_irqs;
++	unsigned long *dual_edge_irqs;
++	struct irq_domain *domain;
+ };
+ 
+ static DEFINE_SPINLOCK(tlmm_lock);
+@@ -168,18 +174,22 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
  
  static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+-	return MSM_GPIO_TO_INT(chip->base + offset);
++	struct msm_gpio_dev *g_dev = to_msm_gpio_dev(chip);
++	struct irq_domain *domain = g_dev->domain;
++
++	return irq_create_mapping(domain, offset);
+ }
+ 
+ static inline int msm_irq_to_gpio(struct gpio_chip *chip, unsigned irq)
+ {
+-	return irq - MSM_GPIO_TO_INT(chip->base);
++	struct irq_data *irq_data = irq_get_irq_data(irq);
++
++	return irq_data->hwirq;
+ }
+ 
+ static struct msm_gpio_dev msm_gpio = {
+ 	.gpio_chip = {
+ 		.base             = 0,
+-		.ngpio            = NR_GPIO_IRQS,
+ 		.direction_input  = msm_gpio_direction_input,
+ 		.direction_output = msm_gpio_direction_output,
+ 		.get              = msm_gpio_get,
+@@ -226,9 +236,9 @@ static void msm_gpio_update_dual_edge_pos(unsigned gpio)
+ 		if (intstat || val == val2)
+ 			return;
+ 	} while (loop_limit-- > 0);
+-	pr_err("dual-edge irq failed to stabilize, "
++	pr_err("%s: dual-edge irq failed to stabilize, "
+ 	       "interrupts dropped. %#08x != %#08x\n",
+-	       val, val2);
++	       __func__, val, val2);
+ }
+ 
+ static void msm_gpio_irq_ack(struct irq_data *d)
+@@ -312,13 +322,14 @@ static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	unsigned long i;
+ 	struct irq_chip *chip = irq_desc_get_chip(desc);
++	int ngpio = msm_gpio.gpio_chip.ngpio;
+ 
+ 	chained_irq_enter(chip, desc);
+ 
+-	for_each_set_bit(i, msm_gpio.enabled_irqs, NR_GPIO_IRQS) {
++	for_each_set_bit(i, msm_gpio.enabled_irqs, ngpio) {
+ 		if (readl(GPIO_INTR_STATUS(i)) & BIT(INTR_STATUS))
+-			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
+-							   i));
++			generic_handle_irq(irq_find_mapping(msm_gpio.domain,
++								i));
+ 	}
+ 
+ 	chained_irq_exit(chip, desc);
+@@ -327,15 +338,16 @@ static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
+ static int msm_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ {
+ 	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
++	int ngpio = msm_gpio.gpio_chip.ngpio;
+ 
+ 	if (on) {
+-		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
+-			irq_set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 1);
++		if (bitmap_empty(msm_gpio.wake_irqs, ngpio))
++			irq_set_irq_wake(summary_irq, 1);
+ 		set_bit(gpio, msm_gpio.wake_irqs);
+ 	} else {
+ 		clear_bit(gpio, msm_gpio.wake_irqs);
+-		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
+-			irq_set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 0);
++		if (bitmap_empty(msm_gpio.wake_irqs, ngpio))
++			irq_set_irq_wake(summary_irq, 0);
+ 	}
+ 
+ 	return 0;
+@@ -350,30 +362,84 @@ static struct irq_chip msm_gpio_irq_chip = {
+ 	.irq_set_wake	= msm_gpio_irq_set_wake,
+ };
+ 
+-static int msm_gpio_probe(struct platform_device *dev)
++static struct lock_class_key msm_gpio_lock_class;
++
++static int msm_gpio_irq_domain_map(struct irq_domain *d, unsigned int irq,
++				   irq_hw_number_t hwirq)
+ {
+-	int i, irq, ret;
++	irq_set_lockdep_class(irq, &msm_gpio_lock_class);
++	irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
++			handle_level_irq);
++	set_irq_flags(irq, IRQF_VALID);
++
++	return 0;
++}
++
++static const struct irq_domain_ops msm_gpio_irq_domain_ops = {
++	.xlate = irq_domain_xlate_twocell,
++	.map = msm_gpio_irq_domain_map,
++};
++
++static int msm_gpio_probe(struct platform_device *pdev)
++{
++	int ret, ngpio;
++	struct resource *res;
++
++	msm_gpio.gpio_chip.label = pdev->name;
++	msm_gpio.gpio_chip.dev = &pdev->dev;
++	if (!of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio)) {
++		dev_err(&pdev->dev, "%s: ngpio property missing\n", __func__);
++		return -EINVAL;
++	}
++
++	msm_gpio.gpio_chip.ngpio = ngpio;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	msm_tlmm_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(msm_tlmm_base))
++		return PTR_ERR(msm_tlmm_base);
++
++	msm_gpio.enabled_irqs = devm_kzalloc(&pdev->dev,
++						sizeof(unsigned long) * ngpio,
++						GFP_KERNEL);
++	msm_gpio.wake_irqs = devm_kzalloc(&pdev->dev,
++						sizeof(unsigned long) * ngpio,
++						GFP_KERNEL);
++	msm_gpio.dual_edge_irqs = devm_kzalloc(&pdev->dev,
++						sizeof(unsigned long) * ngpio,
++						GFP_KERNEL);
++	bitmap_zero(msm_gpio.enabled_irqs, ngpio);
++	bitmap_zero(msm_gpio.wake_irqs, ngpio);
++	bitmap_zero(msm_gpio.dual_edge_irqs, ngpio);
+ 
+-	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
+-	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
+-	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
+-	msm_gpio.gpio_chip.label = dev->name;
+ 	ret = gpiochip_add(&msm_gpio.gpio_chip);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(&pdev->dev, "gpiochip_add failed with error %d\n", ret);
+ 		return ret;
++	}
+ 
+-	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
+-		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
+-		irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
+-					 handle_level_irq);
+-		set_irq_flags(irq, IRQF_VALID);
++	summary_irq = platform_get_irq(pdev, 0);
++	if (summary_irq < 0) {
++		dev_err(&pdev->dev, "No Summary irq defined for msmgpio\n");
++		return summary_irq;
+ 	}
+ 
+-	irq_set_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
+-				msm_summary_irq_handler);
++	msm_gpio.domain = irq_domain_add_linear(pdev->dev.of_node, ngpio,
++						&msm_gpio_irq_domain_ops,
++						&msm_gpio);
++	if (!msm_gpio.domain)
++		return -ENODEV;
++
++	irq_set_chained_handler(summary_irq, msm_summary_irq_handler);
++
+ 	return 0;
+ }
+ 
++static struct of_device_id msm_gpio_of_match[] = {
++	{ .compatible = "qcom,msm-gpio", },
++	{ },
++};
++
+ static int msm_gpio_remove(struct platform_device *dev)
+ {
+ 	int ret = gpiochip_remove(&msm_gpio.gpio_chip);
+@@ -392,36 +458,11 @@ static struct platform_driver msm_gpio_driver = {
+ 	.driver = {
+ 		.name = "msmgpio",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(msm_gpio_of_match),
+ 	},
+ };
+ 
+-static struct platform_device msm_device_gpio = {
+-	.name = "msmgpio",
+-	.id   = -1,
+-};
+-
+-static int __init msm_gpio_init(void)
+-{
+-	int rc;
+-
+-	rc = platform_driver_register(&msm_gpio_driver);
+-	if (!rc) {
+-		rc = platform_device_register(&msm_device_gpio);
+-		if (rc)
+-			platform_driver_unregister(&msm_gpio_driver);
+-	}
+-
+-	return rc;
+-}
+-
+-static void __exit msm_gpio_exit(void)
+-{
+-	platform_device_unregister(&msm_device_gpio);
+-	platform_driver_unregister(&msm_gpio_driver);
+-}
+-
+-postcore_initcall(msm_gpio_init);
+-module_exit(msm_gpio_exit);
++module_platform_driver(msm_gpio_driver)
+ 
+ MODULE_AUTHOR("Gregory Bean <gbean@codeaurora.org>");
+ MODULE_DESCRIPTION("Driver for Qualcomm MSM TLMMv2 SoC GPIOs");
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
