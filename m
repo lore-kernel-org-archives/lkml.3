@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab3EXEVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 00:21:32 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60797 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab3EXEVa convert rfc822-to-8bit (ORCPT
+	id S1752518Ab3EXE2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 00:28:16 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41527 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab3EXE2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 00:21:30 -0400
-Date: Thu, 23 May 2013 23:21:26 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 6/8] Documentation: Updating a broken link in "the
- perfect patch"
-To: Ben Minerds <puzzleduck@gmail.com>
-Cc: greg@kroah.com, Ben Minerds <PuZZleDucK@gmail.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <cover.1369312746.git.PuZZleDucK@gmail.com>
-	<95e6b8218195f2be60823ce6de5ea524b727fe11.1369312746.git.PuZZleDucK@gmail.com>
-In-Reply-To: <95e6b8218195f2be60823ce6de5ea524b727fe11.1369312746.git.PuZZleDucK@gmail.com>
-	(from puzzleduck@gmail.com on Thu May 23 07:49:58 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1369369286.2776.16@driftwood>
+	Fri, 24 May 2013 00:28:15 -0400
+From: Stephen Mell <sub.atomic.fusion@gmail.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: move proc mount options out of pid_namespace
+Date: Fri, 24 May 2013 04:29:54 +0000
+Message-ID: <24900395.sMN6olMGRM@pegasus>
+User-Agent: KMail/4.9.5 (Linux/3.9.3; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <519ED883.9060903@cn.fujitsu.com>
+References: <3342521.NtikuogILA@pegasus> <2515335.Kvy7Q1OKc4@pegasus> <519ED883.9060903@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 07:49:58 AM, Ben Minerds wrote:
->  The link to Andrews patches were out of date. Replacing with new  
-> links. Also
->  slightly reformatted to allow easier selection of links.
-> 
->  Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
-> ---
->  Documentation/development-process/patches/The-Perfect-Patch.txt | 8  
-> ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git  
-> a/Documentation/development-process/patches/The-Perfect-Patch.txt  
-> b/Documentation/development-process/patches/The-Perfect-Patch.txt
-> index 217a303..63eccbb 100644
-> --- a/Documentation/development-process/patches/The-Perfect-Patch.txt
-> +++ b/Documentation/development-process/patches/The-Perfect-Patch.txt
-> @@ -160,8 +160,8 @@ Overall
-> 
-> 
-> 
-> -The patch management scripts at  
-> http://www.zip.com.au/~akpm/linux/patches/
-> -implement all of the above.
-> +The patch management scripts here implement all of the above:
-> +  https://www.kernel.org/pub/linux/kernel/people/akpm/patches/
+Gu,
 
-I looked in that directory, and I'm not seeing quilt.
+On Friday, May 24, 2013 11:03:31 Gu Zheng wrote:
+> Hi Stephen,
+> 
+> On 05/24/2013 07:32 AM, Stephen Mell wrote:
+> 
+> > On Thursday, May 23, 2013 18:20:57 Gu Zheng wrote:
+> > 
+> >> Here it'll create a new proc sb instance which holds the same context as the old ones
+> >> each time we mount proc though in the same PID namespace, won't it?
+> > I believe so. But this is the point, right? 
 
-> -The patch management tools at  
-> https://savannah.nongnu.org/projects/quilt/ also
-> -implement all of the above.
-> \ No newline at end of file
-> +The patch management tools here implement all of the above:
-> +  https://savannah.nongnu.org/projects/quilt/
+> Yes, but I think it's also the problem.
+> 
+> >They won't be identical if different mount options are used, I don't think.
+> 
+> If different mount options are used, we'll create different super block instance, and they have
+> the same context, only the difference is each one holds different proc_sb_info.
+> But I think what we really want is only one proc sb instance and create different proc_sb_info
+> if different mount options are used.
 
-This appears to be the currently location. As mentioned on line 76 of  
-the current Documentation/SubmittingPatches.
+Will having several different superblocks cause problems, or is it merely inefficient? I freely admit to not really knowing what I'm doing, and I thank you for your assistance.
+How is this situation distinct from that of ramfs? It appears to have a superblock for each mount.
+It would seem to me as though one cannot have different sb_infos with the same superblock, making storing the mount options in sb_info effectively the same as storing them in the superblock itself, for the purposes of this discussion. Where would the mount options be stored, if not in the superblock?
 
-I think I'd like to NAK this whole series until you read what's  
-currently in the tree, please?
+> > 
+> >> Here the pre-check seems needless.
+> > Is that new with my patch, or has it always been needless?
+> 
+> Yeah, it's always needless.
+> 
+> Thanks,
+> Gu
+> 
+> > 
+> > Thanks,
+> > Stephen
 
-Rob
+Thanks again,
+Stephen
