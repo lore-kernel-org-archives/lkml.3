@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3EXEQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 00:16:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50237 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752423Ab3EXEQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 00:16:35 -0400
-Message-ID: <1369368994.2080.18.camel@joe-AO722>
-Subject: Re: [PATCH 1/8] Documentation: Adding "The Perfect Patch" by Andrew
- Morton
-From: Joe Perches <joe@perches.com>
-To: Rob Landley <rob@landley.net>
-Cc: Ben Minerds <puzzleduck@gmail.com>, greg@kroah.com,
+	id S1752463Ab3EXEVc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 00:21:32 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:60797 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab3EXEVa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 00:21:30 -0400
+Date: Thu, 23 May 2013 23:21:26 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 6/8] Documentation: Updating a broken link in "the
+ perfect patch"
+To: Ben Minerds <puzzleduck@gmail.com>
+Cc: greg@kroah.com, Ben Minerds <PuZZleDucK@gmail.com>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 23 May 2013 21:16:34 -0700
-In-Reply-To: <1369368624.2776.13@driftwood>
-References: <1369368624.2776.13@driftwood>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+References: <cover.1369312746.git.PuZZleDucK@gmail.com>
+	<95e6b8218195f2be60823ce6de5ea524b727fe11.1369312746.git.PuZZleDucK@gmail.com>
+In-Reply-To: <95e6b8218195f2be60823ce6de5ea524b727fe11.1369312746.git.PuZZleDucK@gmail.com>
+	(from puzzleduck@gmail.com on Thu May 23 07:49:58 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1369369286.2776.16@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-23 at 23:10 -0500, Rob Landley wrote:
-> On 05/23/2013 07:49:53 AM, Ben Minerds wrote:
-> >  Adding Andrews advice on patch submission and subdirectory for  
-> > further patch
-> >  documentstion.
+On 05/23/2013 07:49:58 AM, Ben Minerds wrote:
+>  The link to Andrews patches were out of date. Replacing with new  
+> links. Also
+>  slightly reformatted to allow easier selection of links.
 > 
-> You've seen Documentation/SubmittingPatches right?
+>  Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
+> ---
+>  Documentation/development-process/patches/The-Perfect-Patch.txt | 8  
+> ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git  
+> a/Documentation/development-process/patches/The-Perfect-Patch.txt  
+> b/Documentation/development-process/patches/The-Perfect-Patch.txt
+> index 217a303..63eccbb 100644
+> --- a/Documentation/development-process/patches/The-Perfect-Patch.txt
+> +++ b/Documentation/development-process/patches/The-Perfect-Patch.txt
+> @@ -160,8 +160,8 @@ Overall
+> 
+> 
+> 
+> -The patch management scripts at  
+> http://www.zip.com.au/~akpm/linux/patches/
+> -implement all of the above.
+> +The patch management scripts here implement all of the above:
+> +  https://www.kernel.org/pub/linux/kernel/people/akpm/patches/
 
-Maybe not.
+I looked in that directory, and I'm not seeing quilt.
 
-> > +- Ensure that your patch does not add new trailing whitespace.  The  
-> > below
-> > +  script will fix up your patch by stripping off such whitespace.
-[]
-> Doesn't scripts/checkpatch.pl check for this?
+> -The patch management tools at  
+> https://savannah.nongnu.org/projects/quilt/ also
+> -implement all of the above.
+> \ No newline at end of file
+> +The patch management tools here implement all of the above:
+> +  https://savannah.nongnu.org/projects/quilt/
 
-Yes it does.
-scripts/cleanpatch exists too.
+This appears to be the currently location. As mentioned on line 76 of  
+the current Documentation/SubmittingPatches.
 
+I think I'd like to NAK this whole series until you read what's  
+currently in the tree, please?
 
+Rob
