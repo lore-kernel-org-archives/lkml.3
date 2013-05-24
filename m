@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab3EXHOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 03:14:48 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:19080 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab3EXHOr (ORCPT
+	id S1758545Ab3EXHWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 03:22:42 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:40768 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab3EXHWl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 03:14:47 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@maxim.org.za" <linux@maxim.org.za>
-Subject: RE: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
-	"MT_MEMORY_SO"
-Thread-Topic: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
-	"MT_MEMORY_SO"
-Thread-Index: AQHOVoFuzDkEomPIvUCuWrVoFTdpRZkTy4JA
-Date: Fri, 24 May 2013 07:11:04 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641687BB93C@penmbx01>
-References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
- <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
- <20130522001457.GA18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130522001457.GA18614@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	Fri, 24 May 2013 03:22:41 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA78C307B8F06747967D122FC656B153986448@SERVEUR0.nvp.local>
+References: <CA78C307B8F06747967D122FC656B153986448@SERVEUR0.nvp.local>
+Date: Fri, 24 May 2013 12:52:40 +0530
+Message-ID: <CAK7N6vpg6QUAKODKO2Msr4+GTASLDpA2cG1teQV3yiwt7D4SSw@mail.gmail.com>
+Subject: Re: [I2C] informations + advice about messages handling
+From: anish singh <anish198519851985@gmail.com>
+To: Mylene Josserand <Mylene.Josserand@navocap.com>
+Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4O7EqDv009768
 
+On Fri, May 24, 2013 at 12:41 PM, Mylene Josserand
+<Mylene.Josserand@navocap.com> wrote:
+> Hi all,
+>
+>
+> I am learning how i2c is working and I read that, to write in an i2c
+> register, I need to use the function "i2c_smbus_write_byte_data".
+Only in case your device is smbus compliant.
 
-
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: 2013Äê5ÔÂ22ÈÕ 8:15
-> To: Yang, Wenyou
-> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> plagnioj@jcrosoft.com; Ferre, Nicolas; linux@maxim.org.za
-> Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
-> "MT_MEMORY_SO"
-> 
-> On Mon, May 20, 2013 at 09:06:19AM +0800, Wenyou Yang wrote:
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> 
-> This needs more of a description.  Also, for a single patch, it's silly
-> to send two mails, the first being a cover which has a little more
-> information in it about the patch than the patch itself.
-> 
-> You need to explain _why_ you're making this change.  What I want to see
-> is that you've thought about the implications of this - particularly that
-> you know that strongly ordered memory does *not* imply any ordering with
-> any other memory types.
-> 
-> In other words, I want to know that this change is not a bodge but there's
-> a real reason behind it.
-The story is: for sama5d3x with Cortex-A5 core, if not so, when copying code snippet to the internal SRAM, then jump to run this code, but fail to run.
-So, refer to other code(such as omap4), do such change. I also test it on at91sam9 with 926ej-s core.
-As what you said, I am digging it. Thank you very much.
-
-Best Regards,
-Wenyou Yang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> I wanted to know how the message are handled by using this function. If
+> I use this function to talk with 2 different i2d devices, how it will
+> handle "message collision" ? should I have to add a kind of mutex on the
+Message collision and detection is the job of i2c controller and if I am
+not wrong you are writing a chip driver.
+> access of the i2c bus ?
+> Is it possible that the message destined for one device is sent to
+> another one ? Or a "mix" of messages is impossible ?
+It is not possible as the data contains the chip address which is
+unique.7/10 bit mode addressing is used for addresses.
+>
+> I have read that this function "i2c_smbus_write_byte_data" uses
+> "i2c_smbus_xfer" which uses "i2c_lock_adapter".
+> In this function, there is a mutex so I thought that it will handle it
+> but it says "Get exclusive access to an I2C bus segment". What is
+> exactly an I2C segment ? Is it the device we are talking about ? Or is
+> it the use of the i2c bus ?
+Don't know what you are referring here.
+>
+> I will certainly have to create an i2c driver and I would like to know
+> if this "collision" handling (if it is handled) is done in old kernel
+> (2.6.32) or is it handled only in new kernel versions ?
+AFAIK collision handling and detection was not supported till now
+in linux kernel until recently but I think this patch is doing that.
+I may be wrong but I didn't see collision handling in earlier linux
+kernels.
+http://thread.gmane.org/gmane.linux.kernel/1410276
+>
+> If you have any documentation on how the i2c messages are handled in
+> case of different devices uses, it will help me a lot ! I will search in
+> the kernel documentation but there is many files about i2c.
+> And if you know a good i2c driver that I can use as an example to design
+> mine, it will be great !
+>
+>
+> Thank you in advance,
+>
+> --
+> MylÃ¨ne JOSSERAND
+>
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
