@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3EXWdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 18:33:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1161 "EHLO mx1.redhat.com"
+	id S1756622Ab3EXWng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 18:43:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12213 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab3EXWdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 18:33:42 -0400
-Message-ID: <1369434846.8000.9.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] serial: Add Option GTM681W to qcserial device table.
-From: Dan Williams <dcbw@redhat.com>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Richard Weinberger <richard@nod.at>, gregkh@linuxfoundation.org,
-        jhovold@gmail.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 24 May 2013 17:34:06 -0500
-In-Reply-To: <87ehcwfd6m.fsf@nemi.mork.no>
-References: <1369389711-4290-1-git-send-email-richard@nod.at>
-	 <87obc0frdu.fsf@nemi.mork.no> <519F88CB.4020500@nod.at>
-	 <87ehcwfd6m.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755400Ab3EXWnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 18:43:35 -0400
+Date: Fri, 24 May 2013 18:41:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com
+Subject: Re: rcu_read_lock() used illegally while idle!
+Message-ID: <20130524224152.GC17786@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com
+References: <20130521173100.GA2076@redhat.com>
+ <20130522093624.GZ3578@linux.vnet.ibm.com>
+ <1369226958.6828.175.camel@gandalf.local.home>
+ <20130523164004.GJ16419@redhat.com>
+ <1369403180.6828.223.camel@gandalf.local.home>
+ <20130524142338.GB3106@redhat.com>
+ <1369423420.6828.226.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369423420.6828.226.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-24 at 20:25 +0200, Bjørn Mork wrote:
-> Richard Weinberger <richard@nod.at> writes:
-> > Am 24.05.2013 15:18, schrieb Bjørn Mork:
-> >> Richard Weinberger <richard@nod.at> writes:
-> >>
-> >>> The Option GTM681W uses a qualcomm chip and can be
-> >>> served by the qcserial device driver.
-> >>
-> >> Should it also be added to the qmi_wwan driver?
-> >
-> > Don't know. But I can happily test it. :)
-> > Can you please explain me how to use the qmi_wwan driver?
-> > I've never used it.
-> 
-> The QMI management protocol is delegated to userspace using a
-> /dev/cdc-wdmX character device.  So you need a userspace component to
-> test the driver, like for example libqmi. See 
-> http://sigquit.wordpress.com/2012/08/20/an-introduction-to-libqmi/ for a
-> short intro.
+On Fri, May 24, 2013 at 03:23:40PM -0400, Steven Rostedt wrote:
+ > On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
+ > 
+ > > .config: http://paste.fedoraproject.org/14281/94052971/raw/
+ > > 
+ > > trace shows the problem process was 'cc1', so I was likely building a kernel
+ > > at the time.  There was also a trinity run going on in the background.
+ > > 
+ > > cmdline: nothing special..
+ > > 
+ > > BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
+ > > 
+ > 
+ > OK, I'm able to reproduce this. Looks like the same issue happens from
+ > other ways from userspace into the kernel (the next way was tracing
+ > system calls).
+ > 
+ > Forget the other patch. Here's a new patch that is more specific to
+ > tracing and context tracking.
+ > 
+ > Can you try this one out, please.
 
-Various marketing collateral suggests the 681W is a Gobi3K and thus it
-most certainly should also get added to qmi_wwan.  lsusb -v output for
-it would be helpful too I think?
+It's looking good so far.
 
-http://www.option.com/product/gtm681wgtm689w/
-
-Dan
-
-> This library is packaged in Debian.  Don't know the status of other
-> distros. 
-> 
-> The driver supports dynamic device IDs, so if you have qcserial bound to
-> all serial ports, and there is a QMI interface with no driver bound yet,
-> then testing should be as easy as
-> 
->  modprobe qmi_wwan
->  echo "0af0 8120" >/sys/bus/usb/drivers/qmi_wwan/new_id
->  qmicli -d /dev/cdc-wdm0 --dms-get-manufacturer
-> 
-> 
-> 
-> Bjørn
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+	Dave
 
