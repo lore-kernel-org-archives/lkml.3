@@ -1,60 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3EXNHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 09:07:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187Ab3EXNHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 09:07:18 -0400
-Message-ID: <519F65DB.2020305@redhat.com>
-Date: Fri, 24 May 2013 09:06:35 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755642Ab3EXNHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 09:07:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36071 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab3EXNHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 09:07:45 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <balbi@ti.com>, <shc_work@mail.ru>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: OMAP2+: omap-usb-host: Fix memory leaks
+Date: Fri, 24 May 2013 16:06:58 +0300
+Message-ID: <1369400818-31625-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-To: Stanislav Meduna <stano@meduna.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org>
-In-Reply-To: <519F24DD.5060700@meduna.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 04:29 AM, Stanislav Meduna wrote:
-> On 23.05.2013 14:19, Rik van Riel wrote:
->
->>>> static inline void __native_flush_tlb_single(unsigned long addr)
->>>> {
->>>>           __flush_tlb();
->>>> }
->>
->>> I will give it some more testing time.
->>
->> That is a good idea.
->
-> Still no crash, so this one indeed seems to change things.
->
-> If I understand it correctly, these patches fix the problem
-> when it happens and we still don't know why the TLB is stale
-> in the first place - whether there is (also) a genuine bug
-> or whether we are hitting some chip errata, right?
+Fix memory leaks in the error path.
+Also, use platform_device_register_full() to allocate
+the platform devices and set platform data.
 
-Just to rule something out, are you using
-transparent huge pages on those systems?
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/usb-host.c |  106 +++++++++++++++++++++-------------------
+ 1 files changed, 56 insertions(+), 50 deletions(-)
 
-That could result in a mix of 4MB and 4kB
-mappings, sometimes of the same memory.
-The page tables would only ever contain
-one of those mappings, but if we have some
-kind of TLB problem, we might preserve a
-large mapping across a page breakup, or
-a small one across a page collapse...
+diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+index aa27d7f..609b330 100644
+--- a/arch/arm/mach-omap2/usb-host.c
++++ b/arch/arm/mach-omap2/usb-host.c
+@@ -28,6 +28,7 @@
+ #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/usb/phy.h>
++#include <linux/usb/nop-usb-xceiv.h>
+ 
+ #include "soc.h"
+ #include "omap_device.h"
+@@ -560,7 +561,8 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+ 	struct regulator_init_data *reg_data;
+ 	struct fixed_voltage_config *config;
+ 	struct platform_device *pdev;
+-	int ret;
++	struct platform_device_info pdevinfo;
++	int ret = -ENOMEM;
+ 
+ 	supplies = kzalloc(sizeof(*supplies), GFP_KERNEL);
+ 	if (!supplies)
+@@ -571,7 +573,7 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+ 
+ 	reg_data = kzalloc(sizeof(*reg_data), GFP_KERNEL);
+ 	if (!reg_data)
+-		return -ENOMEM;
++		goto err_data;
+ 
+ 	reg_data->constraints.valid_ops_mask = REGULATOR_CHANGE_STATUS;
+ 	reg_data->consumer_supplies = supplies;
+@@ -580,39 +582,53 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+ 	config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
+ 			GFP_KERNEL);
+ 	if (!config)
+-		return -ENOMEM;
++		goto err_config;
++
++	config->supply_name = kstrdup(name, GFP_KERNEL);
++	if (!config->supply_name)
++		goto err_supplyname;
+ 
+-	config->supply_name = name;
+ 	config->gpio = gpio;
+ 	config->enable_high = polarity;
+ 	config->init_data = reg_data;
+ 
+ 	/* create a regulator device */
+-	pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+-	if (!pdev)
+-		return -ENOMEM;
++	memset(&pdevinfo, 0, sizeof(pdevinfo));
++	pdevinfo.name = reg_name;
++	pdevinfo.id = PLATFORM_DEVID_AUTO;
++	pdevinfo.data = config;
++	pdevinfo.size_data = sizeof(*config);
+ 
+-	pdev->id = PLATFORM_DEVID_AUTO;
+-	pdev->name = reg_name;
+-	pdev->dev.platform_data = config;
++	pdev = platform_device_register_full(&pdevinfo);
++	if (IS_ERR(pdev)) {
++		ret = PTR_ERR(pdev);
++		pr_err("%s: Failed registering regulator %s for %s : %d\n",
++				__func__, name, dev_id, ret);
++		goto err_register;
++	}
+ 
+-	ret = platform_device_register(pdev);
+-	if (ret)
+-		pr_err("%s: Failed registering regulator %s for %s\n",
+-				__func__, name, dev_id);
++	return 0;
+ 
++err_register:
++	kfree(config->supply_name);
++err_supplyname:
++	kfree(config);
++err_config:
++	kfree(reg_data);
++err_data:
++	kfree(supplies);
+ 	return ret;
+ }
+ 
++#define MAX_STR 20
++
+ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+ {
+-	char *rail_name;
+-	int i, len;
++	char rail_name[MAX_STR];
++	int i;
+ 	struct platform_device *pdev;
+ 	char *phy_id;
+-
+-	/* the phy_id will be something like "nop_usb_xceiv.1" */
+-	len = strlen(nop_name) + 3; /* 3 -> ".1" and NULL terminator */
++	struct platform_device_info pdevinfo;
+ 
+ 	for (i = 0; i < num_phys; i++) {
+ 
+@@ -627,25 +643,26 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+ 			!gpio_is_valid(phy->vcc_gpio))
+ 			continue;
+ 
+-		/* create a NOP PHY device */
+-		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+-		if (!pdev)
+-			return -ENOMEM;
+-
+-		pdev->id = phy->port;
+-		pdev->name = nop_name;
+-		pdev->dev.platform_data = phy->platform_data;
+-
+-		phy_id = kmalloc(len, GFP_KERNEL);
+-		if (!phy_id)
++		phy_id = kmalloc(MAX_STR, GFP_KERNEL);
++		if (!phy_id) {
++			pr_err("%s: kmalloc() failed\n", __func__);
+ 			return -ENOMEM;
++		}
+ 
+-		scnprintf(phy_id, len, "nop_usb_xceiv.%d\n",
+-					pdev->id);
+-
+-		if (platform_device_register(pdev)) {
+-			pr_err("%s: Failed to register device %s\n",
+-				__func__,  phy_id);
++		/* create a NOP PHY device */
++		memset(&pdevinfo, 0, sizeof(pdevinfo));
++		pdevinfo.name = nop_name;
++		pdevinfo.id = phy->port;
++		pdevinfo.data = phy->platform_data;
++		pdevinfo.size_data = sizeof(struct nop_usb_xceiv_platform_data);
++
++		scnprintf(phy_id, MAX_STR, "nop_usb_xceiv.%d",
++					phy->port);
++		pdev = platform_device_register_full(&pdevinfo);
++		if (IS_ERR(pdev)) {
++			pr_err("%s: Failed to register device %s : %ld\n",
++				__func__,  phy_id, PTR_ERR(pdev));
++			kfree(phy_id);
+ 			continue;
+ 		}
+ 
+@@ -653,26 +670,15 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+ 
+ 		/* Do we need RESET regulator ? */
+ 		if (gpio_is_valid(phy->reset_gpio)) {
+-
+-			rail_name = kmalloc(13, GFP_KERNEL);
+-			if (!rail_name)
+-				return -ENOMEM;
+-
+-			scnprintf(rail_name, 13, "hsusb%d_reset", phy->port);
+-
++			scnprintf(rail_name, MAX_STR,
++					"hsusb%d_reset", phy->port);
+ 			usbhs_add_regulator(rail_name, phy_id, "reset",
+ 						phy->reset_gpio, 1);
+ 		}
+ 
+ 		/* Do we need VCC regulator ? */
+ 		if (gpio_is_valid(phy->vcc_gpio)) {
+-
+-			rail_name = kmalloc(13, GFP_KERNEL);
+-			if (!rail_name)
+-				return -ENOMEM;
+-
+-			scnprintf(rail_name, 13, "hsusb%d_vcc", phy->port);
+-
++			scnprintf(rail_name, MAX_STR, "hsusb%d_vcc", phy->port);
+ 			usbhs_add_regulator(rail_name, phy_id, "vcc",
+ 					phy->vcc_gpio, phy->vcc_polarity);
+ 		}
+-- 
+1.7.4.1
 
