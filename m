@@ -1,176 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab3EXIMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:12:06 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48381 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab3EXIMA (ORCPT
+	id S932078Ab3EXIQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:16:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22723 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab3EXIQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:12:00 -0400
-Date: Fri, 24 May 2013 10:11:56 +0200
-From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-To: Juergen Beisert <jbe@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Hector Palacios <hector.palacios@digi.com>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        brian@crystalfontz.com, s.hauer@pengutronix.de,
+	Fri, 24 May 2013 04:16:32 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-c3-519f21de0ba1
+Date: Fri, 24 May 2013 08:16:30 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application
+ Booster governor - tests results
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Cc: =?euc-kr?Q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>,
+        "Rafael J. Wysocky" <rjw@sisk.pl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: mxsfb: DATA_FORMAT_24_BIT flag outputs invalid colours
-Message-ID: <20130524081156.GA3154@lukather>
-References: <519E03B0.1080006@digi.com>
- <20130523130039.GF8595@lukather>
- <201305231531.31376.jbe@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201305231531.31376.jbe@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20130524081622735@myungjoo.ham
+Msgkey: 20130524081622735@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130524081622735@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <27081278.28361369383389496.JavaMail.weblogic@epml20>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42JZI2JSqHtPcX6gQdM8Q4vLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJXx4fcKxoI58hVt+8+yNDBukOti5OQQElCXWLTkJBuILSFgIvHs
+	80oWCFtM4sK99UBxLqCapYwSX+duYO1i5AArWvzHHKJ3PqPEkZUWIDaLgKpE7/xONpASNgE9
+	iZmfk0HCwgKZEntfX2AHsUUEoiQ2b3/JDDKSWWAxs8S9U/9YIeYoSazZ9wpsL6+AoMTJmU+g
+	blCVOLpgMthaXgE1iStXUyDCEhKzpl9ghbB5JWa0P4Uql5OY9nUNM4QtLXF+1gZGmFcWf38M
+	FeeXOHZ7BxPEJ7wST+4Hw4zZvfkLNBQEJKaeOQjVqiWxu+Mm1Co+iTUL37LAjNl1ajkzTO/9
+	LXOZQGxmAUWJKd0P2SFsLYkvP/axofoK5BNHiasnSicwKs9CkpmFpHsWkm5kNQsYWVYxiqYW
+	JBcUJ6UXmeoVJ+YWl+al6yXn525iBCaE0/+eTdzBeP+A9SHGZGCETGSWEk3OByaUvJJ4Q2Mz
+	IwtTE1NjI3NLM9KElcR51VusA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw9v5WM0i5+G++
+	jYG3yZGo555CZmJCHKUaUfImK6eYRqseELhhOJEhZPoDfwVurgW9ypbux/NXNXZVfNKN5SqY
+	n68xUTLrytln1Wk2R8rq9x1RDj/y7K37ctHJfNy3MgtKAkNS2ZjeNmSvD1sX+uj92t4D5SHK
+	kvlT98/e4yAZcbnZ6Obpu1uUWIozEg21mIuKEwEYVPFLHgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDKsWRmVeSWpSXmKPExsVy+t/t6br3FOcHGrzeo2VxedccNgdGj8+b
+	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
+	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DI1jrQwNDIxMgWoS0jI+
+	/F7BWDBHvqJt/1mWBsYNcl2MnBxCAuoSi5acZOti5OCQEDCRWPzHHCQsISAmceHeejaIkvmM
+	EkdWWoDYLAKqEr3zO8HK2QT0JGZ+TgYJCwtkSux9fYEdxBYRiJLYvP0lcxcjFwezwGJmiXun
+	/rFCzFGSWLPvFQuIzSsgKHFy5hMWiF2qEkcXTGYFmckroCZx5WoKRFhCYtb0C6wQNq/EjPan
+	UOVyEtO+rmGGsKUlzs/awAhz8uLvj6Hi/BLHbu9ggviKV+LJ/WCYMbs3f2GDsAUkpp45CNWq
+	JbG74ybUKj6JNQvfssCM2XVqOTNM7/0tc5lAbGYBRYkp3Q/ZIWwtiS8/9rGh+grkE0eJqydK
+	JzDKzUKSmYWkexaSbmQ1CxhZVjGKphYkFxQnpVcY6xUn5haX5qXrJefnbmIEp6Vni3cw/j9v
+	fYhRgINRiYf3g968QCHWxLLiytxDjBIczEoivLP45gcK8aYkVlalFuXHF5XmpBYfYkwGRt9E
+	ZinR5HxgyswriTc0NjYxMzG1NLEwMDUnTVhJnPdZq3WgkEB6YklqdmpqQWoRzBYmDk6pBkYJ
+	tX3MuXqMzkv+XpPOcTgY77v6wAb3j/8fztrbMKF1usPhJewbGR5v3xXwcXevX4C/gc5Gv+81
+	XNOZIkScXvVsdyiVl6mVyWHtmrT6/cWlZ1QVdl55abf49d/+K4ErKqQmbf8xo94qe6PcT/0v
+	h1b9+/9B+4a+mKfHyj238lmaS5dx5e+wuL9WiaU4I9FQi7moOBEAkx86bY8DAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4O8GkrQ010151
 
-Hi Juergen,
-
-On Thu, May 23, 2013 at 03:31:31PM +0200, Juergen Beisert wrote:
-> Hi Maxime,
-> 
-> maxime.ripard@free-electrons.com wrote:
-> > On Thu, May 23, 2013 at 01:55:28PM +0200, Hector Palacios wrote:
-> > > I'm using an i.MX28 based board with lcd connected with 18bits data bus.
-> > > My platform uses 32 bits per pixel:
-> > >
-> > > 	mxsfb_pdata.default_bpp = 32;
-> > > 	mxsfb_pdata.ld_intf_width = STMLCDIF_18BIT;
-> > >
-> > > With these settings the mxsfb.c driver sets flag DATA_FORMAT_24_BIT
-> > > at HW_LCDIF_CTRL register in function mxsfb_set_par():
-> > >
-> > > 	case 32:
-> > > 		dev_dbg(&host->pdev->dev, "Setting up RGB888/666 mode\n");
-> > > 		ctrl |= CTRL_SET_WORD_LENGTH(3);
-> > > 		switch (host->ld_intf_width) {
-> > > 		case STMLCDIF_8BIT:
-> > > 			dev_dbg(&host->pdev->dev,
-> > > 					"Unsupported LCD bus width mapping\n");
-> > > 			return -EINVAL;
-> > > 		case STMLCDIF_16BIT:
-> > > 		case STMLCDIF_18BIT:
-> > > 			/* 24 bit to 18 bit mapping */
-> > > 			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
-> > > 					    *  each colour component
-> > > 					    */
-> > > 			break;
-> > > 		case STMLCDIF_24BIT:
-> > > 			/* real 24 bit */
-> > > 			break;
-> > > 		}
-> > >
-> > > According to the manual, this flag does:
-> > > 	0x0: ALL_24_BITS_VALID: Data input to the block is in 24 bpp
-> > > format, such that all RGB 888 data is contained in 24 bits.
-> > > 	0x1: DROP_UPPER_2_BITS_PER_BYTE ‚Äî Data input to the block is
-> > > actually RGB 18 bpp, but there is 1 colour per byte, hence the upper
-> > > 2 bits in each byte do not contain any useful data, and should be
-> > > dropped.
-> > >
-> > > The setting of this flag is producing bad colours with true colour
-> > > images (i.e. the Linux penguin is displayed ok, but QT applications
-> > > or images displayed with fbv are not).
-> > > I believe the setting of this flag is not correct (after all, if my
-> > > bpp is 32, then all 24bit colours are useful and dropping the upper
-> > > 2 bits is a bad idea).
-> > > If I don't set it, then true colour images are displayed correctly.
-> > > The only problem is that the Linux penguin is displayed much darker
-> > > than usual (correct colours, but darker). Perhaps the 224 colour
-> > > format of this image justifies it?
-> > >
-> > > I noticed the cfa10049 platform also uses the same configuration (18
-> > > bits data bus and 32bpp) and was wondering if true colour images are
-> > > correctly displayed in this platform with this flag set (for example
-> > > with fbv application [1]).
+> On 24 May 2013 11:26, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> >> > On 22 May 2013 15:57, Lukasz Majewski <l.majewski@samsung.com>
+> > As you wished, I've provided relevant data for overclocking.
 > >
-> > I had the exact same problem, and suggested the exact same solution a
-> > few weeks back.
-> >
-> > https://patchwork.kernel.org/patch/2470441/
-> >
-> > The conclusion of that discussion what that the userspace applications
-> > were not honouring the bitfield correctly set by the mxsfb driver, and
-> > as such, it was not a bug in the driver.
-> >
-> > While this is correct, I wonder, now that since we had that same problem
-> > in a very short amount of time, if we couldn't set this behaviour
-> > dependant of some (dt? kernel argument?) property so that one could
-> > customise it anyway he want.
-> >
-> > Maxime
+> > Would you be so kind and comment on them?
 > 
-> i.MX2[3|8]    LCD1       LCD2       LCD3
->               24bit      18bit      18bit
-> --------------------------------------------
-> LCD_D0         B0         B0         --
-> LCD_D1         B1         B1         --
-> LCD_D2         B2         B2         B0
-> LCD_D3         B3         B3         B1
-> LCD_D4         B4         B4         B2
-> LCD_D5         B5         B5         B3
-> LCD_D6         B6         G0         B4
-> LCD_D7         B7         G1         B5
+> I was about to reply ... was busy with some other backlog :)
 > 
-> LCD_D8         G0         G2         --
-> LCD_D9         G1         G3         --
-> LCD_D10        G2         G4         G0
-> LCD_D11        G3         G5         G1
-> LCD_D12        G4         R0         G2
-> LCD_D13        G5         R1         G3
-> LCD_D14        G6         R2         G4
-> LCD_D15        G7         R3         G5
+> >> Test HW Exynos4412 (4 Cores):
+> >> Kernel 3.8.3
+> >>
+> >> Ondemand max freq: 1.4 GHz
+> >> Overclock max freq: 1.5 GHz
+> >>
+> >>
+> >> Ondemand improvement with and without overclocking (called by us
+> >> TurboBoost - TB):
+> >>
+> >> Dhrystone has been built according to:
+> >> http://zenit.senecac.on.ca/wiki/index.php/Dhrystone_howto
+> >> It's Makefile is also attached.
+> >> ------------------------------------------------
+> >>
+> >> Dhrystone     # of Threads
+> >>               1       2       3       4
+> >> ondemand      2054794 2061855 2097902 2090592
+> >> ondemand + TB 2290076 2205882 2281368 2290076
+> >>
+> >> Improvement:  10%     7%      8%      9%
+> >> -------------------------------------------------
+> >>
+> >> Electric charge [C]
+> >> (Avg) [A] * [second]  # of Threads
+> >>               1       2       3       4
+> >> ondemand      1,334   1,837   2,296   3,096
+> >> ondemand + TB 1,401   2,2025  2,907   4,34976
+> >>
+> >> Power cost:   5%      17%     21%     29%
+> >> -------------------------------------------------
+> >>
+> >> Execution time [second]       # of Threads
+> >>               1       2       3       4
+> >> ondemand      2,827   2,8     2,787   2,872
+> >> ondemand + TB 2,622   2,694   2,667   2,76
+> >>
+> >>
+> >> Speedup:      -7%     -4%     -4%     -4%
+> >>
+> >> -------------------------------------------------
+> >>
+> >> "Real life" example:
+> >> time tar -czf linux-3.9.1.tar.gz linux-3.9.1/
+> >>
+> >>               Avg current[mA]         Time[s]
+> >> Ondemand:     460                     153
+> >> Ondemand + TB:        512                     144
+> >>
+> >> Result:               +10%                    -6%
+> >>
+> >> Conclusion:
+> >>
+> >> The main use case for TB is to speed up execution of tasks packed to
+> >> one core. Other cores are then in IDLE state.
+> >>
+> >> For a single core we can safely overclock, since we will not exceed
+> >> its power consumption and thermal limits.
 > 
-> LCD_D16        R0         R4         --
-> LCD_D17        R1         R5         --
-> LCD_D18        R2                    R0
-> LCD_D19        R3                    R1
-> LCD_D20        R4                    R2
-> LCD_D21        R5                    R3
-> LCD_D22        R6                    R4
-> LCD_D23        R7                    R5
+> Hmm... So its ultraclear that higher clock rates have given us better
+> performance numbers, obviously at the cost of power.
 > 
-> Is your display connected like LCD2 or LCD3? LCD3 must still handled like a 24 
-> bit display shown in LCD1, while only the LCD2-case is the "24 bit to 18 bit 
-> mapping" case.
-> 
-> At least my current tests with an i.MX23 and a connection like LCD2 are 
-> working here with a Qt application. Qt honours the pixel bitfield 
-> description. And I'm using the "bits-per-pixel = <32>" and "bus-width = <18>" 
-> entries in the device tree.
+> Now, why don't we simply add this high end frequency in the available
+> frequencies list? And then ondemand can set it whenever the load is
+> high? Why do we need additional core support for it?
 
-I'm in the second case, so with the same setup that you have it seems.
 
-Don't get me wrong, I was not saying that the driver was flawed or had a
-bug, I understood very well your arguments when I first submitted the
-patch. The problem is more for all the userspace applications that don't
-honour the bitfield and just look at the color depth used to feed data
-to the framebuffer.
+It is because we cannot use the frequency if there are more running cores.
+We can use such frequencies only if the # cores is limited.
+(We do not want conventional performance/ondemand/conservative to use
+such frequencies.)
 
-I must admit that the ideal case should be that these applications
-should be fixed, but it's not realistic.
 
-About QT, let's not use it as an example, the issues I had were probably
-some miscompilation on my side, and if you say that it works fine, then
-I trust you.
+Cheers,
+MyungJoo
 
-This is also why I suggested a kernel argument to enable a different
-"compatibility" mode when you have to deal with these kind of
-applications on your system. the pixel bitfield should probably be
-changed as well so that applications honouring it are not confused.
-
-Hector's case looks like a different story though.
-
-Maxime
-
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
