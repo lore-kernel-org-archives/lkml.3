@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760262Ab3EXJkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:40:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14209 "EHLO song.cn.fujitsu.com"
+	id S1760230Ab3EXJkm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:40:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:47827 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760129Ab3EXJh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752248Ab3EXJh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 May 2013 05:37:27 -0400
 X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
-   d="scan'208";a="7355220"
+   d="scan'208";a="7355218"
 From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, mingo@redhat.com,
-        hpa@zytor.com, minchan@kernel.org, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, yinghai@kernel.org, jiang.liu@huawei.com,
-        tj@kernel.org, liwanp@linux.vnet.ibm.com,
-        isimatu.yasuaki@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages in memory offline procedure.
-Date: Fri, 24 May 2013 17:30:05 +0800
-Message-Id: <1369387807-17956-3-git-send-email-tangchen@cn.fujitsu.com>
+To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v3 13/13] doc, page_alloc, acpi, mem-hotplug: Add doc for movablecore=acpi boot option.
+Date: Fri, 24 May 2013 17:29:22 +0800
+Message-Id: <1369387762-17865-14-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:25:48,
+ 2013/05/24 17:25:04,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:36:02,
-	Serialize complete at 2013/05/24 17:36:02
+ 2013/05/24 17:36:01,
+	Serialize complete at 2013/05/24 17:36:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In memory offline procedure, skip pages marked as LOCAL_NODE_DATA.
-For now, this kind of pages are used to store local node pagetables.
-
-The minimum unit of memory online/offline is a memory block. In a
-block, the movable pages will be offlined as usual (unmapped and
-isolated), and the pagetable pages will be skipped. After the iteration
-of all page, the block will be set as offline, but the kernel can
-still access the pagetable pages. This is user transparent.
+Since we modify movablecore boot option to support
+"movablecore=acpi", this patch adds doc for it.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- mm/page_alloc.c     |   18 ++++++++++++++++--
- mm/page_isolation.c |    6 ++++++
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ Documentation/kernel-parameters.txt |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 557b21b..73b8f0b 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5701,11 +5701,18 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
- 	pfn = page_to_pfn(page);
- 	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
- 		unsigned long check = pfn + iter;
-+		unsigned long magic;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4609e81..a1c515b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1649,6 +1649,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
  
- 		if (!pfn_valid_within(check))
- 			continue;
++	movablecore=acpi	[KNL,X86] This parameter will enable the
++			kernel to arrange ZONE_MOVABLE with the help of
++			Hot-Pluggable Field in SRAT. All the hotpluggable
++			memory will be arranged in ZONE_MOVABLE.
++			NOTE: Any node which the kernel resides in will
++			      always be un-hotpluggable so that the kernel
++			      will always have enough memory to boot.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
  
- 		page = pfn_to_page(check);
-+
-+		/* Skip pages storing local node kernel data. */
-+		magic = (unsigned long)page->lru.next;
-+		if (magic == LOCAL_NODE_DATA)
-+			continue;
-+
- 		/*
- 		 * We can't use page_count without pin a page
- 		 * because another CPU can free compound page.
-@@ -6029,8 +6036,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 	struct page *page;
- 	struct zone *zone;
- 	int order, i;
--	unsigned long pfn;
--	unsigned long flags;
-+	unsigned long pfn, flags, magic;
- 	/* find the first valid pfn */
- 	for (pfn = start_pfn; pfn < end_pfn; pfn++)
- 		if (pfn_valid(pfn))
-@@ -6046,6 +6052,14 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 			continue;
- 		}
- 		page = pfn_to_page(pfn);
-+
-+		/* Skip pages storing local node kernel data. */
-+		magic = (unsigned long)page->lru.next;
-+		if (magic == LOCAL_NODE_DATA) {
-+			pfn++;
-+			continue;
-+		}
-+
- 		/*
- 		 * The HWPoisoned page may be not in buddy system, and
- 		 * page_count() is not 0.
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 383bdbb..fb60a27 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -174,6 +174,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 				  bool skip_hwpoisoned_pages)
- {
- 	struct page *page;
-+	unsigned long magic;
- 
- 	while (pfn < end_pfn) {
- 		if (!pfn_valid_within(pfn)) {
-@@ -181,6 +182,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 			continue;
- 		}
- 		page = pfn_to_page(pfn);
-+		magic = (unsigned long)page->lru.next;
-+
- 		if (PageBuddy(page)) {
- 			/*
- 			 * If race between isolatation and allocation happens,
-@@ -208,6 +211,9 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 			 */
- 			pfn++;
- 			continue;
-+		} else if (magic == LOCAL_NODE_DATA) {
-+			pfn++;
-+			continue;
- 		}
- 		else
- 			break;
 -- 
 1.7.1
 
