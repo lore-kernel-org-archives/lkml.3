@@ -1,110 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3EXMxR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 08:53:17 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:37532 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab3EXMxQ (ORCPT
+	id S1755647Ab3EXMx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 08:53:29 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42341 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab3EXMxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 08:53:16 -0400
-Message-ID: <519F62B3.8090302@elopez.com.ar>
-Date: Fri, 24 May 2013 09:53:07 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Florian Fainelli <florian@openwrt.org>,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com
-Subject: Re: [PATCHv3 5/6] ARM: cubieboard: Enable ethernet (EMAC) support
- in dts
-References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com> <1369387394-9453-6-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1369387394-9453-6-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: multipart/mixed;
- boundary="------------060108070901020907050906"
+	Fri, 24 May 2013 08:53:24 -0400
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: devicetree-discuss@lists.ozlabs.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>
+Subject: [RFC PATCH 2/3] drivers: mfd: vexpress: add timeout API to vexpress config interface
+Date: Fri, 24 May 2013 13:53:05 +0100
+Message-Id: <1369399986-15649-3-git-send-email-lorenzo.pieralisi@arm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1369399986-15649-1-git-send-email-lorenzo.pieralisi@arm.com>
+References: <1369399986-15649-1-git-send-email-lorenzo.pieralisi@arm.com>
+X-OriginalArrivalTime: 24 May 2013 12:53:21.0462 (UTC) FILETIME=[ABAB7560:01CE587D]
+X-MC-Unique: 113052413532301501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This is a multi-part message in MIME format.
---------------060108070901020907050906
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r4OCrim1011955
 
-Hi,
+In case some transactions to the Serial Power Controller (SPC) are lost owing
+to multiple operations handled at once by the M3 controller the OS needs to
+rely on a configuration API that can time out so that failures do not result
+in an unusable system.
 
-El 24/05/13 06:23, Maxime Ripard escribió:
-> From: Stefan Roese <sr@denx.de>
-> 
-> Signed-off-by: Stefan Roese <sr@denx.de>
-> ---
->  arch/arm/boot/dts/sun4i-a10-cubieboard.dts | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> index b70fe0d..32d9b18 100644
-> --- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> +++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> @@ -27,6 +27,21 @@
->  	};
->  
->  	soc@01c20000 {
-> +		emac: ethernet@01c0b000 {
-> +			pinctrl-names = "default";
-> +			pinctrl-0 = <&emac_pins_a>;
-> +			phy = <&phy0>;
-> +			status = "okay";
-> +		};
-> +
-> +		mdio@01c0b080 {
-> +			status = "okay";
-> +
-> +			phy0: ethernet-phy@0 {
-> +				reg = <0>;
-> +			};
+This patch adds a timeout API to the vexpress config programming interface,
+and refactors the existing read/write functions so that they can be reused
+seamlessly on top of the newly defined API.
 
-During my testing I found out that I needed to use 1 as reg for the
-driver to work. You can find a fixup patch enclosed that changes this;
-it's possible that some extra changes may also be needed (s/phy0/phy1/
-on the node?)
-
-Cheers,
-
-Emilio
-
---------------060108070901020907050906
-Content-Type: text/x-diff;
- name="fixup-reg.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="fixup-reg.patch"
-
->From f8a76c66fff0700e3c87f89b8b250effc0f2b37f Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
-Date: Fri, 17 May 2013 10:11:48 -0300
-Subject: [PATCH] fixup! ARM: cubieboard: Enable ethernet (EMAC) support in dts
-
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Achin Gupta <achin.gupta@arm.com>
+Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 ---
- arch/arm/boot/dts/sun4i-a10-cubieboard.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/vexpress-config.c | 26 +++++++---
+ include/linux/vexpress.h      | 23 ++++++--
+ 2 files changed, 37 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-index cd69799..21f0197 100644
---- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-+++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-@@ -38,7 +38,7 @@
- 			status = "okay";
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index 1af2b0e..6f4aa5a 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -266,8 +266,18 @@ int vexpress_config_wait(struct vexpress_config_trans *trans)
+ }
+ EXPORT_SYMBOL(vexpress_config_wait);
  
- 			phy0: ethernet-phy@0 {
--				reg = <0>;
-+				reg = <1>;
- 			};
- 		};
+-int vexpress_config_read(struct vexpress_config_func *func, int offset,
+-		u32 *data)
++int vexpress_config_wait_timeout(struct vexpress_config_trans *trans,
++			long jiffies)
++{
++	int ret;
++	ret = wait_for_completion_timeout(&trans->completion, jiffies);
++
++	return ret ? trans->status : -ETIMEDOUT;
++}
++EXPORT_SYMBOL(vexpress_config_wait_timeout);
++
++int vexpress_config_read_timeout(struct vexpress_config_func *func, int offset,
++		u32 *data, long jiffies)
+ {
+ 	struct vexpress_config_trans trans = {
+ 		.func = func,
+@@ -279,14 +289,14 @@ int vexpress_config_read(struct vexpress_config_func *func, int offset,
+ 	int status = vexpress_config_schedule(&trans);
+ 
+ 	if (status == VEXPRESS_CONFIG_STATUS_WAIT)
+-		status = vexpress_config_wait(&trans);
++		status = vexpress_config_wait_timeout(&trans, jiffies);
+ 
+ 	return status;
+ }
+-EXPORT_SYMBOL(vexpress_config_read);
++EXPORT_SYMBOL(vexpress_config_read_timeout);
+ 
+-int vexpress_config_write(struct vexpress_config_func *func, int offset,
+-		u32 data)
++int vexpress_config_write_timeout(struct vexpress_config_func *func,
++				  int offset, u32 data, long jiffies)
+ {
+ 	struct vexpress_config_trans trans = {
+ 		.func = func,
+@@ -298,8 +308,8 @@ int vexpress_config_write(struct vexpress_config_func *func, int offset,
+ 	int status = vexpress_config_schedule(&trans);
+ 
+ 	if (status == VEXPRESS_CONFIG_STATUS_WAIT)
+-		status = vexpress_config_wait(&trans);
++		status = vexpress_config_wait_timeout(&trans, jiffies);
+ 
+ 	return status;
+ }
+-EXPORT_SYMBOL(vexpress_config_write);
++EXPORT_SYMBOL(vexpress_config_write_timeout);
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index 50368e0..e5015d8 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -15,6 +15,7 @@
+ #define _LINUX_VEXPRESS_H
+ 
+ #include <linux/device.h>
++#include <linux/sched.h>
+ 
+ #define VEXPRESS_SITE_MB		0
+ #define VEXPRESS_SITE_DB1		1
+@@ -102,10 +103,24 @@ struct vexpress_config_func *__vexpress_config_func_get(
+ void vexpress_config_func_put(struct vexpress_config_func *func);
+ 
+ /* Both may sleep! */
+-int vexpress_config_read(struct vexpress_config_func *func, int offset,
+-		u32 *data);
+-int vexpress_config_write(struct vexpress_config_func *func, int offset,
+-		u32 data);
++int vexpress_config_read_timeout(struct vexpress_config_func *func, int offset,
++		u32 *data, long jiffies);
++int vexpress_config_write_timeout(struct vexpress_config_func *func,
++		int offset, u32 data, long jiffies);
++
++static inline int vexpress_config_read(struct vexpress_config_func *func,
++				 int offset, u32 *data)
++{
++	return vexpress_config_read_timeout(func, offset, data,
++					     MAX_SCHEDULE_TIMEOUT);
++}
++
++static inline int vexpress_config_write(struct vexpress_config_func *func,
++				 int offset, u32 data)
++{
++	return vexpress_config_write_timeout(func, offset, data,
++					     MAX_SCHEDULE_TIMEOUT);
++}
+ 
+ /* Platform control */
  
 -- 
-1.8.1.6
+1.8.2.2
 
 
---------------060108070901020907050906--
