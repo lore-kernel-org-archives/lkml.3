@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab3EXJXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:23:07 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:52164 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3EXJXF (ORCPT
+	id S1759982Ab3EXJXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:23:23 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48736 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757260Ab3EXJXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:23:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPgLHd_v3oNBP5DcqJ9bkGKkCDqwr1UzJNnVT6uz8V--FWEQ0Q@mail.gmail.com>
-References: <CAPgLHd_v3oNBP5DcqJ9bkGKkCDqwr1UzJNnVT6uz8V--FWEQ0Q@mail.gmail.com>
-Date: Fri, 24 May 2013 11:23:04 +0200
-Message-ID: <CACRpkdbAhSRLpvLt8K8suL57cs7ts7rH-SqHJgQc1LA96=JO8Q@mail.gmail.com>
-Subject: Re: [PATCH -next] pinctrl: sunxi: fix error return code in sunxi_pinctrl_probe()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>,
+	Fri, 24 May 2013 05:23:21 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: davem@davemloft.net
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stefan Roese <sr@denx.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCHv3 RESEND 0/6] ARM: sunxi: Add support for A10 Ethernet controller
+Date: Fri, 24 May 2013 11:23:08 +0200
+Message-Id: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:32 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+Hi,
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Fix to return a negative error code from the devm_clk_get() error
-> handling case instead of 0, as done elsewhere in this function.
->
-> Introduced by commit 950707c0eb5c7aeaa2c446a04c824f4be686d2f6
-> (pinctrl: sunxi: add clock support)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+The Allwinner A10 SoC has an ethernet controller that seem to be specific to
+Allwinner. This IP has no public documentation, so exact
+details are quite sparse, and this code come from refactored Allwinner
+code.
 
-Patch applied for fixes, thanks!
+The rework to use NAPI is taking more time than expected, I'm still working
+on it, but it could probably be sent as a follow-up patch.
 
-Maxime: OK?
+Thanks,
+Maxime
 
-Yours,
-Linus Walleij
+Changes from v2:
+  - Split the MDIO controller to a separate driver and make use of standards
+    device tree bindings
+  - Fixed various minor things as suggested by Florian Fainelli
+  - Added clock support now that we have a clock driver
+
+Changes from v1:
+  - Use phylib for the phy-related functions
+  - Use an optional regulator to power up the phy
+  - Rename the driver from Davicom Wemac to Allwinner EMAC, since it's the name
+    mentionned in the datasheet, and we have no strong evidence of a
+    relationship with Davicom
+  - Fix various small things around the driver: add defines for undocumented
+    values, fix documentation name and compatible example, etc.
+
+Maxime Ripard (4):
+  net: Add MDIO bus driver for the Allwinner EMAC
+  ARM: sun4i: Add muxing options for the ethernet controller
+  ARM: sunxi: Add EMAC controller node to sun4i DTSI
+  ARM: sunxi: Add EMAC Controller to Hackberry dt
+
+Stefan Roese (2):
+  net: Add EMAC ethernet driver found on Allwinner A10 SoC's
+  ARM: cubieboard: Enable ethernet (EMAC) support in dts
+
+ .../bindings/net/allwinner,sun4i-emac.txt          |  22 +
+ .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |  15 +
+ arch/arm/boot/dts/sun4i-a10-hackberry.dts          |  41 +
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |  27 +
+ drivers/net/ethernet/Kconfig                       |   1 +
+ drivers/net/ethernet/Makefile                      |   1 +
+ drivers/net/ethernet/allwinner/Kconfig             |  44 +
+ drivers/net/ethernet/allwinner/Makefile            |   6 +
+ drivers/net/ethernet/allwinner/sun4i-emac.c        | 960 +++++++++++++++++++++
+ drivers/net/ethernet/allwinner/sun4i-emac.h        | 108 +++
+ drivers/net/ethernet/allwinner/sun4i-mdio.c        | 191 ++++
+ 12 files changed, 1442 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-emac.txt
+ create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-mdio.txt
+ create mode 100644 drivers/net/ethernet/allwinner/Kconfig
+ create mode 100644 drivers/net/ethernet/allwinner/Makefile
+ create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.c
+ create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.h
+ create mode 100644 drivers/net/ethernet/allwinner/sun4i-mdio.c
+
+-- 
+1.8.1.2
+
