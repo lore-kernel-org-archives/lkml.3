@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3EXOLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:11:36 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:4691
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753310Ab3EXOLf (ORCPT
+	id S1756235Ab3EXOLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:11:44 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55063 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab3EXOLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:11:35 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MNB3EZ-02-6M1-02
-X-M-MSG: 
-Date: Fri, 24 May 2013 09:11:24 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH V2 2/3] x86, microcode, intel: Correct typo in printk
-Message-ID: <20130524141124.GB13275@jshin-Toonie>
-References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
- <1369323618-5820-3-git-send-email-jacob.shin@amd.com>
- <20130524084350.GC23402@nazgul.tnic>
+	Fri, 24 May 2013 10:11:42 -0400
+Message-ID: <519F7519.8050100@gmail.com>
+Date: Fri, 24 May 2013 08:11:37 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130524084350.GC23402@nazgul.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf record: handle death by SIGTERM
+References: <1367864663-1309-1-git-send-email-dsahern@gmail.com> <20130524090817.GA1020@krava.brq.redhat.com>
+In-Reply-To: <20130524090817.GA1020@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 10:43:50AM +0200, Borislav Petkov wrote:
-> On Thu, May 23, 2013 at 10:40:17AM -0500, Jacob Shin wrote:
-> > From: Borislav Petkov <bp@suse.de>
-> > 
-> > User-visible so correct it.
-> > 
-> > Signed-off-by: Borislav Petkov <bp@suse.de>
-> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> > ---
-> >  arch/x86/kernel/microcode_intel_early.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-> > index 88f0edc..5e558eb 100644
-> > --- a/arch/x86/kernel/microcode_intel_early.c
-> > +++ b/arch/x86/kernel/microcode_intel_early.c
-> > @@ -529,7 +529,7 @@ int save_mc_for_early(u8 *mc)
-> >  	 */
-> >  	ret = save_microcode(&mc_saved_data, mc_saved_tmp, mc_saved_count);
-> >  	if (ret) {
-> > -		pr_err("Can not save microcode patch.\n");
-> > +		pr_err("Cannot save microcode patches from initrd.\n");
-> 
-> This doesn't look like the diff I sent you, please redo against latest
-> Linus tree when redoing your patchset.
+On 5/24/13 3:08 AM, Jiri Olsa wrote:
+> On Mon, May 06, 2013 at 12:24:23PM -0600, David Ahern wrote:
+>> perf data files cannot be processed until the header file is update
+>> which is done via an on_exit handler. If perf is killed due to a SIGTERM
+>> it does not run the on_exit hooks leaving the perf.data file in a
+>> random state which perf-report will happily spin on trying to read. As
+>> noted by Mike an easy reproducer is:
+>>    perf record -a -g & sleep 1; killall perf
+>>
+>> Fix by catching SIGTERM like it does SIGINT.  Also need to remove the
+>> kill which was added via commit f7b7c26e.
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>> Cc: Mike Galbraith <efault@gmx.de>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Namhyung Kim <namhyung@kernel.org>
+>> Cc: Stephane Eranian <eranian@google.com>
+>> ---
+>>   tools/perf/builtin-record.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index cdf58ec..fff985c 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -198,7 +198,6 @@ static void perf_record__sig_exit(int exit_status __maybe_unused, void *arg)
+>>   		return;
+>>
+>>   	signal(signr, SIG_DFL);
+>> -	kill(getpid(), signr);
+>>   }
+>>
+>>   static bool perf_evlist__equal(struct perf_evlist *evlist,
+>> @@ -404,6 +403,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+>>   	signal(SIGCHLD, sig_handler);
+>>   	signal(SIGINT, sig_handler);
+>>   	signal(SIGUSR1, sig_handler);
+>> +	signal(SIGTERM, sig_handler);
+>>
+>>   	if (!output_name) {
+>>   		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+>> --
+>> 1.7.10.1
+>>
+>
+> hi,
+> got a perf test hanging on me on latest acme's perf/core and bisected
+> it to this one. I separated reproducer so far but probably wont get to
+> it this week:
 
-Oops, the patch didn't apply cleanly for me, so I hand fixed it up,
-but I think I did it wrong. I'll fix that. Thanks.
+Ok, I should have some time to look into it this weekend.
+
+David
+
+>
+> [jolsa@krava2 perf]$ cat /proc/sys/kernel/perf_event_paranoid
+> 1
+> [jolsa@krava2 perf]$ ./perf record -C 0 kill
+> Error:
+> You may not have permission to collect %sstats.
+> Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+>   -1 - Not paranoid at all
+>    0 - Disallow raw tracepoint access for unpriv
+>    1 - Disallow cpu events for unpriv
+>    2 - Disallow kernel profiling for unpriv
+>
+> jirka
+>
 
