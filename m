@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760087Ab3EXJpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:45:46 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:40575 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3EXJpo (ORCPT
+	id S1760046Ab3EXJxE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:53:04 -0400
+Received: from smtp-105-friday.noc.nerim.net ([178.132.17.105]:29666 "EHLO
+	mallaury.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752248Ab3EXJxB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:45:44 -0400
-Message-ID: <519F36BD.1030806@redhat.com>
-Date: Fri, 24 May 2013 11:45:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 24 May 2013 05:53:01 -0400
+X-Greylist: delayed 3523 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 05:53:00 EDT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <519F2566.2000008@redhat.com> <CAOS58YMSw6wJU07WfVG8wd_BnU4TXr7VDBHeDPa4XjSpn2p3Ag@mail.gmail.com>
-In-Reply-To: <CAOS58YMSw6wJU07WfVG8wd_BnU4TXr7VDBHeDPa4XjSpn2p3Ag@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+X-MimeOLE: Produced By Microsoft Exchange V6.5.7235.2
+Content-class: urn:content-classes:message
+Subject: Re: [I2C] informations + advice about messages handling
+Date: Fri, 24 May 2013 11:52:54 +0200
+Message-ID: <CA78C307B8F06747967D122FC656B15398644B@SERVEUR0.nvp.local>
+In-Reply-To: <20130524110706.6052493e@endymion.delvare>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [I2C] informations + advice about messages handling
+thread-index: Ac5YZHhyDMbJAaDRT5i25Z1kGHalyg==
+References: <CA78C307B8F06747967D122FC656B153986448@SERVEUR0.nvp.local> <CAK7N6vpg6QUAKODKO2Msr4+GTASLDpA2cG1teQV3yiwt7D4SSw@mail.gmail.com> <20130524094407.61d0ec42@endymion.delvare> <CA78C307B8F06747967D122FC656B15398644A@SERVEUR0.nvp.local> <20130524110706.6052493e@endymion.delvare>
+From: "Mylene Josserand" <Mylene.Josserand@navocap.com>
+To: "Jean Delvare" <khali@linux-fr.org>
+Cc: "anish singh" <anish198519851985@gmail.com>,
+        "kernelnewbies" <kernelnewbies@kernelnewbies.org>,
+        "Linux I2C" <linux-i2c@vger.kernel.org>,
+        "linux-kernel-mail" <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/05/2013 11:07, Tejun Heo ha scritto:
-> On Fri, May 24, 2013 at 5:31 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->> I agree intuition may not count, and it's perfectly possible that
->> firmware writers forgot a "break;" or put the wrong location in a jump
->> table, so that unimplemented commands give interesting results.
-> 
-> It's not just unimplemented commands. Exposing any new command exposes
-> its borderline problems together with it.
+Le 24/05/2013 11:07, Jean Delvare a écrit :
+ > On Fri, 24 May 2013 10:54:11 +0200, Mylene Josserand wrote:
+ >> Ah okay ! And if there are not SMBus compliant, what function I will
+ >> have to use ?
+ >
+ > i2c_transfer()
 
-For commands that are used by Linux already, the right way to fix the
-problems is not obscuring the commands from userspace's view.  You can
-hit the same problems with ioctls or even with normal operation of the
-device.
 
->> However, the _fact_ is that this might happen anyway with the buttload
->> of commands that are already enabled by the whitelist and that most
->> disks will never implement.
-> 
-> Yes and that's why the whitelist is generally frowned upon. It's
-> inherently fragile. These devices simply aren't designed and
-> implemented to be exposed to lesser security domains directly. It's
-> true that it's already kinda broken that way but as I wrote before
-> it's a vicious cycle and we don't wanna keep building on top of it.
-> This expansion is gonna increase the usage of whitelisting which will
-> in turn attract further use cases which are likely to call for even
-> more expansion.
+Okay, logic name ;)
 
-And prohibiting the extension of whitelists is gonna increase the
-usage of unpriv_sgio and less-secure userspace whitelists.
 
-Anvil, meet hammer.
+ >> What is it doing if I use this function and that my device is not SMbus
+ >> compliant ?
+ >
+ > This would make no sense. Your device understands only specific message
+ > formats, which should be documented in its datasheet. You have to use
+ > exactly that in your driver. If the message format matches SMBus, you
+ > can use the SMBus API, otherwise you must use i2c_transfer() instead.
 
->>> The thing is that both approaches aren't perfect here so you can make
->>> similar type of argument from the other side. If the system wants to
->>> give out raw hardware access to VMs, requiring it to delegate the
->>> device fully could be reasonable.
->>
->> No, it is not unfortunately.  Allowing to do discards is one thing,
->> allowing to disrupt the settings of a SAN is another.  You can only
->> delegate the device fully in these cases:
->>
->> (a) of course, if the guest is trusted;
->> (b) if QEMU is running as a confined user;
-> 
-> If the bulk of filtering can be solved with userland whitelisting as a
-> confined user, it should be possible to resolve peripheral problems
-> like log messages in simpler way, no? Can you please elaborate on the
-> log message problem? Who's spewing those messages?
+Very interesting !
+Right now, my company uses the "i2c_smbus_read/write_byte_data" 
+functions to talk to devices through an application. On the datasheet of 
+these devices, I search but did not seem to be SMBus compliant.
+As it was a software which was using these functions, we thought that a 
+driver (that I would write) should be better. And here I am ! I prefer 
+to understand well the mechanism before coding anything and it is 
+interesting !
 
-For example:
 
-        if (bdev_write_same(bdev)) {
-                unsigned char bdn[BDEVNAME_SIZE];
+ >> I have some difficulties to understand the differences
+ >> between SMbus and I2C :(
+ >
+ > SMBus is a subset of I2C. With I2C you can have messages of any length
+ > and any format, with no attached semantics. SMBus restricts the
+ > possibilities to a few standardized messages formats with semantics. If
+ > you'd just tell us what your device is, we would be able to tell you if
+ > SMBus will work or if I2C will be needed.
 
-                if (!blkdev_issue_write_same(bdev, sector, nr_sects, gfp_mask,
-                                             ZERO_PAGE(0)))
-                        return 0;
+Thanks for the explanation.
+No problem, we have 2 devices used without drivers :
+- an odometer PIC18F24201 : In the datasheet, there is a SMBus select 
+bit but I don't know if it is SMBus compliant.
+- an audio codec tlv320aic3204 : There is a driver for this device but 
+for some reasons, we did not use it. Did not find a "SMBus compliant" in 
+its datasheet.
 
-                bdevname(bdev, bdn);
-                pr_err("%s: WRITE SAME failed. Manually zeroing.\n", bdn);
-        }
 
-        return __blkdev_issue_zeroout(bdev, sector, nr_sects, gfp_mask);
+ >> (...)
+ >> In my case, I have 2 segments but if I understand, the bus will not be
+ >> used at the same time.
+ >
+ > I can't comment on that without knowing the exact topology. In
+ > particular, do you have two independent segments each with its own
+ > controller, or are they interconnected in some way? I2C/SMBus is very
+ > simple with basic topologies but can become difficult with complex ones.
 
-The device exposes the ability to zero out LUN blocks, but the command is
-not whitelisted and it fails.
+Yes of course, I understand.
+For that, I will ask to our "hardware guy".
 
-Paolo
+
+ >> (...)
+ >> Okay. So the mutex blocks the I2C bus. And is it locking the bus at the
+ >> beginning of a message (so when a START is send) and unlocking it after
+ >> the STOP ?
+ >
+ > Yes.
+ >
+ >> So a complete message will be sent to a same device (the one which
+ >> address is in the data frame) ? A device can not receive a beginning of
+ >> one message (so with his address) and the end of another message
+ >> destined to another device [because of "collision"], for example ?
+ >
+ > No, this cannot happen.
+
+
+Thanks a lot for your help !
+
+
+-- 
+Mylène JOSSERAND
