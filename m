@@ -1,201 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab3EXFde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:33:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6970 "EHLO mx1.redhat.com"
+	id S1753767Ab3EXFeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:34:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55026 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779Ab3EXFdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:33:32 -0400
-Message-ID: <519EFB9D.8070607@redhat.com>
-Date: Fri, 24 May 2013 13:33:17 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752910Ab3EXFeI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 01:34:08 -0400
+From: "B, Ravi" <ravibabu@ti.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: RE: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
+ am33xx
+Thread-Topic: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
+ am33xx
+Thread-Index: AQHOV3sDeuljQaJjrUaNxyq64bPttJkSTkcAgACzRiD//40XAIABKrbg
+Date: Fri, 24 May 2013 05:34:02 +0000
+Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAE52A3@DBDE04.ent.ti.com>
+References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
+ <1369288888-8614-9-git-send-email-ravibabu@ti.com>
+ <519E275A.5020200@cogentembedded.com>
+ <6C6B28D4DC342643927BEAFCE8707BF63EAE3EBF@DBDE04.ent.ti.com>
+ <519E5D58.5020002@cogentembedded.com>
+In-Reply-To: <519E5D58.5020002@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC 5/8] macvtap: eliminate linear search
-References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-6-git-send-email-jasowang@redhat.com> <20130523114109.GB17993@redhat.com>
-In-Reply-To: <20130523114109.GB17993@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 07:41 PM, Michael S. Tsirkin wrote:
-> On Thu, May 23, 2013 at 11:12:30AM +0800, Jason Wang wrote:
->> Linear search were used in both get_slot() and macvtap_get_queue(), this is
->> because:
->>
->> - macvtap didn't reshuffle the array of taps when create or destroy a queue, so
->>   when adding a new queue, macvtap must do linear search to find a location for
->>   the new queue. This will also complicate the TUNSETQUEUE implementation for
->>   multiqueue API.
->> - the queue itself didn't track the queue index, so the we must do a linear
->>   search in the array to find the location of a existed queue.
->>
->> The solution is straightforward: reshuffle the array and introduce a queue_index
->> to macvtap_queue.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/macvtap.c |   63 +++++++++++++++---------------------------------
->>  1 files changed, 20 insertions(+), 43 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index a36e49e..5fd341c 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -44,6 +44,7 @@ struct macvtap_queue {
->>  	struct macvlan_dev __rcu *vlan;
->>  	struct file *file;
->>  	unsigned int flags;
->> +	u16 queue_index;
->>  };
->>  
->>  static struct proto macvtap_proto = {
->> @@ -84,30 +85,10 @@ static const struct proto_ops macvtap_socket_ops;
->>   */
->>  static DEFINE_SPINLOCK(macvtap_lock);
->>  
->> -/*
->> - * get_slot: return a [unused/occupied] slot in vlan->taps[]:
->> - *	- if 'q' is NULL, return the first empty slot;
->> - *	- otherwise, return the slot this pointer occupies.
->> - */
->> -static int get_slot(struct macvlan_dev *vlan, struct macvtap_queue *q)
->> -{
->> -	int i;
->> -
->> -	for (i = 0; i < MAX_MACVTAP_QUEUES; i++) {
->> -		if (rcu_dereference_protected(vlan->taps[i],
->> -					      lockdep_is_held(&macvtap_lock)) == q)
->> -			return i;
->> -	}
->> -
->> -	/* Should never happen */
->> -	BUG_ON(1);
->> -}
->> -
->>  static int macvtap_set_queue(struct net_device *dev, struct file *file,
->>  				struct macvtap_queue *q)
->>  {
->>  	struct macvlan_dev *vlan = netdev_priv(dev);
->> -	int index;
->>  	int err = -EBUSY;
->>  
->>  	spin_lock(&macvtap_lock);
->> @@ -115,12 +96,12 @@ static int macvtap_set_queue(struct net_device *dev, struct file *file,
->>  		goto out;
->>  
->>  	err = 0;
->> -	index = get_slot(vlan, NULL);
->>  	rcu_assign_pointer(q->vlan, vlan);
->> -	rcu_assign_pointer(vlan->taps[index], q);
->> +	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
->>  	sock_hold(&q->sk);
->>  
->>  	q->file = file;
->> +	q->queue_index = vlan->numvtaps;
->>  	file->private_data = q;
->>  
->>  	vlan->numvtaps++;
->> @@ -140,16 +121,23 @@ out:
->>   */
->>  static void macvtap_put_queue(struct macvtap_queue *q)
->>  {
->> +	struct macvtap_queue *nq;
->>  	struct macvlan_dev *vlan;
->>  
->>  	spin_lock(&macvtap_lock);
->>  	vlan = rcu_dereference_protected(q->vlan,
->>  					 lockdep_is_held(&macvtap_lock));
->>  	if (vlan) {
->> -		int index = get_slot(vlan, q);
->> +		int index = q->queue_index;
->> +		BUG_ON(index >= vlan->numvtaps);
->>  
->> -		RCU_INIT_POINTER(vlan->taps[index], NULL);
->> +		rcu_assign_pointer(vlan->taps[index],
->> +				   vlan->taps[vlan->numvtaps - 1]);
->>  		RCU_INIT_POINTER(q->vlan, NULL);
->> +		nq = rcu_dereference_protected(vlan->taps[index],
->> +					       lockdep_is_held(&macvtap_lock));
->> +		nq->queue_index = index;
->> +
->>  		sock_put(&q->sk);
-> Hmm this looks like a bug BTW: sock_put should be after
-> no one uses this tap, so must be after synchronize_rcu.
-> No?
+Subject: Re: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for am33xx
 
-Two refcnts were held, one is the socket itself (and we can safely put
-it here), another is held by device when doing macvtap_set_queue(), it
-was released by another sock_put() after synchronize_rcu().
->
->>  		--vlan->numvtaps;
->>  	}
-> So:
-> 		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
-> 					       lockdep_is_held(&macvtap_lock));
-> 		rcu_assign_pointer(vlan->taps[index], nq);
->
-> same thing?
+Hello.
 
-Same and cleaner, thanks.
+On 05/23/2013 09:13 PM, B, Ravi wrote:
+
 >
->> @@ -182,8 +170,7 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
->>  	rxq = skb_get_rxhash(skb);
->>  	if (rxq) {
->>  		tap = rcu_dereference(vlan->taps[rxq % numvtaps]);
->> -		if (tap)
->> -			goto out;
->> +		goto out;
->>  	}
->>  
->>  	if (likely(skb_rx_queue_recorded(skb))) {
->> @@ -193,17 +180,10 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
->>  			rxq -= numvtaps;
->>  
->>  		tap = rcu_dereference(vlan->taps[rxq]);
->> -		if (tap)
->> -			goto out;
->> -	}
->> -
->> -	/* Everything failed - find first available queue */
->> -	for (rxq = 0; rxq < MAX_MACVTAP_QUEUES; rxq++) {
->> -		tap = rcu_dereference(vlan->taps[rxq]);
->> -		if (tap)
->> -			break;
->> +		goto out;
->>  	}
->>  
->> +	tap = rcu_dereference(vlan->taps[0]);
->>  out:
->>  	return tap;
->>  }
->> @@ -221,17 +201,14 @@ static void macvtap_del_queues(struct net_device *dev)
->>  
->>  	/* macvtap_put_queue can free some slots, so go through all slots */
->>  	spin_lock(&macvtap_lock);
->> -	for (i = 0; i < MAX_MACVTAP_QUEUES && vlan->numvtaps; i++) {
->> +	for (i = 0; i < vlan->numvtaps; i++) {
->>  		q = rcu_dereference_protected(vlan->taps[i],
->>  					      lockdep_is_held(&macvtap_lock));
->> -		if (q) {
->> -			qlist[j++] = q;
->> -			RCU_INIT_POINTER(vlan->taps[i], NULL);
->> -			RCU_INIT_POINTER(q->vlan, NULL);
->> -			vlan->numvtaps--;
->> -		}
->> +		BUG_ON(q == NULL);
->> +		qlist[j++] = q;
->> +		RCU_INIT_POINTER(vlan->taps[i], NULL);
->> +		RCU_INIT_POINTER(q->vlan, NULL);
->>  	}
->> -	BUG_ON(vlan->numvtaps != 0);
->>  	/* guarantee that any future macvtap_set_queue will fail */
->>  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
->>  	spin_unlock(&macvtap_lock);
->> -- 
->> 1.7.1
+>>> +		phy1: usbphy-gs70@44e10620 {
+>>> +			compatible = "ti,dsps-usbphy";
+>>> +			reg = <0x44e10620 0x8
+>>> +			       0x44e10648 0x4>;
+>>> +			reg-names = "phy_ctrl","phy_wkup";
+>>> +			id = <0>;
+>>> +		};
+>>> +
+>>> +		phy2: usbphy-gs70@44e10628 {
+>>> +			compatible = "ti,dsps-usbphy";
+>>> +			reg = <0x44e10628 0x8
+>>> +			       0x44e10648 0x4>;
+>> The second register conflicts with phy1.
+> The two instances of phy uses common phy wakeup register.
+
+>>     That's why there is a resource conflict. Have you actually tried to instantiate the devices out of such tree?
+>>This register should be declared somewhere above the PHYs I think...
+
+I did not face any problem with this, I have tested both instances of phy used by dual instance controller, worked fine. 
+What do you suggest, in case of common register which both phy have to use this for wakeup functionality.  
+The DT should support this.  What do you suggest in such case?
+
+--
+Ravi B
 
