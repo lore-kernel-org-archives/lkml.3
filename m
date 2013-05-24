@@ -1,150 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3EXTXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 15:23:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15191 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab3EXTXm (ORCPT
+	id S1756855Ab3EXTaB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 15:30:01 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:23217 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab3EXT37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 15:23:42 -0400
-X-Authority-Analysis: v=2.0 cv=MNbiabll c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=s9b0WtSLZS4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=_vU5-hpMSx0A:10 a=vTr9H3xdAAAA:8 a=3GGo4NZLzqwFqJpmK_EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369423420.6828.226.camel@gandalf.local.home>
-Subject: Re: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com
-Date: Fri, 24 May 2013 15:23:40 -0400
-In-Reply-To: <20130524142338.GB3106@redhat.com>
-References: <20130521173100.GA2076@redhat.com>
-	 <20130522093624.GZ3578@linux.vnet.ibm.com>
-	 <1369226958.6828.175.camel@gandalf.local.home>
-	 <20130523164004.GJ16419@redhat.com>
-	 <1369403180.6828.223.camel@gandalf.local.home>
-	 <20130524142338.GB3106@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Fri, 24 May 2013 15:29:59 -0400
+Subject: [PATCH] cciss: fix broken mutex usage in ioctl
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Fri, 24 May 2013 14:28:41 -0500
+Message-ID: <20130524192841.21256.51523.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-> .config: http://paste.fedoraproject.org/14281/94052971/raw/
-> 
-> trace shows the problem process was 'cc1', so I was likely building a kernel
-> at the time.  There was also a trinity run going on in the background.
-> 
-> cmdline: nothing special..
-> 
-> BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
-> 
+If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
+(as is normal with the Array Configuration Utility) the process
+will hang as below.  It attempts to acquire the same mutex twice, once
+in do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
+the mutex isn't.
 
-OK, I'm able to reproduce this. Looks like the same issue happens from
-other ways from userspace into the kernel (the next way was tracing
-system calls).
+Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
+[...]
+acu             D 0000000000000001     0  3246   3191 0x00000080
+ ffff8800da833a18 0000000000000086 ffff8800da833fd8 0000000000012d00
+ ffff8800da832010 0000000000012d00 0000000000012d00 0000000000012d00
+ ffff8800da833fd8 0000000000012d00 ffff8800da8294e0 ffff8800db50eb10
+Call Trace:
+ [<ffffffff8153a2d9>] schedule+0x29/0x70
+ [<ffffffff8153a5de>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff81538e0b>] __mutex_lock_slowpath+0x17b/0x220
+ [<ffffffff81538c6b>] mutex_lock+0x2b/0x50
+ [<ffffffffa0002bdf>] cciss_unlocked_open+0x2f/0x110 [cciss]
+ [<ffffffff811a06f3>] __blkdev_get+0xd3/0x470
+ [<ffffffff811a0aec>] blkdev_get+0x5c/0x1e0
+ [<ffffffff8123cd42>] register_disk+0x182/0x1a0
+ [<ffffffff8123cedc>] add_disk+0x17c/0x310
+ [<ffffffffa0002dfa>] cciss_add_disk+0x13a/0x170 [cciss]
+ [<ffffffffa000adfb>] cciss_update_drive_info+0x39b/0x480 [cciss]
+ [<ffffffffa000b818>] rebuild_lun_table+0x258/0x370 [cciss]
+ [<ffffffffa000bc7f>] cciss_ioctl+0x34f/0x470 [cciss]
+ [<ffffffff81538c5e>] ? mutex_lock+0x1e/0x50
+ [<ffffffffa000bde9>] do_ioctl+0x49/0x70 [cciss]
+ [<ffffffff81239e48>] __blkdev_driver_ioctl+0x28/0x30
+ [<ffffffff8123a4e0>] blkdev_ioctl+0x200/0x7b0
+ [<ffffffff81186633>] ? mntput+0x23/0x40
+ [<ffffffff8119ef0c>] block_ioctl+0x3c/0x40
+ [<ffffffff8117a309>] do_vfs_ioctl+0x89/0x350
+ [<ffffffff8116a12e>] ? ____fput+0xe/0x10
+ [<ffffffff81063ae4>] ? task_work_run+0x94/0xf0
+ [<ffffffff8117a671>] SyS_ioctl+0xa1/0xb0
+ [<ffffffff81544102>] system_call_fastpath+0x16/0x1b
 
-Forget the other patch. Here's a new patch that is more specific to
-tracing and context tracking.
+This mutex usage was added into the ioctl path when the big kernel
+lock was removed.  As it turns out, these paths are all thread
+safe anyway (or can easily be made so) and we don't want ioctl()
+to be single threaded in any case.
 
-Can you try this one out, please.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
--- Steve
+Cc: stable@vger.kernel.org
+---
+ drivers/block/cciss.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index 87a03c7..f5d4723 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -33,9 +33,25 @@ do { \
- 		preempt_schedule(); \
- } while (0)
- 
-+#ifdef CONFIG_CONTEXT_TRACKING
-+
-+void preempt_schedule_context(void);
-+
-+#define preempt_check_resched_context() \
-+do { \
-+	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
-+		preempt_schedule_context(); \
-+} while (0)
-+#else
-+
-+#define preempt_check_resched_context() preempt_check_resched()
-+
-+#endif /* CONFIG_CONTEXT_TRACKING */
-+
- #else /* !CONFIG_PREEMPT */
- 
- #define preempt_check_resched()		do { } while (0)
-+#define preempt_check_resched_context()	do { } while (0)
- 
- #endif /* CONFIG_PREEMPT */
- 
-@@ -88,7 +104,7 @@ do { \
- do { \
- 	preempt_enable_no_resched_notrace(); \
- 	barrier(); \
--	preempt_check_resched(); \
-+	preempt_check_resched_context(); \
- } while (0)
- 
- #else /* !CONFIG_PREEMPT_COUNT */
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 65349f0..ac3a312 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -71,6 +71,46 @@ void user_enter(void)
- 	local_irq_restore(flags);
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 6374dc1..62b6c2c 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -168,8 +168,6 @@ static irqreturn_t do_cciss_msix_intr(int irq, void *dev_id);
+ static int cciss_open(struct block_device *bdev, fmode_t mode);
+ static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
+ static void cciss_release(struct gendisk *disk, fmode_t mode);
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned int cmd, unsigned long arg);
+ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 		       unsigned int cmd, unsigned long arg);
+ static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
+@@ -235,7 +233,7 @@ static const struct block_device_operations cciss_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = cciss_unlocked_open,
+ 	.release = cciss_release,
+-	.ioctl = do_ioctl,
++	.ioctl = cciss_ioctl,
+ 	.getgeo = cciss_getgeo,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = cciss_compat_ioctl,
+@@ -1143,16 +1141,6 @@ static void cciss_release(struct gendisk *disk, fmode_t mode)
+ 	mutex_unlock(&cciss_mutex);
  }
  
-+/**
-+ * preempt_schedule_context - preempt_schedule called by tracing
-+ *
-+ * The tracing infrastructure uses preempt_enable_notrace to prevent
-+ * recursion and tracing preempt enabling caused by the tracing
-+ * infrastructure itself. But as tracing can happen in areas coming
-+ * from userspace or just about to enter userspace, a preempt enable
-+ * can occur before user_exit() is called. This will cause the scheduler
-+ * to be called when the system is still in usermode.
-+ *
-+ * To prevent this, the preempt_enable_notrace will use this function
-+ * instead of preempt_schedule() to exit user context if needed before
-+ * calling the scheduler.
-+ */
-+void __sched notrace preempt_schedule_context(void)
-+{
-+	struct thread_info *ti = current_thread_info();
-+	enum ctx_state prev_ctx;
-+
-+	if (likely(ti->preempt_count || irqs_disabled()))
-+		return;
-+
-+	/*
-+	 * Need to disable preemption in case user_exit() is traced
-+	 * and the tracer calls preempt_enable_notrace() causing
-+	 * an infinite recursion.
-+	 */
-+	preempt_disable_notrace();
-+	prev_ctx = this_cpu_read(context_tracking.state);
-+	user_exit();
-+	preempt_enable_no_resched_notrace();
-+
-+	preempt_schedule();
-+
-+	preempt_disable_notrace();
-+	if (prev_ctx == IN_USER)
-+		user_enter();
-+	preempt_enable_notrace();
-+}
-+EXPORT_SYMBOL(preempt_schedule_context);
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned cmd, unsigned long arg)
+-{
+-	int ret;
+-	mutex_lock(&cciss_mutex);
+-	ret = cciss_ioctl(bdev, mode, cmd, arg);
+-	mutex_unlock(&cciss_mutex);
+-	return ret;
+-}
+-
+ #ifdef CONFIG_COMPAT
  
- /**
-  * user_exit - Inform the context tracking that the CPU is
-
+ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+@@ -1179,7 +1167,7 @@ static int cciss_compat_ioctl(struct block_device *bdev, fmode_t mode,
+ 	case CCISS_REGNEWD:
+ 	case CCISS_RESCANDISK:
+ 	case CCISS_GETLUNINFO:
+-		return do_ioctl(bdev, mode, cmd, arg);
++		return cciss_ioctl(bdev, mode, cmd, arg);
+ 
+ 	case CCISS_PASSTHRU32:
+ 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
+@@ -1219,7 +1207,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1261,7 +1249,7 @@ static int cciss_ioctl32_big_passthru(struct block_device *bdev, fmode_t mode,
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1311,11 +1299,14 @@ static int cciss_getpciinfo(ctlr_info_t *h, void __user *argp)
+ static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
+ {
+ 	cciss_coalint_struct intinfo;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
+ 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user
+ 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
+ 		return -EFAULT;
+@@ -1356,12 +1347,15 @@ static int cciss_setintinfo(ctlr_info_t *h, void __user *argp)
+ static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
+ {
+ 	NodeName_type NodeName;
++	unsigned long flags;
+ 	int i;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	for (i = 0; i < 16; i++)
+ 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1398,10 +1392,13 @@ static int cciss_setnodename(ctlr_info_t *h, void __user *argp)
+ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
+ {
+ 	Heartbeat_type heartbeat;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	heartbeat = readl(&h->cfgtable->HeartBeat);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1410,10 +1407,13 @@ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
+ static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
+ {
+ 	BusTypes_type BusTypes;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	BusTypes = readl(&h->cfgtable->BusTypes);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
+ 		return -EFAULT;
+ 	return 0;
 
