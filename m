@@ -1,212 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab3EXNHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 09:07:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36071 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab3EXNHp (ORCPT
+	id S1755929Ab3EXNIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 09:08:19 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:58071 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab3EXNIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 09:07:45 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <linux@arm.linux.org.uk>, <balbi@ti.com>, <shc_work@mail.ru>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH] ARM: OMAP2+: omap-usb-host: Fix memory leaks
-Date: Fri, 24 May 2013 16:06:58 +0300
-Message-ID: <1369400818-31625-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 24 May 2013 09:08:14 -0400
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH 1/2] kdump/mmap: Introduce arch_oldmem_remap_pfn_range()
+Date: Fri, 24 May 2013 15:08:08 +0200
+Message-Id: <1369400889-11064-2-git-send-email-holzheu@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.6
+In-Reply-To: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
+References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052413-3548-0000-0000-0000057CA388
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix memory leaks in the error path.
-Also, use platform_device_register_full() to allocate
-the platform devices and set platform data.
+From: Jan Willeke <willeke@de.ibm.com>
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Currently the /proc/vmcore mmap patches are not working on s390. The
+problem is that on s390 the kernel in not relocatable and therefore
+always runs in the lower memory area. Therefore for kdump on s390 we
+swap the lower memory area with the crashkernel area before starting
+the kdump kernel:
+
+[0 - OLDMEM_SIZE] is mapped to [OLDMEM_BASE - OLDMEM_BASE + OLDMEM_SIZE]
+
+To fix /proc/vmcore mmap memory below OLDMEMSIZE needs to be mapped
+with OLDMEM_BASE as offset. To achieve that, a new weak function
+arch_oldmem_remap_pfn_range() is introduced.
+
+Signed-off-by: Jan Willeke <willeke@de.ibm.com>
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- arch/arm/mach-omap2/usb-host.c |  106 +++++++++++++++++++++-------------------
- 1 files changed, 56 insertions(+), 50 deletions(-)
+ fs/proc/vmcore.c           | 15 ++++++++++++++-
+ include/linux/crash_dump.h |  5 +++++
+ 2 files changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-index aa27d7f..609b330 100644
---- a/arch/arm/mach-omap2/usb-host.c
-+++ b/arch/arm/mach-omap2/usb-host.c
-@@ -28,6 +28,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/usb/phy.h>
-+#include <linux/usb/nop-usb-xceiv.h>
- 
- #include "soc.h"
- #include "omap_device.h"
-@@ -560,7 +561,8 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
- 	struct regulator_init_data *reg_data;
- 	struct fixed_voltage_config *config;
- 	struct platform_device *pdev;
--	int ret;
-+	struct platform_device_info pdevinfo;
-+	int ret = -ENOMEM;
- 
- 	supplies = kzalloc(sizeof(*supplies), GFP_KERNEL);
- 	if (!supplies)
-@@ -571,7 +573,7 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
- 
- 	reg_data = kzalloc(sizeof(*reg_data), GFP_KERNEL);
- 	if (!reg_data)
--		return -ENOMEM;
-+		goto err_data;
- 
- 	reg_data->constraints.valid_ops_mask = REGULATOR_CHANGE_STATUS;
- 	reg_data->consumer_supplies = supplies;
-@@ -580,39 +582,53 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
- 	config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
- 			GFP_KERNEL);
- 	if (!config)
--		return -ENOMEM;
-+		goto err_config;
-+
-+	config->supply_name = kstrdup(name, GFP_KERNEL);
-+	if (!config->supply_name)
-+		goto err_supplyname;
- 
--	config->supply_name = name;
- 	config->gpio = gpio;
- 	config->enable_high = polarity;
- 	config->init_data = reg_data;
- 
- 	/* create a regulator device */
--	pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
--	if (!pdev)
--		return -ENOMEM;
-+	memset(&pdevinfo, 0, sizeof(pdevinfo));
-+	pdevinfo.name = reg_name;
-+	pdevinfo.id = PLATFORM_DEVID_AUTO;
-+	pdevinfo.data = config;
-+	pdevinfo.size_data = sizeof(*config);
- 
--	pdev->id = PLATFORM_DEVID_AUTO;
--	pdev->name = reg_name;
--	pdev->dev.platform_data = config;
-+	pdev = platform_device_register_full(&pdevinfo);
-+	if (IS_ERR(pdev)) {
-+		ret = PTR_ERR(pdev);
-+		pr_err("%s: Failed registering regulator %s for %s : %d\n",
-+				__func__, name, dev_id, ret);
-+		goto err_register;
-+	}
- 
--	ret = platform_device_register(pdev);
--	if (ret)
--		pr_err("%s: Failed registering regulator %s for %s\n",
--				__func__, name, dev_id);
-+	return 0;
- 
-+err_register:
-+	kfree(config->supply_name);
-+err_supplyname:
-+	kfree(config);
-+err_config:
-+	kfree(reg_data);
-+err_data:
-+	kfree(supplies);
- 	return ret;
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 80221d7..3eda0ac 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -123,6 +123,19 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
+ 	return read;
  }
  
-+#define MAX_STR 20
++/*
++ * Architetures may override this function to map oldmen
++ */
++int __weak arch_oldmem_remap_pfn_range(struct vm_area_struct *vma,
++				       unsigned long from,
++				       unsigned long pfn,
++				       unsigned long size,
++				       pgprot_t prot)
++{
++	return remap_pfn_range(vma, from, pfn, size, prot);
++}
 +
- int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
- {
--	char *rail_name;
--	int i, len;
-+	char rail_name[MAX_STR];
-+	int i;
- 	struct platform_device *pdev;
- 	char *phy_id;
--
--	/* the phy_id will be something like "nop_usb_xceiv.1" */
--	len = strlen(nop_name) + 3; /* 3 -> ".1" and NULL terminator */
-+	struct platform_device_info pdevinfo;
- 
- 	for (i = 0; i < num_phys; i++) {
- 
-@@ -627,25 +643,26 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
- 			!gpio_is_valid(phy->vcc_gpio))
- 			continue;
- 
--		/* create a NOP PHY device */
--		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
--		if (!pdev)
--			return -ENOMEM;
--
--		pdev->id = phy->port;
--		pdev->name = nop_name;
--		pdev->dev.platform_data = phy->platform_data;
--
--		phy_id = kmalloc(len, GFP_KERNEL);
--		if (!phy_id)
-+		phy_id = kmalloc(MAX_STR, GFP_KERNEL);
-+		if (!phy_id) {
-+			pr_err("%s: kmalloc() failed\n", __func__);
- 			return -ENOMEM;
-+		}
- 
--		scnprintf(phy_id, len, "nop_usb_xceiv.%d\n",
--					pdev->id);
--
--		if (platform_device_register(pdev)) {
--			pr_err("%s: Failed to register device %s\n",
--				__func__,  phy_id);
-+		/* create a NOP PHY device */
-+		memset(&pdevinfo, 0, sizeof(pdevinfo));
-+		pdevinfo.name = nop_name;
-+		pdevinfo.id = phy->port;
-+		pdevinfo.data = phy->platform_data;
-+		pdevinfo.size_data = sizeof(struct nop_usb_xceiv_platform_data);
 +
-+		scnprintf(phy_id, MAX_STR, "nop_usb_xceiv.%d",
-+					phy->port);
-+		pdev = platform_device_register_full(&pdevinfo);
-+		if (IS_ERR(pdev)) {
-+			pr_err("%s: Failed to register device %s : %ld\n",
-+				__func__,  phy_id, PTR_ERR(pdev));
-+			kfree(phy_id);
- 			continue;
- 		}
+ /* Read from the ELF header and then the crash dump. On error, negative value is
+  * returned otherwise number of bytes read are returned.
+  */
+@@ -267,7 +280,7 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 			if (size < tsz)
+ 				tsz = size;
+ 			paddr = m->paddr + start - m->offset;
+-			if (remap_pfn_range(vma, vma->vm_start + len,
++			if (arch_oldmem_remap_pfn_range(vma, vma->vm_start + len,
+ 					    paddr >> PAGE_SHIFT, tsz,
+ 					    vma->vm_page_prot)) {
+ 				do_munmap(vma->vm_mm, vma->vm_start, len);
+diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
+index 37e4f8d..da300a7 100644
+--- a/include/linux/crash_dump.h
++++ b/include/linux/crash_dump.h
+@@ -14,6 +14,11 @@ extern unsigned long long elfcorehdr_size;
  
-@@ -653,26 +670,15 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
+ 						unsigned long, int);
++extern int __weak arch_oldmem_remap_pfn_range(struct vm_area_struct *vma,
++					      unsigned long from,
++					      unsigned long pfn,
++					      unsigned long size,
++					      pgprot_t prot);
  
- 		/* Do we need RESET regulator ? */
- 		if (gpio_is_valid(phy->reset_gpio)) {
--
--			rail_name = kmalloc(13, GFP_KERNEL);
--			if (!rail_name)
--				return -ENOMEM;
--
--			scnprintf(rail_name, 13, "hsusb%d_reset", phy->port);
--
-+			scnprintf(rail_name, MAX_STR,
-+					"hsusb%d_reset", phy->port);
- 			usbhs_add_regulator(rail_name, phy_id, "reset",
- 						phy->reset_gpio, 1);
- 		}
- 
- 		/* Do we need VCC regulator ? */
- 		if (gpio_is_valid(phy->vcc_gpio)) {
--
--			rail_name = kmalloc(13, GFP_KERNEL);
--			if (!rail_name)
--				return -ENOMEM;
--
--			scnprintf(rail_name, 13, "hsusb%d_vcc", phy->port);
--
-+			scnprintf(rail_name, MAX_STR, "hsusb%d_vcc", phy->port);
- 			usbhs_add_regulator(rail_name, phy_id, "vcc",
- 					phy->vcc_gpio, phy->vcc_polarity);
- 		}
+ /* Architecture code defines this if there are other possible ELF
+  * machine types, e.g. on bi-arch capable hardware. */
 -- 
-1.7.4.1
+1.8.1.6
 
