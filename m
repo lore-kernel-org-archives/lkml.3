@@ -1,69 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3EXS4t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 14:56:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58570 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3EXS4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 14:56:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC] Add co-maintainer for fbdev
-Date: Fri, 24 May 2013 20:56:42 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        linux-fbdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-References: <20130524153835.GF15839@game.jcrosoft.org> <CAOesGMj26_=6eQk+=0MPCoobymqrHPwwtiUnv63hz0a9Ou_VMw@mail.gmail.com>
-In-Reply-To: <CAOesGMj26_=6eQk+=0MPCoobymqrHPwwtiUnv63hz0a9Ou_VMw@mail.gmail.com>
+	id S1757338Ab3EXS5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 14:57:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37188 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755230Ab3EXS5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 14:57:32 -0400
+Message-ID: <519FB7F7.7080009@ti.com>
+Date: Fri, 24 May 2013 13:56:55 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Nishanth Menon <nm@ti.com>, <b-cousson@ti.com>, <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6] ARM:dts:omap4-panda: Update the LED support for the
+ panda DTS
+References: <1368806552-8851-1-git-send-email-dmurphy@ti.com> <20130517161525.GA30014@kahuna> <5196580D.1070209@ti.com>
+In-Reply-To: <5196580D.1070209@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305242056.42482.arnd@arndb.de>
-X-Provags-ID: V02:K0:fQV2n5pa3/5YGrUDLXqdM7YV/Qkh2GkUg9luq/CFg1z
- Iq2S+qe4PXvJ2CuxjewlLiwE4lKSQuXN8fAIFD+XdXW1lZIXzg
- 0kpQwp5IaGJDEn6UBuMH6K6c2v/roGnws3c+HEA2l3nT7Tx6K8
- WUXJsPkwDvTh+c69Lb7/PcdF7oToVYbEmsiXJ9GrzRs4bRV8k3
- 7eVU0tHDX2uEFBoWv3v1FmKZuqeGIDwl5xNLxzPjqgHGZfwQWc
- G8GFCim9quiy/n5vuQl2pnhCX7lHub2qVAH7JVvM7qmtajv/9t
- 9d41m/8iIQzyI1kK4E+yBUloLwIWDPe0lfFGBCne4ScpcQjEUp
- LhBJfFx+RDUVBT0aWFnI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 May 2013, Olof Johansson wrote:
-> [+akpm]
+On 05/17/2013 11:17 AM, Dan Murphy wrote:
+> On 05/17/2013 11:15 AM, Nishanth Menon wrote:
+>> On 11:02-20130517, Dan Murphy wrote:
+>>> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+>>> are different.
+>>>
+>>> A1-A3 = gpio_wk7
+>>> ES = gpio_110
+>>>
+>>> There is no change to LED D2
+>>>
+>>> Abstract away the pinmux and the LED definitions for the two boards into
+>>> the respective DTS files.
+>>>
+>>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>>> ---
+>>> Changes in this version:
+>>> 	- review comments incorporated.
+>>> Previous version of this patch was discussed in:
+>>> 	https://patchwork.kernel.org/patch/2582771/
+>> one minor nit,
+>> $subject could do with space after the ':'
+>> otherwise, it looks fine to me. Will suggest waiting for further
+>> reviewers if they have an opinion prior to a new rev.
+> Thanks NM I will queue up this change locally and await further review prior to sending v7.
+>
+>>>  arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
+>>>  arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
+>>>  2 files changed, 43 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> index 03bd60d..5fd59b3 100644
+>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> @@ -16,8 +16,13 @@
+>>>  		reg = <0x80000000 0x40000000>; /* 1 GB */
+>>>  	};
+>>>  
+>>> -	leds {
+>>> +	leds: leds {
+>>>  		compatible = "gpio-leds";
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <
+>>> +			&led_wkgpio_pins
+>>> +		>;
+>>> +
+>>>  		heartbeat {
+>>>  			label = "pandaboard::status1";
+>>>  			gpios = <&gpio1 7 0>;
+>>> @@ -137,6 +142,15 @@
+>>>  	};
+>>>  };
+>>>  
+>>> +&omap4_pmx_wkup {
+>>> +	led_wkgpio_pins: pinmux_leds_wkpins {
+>>> +		pinctrl-single,pins = <
+>>> +			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
+>>> +			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+>>> +		>;
+>>> +	};
+>>> +};
+>>> +
+>>>  &i2c1 {
+>>>  	pinctrl-names = "default";
+>>>  	pinctrl-0 = <&i2c1_pins>;
+>>> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+>>> index f1d8c21..c968a3b 100644
+>>> --- a/arch/arm/boot/dts/omap4-panda-es.dts
+>>> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
+>>> @@ -34,3 +34,31 @@
+>>>  		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
+>>>  		>;
+>>>  };
+>>> +
+>>> +&omap4_pmx_core {
+>>> +	led_gpio_pins: gpio_led_pmx {
+>>> +		pinctrl-single,pins = <
+>>> +			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
+>>> +		>;
+>>> +	};
+>>> +};
+>>> +
+>>> +&led_wkgpio_pins {
+>>> +	pinctrl-single,pins = <
+>>> +		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+>>> +	>;
+>>> +};
+>>> +
+>>> +&leds {
+>>> +	pinctrl-0 = <
+>>> +		&led_gpio_pins
+>>> +		&led_wkgpio_pins
+>>> +	>;
+>>> +
+>>> +	heartbeat {
+>>> +		gpios = <&gpio4 14 0>;
+>>> +	};
+>>> +	mmc {
+>>> +		gpios = <&gpio1 8 0>;
+>>> +	};
+>>> +};
+>
+Any additional comments besides the headline?
 
-[+florian]
+If not I will post v7
 
-> On Fri, May 24, 2013 at 8:38 AM, Jean-Christophe PLAGNIOL-VILLARD
-> <plagnioj@jcrosoft.com> wrote:
-> > Hi Florian,
-> >
-> >         As you seems very busy I'd like to propose the help you to handle the
-> >         fbdev subsystem to easier the rich of the fbdev patch to Linus
-> >
-> >         As I'm working on fbdev on at91 and others and already Co-Maintain the
-> >         at91 mach on ARM
-> >
-> >         And if you are not willing to continue I could take over
-> 
-> Andrew has been fallback fbdev maintainer for a while, we have the
-> option of formalizing that as well. Adding him on cc so he sees this.
+-- 
+------------------
+Dan Murphy
 
-It seems that Florian himself was missing on Cc too, probably by accident.
-
-I would certainly welcome Jean-Christophe to step in for fbdev, since I
-frequently have trivial patches for the subsystem, either from myself
-or one of the subarch maintainers, and it would be helpful to get feedback
-on them in order to merge them through arm-soc when they depend on other
-patches we carry, or to have them picked up into a git tree.
-
-	Arnd
