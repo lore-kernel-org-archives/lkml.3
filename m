@@ -1,74 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab3EXIEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:04:48 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61830 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760013Ab3EXIEp (ORCPT
+	id S1755648Ab3EXIMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:12:06 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48381 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab3EXIMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:04:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <519A8A57.9060007@wwwdotorg.org>
-References: <1368690525-32252-1-git-send-email-linus.walleij@stericsson.com>
-	<519A8A57.9060007@wwwdotorg.org>
-Date: Fri, 24 May 2013 10:04:44 +0200
-Message-ID: <CACRpkdZieCmFnHCGUkv8EqcAtb3DA7dSZpimSdB4P81tZPJRoQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: sink pinctrldev_list_mutex
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
+	Fri, 24 May 2013 04:12:00 -0400
+Date: Fri, 24 May 2013 10:11:56 +0200
+From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Hector Palacios <hector.palacios@digi.com>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        brian@crystalfontz.com, s.hauer@pengutronix.de,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: mxsfb: DATA_FORMAT_24_BIT flag outputs invalid colours
+Message-ID: <20130524081156.GA3154@lukather>
+References: <519E03B0.1080006@digi.com>
+ <20130523130039.GF8595@lukather>
+ <201305231531.31376.jbe@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201305231531.31376.jbe@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 10:40 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+Hi Juergen,
 
-> This seems fine on the surface, but I do have one question:
->
-> I think the pinctrl lock serves a couple of purposes:
->
-> 1) Basic protection for accesses to the pinctrldev_list itself.
->
-> This patch seems just fine w.r.t. this point.
->
-> 2) Preventing pinctrl drivers from being unregistered (and their modules
-> unloaded) when some operation is being performed on/to them.
+On Thu, May 23, 2013 at 03:31:31PM +0200, Juergen Beisert wrote:
+> Hi Maxime,
+> 
+> maxime.ripard@free-electrons.com wrote:
+> > On Thu, May 23, 2013 at 01:55:28PM +0200, Hector Palacios wrote:
+> > > I'm using an i.MX28 based board with lcd connected with 18bits data bus.
+> > > My platform uses 32 bits per pixel:
+> > >
+> > > 	mxsfb_pdata.default_bpp = 32;
+> > > 	mxsfb_pdata.ld_intf_width = STMLCDIF_18BIT;
+> > >
+> > > With these settings the mxsfb.c driver sets flag DATA_FORMAT_24_BIT
+> > > at HW_LCDIF_CTRL register in function mxsfb_set_par():
+> > >
+> > > 	case 32:
+> > > 		dev_dbg(&host->pdev->dev, "Setting up RGB888/666 mode\n");
+> > > 		ctrl |= CTRL_SET_WORD_LENGTH(3);
+> > > 		switch (host->ld_intf_width) {
+> > > 		case STMLCDIF_8BIT:
+> > > 			dev_dbg(&host->pdev->dev,
+> > > 					"Unsupported LCD bus width mapping\n");
+> > > 			return -EINVAL;
+> > > 		case STMLCDIF_16BIT:
+> > > 		case STMLCDIF_18BIT:
+> > > 			/* 24 bit to 18 bit mapping */
+> > > 			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
+> > > 					    *  each colour component
+> > > 					    */
+> > > 			break;
+> > > 		case STMLCDIF_24BIT:
+> > > 			/* real 24 bit */
+> > > 			break;
+> > > 		}
+> > >
+> > > According to the manual, this flag does:
+> > > 	0x0: ALL_24_BITS_VALID: Data input to the block is in 24 bpp
+> > > format, such that all RGB 888 data is contained in 24 bits.
+> > > 	0x1: DROP_UPPER_2_BITS_PER_BYTE — Data input to the block is
+> > > actually RGB 18 bpp, but there is 1 colour per byte, hence the upper
+> > > 2 bits in each byte do not contain any useful data, and should be
+> > > dropped.
+> > >
+> > > The setting of this flag is producing bad colours with true colour
+> > > images (i.e. the Linux penguin is displayed ok, but QT applications
+> > > or images displayed with fbv are not).
+> > > I believe the setting of this flag is not correct (after all, if my
+> > > bpp is 32, then all 24bit colours are useful and dropping the upper
+> > > 2 bits is a bad idea).
+> > > If I don't set it, then true colour images are displayed correctly.
+> > > The only problem is that the Linux penguin is displayed much darker
+> > > than usual (correct colours, but darker). Perhaps the 224 colour
+> > > format of this image justifies it?
+> > >
+> > > I noticed the cfa10049 platform also uses the same configuration (18
+> > > bits data bus and 32bpp) and was wondering if true colour images are
+> > > correctly displayed in this platform with this flag set (for example
+> > > with fbv application [1]).
+> >
+> > I had the exact same problem, and suggested the exact same solution a
+> > few weeks back.
+> >
+> > https://patchwork.kernel.org/patch/2470441/
+> >
+> > The conclusion of that discussion what that the userspace applications
+> > were not honouring the bitfield correctly set by the mxsfb driver, and
+> > as such, it was not a bug in the driver.
+> >
+> > While this is correct, I wonder, now that since we had that same problem
+> > in a very short amount of time, if we couldn't set this behaviour
+> > dependant of some (dt? kernel argument?) property so that one could
+> > customise it anyway he want.
+> >
+> > Maxime
+> 
+> i.MX2[3|8]    LCD1       LCD2       LCD3
+>               24bit      18bit      18bit
+> --------------------------------------------
+> LCD_D0         B0         B0         --
+> LCD_D1         B1         B1         --
+> LCD_D2         B2         B2         B0
+> LCD_D3         B3         B3         B1
+> LCD_D4         B4         B4         B2
+> LCD_D5         B5         B5         B3
+> LCD_D6         B6         G0         B4
+> LCD_D7         B7         G1         B5
+> 
+> LCD_D8         G0         G2         --
+> LCD_D9         G1         G3         --
+> LCD_D10        G2         G4         G0
+> LCD_D11        G3         G5         G1
+> LCD_D12        G4         R0         G2
+> LCD_D13        G5         R1         G3
+> LCD_D14        G6         R2         G4
+> LCD_D15        G7         R3         G5
+> 
+> LCD_D16        R0         R4         --
+> LCD_D17        R1         R5         --
+> LCD_D18        R2                    R0
+> LCD_D19        R3                    R1
+> LCD_D20        R4                    R2
+> LCD_D21        R5                    R3
+> LCD_D22        R6                    R4
+> LCD_D23        R7                    R5
+> 
+> Is your display connected like LCD2 or LCD3? LCD3 must still handled like a 24 
+> bit display shown in LCD1, while only the LCD2-case is the "24 bit to 18 bit 
+> mapping" case.
+> 
+> At least my current tests with an i.MX23 and a connection like LCD2 are 
+> working here with a Qt application. Qt honours the pixel bitfield 
+> description. And I'm using the "bits-per-pixel = <32>" and "bus-width = <18>" 
+> entries in the device tree.
 
-Prevention of module unloading of pin controllers has never
-been working properly, as there is no way to release the
-pinctrl handles taken by different drivers.
+I'm in the second case, so with the same setup that you have it seems.
 
-I think that is why most pin controller drivers are bool rather
-than tristate.
+Don't get me wrong, I was not saying that the driver was flawed or had a
+bug, I understood very well your arguments when I first submitted the
+patch. The problem is more for all the userspace applications that don't
+honour the bitfield and just look at the color depth used to feed data
+to the framebuffer.
 
-Currently only pinctrl-single is tristate. Part of me want to
-change that to bool, I think it only will work when using the
-single with hogs (that will be properly free:ed when unloading
-the driver).
+I must admit that the ideal case should be that these applications
+should be fixed, but it's not realistic.
 
-Tony: is this really working with non-hogs?
+About QT, let's not use it as an example, the issues I had were probably
+some miscompilation on my side, and if you say that it works fine, then
+I trust you.
 
-If we really want to support loading/unloading of pin controllers
-I think the mutex is the least of the problems, and we should
-probably create a separate lock for handling that instead of
-relying on the list lock in that case.
+This is also why I suggested a kernel argument to enable a different
+"compatibility" mode when you have to deal with these kind of
+applications on your system. the pixel bitfield should probably be
+changed as well so that applications honouring it are not confused.
 
-While it's probably possible to *unload* the driver properly
-after some hacking like this, we get to the problem of
-re-probing the driver and re-associating all pinctrl handles
-(at that point floating in space with no driver back-end)
-with the driver again.
+Hector's case looks like a different story though.
 
-I feel this needs to be driven by someone who actually
-need to load/unload pinctrl modules.
+Maxime
 
-Yours,
-Linus Walleij
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
