@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3EXTx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 15:53:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57931 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab3EXTxZ (ORCPT
+	id S1757465Ab3EXUBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 16:01:20 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:53428 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916Ab3EXUBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 15:53:25 -0400
-Date: Fri, 24 May 2013 12:53:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] coredump: kill call_count, add core_name_size
-Message-Id: <20130524125323.861541a12992c3da0145f0d9@linux-foundation.org>
-In-Reply-To: <20130515201232.GA14648@redhat.com>
-References: <20130515201158.GA14606@redhat.com>
-	<20130515201232.GA14648@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 24 May 2013 16:01:18 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: vinod.koul@intel.com
+Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] dma: mxs-dma: Staticize mxs_dma_xlate
+Date: Fri, 24 May 2013 16:37:27 -0300
+Message-Id: <1369424247-12439-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013 22:12:32 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-> Imho, "atomic_t call_count" is ugly and should die. It buys
-> nothing and in fact it can grow more than necessary, expand
-> doesn't check if it was already incremented by another task.
-> 
-> Kill it, and introduce "static int core_name_size" updated by
-> expand_corename(). This is obviously racy too but harmless,
-> and core_name_size never grows for no reason.
-> 
-> We do not bother to to calculate the "right" new size, we
-> simply do kmalloc(size_we_need) and use ksize() to rely on
-> kmalloc_index's decision.
-> 
-> Finally change format_corename() to use expand_corename(),
-> krealloc(NULL) is fine.
+Fix the following sparse warning:
 
-The code still looks like a bunch of fluff.  I look at it and think
-"wtf, why doesn't it just use kasprintf()". 
+drivers/dma/mxs-dma.c:696:17: warning: symbol 'mxs_dma_xlate' was not declared. Should it be static?
 
-If there were any comments in there at all which explained the reason
-for the code's existence, perhaps I wouldn't think that.  But there
-aren't, so I do.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/dma/mxs-dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+index b48a79c..7195930 100644
+--- a/drivers/dma/mxs-dma.c
++++ b/drivers/dma/mxs-dma.c
+@@ -693,7 +693,7 @@ static bool mxs_dma_filter_fn(struct dma_chan *chan, void *fn_param)
+ 	return true;
+ }
+ 
+-struct dma_chan *mxs_dma_xlate(struct of_phandle_args *dma_spec,
++static struct dma_chan *mxs_dma_xlate(struct of_phandle_args *dma_spec,
+ 			       struct of_dma *ofdma)
+ {
+ 	struct mxs_dma_engine *mxs_dma = ofdma->of_dma_data;
+-- 
+1.8.1.2
 
