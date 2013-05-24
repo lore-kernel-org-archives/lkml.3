@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3EXOj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:39:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35035 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3EXOj5 (ORCPT
+	id S1753906Ab3EXOlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:41:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45357 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3EXOlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:39:57 -0400
-Date: Fri, 24 May 2013 10:37:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Kent Yoder <shpedoikal@gmail.com>
-Cc: leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com,
-        Daniel De Graaf <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
-        Ian.Campbell@citrix.com, Jan Beulich <JBeulich@suse.com>,
-        xen-devel@lists.xen.org
-Subject: Re: [tpmdd-devel] [PATCH v2] drivers/tpm: add xen tpmfront interface
-Message-ID: <20130524143759.GA4404@phenom.dumpdata.com>
-References: <1365692161-13735-1-git-send-email-dgdegra@tycho.nsa.gov>
- <20130522191551.GB10617@phenom.dumpdata.com>
- <CAM0nabGSo9b7q1pGOsTGjFzJBi7cK=2s5mGmOgNjeAf-2+ZvDQ@mail.gmail.com>
- <20130522205704.GB12923@phenom.dumpdata.com>
- <CAM0nabFO_tTqsX5c7Q-Z14CbRnqo9m11f__xkfzt6c8M026D_A@mail.gmail.com>
+	Fri, 24 May 2013 10:41:44 -0400
+Message-ID: <519F7C2E.2060409@cogentembedded.com>
+Date: Fri, 24 May 2013 18:41:50 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM0nabFO_tTqsX5c7Q-Z14CbRnqo9m11f__xkfzt6c8M026D_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "B, Ravi" <ravibabu@ti.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register
+ APIs from glue
+References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-3-git-send-email-ravibabu@ti.com> <519E2612.5000904@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com> <519E5E2E.4070104@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE52AA@DBDE04.ent.ti.com>
+In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EAE52AA@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 05:12:24PM -0500, Kent Yoder wrote:
-> On Wed, May 22, 2013 at 3:57 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Wed, May 22, 2013 at 02:47:01PM -0500, Kent Yoder wrote:
-> >> >> +     notify_remote_via_evtchn(priv->evtchn);
-> >> >> +
-> >> >> +     ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
-> >> >
-> >> > Um, + 6? Why? Is there an #define for that magic constant?
-> >> > Should this value be read before you do the wait_for_tpm_stat stuff?
-> >>
-> >>   This is hardcoded to 6 even in tpm.c.  Time for a #define...
-> >>
-> >> > Otherwise it looks OK to me. Should this go through me or Kent?
-> >> > And if so, is Kent waiting for my feedback?
-> >>
-> >>   My comments were minor -- I was expecting feedback on your earlier
-> >> comments before merging.  I think this should go through the tpmdd
-> >> maintainer if its going to live in drivers/char/tpm though.
-> >
-> > That is you I thought?
-> >
-> > konrad@phenom:~/mm$ scripts/get_maintainer.pl -f drivers/char/tpm
-> > Kent Yoder <key@linux.vnet.ibm.com> (maintainer:TPM DEVICE DRIVER)
-> > Rajiv Andrade <mail@srajiv.net> (maintainer:TPM DEVICE DRIVER)
-> > Marcel Selhorst <tpmdd@selhorst.net> (maintainer:TPM DEVICE DRIVER)
-> > Sirrix AG <tpmdd@sirrix.com> (maintainer:TPM DEVICE DRIVER)
-> > tpmdd-devel@lists.sourceforge.net (moderated list:TPM DEVICE DRIVER)
-> > linux-kernel@vger.kernel.org (open list)
-> 
-> That was me until today. :-)  But I didn't see the response your comments yet.
+Hello.
 
-Congratulations to you on a move to a new job!! Can you say what it is?
+On 24-05-2013 9:34, B, Ravi wrote:
 
-I am sure Daniel will post a patch shortly, and will CC everybody that get_maintainer.pl
-finds.
+>>>> removed unused nop xceiv (un_)register API's from all musb platform
+>>>> drivers
+
+>>>      Since when are they unused?
+
+>> Please refer to commit id 662dca54 : usb: otg: support for multiple transceivers by a single controller.
+>> Usb_get_phy() is used to get the of phy used by controller, phy bindings are done through DT.
+
+>>     Why are you sure that all these platforms support DT (in all configurations)?
+>> It seems to me that you're simply breaking the patched glue layers with this patch.
+>> I'll let Felipe decide the fate of this patch though...
+
+> You are correct, the bindings of phy and controller need not to done through DT alone, there is a saperate API
+> Phy API's available for such bindings done in respective board platform files.
+
+    I don't see any such code in e.g. DaVinci/DA8xx platform files.
+
+>>>> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+>> --
+>> Ravi B
+
+WBR, Sergei
+
