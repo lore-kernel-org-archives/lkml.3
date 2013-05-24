@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab3EXROI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:14:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57052 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756106Ab3EXROG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:14:06 -0400
-Date: Fri, 24 May 2013 18:13:00 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for
-	Kirkwood SoCs
-Message-ID: <20130524171300.GD18614@n2100.arm.linux.org.uk>
-References: <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com> <20130522201607.GA18823@obsidianresearch.com> <20130523160111.GP31290@titan.lakedaemon.net> <20130523171112.GB31281@obsidianresearch.com> <20130523172339.GQ31290@titan.lakedaemon.net> <20130523175357.GB2821@obsidianresearch.com> <20130523184028.GU31290@titan.lakedaemon.net> <519E9ADA.3040204@gmail.com> <CACRpkdbsicPkPAiaQCOg2mQF2Ce2dg_K=BKqqx=FCdAH7Y+QBg@mail.gmail.com> <20130524170125.GX31290@titan.lakedaemon.net>
+	id S1757061Ab3EXROv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:14:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38986 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752882Ab3EXROt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 13:14:49 -0400
+Subject: [PATCH] iommu: Split iommu_unmaps
+To: iommu@lists.linux-foundation.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: joro@8bytes.org, linux-kernel@vger.kernel.org
+Date: Fri, 24 May 2013 11:14:45 -0600
+Message-ID: <20130524171401.14099.78694.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524170125.GX31290@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 01:01:25PM -0400, Jason Cooper wrote:
-> On Fri, May 24, 2013 at 01:03:25PM +0200, Linus Walleij wrote:
-> > IMO: if you want to go down that road, what you really want is not
-> > ever more expressible device trees, but real open firmware,
-> > or ACPI or UEFI that can interpret and run bytecode as some
-> > "bios" for you. With DT coming from OF maybe this is a natural
-> > progression of things, but one has to realize when we reach the
-> > point where what we really want is a bios. Then your time is
-> > likely better spent with Tianocore or something than with the
-> > kernel.
-> 
-> shudder.  I like embedded systems because the *don't* have a bios.
+iommu_map splits requests into pages that the iommu driver reports
+that it can handle.  The iommu_unmap path does not do the same.  This
+can cause problems not only from callers that might expect the same
+behavior as the map path, but even from the failure path of iommu_map,
+should it fail at a point where it has mapped and needs to unwind a
+set of pages that the iommu driver cannot handle directly.  amd_iommu,
+for example, will BUG_ON if asked to unmap a non power of 2 size.
 
-Then you're into scenarios like I have with my laptop, where - those
-of you who check the nightly build results will have noticed - one
-of my serial ports doesn't always exist.  That's because the ACPI data
-in the BIOS is *wrong*.  It reports that it has been enabled when it
-hasn't, and the disassembled byte code is at fault here.
+Fix this by extracting and generalizing the sizing code from the
+iommu_map path and use it for both map and unmap.
 
-The fix?  God knows.  As far as I'm concerned as a user, or even as an
-OS developer, it's unfixable without getting the ACPI data structures
-changed, and that's not something I can do.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/iommu/iommu.c |   63 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 35 insertions(+), 28 deletions(-)
 
-Do you really want that on ARM?  Given the fiasco with the location of
-the registers, are you sure you want to place more trust in that
-direction?  Does it give you a warm fuzzy feeling to know that you
-might have to work out some way to patch vendor supplied bytecode?
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index d8f98b1..4b0b56b 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -754,6 +754,38 @@ int iommu_domain_has_cap(struct iommu_domain *domain,
+ }
+ EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
+ 
++static size_t iommu_pgsize(struct iommu_domain *domain,
++			   unsigned long addr_merge, size_t size)
++{
++	unsigned int pgsize_idx;
++	size_t pgsize;
++
++	/* Max page size that still fits into 'size' */
++	pgsize_idx = __fls(size);
++
++	/* need to consider alignment requirements ? */
++	if (likely(addr_merge)) {
++		/* Max page size allowed by address */
++		unsigned int align_pgsize_idx = __ffs(addr_merge);
++		pgsize_idx = min(pgsize_idx, align_pgsize_idx);
++	}
++
++	/* build a mask of acceptable page sizes */
++	pgsize = (1UL << (pgsize_idx + 1)) - 1;
++
++	/* throw away page sizes not supported by the hardware */
++	pgsize &= domain->ops->pgsize_bitmap;
++
++	/* make sure we're still sane */
++	BUG_ON(!pgsize);
++
++	/* pick the biggest page */
++	pgsize_idx = __fls(pgsize);
++	pgsize = 1UL << pgsize_idx;
++
++	return pgsize;
++}
++
+ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 	      phys_addr_t paddr, size_t size, int prot)
+ {
+@@ -785,32 +817,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 				(unsigned long)paddr, (unsigned long)size);
+ 
+ 	while (size) {
+-		unsigned long pgsize, addr_merge = iova | paddr;
+-		unsigned int pgsize_idx;
+-
+-		/* Max page size that still fits into 'size' */
+-		pgsize_idx = __fls(size);
+-
+-		/* need to consider alignment requirements ? */
+-		if (likely(addr_merge)) {
+-			/* Max page size allowed by both iova and paddr */
+-			unsigned int align_pgsize_idx = __ffs(addr_merge);
+-
+-			pgsize_idx = min(pgsize_idx, align_pgsize_idx);
+-		}
+-
+-		/* build a mask of acceptable page sizes */
+-		pgsize = (1UL << (pgsize_idx + 1)) - 1;
+-
+-		/* throw away page sizes not supported by the hardware */
+-		pgsize &= domain->ops->pgsize_bitmap;
+-
+-		/* make sure we're still sane */
+-		BUG_ON(!pgsize);
+-
+-		/* pick the biggest page */
+-		pgsize_idx = __fls(pgsize);
+-		pgsize = 1UL << pgsize_idx;
++		size_t pgsize = iommu_pgsize(domain, iova | paddr, size);
+ 
+ 		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
+ 					(unsigned long)paddr, pgsize);
+@@ -863,9 +870,9 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+ 	 * or we hit an area that isn't mapped.
+ 	 */
+ 	while (unmapped < size) {
+-		size_t left = size - unmapped;
++		size_t pgsize = iommu_pgsize(domain, iova, size - unmapped);
+ 
+-		unmapped_page = domain->ops->unmap(domain, iova, left);
++		unmapped_page = domain->ops->unmap(domain, iova, pgsize);
+ 		if (!unmapped_page)
+ 			break;
+ 
+
