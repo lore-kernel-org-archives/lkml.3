@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab3EYRnw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 13:43:52 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:34922 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757457Ab3EYRnv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 13:43:51 -0400
+	id S1757563Ab3EYR4G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 13:56:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757437Ab3EYR4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 13:56:03 -0400
+Message-ID: <51A0FB23.3050301@redhat.com>
+Date: Sat, 25 May 2013 13:55:47 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1369503576-22271-2-git-send-email-prabhakar.csengg@gmail.com>
-References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com> <1369503576-22271-2-git-send-email-prabhakar.csengg@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sat, 25 May 2013 23:13:29 +0530
-Message-ID: <CA+V-a8sAXXq=gBO_uDsOS1MonXJan+mpBwo15tvp+wR40kAMKA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] ARM: davinci: dm365 evm: remove init_enable from
- ths7303 pdata
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] ipc/sem.c: fix lockup, restore FIFO behavior
+References: <1369495011-2586-1-git-send-email-manfred@colorfullife.com>
+In-Reply-To: <1369495011-2586-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
-
-On Sat, May 25, 2013 at 11:09 PM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 05/25/2013 11:16 AM, Manfred Spraul wrote:
+> The double coward solution:
+> - wakeup stays FIFO
+> - fast switch back to per-semaphore spinlock mode
 >
-> remove init_enable from ths7303 pdata as it is being dropped
-> from ths7303_platform_data.
+> The patch
+> a) fixes a lockup due to a missing restart.
+> b) makes the wakeups again FIFO (as linux <= 3.0.9)
+> c) tries to limit the time while in global lock mode as much
+>     as possible. (same as linux-3.0.10-rc1)
 >
-Can you please ack this patch as I intend to take this patch via media
-tree.
+> Changes:
+> - the wait-for-zero operations are moved into seperate lists. Thus they can
+>    be checked seperately, without rescanning the whole queue.
+> - If a complex operation must sleep, then all pending change operations are
+>    moved into the global queue. This allows to keep everything FIFO.
+> - When all complex operations have completed, the simple ops are moved
+>    back into the per-semaphore queues.
+>
+> Advantage:
+> - FIFO. Dropping FIFO is a user visible change, and I'm a coward.
 
-Regards,
---Prabhakar Lad
+I am still not entirely convinced that FIFO is worthwhile,
+but the code looks correct to me.
+
+Acked-by: Rik van Riel <riel@redhat.com>
+
+> - simpler check_restart logic.
+> - Efficient handling of wait-for-zero semops, both simple and complex.
+> - Fewer restarts in update_queue(), because pending wait-for-zero do not
+>    force a restart anymore.
+>
+> Other changes:
+> - try_atomic_semop() also performs the semop. Thus rename the function.
+>
+> It passes tests with qemu, but not boot-tested due to EFI problems.
+>
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+
