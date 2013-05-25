@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab3EYKY7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 06:24:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18005 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753183Ab3EYKY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 06:24:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,740,1363158000"; 
-   d="scan'208";a="342990157"
-Date: Sat, 25 May 2013 18:25:44 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: lkp@linux.intel.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] x86, mm: fix boot hang regression
-Message-ID: <20130525102544.GP2663@yliu-dev.sh.intel.com>
-References: <1369456201-24910-1-git-send-email-yuanhan.liu@linux.intel.com>
- <CAE9FiQVZyizrB4=FV56hjeb_-vX_YWJ=Ur54ptTEeFpaekv16Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQVZyizrB4=FV56hjeb_-vX_YWJ=Ur54ptTEeFpaekv16Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755521Ab3EYLId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 07:08:33 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:41254 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718Ab3EYLIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 07:08:32 -0400
+From: Daniel Tang <dt.tangr@gmail.com>
+To: linux-arm-kernel@lists.infradead.org,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>
+Cc: Daniel Tang <dt.tangr@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
+Subject: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
+Date: Sat, 25 May 2013 21:08:01 +1000
+Message-Id: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 12:31:43AM -0700, Yinghai Lu wrote:
-> On Fri, May 24, 2013 at 9:30 PM, Yuanhan Liu
-> <yuanhan.liu@linux.intel.com> wrote:
-> > Commit 8d57470d introduced a kernel panic while setting mem=2G at
-> > boot time, and commit c9b3234a6 turns the the kernel panic to hang.
-> >
-> > While, the reason is the same: the are accessing a BAD address; I mean
-> > the mapping is broken.
-> >
-> > Here is a mem mapping range dumped at boot time:
-> >     [mem 0x00000000-0x000fffff] page 4k  (0)
-> >     [mem 0x7fe00000-0x7fffffff] page 1G  (1)
-> >     [mem 0x7c000000-0x7fdfffff] page 1G  (2)
-> >     [mem 0x00100000-0x001fffff] page 4k  (3)
-> >     [mem 0x00200000-0x7bffffff] page 2M  (4)
-> >
-> ...
-> > I reported this panic regression long time ago, and I didn't notic the above
-> > panic->hang change before, which might confuse Yinghai for understanding
-> > what happened from 2 logs I sent before(one is from 8d57470d, another is
-> > from the HEAD commit at that time, which turn to a hang as stated).
-> > More, it seems that Yinghai can't produce it. And I was busying at
-> > something else. And I finally got a day yesterday(and a good mood ;).
-> >
-> > Last, Thanks Changlong's effort for bisecting the 2 above commit.
-> > ---
-> >  arch/x86/mm/init_64.c |   51 +++++++++++++++++++++++++++++++++++++++++-------
-> >  1 files changed, 43 insertions(+), 8 deletions(-)
-> 
-> oh, I know the reason, my intel box has acpi or reserved area just below 2GiB.
+Changes between http://archive.arm.linux.org.uk/lurker/message/20130408.113343.585af217.en.html and v2:
+* Added new drivers to support the irqchip and timers on older models.
+* Added new device trees to support the other models.
 
-Due to the 1GB page mapping support, it seems that this issue does not
-exist on platform before Sandybridge.
+Changes between v2 and v3:
+* Clean up keypad driver
+* Update copyright messages (2012->2013)
+* Added clock driver
+* Fix keypad support for classic models
+* Fix nspire-classic-timer code to use updated CLOCKSOURCE_OF_DECLARE
+* Change CLCD code to use panel capabilities
+* Change UART clock to match APB speed
+* Support for reset
 
-> 
-> your patch is not right fix.
-> 
-> Attached patch should fix the problem.
+Changes between v3 and v4:
+* Remove redundant clock-names in device tree
+* Re-enable bus access to some peripherals on bootup
+* Clean up nspire-classic-timer code.
+  - Implement a nspire_timer_set_mode function
+  - Removed messy IO_MATCHx and CNTL_MATCHx macros
+  - Timer starts disabled to begin with
+  - Interrupt handling code return IRQ_NONE for spurious interrupts
+  - Delete unnessecary shift
+* Change clk-nspire to use compatible property to determine IO type
+* Change device tree bindings to have appropriate vendor prefixes
+* Added device tree binding documentation
+* Fix incorrect register addresses for clocks
+* Use more specific .caps for CLCD
 
-Firstly, your patch works and feel free to add:
-	Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Daniel Tang (6):
+  arm: TI-Nspire platform code
+  arm: TI-Nspire device trees
+  clk: TI-Nspire clock drivers
+  clocksource: TI-Nspire timer support
+  input: TI-Nspire keypad support
+  irqchip: TI-Nspire irqchip support
 
-While, your patch fixes this issue on source side. I thought that
-before, too.  But I think it's better to fix it on root side.
-That's why I sent a patch to try to fix it at mapping stage; Meanwhile,
-I was trying to sent another patch to fix this issue on source
-side later. And you did that.
+ .../devicetree/bindings/clock/nspire-clock.txt     |  24 ++
+ .../devicetree/bindings/input/ti,nspire-keypad.txt |  60 ++++
+ .../interrupt-controller/lsi,zevio-intc.txt        |  18 ++
+ .../devicetree/bindings/timer/lsi,zevio-timer.txt  |  33 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/Kconfig.debug                             |  16 ++
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/boot/dts/Makefile                         |   3 +
+ arch/arm/boot/dts/nspire-classic.dtsi              |  74 +++++
+ arch/arm/boot/dts/nspire-clp.dts                   |  45 +++
+ arch/arm/boot/dts/nspire-cx.dts                    | 112 ++++++++
+ arch/arm/boot/dts/nspire-tp.dts                    |  44 +++
+ arch/arm/boot/dts/nspire.dtsi                      | 175 ++++++++++++
+ arch/arm/include/debug/nspire.S                    |  28 ++
+ arch/arm/mach-nspire/Kconfig                       |  15 +
+ arch/arm/mach-nspire/Makefile                      |   2 +
+ arch/arm/mach-nspire/Makefile.boot                 |   0
+ arch/arm/mach-nspire/clcd.c                        | 119 ++++++++
+ arch/arm/mach-nspire/clcd.h                        |  14 +
+ arch/arm/mach-nspire/mmio.h                        |  23 ++
+ arch/arm/mach-nspire/nspire.c                      | 117 ++++++++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-nspire.c                           | 155 ++++++++++
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/zevio-timer.c                  | 231 +++++++++++++++
+ drivers/input/keyboard/Kconfig                     |  10 +
+ drivers/input/keyboard/Makefile                    |   1 +
+ drivers/input/keyboard/nspire-keypad.c             | 315 +++++++++++++++++++++
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-zevio.c                        | 177 ++++++++++++
+ 31 files changed, 1818 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/nspire-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/input/ti,nspire-keypad.txt
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+ create mode 100644 arch/arm/boot/dts/nspire-classic.dtsi
+ create mode 100644 arch/arm/boot/dts/nspire-clp.dts
+ create mode 100644 arch/arm/boot/dts/nspire-cx.dts
+ create mode 100644 arch/arm/boot/dts/nspire-tp.dts
+ create mode 100644 arch/arm/boot/dts/nspire.dtsi
+ create mode 100644 arch/arm/include/debug/nspire.S
+ create mode 100644 arch/arm/mach-nspire/Kconfig
+ create mode 100644 arch/arm/mach-nspire/Makefile
+ create mode 100644 arch/arm/mach-nspire/Makefile.boot
+ create mode 100644 arch/arm/mach-nspire/clcd.c
+ create mode 100644 arch/arm/mach-nspire/clcd.h
+ create mode 100644 arch/arm/mach-nspire/mmio.h
+ create mode 100644 arch/arm/mach-nspire/nspire.c
+ create mode 100644 drivers/clk/clk-nspire.c
+ create mode 100644 drivers/clocksource/zevio-timer.c
+ create mode 100644 drivers/input/keyboard/nspire-keypad.c
+ create mode 100644 drivers/irqchip/irq-zevio.c
 
-On the other hand, since we support splitting PUD(and PMD), I guess we
-should make it do the right work just in case will meet such case later.
+--
+1.8.1.3
 
-So, I still think my patch does fix something and should be merged,
-unless I did it wrongly. And please correct me if I'm wrong.
-
-Thanks.
-
-	--yliu
