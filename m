@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab3EYLOv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 07:14:51 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:37207 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab3EYLOu (ORCPT
+	id S1755859Ab3EYLUX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 07:20:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32639 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082Ab3EYLUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 07:14:50 -0400
-Message-ID: <51A09D1D.3040706@redhat.com>
-Date: Sat, 25 May 2013 13:14:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sat, 25 May 2013 07:20:21 -0400
+Date: Sat, 25 May 2013 07:20:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
+        qemu-devel@nongnu.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] vfio: hugepage support for vfio_iommu_type1
+Message-ID: <20130525112009.GC2418@localhost.localdomain>
+References: <20130524171613.14229.84050.stgit@bling.home>
+ <20130524172438.14229.59476.stgit@bling.home>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <1369456502.5008.5.camel@dabdike> <20130525083713.GA6179@mtj.dyndns.org>
-In-Reply-To: <20130525083713.GA6179@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524172438.14229.59476.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/05/2013 10:37, Tejun Heo ha scritto:
-> Hey, James.
-> 
-> On Fri, May 24, 2013 at 09:35:02PM -0700, James Bottomley wrote:
->>> Well, I'd actually much prefer disabling CDB whitelisting for all !MMC
->>> devices if at all possible.
->>
->> I'll go along with this.  I'm also wondering what the problem would be
-> 
-> Don't think we can.  It'd be a behavior change clearly visible to
-> userland at this point.
+> + * Turns out AMD IOMMU has a page table bug where it won't map large pages
+> + * to a region that previously mapped smaller pages.  This should be fixed
+> + * soon, so this is just a temporary workaround to break mappings down into
+> + * PAGE_SIZE.  Better to map smaller pages than nothing.
+> + */
+> +static int map_try_harder(struct vfio_iommu *iommu, dma_addr_t iova,
+> +			  unsigned long pfn, long npage, int prot)
+> +{
+> +	long i;
+> +	int ret;
+> +
+> +	for (i = 0; i < npage; i++, pfn++, iova += PAGE_SIZE) {
+> +		ret = iommu_map(iommu->domain, iova,
+> +				(phys_addr_t)pfn << PAGE_SHIFT,
+> +				PAGE_SIZE, prot);
+> +		if (ret)
+> +			break;
+> +	}
+> +
+> +	for (; i < npage && i > 0; i--, iova -= PAGE_SIZE)
+> +		iommu_unmap(iommu->domain, iova, PAGE_SIZE);
+> +
+>  	return ret;
+>  }
 
-We can (and even for MMC) if it is a build-time configuration knob.  It
-would satisfy those people who want the CVE fixed, as long as userspace
-gets some configurability.
-
-> * Fix the security bug.  I don't really care how it's fixed as long as
->   the amount of whitelisted commands goes down not up.
-> 
-> * It's not like we can remove the filter for !MMC devices at this
->   point, so I think it makes sense to make it per-class so that we can
->   *remove* commands which aren't relevant for the device type.  Also,
->   we probably wanna add read blinking comment yelling that no further
->   commands should be added.
-> 
-> * Merge the patch to give out SG_IO access along with write access, so
->   the use cases which want to give out SG_IO access can do so
->   explicitly and be fully responsible for the device.  This makes
->   sense to me.  If one wants to be allowed to issue raw commands to
->   the hardware, one takes the full responsibility.
-
-That's not possible; it would make it impossible to do things like using
-a privileged helper to open the file and passing it back via SCM_RIGHTS
-to an unprivileged program (running as the user).  This is the ptrace
-attack that you mentioned.
-
-Paolo
+This looks to belong to a vfio-quirk file (a something else) that deals with
+various IOMMU's quirks.
