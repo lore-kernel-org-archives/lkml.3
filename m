@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab3EYJJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 05:09:47 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:36196 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3EYJJj convert rfc822-to-8bit (ORCPT
+	id S1755834Ab3EYJJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 05:09:57 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41801 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3EYJJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 05:09:39 -0400
+	Sat, 25 May 2013 05:09:55 -0400
 MIME-Version: 1.0
-Date: Sat, 25 May 2013 11:09:38 +0200
-Message-ID: <CADDKRnBf4i8ZQ4EXC15Sa6z9CZ55w0vBDnXG26sjWgdO9zH45w@mail.gmail.com>
-Subject: [v3.10-rc2] iwlwifi regression
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <519F8B02.1080000@wwwdotorg.org>
+References: <1368690525-32252-1-git-send-email-linus.walleij@stericsson.com>
+	<519A8A57.9060007@wwwdotorg.org>
+	<CACRpkdZieCmFnHCGUkv8EqcAtb3DA7dSZpimSdB4P81tZPJRoQ@mail.gmail.com>
+	<519F8B02.1080000@wwwdotorg.org>
+Date: Sat, 25 May 2013 11:09:54 +0200
+Message-ID: <CACRpkdYxvBvYAnmp-p5WwB3QD0rd83qDcdg-BMhN7-2Jv8Oo_w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: sink pinctrldev_list_mutex
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: ext Tony Lindgren <tony@atomide.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If iwlwifi/iwldvm are built into the kernel (no loadable modules)
-following error is written to console and syslog since v3.10-rc:
+On Fri, May 24, 2013 at 5:45 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/24/2013 02:04 AM, Linus Walleij wrote:
 
-iwlwifi 0000:08:00.0: failed to load module iwldvm (error -38), is
-dynamic loading enabled?
+>> Prevention of module unloading of pin controllers has never
+>> been working properly, as there is no way to release the
+>> pinctrl handles taken by different drivers.
+>>
+>> I think that is why most pin controller drivers are bool rather
+>> than tristate.
+>
+> Once we get to multi-platform distro kernels, we will probably want all
+> the pinctrl drivers to be modules so only the correct one gets loaded
+> from an initrd. Hence, we'll want to move things to tristate rather than
+> away from it.
 
-reverting
-commit 1618b2b02a3a0ee7a6863fed4b0d22e697e7e97c
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Thu Apr 4 10:35:23 2013 +0200
-    iwlwifi: print warning on request_module failure
+OK ... As some kind of excuse I think the current situation is an
+outgrowth of the fact that all the custom set-up used to be in machines
+down in arch/arm/* and inevitably done at machine init.
 
-fixes the problem for me.
+> If we know the pinctrl subsystem doesn't yet work correctly with module
+> unloads, should we modify pinctrl_register() to simply take a lock on
+> the driver module and never drop it, so that we guarantee we don't try
+> to unload the module later? Or, is this effectively already in place?
 
-Jörg
+Hm, it won't happen with anything but pinctrl-single for sure.
+But I know that Tony used it at one point, however I still
+suspect that he was only using hogs.
 
-I'm not subscribed,please CC me in answeres
+We should maybe take the lock at the instant we instatiate a
+pinctrl handle from something else than a hog, so as to mark
+that we then have external dependencies that make unloading
+impossible.
+
+But it'd be even cooler to actually just iterate over the
+pinctrl_list och handles and orphan them, and later recouple
+them if a driver is loaded back in.
+
+It can surely be done, but at the cost of introducing a state
+lock in struct pinctrl and some pieces of hairy code in the
+core.
+
+Yours,
+Linus Walleij
