@@ -1,73 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3EYOkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 10:40:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756485Ab3EYOkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 10:40:10 -0400
-Message-ID: <1369492793.2646.164.camel@ul30vt.home>
-Subject: Re: [PATCH 0/2] vfio: type1 iommu hugepage support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
-        qemu-devel@nongnu.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 25 May 2013 08:39:53 -0600
-In-Reply-To: <20130525112153.GD2418@localhost.localdomain>
-References: <20130524171613.14229.84050.stgit@bling.home>
-	 <20130525112153.GD2418@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756746Ab3EYOm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 10:42:26 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:59310 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab3EYOmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 10:42:25 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Subject: [PATCH 1/1] rtc: rtc-ds1307: use devm_*() functions
+Date: Sat, 25 May 2013 07:41:54 -0700
+Message-Id: <1369492914-32288-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-05-25 at 07:21 -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, May 24, 2013 at 11:24:26AM -0600, Alex Williamson wrote:
-> > This series let's the vfio type1 iommu backend take advantage of iommu
-> > large page support.  See patch 2/2 for the details.  This has been
-> > tested on both amd_iommu and intel_iommu, but only my AMD system has
-> > large page support.  I'd appreciate any testing and feedback on other
-> > systems, particularly vt-d systems supporting large pages.  Mapping
-> > efficiency should be improved a bit without iommu hugepages, but I
-> > hope that it's much more noticeable with huge pages, especially for
-> > very large QEMU guests.
-> 
-> I took a very very quick look - and I am wondering if there should also
-> be a flag to turn it on/off in ther kernel in such case? Especially in the 
-> field if a user finds out that their particular IOMMU chipset might
-> be doing something funky with large-pages ?
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-Yeah, that's probably a reasonable feature.  intel-iommu has a boot
-option to disable superpages, but we could make it more consistent at
-the vfio level if we have a switch there.  It could provided interesting
-performance and debugging info.  I'll add a module option to do this.
-Thanks,
+Use devm_*() functions to make cleanup paths simpler.
 
-Alex
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+---
+ drivers/rtc/rtc-ds1307.c |   57 +++++++++++++++++-----------------------------
+ 1 file changed, 21 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
+index b53992a..9852f55 100644
+--- a/drivers/rtc/rtc-ds1307.c
++++ b/drivers/rtc/rtc-ds1307.c
+@@ -683,7 +683,9 @@ static int ds1307_probe(struct i2c_client *client,
+ 	    && !i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
+ 		return -EIO;
  
-> > This change includes a clarification to the mapping expectations for
-> > users of the type1 iommu, but is compatible with known users and works
-> > with existing QEMU userspace supporting vfio.  Thanks,
-> > 
-> > Alex
-> > 
-> > ---
-> > 
-> > Alex Williamson (2):
-> >       vfio: Convert type1 iommu to use rbtree
-> >       vfio: hugepage support for vfio_iommu_type1
-> > 
-> > 
-> >  drivers/vfio/vfio_iommu_type1.c |  607 ++++++++++++++++++++++++---------------
-> >  include/uapi/linux/vfio.h       |    8 -
-> >  2 files changed, 387 insertions(+), 228 deletions(-)
-> > _______________________________________________
-> > iommu mailing list
-> > iommu@lists.linux-foundation.org
-> > https://lists.linuxfoundation.org/mailman/listinfo/iommu
-
-
+-	ds1307 = kzalloc(sizeof(struct ds1307), GFP_KERNEL);
++	ds1307 = devm_kzalloc(&client->dev, sizeof(struct ds1307),
++						GFP_KERNEL);
++
+ 	if (!ds1307)
+ 		return -ENOMEM;
+ 
+@@ -714,8 +716,7 @@ static int ds1307_probe(struct i2c_client *client,
+ 				DS1337_REG_CONTROL, 2, buf);
+ 		if (tmp != 2) {
+ 			dev_dbg(&client->dev, "read error %d\n", tmp);
+-			err = -EIO;
+-			goto exit_free;
++			return -EIO;
+ 		}
+ 
+ 		/* oscillator off?  turn it on, so clock can tick. */
+@@ -753,8 +754,7 @@ static int ds1307_probe(struct i2c_client *client,
+ 				RX8025_REG_CTRL1 << 4 | 0x08, 2, buf);
+ 		if (tmp != 2) {
+ 			dev_dbg(&client->dev, "read error %d\n", tmp);
+-			err = -EIO;
+-			goto exit_free;
++			return -EIO;
+ 		}
+ 
+ 		/* oscillator off?  turn it on, so clock can tick. */
+@@ -797,8 +797,7 @@ static int ds1307_probe(struct i2c_client *client,
+ 					RX8025_REG_CTRL1 << 4 | 0x08, 2, buf);
+ 			if (tmp != 2) {
+ 				dev_dbg(&client->dev, "read error %d\n", tmp);
+-				err = -EIO;
+-				goto exit_free;
++				return -EIO;
+ 			}
+ 
+ 			/* correct hour */
+@@ -825,8 +824,7 @@ read_rtc:
+ 	tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
+ 	if (tmp != 8) {
+ 		dev_dbg(&client->dev, "read error %d\n", tmp);
+-		err = -EIO;
+-		goto exit_free;
++		return -EIO;
+ 	}
+ 
+ 	/*
+@@ -867,8 +865,7 @@ read_rtc:
+ 		tmp = i2c_smbus_read_byte_data(client, DS1340_REG_FLAG);
+ 		if (tmp < 0) {
+ 			dev_dbg(&client->dev, "read error %d\n", tmp);
+-			err = -EIO;
+-			goto exit_free;
++			return -EIO;
+ 		}
+ 
+ 		/* oscillator fault?  clear flag, and warn */
+@@ -927,13 +924,13 @@ read_rtc:
+ 				bin2bcd(tmp));
+ 	}
+ 
+-	ds1307->rtc = rtc_device_register(client->name, &client->dev,
++	ds1307->rtc = devm_rtc_device_register(&client->dev, client->name,
+ 				&ds13xx_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(ds1307->rtc)) {
+ 		err = PTR_ERR(ds1307->rtc);
+ 		dev_err(&client->dev,
+ 			"unable to register the class device\n");
+-		goto exit_free;
++		return err;
+ 	}
+ 
+ 	if (want_irq) {
+@@ -942,7 +939,7 @@ read_rtc:
+ 		if (err) {
+ 			dev_err(&client->dev,
+ 				"unable to request IRQ!\n");
+-			goto exit_irq;
++			return err;
+ 		}
+ 
+ 		device_set_wakeup_capable(&client->dev, 1);
+@@ -951,12 +948,12 @@ read_rtc:
+ 	}
+ 
+ 	if (chip->nvram_size) {
+-		ds1307->nvram = kzalloc(sizeof(struct bin_attribute),
+-							GFP_KERNEL);
+-		if (!ds1307->nvram) {
+-			err = -ENOMEM;
+-			goto exit_nvram;
+-		}
++		ds1307->nvram =	devm_kzalloc(&client->dev,
++			sizeof(struct bin_attribute), GFP_KERNEL);
++
++		if (!ds1307->nvram)
++			return -ENOMEM;
++
+ 		ds1307->nvram->attr.name = "nvram";
+ 		ds1307->nvram->attr.mode = S_IRUGO | S_IWUSR;
+ 		sysfs_bin_attr_init(ds1307->nvram);
+@@ -965,22 +962,14 @@ read_rtc:
+ 		ds1307->nvram->size = chip->nvram_size;
+ 		ds1307->nvram_offset = chip->nvram_offset;
+ 		err = sysfs_create_bin_file(&client->dev.kobj, ds1307->nvram);
+-		if (err) {
+-			kfree(ds1307->nvram);
+-			goto exit_nvram;
+-		}
++		if (err)
++			return err;
++
+ 		set_bit(HAS_NVRAM, &ds1307->flags);
+ 		dev_info(&client->dev, "%zu bytes nvram\n", ds1307->nvram->size);
+ 	}
+ 
+ 	return 0;
+-
+-exit_nvram:
+-exit_irq:
+-	rtc_device_unregister(ds1307->rtc);
+-exit_free:
+-	kfree(ds1307);
+-	return err;
+ }
+ 
+ static int ds1307_remove(struct i2c_client *client)
+@@ -992,13 +981,9 @@ static int ds1307_remove(struct i2c_client *client)
+ 		cancel_work_sync(&ds1307->work);
+ 	}
+ 
+-	if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags)) {
++	if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags))
+ 		sysfs_remove_bin_file(&client->dev.kobj, ds1307->nvram);
+-		kfree(ds1307->nvram);
+-	}
+ 
+-	rtc_device_unregister(ds1307->rtc);
+-	kfree(ds1307);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
