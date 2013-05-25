@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3EYNNg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 09:13:36 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50850 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3EYNNe (ORCPT
+	id S1756095Ab3EYNZw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 09:25:52 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55361 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3EYNZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 09:13:34 -0400
-Date: Sat, 25 May 2013 15:13:24 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130525151324.637d6b70@holzheu>
-In-Reply-To: <20130524170507.GG18218@redhat.com>
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<20130524143644.GD18218@redhat.com>
-	<20130524170626.2ac06efe@holzheu>
-	<20130524152849.GF18218@redhat.com>
-	<20130524184653.52d75b5f@holzheu>
-	<20130524170507.GG18218@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052513-0342-0000-0000-00000521EF51
+	Sat, 25 May 2013 09:25:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368028298-7401-17-git-send-email-jiang.liu@huawei.com>
+References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
+	<1368028298-7401-17-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 25 May 2013 21:25:47 +0800
+Message-ID: <CAJxxZ0Ous_4_QCM7dyDkDHyHiLiib3Gr70Z22-ac0u275shfSQ@mail.gmail.com>
+Subject: Re: [PATCH v5, part4 16/41] mm/blackfin: prepare for removing
+ num_physpages and simplify mem_init()
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 May 2013 13:05:07 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+Hi Jiang
 
-> On Fri, May 24, 2013 at 06:46:53PM +0200, Michael Holzheu wrote:
-> > On Fri, 24 May 2013 11:28:49 -0400
-> > Vivek Goyal <vgoyal@redhat.com> wrote:
-> > 
-> > > On Fri, May 24, 2013 at 05:06:26PM +0200, Michael Holzheu wrote:
-> > 
-> > [snip] 
-> > 
-> > > As /proc/vmcore is the most used and useful interface, I prefer
-> > > that we swap memory and put that info in elf headers.
-> > > For /dev/oldme, I don't mind if we leave it as it is. If somebody
-> > > really cares, then I guess we need to write a new command line
-> > > option which /dev/mem can parse and which tells it about swaps so
-> > > that /dev/oldmem can map things correctly. (This is better than
-> > > hardcoding things).
-> > 
-> > Besides of the potential /dev/oldmem issue, I still do not
-> > understand the option of doing the swap in the elf header. Looks
-> > like I missed here a fundamental design point of kdump :(
-> > 
-> > Is that done by specifying different virtual and physical addresses
-> > in the ELF header?
-> 
-> Nope. We keep the virtual to physical address mapping same. We just
-> modify the p_offset in PT_LOAD elf header to represent where actually
-> the memory is present physically. And when /proc/vmcore reads the
-> data, it reads it from p_offset.
-> 
-> IOW, p_offset and p_paddr will be different for swapped memory but 
-> should be same for memory which has not been swapped.
+On Wed, May 8, 2013 at 11:51 PM, Jiang Liu <liuj97@gmail.com> wrote:
+> Prepare for removing num_physpages and simplify mem_init().
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Bob Liu <lliubbo@gmail.com>
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/blackfin/mm/init.c |   38 ++++++--------------------------------
+>  1 file changed, 6 insertions(+), 32 deletions(-)
+>
+> diff --git a/arch/blackfin/mm/init.c b/arch/blackfin/mm/init.c
+> index 1cc8607..e4b6e11 100644
+> --- a/arch/blackfin/mm/init.c
+> +++ b/arch/blackfin/mm/init.c
+> @@ -90,43 +90,17 @@ asmlinkage void __init init_pda(void)
+>
+>  void __init mem_init(void)
+>  {
+> -       unsigned int codek = 0, datak = 0, initk = 0;
+> -       unsigned int reservedpages = 0, freepages = 0;
+> -       unsigned long tmp;
+> -       unsigned long start_mem = memory_start;
+> -       unsigned long end_mem = memory_end;
+> +       char buf[64];
+>
+> -       end_mem &= PAGE_MASK;
+> -       high_memory = (void *)end_mem;
+> -
+> -       start_mem = PAGE_ALIGN(start_mem);
+> -       max_mapnr = num_physpages = MAP_NR(high_memory);
+> -       printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", num_physpages);
+> +       high_memory = (void *)(memory_end & PAGE_MASK);
+> +       max_mapnr = MAP_NR(high_memory);
+> +       printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", max_mapnr);
+>
+>         /* This will put all low memory onto the freelists. */
+>         free_all_bootmem();
+>
+> -       reservedpages = 0;
+> -       for (tmp = ARCH_PFN_OFFSET; tmp < max_mapnr; tmp++)
+> -               if (PageReserved(pfn_to_page(tmp)))
+> -                       reservedpages++;
+> -       freepages =  max_mapnr - ARCH_PFN_OFFSET - reservedpages;
+> -
+> -       /* do not count in kernel image between _rambase and _ramstart */
+> -       reservedpages -= (_ramstart - _rambase) >> PAGE_SHIFT;
+> -#if (defined(CONFIG_BFIN_EXTMEM_ICACHEABLE) && ANOMALY_05000263)
+> -       reservedpages += (_ramend - memory_end - DMA_UNCACHED_REGION) >> PAGE_SHIFT;
+> -#endif
+> -
+> -       codek = (_etext - _stext) >> 10;
+> -       initk = (__init_end - __init_begin) >> 10;
+> -       datak = ((_ramstart - _rambase) >> 10) - codek - initk;
+> -
+> -       printk(KERN_INFO
+> -            "Memory available: %luk/%luk RAM, "
+> -               "(%uk init code, %uk kernel code, %uk data, %uk dma, %uk reserved)\n",
+> -               (unsigned long) freepages << (PAGE_SHIFT-10), (_ramend - CONFIG_PHY_RAM_BASE_ADDRESS) >> 10,
+> -               initk, codek, datak, DMA_UNCACHED_REGION >> 10, (reservedpages << (PAGE_SHIFT-10)));
 
-Hello Vivek,
+You can't remove all these memory information for blackfin. They are
+useful on blackfin platform.
 
-Ok, now I got it :)
+Regards,
 
-It worked for me by specifying a PT_LOAD with:
-
-  phdr->p_offset = OLDMEM_BASE;
-  phdr->p_vaddr = phdr->p_paddr = 0;
-  phdr->p_filesz = phdr->p_memsz = OLDMEM_SIZE;
-
-Best Regards,
-Michael
-
-
+Sonic
