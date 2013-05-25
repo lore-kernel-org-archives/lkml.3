@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab3EYHLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 03:11:25 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41495
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751545Ab3EYHLX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 03:11:23 -0400
-Date: Sat, 25 May 2013 03:11:18 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130525071118.GA11912@infradead.org>
-References: <20130522221737.GA12339@mtj.dyndns.org>
- <519DC926.4000106@redhat.com>
- <20130523090222.GA26592@mtj.dyndns.org>
- <519DE5AD.7080303@redhat.com>
- <20130524014405.GB16882@mtj.dyndns.org>
- <519F12FF.6090809@redhat.com>
- <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
- <1369456502.5008.5.camel@dabdike>
- <20130525052744.GA25186@infradead.org>
- <51A062B5.8040601@redhat.com>
+	id S1753029Ab3EYHMb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 03:12:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43654 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954Ab3EYHMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 03:12:30 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <51A02E50.5020507@gmail.com>
+References: <51A02E50.5020507@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A062B5.8040601@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 0/7] Remove unused /dev/oldmem interface
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 25 May 2013 00:11:33 -0700
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Simon Horman <horms@verge.net.au>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <d36f8c1a-dca0-41d2-a478-7c1551844b42@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 09:05:25AM +0200, Paolo Bonzini wrote:
-> > you could send destructive commands to a partition.  The right fix
-> > for that would be to not allow SG_IO on partitions at all, just
-> > wondering if anything would be broken by this.
-> 
-> Linus wanted to keep that for CAP_SYS_RAWIO.  We found two uses of SG_IO
-> on partitions: zfs-fuse used SYNCHRONIZE CACHE; some proprietary driver
-> used TEST UNIT READY.
-> 
-> Really, the solution is to make the bitmaps configurable in userspace.
-> It is no less secure than unpriv_sgio.  Then the kernel can be
-> configured at build-time to have either an MMC bitmap and a basic
-> whitelist of a dozen commands.  We can even avoid working around those
-> few conflicting opcodes; if you're paranoid you can just configure your
-> kernel right.
+Awesome!
 
-Keep it simple.  Allowing SG_IO for CAP_SYS_RAWIO probably is fine,
-allowing it for permissions only clearly isn't. All the per-command
-filetering is just complete bullshit and the kind of bloat that
-eventually will make Linux unmaintainable.
+Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
 
+>/dev/oldmem provides the interface for us to access the "old memory" in
+>the dump-capture kernel. Unfortunately, no one actually uses this
+>interface.
+>
+>And this interface could actually cause some real problems if used on
+>ia64
+>where the cached/uncached accesses are mixed. See the discussion from
+>the link: https://lkml.org/lkml/2013/4/12/386.
+>
+>So Eric suggested that we should remove /dev/oldmem as an unused piece
+>of
+>code.
+>
+>Besides, we used a global variable saved_max_pfn to let the capture
+>kernel
+>know the amount of memory that the previous kernel used. And for almost
+>all
+>architectures (except x86. In x86, saved_max_pfn is used by
+>detect_calgary()),
+>the only user of this variable is the read_oldmem interface of
+>/dev/oldmem, so
+>also remove the setting for saved_max_pfn in those architectures.
+>
+>Zhang Yanfei (7):
+>  /dev/oldmem: Remove this interface
+>  Documentation/devices.txt: Remove /dev/oldmem description
+>  Documentation/kdump/kdump.txt: Remove /dev/oldmem description
+>  mips: Remove savemaxmem parameter setup
+>  powerpc: Remove savemaxmem parameter setup
+>  ia64: Remove setting for saved_max_pfn
+>  s390: Remove setting for saved_max_pfn
+>
+> Documentation/devices.txt        |    2 -
+> Documentation/kdump/kdump.txt    |   31 +++++--------------------
+> arch/ia64/kernel/efi.c           |    5 ----
+> arch/mips/kernel/crash_dump.c    |   10 --------
+> arch/powerpc/kernel/crash_dump.c |   10 --------
+> arch/s390/kernel/setup.c         |    4 ---
+>drivers/char/mem.c               |   47
+>--------------------------------------
+> 7 files changed, 6 insertions(+), 103 deletions(-)
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
