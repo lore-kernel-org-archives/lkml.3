@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab3EYEnE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 00:43:04 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43079 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3EYEnD convert rfc822-to-8bit (ORCPT
+	id S1752470Ab3EYEog (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 00:44:36 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:58875 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3EYEof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 00:43:03 -0400
+	Sat, 25 May 2013 00:44:35 -0400
+Message-ID: <51A040D2.20708@huawei.com>
+Date: Sat, 25 May 2013 12:40:50 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com>
-References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com>
-Date: Sat, 25 May 2013 00:43:01 -0400
-Message-ID: <CANsc=4WDM0q=RwaN2ZrcNqgJ=fDsgGHcBDcufnDek4EVWcnGfw@mail.gmail.com>
-Subject: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
-From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Florian Fainelli <florian@openwrt.org>, Arnd Bergmann <arnd@arndb.de>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Yannick Brosseau <yannick.brosseau@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <stern@rowland.harvard.edu>,
+        <linux-arm-kernel@lists.infradead.org>, Li Zefan <lizefan@huawei.com>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] module: use a macro instead of platform_driver_register
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On OMAP4 platforms, EHCI HCD needs the physical layer signalling
-activated, along with the NOP USB Transceiver driver. Otherwise, the
-kernel boots without registering any USB device.
 
-This patch applies to Linux 3.10-rc2.
+I found a lot of mistakes using struct platform_driver without owner
+so I make a macro instead of the function platform_driver_register.
+It can set owner in it, then guys don`t care about module owner again.
 
-Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index de94f26..47959d7 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -44,6 +44,8 @@ endif # USB_XHCI_HCD
- config USB_EHCI_HCD
- 	tristate "EHCI HCD (USB 2.0) support"
- 	depends on USB_ARCH_HAS_EHCI
-+	select USB_PHY if ARCH_OMAP4
-+	select NOP_USB_XCEIV if ARCH_OMAP4
- 	---help---
- 	  The Enhanced Host Controller Interface (EHCI) is standard for USB 2.0
- 	  "high speed" (480 Mbit/sec, 60 Mbyte/sec) host controller hardware.
+ drivers/base/platform.c         |    8 +++++---
+ include/linux/platform_device.h |    8 +++++++-
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 9eda842..ed75cf6 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -523,11 +523,13 @@ static void platform_drv_shutdown(struct device *_dev)
+ }
+
+ /**
+- * platform_driver_register - register a driver for platform-level devices
++ * __platform_driver_register - register a driver for platform-level devices
+  * @drv: platform driver structure
+  */
+-int platform_driver_register(struct platform_driver *drv)
++int __platform_driver_register(struct platform_driver *drv,
++				struct module *owner)
+ {
++	drv->driver.owner = owner;
+ 	drv->driver.bus = &platform_bus_type;
+ 	if (drv->probe)
+ 		drv->driver.probe = platform_drv_probe;
+@@ -538,7 +540,7 @@ int platform_driver_register(struct platform_driver *drv)
+
+ 	return driver_register(&drv->driver);
+ }
+-EXPORT_SYMBOL_GPL(platform_driver_register);
++EXPORT_SYMBOL_GPL(__platform_driver_register);
+
+ /**
+  * platform_driver_unregister - unregister a driver for platform-level devices
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 9abf1db..cd46ee5 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -180,7 +180,13 @@ struct platform_driver {
+ 	const struct platform_device_id *id_table;
+ };
+
+-extern int platform_driver_register(struct platform_driver *);
++/*
++ * use a macro to avoid include chaining to get THIS_MODULE
++ */
++#define platform_driver_register(drv) \
++	__platform_driver_register(drv, THIS_MODULE)
++extern int __platform_driver_register(struct platform_driver *,
++					struct module *);
+ extern void platform_driver_unregister(struct platform_driver *);
+
+ /* non-hotpluggable platform devices may use this so that probe() and
+-- 
+1.7.1
+
+
