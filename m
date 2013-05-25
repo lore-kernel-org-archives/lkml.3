@@ -1,113 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3EYAda (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 20:33:30 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49207 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3EYAd3 (ORCPT
+	id S1752939Ab3EYBeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 21:34:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39570 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab3EYBeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 20:33:29 -0400
-Message-ID: <51A006CF.90105@gmail.com>
-Date: Sat, 25 May 2013 08:33:19 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com> <20130524143644.GD18218@redhat.com> <20130524170626.2ac06efe@holzheu> <20130524152849.GF18218@redhat.com> <87mwrkatgu.fsf@xmission.com>
-In-Reply-To: <87mwrkatgu.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 24 May 2013 21:34:02 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Elric Fu <elricfu1@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] usb: xhci: Fix Command Ring Stopped Event handling
+Date: Fri, 24 May 2013 18:33:50 -0700
+Message-Id: <1369445630-31018-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eric,
+The current XHCI code treats a command completion event with the
+COMP_CMD_STOP code as a slightly different version of COMP_CMD_ABORT. In
+particular, it puts the pointed-to command TRB through the normal
+command completion handlers. This is not how this event works.
 
-于 2013年05月25日 06:44, Eric W. Biederman 写道:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
->> On Fri, May 24, 2013 at 05:06:26PM +0200, Michael Holzheu wrote:
->>> Hello Vivek,
->>>
->>> On Fri, 24 May 2013 10:36:44 -0400
->>> Vivek Goyal <vgoyal@redhat.com> wrote:
->>>
->>> [snip]
->>>
->>>> Sorry, I don't understand the problem. If we swapped low memory and
->>>> crash reserved memory, that should have been taken care by prepared
->>>> ELF headers so that we map the right pfns. In x86 we swap 640K of low
->>>> memory with 640K of memory in reserved and we take care of this by
->>>> preparing elf headers accordingly.
->>>>
->>>> So why s390 can't do the same thing?
->>>
->>> I am not sure if I understand this. Currently we create the ELF
->>> header in a way that we have virtual=real. In the copy_oldmem_page() we
->>> do the swap so that for the /proc/vmcore code it looks like contiguous
->>> non-swapped memory.
->>>
->>> One reason why I thought this was necessary was that /dev/oldmem
->>> also uses the function and it should provide linear memory access like
->>> it is on the live system with /dev/mem.
->>>
->>> Is that implementation incorrect?
->>
->> [ CC Andrew. Keep him in loop for all kernel kdump patches as all kdump
->>   patches are routed through him ].
->>
->> [ CC Eric Biederman ]
->>
->> Looking at the code, looks like /dev/oldmem is broken. It does not know
->> anything about swap of any of the memory areas and it will simply
->> return the contents of page frame asked. And this has been like this
->> since the beginning.
->>
->> I have always questioned the utility of /dev/oldmem. Atleast I am not
->> aware of any tool making use of it.
->>
->> If we want to fix it, then somebow all the swapped memory region info
->> needs to be communicated to second kernel so that read_oldmem() can
->> do the mapping correctly and we really don't have any mechanism for
->> that. (I am assuming that in s390 you must have hardcoded the regions
->> of memory which are always swapped).
->>
->> As /proc/vmcore is the most used and useful interface, I prefer that
->> we swap memory and put that info in elf headers. For /dev/oldme, I
->> don't mind if we leave it as it is. If somebody really cares, then
->> I guess we need to write a new command line option which /dev/mem
->> can parse and which tells it about swaps so that /dev/oldmem can
->> map things correctly. (This is better than hardcoding things).
->>
->> Eric, do you have any thoughts on this.
-> 
-> I don't think anyone actually uses /dev/oldmem.  I would like to cite
-> the s390 confusion as proof but I don't think that quite works.
-> 
-> I think the solution is for someone to send a patch removing /dev/oldmem
-> as an unused piece of code.  That will also move us in the direction of
-> resolving HPAs concerns.
+As XHCI spec 4.6.1.1 describes, unlike other command completion events
+Command Ring Stopped sets the Command TRB Pointer to the *current*
+Command Ring Dequeue Pointer. This is the command TRB that the XHCI will
+execute next, and not a command that has already been executed. The
+driver's internal command ring dequeue pointer should not be increased
+after this event, since it does not really mark a command completion...
+it's just a hint for the driver that execution is stopped now and where
+it will be picked up again if the ring gets restarted.
 
-I think I can try this.
+This patch gets rid of the handle_stopped_command_ring() function and
+splits its behavior into two distinct parts for COMP_CMD_STOP and
+COMP_CMD_ABORT events. It ensures that the former no longer messes with
+the dequeue pointer, while the latter's behavior is unchanged. This
+prevents the hardware and software dequeue pointer from going out of
+sync during command cancellations, which can lead to a variety of
+problems (up to a total HCD death if the next command after the one that
+was cancelled is Stop Endpoint, and the stop_endpoint_watchdog won't see
+the command's completion because it got skipped by the software dequeue
+pointer).
 
-> 
-> The function copy_oldmem_page also concerns me.  I don't have a clue why
-> we duplicate that function on every architecutre in a slightly different
-> form.  There should be enough abstractions in the kernel to make that
-> unnecessary.  I would be glad to see that function go, and remove the
-> possibility of confusion that happened on s390.
+This patch should be backported to kernels as far as 3.0 that contain
+the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI: handle
+command after aborting the command ring".
 
-You mean we should have a common copy_oldmem_page for all architectures? And
-just like vivek said above, for s390, we should put the swap info in the elf
-headers instead of doing that in copy_oldmem_page.
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/usb/host/xhci-ring.c | 85 +++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 52 deletions(-)
 
-Zhang
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 1969c00..98b7673 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1314,47 +1314,11 @@ static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
+ 	return 0;
+ }
+ 
+-/*
+- * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
+- * trb pointed by the command ring dequeue pointer is the trb we want to
+- * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
+- * traverse the cancel_cmd_list to trun the all of the commands according
+- * to command descriptor to NO-OP trb.
+- */
+-static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
+-		int cmd_trb_comp_code)
+-{
+-	int cur_trb_is_good = 0;
+-
+-	/* Searching the cmd trb pointed by the command ring dequeue
+-	 * pointer in command descriptor list. If it is found, free it.
+-	 */
+-	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
+-			xhci->cmd_ring->dequeue);
+-
+-	if (cmd_trb_comp_code == COMP_CMD_ABORT)
+-		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
+-	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
+-		/* traversing the cancel_cmd_list and canceling
+-		 * the command according to command descriptor
+-		 */
+-		xhci_cancel_cmd_in_cd_list(xhci);
+-
+-		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
+-		/*
+-		 * ring command ring doorbell again to restart the
+-		 * command ring
+-		 */
+-		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
+-			xhci_ring_cmd_db(xhci);
+-	}
+-	return cur_trb_is_good;
+-}
+-
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		struct xhci_event_cmd *event)
+ {
+ 	int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));
++	int comp_code = GET_COMP_CODE(le32_to_cpu(event->status));
+ 	u64 cmd_dma;
+ 	dma_addr_t cmd_dequeue_dma;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+@@ -1377,16 +1341,34 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		return;
+ 	}
+ 
+-	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
+-		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
+-		/* If the return value is 0, we think the trb pointed by
+-		 * command ring dequeue pointer is a good trb. The good
+-		 * trb means we don't want to cancel the trb, but it have
+-		 * been stopped by host. So we should handle it normally.
+-		 * Otherwise, driver should invoke inc_deq() and return.
+-		 */
+-		if (handle_stopped_cmd_ring(xhci,
+-				GET_COMP_CODE(le32_to_cpu(event->status)))) {
++	/*
++	 * Command Ring Stopped events point at the xHC's *current* dequeue
++	 * pointer, i.e. the next command that will be executed. That TRB may
++	 * or may not have been issued yet. Just overwrite all canceled commands
++	 * with NOOPs and restart the ring, leaving our internal dequeue pointer
++	 * as it is (we will get another event for that position later, when
++	 * it has actually been executed).
++	 */
++	if (comp_code == COMP_CMD_STOP) {
++		xhci_cancel_cmd_in_cd_list(xhci);
++		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
++		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
++			xhci_ring_cmd_db(xhci);
++		return;
++	}
++
++	/*
++	 * If we aborted a command, we check if it is one of the commands we
++	 * meant to cancel. In that case, it will be freed and we just finish
++	 * up right here. If we aborted something else instead, we run it
++	 * through the normal handlers below. At any rate, the command ring is
++	 * stopped now, but the xHC will issue a Command Ring Stopped event
++	 * after this that will cause us to restart it.
++	 */
++	if (comp_code == COMP_CMD_ABORT) {
++		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
++		if (xhci_search_cmd_trb_in_cd_list(xhci,
++			xhci->cmd_ring->dequeue)) {
+ 			inc_deq(xhci, xhci->cmd_ring);
+ 			return;
+ 		}
+@@ -1395,7 +1377,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+ 		& TRB_TYPE_BITMASK) {
+ 	case TRB_TYPE(TRB_ENABLE_SLOT):
+-		if (GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_SUCCESS)
++		if (comp_code == COMP_SUCCESS)
+ 			xhci->slot_id = slot_id;
+ 		else
+ 			xhci->slot_id = 0;
+@@ -1451,19 +1433,18 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		}
+ bandwidth_change:
+ 		xhci_dbg(xhci, "Completed config ep cmd\n");
+-		xhci->devs[slot_id]->cmd_status =
+-			GET_COMP_CODE(le32_to_cpu(event->status));
++		xhci->devs[slot_id]->cmd_status = comp_code;
+ 		complete(&xhci->devs[slot_id]->cmd_completion);
+ 		break;
+ 	case TRB_TYPE(TRB_EVAL_CONTEXT):
+ 		virt_dev = xhci->devs[slot_id];
+ 		if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
+ 			break;
+-		xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
++		xhci->devs[slot_id]->cmd_status = comp_code;
+ 		complete(&xhci->devs[slot_id]->cmd_completion);
+ 		break;
+ 	case TRB_TYPE(TRB_ADDR_DEV):
+-		xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
++		xhci->devs[slot_id]->cmd_status = comp_code;
+ 		complete(&xhci->addr_dev);
+ 		break;
+ 	case TRB_TYPE(TRB_STOP_RING):
+-- 
+1.7.12.4
+
