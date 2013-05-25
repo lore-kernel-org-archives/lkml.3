@@ -1,204 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3EYOvs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 10:51:48 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:37575 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab3EYOvp (ORCPT
+	id S1756864Ab3EYPQR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 11:16:17 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33254 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab3EYPQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 10:51:45 -0400
+	Sat, 25 May 2013 11:16:14 -0400
+Date: Sat, 25 May 2013 11:15:47 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
+Message-ID: <20130525151547.GH7660@sirena.org.uk>
+References: <1369384162-25196-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <1369492914-32288-1-git-send-email-n.a.balandin@gmail.com>
-References: <1369492914-32288-1-git-send-email-n.a.balandin@gmail.com>
-Date: Sat, 25 May 2013 10:51:43 -0400
-Message-ID: <CAHdPZaMg5PeL-ny2jM5_UBC0cnS9uMTsC5knC6OwiqV=3Mh0mw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] rtc: rtc-ds1307: use devm_*() functions
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Nikolay Balandin <n.a.balandin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0OWHXb1mYLuhj1Ox"
+Content-Disposition: inline
+In-Reply-To: <1369384162-25196-1-git-send-email-lars@metafoo.de>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 107.18.111.72
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: Make regmap-mmio usable from atomic contexts
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 10:41 AM, Nikolay Balandin
-<n.a.balandin@gmail.com> wrote:
-> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
->
-> Use devm_*() functions to make cleanup paths simpler.
->
-> Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-> ---
->  drivers/rtc/rtc-ds1307.c |   57 +++++++++++++++++-----------------------------
->  1 file changed, 21 insertions(+), 36 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-> index b53992a..9852f55 100644
-> --- a/drivers/rtc/rtc-ds1307.c
-> +++ b/drivers/rtc/rtc-ds1307.c
-> @@ -683,7 +683,9 @@ static int ds1307_probe(struct i2c_client *client,
->             && !i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
->                 return -EIO;
->
-> -       ds1307 = kzalloc(sizeof(struct ds1307), GFP_KERNEL);
-> +       ds1307 = devm_kzalloc(&client->dev, sizeof(struct ds1307),
-> +                                               GFP_KERNEL);
-> +
->         if (!ds1307)
->                 return -ENOMEM;
->
-> @@ -714,8 +716,7 @@ static int ds1307_probe(struct i2c_client *client,
->                                 DS1337_REG_CONTROL, 2, buf);
->                 if (tmp != 2) {
->                         dev_dbg(&client->dev, "read error %d\n", tmp);
-> -                       err = -EIO;
-> -                       goto exit_free;
-> +                       return -EIO;
->                 }
->
->                 /* oscillator off?  turn it on, so clock can tick. */
-> @@ -753,8 +754,7 @@ static int ds1307_probe(struct i2c_client *client,
->                                 RX8025_REG_CTRL1 << 4 | 0x08, 2, buf);
->                 if (tmp != 2) {
->                         dev_dbg(&client->dev, "read error %d\n", tmp);
-> -                       err = -EIO;
-> -                       goto exit_free;
-> +                       return -EIO;
->                 }
->
->                 /* oscillator off?  turn it on, so clock can tick. */
-> @@ -797,8 +797,7 @@ static int ds1307_probe(struct i2c_client *client,
->                                         RX8025_REG_CTRL1 << 4 | 0x08, 2, buf);
->                         if (tmp != 2) {
->                                 dev_dbg(&client->dev, "read error %d\n", tmp);
-> -                               err = -EIO;
-> -                               goto exit_free;
-> +                               return -EIO;
->                         }
->
->                         /* correct hour */
-> @@ -825,8 +824,7 @@ read_rtc:
->         tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
->         if (tmp != 8) {
->                 dev_dbg(&client->dev, "read error %d\n", tmp);
-> -               err = -EIO;
-> -               goto exit_free;
-> +               return -EIO;
->         }
->
->         /*
-> @@ -867,8 +865,7 @@ read_rtc:
->                 tmp = i2c_smbus_read_byte_data(client, DS1340_REG_FLAG);
->                 if (tmp < 0) {
->                         dev_dbg(&client->dev, "read error %d\n", tmp);
-> -                       err = -EIO;
-> -                       goto exit_free;
-> +                       return -EIO;
->                 }
->
->                 /* oscillator fault?  clear flag, and warn */
-> @@ -927,13 +924,13 @@ read_rtc:
->                                 bin2bcd(tmp));
->         }
->
-> -       ds1307->rtc = rtc_device_register(client->name, &client->dev,
-> +       ds1307->rtc = devm_rtc_device_register(&client->dev, client->name,
->                                 &ds13xx_rtc_ops, THIS_MODULE);
->         if (IS_ERR(ds1307->rtc)) {
->                 err = PTR_ERR(ds1307->rtc);
->                 dev_err(&client->dev,
->                         "unable to register the class device\n");
-> -               goto exit_free;
-> +               return err;
->         }
->
->         if (want_irq) {
-> @@ -942,7 +939,7 @@ read_rtc:
->                 if (err) {
->                         dev_err(&client->dev,
->                                 "unable to request IRQ!\n");
-> -                       goto exit_irq;
-> +                       return err;
->                 }
->
->                 device_set_wakeup_capable(&client->dev, 1);
-> @@ -951,12 +948,12 @@ read_rtc:
->         }
->
->         if (chip->nvram_size) {
-> -               ds1307->nvram = kzalloc(sizeof(struct bin_attribute),
-> -                                                       GFP_KERNEL);
-> -               if (!ds1307->nvram) {
-> -                       err = -ENOMEM;
-> -                       goto exit_nvram;
-> -               }
-> +               ds1307->nvram = devm_kzalloc(&client->dev,
-> +                       sizeof(struct bin_attribute), GFP_KERNEL);
-> +
-> +               if (!ds1307->nvram)
-> +                       return -ENOMEM;
-> +
->                 ds1307->nvram->attr.name = "nvram";
->                 ds1307->nvram->attr.mode = S_IRUGO | S_IWUSR;
->                 sysfs_bin_attr_init(ds1307->nvram);
-> @@ -965,22 +962,14 @@ read_rtc:
->                 ds1307->nvram->size = chip->nvram_size;
->                 ds1307->nvram_offset = chip->nvram_offset;
->                 err = sysfs_create_bin_file(&client->dev.kobj, ds1307->nvram);
-> -               if (err) {
-> -                       kfree(ds1307->nvram);
-> -                       goto exit_nvram;
-> -               }
-> +               if (err)
-> +                       return err;
-> +
->                 set_bit(HAS_NVRAM, &ds1307->flags);
->                 dev_info(&client->dev, "%zu bytes nvram\n", ds1307->nvram->size);
->         }
->
->         return 0;
-> -
-> -exit_nvram:
-> -exit_irq:
-> -       rtc_device_unregister(ds1307->rtc);
 
-Please dont remove this unregister, there's no devm_* for the rtc subsystem.
+--0OWHXb1mYLuhj1Ox
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, May 24, 2013 at 10:29:22AM +0200, Lars-Peter Clausen wrote:
+> regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for locking.
 
-> -exit_free:
-> -       kfree(ds1307);
-> -       return err;
->  }
->
->  static int ds1307_remove(struct i2c_client *client)
-> @@ -992,13 +981,9 @@ static int ds1307_remove(struct i2c_client *client)
->                 cancel_work_sync(&ds1307->work);
->         }
->
-> -       if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags)) {
-> +       if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags))
->                 sysfs_remove_bin_file(&client->dev.kobj, ds1307->nvram);
-> -               kfree(ds1307->nvram);
-> -       }
->
-> -       rtc_device_unregister(ds1307->rtc);
+Applied, thanks.
 
-Here too.
+--0OWHXb1mYLuhj1Ox
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-> -       kfree(ds1307);
->         return 0;
->  }
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+iQIcBAEBAgAGBQJRoNWaAAoJELSic+t+oim9C1cP/RaJaRDHSFSjrvXdpnkjutXL
++STvmayXwXGIrVyJxYnC6pL7Rk5VCd+/c9azfngq7qUd/sbWXFpAVFWx5yi3izfV
+JOOGIedYJ51nBfhn4c2A3j9LorEtAWarRUX5a850EnAfgUksgJpbbRJL1ItV6KsP
+bLQhdcNgHaz6wGo5kQbNmqh/+YXK+rWAd1bh+9flGPYjc43QipgiTNVIFpr7wzDC
+FCH7nJjDHszv43WTAZS1JQg+e2IJda6iSIDYwuWS5ky5Skh4zRT7PTgwlfyVE3B4
+7KInKsq8xMZ4iowaacujinFnttvzLJpkPoccDHtF2m7P2i7mxLDTFsJQ7ayHXnma
+bM3Iowgx/napIAnAofQUldeT2Z7yYxFaafKHBRb7Q7X5G1OOnmyfjtpnRdt8jof1
+80lq7Fqj8LGBGzisEenKd+auvTriV6vgbA29zypsSB2czmVbeuZ1H60noTkwpLGr
+6Fol1+67ZGmECfi/3HAtFCcM7GGEEUpPWsqfcSXYYZ+li3sKfAapp7Tse8h8DRg3
+2uDYv3Nx1nfXFuih2GGRNs9uq4PZ2e/gi+D0gJTbBEMREYJXBHV4+9b79QTH+G6v
+0Ug+Pr/DTcz/qEl7tD4vjdXlvmWMXDsTMH1r6vAXwa5omWeIdF0E9Z51qEy7qgzM
+MWtazqSb66GDXP3KQK2H
+=TRsT
+-----END PGP SIGNATURE-----
+
+--0OWHXb1mYLuhj1Ox--
