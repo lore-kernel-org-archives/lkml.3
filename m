@@ -1,93 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3EYDyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 23:54:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56703 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab3EYDyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 23:54:51 -0400
-Message-ID: <51A035FA.6070409@vlnb.net>
-Date: Fri, 24 May 2013 20:54:34 -0700
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+	id S1755545Ab3EYD6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 23:58:39 -0400
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:54913 "HELO
+	stec-inc.com.stec-inc.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1754269Ab3EYD6h convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 23:58:37 -0400
+X-ASG-Debug-ID: 1369454313-053ea947e8c5a00001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+From: Amit Kale <akale@stec-inc.com>
+To: Jens Axboe <axboe@kernel.dk>, OS Engineering <osengineering@stec-inc.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Padmini Balasubramaniyan <padminib@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Subject: RE: EnhanceIO(TM) caching driver features [1/3]
+Thread-Topic: EnhanceIO(TM) caching driver features [1/3]
+X-ASG-Orig-Subj: RE: EnhanceIO(TM) caching driver features [1/3]
+Thread-Index: Ac5YX7JuBwqZqug8TSO0+2mX9HFy+QADGJuAACNg8TA=
+Date: Sat, 25 May 2013 03:57:08 +0000
+Message-ID: <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad>
+References: <A44CB407BBB85C498149811C52498A450872D9@MYMBX3.stec-inc.ad>
+ <20130524184727.GQ29680@kernel.dk>
+In-Reply-To: <20130524184727.GQ29680@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [124.125.84.30]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>	<519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>	<519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>	<519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org>	<519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org>	<519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1vc6b561q.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:R1wefGuIxVNe1b18WZRSTPJYNrwdqBHgR1wYZ383R3I
- 4n8z4tZjCnoeehJHvdJybo64BDnMytD8D4H+AG2tlOGKQFEb7O
- Q7W7NSutkBAIfPXWDLfWC477uAuLhYbWJIl8ARIZCuhsFh7sJ3
- yg7oyTv3JYPB5kUnGSdnVsXXYKxgagk/qJfSJG1UWQmkshLzzV
- nQ+gz8vHOQY6ET4n6ZiN0kvZwjx0mBDiVX5jcsO64s/lme70FX
- y6V3McJRQsMXXnXFDG7qQzshiGYo7G8X1wQ8lQZz5uckKlTv+d
- Djq8EAGNsZxR+1olwCEdJtXEF+rVxtvScih7abebMjt+01Piw=
- =
+X-Barracuda-Connect: mycas03.stec-inc.ad[172.30.8.21]
+X-Barracuda-Start-Time: 1369454313
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.131947
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin K. Petersen, on 05/22/2013 09:32 AM wrote:
-> Paolo> First of all, I'll note that SG_IO and block-device-specific
-> Paolo> ioctls both have their place.  My usecase for SG_IO is
-> Paolo> virtualization, where I need to pass information from the LUN to
-> Paolo> the virtual machine with as much fidelity as possible if I choose
-> Paolo> to virtualize at the SCSI level.  
+Hi Jens,
+
+I by mistake dropped the weblink to demartek study while composing my email. The demartek study is published here: http://www.demartek.com/Demartek_STEC_S1120_PCIe_Evaluation_2013-02.html. It's an independent study. Here are a few numbers taken from this report. In a database comparison using transactions per second
+HDD baseline (40 disks) - 2570 tps
+240GB Cache - 9844 tps
+480GB cache - 19758 tps
+RAID5 pure SSD - 32380 tps
+RAID0 pure SSD - 40467 tps
+
+There are two types of performance comparisons, application based and IO pattern based. Application based tests measure efficiency of cache replacement algorithms. These are time consuming. Above tests were done by demartek over a period of time. I don't have performance comparisons between EnhanceIO(TM) driver, bcache and dm-cache. I'll try to get them done in-house. 
+
+IO pattern based tests can be done quickly. However since IO pattern is fixed prior to the test, output tends to depend on whether the IO pattern suits the caching algorithm. These are relatively easy. I can definitely post this comparison.
+
+Regarding IO error handling - that's really our USP :-). While it won't be possible to do a testing of bcache and dm-cache on our internal error test suites, I'll try to come up with a few points based on code comparison.
+
+Thanks.
+-Amit
+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Jens Axboe
+> Sent: Saturday, May 25, 2013 12:17 AM
+> To: OS Engineering
+> Cc: LKML; Padmini Balasubramaniyan; Amit Phansalkar
+> Subject: Re: EnhanceIO(TM) caching driver features [1/3]
 > 
-> Now there's your problem! Several people told you way back that the SCSI
-> virt approach was a really poor choice. The SG_IO permissions problem is
-> a classic "Doctor, it hurts when I do this".
+> On Fri, May 24 2013, OS Engineering wrote:
+> > Hi Jens and Kernel Gurus,
 > 
-> The kernel's fundamental task is to provide abstraction between
-> applications and intricacies of hardware. The right way to solve the
-> problem would have been to provide a better device abstraction built on
-> top of the block/SCSI infrastructure we already have in place. If you
-> need more fidelity, add fidelity to the block layer instead of punching
-> a giant hole through it.
+> [snip]
 > 
-> I seem to recall that reservations were part of your motivation for
-> going the SCSI route in the first place. A better approach would have
-> been to create a generic reservations mechanism that could be exposed to
-> the guest. And then let the baremetal kernel worry about the appropriate
-> way to communicate with the physical hardware. Just like we've done with
-> reads and writes, discard, write same, etc.
+> Thanks for writing all of this up, but I'm afraid it misses the point
+> somewhat. As stated previously, we have (now) two existing competing
+> implementations in the kernel. I'm looking for justification on why
+> YOUR solution is better. A writeup and documentation on error handling
+> details is nice and all, but it doesn't answer the key important
+> questions.
+> 
+> Lets say somebody sends in a patch that he/she claims improves memory
+> management performance. To justify such a patch (or any patch, really),
+> the maintenance burden vs performance benefit needs to be quantified.
+> Such a person had better supply a set of before and after numbers, such
+> that the benefit can be quantified.
+> 
+> It's really the same with your solution. You mention "the solution has
+> been proven in independent testing, such as testing by Demartek.". I
+> have no idea what this testing is, what they ran, compared with, etc.
+> 
+> So, to put it bluntly, I need to see some numbers. Run relevant
+> workloads on EnhanceIO, bcache, dm-cache. Show why EnhanceIO is better.
+> Then we can decide whether it really is the superior solution. Or,
+> perhaps, it turns out there are inefficiencies in eg bcache/dm-cache
+> that could be fixed up.
+> 
+> Usually I'm not such a stickler for including new code. But a new
+> driver is different than EnhanceIO. If somebody submitted a patch to
+> add a newly written driver for hw that we already have a driver for,
+> that would be similar situation.
+> 
+> The executive summary: your writeup was good, but we need some relevant
+> numbers to look at too.
+> 
+> --
+> Jens Axboe
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in the body of a message to majordomo@vger.kernel.org More majordomo
+> info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Well, any abstraction is good only if it isn't artificial, so solving more problems
-than creating.
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
-Reality is that de facto in the industry _SCSI_ is the abstraction for block/direct
-access to data. Look around. How many of systems around you after all layers end up to
-SCSI commands in their storage devices?
 
-Linux block layer is purely artificial creature slowly reinventing wheel creating more
-problems, than solving. It enforces approach, where often "impossible" means
-"impossible in this interface". For instance, how about copy offload? How about
-reservations? How about atomic writes? Look at history of barriers and compare then
-with what can be done in SCSI. It's still worse, because doesn't allow usage of all
-devices capabilities. Why was it needed to create special blk integrity interface with
-the only end user - SCSI? Artificial task created - then well solved. Etc, etc.
 
-The block layer keeps repeating SCSI. So, maybe, after all, it's better to acknowledge
-that direct usage of SCSI without any intermediate layers and translations is more
-productive? And for those minors not using SCSI internally, translate from SCSI to
-their internal commands? Creating and filling CDB fields for most cases isn't anyhow
-harder, than creating and feeling bio fields.
-
-So, I appreciate work Paolo is doing in this direction. At least, the right thing will
-be on the virtualization level.
-
-I do understand that with all existing baggage replacing block layer by SCSI isn't
-practical and not proposing it, but let's at least acknowledge limitations of the
-academic block abstraction. Let's don't make those limitations global walls. Many
-things better to do using direct SCSI, hence let's do the better way.
-
-Vlad
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
