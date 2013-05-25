@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab3EYNwQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 09:52:16 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45000 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756827Ab3EYNwL (ORCPT
+	id S1756758Ab3EYNvz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 09:51:55 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42039 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab3EYNvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 09:52:11 -0400
+	Sat, 25 May 2013 09:51:50 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -14,11 +14,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Donald Dutile <ddutile@redhat.com>, Ram Pai <linuxram@us.ibm.com>
-Subject: [PATCH v3, part1 10/10] PCI, IOV: hide remove and rescan sysfs interfaces for SR-IOV virtual functions
-Date: Sat, 25 May 2013 21:48:38 +0800
-Message-Id: <1369489718-25869-11-git-send-email-jiang.liu@huawei.com>
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3, part1 06/10] PCI: make PCI host bridge/bus creating and destroying logic symmetric
+Date: Sat, 25 May 2013 21:48:34 +0800
+Message-Id: <1369489718-25869-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
 References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
@@ -26,117 +25,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI devices for SR-IOV virtual functions should only be created/
-destroyed by pci_enable_sriov()/pci_disable_sriov() because special
-data structures are assoicated with SR-IOV virtual functions.
-So hide hotplug related sysfs interfaces "remove" and "rescan" for
-SR-IOV virtual functions, otherwise it may causes memory leakage
-and other issues.
+This patch makes PCI host bridge/bus creating and destroying logic
+symmetric by using device_initialize()/device_add()/device_del()/put_device()
+pairs as discussed in thread at:
+http://comments.gmane.org/gmane.linux.kernel.pci/22073
+
+It also fixes a bug in error recovery path in pci_create_root_bus()
+which may kfree() an in-use host bridge object.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Donald Dutile <ddutile@redhat.com>
 Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pci/iov.c       |  5 ++---
- drivers/pci/pci-sysfs.c | 30 ++++++++++++++++++++++++++++--
- 2 files changed, 30 insertions(+), 5 deletions(-)
+ drivers/pci/probe.c  | 84 +++++++++++++++++++++++-----------------------------
+ drivers/pci/remove.c |  3 +-
+ 2 files changed, 39 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 3e33499..5eb8165 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -80,6 +80,8 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
- 	pci_setup_device(virtfn);
- 	virtfn->dev.parent = dev->dev.parent;
-+	virtfn->physfn = pci_dev_get(dev);
-+	virtfn->is_virtfn = 1;
- 
- 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
- 		res = dev->resource + PCI_IOV_RESOURCES + i;
-@@ -101,9 +103,6 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	pci_device_add(virtfn, virtfn->bus);
- 	mutex_unlock(&iov->dev->sriov->lock);
- 
--	virtfn->physfn = pci_dev_get(dev);
--	virtfn->is_virtfn = 1;
--
- 	rc = pci_bus_add_device(virtfn);
- 	sprintf(buf, "virtfn%u", id);
- 	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 5b4a9d9..403da60 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -325,6 +325,8 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index d5d18a0..c9a5ce7 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -451,7 +451,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
  	}
- 	return count;
  }
-+struct device_attribute dev_rescan_attr = __ATTR(rescan, (S_IWUSR|S_IWGRP),
-+						 NULL, dev_rescan_store);
  
- static void remove_callback(struct device *dev)
+-static struct pci_bus * pci_alloc_bus(void)
++static struct pci_bus *pci_alloc_bus(struct pci_ops *ops, void *sd, int bus)
  {
-@@ -354,6 +356,8 @@ remove_store(struct device *dev, struct device_attribute *dummy,
- 		count = ret;
- 	return count;
- }
-+struct device_attribute dev_remove_attr = __ATTR(remove, (S_IWUSR|S_IWGRP),
-+						 NULL, remove_store);
+ 	struct pci_bus *b;
  
- static ssize_t
- dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
-@@ -504,8 +508,6 @@ struct device_attribute pci_dev_attrs[] = {
- 	__ATTR(broken_parity_status,(S_IRUGO|S_IWUSR),
- 		broken_parity_status_show,broken_parity_status_store),
- 	__ATTR(msi_bus, 0644, msi_bus_show, msi_bus_store),
--	__ATTR(remove, (S_IWUSR|S_IWGRP), NULL, remove_store),
--	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store),
- #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
- 	__ATTR(d3cold_allowed, 0644, d3cold_allowed_show, d3cold_allowed_store),
- #endif
-@@ -1463,6 +1465,29 @@ static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
- 	return a->mode;
- }
- 
-+static struct attribute *pci_dev_hp_attrs[] = {
-+	&dev_remove_attr.attr,
-+	&dev_rescan_attr.attr,
-+	NULL,
-+};
+@@ -464,10 +464,32 @@ static struct pci_bus * pci_alloc_bus(void)
+ 		INIT_LIST_HEAD(&b->resources);
+ 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++		b->sysdata = sd;
++		b->ops = ops;
++		b->number = bus;
++		b->busn_res.start = bus;
++		b->busn_res.end = 0xff;
++		b->busn_res.flags = IORESOURCE_BUS;
++		b->dev.class = &pcibus_class;
++		dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
++		device_initialize(&b->dev);
+ 	}
 +
-+static umode_t pci_dev_hp_attrs_are_visible(struct kobject *kobj,
-+						struct attribute *a, int n)
+ 	return b;
+ }
+ 
++static void pci_release_host_bridge_dev(struct device *dev)
 +{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct pci_dev *pdev = to_pci_dev(dev);
++	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
 +
-+	if (pdev->is_virtfn)
-+		return 0;
++	if (bridge->release_fn)
++		bridge->release_fn(bridge);
 +
-+	return a->mode;
++	pci_free_resource_list(&bridge->windows);
++
++	kfree(bridge);
 +}
 +
-+static struct attribute_group pci_dev_hp_attr_group = {
-+	.attrs = pci_dev_hp_attrs,
-+	.is_visible = pci_dev_hp_attrs_are_visible,
-+};
-+
- #ifdef CONFIG_PCI_IOV
- static struct attribute *sriov_dev_attrs[] = {
- 	&sriov_totalvfs_attr.attr,
-@@ -1494,6 +1519,7 @@ static struct attribute_group pci_dev_attr_group = {
+ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ {
+ 	struct pci_host_bridge *bridge;
+@@ -476,6 +498,10 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 	if (bridge) {
+ 		INIT_LIST_HEAD(&bridge->windows);
+ 		bridge->bus = b;
++		bridge->dev.release = pci_release_host_bridge_dev;
++		dev_set_name(&bridge->dev, "pci%04x:%02x",
++			     pci_domain_nr(b), b->number);
++		device_initialize(&bridge->dev);
+ 	}
  
- static const struct attribute_group *pci_dev_attr_groups[] = {
- 	&pci_dev_attr_group,
-+	&pci_dev_hp_attr_group,
- #ifdef CONFIG_PCI_IOV
- 	&sriov_dev_attr_group,
- #endif
+ 	return bridge;
+@@ -628,28 +654,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	/*
+ 	 * Allocate a new bus, and inherit stuff from the parent..
+ 	 */
+-	child = pci_alloc_bus();
++	child = pci_alloc_bus(parent->ops, parent->sysdata, busnr);
+ 	if (!child)
+ 		return NULL;
+ 
+ 	child->parent = parent;
+-	child->ops = parent->ops;
+-	child->sysdata = parent->sysdata;
+ 	child->bus_flags = parent->bus_flags;
+-
+-	/* initialize some portions of the bus device, but don't register it
+-	 * now as the parent is not properly set up yet.
+-	 */
+-	child->dev.class = &pcibus_class;
+-	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+-
+-	/*
+-	 * Set up the primary, secondary and subordinate
+-	 * bus numbers.
+-	 */
+-	child->number = child->busn_res.start = busnr;
+ 	child->primary = parent->busn_res.start;
+-	child->busn_res.end = 0xff;
+ 
+ 	if (!bridge) {
+ 		child->dev.parent = parent->bridge;
+@@ -670,7 +681,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	bridge->subordinate = child;
+ 
+ add_dev:
+-	ret = device_register(&child->dev);
++	ret = device_add(&child->dev);
+ 	WARN_ON(ret < 0);
+ 
+ 	pcibios_add_bus(child);
+@@ -1189,18 +1200,6 @@ int pci_cfg_space_size(struct pci_dev *dev)
+ 	return PCI_CFG_SPACE_SIZE;
+ }
+ 
+-static void pci_release_bus_bridge_dev(struct device *dev)
+-{
+-	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
+-
+-	if (bridge->release_fn)
+-		bridge->release_fn(bridge);
+-
+-	pci_free_resource_list(&bridge->windows);
+-
+-	kfree(bridge);
+-}
+-
+ struct pci_dev *pci_alloc_dev(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+@@ -1688,13 +1687,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
+-	b = pci_alloc_bus();
++	b = pci_alloc_bus(ops, sysdata, bus);
+ 	if (!b)
+ 		return NULL;
+ 
+-	b->sysdata = sysdata;
+-	b->ops = ops;
+-	b->number = b->busn_res.start = bus;
+ 	b2 = pci_find_bus(pci_domain_nr(b), bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+@@ -1706,27 +1702,22 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (!bridge)
+ 		goto err_out;
+ 
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_bus_bridge_dev;
+-	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+ 	error = pcibios_root_bridge_prepare(bridge);
+ 	if (error)
+ 		goto bridge_dev_reg_err;
+ 
+-	error = device_register(&bridge->dev);
++	bridge->dev.parent = parent;
++	error = device_add(&bridge->dev);
+ 	if (error)
+ 		goto bridge_dev_reg_err;
++
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+ 	pci_set_bus_of_node(b);
+-
+ 	if (!parent)
+ 		set_dev_node(b->bridge, pcibus_to_node(b));
+-
+-	b->dev.class = &pcibus_class;
+ 	b->dev.parent = b->bridge;
+-	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+-	error = device_register(&b->dev);
++	error = device_add(&b->dev);
+ 	if (error)
+ 		goto class_dev_reg_err;
+ 
+@@ -1769,12 +1760,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	return b;
+ 
+ class_dev_reg_err:
+-	put_device(&bridge->dev);
+-	device_unregister(&bridge->dev);
++	device_del(&bridge->dev);
+ bridge_dev_reg_err:
+-	kfree(bridge);
++	put_device(&bridge->dev);
+ err_out:
+-	kfree(b);
++	put_device(&b->dev);
+ 	return NULL;
+ }
+ 
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 8fc54b7..b0ce875 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -52,7 +52,8 @@ void pci_remove_bus(struct pci_bus *bus)
+ 	up_write(&pci_bus_sem);
+ 	pci_remove_legacy_files(bus);
+ 	pcibios_remove_bus(bus);
+-	device_unregister(&bus->dev);
++	device_del(&bus->dev);
++	put_device(&bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+ 
 -- 
 1.8.1.2
 
