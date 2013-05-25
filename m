@@ -1,58 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab3EZIwT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 04:52:19 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39613 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab3EZIwR (ORCPT
+	id S1751442Ab3EZIwr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 04:52:47 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41589 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab3EZIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 04:52:17 -0400
-Date: Sun, 26 May 2013 16:52:01 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: rostedt@goodmis.org
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        vnagarnaik@google.com
-Subject: [PATCH] tracing: Fix file mode of free_buffer
-Message-ID: <20130526085201.GA3183@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, rostedt@goodmis.org,
-	fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-	vnagarnaik@google.com
+	Sun, 26 May 2013 04:52:43 -0400
+Date: Sat, 25 May 2013 04:37:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130525113715.GA3795@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <519B8908.9080007@yandex-team.ru>
+ <1369150693.3301.233.camel@edumazet-glaptop>
+ <519BB90B.6080706@yandex-team.ru>
+ <1369188080.3301.268.camel@edumazet-glaptop>
+ <1369201765.3301.299.camel@edumazet-glaptop>
+ <519CB2D8.103@yandex-team.ru>
+ <1369225837.3301.324.camel@edumazet-glaptop>
+ <519CC2FB.2010006@yandex-team.ru>
+ <20130522174532.GC3431@linux.vnet.ibm.com>
+ <519D19DA.50400@yandex-team.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <519D19DA.50400@yandex-team.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052608-7606-0000-0000-00000BCE415E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4f271a2a60c748599b30bb4dafff30d770439b96
-(tracing: Add a proc file to stop tracing and free buffer)
-implement a method to free up ring buffer in kernel memory
-in the release code path of free_buffer's fd.
+On Wed, May 22, 2013 at 11:17:46PM +0400, Roman Gushchin wrote:
+> On 22.05.2013 21:45, Paul E. McKenney wrote:
+> >On Wed, May 22, 2013 at 05:07:07PM +0400, Roman Gushchin wrote:
+> >>On 22.05.2013 16:30, Eric Dumazet wrote:
+> >>>On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
+> >>>
+> >>>>+/*
+> >>>>+ * Same as ACCESS_ONCE(), but used for accessing field of a structure.
+> >>>>+ * The main goal is preventing compiler to store &ptr->field in a register.
+> >>>
+> >>>But &ptr->field is a constant during the whole duration of
+> >>>udp4_lib_lookup2() and could be in a register, in my case field is at
+> >>>offset 0, and ptr is a parameter (so could be in a 'register')
+> >>>
+> >>>The bug you found is that compiler caches the indirection  (ptr->field)
+> >>>into a register, not that compiler stores &ptr->field into a register.
+> >>>
+> >>>>+ */
+> >>>>+#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
+> >>>>+
+> >>>
+> >>>Here we force the compiler to consider ptr as volatile, but semantically
+> >>>it is not required in rcu_dereference(ptr->field)
+> >>
+> >>Actually, we need to mark an "address of a place" where the field value is
+> >>located as volatile before dereferencing. I have no idea how to do it in another way,
+> >>except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
+> >>	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
+> 
+> Probably I miss one more ACCESS_ONCE() in this expression. Should be something like
+> ACCESS_ONCE(typeof(&ptr->field)((char*)ACCESS_ONCE(ptr) + offsetof(typeof(*ptr), field))) .
+> But this is not a working example, just an illustration against using ACCESS_ONCE() here.
+> 
+> >Why not just ACCESS_ONCE(ptr->field)?  Or if it is the thing that
+> >ptr->field points to that is subject to change, ACCESS_ONCE(*ptr->field)?
+> >
+> >Or rcu_dereference(ptr->field), as appropriate?
+> 
+> It's not enough. So is the code now, and it doesn't work as expected.
+> You can't write (ptr->field) without ptr being marked as a volatile pointer.
+> 
+> I try to explain the problem once more from scratch:
+> 
+> 1) We have the following pseudo-code (based on udp4_lib_lookup2()):
+> 
+> static void some_func(struct hlist_nulls_head *head) {
+> 	struct hlist_nulls_node *node;
+> 
+> begin:
+> 	for (node = rcu_dereference(head->first);
+> 		!is_nulls(node) & ...;
+> 		node = rcu_dereference(node->next)) {
+> 		<...>
+> 	}
+> 
+> 	if (restart_condition)
+> 		goto begin;
+> 
+> 2) A problem occurs when restart_condition is true and we jump to the begin label.
+> We do not recalculate (head + offsetof(head, first)) address, we just dereference
+> again the OLD (head->first) pointer. So, we get a node, that WAS the first node in a
+> previous time instead of current first node. That node can be dead, or, for instance,
+> can be a head of another chain.
 
-Then we don't need read/write support for free_buffer,
-indeed we just have a dummy write fop, and don't implement read fop.
+OK, this is what I was referring to when I said that the RCU list macros
+assume that the list header is static (or equivalently, appropriately
+protected).
 
-So the 0200 is more reasonable file mode for free_buffer than
-the current file mode 0644.
+With some_func() as written above, you would need to return some sort
+of failure indication from some_func(), and have the caller refetch head.
+Otherwise, as far as gcc is concerned, the value of the parameter head
+is constant throughout some_func().
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- kernel/trace/trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> It is correct from gcc's point of view, since it doesn't expect the head pointer
+> to change, and this address is just (head + constant offset).
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ae6fa2d..02d9875 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5927,7 +5927,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
- 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
- 			  tr, &tracing_total_entries_fops);
- 
--	trace_create_file("free_buffer", 0644, d_tracer,
-+	trace_create_file("free_buffer", 0200, d_tracer,
- 			  tr, &tracing_free_buffer_fops);
- 
- 	trace_create_file("trace_marker", 0220, d_tracer,
--- 
-1.7.12.4.dirty
+Agreed.
+
+How does the caller calculate the value to pass in through the argument "head"?
+
+> 3) If we start with a wrong first element, restart_condition can be always true, so,
+> we get an infinite loop. In any case, we do not scan the whole (socket) chain,
+> as expected.
+
+Agreed.
+
+> This scenario is absolutely real and causes our DNS servers to hang
+> sometimes under high load.
+
+I completely believe that such a hang could happen.
+
+> Note, that there are no problems if we don't restart a loop. Also, it is highly
+> dependent on gcc options, and the code in the body of the loop. Even small changes
+> in the code (like adding debugging print) preventing reproducing of the issue.
+
+Again, I believe that your retry logic needs to extend back into the
+calling function for your some_func() example above.
+
+							Thanx, Paul
+
