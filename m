@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab3EYLJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 07:09:28 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63104 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab3EYLJX (ORCPT
+	id S1756130Ab3EYLJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 07:09:34 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:59139 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756074Ab3EYLJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 07:09:23 -0400
+	Sat, 25 May 2013 07:09:30 -0400
 From: Daniel Tang <dt.tangr@gmail.com>
 To: linux-arm-kernel@lists.infradead.org,
         "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>
@@ -14,10 +14,11 @@ Cc: Daniel Tang <dt.tangr@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>,
         "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
         Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [RFC PATCHv4 3/6] clk: TI-Nspire clock drivers
-Date: Sat, 25 May 2013 21:08:04 +1000
-Message-Id: <1369480087-24786-4-git-send-email-dt.tangr@gmail.com>
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC PATCHv4 4/6] clocksource: TI-Nspire timer support
+Date: Sat, 25 May 2013 21:08:05 +1000
+Message-Id: <1369480087-24786-5-git-send-email-dt.tangr@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
 References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
@@ -25,67 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for TI-Nspire clocks.
+Add clocksource and clockevent driver for the TI-Nspire.
 
 Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 ---
- .../devicetree/bindings/clock/nspire-clock.txt     |  24 ++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-nspire.c                           | 155 +++++++++++++++++++++
- 3 files changed, 180 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/nspire-clock.txt
- create mode 100644 drivers/clk/clk-nspire.c
+ .../devicetree/bindings/timer/lsi,zevio-timer.txt  |  33 +++
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/zevio-timer.c                  | 231 +++++++++++++++++++++
+ 3 files changed, 265 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+ create mode 100644 drivers/clocksource/zevio-timer.c
 
-diff --git a/Documentation/devicetree/bindings/clock/nspire-clock.txt b/Documentation/devicetree/bindings/clock/nspire-clock.txt
+diff --git a/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
 new file mode 100644
-index 0000000..7c3bc8b
+index 0000000..b2d07ad
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nspire-clock.txt
-@@ -0,0 +1,24 @@
-+TI-NSPIRE Clocks
++++ b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+@@ -0,0 +1,33 @@
++TI-NSPIRE timer
 +
 +Required properties:
-+- compatible: Valid compatible properties include:
-+	"lsi,nspire-cx-ahb-divider" for the AHB divider in the CX model
-+	"lsi,nspire-classic-ahb-divider" for the AHB divider in the older model
-+	"lsi,nspire-cx-clock" for the base clock in the CX model
-+	"lsi,nspire-classic-clock" for the base clock in the older model
 +
-+- reg: Physical base address of the controller and length of memory mapped
-+	region.
++- compatible : should be "lsi,zevio-timer".
++- reg : The physical base address and size of the timer (always first).
++- clocks: phandle to the source clock.
 +
-+Optional:
-+- clocks: For the "nspire-*-ahb-divider" compatible clocks, this is the parent
-+	clock where it divides the rate from.
++Optional properties:
++
++- interrupts : The interrupt number of the first timer.
++- reg : The interrupt acknowledgement registers
++	(always after timer base address)
++
++If any of the optional properties are not given, the timer is added as a
++clock-source only.
 +
 +Example:
 +
-+ahb_clk {
-+	#clock-cells = <0>;
-+	compatible = "lsi,nspire-cx-clock";
-+	reg = <0x900B0000 0x4>;
-+	clocks = <&base_clk>;
++timer {
++	compatible = "lsi,zevio-timer";
++	reg = <0x900D0000 0x1000>, <0x900A0020 0x8>;
++	interrupts = <19>;
++	clocks = <&timer_clk>;
 +};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 137d3e7..72ebbe1 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
-+obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
- obj-$(CONFIG_ARCH_MXS)		+= mxs/
- obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/clk/clk-nspire.c b/drivers/clk/clk-nspire.c
++
++Example (no clock-events):
++
++timer {
++	compatible = "lsi,zevio-timer";
++	reg = <0x900D0000 0x1000>;
++	clocks = <&timer_clk>;
++};
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8d979c7..293f86e 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
++obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
+ obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+ obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
+ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+diff --git a/drivers/clocksource/zevio-timer.c b/drivers/clocksource/zevio-timer.c
 new file mode 100644
-index 0000000..2546f7d
+index 0000000..c6d7f03
 --- /dev/null
-+++ b/drivers/clk/clk-nspire.c
-@@ -0,0 +1,155 @@
++++ b/drivers/clocksource/zevio-timer.c
+@@ -0,0 +1,231 @@
 +/*
-+ *  linux/drivers/clk/clk-nspire.c
++ *  linux/drivers/clocksource/zevio-timer.c
 + *
 + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
 + *
@@ -95,150 +105,226 @@ index 0000000..2546f7d
 + *
 + */
 +
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
 +#include <linux/io.h>
++#include <linux/irq.h>
 +#include <linux/of.h>
 +#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/clk.h>
++#include <linux/clockchips.h>
++#include <linux/cpumask.h>
++#include <linux/interrupt.h>
++#include <linux/slab.h>
 +
-+#define MHZ (1000 * 1000)
++#define IO_CURRENT_VAL	0x00
++#define IO_DIVIDER	0x04
++#define IO_CONTROL	0x08
 +
-+#define BASE_CPU_SHIFT		1
-+#define BASE_CPU_MASK		0x7F
++#define IO_TIMER1	0x00
++#define IO_TIMER2	0x0C
 +
-+#define CPU_AHB_SHIFT		12
-+#define CPU_AHB_MASK		0x07
++#define IO_MATCH_BEGIN	0x18
++#define IO_MATCH(x)	(IO_MATCH_BEGIN + ((x)<<2))
 +
-+#define FIXED_BASE_SHIFT	8
-+#define FIXED_BASE_MASK		0x01
++#define IO_INTR_STS	0x00
++#define IO_INTR_ACK	0x00
++#define IO_INTR_MSK	0x04
 +
-+#define CLASSIC_BASE_SHIFT	16
-+#define CLASSIC_BASE_MASK	0x1F
++#define CNTL_STOP_TIMER	(1<<4)
++#define CNTL_RUN_TIMER	(0<<4)
 +
-+#define CX_BASE_SHIFT		15
-+#define CX_BASE_MASK		0x3F
++#define CNTL_INC	(1<<3)
++#define CNTL_DEC	(0<<3)
 +
-+#define CX_UNKNOWN_SHIFT	21
-+#define CX_UNKNOWN_MASK		0x03
++#define CNTL_TOZERO	0
++#define CNTL_MATCH(x)	((x) + 1)
++#define CNTL_FOREVER	7
 +
-+struct nspire_clk_info {
-+	u32 base_clock;
-+	u16 base_cpu_ratio;
-+	u16 base_ahb_ratio;
++/* There are 6 match registers but we only use one. */
++#define TIMER_MATCH	0
++
++#define TIMER_INTR_MSK	(1<<(TIMER_MATCH))
++#define TIMER_INTR_ALL	0x3F
++
++struct zevio_timer {
++	void __iomem *base;
++	void __iomem *timer1, *timer2;
++	void __iomem *interrupt_regs;
++
++	int irqnr;
++
++	struct clk *clk;
++	struct clock_event_device clkevt;
++	struct irqaction clkevt_irq;
++
++	char clocksource_name[64];
++	char clockevent_name[64];
 +};
 +
-+
-+#define EXTRACT(var, prop) (((var)>>prop##_SHIFT) & prop##_MASK)
-+static void nspire_clkinfo_cx(u32 val, struct nspire_clk_info *clk)
++static int zevio_timer_set_event(unsigned long delta,
++		struct clock_event_device *dev)
 +{
-+	if (EXTRACT(val, FIXED_BASE))
-+		clk->base_clock = 48 * MHZ;
-+	else
-+		clk->base_clock = 6 * EXTRACT(val, CX_BASE) * MHZ;
++	unsigned long flags;
++	struct zevio_timer *timer = container_of(dev,
++			struct zevio_timer,
++			clkevt);
 +
-+	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * EXTRACT(val, CX_UNKNOWN);
-+	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
++	local_irq_save(flags);
++
++	writel(delta, timer->timer1 + IO_CURRENT_VAL);
++	writel(CNTL_RUN_TIMER | CNTL_DEC | CNTL_MATCH(TIMER_MATCH),
++			timer->timer1 + IO_CONTROL);
++
++	local_irq_restore(flags);
++
++	return 0;
 +}
 +
-+static void nspire_clkinfo_classic(u32 val, struct nspire_clk_info *clk)
++static void zevio_timer_set_mode(enum clock_event_mode mode,
++		struct clock_event_device *dev)
 +{
-+	if (EXTRACT(val, FIXED_BASE))
-+		clk->base_clock = 27 * MHZ;
-+	else
-+		clk->base_clock = (300 - 6 * EXTRACT(val, CLASSIC_BASE)) * MHZ;
++	unsigned long flags;
++	struct zevio_timer *timer = container_of(dev,
++			struct zevio_timer,
++			clkevt);
 +
-+	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * 2;
-+	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
-+}
-+#undef EXTRACT
++	local_irq_save(flags);
 +
-+static void __init nspire_ahbdiv_setup(struct device_node *node,
-+		void (*get_clkinfo)(u32, struct nspire_clk_info *))
-+{
-+	u32 val;
-+	void __iomem *io;
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	struct nspire_clk_info info;
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		/* Unsupported */
++		break;
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_ONESHOT:
++		/* Enable timer interrupts */
++		writel(TIMER_INTR_MSK, timer->interrupt_regs + IO_INTR_MSK);
++		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
++		dev->mode = mode;
++		break;
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	case CLOCK_EVT_MODE_UNUSED:
++		/* Disable timer interrupts */
++		writel(0, timer->interrupt_regs + IO_INTR_MSK);
++		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
++		/* Stop timer */
++		writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
++		dev->mode = mode;
++		break;
++	}
 +
-+	io = of_iomap(node, 0);
-+	if (!io)
-+		return;
-+	val = readl(io);
-+	iounmap(io);
-+
-+	get_clkinfo(val, &info);
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+	parent_name = of_clk_get_parent_name(node, 0);
-+
-+	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
-+					1, info.base_ahb_ratio);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++	local_irq_restore(flags);
 +}
 +
-+static void __init nspire_ahbdiv_setup_cx(struct device_node *node)
++static irqreturn_t zevio_timer_interrupt(int irq, void *dev_id)
 +{
-+	nspire_ahbdiv_setup(node, nspire_clkinfo_cx);
++	struct zevio_timer *timer = dev_id;
++	u32 intr;
++
++	intr = readl(timer->interrupt_regs + IO_INTR_ACK);
++	if (!(intr & TIMER_INTR_MSK))
++		return IRQ_NONE;
++
++	writel(TIMER_INTR_MSK, timer->interrupt_regs + IO_INTR_ACK);
++	writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
++
++	if (timer->clkevt.event_handler)
++		timer->clkevt.event_handler(&timer->clkevt);
++
++	return IRQ_HANDLED;
 +}
 +
-+static void __init nspire_ahbdiv_setup_classic(struct device_node *node)
++static int __init zevio_timer_add(struct device_node *node)
 +{
-+	nspire_ahbdiv_setup(node, nspire_clkinfo_classic);
++	struct zevio_timer *timer;
++	struct resource res;
++	int ret;
++
++	timer = kzalloc(sizeof(*timer), GFP_ATOMIC);
++	if (!timer)
++		return -ENOMEM;
++
++	timer->base = of_iomap(node, 0);
++	if (!timer->base) {
++		ret = -EINVAL;
++		goto error_free;
++	}
++	timer->timer1 = timer->base + IO_TIMER1;
++	timer->timer2 = timer->base + IO_TIMER2;
++
++	timer->clk = of_clk_get(node, 0);
++	if (IS_ERR(timer->clk)) {
++		ret = PTR_ERR(timer->clk);
++		pr_err("Timer clock not found! (error %d)\n", ret);
++		goto error_unmap;
++	}
++
++	timer->interrupt_regs = of_iomap(node, 1);
++	timer->irqnr = irq_of_parse_and_map(node, 0);
++
++	of_address_to_resource(node, 0, &res);
++	scnprintf(timer->clocksource_name, sizeof(timer->clocksource_name),
++			"%llx.%s_clocksource",
++			(unsigned long long)res.start, node->name);
++
++	scnprintf(timer->clockevent_name, sizeof(timer->clockevent_name),
++			"%llx.%s_clockevent",
++			(unsigned long long)res.start, node->name);
++
++	if (timer->interrupt_regs && timer->irqnr) {
++		timer->clkevt.name	= timer->clockevent_name;
++		timer->clkevt.set_next_event = zevio_timer_set_event;
++		timer->clkevt.set_mode	= zevio_timer_set_mode;
++		timer->clkevt.rating	= 200;
++		timer->clkevt.cpumask	= cpu_all_mask;
++		timer->clkevt.features	=
++			CLOCK_EVT_FEAT_ONESHOT;
++
++		writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
++		writel(0, timer->timer1 + IO_DIVIDER);
++
++		/* Start with timer interrupts disabled */
++		writel(0, timer->interrupt_regs + IO_INTR_MSK);
++		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
++
++		/* Interrupt to occur when timer value matches 0 */
++		writel(0, timer->base + IO_MATCH(TIMER_MATCH));
++
++		timer->clkevt_irq.name	= timer->clockevent_name;
++		timer->clkevt_irq.handler = zevio_timer_interrupt;
++		timer->clkevt_irq.dev_id = timer;
++		timer->clkevt_irq.flags	=
++			IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL;
++
++		setup_irq(timer->irqnr, &timer->clkevt_irq);
++
++		clockevents_config_and_register(&timer->clkevt,
++				clk_get_rate(timer->clk), 0x0001, 0xffff);
++		pr_info("Added %s as clockevent\n", timer->clockevent_name);
++	}
++
++	writel(CNTL_STOP_TIMER, timer->timer2 + IO_CONTROL);
++	writel(0, timer->timer2 + IO_CURRENT_VAL);
++	writel(0, timer->timer2 + IO_DIVIDER);
++	writel(CNTL_RUN_TIMER | CNTL_FOREVER | CNTL_INC,
++			timer->timer2 + IO_CONTROL);
++
++	clocksource_mmio_init(timer->timer2 + IO_CURRENT_VAL,
++			timer->clocksource_name,
++			clk_get_rate(timer->clk),
++			200, 16,
++			clocksource_mmio_readw_up);
++
++	pr_info("Added %s as clocksource\n", timer->clocksource_name);
++
++	return 0;
++error_unmap:
++	iounmap(timer->base);
++error_free:
++	kfree(timer);
++	return ret;
 +}
 +
-+CLK_OF_DECLARE(nspire_ahbdiv_cx, "lsi,nspire-cx-ahb-divider",
-+		nspire_ahbdiv_setup_cx);
-+CLK_OF_DECLARE(nspire_ahbdiv_classic, "lsi,nspire-classic-ahb-divider",
-+		nspire_ahbdiv_setup_classic);
-+
-+static void __init nspire_clk_setup(struct device_node *node,
-+		void (*get_clkinfo)(u32, struct nspire_clk_info *))
-+{
-+	u32 val;
-+	void __iomem *io;
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	struct nspire_clk_info info;
-+
-+	io = of_iomap(node, 0);
-+	if (!io)
-+		return;
-+	val = readl(io);
-+	iounmap(io);
-+
-+	get_clkinfo(val, &info);
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT,
-+			info.base_clock);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	else
-+		return;
-+
-+	pr_info("TI-NSPIRE Base: %uMHz CPU: %uMHz AHB: %uMHz\n",
-+		info.base_clock / MHZ,
-+		info.base_clock / info.base_cpu_ratio / MHZ,
-+		info.base_clock / info.base_ahb_ratio / MHZ);
-+}
-+
-+static void __init nspire_clk_setup_cx(struct device_node *node)
-+{
-+	nspire_clk_setup(node, nspire_clkinfo_cx);
-+}
-+
-+static void __init nspire_clk_setup_classic(struct device_node *node)
-+{
-+	nspire_clk_setup(node, nspire_clkinfo_classic);
-+}
-+
-+CLK_OF_DECLARE(nspire_clk_cx, "lsi,nspire-cx-clock", nspire_clk_setup_cx);
-+CLK_OF_DECLARE(nspire_clk_classic, "lsi,nspire-classic-clock",
-+		nspire_clk_setup_classic);
++CLOCKSOURCE_OF_DECLARE(zevio_timer, "lsi,zevio-timer", zevio_timer_add);
 --
 1.8.1.3
 
