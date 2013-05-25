@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab3EYPTf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 11:19:35 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:51849 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab3EYPT3 (ORCPT
+	id S1757017Ab3EYPUd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 11:20:33 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60519 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756892Ab3EYPUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 11:19:29 -0400
-Message-ID: <51A0D663.1030901@gmail.com>
-Date: Sat, 25 May 2013 23:18:59 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Sat, 25 May 2013 11:20:31 -0400
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
-Subject: Re: [RFC PATCH v2, part 2 14/18] PCI, EDAC: use hotplug-safe PCI
- bus iterators to walk PCI buses
-References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com> <1368550322-1045-14-git-send-email-jiang.liu@huawei.com> <519C45A3.3000005@cn.fujitsu.com>
-In-Reply-To: <519C45A3.3000005@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [114.40.26.198]
+In-Reply-To: <4528298.O99iVSpig9@avalon>
+References: <1369057541.11578.1.camel@phoenix>
+	<20130523013933.GI22608@verge.net.au>
+	<20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
+	<4528298.O99iVSpig9@avalon>
+Date: Sat, 25 May 2013 23:20:30 +0800
+Message-ID: <CAFRkauD6jgaETfnFcekJsM1irvCq45bes-Gt7BL1EP36G9+5rg@mail.gmail.com>
+Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call in tpu_remove()
+From: Axel Lin <axel.lin@ingics.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Horman <horms@verge.net.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22 May 2013 12:12:19 PM CST, Gu Zheng wrote:
-> On 05/15/2013 12:51 AM, Jiang Liu wrote:
+2013/5/25 Laurent Pinchart <laurent.pinchart@ideasonboard.com>:
+> Hi Thierry,
 >
->> Enhance EDAC drviers to use hotplug-safe iterators to walk PCI buses.
+> On Thursday 23 May 2013 21:12:17 Thierry Reding wrote:
+>> On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
+>> > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
+>> > > Hi Axel,
+>> > >
+>> > > Thank you for the patch.
+>> > >
+>> > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
+>> > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> > >
+>> > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> >
+>> > Thanks. I have queued this up for v3.11 in the pinmux branch
+>> > of my renesas tree on kernel.org.
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
->> Cc: Doug Thompson <dougthompson@xmission.com>
->> Cc: linux-edac@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/edac/i7core_edac.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
->> index 0ec3e95..39d5823 100644
->> --- a/drivers/edac/i7core_edac.c
->> +++ b/drivers/edac/i7core_edac.c
->> @@ -1296,7 +1296,7 @@ static unsigned i7core_pci_lastbus(void)
->>   	int last_bus = 0, bus;
->>   	struct pci_bus *b = NULL;
->>
->> -	while ((b = pci_find_next_bus(b)) != NULL) {
->> +	for_each_pci_root_bus(b)
+>> I'd rather take this through the PWM tree along with the original driver
+>> patch.
 >
-> missing the "{":
-> +	for_each_pci_root_bus(b) {
-Hi Zheng,
-             Thanks for review! Will fix it in next version.
-Regards!
-Gerry
+> As I will need to submit a new version of the renesas-tpu patches should I
+> fold this patch in ?
 
->
->>   		bus = b->number;
->>   		edac_dbg(0, "Found bus %d\n", bus);
->>   		if (bus > last_bus)
->
->
+Hi Laurent,
+I think you can fold this patch in if you are going to submit a new version
+of the renesas-tpu patches.
 
-
+Regards,
+Axel
