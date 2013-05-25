@@ -1,59 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3EYSCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 14:02:39 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:37644 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491Ab3EYSCg (ORCPT
+	id S1757646Ab3EYSUN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 14:20:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14449 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757546Ab3EYSUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 14:02:36 -0400
-Message-ID: <51A0FCB6.7060609@gmail.com>
-Date: Sat, 25 May 2013 20:02:30 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH RFC v2] media: OF: add sync-on-green endpoint property
-References: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com> <519F4AE7.8000003@gmail.com> <CA+V-a8tMQnjh=8qaRoNhwkdrcoTCK2zofTkCOd79hAMoz5qK2A@mail.gmail.com> <51A0C6A8.5090302@gmail.com> <CA+V-a8tqQGk1v_QdSsn2rt-OJY5PxoFmr1LLkp1bQQb3GuerMA@mail.gmail.com>
-In-Reply-To: <CA+V-a8tqQGk1v_QdSsn2rt-OJY5PxoFmr1LLkp1bQQb3GuerMA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 25 May 2013 14:20:07 -0400
+X-Authority-Analysis: v=2.0 cv=IZAFqBWa c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=s9b0WtSLZS4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=_vU5-hpMSx0A:10 a=vTr9H3xdAAAA:8 a=GUr4Vct4AAAA:8 a=dcEtbxvJFPXfnERhC-QA:9 a=QEXdDO2ut3YA:10 a=gA6IeH5FQcgA:10 a=NWVoK91CQyQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1369506004.15552.5.camel@gandalf.local.home>
+Subject: Re: rcu_read_lock() used illegally while idle!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Sat, 25 May 2013 14:20:04 -0400
+In-Reply-To: <20130525135959.GA1784@redhat.com>
+References: <20130521173100.GA2076@redhat.com>
+	 <20130522093624.GZ3578@linux.vnet.ibm.com>
+	 <1369226958.6828.175.camel@gandalf.local.home>
+	 <20130523164004.GJ16419@redhat.com>
+	 <1369403180.6828.223.camel@gandalf.local.home>
+	 <20130524142338.GB3106@redhat.com>
+	 <1369423420.6828.226.camel@gandalf.local.home>
+	 <20130525135959.GA1784@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2013 04:26 PM, Prabhakar Lad wrote:
->> Thus it might make sense to have only following integer properties (added
->> >  as needed):
->> >
->> >  composite-sync-active
->> >  sync-on-green-active
->> >  sync-on-comp-active
->> >  sync-on-luma-active
->> >
->> >  This would allow to specify polarity of each signal and at the same time
->> >  the parsing code could derive synchronisation type. A new field could be
->> >  added to struct v4l2_of_parallel_bus, e.g. sync_type and it would be filled
->> >  within v4l2_of_parse_endpoint().
->> >
-> I am OK with this option. and I hope you meant "struct
-> v4l2_of_bus_parallel" instead
-> of " struct v4l2_of_parallel_bus" and to fill sync_type within
-> v4l2_of_parse_parallel_bus()
-> and not in v4l2_of_parse_endpoint().
+On Sat, 2013-05-25 at 09:59 -0400, Dave Jones wrote:
+> On Fri, May 24, 2013 at 03:23:40PM -0400, Steven Rostedt wrote:
+>  > On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
+>  > 
+>  > > .config: http://paste.fedoraproject.org/14281/94052971/raw/
+>  > > 
+>  > > trace shows the problem process was 'cc1', so I was likely building a kernel
+>  > > at the time.  There was also a trinity run going on in the background.
+>  > > 
+>  > > cmdline: nothing special..
+>  > > 
+>  > > BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
+>  > > 
+>  > 
+>  > OK, I'm able to reproduce this. Looks like the same issue happens from
+>  > other ways from userspace into the kernel (the next way was tracing
+>  > system calls).
+>  > 
+>  > Forget the other patch. Here's a new patch that is more specific to
+>  > tracing and context tracking.
+>  > 
+>  > Can you try this one out, please.
+> 
+> Took a lot longer to hit this..
 
-Yes, that's what I meant, sorry for this confusion.
+This is a same but different bug ;-)
 
-Regards,
-Sylwester
+Looks like we fixed all the function tracing infrastructure problems,
+but this is a function tracer user problem. Namely perf.
+
+> 
+> [53693.297516] ===============================
+> [53693.298109] [ INFO: suspicious RCU usage. ]
+> [53693.298562] 3.10.0-rc2+ #38 Not tainted
+> [53693.299017] -------------------------------
+> [53693.299474] include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+> [53693.299959] 
+> other info that might help us debug this:
+> 
+> [53693.301420] 
+> RCU used illegally from idle CPU!
+> rcu_scheduler_active = 1, debug_locks = 0
+> [53693.302918] RCU used illegally from extended quiescent state!
+> [53693.303462] 1 lock held by trinity-child1/18786:
+> [53693.303966]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff8113dd48>] __perf_event_overflow+0x108/0x310
+> [53693.304557] 
+> stack backtrace:
+> [53693.305608] CPU: 3 PID: 18786 Comm: trinity-child1 Not tainted 3.10.0-rc2+ #38 
+> [53693.306790]  0000000000000000 ffff88020767bac8 ffffffff816e2f6b ffff88020767baf8
+> [53693.307408]  ffffffff810b5897 ffff88021de92520 0000000000000000 ffff88020767bbf8
+> [53693.308035]  0000000000000000 ffff88020767bb78 ffffffff8113ded4 ffffffff8113dd48
+> [53693.308671] Call Trace:
+> [53693.309301]  [<ffffffff816e2f6b>] dump_stack+0x19/0x1b
+> [53693.309943]  [<ffffffff810b5897>] lockdep_rcu_suspicious+0xe7/0x120
+> [53693.310596]  [<ffffffff8113ded4>] __perf_event_overflow+0x294/0x310
+> [53693.311256]  [<ffffffff8113dd48>] ? __perf_event_overflow+0x108/0x310
+> [53693.311923]  [<ffffffff81309289>] ? __const_udelay+0x29/0x30
+> [53693.312596]  [<ffffffff81076054>] ? __rcu_read_unlock+0x54/0xa0
+> [53693.313275]  [<ffffffff816f4000>] ? ftrace_call+0x5/0x2f
+> [53693.313958]  [<ffffffff8113dfa1>] perf_swevent_overflow+0x51/0xe0
+> [53693.314650]  [<ffffffff8113e08f>] perf_swevent_event+0x5f/0x90
+> [53693.315347]  [<ffffffff8113e1c9>] perf_tp_event+0x109/0x4f0
+> [53693.316059]  [<ffffffff8113e36f>] ? perf_tp_event+0x2af/0x4f0
+> [53693.316773]  [<ffffffff81074630>] ? __rcu_read_lock+0x20/0x20
+
+Ouch! perf function tracing uses rcu_lock(). This should be avoided.
+Believe it or not, rcu_lock() is too invasive for function tracing, not
+to mention that the function tracer traces rcu_lock().
+
+Jiri,
+
+Is there a way you can make perf not use rcu here? Or we need to
+blacklist what perf can trace. It can not trace any rcu calls. Here it
+looks like it traced rcu_eqs_enter(). It also wont be able to trace
+anything before user_exit() or after user_enter().
+
+-- Steve
+
+> [53693.317485]  [<ffffffff8112d79f>] perf_ftrace_function_call+0xbf/0xd0
+> [53693.318207]  [<ffffffff8110e1e1>] ? ftrace_ops_control_func+0x181/0x210
+> [53693.318921]  [<ffffffff81074630>] ? __rcu_read_lock+0x20/0x20
+> [53693.319621]  [<ffffffff81100cae>] ? rcu_eqs_enter_common+0x5e/0x470
+> [53693.320330]  [<ffffffff8110e1e1>] ftrace_ops_control_func+0x181/0x210
+> [53693.321046]  [<ffffffff816f4000>] ftrace_call+0x5/0x2f
+> [53693.321763]  [<ffffffff8110e229>] ? ftrace_ops_control_func+0x1c9/0x210
+> [53693.322490]  [<ffffffff816f4000>] ? ftrace_call+0x5/0x2f
+> [53693.323221]  [<ffffffff81074635>] ? debug_lockdep_rcu_enabled+0x5/0x40
+> [53693.323988]  [<ffffffff81074635>] ? debug_lockdep_rcu_enabled+0x5/0x40
+> [53693.324728]  [<ffffffff81100cae>] ? rcu_eqs_enter_common+0x5e/0x470
+> [53693.325489]  [<ffffffff8110112a>] rcu_eqs_enter+0x6a/0xb0
+> [53693.326273]  [<ffffffff81103673>] rcu_user_enter+0x13/0x20
+> [53693.327025]  [<ffffffff8114541a>] user_enter+0x6a/0xd0
+> [53693.327783]  [<ffffffff8100f6d8>] syscall_trace_leave+0x78/0x140
+> [53693.328551]  [<ffffffff816f46af>] int_check_syscall_exit_work+0x34/0x3d
+>  
+
+
