@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3EYM4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 08:56:22 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:33356 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3EYM4T (ORCPT
+	id S1756213Ab3EYNNg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 09:13:36 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50850 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab3EYNNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 08:56:19 -0400
-Message-ID: <51A0B4E7.4030307@redhat.com>
-Date: Sat, 25 May 2013 14:56:07 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <1369456502.5008.5.camel@dabdike> <20130525083713.GA6179@mtj.dyndns.org> <51A09D1D.3040706@redhat.com> <20130525124814.GA8489@mtj.dyndns.org>
-In-Reply-To: <20130525124814.GA8489@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 25 May 2013 09:13:34 -0400
+Date: Sat, 25 May 2013 15:13:24 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+Message-ID: <20130525151324.637d6b70@holzheu>
+In-Reply-To: <20130524170507.GG18218@redhat.com>
+References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
+	<20130524143644.GD18218@redhat.com>
+	<20130524170626.2ac06efe@holzheu>
+	<20130524152849.GF18218@redhat.com>
+	<20130524184653.52d75b5f@holzheu>
+	<20130524170507.GG18218@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052513-0342-0000-0000-00000521EF51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/05/2013 14:48, Tejun Heo ha scritto:
->>> * Merge the patch to give out SG_IO access along with write access, so
->>> > >   the use cases which want to give out SG_IO access can do so
->>> > >   explicitly and be fully responsible for the device.  This makes
->>> > >   sense to me.  If one wants to be allowed to issue raw commands to
->>> > >   the hardware, one takes the full responsibility.
->> > 
->> > That's not possible; it would make it impossible to do things like using
->> > a privileged helper to open the file and passing it back via SCM_RIGHTS
->> > to an unprivileged program (running as the user).  This is the ptrace
->> > attack that you mentioned.
-> I have no idea what you're talking about.  I'm describing the same
-> thing you implemented and posted.
+On Fri, 24 May 2013 13:05:07 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Ok, I think we need a rewind.  I'll try to post what I mean next week.
+> On Fri, May 24, 2013 at 06:46:53PM +0200, Michael Holzheu wrote:
+> > On Fri, 24 May 2013 11:28:49 -0400
+> > Vivek Goyal <vgoyal@redhat.com> wrote:
+> > 
+> > > On Fri, May 24, 2013 at 05:06:26PM +0200, Michael Holzheu wrote:
+> > 
+> > [snip] 
+> > 
+> > > As /proc/vmcore is the most used and useful interface, I prefer
+> > > that we swap memory and put that info in elf headers.
+> > > For /dev/oldme, I don't mind if we leave it as it is. If somebody
+> > > really cares, then I guess we need to write a new command line
+> > > option which /dev/mem can parse and which tells it about swaps so
+> > > that /dev/oldmem can map things correctly. (This is better than
+> > > hardcoding things).
+> > 
+> > Besides of the potential /dev/oldmem issue, I still do not
+> > understand the option of doing the swap in the elf header. Looks
+> > like I missed here a fundamental design point of kdump :(
+> > 
+> > Is that done by specifying different virtual and physical addresses
+> > in the ELF header?
+> 
+> Nope. We keep the virtual to physical address mapping same. We just
+> modify the p_offset in PT_LOAD elf header to represent where actually
+> the memory is present physically. And when /proc/vmcore reads the
+> data, it reads it from p_offset.
+> 
+> IOW, p_offset and p_paddr will be different for swapped memory but 
+> should be same for memory which has not been swapped.
 
-Paolo
+Hello Vivek,
+
+Ok, now I got it :)
+
+It worked for me by specifying a PT_LOAD with:
+
+  phdr->p_offset = OLDMEM_BASE;
+  phdr->p_vaddr = phdr->p_paddr = 0;
+  phdr->p_filesz = phdr->p_memsz = OLDMEM_SIZE;
+
+Best Regards,
+Michael
+
+
