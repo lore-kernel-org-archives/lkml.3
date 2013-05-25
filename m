@@ -1,97 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3EYQ7u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 12:59:50 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:56506 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab3EYQ7r (ORCPT
+	id S1757410Ab3EYRF4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 13:05:56 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15641 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148Ab3EYRFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 12:59:47 -0400
+	Sat, 25 May 2013 13:05:52 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 May 2013 13:05:51 EDT
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 25 May 2013 10:00:26 -0700
+Message-ID: <51A0EE29.6060708@nvidia.com>
+Date: Sat, 25 May 2013 22:30:25 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
-References: <20130524210503.GC15788@xanatos>
-	<Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
-Date: Sat, 25 May 2013 09:59:46 -0700
-X-Google-Sender-Auth: 9ITwWoNrWRVBlI_VytzrEtSN1-s
-Message-ID: <CALaWCONKcOhTxZpsGGgi2rw5_EB-373KbLFGAGRNVa0evf=PNA@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky controllers.
-From: Shawn Nematbakhsh <shawnn@chromium.org>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "george.cherian@ti.com" <george.cherian@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] drivers: regulator: palmas: add an API to set/clear
+ the switch bit on SMPS10
+References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-2-git-send-email-kishon@ti.com>
+In-Reply-To: <1369405896-30246-2-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah and Alan,
+Hi Kishon/Graeme,
 
-Thanks for the comments. I will make the following revisions:
+On Friday 24 May 2013 08:01 PM, Kishon Vijay Abraham I wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+>
+> Added an API to set/clear the switch bit on SMPS10 which can be used by
+> palmas usb. The switch bit should be set in order for palmas to
+> supply VBUS and is needed when OMAP is acting as USB HOST.
+>
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>   drivers/regulator/palmas-regulator.c | 26 ++++++++++++++++++++++++++
+>   include/linux/mfd/palmas.h           |  2 ++
+>   2 files changed, 28 insertions(+)
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 92ceed0..d57ab55 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -465,6 +465,32 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
+>   	return ret;
+>   }
+>   
+> +/**
+> + * palmas_set_switch_smps10() - set or clear the switch bit on SMPS10
+> + * @param palmas pointer to the palmas mfd structure
+> + * @param sw boolean to indicate switch status
+> + *
+> + * There is not a way to represent this function within the regulator
+> + * framework. This sets/clears the switch of SMPS10 so SMPS10_OUT1 and
+> + * SMPS10_OUT2 are shorted together.
+> + */
+>
 
-1. Call pm_runtime_get_noresume only when the first device is
-connected, and call pm_runtime_put when the last device is
-disconnected.
-2. Wrap the calls in an ifdef CONFIG_USB_DEFAULT_PERSIST.
-3. Make sure that all pm_runtime_get_noresume calls have a
-corresponding pm_runtime_put somewhere (originally the intent was to
-disable runtime suspend "forever", but no longer).
+As per datasheet, SMPS10 has 2 outputs, OUT1 and OUT2.
+OUT2 is always available either through parasitic diode or bypass switch 
+or boost mode. It can not be off at all.
+OUT2 can be enable/disable through the switch bit.
 
-In principle, would the patch be acceptable with these revisions?
+The smps10 regulator is implemented  enable/disable on which it just 
+enable/disable boost mode.
+I think this is not proper control, actually we should control OUT1 
+switch on regulator enable/disable of the smps10.
 
-On Sat, May 25, 2013 at 7:11 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 24 May 2013, Sarah Sharp wrote:
->
->> On Fri, May 24, 2013 at 11:12:57AM -0700, Shawn Nematbakhsh wrote:
->> > If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
->> > a reset will be performed upon runtime resume. Any previously suspended
->> > devices attached to the controller will be re-enumerated at this time.
->> > This will cause problems, for example, if an open system call on the
->> > device triggered the resume (the open call will fail).
->>
->> That's ugly, but disabling runtime PM is going to have a big impact on
->> the power consumption of those systems.
->>
->> Alan, do you think this is really the right thing to be doing here?  It
->> feels like userspace should just be able to deal with devices
->> disconnecting on resume.  After all, there are lots of USB devices that
->> can't handle USB device suspend at all.
->
-> This is a complicated issue.  It depends on the runtime PM settings for
-> both the device and the host controller.
->
-> As just one aspect, consider the fact that if it wants to, userspace
-> can already prevent the controller from going into runtime suspend.
-> Always preventing this at the kernel level, even when no devices are
-> plugged in, does seem too heavy-handed.
->
->> Shouldn't userspace just disable runtime PM for the USB device classes
->> that don't have a reset resume callback?
->
-> That's not so easy, because the kernel changes over time.  Userspace
-> has no general way to tell which drivers have reset-resume support.
->
->> > Note that this change is only relevant when persist_enabled is not set
->> > for USB devices.
->>
->> Could we at least wrap the call in an ifdef CONFIG_USB_DEFAULT_PERSIST?
->> That way if people have USB persist turned off in their configuration,
->> their host will still be able to suspend.
->
-> Not just that; the patch is incorrect on the face of it...
->
->> > @@ -4687,6 +4687,12 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
->> >
->> >     get_quirks(dev, xhci);
->> >
->> > +   /* If we are resetting upon resume, we must disable runtime PM.
->> > +    * Otherwise, an open() syscall to a device on our runtime suspended
->> > +    * controller will trigger controller reset and device re-enumeration */
->> > +   if (xhci->quirks & XHCI_RESET_ON_RESUME)
->> > +           pm_runtime_get_noresume(dev);
->> > +
->
-> It adds a pm_runtime_get call with no corresponding pm_runtime_put.
->
-> Alan Stern
->
+And hence in this case, we will not need this API.
+
+Otherwise it will difficult to use this api outside of palmas.
+
+In tegra platform, we have connected the USB-VBUS supply from 
+SMPS10-OUT1 and usb driver control the vbus enabled/disable and so it 
+can not call this API. This functionality need to be exposed through the 
+regulator only.
+
+
