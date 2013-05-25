@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3EYG3o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 02:29:44 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41396
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750862Ab3EYG3n (ORCPT
+	id S1752298Ab3EYHFi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 03:05:38 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:49856 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3EYHFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 02:29:43 -0400
-Date: Sat, 25 May 2013 08:29:17 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Amit Kale <akale@stec-inc.com>
-Cc: OS Engineering <osengineering@stec-inc.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Padmini Balasubramaniyan <padminib@stec-inc.com>,
-        Amit Phansalkar <aphansalkar@stec-inc.com>
-Subject: Re: EnhanceIO(TM) caching driver features [1/3]
-Message-ID: <20130525062917.GW29680@kernel.dk>
-References: <A44CB407BBB85C498149811C52498A450872D9@MYMBX3.stec-inc.ad>
- <20130524184727.GQ29680@kernel.dk>
- <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad>
+	Sat, 25 May 2013 03:05:37 -0400
+Message-ID: <51A062B5.8040601@redhat.com>
+Date: Sat, 25 May 2013 09:05:25 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad>
+To: Christoph Hellwig <hch@infradead.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <1369456502.5008.5.camel@dabdike> <20130525052744.GA25186@infradead.org>
+In-Reply-To: <20130525052744.GA25186@infradead.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't top post!
-
-On Sat, May 25 2013, Amit Kale wrote:
-> Hi Jens,
+Il 25/05/2013 07:27, Christoph Hellwig ha scritto:
+> On Fri, May 24, 2013 at 09:35:02PM -0700, James Bottomley wrote:
+>> I'll go along with this.  I'm also wondering what the problem would be
+>> if we just allowed all commands on either CAP_SYS_RAWIO or opening the
+>> device for write, so we just defer to the filesystem permissions and
+>> restricted read only opens to the basic all device opcodes.
 > 
-> I by mistake dropped the weblink to demartek study while composing my
-> email. The demartek study is published here:
-> http://www.demartek.com/Demartek_STEC_S1120_PCIe_Evaluation_2013-02.html.
-> It's an independent study. Here are a few numbers taken from this
-> report. In a database comparison using transactions per second
+> I've been out of this area for a bit, but the problem used to be that
+> you could send destructive commands to a partition.  The right fix
+> for that would be to not allow SG_IO on partitions at all, just
+> wondering if anything would be broken by this.
 
-> HDD baseline (40 disks) - 2570 tps
-> 240GB Cache - 9844 tps
-> 480GB cache - 19758 tps
-> RAID5 pure SSD - 32380 tps
-> RAID0 pure SSD - 40467 tps
-> 
-> There are two types of performance comparisons, application based and
-> IO pattern based. Application based tests measure efficiency of cache
-> replacement algorithms. These are time consuming. Above tests were
-> done by demartek over a period of time. I don't have performance
-> comparisons between EnhanceIO(TM) driver, bcache and dm-cache. I'll
-> try to get them done in-house. 
+Linus wanted to keep that for CAP_SYS_RAWIO.  We found two uses of SG_IO
+on partitions: zfs-fuse used SYNCHRONIZE CACHE; some proprietary driver
+used TEST UNIT READY.
 
-Unless I'm badly mistaken, that study is only on enhanceio, it does not
-compare it to any other solutions. Additionally, it's running on
-Windows?! I don't think it's too much to ask to see results on the
-operating system for which you are submitting the changes.
+Really, the solution is to make the bitmaps configurable in userspace.
+It is no less secure than unpriv_sgio.  Then the kernel can be
+configured at build-time to have either an MMC bitmap and a basic
+whitelist of a dozen commands.  We can even avoid working around those
+few conflicting opcodes; if you're paranoid you can just configure your
+kernel right.
 
-> IO pattern based tests can be done quickly. However since IO pattern
-> is fixed prior to the test, output tends to depend on whether the IO
-> pattern suits the caching algorithm. These are relatively easy. I can
-> definitely post this comparison.
-
-It's fairly trivial to do some synthetic cache testing with fio, using
-eg the zipf distribution. That'll get you data reuse, for both reads and
-writes (if you want), in the selected distribution.
-
--- 
-Jens Axboe
-
+Paolo
