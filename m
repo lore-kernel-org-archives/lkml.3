@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3EYR4G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 13:56:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757437Ab3EYR4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 13:56:03 -0400
-Message-ID: <51A0FB23.3050301@redhat.com>
-Date: Sat, 25 May 2013 13:55:47 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1757616Ab3EYSCj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 14:02:39 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:37644 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757491Ab3EYSCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 14:02:36 -0400
+Message-ID: <51A0FCB6.7060609@gmail.com>
+Date: Sat, 25 May 2013 20:02:30 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] ipc/sem.c: fix lockup, restore FIFO behavior
-References: <1369495011-2586-1-git-send-email-manfred@colorfullife.com>
-In-Reply-To: <1369495011-2586-1-git-send-email-manfred@colorfullife.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH RFC v2] media: OF: add sync-on-green endpoint property
+References: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com> <519F4AE7.8000003@gmail.com> <CA+V-a8tMQnjh=8qaRoNhwkdrcoTCK2zofTkCOd79hAMoz5qK2A@mail.gmail.com> <51A0C6A8.5090302@gmail.com> <CA+V-a8tqQGk1v_QdSsn2rt-OJY5PxoFmr1LLkp1bQQb3GuerMA@mail.gmail.com>
+In-Reply-To: <CA+V-a8tqQGk1v_QdSsn2rt-OJY5PxoFmr1LLkp1bQQb3GuerMA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2013 11:16 AM, Manfred Spraul wrote:
-> The double coward solution:
-> - wakeup stays FIFO
-> - fast switch back to per-semaphore spinlock mode
->
-> The patch
-> a) fixes a lockup due to a missing restart.
-> b) makes the wakeups again FIFO (as linux <= 3.0.9)
-> c) tries to limit the time while in global lock mode as much
->     as possible. (same as linux-3.0.10-rc1)
->
-> Changes:
-> - the wait-for-zero operations are moved into seperate lists. Thus they can
->    be checked seperately, without rescanning the whole queue.
-> - If a complex operation must sleep, then all pending change operations are
->    moved into the global queue. This allows to keep everything FIFO.
-> - When all complex operations have completed, the simple ops are moved
->    back into the per-semaphore queues.
->
-> Advantage:
-> - FIFO. Dropping FIFO is a user visible change, and I'm a coward.
+On 05/25/2013 04:26 PM, Prabhakar Lad wrote:
+>> Thus it might make sense to have only following integer properties (added
+>> >  as needed):
+>> >
+>> >  composite-sync-active
+>> >  sync-on-green-active
+>> >  sync-on-comp-active
+>> >  sync-on-luma-active
+>> >
+>> >  This would allow to specify polarity of each signal and at the same time
+>> >  the parsing code could derive synchronisation type. A new field could be
+>> >  added to struct v4l2_of_parallel_bus, e.g. sync_type and it would be filled
+>> >  within v4l2_of_parse_endpoint().
+>> >
+> I am OK with this option. and I hope you meant "struct
+> v4l2_of_bus_parallel" instead
+> of " struct v4l2_of_parallel_bus" and to fill sync_type within
+> v4l2_of_parse_parallel_bus()
+> and not in v4l2_of_parse_endpoint().
 
-I am still not entirely convinced that FIFO is worthwhile,
-but the code looks correct to me.
+Yes, that's what I meant, sorry for this confusion.
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-> - simpler check_restart logic.
-> - Efficient handling of wait-for-zero semops, both simple and complex.
-> - Fewer restarts in update_queue(), because pending wait-for-zero do not
->    force a restart anymore.
->
-> Other changes:
-> - try_atomic_semop() also performs the semop. Thus rename the function.
->
-> It passes tests with qemu, but not boot-tested due to EFI problems.
->
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-
+Regards,
+Sylwester
