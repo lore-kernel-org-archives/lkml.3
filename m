@@ -1,147 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3EYBlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 21:41:15 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:46609 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab3EYBlN (ORCPT
+	id S1752910Ab3EYCPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 22:15:15 -0400
+Received: from [119.145.14.65] ([119.145.14.65]:59100 "EHLO
+	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab3EYCPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 21:41:13 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Frank=20L=C3=B6mker?= <Frank.Loemker@isa.de.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: xhci: Use non-interruptible sleep for XHCI commands
-Date: Fri, 24 May 2013 18:39:37 -0700
-Message-Id: <1369445977-31404-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 24 May 2013 22:15:13 -0400
+Message-ID: <51A01DBE.2090201@huawei.com>
+Date: Sat, 25 May 2013 10:11:10 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <minchan@kernel.org>, <wency@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <yinghai@kernel.org>, <jiang.liu@huawei.com>,
+        <tj@kernel.org>, <liwanp@linux.vnet.ibm.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages in memory
+ offline procedure.
+References: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com> <1369387807-17956-3-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1369387807-17956-3-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The XHCI stack usually uses wait_for_completion_interruptible_timeout()
-to wait for the completion of an XHCI command, and treats both timeouts
-and interruptions as errors. This is a bad idea, since these commands
-are often essential for the correct operation of the USB stack, and
-their failure can leave devices in a misconfigured and/or unusable
-state. While a timeout probably means a real problem that needs to be
-dealt with, a random signal to the controlling user-space process should
-not cause such harsh consequences.
+On 2013/5/24 17:30, Tang Chen wrote:
 
-This patch changes that behavior to use uninterruptible waits instead.
-It fixes an easy to reproduce bug that occurs when you kill -9 a
-process that reads from a UVC camera. The UVC driver's release code
-tries to set the camera's alternate setting back to 0, but the lingering
-SIGKILL instantly aborts any Stop Endpoint or Configure Endpoint command
-sent to the xHC. The code dies halfway through the bandwidth allocation
-process, leaving the device in an active configuration and preventing
-future access to it due to the now out-of-sync bandwidth calculation.
+> In memory offline procedure, skip pages marked as LOCAL_NODE_DATA.
+> For now, this kind of pages are used to store local node pagetables.
+> 
+> The minimum unit of memory online/offline is a memory block. In a
+> block, the movable pages will be offlined as usual (unmapped and
+> isolated), and the pagetable pages will be skipped. After the iteration
+> of all page, the block will be set as offline, but the kernel can
+> still access the pagetable pages. This is user transparent.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  mm/page_alloc.c     |   18 ++++++++++++++++--
+>  mm/page_isolation.c |    6 ++++++
+>  2 files changed, 22 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 557b21b..73b8f0b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5701,11 +5701,18 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
+>  	pfn = page_to_pfn(page);
+>  	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
+>  		unsigned long check = pfn + iter;
+> +		unsigned long magic;
+>  
+>  		if (!pfn_valid_within(check))
+>  			continue;
+>  
+>  		page = pfn_to_page(check);
+> +
+> +		/* Skip pages storing local node kernel data. */
 
-This patch should be backported to kernels as far 2.6.31 that contain
-the commit 3ffbba9511b4148cbe1f6b6238686adaeaca8feb "USB: xhci: Allocate
-and address USB devices".
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/host/xhci-hub.c |  7 +++----
- drivers/usb/host/xhci.c     | 26 +++++++++++---------------
- 2 files changed, 14 insertions(+), 19 deletions(-)
+> +		magic = (unsigned long)page->lru.next;
+> +		if (magic == LOCAL_NODE_DATA)
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 187a3ec..c1bcfa8 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -293,12 +293,11 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* Wait for last stop endpoint command to finish */
--	timeleft = wait_for_completion_interruptible_timeout(
-+	timeleft = wait_for_completion_timeout(
- 			cmd->completion,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
--		xhci_warn(xhci, "%s while waiting for stop endpoint command\n",
--				timeleft == 0 ? "Timeout" : "Signal");
-+		xhci_warn(xhci, "Timeout while waiting for Stop Endpoint\n");
- 		spin_lock_irqsave(&xhci->lock, flags);
- 		/* The timeout might have raced with the event ring handler, so
- 		 * only delete from the list if the item isn't poisoned.
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index b4aa79d..302f992 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2613,15 +2613,14 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* Wait for the configure endpoint command to complete */
--	timeleft = wait_for_completion_interruptible_timeout(
-+	timeleft = wait_for_completion_timeout(
- 			cmd_completion,
- 			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
--		xhci_warn(xhci, "%s while waiting for %s command\n",
--				timeleft == 0 ? "Timeout" : "Signal",
-+		xhci_warn(xhci, "Timeout while waiting for %s\n",
- 				ctx_change == 0 ?
--					"configure endpoint" :
--					"evaluate context");
-+					"Configure Endpoint" :
-+					"Evaluate Context");
- 		/* cancel the configure endpoint command */
- 		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
- 		if (ret < 0)
-@@ -3399,12 +3398,11 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* Wait for the Reset Device command to finish */
--	timeleft = wait_for_completion_interruptible_timeout(
-+	timeleft = wait_for_completion_timeout(
- 			reset_device_cmd->completion,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
--		xhci_warn(xhci, "%s while waiting for reset device command\n",
--				timeleft == 0 ? "Timeout" : "Signal");
-+		xhci_warn(xhci, "Timeout while waiting for Reset Device\n");
- 		spin_lock_irqsave(&xhci->lock, flags);
- 		/* The timeout might have raced with the event ring handler, so
- 		 * only delete from the list if the item isn't poisoned.
-@@ -3588,11 +3586,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* XXX: how much time for xHC slot assignment? */
--	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
-+	timeleft = wait_for_completion_timeout(&xhci->addr_dev,
- 			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
--		xhci_warn(xhci, "%s while waiting for a slot\n",
--				timeleft == 0 ? "Timeout" : "Signal");
-+		xhci_warn(xhci, "Timeout while waiting for a slot\n");
- 		/* cancel the enable slot request */
- 		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
- 	}
-@@ -3706,15 +3703,14 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
--	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
-+	timeleft = wait_for_completion_timeout(&xhci->addr_dev,
- 			XHCI_CMD_DEFAULT_TIMEOUT);
- 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
- 	 * the SetAddress() "recovery interval" required by USB and aborting the
- 	 * command on a timeout.
- 	 */
- 	if (timeleft <= 0) {
--		xhci_warn(xhci, "%s while waiting for address device command\n",
--				timeleft == 0 ? "Timeout" : "Signal");
-+		xhci_warn(xhci, "Timeout while waiting for Address Device\n");
- 		/* cancel the address device command */
- 		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
- 		if (ret < 0)
--- 
-1.7.12.4
+Hi Tang,
+
+I think can define this as a macro, and can be reused in the other places.
+
+Thanks,
+Jianguo Wu.
+
+> +			continue;
+> +
+>  		/*
+>  		 * We can't use page_count without pin a page
+>  		 * because another CPU can free compound page.
+> @@ -6029,8 +6036,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+>  	struct page *page;
+>  	struct zone *zone;
+>  	int order, i;
+> -	unsigned long pfn;
+> -	unsigned long flags;
+> +	unsigned long pfn, flags, magic;
+>  	/* find the first valid pfn */
+>  	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+>  		if (pfn_valid(pfn))
+> @@ -6046,6 +6052,14 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+>  			continue;
+>  		}
+>  		page = pfn_to_page(pfn);
+> +
+> +		/* Skip pages storing local node kernel data. */
+> +		magic = (unsigned long)page->lru.next;
+> +		if (magic == LOCAL_NODE_DATA) {
+> +			pfn++;
+> +			continue;
+> +		}
+> +
+>  		/*
+>  		 * The HWPoisoned page may be not in buddy system, and
+>  		 * page_count() is not 0.
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 383bdbb..fb60a27 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -174,6 +174,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+>  				  bool skip_hwpoisoned_pages)
+>  {
+>  	struct page *page;
+> +	unsigned long magic;
+>  
+>  	while (pfn < end_pfn) {
+>  		if (!pfn_valid_within(pfn)) {
+> @@ -181,6 +182,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+>  			continue;
+>  		}
+>  		page = pfn_to_page(pfn);
+> +		magic = (unsigned long)page->lru.next;
+> +
+>  		if (PageBuddy(page)) {
+>  			/*
+>  			 * If race between isolatation and allocation happens,
+> @@ -208,6 +211,9 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+>  			 */
+>  			pfn++;
+>  			continue;
+> +		} else if (magic == LOCAL_NODE_DATA) {
+> +			pfn++;
+> +			continue;
+>  		}
+>  		else
+>  			break;
+
+
 
