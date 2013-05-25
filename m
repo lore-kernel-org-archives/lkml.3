@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3EYIcK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 04:32:10 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38631 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab3EYIcI (ORCPT
+	id S1753834Ab3EYIhW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 04:37:22 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:62847 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab3EYIhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 04:32:08 -0400
-Message-ID: <51A076FE.3060604@gmail.com>
-Date: Sat, 25 May 2013 16:31:58 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sat, 25 May 2013 04:37:17 -0400
+Date: Sat, 25 May 2013 17:37:13 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+Message-ID: <20130525083713.GA6179@mtj.dyndns.org>
+References: <20130522193009.GA23845@mtj.dyndns.org>
+ <519D360D.4050309@redhat.com>
+ <20130522221737.GA12339@mtj.dyndns.org>
+ <519DC926.4000106@redhat.com>
+ <20130523090222.GA26592@mtj.dyndns.org>
+ <519DE5AD.7080303@redhat.com>
+ <20130524014405.GB16882@mtj.dyndns.org>
+ <519F12FF.6090809@redhat.com>
+ <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
+ <1369456502.5008.5.camel@dabdike>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com> <20130524143644.GD18218@redhat.com> <20130524170626.2ac06efe@holzheu> <20130524152849.GF18218@redhat.com> <87mwrkatgu.fsf@xmission.com> <51A006CF.90105@gmail.com> <87k3mnahkf.fsf@xmission.com>
-In-Reply-To: <87k3mnahkf.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369456502.5008.5.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月25日 11:01, Eric W. Biederman 写道:
-> Zhang Yanfei <zhangyanfei.yes@gmail.com> writes:
+Hey, James.
+
+On Fri, May 24, 2013 at 09:35:02PM -0700, James Bottomley wrote:
+> > Well, I'd actually much prefer disabling CDB whitelisting for all !MMC
+> > devices if at all possible.
 > 
->> Hello Eric,
->>
->>> The function copy_oldmem_page also concerns me.  I don't have a clue why
->>> we duplicate that function on every architecutre in a slightly different
->>> form.  There should be enough abstractions in the kernel to make that
->>> unnecessary.  I would be glad to see that function go, and remove the
->>> possibility of confusion that happened on s390.
->>
->> You mean we should have a common copy_oldmem_page for all architectures? And
->> just like vivek said above, for s390, we should put the swap info in the elf
->> headers instead of doing that in copy_oldmem_page.
-> 
-> Exactly.
-> 
-> The user space change in /sbin/kexec should even be backwards compatible
-> for s390.  So fixing /sbin/kexec should probably come first.
-> 
+> I'll go along with this.  I'm also wondering what the problem would be
 
-I am kind of not sure about the "backwards compatible for s390" you meant.
+Don't think we can.  It'd be a behavior change clearly visible to
+userland at this point.
 
-For s390, if we put swap info into the elf header, This will change /sbin/kexec.
-But at this point, copy_oldmem_page is still doing the swap when we try to read
-the pages among [0 - OLDMEM_SIZE] and [OLDMEM_BASE - OLDMEM_BASE + OLDMEM_SIZE].
-So removing the swap in copy_oldmem_page should be done at the same time.
-New kexec with old kernels would fail and old kexec with new kernels would fail too.
+> if we just allowed all commands on either CAP_SYS_RAWIO or opening the
+> device for write, so we just defer to the filesystem permissions and
+> restricted read only opens to the basic all device opcodes.
 
-So could you please explain more about the ""backwards compatible". And please
-correct me if I am wrong.
+Given that there are quite a few cases where we give out block device
+permission accesses, changing the behavior by default is likely too
+dangerous.
 
-Thanks
-Zhang
+> Do we have a real world example of this?  Getting the kernel out of the
+> command filtering business does seem to be a good idea to me.
 
+Something like the following seems workable.
 
+* Fix the security bug.  I don't really care how it's fixed as long as
+  the amount of whitelisted commands goes down not up.
+
+* It's not like we can remove the filter for !MMC devices at this
+  point, so I think it makes sense to make it per-class so that we can
+  *remove* commands which aren't relevant for the device type.  Also,
+  we probably wanna add read blinking comment yelling that no further
+  commands should be added.
+
+* Merge the patch to give out SG_IO access along with write access, so
+  the use cases which want to give out SG_IO access can do so
+  explicitly and be fully responsible for the device.  This makes
+  sense to me.  If one wants to be allowed to issue raw commands to
+  the hardware, one takes the full responsibility.
+
+Thanks.
+
+-- 
+tejun
