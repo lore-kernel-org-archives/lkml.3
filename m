@@ -1,476 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3EYLI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 07:08:56 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:48807 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab3EYLIq (ORCPT
+	id S1755648Ab3EYLOv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 07:14:51 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:37207 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718Ab3EYLOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 07:08:46 -0400
-From: Daniel Tang <dt.tangr@gmail.com>
-To: linux-arm-kernel@lists.infradead.org,
-        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>
-Cc: Daniel Tang <dt.tangr@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCHv4 1/6] arm: TI-Nspire platform code
-Date: Sat, 25 May 2013 21:08:02 +1000
-Message-Id: <1369480087-24786-2-git-send-email-dt.tangr@gmail.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
-References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
+	Sat, 25 May 2013 07:14:50 -0400
+Message-ID: <51A09D1D.3040706@redhat.com>
+Date: Sat, 25 May 2013 13:14:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <1369456502.5008.5.camel@dabdike> <20130525083713.GA6179@mtj.dyndns.org>
+In-Reply-To: <20130525083713.GA6179@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add initial platform support for the TI-Nspire series.
+Il 25/05/2013 10:37, Tejun Heo ha scritto:
+> Hey, James.
+> 
+> On Fri, May 24, 2013 at 09:35:02PM -0700, James Bottomley wrote:
+>>> Well, I'd actually much prefer disabling CDB whitelisting for all !MMC
+>>> devices if at all possible.
+>>
+>> I'll go along with this.  I'm also wondering what the problem would be
+> 
+> Don't think we can.  It'd be a behavior change clearly visible to
+> userland at this point.
 
-Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
----
- arch/arm/Kconfig                   |   2 +
- arch/arm/Kconfig.debug             |  16 +++++
- arch/arm/Makefile                  |   1 +
- arch/arm/include/debug/nspire.S    |  28 +++++++++
- arch/arm/mach-nspire/Kconfig       |  15 +++++
- arch/arm/mach-nspire/Makefile      |   2 +
- arch/arm/mach-nspire/Makefile.boot |   0
- arch/arm/mach-nspire/clcd.c        | 119 +++++++++++++++++++++++++++++++++++++
- arch/arm/mach-nspire/clcd.h        |  14 +++++
- arch/arm/mach-nspire/mmio.h        |  23 +++++++
- arch/arm/mach-nspire/nspire.c      | 117 ++++++++++++++++++++++++++++++++++++
- 11 files changed, 337 insertions(+)
- create mode 100644 arch/arm/include/debug/nspire.S
- create mode 100644 arch/arm/mach-nspire/Kconfig
- create mode 100644 arch/arm/mach-nspire/Makefile
- create mode 100644 arch/arm/mach-nspire/Makefile.boot
- create mode 100644 arch/arm/mach-nspire/clcd.c
- create mode 100644 arch/arm/mach-nspire/clcd.h
- create mode 100644 arch/arm/mach-nspire/mmio.h
- create mode 100644 arch/arm/mach-nspire/nspire.c
+We can (and even for MMC) if it is a build-time configuration knob.  It
+would satisfy those people who want the CVE fixed, as long as userspace
+gets some configurability.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 49d993c..86a3ed9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -964,6 +964,8 @@ source "arch/arm/mach-netx/Kconfig"
- 
- source "arch/arm/mach-nomadik/Kconfig"
- 
-+source "arch/arm/mach-nspire/Kconfig"
-+
- source "arch/arm/plat-omap/Kconfig"
- 
- source "arch/arm/mach-omap1/Kconfig"
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 1d41908..fe07941 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -309,6 +309,20 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on MVEBU based platforms.
- 
-+	config DEBUG_NSPIRE_CLASSIC_UART
-+		bool "Kernel low-level debugging via TI-NSPIRE 8250 UART"
-+		depends on ARCH_NSPIRE
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on TI-NSPIRE classic models.
-+
-+	config DEBUG_NSPIRE_CX_UART
-+		bool "Kernel low-level debugging via TI-NSPIRE PL011 UART"
-+		depends on ARCH_NSPIRE
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on TI-NSPIRE CX models.
-+
- 	config DEBUG_NOMADIK_UART
- 		bool "Kernel low-level debugging messages via NOMADIK UART"
- 		depends on ARCH_NOMADIK
-@@ -633,6 +647,8 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX53_UART ||\
- 				 DEBUG_IMX6Q_UART
- 	default "debug/mvebu.S" if DEBUG_MVEBU_UART
-+	default "debug/nspire.S" if 	DEBUG_NSPIRE_CX_UART || \
-+					DEBUG_NSPIRE_CLASSIC_UART
- 	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
- 	default "debug/nomadik.S" if DEBUG_NOMADIK_UART
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 1ba358b..b4615aa 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -164,6 +164,7 @@ machine-$(CONFIG_ARCH_MXS)		+= mxs
- machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
- machine-$(CONFIG_ARCH_NETX)		+= netx
- machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
-+machine-$(CONFIG_ARCH_NSPIRE)		+= nspire
- machine-$(CONFIG_ARCH_OMAP1)		+= omap1
- machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
- machine-$(CONFIG_ARCH_ORION5X)		+= orion5x
-diff --git a/arch/arm/include/debug/nspire.S b/arch/arm/include/debug/nspire.S
-new file mode 100644
-index 0000000..886fd27
---- /dev/null
-+++ b/arch/arm/include/debug/nspire.S
-@@ -0,0 +1,28 @@
-+/*
-+ *	linux/arch/arm/include/debug/nspire.S
-+ *
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#define NSPIRE_EARLY_UART_PHYS_BASE	   0x90020000
-+#define NSPIRE_EARLY_UART_VIRT_BASE	   0xfee20000
-+
-+.macro	addruart, rp, rv, tmp
-+	ldr \rp, =(NSPIRE_EARLY_UART_PHYS_BASE)		@ physical base address
-+	ldr \rv, =(NSPIRE_EARLY_UART_VIRT_BASE)		@ virtual base address
-+.endm
-+
-+
-+#ifdef CONFIG_DEBUG_NSPIRE_CX_UART
-+#include <asm/hardware/debug-pl01x.S>
-+#endif
-+
-+#ifdef CONFIG_DEBUG_NSPIRE_CLASSIC_UART
-+#define UART_SHIFT 2
-+#include <asm/hardware/debug-8250.S>
-+#endif
-diff --git a/arch/arm/mach-nspire/Kconfig b/arch/arm/mach-nspire/Kconfig
-new file mode 100644
-index 0000000..a295b18
---- /dev/null
-+++ b/arch/arm/mach-nspire/Kconfig
-@@ -0,0 +1,15 @@
-+config ARCH_NSPIRE
-+	bool "TI-NSPIRE based"
-+	depends on ARCH_MULTI_V4_V5
-+	depends on MMU
-+	select CPU_ARM926T
-+	select COMMON_CLK
-+	select GENERIC_CLOCKEVENTS
-+	select SPARSE_IRQ
-+	select ARM_AMBA
-+	select ARM_VIC
-+	select ARM_TIMER_SP804
-+	select USE_OF
-+	select CLKSRC_OF
-+	help
-+	  This enables support for systems using the TI-NSPIRE CPU
-diff --git a/arch/arm/mach-nspire/Makefile b/arch/arm/mach-nspire/Makefile
-new file mode 100644
-index 0000000..1bec256
---- /dev/null
-+++ b/arch/arm/mach-nspire/Makefile
-@@ -0,0 +1,2 @@
-+obj-y				+= nspire.o
-+obj-y				+= clcd.o
-diff --git a/arch/arm/mach-nspire/Makefile.boot b/arch/arm/mach-nspire/Makefile.boot
-new file mode 100644
-index 0000000..e69de29
-diff --git a/arch/arm/mach-nspire/clcd.c b/arch/arm/mach-nspire/clcd.c
-new file mode 100644
-index 0000000..abea126
---- /dev/null
-+++ b/arch/arm/mach-nspire/clcd.c
-@@ -0,0 +1,119 @@
-+/*
-+ *	linux/arch/arm/mach-nspire/clcd.c
-+ *
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <linux/amba/bus.h>
-+#include <linux/amba/clcd.h>
-+#include <linux/dma-mapping.h>
-+
-+static struct clcd_panel nspire_cx_lcd_panel = {
-+	.mode		= {
-+		.name		= "Color LCD",
-+		.refresh	= 60,
-+		.xres		= 320,
-+		.yres		= 240,
-+		.sync		= 0,
-+		.vmode		= FB_VMODE_NONINTERLACED,
-+		.pixclock	= 1,
-+		.hsync_len	= 6,
-+		.vsync_len	= 1,
-+		.right_margin	= 50,
-+		.left_margin	= 38,
-+		.lower_margin	= 3,
-+		.upper_margin	= 17,
-+	},
-+	.width		= 65, /* ~6.50 cm */
-+	.height		= 49, /* ~4.87 cm */
-+	.tim2		= TIM2_IPC,
-+	.cntl		= CNTL_LCDTFT | CNTL_LCDVCOMP(1),
-+	.bpp		= 16,
-+	.caps		= CLCD_CAP_565,
-+};
-+
-+static struct clcd_panel nspire_classic_lcd_panel = {
-+	.mode		= {
-+		.name		= "Grayscale LCD",
-+		.refresh	= 60,
-+		.xres		= 320,
-+		.yres		= 240,
-+		.sync		= FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
-+		.vmode		= FB_VMODE_NONINTERLACED,
-+		.pixclock	= 1,
-+		.hsync_len	= 6,
-+		.vsync_len	= 1,
-+		.right_margin	= 6,
-+		.left_margin	= 6,
-+	},
-+	.width		= 71, /* 7.11cm */
-+	.height		= 53, /* 5.33cm */
-+	.tim2		= 0x80007d0,
-+	.cntl		= CNTL_LCDMONO8,
-+	.bpp		= 8,
-+	.grayscale	= 1,
-+	.caps		= CLCD_CAP_5551,
-+};
-+
-+int nspire_clcd_setup(struct clcd_fb *fb)
-+{
-+	struct clcd_panel *panel;
-+	size_t panel_size;
-+	const char *type;
-+	dma_addr_t dma;
-+	int err;
-+
-+	BUG_ON(!fb->dev->dev.of_node);
-+
-+	err = of_property_read_string(fb->dev->dev.of_node, "lcd-type", &type);
-+	if (err) {
-+		pr_err("CLCD: Could not find lcd-type property\n");
-+		return err;
-+	}
-+
-+	if (!strcmp(type, "cx")) {
-+		panel = &nspire_cx_lcd_panel;
-+	} else if (!strcmp(type, "classic")) {
-+		panel = &nspire_classic_lcd_panel;
-+	} else {
-+		pr_err("CLCD: Unknown lcd-type %s\n", type);
-+		return -EINVAL;
-+	}
-+
-+	panel_size = ((panel->mode.xres * panel->mode.yres) * panel->bpp) / 8;
-+	panel_size = ALIGN(panel_size, PAGE_SIZE);
-+
-+	fb->fb.screen_base = dma_alloc_writecombine(&fb->dev->dev,
-+		panel_size, &dma, GFP_KERNEL);
-+
-+	if (!fb->fb.screen_base) {
-+		pr_err("CLCD: unable to map framebuffer\n");
-+		return -ENOMEM;
-+	}
-+
-+	fb->fb.fix.smem_start = dma;
-+	fb->fb.fix.smem_len = panel_size;
-+	fb->panel = panel;
-+
-+	return 0;
-+}
-+
-+int nspire_clcd_mmap(struct clcd_fb *fb, struct vm_area_struct *vma)
-+{
-+	return dma_mmap_writecombine(&fb->dev->dev, vma,
-+		fb->fb.screen_base, fb->fb.fix.smem_start,
-+		fb->fb.fix.smem_len);
-+}
-+
-+void nspire_clcd_remove(struct clcd_fb *fb)
-+{
-+	dma_free_writecombine(&fb->dev->dev, fb->fb.fix.smem_len,
-+		fb->fb.screen_base, fb->fb.fix.smem_start);
-+}
-diff --git a/arch/arm/mach-nspire/clcd.h b/arch/arm/mach-nspire/clcd.h
-new file mode 100644
-index 0000000..8c33d2c
---- /dev/null
-+++ b/arch/arm/mach-nspire/clcd.h
-@@ -0,0 +1,14 @@
-+/*
-+ *	linux/arch/arm/mach-nspire/clcd.h
-+ *
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+int nspire_clcd_setup(struct clcd_fb *fb);
-+int nspire_clcd_mmap(struct clcd_fb *fb, struct vm_area_struct *vma);
-+void nspire_clcd_remove(struct clcd_fb *fb);
-diff --git a/arch/arm/mach-nspire/mmio.h b/arch/arm/mach-nspire/mmio.h
-new file mode 100644
-index 0000000..4de63fc
---- /dev/null
-+++ b/arch/arm/mach-nspire/mmio.h
-@@ -0,0 +1,23 @@
-+/*
-+ *	linux/arch/arm/mach-nspire/mmio.h
-+ *
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#define NSPIRE_EARLY_UART_PHYS_BASE	0x90020000
-+#define NSPIRE_EARLY_UART_VIRT_BASE	0xFEE20000
-+
-+#define NSPIRE_MISC_PHYS_BASE		0x900A0000
-+#define NSPIRE_MISC_HWRESET		0x08
-+
-+#define NSPIRE_PWR_PHYS_BASE		0x900B0000
-+#define NSPIRE_PWR_VIRT_BASE		0xFEEB0000
-+#define NSPIRE_PWR_BUS_DISABLE1		0x18
-+#define NSPIRE_PWR_BUS_DISABLE2		0x20
-+
-+#define NSPIRE_LCD_PHYS_BASE		0xC0000000
-diff --git a/arch/arm/mach-nspire/nspire.c b/arch/arm/mach-nspire/nspire.c
-new file mode 100644
-index 0000000..d26c46d
---- /dev/null
-+++ b/arch/arm/mach-nspire/nspire.c
-@@ -0,0 +1,117 @@
-+/*
-+ *	linux/arch/arm/mach-nspire/nspire.c
-+ *
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/init.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/irqchip.h>
-+#include <linux/irqchip/arm-vic.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/amba/bus.h>
-+#include <linux/amba/clcd.h>
-+#include <linux/clocksource.h>
-+
-+#include <asm/mach/arch.h>
-+#include <asm/mach-types.h>
-+#include <asm/mach/map.h>
-+
-+#include <asm/hardware/timer-sp.h>
-+
-+#include "mmio.h"
-+#include "clcd.h"
-+
-+static const char *nspire_dt_match[] __initconst = {
-+	"ti,nspire",
-+	"ti,nspire-cx",
-+	"ti,nspire-tp",
-+	"ti,nspire-clp",
-+	NULL,
-+};
-+
-+static struct map_desc nspire_io_desc[] __initdata = {
-+	{
-+		.virtual	=  NSPIRE_EARLY_UART_VIRT_BASE,
-+		.pfn		= __phys_to_pfn(NSPIRE_EARLY_UART_PHYS_BASE),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE
-+	},
-+	{
-+		.virtual	=  NSPIRE_PWR_VIRT_BASE,
-+		.pfn		= __phys_to_pfn(NSPIRE_PWR_PHYS_BASE),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE
-+	}
-+};
-+
-+static void __init nspire_map_io(void)
-+{
-+	iotable_init(nspire_io_desc, ARRAY_SIZE(nspire_io_desc));
-+}
-+
-+static struct clcd_board nspire_clcd_data = {
-+	.name		= "LCD",
-+	.caps		= CLCD_CAP_5551 | CLCD_CAP_565,
-+	.check		= clcdfb_check,
-+	.decode		= clcdfb_decode,
-+	.setup		= nspire_clcd_setup,
-+	.mmap		= nspire_clcd_mmap,
-+	.remove		= nspire_clcd_remove,
-+};
-+
-+
-+static struct of_dev_auxdata nspire_auxdata[] __initdata = {
-+	OF_DEV_AUXDATA("arm,pl111", NSPIRE_LCD_PHYS_BASE,
-+			NULL, &nspire_clcd_data),
-+	{ }
-+};
-+
-+static void __init nspire_early_init(void)
-+{
-+	void __iomem *pwr = IOMEM(NSPIRE_PWR_VIRT_BASE);
-+
-+	/* Re-enable bus access to all peripherals */
-+	writel(0, pwr + NSPIRE_PWR_BUS_DISABLE1);
-+	writel(0, pwr + NSPIRE_PWR_BUS_DISABLE2);
-+
-+	pr_info("Re-enabled bus access to all peripherals\n");
-+}
-+
-+static void __init nspire_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			nspire_auxdata, NULL);
-+}
-+
-+static void __init nspire_init_time(void)
-+{
-+	of_clk_init(NULL);
-+	clocksource_of_init();
-+}
-+
-+static void nspire_restart(char mode, const char *cmd)
-+{
-+	void __iomem *base = ioremap(NSPIRE_MISC_PHYS_BASE, SZ_4K);
-+	if (!base)
-+		return;
-+
-+	writel(2, base + NSPIRE_MISC_HWRESET);
-+}
-+
-+DT_MACHINE_START(NSPIRE, "TI-NSPIRE")
-+	.map_io		= nspire_map_io,
-+	.init_irq	= irqchip_init,
-+	.init_time	= nspire_init_time,
-+	.init_machine	= nspire_init,
-+	.init_early	= nspire_early_init,
-+	.dt_compat	= nspire_dt_match,
-+	.restart	= nspire_restart,
-+MACHINE_END
--- 
-1.8.1.3
+> * Fix the security bug.  I don't really care how it's fixed as long as
+>   the amount of whitelisted commands goes down not up.
+> 
+> * It's not like we can remove the filter for !MMC devices at this
+>   point, so I think it makes sense to make it per-class so that we can
+>   *remove* commands which aren't relevant for the device type.  Also,
+>   we probably wanna add read blinking comment yelling that no further
+>   commands should be added.
+> 
+> * Merge the patch to give out SG_IO access along with write access, so
+>   the use cases which want to give out SG_IO access can do so
+>   explicitly and be fully responsible for the device.  This makes
+>   sense to me.  If one wants to be allowed to issue raw commands to
+>   the hardware, one takes the full responsibility.
 
+That's not possible; it would make it impossible to do things like using
+a privileged helper to open the file and passing it back via SCM_RIGHTS
+to an unprivileged program (running as the user).  This is the ptrace
+attack that you mentioned.
+
+Paolo
