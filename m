@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3EYNth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 09:49:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755970Ab3EYNtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 09:49:36 -0400
-Message-ID: <51A0C166.4000503@redhat.com>
-Date: Sat, 25 May 2013 09:49:26 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] ipc/sem.c: fix lockup, restore FIFO behavior
-References: <1369472095-30195-1-git-send-email-manfred@colorfullife.com>
-In-Reply-To: <1369472095-30195-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756388Ab3EYNvG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 09:51:06 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:39174 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab3EYNvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 09:51:01 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3, part1 00/10] Prepare for introducing PCI bus lock interfaces
+Date: Sat, 25 May 2013 21:48:28 +0800
+Message-Id: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2013 04:54 AM, Manfred Spraul wrote:
-> Hi Rik,
->
-> I came up with a completely different approach:
->
-> The patch
-> a) fixes a lockup due to a missing restart.
-> b) makes the code again FIFO.
->
-> Changes:
-> - the wait-for-zero operations are moved into seperate lists. Thus they can
->    be checked seperately, without rescanning the whole queue.
-> - If a complex operating arrives, then all pending change operations are
->    moved into the global queue. This allows to keep everything FIFO.
->
-> Advantage:
-> - Fewer restarts in update_queue(), because pending wait-for-zero do not
->    force a restart anymore.
-> - Efficient handling of wait-for-zero semops, both simple and complex.
-> - FIFO. Dropping FIFO is a user visible change, and I'm a coward.
-> - simpler check_restart logic.
->
-> Disadvantage:
-> When one complex operation arrives, then the semaphore array goes into a
-> complex_present mode that always acquires the global lock. Even when the
-> complex operations have completed, pending simple decrease operations
-> prevent the array from switching back. The switch happens when
-> there are only simple wait-for-zero semops (or no semops at all).
->
-> But: Let's wait if this really exists: An application that does rarely
-> complex operations (and that doesn't prefer FIFO semantics).
+This is a preparation patchset for introducing PCI bus lock mechanisms
+to protect PCI subsystem from concurrent hotplug operations.
 
-I do not like that downside at all.
+Patch 1:
+	Introduce pci_bus_{get|put}() to manage PCI bus reference count
+Patch 2-3:
+	pci_alloc_dev() patchset from Gu Zheng
+Patch 6:
+	Make PCI bus creating/destroying logic symmetric
+Patch 8-10:
+	Cleanup and bugfix for IOV
+Other:
+	Minor code improvements/cleanups
 
-The danger of staying in "too slow to be useful" mode forever
-is really not a risk I want to take.
+Gu Zheng (2):
+  PCI: Introduce pci_alloc_dev(struct pci_bus*) to replace
+    alloc_pci_dev()
+  PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus) instead
+
+Jiang Liu (8):
+  PCI: introduce pci_bus_{get|put}() to manage PCI bus reference count
+  PCI: mark pci_scan_bus_parented() as __deprecated
+  PCI, IA64: minor code clean up
+  PCI: make PCI host bridge/bus creating and destroying logic symmetric
+  PCI, unicore, m68k: remove redundant call of pci_bus_add_devices()
+  PCI, IOV: don't touch bus->is_added flag
+  PCI, IOV: simplify IOV implementation
+  PCI, IOV: hide remove and rescan sysfs interfaces for SR-IOV virtual
+    functions
+
+ arch/ia64/sn/kernel/io_init.c     |  11 +---
+ arch/m68k/platform/coldfire/pci.c |   2 +-
+ arch/powerpc/kernel/pci_of_scan.c |   3 +-
+ arch/sparc/kernel/pci.c           |   3 +-
+ arch/tile/kernel/pci.c            |   3 --
+ arch/unicore32/kernel/pci.c       |   5 --
+ drivers/char/agp/alpha-agp.c      |   2 +-
+ drivers/char/agp/parisc-agp.c     |   2 +-
+ drivers/pci/bus.c                 |  15 ++++++
+ drivers/pci/iov.c                 |  64 +++++++++--------------
+ drivers/pci/pci-sysfs.c           |  30 ++++++++++-
+ drivers/pci/probe.c               | 105 ++++++++++++++++++--------------------
+ drivers/pci/remove.c              |   3 +-
+ drivers/scsi/megaraid.c           |   2 +-
+ include/linux/pci.h               |   9 ++--
+ 15 files changed, 134 insertions(+), 125 deletions(-)
 
 -- 
-All rights reversed
+1.8.1.2
+
