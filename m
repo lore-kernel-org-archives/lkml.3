@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab3EYGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 02:19:09 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:42608 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3EYGTH (ORCPT
+	id S1752311Ab3EYG3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 02:29:44 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41396
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750862Ab3EYG3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 02:19:07 -0400
-Message-ID: <51A057CF.5070605@redhat.com>
-Date: Sat, 25 May 2013 08:18:55 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sat, 25 May 2013 02:29:43 -0400
+Date: Sat, 25 May 2013 08:29:17 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Amit Kale <akale@stec-inc.com>
+Cc: OS Engineering <osengineering@stec-inc.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Padmini Balasubramaniyan <padminib@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Subject: Re: EnhanceIO(TM) caching driver features [1/3]
+Message-ID: <20130525062917.GW29680@kernel.dk>
+References: <A44CB407BBB85C498149811C52498A450872D9@MYMBX3.stec-inc.ad>
+ <20130524184727.GQ29680@kernel.dk>
+ <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, tj@kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v3 part1 1/4] sg_io: pass request_queue to blk_verify_command
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>     <1369317503-4095-2-git-send-email-pbonzini@redhat.com>    <1369380965.1945.10.camel@dabdike> <519F1A28.6080303@redhat.com>   <1369381857.1945.15.camel@dabdike> <519F1C7A.2030605@redhat.com>  <1369382613.1945.19.camel@dabdike> <519F2597.9030208@redhat.com> <1369455247.1893.2.camel@dabdike>
-In-Reply-To: <1369455247.1893.2.camel@dabdike>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/05/2013 06:14, James Bottomley ha scritto:
-> On Fri, 2013-05-24 at 10:32 +0200, Paolo Bonzini wrote:
->> Il 24/05/2013 10:03, James Bottomley ha scritto:
->>>>>>>>>>> Does anyone in the real world actually care about this bug?
->>>>>>>>>
->>>>>>>>> Yes, or I would move on and not waste so much time on this.
->>>>>>>
->>>>>>> Fine, so produce a simple fix for this bug which we can discuss that's
->>>>>>> not tied to this feature.
->>>>>
->>>>> Honestly, I have no idea how this is even possible.
->>> Really?  It looks to me like a simple block on the commands for disk
->>> devices in the opcode switch would do it (with a corresponding change to
->>> sg.c:sg_allow_access).
->>
->> Which switch?  What I can do is something like this in blk_verify_command:
+Please don't top post!
+
+On Sat, May 25 2013, Amit Kale wrote:
+> Hi Jens,
 > 
-> not in blk_verify_command: outside of it, in the three places it's used.
+> I by mistake dropped the weblink to demartek study while composing my
+> email. The demartek study is published here:
+> http://www.demartek.com/Demartek_STEC_S1120_PCIe_Evaluation_2013-02.html.
+> It's an independent study. Here are a few numbers taken from this
+> report. In a database comparison using transactions per second
 
-In other words,
+> HDD baseline (40 disks) - 2570 tps
+> 240GB Cache - 9844 tps
+> 480GB cache - 19758 tps
+> RAID5 pure SSD - 32380 tps
+> RAID0 pure SSD - 40467 tps
+> 
+> There are two types of performance comparisons, application based and
+> IO pattern based. Application based tests measure efficiency of cache
+> replacement algorithms. These are time consuming. Above tests were
+> done by demartek over a period of time. I don't have performance
+> comparisons between EnhanceIO(TM) driver, bcache and dm-cache. I'll
+> try to get them done in-house. 
 
-	if (blk_verify_command(...) ||
-	    blk_verify_command_with_queue(q, ...))
+Unless I'm badly mistaken, that study is only on enhanceio, it does not
+compare it to any other solutions. Additionally, it's running on
+Windows?! I don't think it's too much to ask to see results on the
+operating system for which you are submitting the changes.
 
-We must have different taste.
+> IO pattern based tests can be done quickly. However since IO pattern
+> is fixed prior to the test, output tends to depend on whether the IO
+> pattern suits the caching algorithm. These are relatively easy. I can
+> definitely post this comparison.
 
-Paolo
+It's fairly trivial to do some synthetic cache testing with fio, using
+eg the zipf distribution. That'll get you data reuse, for both reads and
+writes (if you want), in the selected distribution.
+
+-- 
+Jens Axboe
+
