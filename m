@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab3EYF1y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 01:27:54 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41258
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750954Ab3EYF1w (ORCPT
+	id S1752159Ab3EYFcu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 01:32:50 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:51919 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3EYFct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 01:27:52 -0400
-Date: Sat, 25 May 2013 01:27:44 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tejun Heo <tj@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130525052744.GA25186@infradead.org>
-References: <20130522193009.GA23845@mtj.dyndns.org>
- <519D360D.4050309@redhat.com>
- <20130522221737.GA12339@mtj.dyndns.org>
- <519DC926.4000106@redhat.com>
- <20130523090222.GA26592@mtj.dyndns.org>
- <519DE5AD.7080303@redhat.com>
- <20130524014405.GB16882@mtj.dyndns.org>
- <519F12FF.6090809@redhat.com>
- <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
- <1369456502.5008.5.camel@dabdike>
+	Sat, 25 May 2013 01:32:49 -0400
+Date: Sat, 25 May 2013 14:33:27 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call
+ in tpu_remove()
+Message-ID: <20130525053327.GB9293@verge.net.au>
+References: <1369057541.11578.1.camel@phoenix>
+ <1454213.B1kNpQ6JtX@avalon>
+ <20130523013933.GI22608@verge.net.au>
+ <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369456502.5008.5.camel@dabdike>
+In-Reply-To: <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 09:35:02PM -0700, James Bottomley wrote:
-> I'll go along with this.  I'm also wondering what the problem would be
-> if we just allowed all commands on either CAP_SYS_RAWIO or opening the
-> device for write, so we just defer to the filesystem permissions and
-> restricted read only opens to the basic all device opcodes.
+On Thu, May 23, 2013 at 09:12:17PM +0200, Thierry Reding wrote:
+> On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
+> > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
+> > > Hi Axel,
+> > > 
+> > > Thank you for the patch.
+> > > 
+> > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
+> > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > > 
+> > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > 
+> > Thanks. I have queued this up for v3.11 in the pinmux branch
+> > of my renesas tree on kernel.org.
+> 
+> I'd rather take this through the PWM tree along with the original driver
+> patch.
 
-I've been out of this area for a bit, but the problem used to be that
-you could send destructive commands to a partition.  The right fix
-for that would be to not allow SG_IO on partitions at all, just
-wondering if anything would be broken by this.
+Sure that is fine.
+
+I had them queued up in my tree but I have dropped them now.
+That should propogate to linux-next in the not too distant future.
+
+I have also dropped the following changes from my tree
+as they appear to ether depend on the TPU PWD driver or one
+of the other patches in the list below.
+
+Laurent, I think it would be best if you resubmitted these patches
+once there is a stable branch available with the TPU PWD driver merged
+which I can use as a base.
+
+ARM: mach-shmobile: armadillo800eva: Add backlight support
+ARM: mach-shmobile: kota2: Use leds-pwm + pwm-rmob
+leds: Remove leds-renesas-tpu driver
+sh-pfc: sh73a0: Remove function GPIOs
 
