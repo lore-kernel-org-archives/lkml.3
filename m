@@ -1,237 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3EYNvz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 09:51:55 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42039 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab3EYNvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 09:51:50 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3, part1 06/10] PCI: make PCI host bridge/bus creating and destroying logic symmetric
-Date: Sat, 25 May 2013 21:48:34 +0800
-Message-Id: <1369489718-25869-7-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
-References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
+	id S1756817Ab3EYNxV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 09:53:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14062 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756301Ab3EYNxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 May 2013 09:53:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,741,1363158000"; 
+   d="scan'208";a="339944506"
+Date: Sat, 25 May 2013 18:46:32 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, djbw@fb.com
+Subject: [GIT PULL] slave-dmaengine fixes
+Message-ID: <20130525131632.GV30200@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes PCI host bridge/bus creating and destroying logic
-symmetric by using device_initialize()/device_add()/device_del()/put_device()
-pairs as discussed in thread at:
-http://comments.gmane.org/gmane.linux.kernel.pci/22073
+Hi Linus,
 
-It also fixes a bug in error recovery path in pci_create_root_bus()
-which may kfree() an in-use host bridge object.
+Here are slave-dmaenegine fixes for 3.10. We have two patches from Andy & Rafael
+fixing the Lynxpoint dma.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c  | 84 +++++++++++++++++++++++-----------------------------
- drivers/pci/remove.c |  3 +-
- 2 files changed, 39 insertions(+), 48 deletions(-)
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index d5d18a0..c9a5ce7 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -451,7 +451,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
- 	}
- }
- 
--static struct pci_bus * pci_alloc_bus(void)
-+static struct pci_bus *pci_alloc_bus(struct pci_ops *ops, void *sd, int bus)
- {
- 	struct pci_bus *b;
- 
-@@ -464,10 +464,32 @@ static struct pci_bus * pci_alloc_bus(void)
- 		INIT_LIST_HEAD(&b->resources);
- 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
- 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
-+		b->sysdata = sd;
-+		b->ops = ops;
-+		b->number = bus;
-+		b->busn_res.start = bus;
-+		b->busn_res.end = 0xff;
-+		b->busn_res.flags = IORESOURCE_BUS;
-+		b->dev.class = &pcibus_class;
-+		dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-+		device_initialize(&b->dev);
- 	}
-+
- 	return b;
- }
- 
-+static void pci_release_host_bridge_dev(struct device *dev)
-+{
-+	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
-+
-+	if (bridge->release_fn)
-+		bridge->release_fn(bridge);
-+
-+	pci_free_resource_list(&bridge->windows);
-+
-+	kfree(bridge);
-+}
-+
- static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- {
- 	struct pci_host_bridge *bridge;
-@@ -476,6 +498,10 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- 	if (bridge) {
- 		INIT_LIST_HEAD(&bridge->windows);
- 		bridge->bus = b;
-+		bridge->dev.release = pci_release_host_bridge_dev;
-+		dev_set_name(&bridge->dev, "pci%04x:%02x",
-+			     pci_domain_nr(b), b->number);
-+		device_initialize(&bridge->dev);
- 	}
- 
- 	return bridge;
-@@ -628,28 +654,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	/*
- 	 * Allocate a new bus, and inherit stuff from the parent..
- 	 */
--	child = pci_alloc_bus();
-+	child = pci_alloc_bus(parent->ops, parent->sysdata, busnr);
- 	if (!child)
- 		return NULL;
- 
- 	child->parent = parent;
--	child->ops = parent->ops;
--	child->sysdata = parent->sysdata;
- 	child->bus_flags = parent->bus_flags;
--
--	/* initialize some portions of the bus device, but don't register it
--	 * now as the parent is not properly set up yet.
--	 */
--	child->dev.class = &pcibus_class;
--	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
--
--	/*
--	 * Set up the primary, secondary and subordinate
--	 * bus numbers.
--	 */
--	child->number = child->busn_res.start = busnr;
- 	child->primary = parent->busn_res.start;
--	child->busn_res.end = 0xff;
- 
- 	if (!bridge) {
- 		child->dev.parent = parent->bridge;
-@@ -670,7 +681,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	bridge->subordinate = child;
- 
- add_dev:
--	ret = device_register(&child->dev);
-+	ret = device_add(&child->dev);
- 	WARN_ON(ret < 0);
- 
- 	pcibios_add_bus(child);
-@@ -1189,18 +1200,6 @@ int pci_cfg_space_size(struct pci_dev *dev)
- 	return PCI_CFG_SPACE_SIZE;
- }
- 
--static void pci_release_bus_bridge_dev(struct device *dev)
--{
--	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
--
--	if (bridge->release_fn)
--		bridge->release_fn(bridge);
--
--	pci_free_resource_list(&bridge->windows);
--
--	kfree(bridge);
--}
--
- struct pci_dev *pci_alloc_dev(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
-@@ -1688,13 +1687,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
--	b = pci_alloc_bus();
-+	b = pci_alloc_bus(ops, sysdata, bus);
- 	if (!b)
- 		return NULL;
- 
--	b->sysdata = sysdata;
--	b->ops = ops;
--	b->number = b->busn_res.start = bus;
- 	b2 = pci_find_bus(pci_domain_nr(b), bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
-@@ -1706,27 +1702,22 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (!bridge)
- 		goto err_out;
- 
--	bridge->dev.parent = parent;
--	bridge->dev.release = pci_release_bus_bridge_dev;
--	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
- 	error = pcibios_root_bridge_prepare(bridge);
- 	if (error)
- 		goto bridge_dev_reg_err;
- 
--	error = device_register(&bridge->dev);
-+	bridge->dev.parent = parent;
-+	error = device_add(&bridge->dev);
- 	if (error)
- 		goto bridge_dev_reg_err;
-+
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
- 	pci_set_bus_of_node(b);
--
- 	if (!parent)
- 		set_dev_node(b->bridge, pcibus_to_node(b));
--
--	b->dev.class = &pcibus_class;
- 	b->dev.parent = b->bridge;
--	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
--	error = device_register(&b->dev);
-+	error = device_add(&b->dev);
- 	if (error)
- 		goto class_dev_reg_err;
- 
-@@ -1769,12 +1760,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	return b;
- 
- class_dev_reg_err:
--	put_device(&bridge->dev);
--	device_unregister(&bridge->dev);
-+	device_del(&bridge->dev);
- bridge_dev_reg_err:
--	kfree(bridge);
-+	put_device(&bridge->dev);
- err_out:
--	kfree(b);
-+	put_device(&b->dev);
- 	return NULL;
- }
- 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 8fc54b7..b0ce875 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -52,7 +52,8 @@ void pci_remove_bus(struct pci_bus *bus)
- 	up_write(&pci_bus_sem);
- 	pci_remove_legacy_files(bus);
- 	pcibios_remove_bus(bus);
--	device_unregister(&bus->dev);
-+	device_del(&bus->dev);
-+	put_device(&bus->dev);
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
--- 
-1.8.1.2
+are available in the git repository at:
 
+  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+
+Andy Shevchenko (1):
+      dma: acpi-dma: parse CSRT to extract additional resources
+
+Rafael J. Wysocki (1):
+      ACPI / LPSS: register clock device for Lynxpoint DMA properly
+
+ drivers/acpi/Makefile                  |    1 -
+ drivers/acpi/acpi_lpss.c               |   26 ++++-
+ drivers/acpi/csrt.c                    |  159 -----------------------------
+ drivers/acpi/internal.h                |    1 -
+ drivers/acpi/scan.c                    |    1 -
+ drivers/clk/x86/clk-lpt.c              |   15 ++-
+ drivers/dma/acpi-dma.c                 |  172 +++++++++++++++++++++++++++++++-
+ include/linux/acpi_dma.h               |    4 +
+ include/linux/platform_data/clk-lpss.h |    5 +
+ 9 files changed, 211 insertions(+), 173 deletions(-)
+ delete mode 100644 drivers/acpi/csrt.c
+
+--
+~Vinod
