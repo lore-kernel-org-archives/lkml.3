@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3EXXu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 19:50:57 -0400
-Received: from karen.lavabit.com ([72.249.41.33]:60877 "EHLO karen.lavabit.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514Ab3EXXu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 19:50:56 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=lavabit; d=lavabit.com;
-  b=fr8UxsCxsqsk+Y98dkAallFI1/cUgq3yxQ/FxBthzbGAirHxzuHROlxq0Obx3oLSSEth/izblYVCkaeU0/BVJp1KQPDH2iCmmqT3JcwmqE5ZFRPRjEawi1fSsW3XTnmoWBz9Fl8Pc/jLfMbpYSUwt1wjG3let1WIhBp8k2srfQc=;
-  h=Message-ID:Date:From:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding;
-Message-ID: <519FFCDD.8070001@lavabit.com>
-Date: Sat, 25 May 2013 02:50:53 +0300
-From: Milen Kidane <MilenKidane@lavabit.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752518Ab3EYAda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 20:33:30 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49207 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3EYAd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 20:33:29 -0400
+Message-ID: <51A006CF.90105@gmail.com>
+Date: Sat, 25 May 2013 08:33:19 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: ata1.00: failed to enable AA (error_mask=0x1)
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com> <20130524143644.GD18218@redhat.com> <20130524170626.2ac06efe@holzheu> <20130524152849.GF18218@redhat.com> <87mwrkatgu.fsf@xmission.com>
+In-Reply-To: <87mwrkatgu.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Eric,
 
-Please advise if you can help me with bellow problem. I receive the
-following messages on boot:
+于 2013年05月25日 06:44, Eric W. Biederman 写道:
+> Vivek Goyal <vgoyal@redhat.com> writes:
+> 
+>> On Fri, May 24, 2013 at 05:06:26PM +0200, Michael Holzheu wrote:
+>>> Hello Vivek,
+>>>
+>>> On Fri, 24 May 2013 10:36:44 -0400
+>>> Vivek Goyal <vgoyal@redhat.com> wrote:
+>>>
+>>> [snip]
+>>>
+>>>> Sorry, I don't understand the problem. If we swapped low memory and
+>>>> crash reserved memory, that should have been taken care by prepared
+>>>> ELF headers so that we map the right pfns. In x86 we swap 640K of low
+>>>> memory with 640K of memory in reserved and we take care of this by
+>>>> preparing elf headers accordingly.
+>>>>
+>>>> So why s390 can't do the same thing?
+>>>
+>>> I am not sure if I understand this. Currently we create the ELF
+>>> header in a way that we have virtual=real. In the copy_oldmem_page() we
+>>> do the swap so that for the /proc/vmcore code it looks like contiguous
+>>> non-swapped memory.
+>>>
+>>> One reason why I thought this was necessary was that /dev/oldmem
+>>> also uses the function and it should provide linear memory access like
+>>> it is on the live system with /dev/mem.
+>>>
+>>> Is that implementation incorrect?
+>>
+>> [ CC Andrew. Keep him in loop for all kernel kdump patches as all kdump
+>>   patches are routed through him ].
+>>
+>> [ CC Eric Biederman ]
+>>
+>> Looking at the code, looks like /dev/oldmem is broken. It does not know
+>> anything about swap of any of the memory areas and it will simply
+>> return the contents of page frame asked. And this has been like this
+>> since the beginning.
+>>
+>> I have always questioned the utility of /dev/oldmem. Atleast I am not
+>> aware of any tool making use of it.
+>>
+>> If we want to fix it, then somebow all the swapped memory region info
+>> needs to be communicated to second kernel so that read_oldmem() can
+>> do the mapping correctly and we really don't have any mechanism for
+>> that. (I am assuming that in s390 you must have hardcoded the regions
+>> of memory which are always swapped).
+>>
+>> As /proc/vmcore is the most used and useful interface, I prefer that
+>> we swap memory and put that info in elf headers. For /dev/oldme, I
+>> don't mind if we leave it as it is. If somebody really cares, then
+>> I guess we need to write a new command line option which /dev/mem
+>> can parse and which tells it about swaps so that /dev/oldmem can
+>> map things correctly. (This is better than hardcoding things).
+>>
+>> Eric, do you have any thoughts on this.
+> 
+> I don't think anyone actually uses /dev/oldmem.  I would like to cite
+> the s390 confusion as proof but I don't think that quite works.
+> 
+> I think the solution is for someone to send a patch removing /dev/oldmem
+> as an unused piece of code.  That will also move us in the direction of
+> resolving HPAs concerns.
 
-May 25 01:52:37 Leny kernel: ata1.00: failed to enable AA (error_mask=0x1)
-May 25 01:52:37 Leny kernel: ata1.00: ATA-8: ST500LM012 HN-M500MBB,
-2AR10001, max UDMA/100
-May 25 01:52:37 Leny kernel: ata1.00: 976773168 sectors, multi 0: LBA48
-NCQ (depth 31/32)
-May 25 01:52:37 Leny kernel: ata1.00: failed to enable AA (error_mask=0x1)
-May 25 01:52:37 Leny kernel: ata1.00: configured for UDMA/100
-May 25 01:52:37 Leny kernel: scsi 0:0:0:0: Direct-Access     ATA     
-ST500LM012 HN-M5 2AR1 PQ: 0 ANSI: 5
+I think I can try this.
 
-lspci shows the following:
+> 
+> The function copy_oldmem_page also concerns me.  I don't have a clue why
+> we duplicate that function on every architecutre in a slightly different
+> form.  There should be enough abstractions in the kernel to make that
+> unnecessary.  I would be glad to see that function go, and remove the
+> possibility of confusion that happened on s390.
 
-00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series Chipset
-Family 6 port SATA AHCI Controller (rev 05)
-        Subsystem: Lenovo Device 3975
-        Kernel driver in use: ahci
-        Kernel modules: ahci
+You mean we should have a common copy_oldmem_page for all architectures? And
+just like vivek said above, for s390, we should put the swap info in the elf
+headers instead of doing that in copy_oldmem_page.
 
-I have read topics varying from "it's nothing" to "your HDD will fail
-soon", so I really do not know what is this.
-
-Please cc me in the reply if you can. Thank you very much.
-
+Zhang
