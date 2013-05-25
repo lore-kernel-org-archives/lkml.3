@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab3EYFcu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 01:32:50 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:51919 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3EYFct (ORCPT
+	id S1751599Ab3EYGTJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 02:19:09 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:42608 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3EYGTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 01:32:49 -0400
-Date: Sat, 25 May 2013 14:33:27 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Axel Lin <axel.lin@ingics.com>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call
- in tpu_remove()
-Message-ID: <20130525053327.GB9293@verge.net.au>
-References: <1369057541.11578.1.camel@phoenix>
- <1454213.B1kNpQ6JtX@avalon>
- <20130523013933.GI22608@verge.net.au>
- <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
+	Sat, 25 May 2013 02:19:07 -0400
+Message-ID: <51A057CF.5070605@redhat.com>
+Date: Sat, 25 May 2013 08:18:55 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, tj@kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v3 part1 1/4] sg_io: pass request_queue to blk_verify_command
+References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>     <1369317503-4095-2-git-send-email-pbonzini@redhat.com>    <1369380965.1945.10.camel@dabdike> <519F1A28.6080303@redhat.com>   <1369381857.1945.15.camel@dabdike> <519F1C7A.2030605@redhat.com>  <1369382613.1945.19.camel@dabdike> <519F2597.9030208@redhat.com> <1369455247.1893.2.camel@dabdike>
+In-Reply-To: <1369455247.1893.2.camel@dabdike>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 09:12:17PM +0200, Thierry Reding wrote:
-> On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
-> > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
-> > > Hi Axel,
-> > > 
-> > > Thank you for the patch.
-> > > 
-> > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
-> > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > > 
-> > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > 
-> > Thanks. I have queued this up for v3.11 in the pinmux branch
-> > of my renesas tree on kernel.org.
+Il 25/05/2013 06:14, James Bottomley ha scritto:
+> On Fri, 2013-05-24 at 10:32 +0200, Paolo Bonzini wrote:
+>> Il 24/05/2013 10:03, James Bottomley ha scritto:
+>>>>>>>>>>> Does anyone in the real world actually care about this bug?
+>>>>>>>>>
+>>>>>>>>> Yes, or I would move on and not waste so much time on this.
+>>>>>>>
+>>>>>>> Fine, so produce a simple fix for this bug which we can discuss that's
+>>>>>>> not tied to this feature.
+>>>>>
+>>>>> Honestly, I have no idea how this is even possible.
+>>> Really?  It looks to me like a simple block on the commands for disk
+>>> devices in the opcode switch would do it (with a corresponding change to
+>>> sg.c:sg_allow_access).
+>>
+>> Which switch?  What I can do is something like this in blk_verify_command:
 > 
-> I'd rather take this through the PWM tree along with the original driver
-> patch.
+> not in blk_verify_command: outside of it, in the three places it's used.
 
-Sure that is fine.
+In other words,
 
-I had them queued up in my tree but I have dropped them now.
-That should propogate to linux-next in the not too distant future.
+	if (blk_verify_command(...) ||
+	    blk_verify_command_with_queue(q, ...))
 
-I have also dropped the following changes from my tree
-as they appear to ether depend on the TPU PWD driver or one
-of the other patches in the list below.
+We must have different taste.
 
-Laurent, I think it would be best if you resubmitted these patches
-once there is a stable branch available with the TPU PWD driver merged
-which I can use as a base.
-
-ARM: mach-shmobile: armadillo800eva: Add backlight support
-ARM: mach-shmobile: kota2: Use leds-pwm + pwm-rmob
-leds: Remove leds-renesas-tpu driver
-sh-pfc: sh73a0: Remove function GPIOs
-
+Paolo
