@@ -1,64 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3EYLWH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 07:22:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42255 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab3EYLWG (ORCPT
+	id S1756158Ab3EYLzo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 07:55:44 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34762 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819Ab3EYLzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 07:22:06 -0400
-Date: Sat, 25 May 2013 07:21:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
-        qemu-devel@nongnu.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] vfio: type1 iommu hugepage support
-Message-ID: <20130525112153.GD2418@localhost.localdomain>
-References: <20130524171613.14229.84050.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524171613.14229.84050.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sat, 25 May 2013 07:55:42 -0400
+From: Aditya Srivastava <adityasrivastava010@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Aditya Srivastava <adityasrivastava010@gmail.com>
+Subject: [PATCH 1/1] [PATCH v3.10-rc2 1/1] linux: kernel.h: Fixed coding style error
+Date: Sat, 25 May 2013 17:25:32 +0530
+Message-Id: <1369482932-31305-1-git-send-email-adityasrivastava010@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 11:24:26AM -0600, Alex Williamson wrote:
-> This series let's the vfio type1 iommu backend take advantage of iommu
-> large page support.  See patch 2/2 for the details.  This has been
-> tested on both amd_iommu and intel_iommu, but only my AMD system has
-> large page support.  I'd appreciate any testing and feedback on other
-> systems, particularly vt-d systems supporting large pages.  Mapping
-> efficiency should be improved a bit without iommu hugepages, but I
-> hope that it's much more noticeable with huge pages, especially for
-> very large QEMU guests.
+Fixed coding style errors found in /include/linux/kernel.h
 
-I took a very very quick look - and I am wondering if there should also
-be a flag to turn it on/off in ther kernel in such case? Especially in the 
-field if a user finds out that their particular IOMMU chipset might
-be doing something funky with large-pages ?
+Signed-off-by: Aditya Srivastava <adityasrivastava010@gmail.com>
+---
+ include/linux/kernel.h |   44 ++++++++++++++++++++++----------------------
+ 1 file changed, 22 insertions(+), 22 deletions(-)
 
-> 
-> This change includes a clarification to the mapping expectations for
-> users of the type1 iommu, but is compatible with known users and works
-> with existing QEMU userspace supporting vfio.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (2):
->       vfio: Convert type1 iommu to use rbtree
->       vfio: hugepage support for vfio_iommu_type1
-> 
-> 
->  drivers/vfio/vfio_iommu_type1.c |  607 ++++++++++++++++++++++++---------------
->  include/uapi/linux/vfio.h       |    8 -
->  2 files changed, 387 insertions(+), 228 deletions(-)
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e9ef6d6..31dd69f 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -50,15 +50,15 @@
+ #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
+ #define round_down(x, y) ((x) & ~__round_mask(x, y))
+ 
+-#define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+-#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+-#define DIV_ROUND_UP_ULL(ll,d) \
++#define FIELD_SIZEOF(t, f) (sizeof(((t *)0)->f))
++#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
++#define DIV_ROUND_UP_ULL(ll, d) \
+ 	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
+ 
+ #if BITS_PER_LONG == 32
+-# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP_ULL(ll, d)
++# define DIV_ROUND_UP_SECTOR_T(ll, d) DIV_ROUND_UP_ULL(ll, d)
+ #else
+-# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP(ll,d)
++# define DIV_ROUND_UP_SECTOR_T(ll, d) DIV_ROUND_UP(ll, d)
+ #endif
+ 
+ /* The `const' in roundup() prevents gcc-3.3 from calling __divdi3 */
+@@ -149,7 +149,7 @@ extern int _cond_resched(void);
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+-  void __might_sleep(const char *file, int line, int preempt_offset);
++void __might_sleep(const char *file, int line, int preempt_offset);
+ /**
+  * might_sleep - annotation for functions that can sleep
+  *
+@@ -163,7 +163,7 @@ extern int _cond_resched(void);
+ # define might_sleep() \
+ 	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+ #else
+-  static inline void __might_sleep(const char *file, int line,
++static inline void __might_sleep(const char *file, int line,
+ 				   int preempt_offset) { }
+ # define might_sleep() do { might_resched(); } while (0)
+ #endif
+@@ -342,10 +342,10 @@ static inline int __must_check kstrtos32_from_user(const char __user *s, size_t
+ 
+ /* Obsolete, do not use.  Use kstrto<foo> instead */
+ 
+-extern unsigned long simple_strtoul(const char *,char **,unsigned int);
+-extern long simple_strtol(const char *,char **,unsigned int);
+-extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
+-extern long long simple_strtoll(const char *,char **,unsigned int);
++extern unsigned long simple_strtoul(const char *, char **, unsigned int);
++extern long simple_strtol(const char *, char **, unsigned int);
++extern unsigned long long simple_strtoull(const char *, char **, unsigned int);
++extern long long simple_strtoll(const char *, char **, unsigned int);
+ #define strict_strtoul	kstrtoul
+ #define strict_strtol	kstrtol
+ #define strict_strtoull	kstrtoull
+@@ -355,7 +355,7 @@ extern int num_to_str(char *buf, int size, unsigned long long num);
+ 
+ /* lib/printf utilities */
+ 
+-extern __printf(2, 3) int sprintf(char *buf, const char * fmt, ...);
++extern __printf(2, 3) int sprintf(char *buf, const char *fmt, ...);
+ extern __printf(2, 0) int vsprintf(char *buf, const char *, va_list);
+ extern __printf(3, 4)
+ int snprintf(char *buf, size_t size, const char *fmt, ...);
+@@ -712,8 +712,8 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ 	typeof(max) __max = (max);		\
+ 	(void) (&__val == &__min);		\
+ 	(void) (&__val == &__max);		\
+-	__val = __val < __min ? __min: __val;	\
+-	__val > __max ? __max: __val; })
++	__val = __val < __min ? __min : __val;	\
++	__val > __max ? __max : __val; })
+ 
+ /*
+  * ..and if you can't take the strict
+@@ -724,12 +724,12 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ #define min_t(type, x, y) ({			\
+ 	type __min1 = (x);			\
+ 	type __min2 = (y);			\
+-	__min1 < __min2 ? __min1: __min2; })
++	__min1 < __min2 ? __min1 : __min2; })
+ 
+ #define max_t(type, x, y) ({			\
+ 	type __max1 = (x);			\
+ 	type __max2 = (y);			\
+-	__max1 > __max2 ? __max1: __max2; })
++	__max1 > __max2 ? __max1 : __max2; })
+ 
+ /**
+  * clamp_t - return a value clamped to a given range using a given type
+@@ -745,8 +745,8 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ 	type __val = (val);			\
+ 	type __min = (min);			\
+ 	type __max = (max);			\
+-	__val = __val < __min ? __min: __val;	\
+-	__val > __max ? __max: __val; })
++	__val = __val < __min ? __min : __val;	\
++	__val > __max ? __max : __val; })
+ 
+ /**
+  * clamp_val - return a value clamped to a given range using val's type
+@@ -763,8 +763,8 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ 	typeof(val) __val = (val);		\
+ 	typeof(val) __min = (min);		\
+ 	typeof(val) __max = (max);		\
+-	__val = __val < __min ? __min: __val;	\
+-	__val > __max ? __max: __val; })
++	__val = __val < __min ? __min : __val;	\
++	__val > __max ? __max : __val; })
+ 
+ 
+ /*
+@@ -781,8 +781,8 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+  *
+  */
+ #define container_of(ptr, type, member) ({			\
+-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+-	(type *)( (char *)__mptr - offsetof(type,member) );})
++	const typeof(((type *)0)->member) * __mptr = (ptr);	\
++	(type *)((char *)__mptr - offsetof(type, member)); })
+ 
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
+-- 
+1.7.10.4
+
