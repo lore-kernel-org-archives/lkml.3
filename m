@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab3EYRkb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 13:40:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58412 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab3EYRk1 (ORCPT
+	id S1757629Ab3EYRkp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 13:40:45 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:58952 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608Ab3EYRkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 13:40:27 -0400
+	Sat, 25 May 2013 13:40:40 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -18,9 +18,9 @@ Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Hans Verkuil <hans.verkuil@cisco.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH v2 3/4] media: i2c: ths7303: remove unnecessary function ths7303_setup()
-Date: Sat, 25 May 2013 23:09:35 +0530
-Message-Id: <1369503576-22271-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v2 4/4] media: i2c: ths7303: make the pdata as a constant pointer
+Date: Sat, 25 May 2013 23:09:36 +0530
+Message-Id: <1369503576-22271-5-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,10 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-the ths7303_setup() was doing the same thing as ths7303_setval()
-except that ths7303_setval() sets it to some particular mode.
-This patch removes ths7303_setup() function and calls ths7303_setval()
-in the probe setting the device to 480I_576I filter mode in the probe.
+generally the pdata needs to be a constant pointer in the device
+state structure. This patch makes the pdata as a constant pointer
+and alongside returns -EINVAL when pdata is NULL.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
@@ -42,58 +41,56 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: davinci-linux-open-source@linux.davincidsp.com
 ---
- drivers/media/i2c/ths7303.c |   31 ++++---------------------------
- 1 files changed, 4 insertions(+), 27 deletions(-)
+ drivers/media/i2c/ths7303.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
-index 8cddcd0..af06187 100644
+index af06187..b954195 100644
 --- a/drivers/media/i2c/ths7303.c
 +++ b/drivers/media/i2c/ths7303.c
-@@ -349,30 +349,6 @@ static const struct v4l2_subdev_ops ths7303_ops = {
- 	.video 	= &ths7303_video_ops,
- };
+@@ -35,7 +35,7 @@
  
--static int ths7303_setup(struct v4l2_subdev *sd)
--{
--	struct ths7303_state *state = to_state(sd);
--	struct ths7303_platform_data *pdata = &state->pdata;
--	int ret;
--	u8 mask;
--
--	mask = 0xf8;
--
--	ret = ths7303_write(sd, THS7303_CHANNEL_1, pdata->ch_1 & mask);
--	if (ret)
--		return ret;
--
--	ret = ths7303_write(sd, THS7303_CHANNEL_2, pdata->ch_2 & mask);
--	if (ret)
--		return ret;
--
--	ret = ths7303_write(sd, THS7303_CHANNEL_3, pdata->ch_3 & mask);
--	if (ret)
--		return ret;
--
--	return 0;
--}
--
- static int ths7303_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
+ struct ths7303_state {
+ 	struct v4l2_subdev		sd;
+-	struct ths7303_platform_data	pdata;
++	const struct ths7303_platform_data *pdata;
+ 	struct v4l2_bt_timings		bt;
+ 	int std_id;
+ 	int stream_on;
+@@ -89,7 +89,7 @@ int ths7303_setval(struct v4l2_subdev *sd, enum ths7303_filter_mode mode)
  {
-@@ -402,9 +378,10 @@ static int ths7303_probe(struct i2c_client *client,
- 	/* store the driver data to differntiate the chip */
- 	state->driver_data = (int)id->driver_data;
+ 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+ 	struct ths7303_state *state = to_state(sd);
+-	struct ths7303_platform_data *pdata = &state->pdata;
++	const struct ths7303_platform_data *pdata = state->pdata;
+ 	u8 val, sel = 0;
+ 	int err, disable = 0;
  
--	if (ths7303_setup(sd) < 0) {
--		v4l_err(client, "init failed\n");
--		return -EIO;
-+	/* set to default 480I_576I filter mode */
-+	if (ths7303_setval(sd, THS7303_FILTER_MODE_480I_576I) < 0) {
-+		v4l_err(client, "Setting to 480I_576I filter mode failed!\n");
+@@ -356,6 +356,11 @@ static int ths7303_probe(struct i2c_client *client,
+ 	struct ths7303_state *state;
+ 	struct v4l2_subdev *sd;
+ 
++	if (pdata == NULL) {
++		dev_err(&client->dev, "No platform data\n");
 +		return -EINVAL;
- 	}
++	}
++
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+ 		return -ENODEV;
  
- 	return 0;
+@@ -367,11 +372,7 @@ static int ths7303_probe(struct i2c_client *client,
+ 	if (!state)
+ 		return -ENOMEM;
+ 
+-	if (!pdata)
+-		v4l_warn(client, "No platform data, using default data!\n");
+-	else
+-		state->pdata = *pdata;
+-
++	state->pdata = pdata;
+ 	sd = &state->sd;
+ 	v4l2_i2c_subdev_init(sd, client, &ths7303_ops);
+ 
 -- 
 1.7.0.4
 
