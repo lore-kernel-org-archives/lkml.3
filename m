@@ -1,190 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab3EYBeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 21:34:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39570 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab3EYBeC (ORCPT
+	id S1753170Ab3EYBlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 21:41:15 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:46609 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3EYBlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 21:34:02 -0400
+	Fri, 24 May 2013 21:41:13 -0400
 From: Julius Werner <jwerner@chromium.org>
 To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Elric Fu <elricfu1@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
+        =?UTF-8?q?Frank=20L=C3=B6mker?= <Frank.Loemker@isa.de.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
         Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: xhci: Fix Command Ring Stopped Event handling
-Date: Fri, 24 May 2013 18:33:50 -0700
-Message-Id: <1369445630-31018-1-git-send-email-jwerner@chromium.org>
+Subject: [PATCH] usb: xhci: Use non-interruptible sleep for XHCI commands
+Date: Fri, 24 May 2013 18:39:37 -0700
+Message-Id: <1369445977-31404-1-git-send-email-jwerner@chromium.org>
 X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current XHCI code treats a command completion event with the
-COMP_CMD_STOP code as a slightly different version of COMP_CMD_ABORT. In
-particular, it puts the pointed-to command TRB through the normal
-command completion handlers. This is not how this event works.
+The XHCI stack usually uses wait_for_completion_interruptible_timeout()
+to wait for the completion of an XHCI command, and treats both timeouts
+and interruptions as errors. This is a bad idea, since these commands
+are often essential for the correct operation of the USB stack, and
+their failure can leave devices in a misconfigured and/or unusable
+state. While a timeout probably means a real problem that needs to be
+dealt with, a random signal to the controlling user-space process should
+not cause such harsh consequences.
 
-As XHCI spec 4.6.1.1 describes, unlike other command completion events
-Command Ring Stopped sets the Command TRB Pointer to the *current*
-Command Ring Dequeue Pointer. This is the command TRB that the XHCI will
-execute next, and not a command that has already been executed. The
-driver's internal command ring dequeue pointer should not be increased
-after this event, since it does not really mark a command completion...
-it's just a hint for the driver that execution is stopped now and where
-it will be picked up again if the ring gets restarted.
+This patch changes that behavior to use uninterruptible waits instead.
+It fixes an easy to reproduce bug that occurs when you kill -9 a
+process that reads from a UVC camera. The UVC driver's release code
+tries to set the camera's alternate setting back to 0, but the lingering
+SIGKILL instantly aborts any Stop Endpoint or Configure Endpoint command
+sent to the xHC. The code dies halfway through the bandwidth allocation
+process, leaving the device in an active configuration and preventing
+future access to it due to the now out-of-sync bandwidth calculation.
 
-This patch gets rid of the handle_stopped_command_ring() function and
-splits its behavior into two distinct parts for COMP_CMD_STOP and
-COMP_CMD_ABORT events. It ensures that the former no longer messes with
-the dequeue pointer, while the latter's behavior is unchanged. This
-prevents the hardware and software dequeue pointer from going out of
-sync during command cancellations, which can lead to a variety of
-problems (up to a total HCD death if the next command after the one that
-was cancelled is Stop Endpoint, and the stop_endpoint_watchdog won't see
-the command's completion because it got skipped by the software dequeue
-pointer).
-
-This patch should be backported to kernels as far as 3.0 that contain
-the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI: handle
-command after aborting the command ring".
+This patch should be backported to kernels as far 2.6.31 that contain
+the commit 3ffbba9511b4148cbe1f6b6238686adaeaca8feb "USB: xhci: Allocate
+and address USB devices".
 
 Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- drivers/usb/host/xhci-ring.c | 85 +++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 52 deletions(-)
+ drivers/usb/host/xhci-hub.c |  7 +++----
+ drivers/usb/host/xhci.c     | 26 +++++++++++---------------
+ 2 files changed, 14 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 1969c00..98b7673 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1314,47 +1314,11 @@ static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
- 	return 0;
- }
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 187a3ec..c1bcfa8 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -293,12 +293,11 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
--/*
-- * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
-- * trb pointed by the command ring dequeue pointer is the trb we want to
-- * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
-- * traverse the cancel_cmd_list to trun the all of the commands according
-- * to command descriptor to NO-OP trb.
-- */
--static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
--		int cmd_trb_comp_code)
--{
--	int cur_trb_is_good = 0;
--
--	/* Searching the cmd trb pointed by the command ring dequeue
--	 * pointer in command descriptor list. If it is found, free it.
--	 */
--	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
--			xhci->cmd_ring->dequeue);
--
--	if (cmd_trb_comp_code == COMP_CMD_ABORT)
--		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
--	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
--		/* traversing the cancel_cmd_list and canceling
--		 * the command according to command descriptor
--		 */
--		xhci_cancel_cmd_in_cd_list(xhci);
--
--		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
--		/*
--		 * ring command ring doorbell again to restart the
--		 * command ring
--		 */
--		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
--			xhci_ring_cmd_db(xhci);
--	}
--	return cur_trb_is_good;
--}
--
- static void handle_cmd_completion(struct xhci_hcd *xhci,
- 		struct xhci_event_cmd *event)
- {
- 	int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));
-+	int comp_code = GET_COMP_CODE(le32_to_cpu(event->status));
- 	u64 cmd_dma;
- 	dma_addr_t cmd_dequeue_dma;
- 	struct xhci_input_control_ctx *ctrl_ctx;
-@@ -1377,16 +1341,34 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
- 		return;
+ 	/* Wait for last stop endpoint command to finish */
+-	timeleft = wait_for_completion_interruptible_timeout(
++	timeleft = wait_for_completion_timeout(
+ 			cmd->completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for stop endpoint command\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
++		xhci_warn(xhci, "Timeout while waiting for Stop Endpoint\n");
+ 		spin_lock_irqsave(&xhci->lock, flags);
+ 		/* The timeout might have raced with the event ring handler, so
+ 		 * only delete from the list if the item isn't poisoned.
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index b4aa79d..302f992 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2613,15 +2613,14 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* Wait for the configure endpoint command to complete */
+-	timeleft = wait_for_completion_interruptible_timeout(
++	timeleft = wait_for_completion_timeout(
+ 			cmd_completion,
+ 			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for %s command\n",
+-				timeleft == 0 ? "Timeout" : "Signal",
++		xhci_warn(xhci, "Timeout while waiting for %s\n",
+ 				ctx_change == 0 ?
+-					"configure endpoint" :
+-					"evaluate context");
++					"Configure Endpoint" :
++					"Evaluate Context");
+ 		/* cancel the configure endpoint command */
+ 		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
+ 		if (ret < 0)
+@@ -3399,12 +3398,11 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* Wait for the Reset Device command to finish */
+-	timeleft = wait_for_completion_interruptible_timeout(
++	timeleft = wait_for_completion_timeout(
+ 			reset_device_cmd->completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for reset device command\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
++		xhci_warn(xhci, "Timeout while waiting for Reset Device\n");
+ 		spin_lock_irqsave(&xhci->lock, flags);
+ 		/* The timeout might have raced with the event ring handler, so
+ 		 * only delete from the list if the item isn't poisoned.
+@@ -3588,11 +3586,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+-	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
++	timeleft = wait_for_completion_timeout(&xhci->addr_dev,
+ 			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for a slot\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
++		xhci_warn(xhci, "Timeout while waiting for a slot\n");
+ 		/* cancel the enable slot request */
+ 		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
  	}
+@@ -3706,15 +3703,14 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
--	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
--		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
--		/* If the return value is 0, we think the trb pointed by
--		 * command ring dequeue pointer is a good trb. The good
--		 * trb means we don't want to cancel the trb, but it have
--		 * been stopped by host. So we should handle it normally.
--		 * Otherwise, driver should invoke inc_deq() and return.
--		 */
--		if (handle_stopped_cmd_ring(xhci,
--				GET_COMP_CODE(le32_to_cpu(event->status)))) {
-+	/*
-+	 * Command Ring Stopped events point at the xHC's *current* dequeue
-+	 * pointer, i.e. the next command that will be executed. That TRB may
-+	 * or may not have been issued yet. Just overwrite all canceled commands
-+	 * with NOOPs and restart the ring, leaving our internal dequeue pointer
-+	 * as it is (we will get another event for that position later, when
-+	 * it has actually been executed).
-+	 */
-+	if (comp_code == COMP_CMD_STOP) {
-+		xhci_cancel_cmd_in_cd_list(xhci);
-+		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
-+		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
-+			xhci_ring_cmd_db(xhci);
-+		return;
-+	}
-+
-+	/*
-+	 * If we aborted a command, we check if it is one of the commands we
-+	 * meant to cancel. In that case, it will be freed and we just finish
-+	 * up right here. If we aborted something else instead, we run it
-+	 * through the normal handlers below. At any rate, the command ring is
-+	 * stopped now, but the xHC will issue a Command Ring Stopped event
-+	 * after this that will cause us to restart it.
-+	 */
-+	if (comp_code == COMP_CMD_ABORT) {
-+		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-+		if (xhci_search_cmd_trb_in_cd_list(xhci,
-+			xhci->cmd_ring->dequeue)) {
- 			inc_deq(xhci, xhci->cmd_ring);
- 			return;
- 		}
-@@ -1395,7 +1377,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
- 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
- 		& TRB_TYPE_BITMASK) {
- 	case TRB_TYPE(TRB_ENABLE_SLOT):
--		if (GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_SUCCESS)
-+		if (comp_code == COMP_SUCCESS)
- 			xhci->slot_id = slot_id;
- 		else
- 			xhci->slot_id = 0;
-@@ -1451,19 +1433,18 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
- 		}
- bandwidth_change:
- 		xhci_dbg(xhci, "Completed config ep cmd\n");
--		xhci->devs[slot_id]->cmd_status =
--			GET_COMP_CODE(le32_to_cpu(event->status));
-+		xhci->devs[slot_id]->cmd_status = comp_code;
- 		complete(&xhci->devs[slot_id]->cmd_completion);
- 		break;
- 	case TRB_TYPE(TRB_EVAL_CONTEXT):
- 		virt_dev = xhci->devs[slot_id];
- 		if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
- 			break;
--		xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
-+		xhci->devs[slot_id]->cmd_status = comp_code;
- 		complete(&xhci->devs[slot_id]->cmd_completion);
- 		break;
- 	case TRB_TYPE(TRB_ADDR_DEV):
--		xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
-+		xhci->devs[slot_id]->cmd_status = comp_code;
- 		complete(&xhci->addr_dev);
- 		break;
- 	case TRB_TYPE(TRB_STOP_RING):
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+-	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
++	timeleft = wait_for_completion_timeout(&xhci->addr_dev,
+ 			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+ 	 */
+ 	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for address device command\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
++		xhci_warn(xhci, "Timeout while waiting for Address Device\n");
+ 		/* cancel the address device command */
+ 		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 		if (ret < 0)
 -- 
 1.7.12.4
 
