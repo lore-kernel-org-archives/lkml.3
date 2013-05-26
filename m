@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab3EZA3e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:29:34 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:57771 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758507Ab3EZA0c (ORCPT
+	id S1758484Ab3EZA0a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 20:26:30 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49437 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758282Ab3EZA00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:26:32 -0400
+	Sat, 25 May 2013 20:26:26 -0400
 From: David Ahern <dsahern@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
         peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
         xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/16 v2] perf evlist: add initialzation function for tracepoints
-Date: Sat, 25 May 2013 18:24:43 -0600
-Message-Id: <1369527896-3650-4-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 01/16] perf evlist: restore methods removed in earlier cleanup
+Date: Sat, 25 May 2013 18:24:41 -0600
+Message-Id: <1369527896-3650-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
 References: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
@@ -23,10 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handles initializations typically done as part of processing the file
-header and HEADER_TRACING_DATA event.
-
-v2: close fd as noticed by Namhyung.
+e60fc847 removed the perf_evlist__add_tracepoints and helpers, but
+they are useful for kvm's upcoming live mode.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -38,81 +36,86 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/util/evlist.c |   35 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
  tools/perf/util/evlist.h |    3 +++
- 2 files changed, 38 insertions(+)
+ 2 files changed, 57 insertions(+)
 
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 72b9551..b686411 100644
+index f7c7278..1cf14eb 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -14,6 +14,7 @@
- #include "target.h"
- #include "evlist.h"
- #include "evsel.h"
-+#include "trace-event.h"
- #include <unistd.h>
- 
- #include "parse-events.h"
-@@ -234,6 +235,40 @@ int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
- 	return 0;
+@@ -195,6 +195,60 @@ int __perf_evlist__add_default_attrs(struct perf_evlist *evlist,
+ 	return perf_evlist__add_attrs(evlist, attrs, nr_attrs);
  }
  
-+int perf_evlist__trace_init(struct perf_evlist *evlist,
-+			    struct perf_session *session)
++static int trace_event__id(const char *evname)
 +{
-+	struct tracing_data *tdata;
-+	char temp_file[] = "/tmp/perf-XXXXXXXX";
-+	int fd;
-+	int rc = 0;
++	char *filename, *colon;
++	int err = -1, fd;
 +
-+	fd = mkstemp(temp_file);
-+	if (fd < 0) {
-+		pr_err("mkstemp failed\n");
++	if (asprintf(&filename, "%s/%s/id", tracing_events_path, evname) < 0)
 +		return -1;
++
++	colon = strrchr(filename, ':');
++	if (colon != NULL)
++		*colon = '/';
++
++	fd = open(filename, O_RDONLY);
++	if (fd >= 0) {
++		char id[16];
++		if (read(fd, id, sizeof(id)) > 0)
++			err = atoi(id);
++		close(fd);
 +	}
-+	unlink(temp_file);
 +
-+	tdata = tracing_data_get(&evlist->entries, fd, false);
-+	if (!tdata) {
-+		rc = -1;
-+		goto out;
-+	}
-+
-+	lseek(fd, 0, SEEK_SET);
-+	(void) trace_report(fd, &session->pevent, false);
-+	tracing_data_put(tdata);
-+
-+	rc = perf_evlist__prepare_tracepoint_events(evlist, session->pevent);
-+
-+out:
-+	close(fd);
-+
-+	return rc;
++	free(filename);
++	return err;
 +}
 +
++int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
++				 const char * const tracepoints[],
++				 size_t nr_tracepoints)
++{
++	int err;
++	size_t i;
++	struct perf_event_attr *attrs = zalloc(nr_tracepoints * sizeof(*attrs));
 +
- static int trace_event__id(const char *evname)
++	if (attrs == NULL)
++		return -1;
++
++	for (i = 0; i < nr_tracepoints; i++) {
++		err = trace_event__id(tracepoints[i]);
++
++		if (err < 0)
++			goto out_free_attrs;
++
++		attrs[i].type	       = PERF_TYPE_TRACEPOINT;
++		attrs[i].config	       = err;
++		attrs[i].sample_type   = (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
++					  PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD);
++		attrs[i].sample_period = 1;
++	}
++
++	err = perf_evlist__add_attrs(evlist, attrs, nr_tracepoints);
++out_free_attrs:
++	free(attrs);
++	return err;
++}
++
+ struct perf_evsel *
+ perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id)
  {
- 	char *filename, *colon;
 diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index c2cf183..c579f3d 100644
+index 0583d36..a5b1880 100644
 --- a/tools/perf/util/evlist.h
 +++ b/tools/perf/util/evlist.h
-@@ -8,6 +8,7 @@
- #include "event-parse.h"
- #include "evsel.h"
- #include "util.h"
-+#include "session.h"
- #include <unistd.h>
- 
- struct pollfd;
-@@ -66,6 +67,8 @@ int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
- int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
- 				 const char * const tracepoints[],
- 				 size_t nr_tracepoints);
-+int perf_evlist__trace_init(struct perf_evlist *evlist,
-+			    struct perf_session *session);
+@@ -59,6 +59,9 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
+ int perf_evlist__add_default(struct perf_evlist *evlist);
+ int __perf_evlist__add_default_attrs(struct perf_evlist *evlist,
+ 				     struct perf_event_attr *attrs, size_t nr_attrs);
++int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
++				 const char * const tracepoints[],
++				 size_t nr_tracepoints);
  
  #define perf_evlist__add_default_attrs(evlist, array) \
  	__perf_evlist__add_default_attrs(evlist, array, ARRAY_SIZE(array))
