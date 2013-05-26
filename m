@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab3EZUiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 16:38:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54943 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111Ab3EZUiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 16:38:12 -0400
-Date: Sat, 25 May 2013 15:56:01 -0400
-From: Mark Brown <broonie@kernel.org>
-To: yi zhang <yizhang.mrvl@gmail.com>
-Cc: lgirdwood@gmail.com, cxie4@marvell.com, jett.zhou@marvell.com,
-        linux-kernel@vger.kernel.org, Yi Zhang <yizhang@marvell.com>
-Message-ID: <20130525195601.GJ7660@sirena.org.uk>
-References: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
- <20130522161422.GP1627@sirena.org.uk>
- <CAK=oMXepj7tmZJ3=b9ja+E1N9eAPmsPhBefAzoswVyGWBXwNOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5cSRzy0VGBWAML+b"
-Content-Disposition: inline
-In-Reply-To: <CAK=oMXepj7tmZJ3=b9ja+E1N9eAPmsPhBefAzoswVyGWBXwNOA@mail.gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: 88pm800: add regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1755182Ab3EZUpS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 16:45:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754807Ab3EZUpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 16:45:16 -0400
+From: atomlin@redhat.com
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, edumazet@google.com, pshelar@nicira.com,
+        mst@redhat.com, alexander.h.duyck@intel.com, riel@redhat.com,
+        aquini@redhat.com, sergei.shtylyov@cogentembedded.com,
+        linux-kernel@vger.kernel.org, Aaron Tomlin <atomlin@redhat.com>
+Subject: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for dropped packets
+Date: Sun, 26 May 2013 21:45:01 +0100
+Message-Id: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Aaron Tomlin <atomlin@redhat.com>
 
---5cSRzy0VGBWAML+b
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since v1:
+ - Removed unnecessary parentheses (sergei.shtylyov)
 
-On Fri, May 24, 2013 at 11:01:45AM +0800, yi zhang wrote:
-> 2013/5/23 Mark Brown <broonie@kernel.org>:
-> > On Wed, May 22, 2013 at 08:10:53PM +0800, yizhang.mrvl@gmail.com wrote:
+---8<---
 
-> >> +static const unsigned int BUCK1_table[] = {
-> >> +     /* 0x00-0x4F: from 0.6 to 1.5875V with step 0.0125V */
-> >> +     /* 0x50-0x7F: from 1.6 to 1.8V with step 0.05V */
+Failed GFP_ATOMIC allocations by the network stack result in dropped
+packets, which will be received on a subsequent retransmit, and an
+unnecessary, noisy warning with a kernel backtrace.
 
-> > Write this out as code, don't use a big table for large sets of
-> > voltages.
+These warnings are harmless, but they still cause users to panic and
+file bug reports over dropped packets. It would be better to hide the
+failed allocation warnings and backtraces, and let retransmits handle
+dropped packets quietly.
 
->      The voltage table is "const", if we write it out as code, seems
-> it's hard for us
->      to keep this attribute;
->      And the voltage of this BUCK is not linear(it's separated as two parts),
->      seems I shouldn't use the framework helpers to implement it; Right?
->       what do you think?
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+---
+ net/core/skbuff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-You should open code the mapping functions but you should still do this
-as calcuations, it's faster and produces smaller code.  You'll need a
-small function with an if statement.
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index af9185d..84aa870 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -236,7 +236,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 		? skbuff_fclone_cache : skbuff_head_cache;
+ 
+ 	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
+-		gfp_mask |= __GFP_MEMALLOC;
++		gfp_mask |= __GFP_MEMALLOC | __GFP_NOWARN;
+ 
+ 	/* Get the HEAD */
+ 	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
+-- 
+1.8.1.4
 
---5cSRzy0VGBWAML+b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRoRdJAAoJELSic+t+oim9jb8P/2w+P8e3lxyHC7KEHc5M6xxW
-Arw4qRx5VCEms1+kHwfMf+7H/cMUUUzvtU8WWZPFV7YO4bx9mLKdYQ3/wXhiqWyY
-6PhZCHUD0O9fzxWAW5jbSrfwmga7XbBdKEc78dGhsvaWV/eOig7KF7AnT6ucoblj
-5z85PFEmYSCvBaYtquEkgarWqQKZCIaRJ2r1yVuDOOhepgHiyXHrSY2jHi7Ve24Y
-5gu9EYLFFLv6arAfTWJ00pKafK/L+nB390yIJF/mkaGv83euT25WdwruGMh0Oltb
-Jni6SYdog/mIEMTXlx5wTxWKRwXYQQ3CuKeRDpTBoQQZyeo/il04s4cCC3rNSTqb
-s8z23Rhp5YIySWzVIhz7qMj8IqJxWazye7GeOluTbRPgbwi0bNUKYX2/SdnS5BXL
-ymWHA6lj1Uf1dNSojcHtc8FXyCQRDPTKZJUdx3NCVIjSR77XcYijO+dEK+cCozcF
-TRfeJSV6Eo9gBlLK/uuDkYjV7hShajtuZF5ZyvjiaTeOXMo9M+/co+emRikBI+QK
-QjbnczkVPy+ZWaMGhaJSXFrQtB6TkQ11A8TMHQvooK/R47ss4u03/hAnsOWn4Tj8
-21TJ/+EK4aSXnwc6/aP/ojCWcINLoCF8BJgr5jVl0mL9ZFoCPRGaSG7Y50CZch7n
-6pB7aaqvMxrqoyBu0tPS
-=Dfiu
------END PGP SIGNATURE-----
-
---5cSRzy0VGBWAML+b--
