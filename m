@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab3EZA6j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:58:39 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:44884 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758448Ab3EZA6i (ORCPT
+	id S1758773Ab3EZBLq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 21:11:46 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:47674 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758476Ab3EZBLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:58:38 -0400
-Message-ID: <51A15E2F.7010308@gmail.com>
-Date: Sun, 26 May 2013 08:58:23 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sat, 25 May 2013 21:11:42 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        davej@redhat.com
-Subject: Re: [PATCH 2/7] Documentation/devices.txt: Remove /dev/oldmem description
-References: <51A02E50.5020507@gmail.com> <51A02F59.8000103@gmail.com> <87vc668x4w.fsf@xmission.com>
-In-Reply-To: <87vc668x4w.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
+ <20130523044803.GA25399@ZenIV.linux.org.uk> <20130523104154.GA23650@twins.programming.kicks-ass.net>
+ <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
+ <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
+ <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
+ <20130524140114.GK23650@twins.programming.kicks-ass.net> <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 25 May 2013 21:11:21 -0400
+Message-ID: <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-rdma@vger.kernel.org,
+        Or Gerlitz <or.gerlitz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月26日 07:20, Eric W. Biederman 写道:
-> Zhang Yanfei <zhangyanfei.yes@gmail.com> writes:
-> 
->> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> 
-> Won't we want to keep this reservation around to so that this number
-> doesn't get reused, and cause people confusion when
-> upgrading/downgrading kernels?
+On Fri, May 24, 2013 at 11:40 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Fri, 24 May 2013, Peter Zijlstra wrote:
+>
+>> Patch bc3e53f682 ("mm: distinguish between mlocked and pinned pages")
+>> broke RLIMIT_MEMLOCK.
+>
+> Nope the patch fixed a problem with double accounting.
+>
+> The problem that we seem to have is to define what mlocked and pinned mean
+> and how this relates to RLIMIT_MEMLOCK.
+>
+> mlocked pages are pages that are movable (not pinned!!!) and that are
+> marked in some way by user space actions as mlocked (POSIX semantics).
+> They are marked with a special page flag (PG_mlocked).
+>
+> Pinned pages are pages that have an elevated refcount because the hardware
+> needs to use these pages for I/O. The elevated refcount may be temporary
+> (then we dont care about this) or for a longer time (such as the memory
+> registration of the IB subsystem). That is when we account the memory as
+> pinned. The elevated refcount stops page migration and other things from
+> trying to move that memory.
+>
+> Pages can be both pinned and mlocked. Before my patch some pages those two
+> issues were conflated since the same counter was used and therefore these
+>
+pages were counted twice. If an RDMA application was running using
+> mlockall() and was performing large scale I/O then the counters could show
+> extraordinary large numbers and the VM would start to behave erratically.
+>
+> It is important for the VM to know which pages cannot be evicted but that
+> involves many more pages due to dirty pages etc etc.
+>
+> So far the assumption has been that RLIMIT_MEMLOCK is a limit on the pages
+> that userspace has mlocked.
+>
+> You want the counter to mean something different it seems. What is it?
+>
+> I think we need to be first clear on what we want to accomplish and what
+> these counters actually should count before changing things.
 
-Ah, yes. I will just keep this and add a note to make people know that
-it is removed in the next version.
+Hm.
+If pinned and mlocked are totally difference intentionally, why IB uses
+RLIMIT_MEMLOCK. Why don't IB uses IB specific limit and why only IB raise up
+number of pinned pages and other gup users don't.
+I can't guess IB folk's intent.
 
-Thanks
-Zhang
+And now ever IB code has duplicated RLIMIT_MEMLOCK
+check and at least __ipath_get_user_pages() forget to check
+capable(CAP_IPC_LOCK).
+That's bad.
 
-> 
->> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> Cc: Dave Jones <davej@redhat.com>
->> ---
->>  Documentation/devices.txt |    2 --
->>  1 files changed, 0 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devices.txt b/Documentation/devices.txt
->> index 08f01e7..4f85739 100644
->> --- a/Documentation/devices.txt
->> +++ b/Documentation/devices.txt
->> @@ -100,8 +100,6 @@ Your cooperation is appreciated.
->>  		 10 = /dev/aio		Asynchronous I/O notification interface
->>  		 11 = /dev/kmsg		Writes to this come out as printk's, reads
->>  					export the buffered printk records.
->> -		 12 = /dev/oldmem	Used by crashdump kernels to access
->> -					the memory of the kernel that crashed.
->>  
->>    1 block	RAM disk
->>  		  0 = /dev/ram0		First RAM disk
 
+> Certainly would appreciate improvements in this area but resurrecting the
+> conflation between mlocked and pinned pages is not the way to go.
+>
+>> This patch proposes to properly fix the problem by introducing
+>> VM_PINNED. This also provides the groundwork for a possible mpin()
+>> syscall or MADV_PIN -- although these are not included.
+>
+> Maybe add a new PIN page flag? Pages are not pinned per vma as the patch
+> seems to assume.
+
+Generically, you are right. But if VM_PINNED is really only for IB,
+this is acceptable
+limitation. They can split vma for their own purpose.
+
+Anyway, I agree we should clearly understand the semantics of IB pinning and
+the userland usage and assumption.
