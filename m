@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab3EZHFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 03:05:49 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:2481 "EHLO
+	id S1759256Ab3EZIHB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 04:07:01 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:32774 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759137Ab3EZHFs (ORCPT
+	with ESMTP id S1759221Ab3EZIG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 03:05:48 -0400
+	Sun, 26 May 2013 04:06:57 -0400
 X-Spam-Score: -100.8
-Message-ID: <51A1B419.5000704@asianux.com>
-Date: Sun, 26 May 2013 15:04:57 +0800
+Message-ID: <51A1C26E.5000609@asianux.com>
+Date: Sun, 26 May 2013 16:06:06 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>, Paul Mundt <lethal@linux-sh.org>,
-        realmz paranoid <realmz6@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, monstr@monstr.eu,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: blackfin: kernel: using strlcpy instead of strncpy
+To: ralf@linux-mips.org, blogic@openwrt.org, david.daney@cavium.com
+CC: linux-mips@linux-mips.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: mips: kernel: using strlcpy() instead of strncpy()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,28 +24,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-For NULL terminated string, need always be sure of ended by zero.
+For NUL terminated string, need always be sure of ended by zero.
 
-'command_line' is a static variable which will be initialized
-automatically, and cmdline_init() is __init function, so need not
-initialize it again, can just use strlcpy instead of strncpy.
+Or the next pr_info() will cause issue.
 
 
 Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- arch/blackfin/kernel/setup.c |    2 +-
+ arch/mips/kernel/prom.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/blackfin/kernel/setup.c b/arch/blackfin/kernel/setup.c
-index 107b306..c731ec7 100644
---- a/arch/blackfin/kernel/setup.c
-+++ b/arch/blackfin/kernel/setup.c
-@@ -1458,5 +1458,5 @@ void __init cmdline_init(const char *r0)
- {
- 	early_shadow_stamp();
- 	if (r0)
--		strncpy(command_line, r0, COMMAND_LINE_SIZE);
-+		strlcpy(command_line, r0, COMMAND_LINE_SIZE);
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index 5712bb5..7e95404 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -30,7 +30,7 @@ __init void mips_set_machine_name(const char *name)
+ 	if (name == NULL)
+ 		return;
+ 
+-	strncpy(mips_machine_name, name, sizeof(mips_machine_name));
++	strlcpy(mips_machine_name, name, sizeof(mips_machine_name));
+ 	pr_info("MIPS: machine is %s\n", mips_get_machine_name());
  }
+ 
 -- 
 1.7.7.6
