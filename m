@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab3EZP6J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 11:58:09 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:64324 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab3EZP6E (ORCPT
+	id S1754545Ab3EZP6f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 11:58:35 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60744 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab3EZP6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 11:58:04 -0400
+	Sun, 26 May 2013 11:58:32 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -15,14 +15,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Bill Pemberton <wfp5p@virginia.edu>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v3, part2 10/20] PCI, PPC: use hotplug-safe iterators to walk PCI buses
-Date: Sun, 26 May 2013 23:53:07 +0800
-Message-Id: <1369583597-3801-11-git-send-email-jiang.liu@huawei.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH v3, part2 12/20] PCI, x86: use hotplug-safe iterators to walk PCI buses
+Date: Sun, 26 May 2013 23:53:09 +0800
+Message-Id: <1369583597-3801-13-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
 References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
@@ -30,89 +28,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance PPC architecture specific code to use hotplug-safe iterators
+Enhance x86 architecture specific code to use hotplug-safe iterators
 to walk PCI buses.
 
+In other words, replace pci_find_bus(), pci_find_next_bus() and
+pci_root_buses with pci_bus_exists(), pci_get_bus(), pci_get_next_bus()
+and pci_get_next_root_bus() etc.
+
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Myron Stowe <myron.stowe@redhat.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Bill Pemberton <wfp5p@virginia.edu>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Matthew Garrett <mjg@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/powerpc/kernel/pci-common.c |  4 ++--
- arch/powerpc/kernel/pci_64.c     | 22 ++++++++--------------
- 2 files changed, 10 insertions(+), 16 deletions(-)
+ arch/x86/pci/acpi.c   | 3 ++-
+ arch/x86/pci/common.c | 3 ++-
+ arch/x86/pci/i386.c   | 9 ++++-----
+ arch/x86/pci/irq.c    | 2 +-
+ arch/x86/pci/legacy.c | 2 +-
+ 5 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index f5c5c90..56ad3a4 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -1386,7 +1386,7 @@ void __init pcibios_resource_survey(void)
- 	struct pci_bus *b;
- 
- 	/* Allocate and assign resources */
--	list_for_each_entry(b, &pci_root_buses, node)
-+	for_each_pci_root_bus(b)
- 		pcibios_allocate_bus_resources(b);
- 	pcibios_allocate_resources(0);
- 	pcibios_allocate_resources(1);
-@@ -1396,7 +1396,7 @@ void __init pcibios_resource_survey(void)
- 	 * bus available resources to avoid allocating things on top of them
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 3e72425..b972f04 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -526,7 +526,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	 * Maybe the desired pci bus has been already scanned. In such case
+ 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
  	 */
- 	if (!pci_has_flag(PCI_PROBE_ONLY)) {
--		list_for_each_entry(b, &pci_root_buses, node)
-+		for_each_pci_root_bus(b)
- 			pcibios_reserve_legacy_regions(b);
- 	}
+-	bus = pci_find_bus(domain, busnum);
++	bus = pci_get_bus(domain, busnum);
+ 	if (bus) {
+ 		/*
+ 		 * If the desired bus exits, the content of bus->sysdata will
+@@ -534,6 +534,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		 */
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(info);
++		pci_bus_put(bus);
+ 	} else {
+ 		probe_pci_root_info(info, device, busnum, domain);
  
-diff --git a/arch/powerpc/kernel/pci_64.c b/arch/powerpc/kernel/pci_64.c
-index 873050d..d71249b 100644
---- a/arch/powerpc/kernel/pci_64.c
-+++ b/arch/powerpc/kernel/pci_64.c
-@@ -207,10 +207,8 @@ void pcibios_setup_phb_io_space(struct pci_controller *hose)
- long sys_pciconfig_iobase(long which, unsigned long in_bus,
- 			  unsigned long in_devfn)
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 305c68b..51cc1be 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -460,8 +460,9 @@ struct pci_bus *pcibios_scan_root(int busnum)
  {
--	struct pci_controller* hose;
--	struct list_head *ln;
--	struct pci_bus *bus = NULL;
--	struct device_node *hose_node;
-+	struct pci_controller* hose = NULL;
-+	struct pci_bus *bus;
+ 	struct pci_bus *bus = NULL;
  
- 	/* Argh ! Please forgive me for that hack, but that's the
- 	 * simplest way to get existing XFree to not lockup on some
-@@ -229,19 +227,15 @@ long sys_pciconfig_iobase(long which, unsigned long in_bus,
- 	/* That syscall isn't quite compatible with PCI domains, but it's
- 	 * used on pre-domains setup. We return the first match
- 	 */
--
--	for (ln = pci_root_buses.next; ln != &pci_root_buses; ln = ln->next) {
--		bus = pci_bus_b(ln);
--		if (in_bus >= bus->number && in_bus <= bus->busn_res.end)
-+	for_each_pci_root_bus(bus)
-+		if (in_bus >= bus->number && in_bus <= bus->busn_res.end) {
-+			hose = pci_bus_to_host(bus);
+-	while ((bus = pci_find_next_bus(bus)) != NULL) {
++	for_each_pci_root_bus(bus) {
+ 		if (bus->number == busnum) {
 +			pci_bus_put(bus);
- 			break;
--		bus = NULL;
--	}
--	if (bus == NULL || bus->dev.of_node == NULL)
-+		}
-+	if (hose == NULL)
- 		return -ENODEV;
+ 			/* Already scanned */
+ 			return bus;
+ 		}
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 94919e3..6481d25 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -343,7 +343,7 @@ static int __init pcibios_assign_resources(void)
+ 	struct pci_bus *bus;
  
--	hose_node = bus->dev.of_node;
--	hose = PCI_DN(hose_node)->phb;
+ 	if (!(pci_probe & PCI_ASSIGN_ROMS))
+-		list_for_each_entry(bus, &pci_root_buses, node)
++		for_each_pci_root_bus(bus)
+ 			pcibios_allocate_rom_resources(bus);
+ 
+ 	pci_assign_unassigned_resources();
+@@ -371,12 +371,11 @@ void __init pcibios_resource_survey(void)
+ 
+ 	DBG("PCI: Allocating resources\n");
+ 
+-	list_for_each_entry(bus, &pci_root_buses, node)
++	for_each_pci_root_bus(bus)
+ 		pcibios_allocate_bus_resources(bus);
 -
- 	switch (which) {
- 	case IOBASE_BRIDGE_NUMBER:
- 		return (long)hose->first_busno;
+-	list_for_each_entry(bus, &pci_root_buses, node)
++	for_each_pci_root_bus(bus)
+ 		pcibios_allocate_resources(bus, 0);
+-	list_for_each_entry(bus, &pci_root_buses, node)
++	for_each_pci_root_bus(bus)
+ 		pcibios_allocate_resources(bus, 1);
+ 
+ 	e820_reserve_resources_late();
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 372e9b8..65898f6 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -137,7 +137,7 @@ static void __init pirq_peer_trick(void)
+ 	}
+ 	for (i = 1; i < 256; i++) {
+ 		int node;
+-		if (!busmap[i] || pci_find_bus(0, i))
++		if (!busmap[i] || pci_bus_exists(0, i))
+ 			continue;
+ 		node = get_mp_bus_to_node(i);
+ 		if (pci_scan_bus_on_node(i, &pci_root_ops, node))
+diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
+index 4db96fb..1fb7922 100644
+--- a/arch/x86/pci/legacy.c
++++ b/arch/x86/pci/legacy.c
+@@ -40,7 +40,7 @@ void pcibios_scan_specific_bus(int busn)
+ 	long node;
+ 	u32 l;
+ 
+-	if (pci_find_bus(0, busn))
++	if (pci_bus_exists(0, busn))
+ 		return;
+ 
+ 	node = get_mp_bus_to_node(busn);
 -- 
 1.8.1.2
 
