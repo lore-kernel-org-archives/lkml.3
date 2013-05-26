@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab3EZA3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:29:16 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:45023 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758540Ab3EZA0h (ORCPT
+	id S1758662Ab3EZA3e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 20:29:34 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:57771 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758507Ab3EZA0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:26:37 -0400
+	Sat, 25 May 2013 20:26:32 -0400
 From: David Ahern <dsahern@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
         peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
         xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 05/16] perf top: move CONSOLE_CLEAR to header file
-Date: Sat, 25 May 2013 18:24:45 -0600
-Message-Id: <1369527896-3650-6-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 03/16 v2] perf evlist: add initialzation function for tracepoints
+Date: Sat, 25 May 2013 18:24:43 -0600
+Message-Id: <1369527896-3650-4-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
 References: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
@@ -23,7 +23,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For use with kvm-live mode.
+Handles initializations typically done as part of processing the file
+header and HEADER_TRACING_DATA event.
+
+v2: close fd as noticed by Namhyung.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -35,36 +38,84 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-top.c |    2 --
- tools/perf/util/top.h    |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/evlist.c |   35 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h |    3 +++
+ 2 files changed, 38 insertions(+)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f036af9..495171a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -237,8 +237,6 @@ out_unlock:
- 	pthread_mutex_unlock(&notes->lock);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 72b9551..b686411 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "trace-event.h"
+ #include <unistd.h>
+ 
+ #include "parse-events.h"
+@@ -234,6 +235,40 @@ int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
+ 	return 0;
  }
  
--static const char		CONSOLE_CLEAR[] = "[H[2J";
--
- static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 						     struct addr_location *al,
- 						     struct perf_sample *sample)
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index df46be9..b554ffc 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -39,6 +39,8 @@ struct perf_top {
- 	float		   min_percent;
- };
- 
-+#define CONSOLE_CLEAR "[H[2J"
++int perf_evlist__trace_init(struct perf_evlist *evlist,
++			    struct perf_session *session)
++{
++	struct tracing_data *tdata;
++	char temp_file[] = "/tmp/perf-XXXXXXXX";
++	int fd;
++	int rc = 0;
 +
- size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size);
- void perf_top__reset_sample_counters(struct perf_top *top);
- #endif /* __PERF_TOP_H */
++	fd = mkstemp(temp_file);
++	if (fd < 0) {
++		pr_err("mkstemp failed\n");
++		return -1;
++	}
++	unlink(temp_file);
++
++	tdata = tracing_data_get(&evlist->entries, fd, false);
++	if (!tdata) {
++		rc = -1;
++		goto out;
++	}
++
++	lseek(fd, 0, SEEK_SET);
++	(void) trace_report(fd, &session->pevent, false);
++	tracing_data_put(tdata);
++
++	rc = perf_evlist__prepare_tracepoint_events(evlist, session->pevent);
++
++out:
++	close(fd);
++
++	return rc;
++}
++
++
+ static int trace_event__id(const char *evname)
+ {
+ 	char *filename, *colon;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index c2cf183..c579f3d 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -8,6 +8,7 @@
+ #include "event-parse.h"
+ #include "evsel.h"
+ #include "util.h"
++#include "session.h"
+ #include <unistd.h>
+ 
+ struct pollfd;
+@@ -66,6 +67,8 @@ int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
+ int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
+ 				 const char * const tracepoints[],
+ 				 size_t nr_tracepoints);
++int perf_evlist__trace_init(struct perf_evlist *evlist,
++			    struct perf_session *session);
+ 
+ #define perf_evlist__add_default_attrs(evlist, array) \
+ 	__perf_evlist__add_default_attrs(evlist, array, ARRAY_SIZE(array))
 -- 
 1.7.10.1
 
