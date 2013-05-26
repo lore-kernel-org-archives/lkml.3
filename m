@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3EZFT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 01:19:56 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:55893 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3EZFTw (ORCPT
+	id S1754309Ab3EZF66 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 01:58:58 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39073 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab3EZF6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 01:19:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1305261503510.7712@tundra.namei.org>
-References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com>
-	<CA+55aFw_ic=4OvH0Ys2CUjgotdbfdbuxUsx77RYEYPGrbqzbAA@mail.gmail.com>
-	<20130525165710.GC25399@ZenIV.linux.org.uk>
-	<51A1040A.80003@schaufler-ca.com>
-	<CA+55aFw1RLrMsvkG+yHfHw4ht5BcC7Q39qXDD2dyUp9+_HsSLA@mail.gmail.com>
-	<alpine.LRH.2.02.1305261503510.7712@tundra.namei.org>
-Date: Sat, 25 May 2013 22:19:51 -0700
-X-Google-Sender-Auth: cOvKHPQ30prS1tdqiueJnKsrwvA
-Message-ID: <CA+55aFyiOR=2o7BWQXcb-7_YULXbr+SuzoOeGQxV4cmck1y8Ow@mail.gmail.com>
-Subject: Re: Stupid VFS name lookup interface..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: James Morris <jmorris@namei.org>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 26 May 2013 01:58:54 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <stable@vger.kernel.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 1/6] mm/memory-hotplug: fix lowmem count overflow when offline pages 
+Date: Sun, 26 May 2013 13:58:36 +0800
+Message-Id: <1369547921-24264-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052605-0260-0000-0000-0000030E0CFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 10:04 PM, James Morris <jmorris@namei.org> wrote:
-> On Sat, 25 May 2013, Linus Torvalds wrote:
->
->> But I haven't even looked at what non-selinux setups do to
->> performance. Last time I tried Ubuntu (they still use apparmor, no?),
->> "make modules_install ; make install" didn't work for the kernel, and
->> if the Ubuntu people don't want to support kernel engineers, I
->> certainly am not going to bother with them. Who uses smack?
->
-> Tizen, perhaps a few others.
+Changelog:
+ v1 -> v2:
+	* show number of HighTotal before hotremove 
+	* remove CONFIG_HIGHMEM
+	* cc stable kernels
+	* add Michal reviewed-by
 
-Btw, it really would be good if security people started realizing that
-performance matters. It's annoying to see the security lookups cause
-50% performance degradations on pathname lookup (and no, I'm not
-exaggerating, that's literally what it was before we fixed it - and
-no, by "we" I don't mean security people).
+Logic memory-remove code fails to correctly account the Total High Memory 
+when a memory block which contains High Memory is offlined as shown in the
+example below. The following patch fixes it.
 
-There's a really simple benchmark that is actually fairly relevant:
-build a reasonable kernel ("make localmodconfig" or similar - not the
-normal distro kernel that has everything enabled) without debugging or
-other crud enabled, run that kernel, and then re-build the fully built
-kernel to make sure it's all in the disk cache. Then, when you don't
-need any IO, and don't need to recompile anything, do a "make -j".
+Stable for 2.6.24+.
 
-Assuming you have a reasonably modern desktop machine, it should take
-something like 5-10 seconds, of which almost everything is just "make"
-doing lots of stat() calls to see that everything is fully built. If
-it takes any longer, you're doing something wrong.
+Before logic memory remove:
 
-Once you are at that point, just do "perf record -f -e cycles:pp make
--j" and then "perf report" on the thing.
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
 
-(The "-e cycles:pp" is not necessary for the rough information, but it
-helps if you then want to go and annotate the assembler to see where
-the costs come from).
+After logic memory remove:
 
-If you see security functions at the top, you know that the security
-routines take more time than the real work the kernel is doing, and
-should realize that that would be a problem.
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
 
-Right now (zooming into the kernel only - ignoring the fact that make
-really spends a fair amount of time in user space) I get
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-  9.79%      make  [k] __d_lookup_rcu
-  5.48%      make  [k] link_path_walk
-  2.94%      make  [k] avc_has_perm_noaudit
-  2.47%      make  [k] selinux_inode_permission
-  2.25%      make  [k] path_lookupat
-  1.89%      make  [k] generic_fillattr
-  1.50%      make  [k] lookup_fast
-  1.27%      make  [k] copy_user_generic_string
-  1.17%      make  [k] generic_permission
-  1.15%      make  [k] dput
-  1.12%      make  [k] inode_has_perm.constprop.58
-  1.11%      make  [k] __inode_permission
-  1.08%      make  [k] kmem_cache_alloc
-  ...
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 98cbdf6..23b921f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
+-- 
+1.8.1.2
 
-so the permission checking is certainly quite noticeable, but it's by
-no means dominant. This is with both of the patches I've posted, but
-the numbers weren't all that different before (inode_has_perm and
-selinux_inode_permission used to be higher up in the list, now
-avc_has_perm_noaudit is the top selinux cost - which actually makes
-some amount of sense).
-
-So it's easy to have a fairly real-world performance profile that
-shows path lookup costs on a real test.
-
-                  Linus
