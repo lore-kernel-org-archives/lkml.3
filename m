@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3EZSs1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 14:48:27 -0400
-Received: from smtp105.biz.mail.gq1.yahoo.com ([98.137.12.180]:31976 "HELO
-	smtp105.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754786Ab3EZSs0 (ORCPT
+	id S1754866Ab3EZS5o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 14:57:44 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49025 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab3EZS5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 14:48:26 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 May 2013 14:48:26 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: a4ekpUoVM1kggUJL.wvzpi_Ta_wx5uNFqOkMDar2yxGNwqZ
- iYa79FIbrTMF2YNpOC.OcXcnMUTZk.uRJa8ZlbQjIEw5kGNqo4DCyULIrT0C
- jRo8gbzcEFdRvDNHkR_SYAseDrWRH.r_pc46EgPtYLfRuyIllrbcMfpWzvo0
- OY0cTWDkXXnLnrDiwZD9z3ejdPWpPrJykJ2oOyN3rjCmYYu16GIbTOcFF69e
- V1MOSD6NT4ctW3462D6u3qYV8M.Ll7i6NTXAJaHdo_7gV_08t0bewIkNKiKR
- esCquhkurJQPM2lnNoMwxH38Xwgm4agxI8_4H.or.PRPhOoJGcM3F1Zv2VGz
- okpSdP_WiSuku_h22zyEiPhs.yqOg_sVb8lHoyGKkZk9NEZgHS3oGtuKBRcs
- dXfPSrxLxaQX1uqDLc8PwwxO3iA0Dc1qfyz_GtGZGzr6amVnmR.28.lVgiyX
- 6LxCryXWmPdaT8BJCIFXka6t_VYzcmhN3Dz3_qY1xQf4bfbcjzXym9pmClq_
- ZYKcUdLz3O4SLQr2C9So-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
-        by smtp105.biz.mail.gq1.yahoo.com with SMTP; 26 May 2013 11:41:44 -0700 PDT
-Message-ID: <51A25767.4050407@schaufler-ca.com>
-Date: Sun, 26 May 2013 11:41:43 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Sun, 26 May 2013 14:57:42 -0400
+Date: Sun, 26 May 2013 11:17:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com
+Subject: Re: WARNING: at kernel/rcutree.c:388 rcu_eqs_enter
+Message-ID: <20130526181723.GD6172@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130521173100.GA2076@redhat.com>
+ <20130521235813.GA18737@redhat.com>
+ <20130522095129.GA3578@linux.vnet.ibm.com>
+ <20130523155152.GD16419@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: James Morris <jmorris@namei.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: Stupid VFS name lookup interface..
-References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com> <CA+55aFw_ic=4OvH0Ys2CUjgotdbfdbuxUsx77RYEYPGrbqzbAA@mail.gmail.com> <20130525165710.GC25399@ZenIV.linux.org.uk> <51A1040A.80003@schaufler-ca.com> <CA+55aFw1RLrMsvkG+yHfHw4ht5BcC7Q39qXDD2dyUp9+_HsSLA@mail.gmail.com> <alpine.LRH.2.02.1305261503510.7712@tundra.namei.org> <CA+55aFyiOR=2o7BWQXcb-7_YULXbr+SuzoOeGQxV4cmck1y8Ow@mail.gmail.com> <51A24D9B.50104@schaufler-ca.com> <CA+55aFyAW5tGqZA8kx7kMrMp0Zm0H1ohXVM4thZPOcnZeoosSg@mail.gmail.com>
-In-Reply-To: <CA+55aFyAW5tGqZA8kx7kMrMp0Zm0H1ohXVM4thZPOcnZeoosSg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130523155152.GD16419@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052618-3620-0000-0000-000002B4EC63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/26/2013 11:17 AM, Linus Torvalds wrote:
-> On Sun, May 26, 2013 at 10:59 AM, Casey Schaufler
-> <casey@schaufler-ca.com> wrote:
->> The whole secid philosophy comes out of the need to keep security out
->> of other people's way. It has performance impact. Sure, SELinux
->> hashes lookups, but a blob pointer gets you right where you want to be.
->> When we are constrained in unnatural ways there are going to be
->> consequences. Performance is one. Code complexity is another.
-> Quite frankly, I'd like to possibly introduce a cache of security
-> decisions at least for the common filesystem operations (and the
-> per-pathcomponent lookup is *the* most common one, but the per-stat
-> one is pretty bad too), and put that cache at the VFS level, so that
-> the security people can *not* screw it up, and so that we don't call
-> down to the security layer at all 99% of the time.
->
-> Once that happens, we don't care any more what security people do.
->
-> It has been how we have fixed performance problems for filesystems
-> every single time. It's simply not possible to have a generic
-> interface to 50+ different filesystems and expect that kind of generic
-> interface to be high-performance - but when we've been able to
-> abstract it out as a cache in front of the filesystem operations, it
-> is suddenly quite reasonable to spend a lot of effort making that
-> cache go fast like a bat out of hell.
->
-> It started with the dentry cache and the page cache, but we now do the
-> POSIX ACL's that way too, because it just wasn't reasonable to call
-> down to the filesystem to look up ACL's and have all the complex "we
-> do this with RCU locks held" semantics.
->
-> Is there something similar we could do for the security layer? We
-> don't have 50+ different security models, but we do have several. If
-> the different security modules could agree on some kind of generic
-> "security ID" model so that we could cache things (see fs/namei.c and
-> get_cached_acl_rcu() for example), it would be a great thing.
->
-> Then selinux could get rid of it's hashed lookups entirely, because
-> that whole "cache the security ID" would be handled by generic code.
->
-> But that *would* require that there would be some abstract notion of
-> security ID/context that we could use in generic code *WITHOUT* the
-> need to call down the the security subsystem.
->
-> The indirect calls are expensive, but they are expensive not because
-> an indirect call itself is particularly expensive (although that's
-> true on some architectures too), but because the whole notion of "I'm
-> calling down to the lower-level non-generic code" means that we can't
-> do inlining, we can't optimize locking, we can't do anything clever.
->
-> My selinux patch kept the indirect call, but at least made it cheap.
-> Could we do even better? And keep it generic?
+On Thu, May 23, 2013 at 11:51:52AM -0400, Dave Jones wrote:
+> On Wed, May 22, 2013 at 02:51:29AM -0700, Paul E. McKenney wrote:
+> 
+>  > trace: Allow idle-safe tracepoints to be called from irq
+>  > 
+>  > __DECLARE_TRACE_RCU() currently creates an _rcuidle() tracepoint which
+>  > may safely be invoked from what RCU considers to be an idle CPU.
+>  > However, these _rcuidle() tracepoints may -not- be invoked from the
+>  > handler of an irq taken from idle, because rcu_idle_enter() zeroes
+>  > RCU's nesting-level counter, so that the rcu_irq_exit() returning to
+>  > idle will trigger a WARN_ON_ONCE().
+>  > 
+>  > This commit therefore substitutes rcu_irq_enter() for rcu_idle_exit()
+>  > and rcu_irq_exit() for rcu_idle_enter() in order to make the _rcuidle()
+>  > tracepoints usable from irq handlers as well as from process context.
+>  > 
+>  > Reported-by: Dave Jones <davej@redhat.com>
+>  > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>  > Cc: Steven Rostedt <rostedt@goodmis.org>
+>  > 
+>  > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+>  > index 2f322c3..f8e084d 100644
+>  > --- a/include/linux/tracepoint.h
+>  > +++ b/include/linux/tracepoint.h
+>  > @@ -145,8 +145,8 @@ static inline void tracepoint_synchronize_unregister(void)
+>  >  				TP_PROTO(data_proto),			\
+>  >  				TP_ARGS(data_args),			\
+>  >  				TP_CONDITION(cond),			\
+>  > -				rcu_idle_exit(),			\
+>  > -				rcu_idle_enter());			\
+>  > +				rcu_irq_enter(),			\
+>  > +				rcu_irq_exit());			\
+>  >  	}
+>  >  #else
+>  >  #define __DECLARE_TRACE_RCU(name, proto, args, cond, data_proto, data_args)
+> 
+> This stops the "WARNING: at kernel/context_tracking.c:55 user_enter+0xb5/0xd0()"
+> but I still see..
 
-Probably, but we'll need help from people who really understand VFS,
-caching and RCU.
+Thank you for testing this!
 
-> Btw, if we can do something like that, then nested security modules
-> likely get much easier to do too, because the nesting would all be
-> behind the cache. Once it's behind the cache, it doesn't matter if
-> we'd need to traverse lists etc. The hot case would be able to ignore
-> it all.
+This is the same one that you and Steven Rostedt are discussing, correct?
 
-Indeed. It may require significant revision to the existing LSMs.
+							Thanx, Paul
 
->
->                   Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> [  363.399348] ===============================
+> [  363.400617] [ INFO: suspicious RCU usage. ]
+> [  363.401880] 3.10.0-rc2+ #31 Not tainted
+> [  363.403210] -------------------------------
+> [  363.403787] include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+> [  363.403831] 
+> other info that might help us debug this:
+> 
+> [  363.403880] 
+> RCU used illegally from idle CPU!
+> rcu_scheduler_active = 1, debug_locks = 0
+> [  363.403942] RCU used illegally from extended quiescent state!
+> [  363.403976] 2 locks held by trinity-child0/27319:
+> [  363.404006]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816e91bf>] __schedule+0xef/0x9c0
+> [  363.404076]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810a5605>] cpuacct_charge+0x5/0x1f0
+> [  363.404146] 
+> stack backtrace:
+> [  363.404176] CPU: 1 PID: 27319 Comm: trinity-child0 Not tainted 3.10.0-rc2+ #31 
+> [  363.405536]  0000000000000000 ffff880208ddfcf8 ffffffff816e2a5b ffff880208ddfd28
+> [  363.406835]  ffffffff810b5917 ffff880243362568 00000000003c3c18 ffff880243362520
+> [  363.408140]  0000000000000001 ffff880208ddfd60 ffffffff810a5785 ffffffff810a5605
+> [  363.409451] Call Trace:
+> [  363.410726]  [<ffffffff816e2a5b>] dump_stack+0x19/0x1b
+> [  363.412005]  [<ffffffff810b5917>] lockdep_rcu_suspicious+0xe7/0x120
+> [  363.413281]  [<ffffffff810a5785>] cpuacct_charge+0x185/0x1f0
+> [  363.414543]  [<ffffffff810a5605>] ? cpuacct_charge+0x5/0x1f0
+> [  363.415793]  [<ffffffff8109607c>] update_curr+0xec/0x250
+> [  363.417035]  [<ffffffff810975a8>] put_prev_task_fair+0x228/0x480
+> [  363.418273]  [<ffffffff816e9236>] __schedule+0x166/0x9c0
+> [  363.419497]  [<ffffffff816e9ee4>] preempt_schedule+0x44/0x60
+> [  363.420717]  [<ffffffff816e9fb0>] ? __cond_resched_softirq+0x60/0x60
+> [  363.421940]  [<ffffffff816ebfa4>] ? retint_careful+0x12/0x2e
+> [  363.423155]  [<ffffffff8110e2b3>] ftrace_ops_control_func+0x1d3/0x210
+> [  363.424373]  [<ffffffff816f3a40>] ftrace_call+0x5/0x2f
+> [  363.425577]  [<ffffffff816ebf9d>] ? retint_careful+0xb/0x2e
+> [  363.426784]  [<ffffffff816e9fb5>] ? schedule_user+0x5/0x70
+> [  363.427988]  [<ffffffff816e9fb5>] ? schedule_user+0x5/0x70
+> [  363.429184]  [<ffffffff816ebfa4>] ? retint_careful+0x12/0x2e
+> 
+> I'll try Steve's patch on top next.
+> 
+> 	Dave
+> 
 
