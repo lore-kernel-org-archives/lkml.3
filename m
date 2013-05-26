@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab3EZIwr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 04:52:47 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41589 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3EZIwn (ORCPT
+	id S1751486Ab3EZI7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 04:59:13 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:65535 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab3EZI7J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 04:52:43 -0400
-Date: Sat, 25 May 2013 04:37:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130525113715.GA3795@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <519B8908.9080007@yandex-team.ru>
- <1369150693.3301.233.camel@edumazet-glaptop>
- <519BB90B.6080706@yandex-team.ru>
- <1369188080.3301.268.camel@edumazet-glaptop>
- <1369201765.3301.299.camel@edumazet-glaptop>
- <519CB2D8.103@yandex-team.ru>
- <1369225837.3301.324.camel@edumazet-glaptop>
- <519CC2FB.2010006@yandex-team.ru>
- <20130522174532.GC3431@linux.vnet.ibm.com>
- <519D19DA.50400@yandex-team.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D19DA.50400@yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052608-7606-0000-0000-00000BCE415E
+	Sun, 26 May 2013 04:59:09 -0400
+References: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
+Content-Type: text/plain;
+	charset=GB2312
+Content-Transfer-Encoding: 8BIT
+Message-Id: <99E50EC5-59B7-45D5-95A6-0C861C5C8AB3@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPad Mail (10B329)
+From: ethan <ethan.kernel@gmail.com>
+Subject: Re: Weird disk idling
+Date: Sun, 26 May 2013 16:58:59 +0800
+To: Fredrik Tolf <fredrik@dolda2000.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:17:46PM +0400, Roman Gushchin wrote:
-> On 22.05.2013 21:45, Paul E. McKenney wrote:
-> >On Wed, May 22, 2013 at 05:07:07PM +0400, Roman Gushchin wrote:
-> >>On 22.05.2013 16:30, Eric Dumazet wrote:
-> >>>On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
-> >>>
-> >>>>+/*
-> >>>>+ * Same as ACCESS_ONCE(), but used for accessing field of a structure.
-> >>>>+ * The main goal is preventing compiler to store &ptr->field in a register.
-> >>>
-> >>>But &ptr->field is a constant during the whole duration of
-> >>>udp4_lib_lookup2() and could be in a register, in my case field is at
-> >>>offset 0, and ptr is a parameter (so could be in a 'register')
-> >>>
-> >>>The bug you found is that compiler caches the indirection  (ptr->field)
-> >>>into a register, not that compiler stores &ptr->field into a register.
-> >>>
-> >>>>+ */
-> >>>>+#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
-> >>>>+
-> >>>
-> >>>Here we force the compiler to consider ptr as volatile, but semantically
-> >>>it is not required in rcu_dereference(ptr->field)
-> >>
-> >>Actually, we need to mark an "address of a place" where the field value is
-> >>located as volatile before dereferencing. I have no idea how to do it in another way,
-> >>except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
-> >>	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
+Fred，
+      How do you know the disk is completely idle ? How much cache memory do your controller and disk have ?  Why do you think the requests should trigger action of disk immediately while you don't know what kind of requests are they. They are reading the same offset of the same block ?
+
+  ... ....
+
+    Before got the answer, you should ask yourself many questions.
+
+
+Ethan 
+
+发自我的 iPad
+
+在 2013-5-26，13:29，Fredrik Tolf <fredrik@dolda2000.com> 写道：
+
+> Dear list,
 > 
-> Probably I miss one more ACCESS_ONCE() in this expression. Should be something like
-> ACCESS_ONCE(typeof(&ptr->field)((char*)ACCESS_ONCE(ptr) + offsetof(typeof(*ptr), field))) .
-> But this is not a working example, just an illustration against using ACCESS_ONCE() here.
+> In order to debug I/O performance, I recently wrote a tiny program for inspecting /sys/block/$DISK/stat. It works by dumping deltas of the values every 100 ms, quite simply (except the queue-length value, for which deltas are clearly useless).
 > 
-> >Why not just ACCESS_ONCE(ptr->field)?  Or if it is the thing that
-> >ptr->field points to that is subject to change, ACCESS_ONCE(*ptr->field)?
-> >
-> >Or rcu_dereference(ptr->field), as appropriate?
+> Using this, I often see periods during constant I/O loads where there are lots of requests in the queue, but the disk is completely idle. They usually last somewhere from 0.1 to 2 seconds. Using the aforementioned program, they might look, for instance, like this:
 > 
-> It's not enough. So is the code now, and it doesn't work as expected.
-> You can't write (ptr->field) without ptr being marked as a volatile pointer.
+> 1369545418.8       0        0        0        0        2        0       16     4888      134      100    13400
+> 1369545418.9       0        0        0        0        0        0        0        0      134      100    13400
+> 1369545419.0       0        0        0        0        0        0        0        0      135      104    13984
+> 1369545419.1       0        0        0        0        0        0        0        0      135      100    13500
+> 1369545419.2       0        0        0        0        0        0        0        0      135      100    13500
+> 1369545419.3       0        0        0        0        0        0        0        0      135      100    13500
+> 1369545419.4       0        0        0        0        0        0        0        0      135      100    13500
+> 1369545419.5       0        0        0        0        0        0        0        0      135      100    13500
+> 1369545419.6       0        0        0        0        0        0        0        0      135      104    14040
+> 1369545419.7       2        0       64      672       58        0     1185   152512       78      100    11296
 > 
-> I try to explain the problem once more from scratch:
+> I'm sure you all know what the various fields are (except the first, which is just a timestamp), so as you can see, there are 135 requests in the queue, but no reads or writes happen, in this case, for at least 800 ms.
 > 
-> 1) We have the following pseudo-code (based on udp4_lib_lookup2()):
+> Is this behavior normal and expected, or is there something wrong here? In the latter case, is it my hardware that is failing somehow, or can there be some software weirdness that can be tweaked away or bugfixed?
 > 
-> static void some_func(struct hlist_nulls_head *head) {
-> 	struct hlist_nulls_node *node;
+> The disk in question is a 640 GB WDC Caviar Green, and it's attached via an old Silicon Image 3114 PCI card. Clearly, the hardware is less than optimal, but can that explain this behavior? (For the record, the disk does at least not report any SMART errors, and there are no errors about in the dmesg.)
 > 
-> begin:
-> 	for (node = rcu_dereference(head->first);
-> 		!is_nulls(node) & ...;
-> 		node = rcu_dereference(node->next)) {
-> 		<...>
-> 	}
+> The kernel version is 3.7.1, and the scheduler is CFQ.
 > 
-> 	if (restart_condition)
-> 		goto begin;
+> Thanks for reading!
 > 
-> 2) A problem occurs when restart_condition is true and we jump to the begin label.
-> We do not recalculate (head + offsetof(head, first)) address, we just dereference
-> again the OLD (head->first) pointer. So, we get a node, that WAS the first node in a
-> previous time instead of current first node. That node can be dead, or, for instance,
-> can be a head of another chain.
-
-OK, this is what I was referring to when I said that the RCU list macros
-assume that the list header is static (or equivalently, appropriately
-protected).
-
-With some_func() as written above, you would need to return some sort
-of failure indication from some_func(), and have the caller refetch head.
-Otherwise, as far as gcc is concerned, the value of the parameter head
-is constant throughout some_func().
-
-> It is correct from gcc's point of view, since it doesn't expect the head pointer
-> to change, and this address is just (head + constant offset).
-
-Agreed.
-
-How does the caller calculate the value to pass in through the argument "head"?
-
-> 3) If we start with a wrong first element, restart_condition can be always true, so,
-> we get an infinite loop. In any case, we do not scan the whole (socket) chain,
-> as expected.
-
-Agreed.
-
-> This scenario is absolutely real and causes our DNS servers to hang
-> sometimes under high load.
-
-I completely believe that such a hang could happen.
-
-> Note, that there are no problems if we don't restart a loop. Also, it is highly
-> dependent on gcc options, and the code in the body of the loop. Even small changes
-> in the code (like adding debugging print) preventing reproducing of the issue.
-
-Again, I believe that your retry logic needs to extend back into the
-calling function for your some_func() example above.
-
-							Thanx, Paul
-
+> --
+> 
+> Fredrik Tolf
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
