@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3EZNlj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 09:41:39 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37016 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3EZNlg (ORCPT
+	id S1753577Ab3EZNlw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 09:41:52 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:54241 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab3EZNlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 09:41:36 -0400
+	Sun, 26 May 2013 09:41:49 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH v8, part3 04/14] mm/x86: use free_reserved_area() to simplify code
-Date: Sun, 26 May 2013 21:38:32 +0800
-Message-Id: <1369575522-26405-5-git-send-email-jiang.liu@huawei.com>
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH v8, part3 06/14] mm, acornfb: use free_reserved_area() to simplify code
+Date: Sun, 26 May 2013 21:38:34 +0800
+Message-Id: <1369575522-26405-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com>
 References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com>
@@ -35,89 +34,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help function free_reserved_area() to simplify code.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/x86/mm/init.c    | 14 +++-----------
- arch/x86/mm/init_64.c |  5 ++---
- 2 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/video/acornfb.c | 45 ++++++---------------------------------------
+ 1 file changed, 6 insertions(+), 39 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index eaac174..62f1473 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -494,7 +494,6 @@ int devmem_is_allowed(unsigned long pagenr)
+diff --git a/drivers/video/acornfb.c b/drivers/video/acornfb.c
+index 6488a73..8f7374f 100644
+--- a/drivers/video/acornfb.c
++++ b/drivers/video/acornfb.c
+@@ -1180,42 +1180,6 @@ static int acornfb_detect_monitortype(void)
+ 	return 4;
+ }
  
- void free_init_pages(char *what, unsigned long begin, unsigned long end)
- {
--	unsigned long addr;
- 	unsigned long begin_aligned, end_aligned;
- 
- 	/* Make sure boundaries are page aligned */
-@@ -509,8 +508,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	if (begin >= end)
- 		return;
- 
--	addr = begin;
+-/*
+- * This enables the unused memory to be freed on older Acorn machines.
+- * We are freeing memory on behalf of the architecture initialisation
+- * code here.
+- */
+-static inline void
+-free_unused_pages(unsigned int virtual_start, unsigned int virtual_end)
+-{
+-	int mb_freed = 0;
 -
- 	/*
- 	 * If debugging page accesses then do not free this memory but
- 	 * mark them not present - any buggy init-section access will
-@@ -529,18 +526,13 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
- 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
- 
--	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+-	/*
+-	 * Align addresses
+-	 */
+-	virtual_start = PAGE_ALIGN(virtual_start);
+-	virtual_end = PAGE_ALIGN(virtual_end);
 -
--	for (; addr < end; addr += PAGE_SIZE) {
--		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		free_reserved_page(virt_to_page(addr));
+-	while (virtual_start < virtual_end) {
+-		struct page *page;
+-
+-		/*
+-		 * Clear page reserved bit,
+-		 * set count to 1, and free
+-		 * the page.
+-		 */
+-		page = virt_to_page(virtual_start);
+-		ClearPageReserved(page);
+-		init_page_count(page);
+-		free_page(virtual_start);
+-
+-		virtual_start += PAGE_SIZE;
+-		mb_freed += PAGE_SIZE / 1024;
 -	}
-+	free_reserved_area((void *)begin, (void *)end, POISON_FREE_INITMEM, what);
- #endif
- }
- 
- void free_initmem(void)
- {
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long)(&__init_begin),
- 			(unsigned long)(&__init_end));
- }
-@@ -566,7 +558,7 @@ void __init free_initrd_mem(unsigned long start, unsigned long end)
- 	 *   - relocate_initrd()
- 	 * So here We can do PAGE_ALIGN() safely to get partial page to be freed
- 	 */
--	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
-+	free_init_pages("initrd", start, PAGE_ALIGN(end));
- }
- #endif
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index bb00c46..32e2f25 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1166,11 +1166,10 @@ void mark_rodata_ro(void)
- 	set_memory_ro(start, (end-start) >> PAGE_SHIFT);
- #endif
- 
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long) __va(__pa_symbol(text_end)),
- 			(unsigned long) __va(__pa_symbol(rodata_start)));
 -
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long) __va(__pa_symbol(rodata_end)),
- 			(unsigned long) __va(__pa_symbol(_sdata)));
- }
+-	printk("acornfb: freed %dK memory\n", mb_freed);
+-}
+-
+ static int acornfb_probe(struct platform_device *dev)
+ {
+ 	unsigned long size;
+@@ -1312,10 +1276,13 @@ static int acornfb_probe(struct platform_device *dev)
+ #endif
+ #if defined(HAS_VIDC)
+ 	/*
+-	 * Archimedes/A5000 machines use a fixed address for their
+-	 * framebuffers.  Free unused pages
++	 * We are freeing memory on behalf of the architecture initialisation
++	 * code here. Archimedes/A5000 machines use a fixed address for their
++	 * framebuffers.
+ 	 */
+-	free_unused_pages(PAGE_OFFSET + size, PAGE_OFFSET + MAX_SIZE);
++	free_reserved_area((void *)(PAGE_OFFSET + size),
++			   (void *)PAGE_ALIGN(PAGE_OFFSET + MAX_SIZE),
++			   -1, "acornfb");
+ #endif
+ 
+ 	fb_info.fix.smem_len = size;
 -- 
 1.8.1.2
 
