@@ -1,162 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab3EZPtX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 11:49:23 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:48183 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab3EZPtV convert rfc822-to-8bit (ORCPT
+	id S1754044Ab3EZP5J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 11:57:09 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:58410 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab3EZP5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 11:49:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130524115053.GB5203@ab42.lan>
-References: <20130429161725.GB30136@ab42.lan>
-	<5182B557.4040804@wwwdotorg.org>
-	<CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
-	<20130508164123.GA10248@ab42.lan>
-	<518AAF31.8080502@wwwdotorg.org>
-	<20130510082521.GA2125@ab42.lan>
-	<51942472.9010402@wwwdotorg.org>
-	<CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
-	<20130522142824.GC4789@ab42.lan>
-	<CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
-	<20130524115053.GB5203@ab42.lan>
-Date: Sun, 26 May 2013 23:49:20 +0800
-Message-ID: <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 26 May 2013 11:57:06 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3, part2 00/20] Introduce hotplug-safe PCI bus iterators
+Date: Sun, 26 May 2013 23:52:57 +0800
+Message-Id: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 May 2013 19:50, Christian Ruppert <christian.ruppert@abilis.com> wrote:
-> Hello Haojian,
->
-> On Thu, May 23, 2013 at 03:43:27PM +0800, Haojian Zhuang wrote:
->> On 22 May 2013 22:28, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->> >
->> > On Mon, May 20, 2013 at 10:10:33AM +0200, Linus Walleij wrote:
->> > > On Thu, May 16, 2013 at 2:12 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> > > > On 05/10/2013 02:25 AM, Christian Ruppert wrote:
->> > >
->> > > >> (*1) TB100 GPIO ranges are defined as a phandle to the I/O function
->> > > >>      which provides all pins of a given GPIO port. This function is not
->> > > >>      necessarily requested from pinctrl and GPIO ports may overlap with
->> > > >>      other functions. The pin controller knows about this and provides
->> > > >>      whatever GPIO pin is available after mapping other requested
->> > > >>      functions.
->> > > >> (*2) Here, the entire GPIOB port is explicitly requested by the GPIO
->> > > >>      module, i.e. all pins of the port are made available as GPIOs.
->> > > >
->> > > > So I think all you're looking for is a way in DT to represent GPIO
->> > > > ranges? I don't think that should be by string name, but rather numbers:
->> > > >
->> > > > (actually, doesn't pinctrl-simple already have this?)
->> > >
->> > > Now I'm ever more confused ... we already have this :-)
->> > >
->> > > It's not even pinctrl-simple-centric it is completely generic.
->> > > The code is in drivers/gpio/gpiolib-of.c.
->> > >
->> > > It was written by Shiraz Hashin and Haojian Zhuang.
->> > > At the time I augmented the core code quite a bit to make
->> > > a good fit.
->> >
->> > I agree. Unluckily, it uses pinctrl-internal pin numbering which we
->> > would have to make coherent with the physical pin numbers of the
->> > individual packaging variants of the chip in order to expose them to
->> > customers (see my previous mail at https://lkml.org/lkml/2013/5/22/207).
->> >
->> > Adapting the kernel-internal pin numbering in function of the product
->> > variant doesn't seem such a good idea to me: All pin groups etc. will
->> > have to be redefined for every product, a huge source of bugs and
->> > unnecessary static data within the drivers.
->> >I review two methods you mentioned in this mail.
->>
->> I think that you want to keep the logic simple. If so, I prefer you can
->> check pinctrl-single driver first. All pins are defined in DTS instead.
->
-> Thanks for the hint. I haven't understood how to associate GPIOs to
-> other functions, however: Our hardware pin controller makes GPIO pins
-> available depending on the configuration of the non-GPIO interfaces.
-> This means that in many configurations, GPIO banks are only partially
+This is the second part of PCI bus lock patch series, it's based on
+https://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
 
-They're multiple function pins. You can find those pins in most modern SoCs.
+And the first part of the PCI bus lock patch series could be found at:
+http://marc.info/?l=linux-pci&m=136948986401098&w=2
 
-> available because some pins are used for other purposes. We can't expect
-> our customers to manually change the pin assignments in the device tree
-> in order to take this into account for every PCB.
+You can access the git tree at:
 
-Yes, you need to define the gpio-range & pinctrl-single,gpio-range.
-If you define them in your DTSI file, customer only need to include it.
-If you define them in your DTS file, customer only need to copy them into
-their DTS file.
+Introduce hotplug-safe PCI bus iterators as below, which hold a
+reference on the returned PCI bus object.
+bool pci_bus_exists(int domain, int busnr);
+struct pci_bus *pci_get_bus(int domain, int busnr);
+struct pci_bus *pci_get_next_bus(struct pci_bus *from);
+struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
+#define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
+#define for_each_pci_root_bus(b)  \
+		for (b = NULL; (b = pci_get_next_root_bus(b)); )
 
-If you don't have the requirements of routing multiple pins to the same GPIO,
-I suggest you to define them in your DTSI file.
+The long-term goal is to remove hotplug-unsafe pci_find_bus(),
+pci_find_next_bus() and the global pci_root_buses list.
 
->
-> Is there a way to make different pinmux functions mutually exclusive in
-> pinctrl-single, e.g. a pin is either a GPIO or part of an SPI interface?
+These new interfaces may be a little slower than existing interfaces,
+but it should be acceptable because they are not used on hot paths.
 
-gpio_request() could help you to request GPIO if the pin isn't used yet.
-And even your pin is in I2C mode without usage.
+V1->V2:
+1) address review comments for V1
 
-But if you want to the mutually exclusive, you could do by this way.
+Jiang Liu (20):
+  PCI: introduce hotplug-safe PCI bus iterators
+  PCI, core: use hotplug-safe iterators to walk PCI buses
+  PCI, hotplug: use hotplug-safe iterators to walk PCI buses
+  PCI, IOV: hold a reference to PCI bus when creating virtual PCI
+    devices
+  PCI, Alpha: use hotplug-safe iterators to walk PCI buses
+  PCI, FRV: use hotplug-safe iterators to walk PCI buses
+  PCI, IA64: use hotplug-safe iterators to walk PCI buses
+  PCI, Microblaze: use hotplug-safe iterators to walk PCI buses
+  PCI, mn10300: use hotplug-safe iterators to walk PCI buses
+  PCI, PPC: use hotplug-safe iterators to walk PCI buses
+  PCI, SPARC: use hotplug-safe iterators to walk PCI buses
+  PCI, x86: use hotplug-safe iterators to walk PCI buses
+  PCI, ACPI: use hotplug-safe iterators to walk PCI buses
+  PCI, DRM: use hotplug-safe iterators to walk PCI buses
+  PCI, EDAC: use hotplug-safe PCI bus iterators to walk PCI buses
+  PCI, via-camera: use hotplug-safe iterators to walk PCI buses
+  PCI, iommu: use hotplug-safe iterators to walk PCI buses
+  PCI, eeepc-laptop: use hotplug-safe iterators to walk PCI buses
+  PCI, asus-wmi: use hotplug-safe iterators to walk PCI buses
+  PCI, ARM: use hotplug-safe PCI bus iterators to walk PCI buses
 
-1) Function is only in GPIO mode.
-In uart node, GPIO is function 1.
-pinctrl-0 = <&uart1_pmx_func>;
-uart1_pmx_func: uart1_pmx_func {
-     pinctrl-single,pins = <0x104 0x1>;
-};
+ arch/alpha/kernel/pci.c                 |   2 +-
+ arch/arm/kernel/bios32.c                |  13 +--
+ arch/arm/mach-footbridge/dc21285.c      |  12 ++-
+ arch/frv/mb93090-mb00/pci-frv.c         |   5 +-
+ arch/frv/mb93090-mb00/pci-vdk.c         |   2 +-
+ arch/ia64/hp/common/sba_iommu.c         |   2 +-
+ arch/ia64/sn/kernel/io_common.c         |   2 +-
+ arch/ia64/sn/pci/tioca_provider.c       |   3 +-
+ arch/microblaze/pci/pci-common.c        |   4 +-
+ arch/mn10300/unit-asb2305/pci-asb2305.c |   5 +-
+ arch/powerpc/kernel/pci-common.c        |   4 +-
+ arch/powerpc/kernel/pci_64.c            |  22 ++---
+ arch/sparc/kernel/pci.c                 |   4 +-
+ arch/x86/pci/acpi.c                     |   3 +-
+ arch/x86/pci/common.c                   |   3 +-
+ arch/x86/pci/i386.c                     |   9 +-
+ arch/x86/pci/irq.c                      |   2 +-
+ arch/x86/pci/legacy.c                   |   2 +-
+ drivers/acpi/reboot.c                   |   3 +-
+ drivers/edac/i7core_edac.c              |   2 +-
+ drivers/gpu/drm/drm_fops.c              |   6 +-
+ drivers/iommu/amd_iommu.c               |   4 +-
+ drivers/iommu/dmar.c                    |   6 +-
+ drivers/media/platform/via-camera.c     |  12 ++-
+ drivers/pci/hotplug-pci.c               |   2 +-
+ drivers/pci/hotplug/ibmphp_core.c       |   8 +-
+ drivers/pci/hotplug/ibmphp_ebda.c       |   8 +-
+ drivers/pci/hotplug/sgi_hotplug.c       |   3 +-
+ drivers/pci/hotplug/shpchp_sysfs.c      |   2 +-
+ drivers/pci/iov.c                       |  14 +--
+ drivers/pci/pci-sysfs.c                 |   2 +-
+ drivers/pci/pci.h                       |   1 +
+ drivers/pci/pcie/pme.c                  |   5 +-
+ drivers/pci/probe.c                     |  17 ++--
+ drivers/pci/search.c                    | 159 ++++++++++++++++++++++++++------
+ drivers/pci/setup-bus.c                 |  14 ++-
+ drivers/pci/xen-pcifront.c              |   3 +-
+ drivers/platform/x86/asus-wmi.c         |   9 +-
+ drivers/platform/x86/eeepc-laptop.c     |   5 +-
+ include/linux/pci.h                     |  23 ++++-
+ 40 files changed, 278 insertions(+), 129 deletions(-)
 
-Then you can't switch to SPI interface, unless you want to switch pin state.
+-- 
+1.8.1.2
 
-2) Function is only in UART mode.
-You can hack gpio function in pinctrl-single,gpio-range property. i.e. you
-always set gpio function as UART mode by hack.
-
-But I still don't understand why you need this feature.
-
-> Can the same thing be done for example to mux either SPI or I2C on the
-> same pins?
-
-Are you using the develop board that one pin may be routed to multiple
-functions? And you can choose SPI or I2C by switch.
-
-It means that the sames pin are shared between SPI and I2C driver. Either
-SPI driver gets this pin, or I2C driver gets this pin. Only one driver could
-get the pins even you don't use pinctrl-single driver. It likes GPIO.
-
-SPI & I2C driver are always enabled in your kernel image. So you're enabling
-different devices with different hardware configuration, and you need to
-prepare two DTS files. Your boot loader should find which
-hardware configuration is enabled & loaded the right DTS file.
-So different pinmux settings are written in these two DTS files.
-
->
->> [...]
->
-> Greetings,
->   Christian
->
-> --
->   Christian Ruppert              ,          <christian.ruppert@abilis.com>
->                                 /|
->   Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
->                              _// | bilis Systems   CH-1228 Plan-les-Ouates
