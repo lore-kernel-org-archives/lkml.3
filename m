@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab3EZTLe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 15:11:34 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:51981 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab3EZTLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 15:11:33 -0400
-Date: Sun, 26 May 2013 15:11:24 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: Stupid VFS name lookup interface..
-Message-ID: <20130526191124.GB32729@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Casey Schaufler <casey@schaufler-ca.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Eric Paris <eparis@redhat.com>,
-	James Morris <james.l.morris@oracle.com>
-References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com>
- <CA+55aFw_ic=4OvH0Ys2CUjgotdbfdbuxUsx77RYEYPGrbqzbAA@mail.gmail.com>
- <20130525165710.GC25399@ZenIV.linux.org.uk>
- <51A1040A.80003@schaufler-ca.com>
- <20130526120251.GA32729@thunk.org>
- <51A25305.90101@schaufler-ca.com>
+	id S1754962Ab3EZT3P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 15:29:15 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:64175 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754906Ab3EZT3N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 15:29:13 -0400
+X-IronPort-AV: E=Sophos;i="4.87,746,1363158000"; 
+   d="scan'208";a="27009112"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
+Thread-Index: AQHOWkdMlh/BeZobHUCorW7Ysq7D0Q==
+Date: Sun, 26 May 2013 19:29:11 +0000
+Message-ID: <1369596545.12593.1.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <95DABB31C50AA94A9ABE73D18B3E7F94@hq.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A25305.90101@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 11:23:01AM -0700, Casey Schaufler wrote:
-> I believe that Yama points to a serious change in the way
-> "operating systems" are being developed. The desktop is not
-> the sweet spot for Linux development, nor is the enterprise
-> server. Six years ago the Bell & LaPadula subject/object models
-> still made sense. Today, we're looking at applications, services
-> and resources. We don't have LSMs that support those* natively.
-> We are going to have new LSMs, and soon, if Linux is going to
-> remain relevant.
+Hi Linus,
 
-Oh, I agree, having worked on a TS project involving real-time Linux
-that did not even try to use a Bell-LaPadula security model on the
-Linux system.
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-The challenge is that although the world does seem to be moving
-towards using air gap firewalls and separate single-level systems
-(using trusted message passing routers and/or trusted hypervisors)
-instead of a MLS design, I'm sure there will still be some
-applications where people will want a Bell-LaPadula security model.
-And if we can't rip out that fundamental assumption, it's not obvious
-to me it will be possible to simplify the core LSM architecture.
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
-We also have to consider especially how much sunk costs have been
-invested in systems such as SELinux which can support (but which are
-not limited to) Bell-LaPadula.  If we simplify the LSM architecture,
-but it requires a radical rewrite of systems where massive amounts of
-effort have been poured into make them somewhat easier to use
-(although personally I'm not convinced that a policy file which is
-hundreds of kilobytes qualifies as "easy" to debug or to validate), I
-suspect the people who don't feel like throwing all of that heavy
-investment away will resist such an initiative mightily.  (Not to
-mention that if we break backwards compatibility, we will end up
-breaking userspace for deployed enterprise distro's.)
+are available in the git repository at:
 
-And yet, if we don't rip out some of these assumptions, it's not
-obvious to me how much even Linus's caching idea is going to buy us.
-A generic caching layer still has to include in its hash all of the
-possible inputs that a LSM module might want to use as part of its
-access decision.  If this includes the pathname, then you'll have to
-lock a whole bunch of dentries while you calculate its hash ---
-something that wouldn't be necessary for SELinux, for example.  And
-I'm sure SELinux uses some things when making its access decisions
-which Smack does not need, and so on.  So a generalized caching scheme
-might not result in any any performance wins; it might even be worse
-than what we have today!
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.10-3
 
-So I'm dubious --- but maybe this is something which a Security
-working group could maybe try to hash out at a face-to-face meeting.
-Given our past track record of coming to consensus, I suspect
-face-to-face has a higher chance of working --- who knows, maybe hell
-will freeze over or pigs will end up nesting in trees.  :-)
+for you to fetch changes up to 83c168bf8017212a9d502536f9dcd0b54d24e330:
 
-Cheers,
+  NFS: Fix SETCLIENTID fallback if GSS is not available (2013-05-23 18:50:40 -0400)
 
-					- Ted
+----------------------------------------------------------------
+NFS client bugfixes for 3.10
+
+- Stable fix to prevent an rpc_task wakeup race
+- Fix a NFSv4.1 session drain deadlock
+- Fix a NFSv4/v4.1 mount regression when not running rpc.gssd
+- Ensure auth_gss pipe detection works in namespaces
+- Fix SETCLIENTID fallback if rpcsec_gss is not available
+
+----------------------------------------------------------------
+Andy Adamson (1):
+      NFSv4.1 Fix a pNFS session draining deadlock
+
+Chuck Lever (1):
+      NFS: Fix SETCLIENTID fallback if GSS is not available
+
+Trond Myklebust (4):
+      SUNRPC: Fix a bug in gss_create_upcall
+      SUNRPC: Faster detection if gssd is actually running
+      SUNRPC: Convert auth_gss pipe detection to work in namespaces
+      SUNRPC: Prevent an rpc_task wakeup race
+
+ fs/nfs/callback_proc.c         |  2 +-
+ fs/nfs/callback_xdr.c          |  2 +-
+ fs/nfs/nfs4client.c            |  2 +-
+ fs/nfs/nfs4proc.c              |  2 +-
+ fs/nfs/nfs4session.c           |  4 +--
+ fs/nfs/nfs4session.h           | 13 +++++----
+ fs/nfs/nfs4state.c             | 15 +++++-----
+ net/sunrpc/auth_gss/auth_gss.c | 62 ++++++++++++++++++++++++++++--------------
+ net/sunrpc/netns.h             |  4 +++
+ net/sunrpc/rpc_pipe.c          |  5 ++++
+ net/sunrpc/sched.c             |  8 +++++-
+ 11 files changed, 78 insertions(+), 41 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
