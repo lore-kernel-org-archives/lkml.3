@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3EZP5i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 11:57:38 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:46125 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3EZP52 (ORCPT
+	id S1754348Ab3EZP5u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 11:57:50 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:37250 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab3EZP5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 11:57:28 -0400
+	Sun, 26 May 2013 11:57:46 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -14,10 +14,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3, part2 04/20] PCI, IOV: hold a reference to PCI bus when creating virtual PCI devices
-Date: Sun, 26 May 2013 23:53:01 +0800
-Message-Id: <1369583597-3801-5-git-send-email-jiang.liu@huawei.com>
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v3, part2 07/20] PCI, IA64: use hotplug-safe iterators to walk PCI buses
+Date: Sun, 26 May 2013 23:53:04 +0800
+Message-Id: <1369583597-3801-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
 References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
@@ -25,58 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also use new iterator to walk PCI devices of a PCI bus.
+Enhance IA64 architecture specific code to use hotplug-safe iterators
+to walk PCI buses.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pci/iov.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/ia64/hp/common/sba_iommu.c   | 2 +-
+ arch/ia64/sn/kernel/io_common.c   | 2 +-
+ arch/ia64/sn/pci/tioca_provider.c | 3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 5eb8165..4b796d6 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -36,19 +36,17 @@ static struct pci_bus *virtfn_add_bus(struct pci_bus *bus, int busnr)
- 	struct pci_bus *child;
+diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
+index bcda5b2..6faf241 100644
+--- a/arch/ia64/hp/common/sba_iommu.c
++++ b/arch/ia64/hp/common/sba_iommu.c
+@@ -2156,7 +2156,7 @@ sba_init(void)
+ #ifdef CONFIG_PCI
+ 	{
+ 		struct pci_bus *b = NULL;
+-		while ((b = pci_find_next_bus(b)) != NULL)
++		for_each_pci_root_bus(b)
+ 			sba_connect_bus(b);
+ 	}
+ #endif
+diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
+index 11f2275..87d8d8f 100644
+--- a/arch/ia64/sn/kernel/io_common.c
++++ b/arch/ia64/sn/kernel/io_common.c
+@@ -530,7 +530,7 @@ sn_io_late_init(void)
+ 	 * info from the PROM).
+ 	 */
+ 	bus = NULL;
+-	while ((bus = pci_find_next_bus(bus)) != NULL) {
++	for_each_pci_root_bus(bus) {
+ 		bussoft = SN_PCIBUS_BUSSOFT(bus);
+ 		nasid = NASID_GET(bussoft->bs_base);
+ 		cnode = nasid_to_cnodeid(nasid);
+diff --git a/arch/ia64/sn/pci/tioca_provider.c b/arch/ia64/sn/pci/tioca_provider.c
+index a70b11f..cd8c0fb 100644
+--- a/arch/ia64/sn/pci/tioca_provider.c
++++ b/arch/ia64/sn/pci/tioca_provider.c
+@@ -624,7 +624,7 @@ tioca_bus_fixup(struct pcibus_bussoft *prom_bussoft, struct pci_controller *cont
+ 	    nasid_to_cnodeid(tioca_common->ca_closest_nasid);
+ 	tioca_common->ca_kernel_private = (u64) tioca_kern;
  
- 	if (bus->number == busnr)
--		return bus;
-+		return pci_bus_get(bus);
+-	bus = pci_find_bus(tioca_common->ca_common.bs_persist_segment,
++	bus = pci_get_bus(tioca_common->ca_common.bs_persist_segment,
+ 		tioca_common->ca_common.bs_persist_busnum);
+ 	BUG_ON(!bus);
+ 	tioca_kern->ca_devices = &bus->devices;
+@@ -632,6 +632,7 @@ tioca_bus_fixup(struct pcibus_bussoft *prom_bussoft, struct pci_controller *cont
+ 	/* init GART */
  
--	child = pci_find_bus(pci_domain_nr(bus), busnr);
-+	child = pci_get_bus(pci_domain_nr(bus), busnr);
- 	if (child)
- 		return child;
- 
- 	child = pci_add_new_bus(bus, NULL, busnr);
--	if (!child)
--		return NULL;
--
--	pci_bus_insert_busn_res(child, busnr, busnr);
-+	if (child)
-+		pci_bus_insert_busn_res(child, busnr, busnr);
- 
--	return child;
-+	return pci_bus_get(child);
- }
- 
- static void virtfn_remove_bus(struct pci_bus *physbus, struct pci_bus *virtbus)
-@@ -113,6 +111,7 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 		goto failed2;
- 
- 	kobject_uevent(&virtfn->dev.kobj, KOBJ_CHANGE);
-+	pci_bus_put(bus);
- 
- 	return 0;
- 
-@@ -125,6 +124,7 @@ failed1:
- 	virtfn_remove_bus(dev->bus, bus);
- failed0:
- 	mutex_unlock(&iov->dev->sriov->lock);
-+	pci_bus_put(bus);
- 
- 	return rc;
- }
+ 	if (tioca_gart_init(tioca_kern) < 0) {
++		pci_bus_put(bus);
+ 		kfree(tioca_kern);
+ 		kfree(tioca_common);
+ 		return NULL;
 -- 
 1.8.1.2
 
