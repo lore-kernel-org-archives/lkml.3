@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3EZOcU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:32:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46425 "EHLO mx1.redhat.com"
+	id S1753877Ab3EZOc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:32:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18252 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753726Ab3EZOcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:32:12 -0400
-Date: Sun, 26 May 2013 17:32:13 +0300
+	id S1753217Ab3EZOc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 10:32:27 -0400
+Date: Sun, 26 May 2013 17:32:23 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Arnd Bergmann <arnd@arndb.de>, linux-mm@kvack.org
-Subject: [PATCH v3-resend 10/11] kernel: drop voluntary schedule from
- might_fault
-Message-ID: <1369577426-26721-10-git-send-email-mst@redhat.com>
+Subject: [PATCH v3-resend 11/11] kernel: uaccess in atomic with
+ pagefault_disable
+Message-ID: <1369577426-26721-11-git-send-email-mst@redhat.com>
 References: <1369575487-26176-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,63 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-might_fault is called from functions like copy_to_user
-which most callers expect to be very fast, like
-a couple of instructions.  So functions like memcpy_toiovec call them
-many times in a loop.
-But might_fault calls might_sleep() and with CONFIG_PREEMPT_VOLUNTARY
-this results in a function call.
+This changes might_fault so that it does not
+trigger a false positive diagnostic for e.g. the following
+sequence:
+	spin_lock_irqsave
+	pagefault_disable
+	copy_to_user
+	pagefault_enable
+	spin_unlock_irqrestore
 
-Let's not do this - just call __might_sleep that produces
-a diagnostic for sleep within atomic, but drop
-might_preempt().
+In particular vhost wants to do this, to call
+socket ops from under a lock.
 
-Here's a test sending traffic between the VM and the host,
-host is built with CONFIG_PREEMPT_VOLUNTARY:
-Before:
-	incoming: 7122.77   Mb/s
-	outgoing: 8480.37   Mb/s
-after:
-	incoming: 8619.24   Mb/s
-	outgoing: 9455.42   Mb/s
+There are 3 cases to consider:
+CONFIG_PROVE_LOCKING - might_fault is non-inline
+so it's easy to move the in_atomic test to fix
+up the false positive warning.
 
-As a side effect, this fixes an issue pointed
-out by Ingo: might_fault might schedule differently
-depending on PROVE_LOCKING. Now there's no
-preemption point in both cases, so it's consistent.
+CONFIG_DEBUG_ATOMIC_SLEEP - might_fault
+is currently inline, but we are calling a
+non-inline __might_sleep anyway,
+so let's use the non-line version of might_fault
+that does the right thing.
+
+!CONFIG_DEBUG_ATOMIC_SLEEP && !CONFIG_PROVE_LOCKING
+__might_sleep is a nop so might_fault is a nop.
+Make this explicit.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/kernel.h | 2 +-
- mm/memory.c            | 3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ include/linux/kernel.h |  7 ++-----
+ mm/memory.c            | 11 +++++++----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e96329c..c514c06 100644
+index c514c06..0153be1 100644
 --- a/include/linux/kernel.h
 +++ b/include/linux/kernel.h
-@@ -198,7 +198,7 @@ void might_fault(void);
+@@ -193,13 +193,10 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
+ 
+-#ifdef CONFIG_PROVE_LOCKING
++#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+ void might_fault(void);
  #else
- static inline void might_fault(void)
- {
--	might_sleep();
-+	__might_sleep(__FILE__, __LINE__, 0);
- }
+-static inline void might_fault(void)
+-{
+-	__might_sleep(__FILE__, __LINE__, 0);
+-}
++static inline void might_fault(void) { }
  #endif
  
+ extern struct atomic_notifier_head panic_notifier_list;
 diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..c1f190f 100644
+index c1f190f..d7d54a1 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -4222,7 +4222,8 @@ void might_fault(void)
+@@ -4210,7 +4210,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
+ 	up_read(&mm->mmap_sem);
+ }
+ 
+-#ifdef CONFIG_PROVE_LOCKING
++#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+ void might_fault(void)
+ {
+ 	/*
+@@ -4222,14 +4222,17 @@ void might_fault(void)
  	if (segment_eq(get_fs(), KERNEL_DS))
  		return;
  
--	might_sleep();
-+	__might_sleep(__FILE__, __LINE__, 0);
-+
+-	__might_sleep(__FILE__, __LINE__, 0);
+-
  	/*
  	 * it would be nicer only to annotate paths which are not under
  	 * pagefault_disable, however that requires a larger audit and
+ 	 * providing helpers like get_user_atomic.
+ 	 */
+-	if (!in_atomic() && current->mm)
++	if (in_atomic())
++		return;
++
++	__might_sleep(__FILE__, __LINE__, 0);
++
++	if (current->mm)
+ 		might_lock_read(&current->mm->mmap_sem);
+ }
+ EXPORT_SYMBOL(might_fault);
 -- 
 MST
