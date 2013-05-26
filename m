@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3EZI7N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 04:59:13 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:65535 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab3EZI7J convert rfc822-to-8bit (ORCPT
+	id S1751554Ab3EZI7o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 04:59:44 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59004 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3EZI7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 04:59:09 -0400
-References: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
-Content-Type: text/plain;
-	charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <99E50EC5-59B7-45D5-95A6-0C861C5C8AB3@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (10B329)
-From: ethan <ethan.kernel@gmail.com>
-Subject: Re: Weird disk idling
-Date: Sun, 26 May 2013 16:58:59 +0800
-To: Fredrik Tolf <fredrik@dolda2000.com>
+	Sun, 26 May 2013 04:59:42 -0400
+Date: Sun, 26 May 2013 10:59:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v3 2/6] mm/memory_hotplug: remove
+ memory_add_physaddr_to_nid
+Message-ID: <20130526085938.GD10651@dhcp22.suse.cz>
+References: <1369547921-24264-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1369547921-24264-2-git-send-email-liwanp@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369547921-24264-2-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fred，
-      How do you know the disk is completely idle ? How much cache memory do your controller and disk have ?  Why do you think the requests should trigger action of disk immediately while you don't know what kind of requests are they. They are reading the same offset of the same block ?
+On Sun 26-05-13 13:58:37, Wanpeng Li wrote:
+> memory_add_physaddr_to_nid is not used any more, this patch remove it.
 
-  ... ....
+git grep disagrees.
+git grep "= *\<memory_add_physaddr_to_nid\>" mmotm
+mmotm:drivers/acpi/acpi_memhotplug.c:                   node = memory_add_physaddr_to_nid(info->start_addr);
+mmotm:drivers/acpi/acpi_memhotplug.c:                   nid = memory_add_physaddr_to_nid(info->start_addr);
+mmotm:drivers/base/memory.c:            nid = memory_add_physaddr_to_nid(phys_addr);
+mmotm:drivers/xen/balloon.c:    nid = memory_add_physaddr_to_nid(hotplug_start_paddr);
 
-    Before got the answer, you should ask yourself many questions.
+> 
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  arch/x86/mm/numa.c | 15 ---------------
+>  1 file changed, 15 deletions(-)
+> 
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index a71c4e2..d470a54 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -803,18 +803,3 @@ const struct cpumask *cpumask_of_node(int node)
+>  EXPORT_SYMBOL(cpumask_of_node);
+>  
+>  #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+> -
+> -#ifdef CONFIG_MEMORY_HOTPLUG
+> -int memory_add_physaddr_to_nid(u64 start)
+> -{
+> -	struct numa_meminfo *mi = &numa_meminfo;
+> -	int nid = mi->blk[0].nid;
+> -	int i;
+> -
+> -	for (i = 0; i < mi->nr_blks; i++)
+> -		if (mi->blk[i].start <= start && mi->blk[i].end > start)
+> -			nid = mi->blk[i].nid;
+> -	return nid;
+> -}
+> -EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+> -#endif
+> -- 
+> 1.8.1.2
+> 
 
-
-Ethan 
-
-发自我的 iPad
-
-在 2013-5-26，13:29，Fredrik Tolf <fredrik@dolda2000.com> 写道：
-
-> Dear list,
-> 
-> In order to debug I/O performance, I recently wrote a tiny program for inspecting /sys/block/$DISK/stat. It works by dumping deltas of the values every 100 ms, quite simply (except the queue-length value, for which deltas are clearly useless).
-> 
-> Using this, I often see periods during constant I/O loads where there are lots of requests in the queue, but the disk is completely idle. They usually last somewhere from 0.1 to 2 seconds. Using the aforementioned program, they might look, for instance, like this:
-> 
-> 1369545418.8       0        0        0        0        2        0       16     4888      134      100    13400
-> 1369545418.9       0        0        0        0        0        0        0        0      134      100    13400
-> 1369545419.0       0        0        0        0        0        0        0        0      135      104    13984
-> 1369545419.1       0        0        0        0        0        0        0        0      135      100    13500
-> 1369545419.2       0        0        0        0        0        0        0        0      135      100    13500
-> 1369545419.3       0        0        0        0        0        0        0        0      135      100    13500
-> 1369545419.4       0        0        0        0        0        0        0        0      135      100    13500
-> 1369545419.5       0        0        0        0        0        0        0        0      135      100    13500
-> 1369545419.6       0        0        0        0        0        0        0        0      135      104    14040
-> 1369545419.7       2        0       64      672       58        0     1185   152512       78      100    11296
-> 
-> I'm sure you all know what the various fields are (except the first, which is just a timestamp), so as you can see, there are 135 requests in the queue, but no reads or writes happen, in this case, for at least 800 ms.
-> 
-> Is this behavior normal and expected, or is there something wrong here? In the latter case, is it my hardware that is failing somehow, or can there be some software weirdness that can be tweaked away or bugfixed?
-> 
-> The disk in question is a 640 GB WDC Caviar Green, and it's attached via an old Silicon Image 3114 PCI card. Clearly, the hardware is less than optimal, but can that explain this behavior? (For the record, the disk does at least not report any SMART errors, and there are no errors about in the dmesg.)
-> 
-> The kernel version is 3.7.1, and the scheduler is CFQ.
-> 
-> Thanks for reading!
-> 
-> --
-> 
-> Fredrik Tolf
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Michal Hocko
+SUSE Labs
