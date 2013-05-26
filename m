@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab3EZNDK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 09:03:10 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:44134 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625Ab3EZNDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 09:03:08 -0400
-X-Greylist: delayed 2896 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 May 2013 09:03:08 EDT
-From: Baruch Siach <baruch@tkos.co.il>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Baruch Siach <baruch@tkos.co.il>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: [PATCH 1/2] clocksource: dw_apb: remove unused header
-Date: Sun, 26 May 2013 15:12:46 +0300
-Message-Id: <1369570367-994-1-git-send-email-baruch@tkos.co.il>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752770Ab3EZNEn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 09:04:43 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:48011 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750923Ab3EZNEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 09:04:42 -0400
+Date: Sun, 26 May 2013 15:04:34 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/2] watchdog: mtx1-wdt: use devm_gpio_request_one()
+Message-ID: <20130526130434.GA6094@spo001.leaseweb.com>
+References: <000901ce44bc$38dcfbf0$aa96f3d0$@samsung.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000901ce44bc$38dcfbf0$aa96f3d0$@samsung.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The time.h header seems not to be used by current code. Removing this include
-allows the driver to build on other architecture that do not have this header.
+Hi Jingoo,
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jamie Iles <jamie@jamieiles.com>
-Cc: Dinh Nguyen <dinguyen@altera.com>
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
----
- drivers/clocksource/dw_apb_timer_of.c |    1 -
- 1 file changed, 1 deletion(-)
+> Use devm_gpio_request_one() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/watchdog/mtx-1_wdt.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
 
-diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-index ab09ed3..5a61ebc 100644
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -21,7 +21,6 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- 
--#include <asm/mach/time.h>
- #include <asm/sched_clock.h>
- 
- static void timer_get_base_and_rate(struct device_node *np,
--- 
-1.7.10.4
+Patch added to linux-watchdog-next.
+
+Kind regards,
+Wim.
 
