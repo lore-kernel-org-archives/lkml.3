@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab3EZIHB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 04:07:01 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:32774 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759221Ab3EZIG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 04:06:57 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A1C26E.5000609@asianux.com>
-Date: Sun, 26 May 2013 16:06:06 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751005Ab3EZI0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 04:26:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762Ab3EZIZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 04:25:57 -0400
+Date: Sun, 26 May 2013 10:25:49 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rusty@rustcorp.com.au
+Subject: Re: [PATCH] modules: insert mods sorted
+Message-ID: <20130526082548.GA1815@hawk.usersys.redhat.com>
+References: <1369469386-3215-1-git-send-email-drjones@redhat.com>
 MIME-Version: 1.0
-To: ralf@linux-mips.org, blogic@openwrt.org, david.daney@cavium.com
-CC: linux-mips@linux-mips.org, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch: mips: kernel: using strlcpy() instead of strncpy()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369469386-3215-1-git-send-email-drjones@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 25, 2013 at 10:09:46AM +0200, Andrew Jones wrote:
+> While there isn't a big difference between typing 'lsmod' and
+> 'lsmod | sort', the module listing in Oopses isn't so easily sorted.
+> Attempting to search these quickly by eye for particular modules while
+> rapidly triaging bugs can be a pain. Sort the list and reduce the pain.
+> 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  kernel/module.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/module.c b/kernel/module.c
+> index cab4bce49c23d..7914d8ef2e09c 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -3146,7 +3146,7 @@ static int may_init_module(void)
+>  static int add_unformed_module(struct module *mod)
+>  {
+>  	int err;
+> -	struct module *old;
+> +	struct module *old, *m;
+>  
+>  	mod->state = MODULE_STATE_UNFORMED;
+>  
+> @@ -3166,7 +3166,13 @@ again:
+>  		err = -EEXIST;
+>  		goto out;
+>  	}
+> -	list_add_rcu(&mod->list, &modules);
+> +	if (!list_empty(&modules)) {
+> +		list_for_each_entry(m, &modules, list)
+> +			if (strcmp(mod->name, m->name) < 0)
+> +				break;
+> +		list_add_tail_rcu(&mod->list, &m->list);
+> +	} else
+> +		list_add_rcu(&mod->list, &modules);
+>  	err = 0;
+>  
+>  out:
+> -- 
+> 1.8.1.4
+>
 
-For NUL terminated string, need always be sure of ended by zero.
+self-nacking. Tons of docs and tools exist expecting this
+list in reverse load order. I'll blame the momentary insanity
+the drove me to post this patch on having to triage too many
+bugs...
 
-Or the next pr_info() will cause issue.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/mips/kernel/prom.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 5712bb5..7e95404 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -30,7 +30,7 @@ __init void mips_set_machine_name(const char *name)
- 	if (name == NULL)
- 		return;
- 
--	strncpy(mips_machine_name, name, sizeof(mips_machine_name));
-+	strlcpy(mips_machine_name, name, sizeof(mips_machine_name));
- 	pr_info("MIPS: machine is %s\n", mips_get_machine_name());
- }
- 
--- 
-1.7.7.6
+drew
