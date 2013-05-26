@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3EZVge (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 17:36:34 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:60014 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab3EZVgZ (ORCPT
+	id S1755290Ab3EZVgd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 17:36:33 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:40930 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab3EZVg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 17:36:25 -0400
+	Sun, 26 May 2013 17:36:29 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -15,8 +15,8 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Subject: [PATCH 2/8] posix-cpu-timers: fix acounting delta_exec twice
-Date: Sun, 26 May 2013 17:35:42 -0400
-Message-Id: <1369604149-13016-4-git-send-email-kosaki.motohiro@gmail.com>
+Date: Sun, 26 May 2013 17:35:43 -0400
+Message-Id: <1369604149-13016-5-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
 References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
@@ -30,7 +30,7 @@ Currently glibc rt/tst-cpuclock2 test(*) sporadically fails because
 scheduler delta can be accounted twice from thread_group_cputimer()
 and account_group_exec_runtime().
 
-Finally, clock_nanosleep() wakes up earlier than an argument. This is posix
+Finally, clock_nanosleep() wakes up before an argument. This is posix
 violation. This issue was introduced by commit d670ec1317 (posix-cpu-timers:
 Cure SMP wobbles).
 
