@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab3EZP7I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 11:59:08 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61197 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab3EZP7C (ORCPT
+	id S1754226Ab3EZP5h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 11:57:37 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:62339 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab3EZP5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 11:59:02 -0400
+	Sun, 26 May 2013 11:57:23 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -15,11 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
-Subject: [PATCH v3, part2 15/20] PCI, EDAC: use hotplug-safe PCI bus iterators to walk PCI buses
-Date: Sun, 26 May 2013 23:53:12 +0800
-Message-Id: <1369583597-3801-16-git-send-email-jiang.liu@huawei.com>
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH v3, part2 03/20] PCI, hotplug: use hotplug-safe iterators to walk PCI buses
+Date: Sun, 26 May 2013 23:53:00 +0800
+Message-Id: <1369583597-3801-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
 References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
@@ -27,30 +27,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance EDAC drviers to use hotplug-safe iterators to walk PCI buses.
+Enhance PCI hotplug drivers to use hotplug-safe iterators to walk
+PCI buses.
+
+In other words, replace pci_find_bus(), pci_find_next_bus() and
+pci_root_buses with pci_bus_exists(), pci_get_bus(), pci_get_next_bus()
+and pci_get_next_root_bus() etc.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: linux-edac@vger.kernel.org
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Masanari Iida <standby24x7@gmail.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/edac/i7core_edac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/hotplug-pci.c          | 2 +-
+ drivers/pci/hotplug/ibmphp_core.c  | 8 +++++---
+ drivers/pci/hotplug/ibmphp_ebda.c  | 8 ++++++--
+ drivers/pci/hotplug/sgi_hotplug.c  | 3 ++-
+ drivers/pci/hotplug/shpchp_sysfs.c | 2 +-
+ 5 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 0ec3e95..7146e10 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1296,7 +1296,7 @@ static unsigned i7core_pci_lastbus(void)
- 	int last_bus = 0, bus;
- 	struct pci_bus *b = NULL;
+diff --git a/drivers/pci/hotplug-pci.c b/drivers/pci/hotplug-pci.c
+index 6258dc2..18533ed 100644
+--- a/drivers/pci/hotplug-pci.c
++++ b/drivers/pci/hotplug-pci.c
+@@ -11,7 +11,7 @@ int __ref pci_hp_add_bridge(struct pci_dev *dev)
+ 	int end = parent->busn_res.end;
  
--	while ((b = pci_find_next_bus(b)) != NULL) {
-+	for_each_pci_root_bus(b) {
- 		bus = b->number;
- 		edac_dbg(0, "Found bus %d\n", bus);
- 		if (bus > last_bus)
+ 	for (busnr = start; busnr <= end; busnr++) {
+-		if (!pci_find_bus(pci_domain_nr(parent), busnr))
++		if (!pci_bus_exists(pci_domain_nr(parent), busnr))
+ 			break;
+ 	}
+ 	if (busnr-- > end) {
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index cbd72d8..fb47695 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -739,7 +739,7 @@ static u8 bus_structure_fixup(u8 busno)
+ 	struct pci_dev *dev;
+ 	u16 l;
+ 
+-	if (pci_find_bus(0, busno) || !(ibmphp_find_same_bus_num(busno)))
++	if (pci_bus_exists(0, busno) || !(ibmphp_find_same_bus_num(busno)))
+ 		return 1;
+ 
+ 	bus = kmalloc(sizeof(*bus), GFP_KERNEL);
+@@ -787,7 +787,7 @@ static int ibm_configure_device(struct pci_func *func)
+ 				PCI_DEVFN(func->device, func->function));
+ 
+ 	if (func->dev == NULL) {
+-		struct pci_bus *bus = pci_find_bus(0, func->busno);
++		struct pci_bus *bus = pci_get_bus(0, func->busno);
+ 		if (!bus)
+ 			return 0;
+ 
+@@ -795,6 +795,7 @@ static int ibm_configure_device(struct pci_func *func)
+ 				PCI_DEVFN(func->device, func->function));
+ 		if (num)
+ 			pci_bus_add_devices(bus);
++		pci_bus_put(bus);
+ 
+ 		func->dev = pci_get_bus_and_slot(func->busno,
+ 				PCI_DEVFN(func->device, func->function));
+@@ -1315,13 +1316,14 @@ static int __init ibmphp_init(void)
+ 		goto exit;
+ 	}
+ 
+-	bus = pci_find_bus(0, 0);
++	bus = pci_get_bus(0, 0);
+ 	if (!bus) {
+ 		err("Can't find the root pci bus, can not continue\n");
+ 		rc = -ENODEV;
+ 		goto error;
+ 	}
+ 	memcpy(ibmphp_pci_bus, bus, sizeof(*ibmphp_pci_bus));
++	pci_bus_put(bus);
+ 
+ 	ibmphp_debug = debug;
+ 
+diff --git a/drivers/pci/hotplug/ibmphp_ebda.c b/drivers/pci/hotplug/ibmphp_ebda.c
+index 9df78bc..e17f271 100644
+--- a/drivers/pci/hotplug/ibmphp_ebda.c
++++ b/drivers/pci/hotplug/ibmphp_ebda.c
+@@ -978,9 +978,13 @@ static int __init ebda_rsrc_controller (void)
+ 	}			/* each hpc  */
+ 
+ 	list_for_each_entry(tmp_slot, &ibmphp_slot_head, ibm_slot_list) {
++		struct pci_bus *bus = pci_get_bus(0, tmp_slot->bus);
++
++		BUG_ON(!bus);
+ 		snprintf(name, SLOT_NAME_SIZE, "%s", create_file_name(tmp_slot));
+-		pci_hp_register(tmp_slot->hotplug_slot,
+-			pci_find_bus(0, tmp_slot->bus), tmp_slot->device, name);
++		pci_hp_register(tmp_slot->hotplug_slot, bus, tmp_slot->device,
++				name);
++		pci_bus_put(bus);
+ 	}
+ 
+ 	print_ebda_hpc ();
+diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
+index b2781df..5c69bda 100644
+--- a/drivers/pci/hotplug/sgi_hotplug.c
++++ b/drivers/pci/hotplug/sgi_hotplug.c
+@@ -684,7 +684,7 @@ static int __init sn_pci_hotplug_init(void)
+ 
+ 	INIT_LIST_HEAD(&sn_hp_list);
+ 
+-	while ((pci_bus = pci_find_next_bus(pci_bus))) {
++	for_each_pci_root_bus(pci_bus) {
+ 		if (!pci_bus->sysdata)
+ 			continue;
+ 
+@@ -703,6 +703,7 @@ static int __init sn_pci_hotplug_init(void)
+ 			break;
+ 		}
+ 	}
++	pci_bus_put(pci_bus);
+ 
+ 	return registered == 1 ? 0 : -ENODEV;
+ }
+diff --git a/drivers/pci/hotplug/shpchp_sysfs.c b/drivers/pci/hotplug/shpchp_sysfs.c
+index e8c31fe..e7a5dd2 100644
+--- a/drivers/pci/hotplug/shpchp_sysfs.c
++++ b/drivers/pci/hotplug/shpchp_sysfs.c
+@@ -74,7 +74,7 @@ static ssize_t show_ctrl (struct device *dev, struct device_attribute *attr, cha
+ 	}
+ 	out += sprintf(out, "Free resources: bus numbers\n");
+ 	for (busnr = bus->busn_res.start; busnr <= bus->busn_res.end; busnr++) {
+-		if (!pci_find_bus(pci_domain_nr(bus), busnr))
++		if (!pci_bus_exists(pci_domain_nr(bus), busnr))
+ 			break;
+ 	}
+ 	if (busnr < bus->busn_res.end)
 -- 
 1.8.1.2
 
