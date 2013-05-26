@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab3EZA0w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:26:52 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:38817 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab3EZA0s (ORCPT
+	id S1758743Ab3EZA1B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 20:27:01 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62461 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758474Ab3EZA06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:26:48 -0400
+	Sat, 25 May 2013 20:26:58 -0400
 From: David Ahern <dsahern@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
         peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
         xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 09/16] perf stats: add max and min stats
-Date: Sat, 25 May 2013 18:24:49 -0600
-Message-Id: <1369527896-3650-10-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 13/16] perf kvm: debug for missing vmexit/vmentry event
+Date: Sat, 25 May 2013 18:24:53 -0600
+Message-Id: <1369527896-3650-14-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
 References: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
@@ -23,8 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need an initialization function to set min to -1 to
-differentiate from an actual min of 0.
+Expected to have missing events for each vcpu when perf is
+started. After that should not have missing events.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -36,52 +36,38 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/util/stat.c |    6 ++++++
- tools/perf/util/stat.h |    9 +++++++++
- 2 files changed, 15 insertions(+)
+ tools/perf/builtin-kvm.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 7c59c28..6506b3d 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -10,6 +10,12 @@ void update_stats(struct stats *stats, u64 val)
- 	delta = val - stats->mean;
- 	stats->mean += delta / stats->n;
- 	stats->M2 += delta*(val - stats->mean);
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index c2fede6..76cfe59 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -568,11 +568,22 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
+ 		return true;
+ 
+-	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
++	if (kvm->events_ops->is_begin_event(evsel, sample, &key)) {
++		if (vcpu_record->start_time) {
++			pr_debug("consecutive begin events (%s) for pid %d, vcpu %d\n",
++				 evsel->name, sample->pid, vcpu_record->vcpu_id);
++		}
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
++	}
 +
-+	if (val > stats->max)
-+		stats->max = val;
-+
-+	if (val < stats->min)
-+		stats->min = val;
+ 
+-	if (kvm->events_ops->is_end_event(evsel, sample, &key))
++	if (kvm->events_ops->is_end_event(evsel, sample, &key)) {
++		if (vcpu_record->start_time == 0) {
++			pr_debug("consecutive end events (%s) for pid %d, vcpu %d\n",
++				 evsel->name, sample->pid, vcpu_record->vcpu_id);
++		}
+ 		return handle_end_event(kvm, vcpu_record, &key, sample);
++	}
+ 
+ 	return true;
  }
- 
- double avg_stats(struct stats *stats)
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index 588367c..ae8ccd7 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -6,6 +6,7 @@
- struct stats
- {
- 	double n, mean, M2;
-+	u64 max, min;
- };
- 
- void update_stats(struct stats *stats, u64 val);
-@@ -13,4 +14,12 @@ double avg_stats(struct stats *stats);
- double stddev_stats(struct stats *stats);
- double rel_stddev_stats(double stddev, double avg);
- 
-+static inline void init_stats(struct stats *stats)
-+{
-+	stats->n    = 0.0;
-+	stats->mean = 0.0;
-+	stats->M2   = 0.0;
-+	stats->min  = (u64) -1;
-+	stats->max  = 0;
-+}
- #endif
 -- 
 1.7.10.1
 
