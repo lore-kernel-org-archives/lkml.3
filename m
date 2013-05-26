@@ -1,128 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab3EZJKv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 05:10:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57772 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab3EZJKY (ORCPT
+	id S1751772Ab3EZJSc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 05:18:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50936 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3EZJS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 05:10:24 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 4/4] ipc/sem.c: Rename try_atomic_semop() to perform_atomic_semop(), docu update
-Date: Sun, 26 May 2013 11:08:55 +0200
-Message-Id: <1369559335-13491-5-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
-References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
+	Sun, 26 May 2013 05:18:28 -0400
+Date: Sun, 26 May 2013 11:18:24 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Simon Horman <horms@verge.net.au>, Axel Lin <axel.lin@ingics.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call
+ in tpu_remove()
+Message-ID: <20130526091824.GA12361@avionic-0098.adnet.avionic-design.de>
+References: <1369057541.11578.1.camel@phoenix>
+ <20130523013933.GI22608@verge.net.au>
+ <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
+ <4528298.O99iVSpig9@avalon>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <4528298.O99iVSpig9@avalon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:hecXBTg9G9yP5tTn0pw1b54bmrABMEFHK+1W0q0M0Ne
+ yp9BI4+JVKNa2GgdKMHBnCqQpyx8+Z0/MyXgK128cMG+boSxO2
+ J7dSFGGTdky5rOubFLLv2C6P7n6xmkUpKP9klcpyCu2+wEJf8p
+ QUVTAACOj+ujt3iuz9uArcwoS0DjiVe3Cv2DX/5qmZQ5TyCM6v
+ fMaPIjt+GP9lo9hK68u7Ol3u1zhb0jNKTaxoVdqViv3y7POIcj
+ RYLX73jTRoCX0URThqqe4XQozyntBHSkaS1F7mEhY8Mx6bG583
+ xbaDObEEUq20WryqNw1gOOB4tl9EIRebPywM+crnVkmuV7Nk2o
+ fGvceJqRKHzPM0BXB0gAg/bIUkX5sA0wdgGspuFjDmkFGhVy6u
+ jEUl2awQMJtcDl+dVMchIIQ2aqfzYOPuN59QmCIXmq816MtCYe
+ I1zXE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Final cleanup: Some minor points that I noticed while writing the
-previous 3 patches
 
-1) The name try_atomic_semop() is misleading: The function performs the
-   operation (if it is possible).
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2) Some documentation updates.
+On Sat, May 25, 2013 at 03:42:42PM +0200, Laurent Pinchart wrote:
+> Hi Thierry,
+>=20
+> On Thursday 23 May 2013 21:12:17 Thierry Reding wrote:
+> > On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
+> > > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
+> > > > Hi Axel,
+> > > >=20
+> > > > Thank you for the patch.
+> > > >=20
+> > > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
+> > > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > > >=20
+> > > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > >=20
+> > > Thanks. I have queued this up for v3.11 in the pinmux branch
+> > > of my renesas tree on kernel.org.
+> >=20
+> > I'd rather take this through the PWM tree along with the original driver
+> > patch.
+>=20
+> As I will need to submit a new version of the renesas-tpu patches should =
+I=20
+> fold this patch in ?
 
-No real code change, a rename and documentation changes.
+Yes, that's fine with me. It'd be nice to credit Axel, though.
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+Thierry
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 9ed3853..1dbb2fa 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -153,12 +153,15 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
- #define SEMOPM_FAST	64  /* ~ 372 bytes on stack */
- 
- /*
-- * linked list protection:
-+ * Locking:
-  *	sem_undo.id_next,
-+ *	sem_array.complex_count,
-  *	sem_array.pending{_alter,_cont},
-- *	sem_array.sem_undo: sem_lock() for read/write
-+ *	sem_array.sem_undo: global sem_lock() for read/write
-  *	sem_undo.proc_next: only "current" is allowed to read/write that field.
-  *	
-+ *	sem_array.sem_base[i].pending_{const,alter}:
-+ *		global or semaphore sem_lock() for read/write
-  */
- 
- #define sc_semmsl	sem_ctls[0]
-@@ -535,12 +538,19 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
- 	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params);
- }
- 
--/*
-- * Determine whether a sequence of semaphore operations would succeed
-- * all at once. Return 0 if yes, 1 if need to sleep, else return error code.
-+/** perform_atomic_semop - Perform (if possible) a semaphore operation
-+ * @sma: semaphore array
-+ * @sops: array with operations that should be checked
-+ * @nsems: number of sops
-+ * @un: undo array
-+ * @pid: pid that did the change
-+ *
-+ * Returns 0 if the operation was possible.
-+ * Returns 1 if the operation is impossible, the caller must sleep.
-+ * Negative values are error codes.
-  */
- 
--static int try_atomic_semop (struct sem_array * sma, struct sembuf * sops,
-+static int perform_atomic_semop(struct sem_array *sma, struct sembuf *sops,
- 			     int nsops, struct sem_undo *un, int pid)
- {
- 	int result, sem_op;
-@@ -723,8 +733,8 @@ static int wake_const_ops(struct sem_array *sma, int semnum,
- 		q = container_of(walk, struct sem_queue, list);
- 		walk = walk->next;
- 
--		error = try_atomic_semop(sma, q->sops, q->nsops,
--						q->undo, q->pid);
-+		error = perform_atomic_semop(sma, q->sops, q->nsops,
-+						 q->undo, q->pid);
- 
- 		if (error <= 0) {
- 			/* operation completed, remove from queue & wakeup */
-@@ -835,7 +845,7 @@ again:
- 		if (semnum != -1 && sma->sem_base[semnum].semval == 0)
- 			break;
- 
--		error = try_atomic_semop(sma, q->sops, q->nsops,
-+		error = perform_atomic_semop(sma, q->sops, q->nsops,
- 					 q->undo, q->pid);
- 
- 		/* Does q->sleeper still need to sleep? */
-@@ -1658,7 +1668,6 @@ static int get_queue_result(struct sem_queue *q)
- 	return error;
- }
- 
--
- SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 		unsigned, nsops, const struct timespec __user *, timeout)
- {
-@@ -1756,7 +1765,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	if (un && un->semid == -1)
- 		goto out_unlock_free;
- 
--	error = try_atomic_semop (sma, sops, nsops, un, task_tgid_vnr(current));
-+	error = perform_atomic_semop(sma, sops, nsops, un,
-+					task_tgid_vnr(current));
- 	if (error <= 0) {
- 		if (alter && error == 0)
- 			do_smart_update(sma, sops, nsops, 1, &tasks);
--- 
-1.8.1.4
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRodNgAAoJEN0jrNd/PrOhgx8P/2WRvGi+BykuUiKEaAECnsCn
+DLbHFEJI5EVW1dnvK95YtFrrQTXKvU386toY4G/3DQasOGkF+adrirk3K52WwQnH
+5O3BS7omAMVmXCPp47jrRQR9CL2oDAjzm1GEIoYKQB+PQcESDZjc/R53zxLADltD
+rBnt4+FzNZQ9gRfoBpgd3lEDHGTgBPkUT62SXEvEELQMo8a668pGZ05v2G78PTUf
+Oxduq+JhG5fcbkSHG/3zXQSe6PKQp+2OUVqhoLJd1YS42gRA6UNDeXatml6+Idbe
+wqkOgx5H/YzJ0JwuW540SlSd/6NnRWONPzhpod6Qg2a1q5y7JFHoMiaronstZR+K
+SkYdqo1SL3n2aNCuDeg8Nuc62+AaQp/pdkaaT/W3al/k3dHpQIk7yt0yFoydjzxk
+bijTmHAFcdHcMt1MrwRVa+CbN6Cqknmegd0/zll9scN8Bphs+uIua65wQN/T8+Ua
+mOE723tS2Uw7/P6KAKVhh9USZkhkamm0xZpteRDXIvr37+iTQxtbZ3UeGTuWDgxC
+1qD2K2+GJYFnjtGgIXn4UonR24KH0lMkbDteLFw/tHYZjbFXcp0V0yRA0LVJzonX
+m9S/Sy9Kx2XbgFY6JEmp6ftHAOZVwVBVWJj2wiKBKDJ4mNGM+EGqUYv0Cc805N/U
+aeZExTKADdbqgmTsaDuM
+=3stA
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
