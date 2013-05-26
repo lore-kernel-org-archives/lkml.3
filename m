@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab3EZGQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 02:16:14 -0400
-Received: from moltke.seatribe.se ([178.63.100.209]:51066 "EHLO
-	moltke.seatribe.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104Ab3EZGQN (ORCPT
+	id S1757032Ab3EZGbt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 02:31:49 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:59918 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab3EZGbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 02:16:13 -0400
-X-Greylist: delayed 2818 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 May 2013 02:16:12 EDT
-Date: Sun, 26 May 2013 07:29:08 +0200 (CEST)
-From: Fredrik Tolf <fredrik@dolda2000.com>
-To: linux-kernel@vger.kernel.org
-Subject: Weird disk idling
-Message-ID: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 26 May 2013 02:31:48 -0400
+Message-ID: <51A1AC4A.60506@gmail.com>
+Date: Sun, 26 May 2013 14:31:38 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.7 (nerv.dolda2000.com [IPv6:2002:54d9:e26d:200::1]); Sun, 26 May 2013 07:29:09 +0200 (CEST)
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Simon Horman <horms@verge.net.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: [PATCH v2 0/7] Remove unused /dev/oldmem interface
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear list,
+/dev/oldmem provides the interface for us to access the "old memory" in
+the dump-capture kernel. Unfortunately, no one actually uses this interface.
 
-In order to debug I/O performance, I recently wrote a tiny program for 
-inspecting /sys/block/$DISK/stat. It works by dumping deltas of the values 
-every 100 ms, quite simply (except the queue-length value, for which 
-deltas are clearly useless).
+And this interface could actually cause some real problems if used on ia64
+where the cached/uncached accesses are mixed. See the discussion from
+the link: https://lkml.org/lkml/2013/4/12/386.
 
-Using this, I often see periods during constant I/O loads where there are 
-lots of requests in the queue, but the disk is completely idle. They 
-usually last somewhere from 0.1 to 2 seconds. Using the aforementioned 
-program, they might look, for instance, like this:
+So Eric suggested that we should remove /dev/oldmem as an unused piece of
+code.
 
-1369545418.8       0        0        0        0        2        0       16     4888      134      100    13400
-1369545418.9       0        0        0        0        0        0        0        0      134      100    13400
-1369545419.0       0        0        0        0        0        0        0        0      135      104    13984
-1369545419.1       0        0        0        0        0        0        0        0      135      100    13500
-1369545419.2       0        0        0        0        0        0        0        0      135      100    13500
-1369545419.3       0        0        0        0        0        0        0        0      135      100    13500
-1369545419.4       0        0        0        0        0        0        0        0      135      100    13500
-1369545419.5       0        0        0        0        0        0        0        0      135      100    13500
-1369545419.6       0        0        0        0        0        0        0        0      135      104    14040
-1369545419.7       2        0       64      672       58        0     1185   152512       78      100    11296
+Besides, we used a global variable saved_max_pfn to let the capture kernel
+know the amount of memory that the previous kernel used. And for almost all
+architectures (except x86. In x86, saved_max_pfn is used by detect_calgary()),
+the only user of this variable is the read_oldmem interface of /dev/oldmem, so
+also remove the setting for saved_max_pfn in those architectures.
 
-I'm sure you all know what the various fields are (except the first, which 
-is just a timestamp), so as you can see, there are 135 requests in the 
-queue, but no reads or writes happen, in this case, for at least 800 ms.
+-v2:
+Keep /dev/oldmem and its number 12 in case this number will get reused in the
+future. And mark it obsolete since /dev/oldmem will be removed from kernel.
 
-Is this behavior normal and expected, or is there something wrong here? In 
-the latter case, is it my hardware that is failing somehow, or can there 
-be some software weirdness that can be tweaked away or bugfixed?
+Zhang Yanfei (7):
+  /dev/oldmem: Remove this interface
+  Documentation/devices.txt: Mark /dev/oldmem obsolete
+  Documentation/kdump/kdump.txt: Remove /dev/oldmem description
+  mips: Remove savemaxmem parameter setup
+  powerpc: Remove savemaxmem parameter setup
+  ia64: Remove setting for saved_max_pfn
+  s390: Remove setting for saved_max_pfn
 
-The disk in question is a 640 GB WDC Caviar Green, and it's attached via 
-an old Silicon Image 3114 PCI card. Clearly, the hardware is less than 
-optimal, but can that explain this behavior? (For the record, the disk 
-does at least not report any SMART errors, and there are no errors about 
-in the dmesg.)
+ Documentation/devices.txt        |    3 +-
+ Documentation/kdump/kdump.txt    |   31 +++++--------------------
+ arch/ia64/kernel/efi.c           |    5 ----
+ arch/mips/kernel/crash_dump.c    |   10 --------
+ arch/powerpc/kernel/crash_dump.c |   10 --------
+ arch/s390/kernel/setup.c         |    4 ---
+ drivers/char/mem.c               |   47 --------------------------------------
+ 7 files changed, 7 insertions(+), 103 deletions(-)
 
-The kernel version is 3.7.1, and the scheduler is CFQ.
-
-Thanks for reading!
-
---
-
-Fredrik Tolf
