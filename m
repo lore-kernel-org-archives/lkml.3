@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab3EZKZJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 06:25:09 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39171 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751985Ab3EZKZG (ORCPT
+	id S1752231Ab3EZK0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 06:26:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61124 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab3EZK0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 06:25:06 -0400
-Message-ID: <51A1E2FF.9020400@hurleysoftware.com>
-Date: Sun, 26 May 2013 06:25:03 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sun, 26 May 2013 06:26:11 -0400
+Date: Sun, 26 May 2013 12:26:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: airlied@linux.ie, linux-tegra@vger.kernel.org, tbergstrom@nvidia.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] drm/tegra: Fix syncpoint increment return code
+Message-ID: <20130526102607.GF1652@mithrandir>
+References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
+ <1368791388-31441-7-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 06/10] ipc: Don't allocate a copy larger than max
-References: <51A0A8B9.4070807@colorfullife.com>
-In-Reply-To: <51A0A8B9.4070807@colorfullife.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UBnjLfzoMQYIXCvq"
+Content-Disposition: inline
+In-Reply-To: <1368791388-31441-7-git-send-email-amerilainen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2013 08:04 AM, Manfred Spraul wrote:
-> Hi Peter,
->
-> You wrote:
->> When MSG_COPY is set, a duplicate message must be allocated for
->> the copy before locking the queue. However, the copy could
->> not be larger than was sent which is limited to msg_ctlmax.
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   ipc/msg.c | 6 ++++--
->>   1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/ipc/msg.c b/ipc/msg.c
->> index 950572f..31cd1bf 100644
->> --- a/ipc/msg.c
->> +++ b/ipc/msg.c
->> @@ -820,15 +820,17 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
->>       struct msg_msg *copy = NULL;
->>       unsigned long copy_number = 0;
->> +    ns = current->nsproxy->ipc_ns;
->> +
->>       if (msqid < 0 || (long) bufsz < 0)
->>           return -EINVAL;
->>       if (msgflg & MSG_COPY) {
->> -        copy = prepare_copy(buf, bufsz, msgflg, &msgtyp, &copy_number);
->> +        copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax),
->> +                    msgflg, &msgtyp, &copy_number);
->
-> What about:
-> - increase msg_ctlmax
-> - send message
-> - reduce msg_ctlmax
->
-> The side effects of the patch are odd:
-> - without MSG_COPY, a message can be read regardsless of the size.
->    The user could check for E2BIG and increase the buffer size until
->    msgrcv succeeds.
 
-The patch does not change the behavior of non-MSG_COPY msg receive.
+--UBnjLfzoMQYIXCvq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> - with MSG_COPY, something else would happen.
->    As far as I can see, it would oops: msg_ctlmax bytes are allocated,
->    then the E2BIG test is against bufsz, and copy_msg() doesn't check
->    the size of the target buffer.
+On Fri, May 17, 2013 at 02:49:48PM +0300, Arto Merilainen wrote:
+> Add syncpoint increment to return a proper return code based on the
+> return value from host1x.
+>=20
+> Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
+> ---
+>  drivers/gpu/host1x/drm/drm.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-I assume you are using 3.9
+Maybe this should be folded into patch 5 because it is related to the
+fact that host1x_syncpt_incr() now returns proper error codes?
 
-Current mainline returns EINVAL.
+Thierry
 
-Regards,
-Peter Hurley
+--UBnjLfzoMQYIXCvq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRoeM/AAoJEN0jrNd/PrOhOcQP/A8bTVbRudqsLjxCuC0fZdpH
+F4ZsvRyOENuLu9uXEzUgcHYlAmZ82r2r9FV5BxUnk9sw/W2wJjije1w8V3oDwlCG
+ufXBGI7/QjilXMaAlQEYcU9HBKRZVRedtDwpRclPy9fh0BsuospINBri2sFKOYqB
+wx827Y+/aIMe161QcKX9ePMFQ2F/m9OFAxpYABA8HUHZH0Hc08yy6//KmFlVAe3u
+M68uK/1A/93gW6TKBH+ad2rSPQ6lamjspKIaIgbeCQtseGG9L0nZ0vaQ7WqDWjMC
+eFEhW4resB3VHvLyhTNMAR6fZlf+npJu3UIT6HOL/KVUtCVmVkp1vlYixwvLO2K0
+PMpLFouVeN/9Ye7UDSl1bYng2I5CamP6iEAmpvIxMIMxEw/MEXGJU5OrAq25PFnN
+6d58VAo1JKWMVSu5hRh1ifwnb9QvxIVaObWYhZI1UF4T2pY4jsJzXKWKqX8QyyaA
+oLrYx6j+vjHGUTvqYhBKFc59rM2huOVRhP4XlGpyHmThTND7Trha4SoX6kK6pOo5
+98mpNT9Xo6fjY8rTkfRRRLTki3EHxK7x68ZeEEfDDXbCP6OybOH1c8OG6ERg4r52
+3+BbTWP+BH5FFFyCf91Ic3Yore34MY6l9a0HfTmSHbuJzXi1VOA9UkZh882cpS2L
+owYt6LXYuayLIcwsw2u2
+=axDN
+-----END PGP SIGNATURE-----
+
+--UBnjLfzoMQYIXCvq--
