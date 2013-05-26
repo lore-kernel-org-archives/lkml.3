@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3EZK0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 06:26:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61124 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab3EZK0L (ORCPT
+	id S1752313Ab3EZK26 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 06:28:58 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:13081 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3EZK2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 06:26:11 -0400
-Date: Sun, 26 May 2013 12:26:08 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arto Merilainen <amerilainen@nvidia.com>
-Cc: airlied@linux.ie, linux-tegra@vger.kernel.org, tbergstrom@nvidia.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] drm/tegra: Fix syncpoint increment return code
-Message-ID: <20130526102607.GF1652@mithrandir>
-References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
- <1368791388-31441-7-git-send-email-amerilainen@nvidia.com>
+	Sun, 26 May 2013 06:28:55 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A1E3B3.4060901@asianux.com>
+Date: Sun, 26 May 2013 18:28:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UBnjLfzoMQYIXCvq"
-Content-Disposition: inline
-In-Reply-To: <1368791388-31441-7-git-send-email-amerilainen@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, vgupta@synopsys.com,
+        Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: arm64: kernel: sprintf(), 'str' needs additional 1
+ byte for failure processing
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---UBnjLfzoMQYIXCvq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When failure occurs at the last looping cycle (when 'i == 0'), it will
+print "bad PC value" instead of "(%08x) ", which needs additional 1
+byte.
 
-On Fri, May 17, 2013 at 02:49:48PM +0300, Arto Merilainen wrote:
-> Add syncpoint increment to return a proper return code based on the
-> return value from host1x.
->=20
-> Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
-> ---
->  drivers/gpu/host1x/drm/drm.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+If not add 1 byte, the str will not be NUL terminated, and the next
+printk() will cause issue.
 
-Maybe this should be folded into patch 5 because it is related to the
-fact that host1x_syncpt_incr() now returns proper error codes?
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/kernel/traps.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thierry
-
---UBnjLfzoMQYIXCvq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRoeM/AAoJEN0jrNd/PrOhOcQP/A8bTVbRudqsLjxCuC0fZdpH
-F4ZsvRyOENuLu9uXEzUgcHYlAmZ82r2r9FV5BxUnk9sw/W2wJjije1w8V3oDwlCG
-ufXBGI7/QjilXMaAlQEYcU9HBKRZVRedtDwpRclPy9fh0BsuospINBri2sFKOYqB
-wx827Y+/aIMe161QcKX9ePMFQ2F/m9OFAxpYABA8HUHZH0Hc08yy6//KmFlVAe3u
-M68uK/1A/93gW6TKBH+ad2rSPQ6lamjspKIaIgbeCQtseGG9L0nZ0vaQ7WqDWjMC
-eFEhW4resB3VHvLyhTNMAR6fZlf+npJu3UIT6HOL/KVUtCVmVkp1vlYixwvLO2K0
-PMpLFouVeN/9Ye7UDSl1bYng2I5CamP6iEAmpvIxMIMxEw/MEXGJU5OrAq25PFnN
-6d58VAo1JKWMVSu5hRh1ifwnb9QvxIVaObWYhZI1UF4T2pY4jsJzXKWKqX8QyyaA
-oLrYx6j+vjHGUTvqYhBKFc59rM2huOVRhP4XlGpyHmThTND7Trha4SoX6kK6pOo5
-98mpNT9Xo6fjY8rTkfRRRLTki3EHxK7x68ZeEEfDDXbCP6OybOH1c8OG6ERg4r52
-3+BbTWP+BH5FFFyCf91Ic3Yore34MY6l9a0HfTmSHbuJzXi1VOA9UkZh882cpS2L
-owYt6LXYuayLIcwsw2u2
-=axDN
------END PGP SIGNATURE-----
-
---UBnjLfzoMQYIXCvq--
+diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
+index 61d7dd2..c2f68d2 100644
+--- a/arch/arm64/kernel/traps.c
++++ b/arch/arm64/kernel/traps.c
+@@ -100,7 +100,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
+ {
+ 	unsigned long addr = instruction_pointer(regs);
+ 	mm_segment_t fs;
+-	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
++	char str[sizeof("00000000 ") * 5 + 2 + 1 + 1], *p = str;
+ 	int i;
+ 
+ 	/*
+-- 
+1.7.7.6
