@@ -1,100 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab3EZJkA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 05:40:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33639 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab3EZJj5 (ORCPT
+	id S1751943Ab3EZKCv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 06:02:51 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:49989 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab3EZKCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 05:39:57 -0400
-Date: Sun, 26 May 2013 11:39:54 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: P??draig Brady <P@draigBrady.com>, linux-kernel@vger.kernel.org,
-        Eric Blake <eblake@redhat.com>
-Subject: Re: RFC: allow empty symlink targets
-Message-ID: <20130526093954.GB7225@amd.pavel.ucw.cz>
-References: <1358427833-3847-1-git-send-email-P@draigBrady.com>
- <50F8252C.2060404@draigBrady.com>
- <519381D8.5080206@draigBrady.com>
- <20130515220335.GV25399@ZenIV.linux.org.uk>
+	Sun, 26 May 2013 06:02:45 -0400
+Date: Sun, 26 May 2013 12:02:41 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: airlied@linux.ie, linux-tegra@vger.kernel.org, tbergstrom@nvidia.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] gpu: host1x: Fixes to host1x firewall
+Message-ID: <20130526100240.GA1652@mithrandir>
+References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
+ <1368791388-31441-2-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
 Content-Disposition: inline
-In-Reply-To: <20130515220335.GV25399@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1368791388-31441-2-git-send-email-amerilainen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-05-15 23:03:35, Al Viro wrote:
-> On Wed, May 15, 2013 at 01:38:48PM +0100, P??draig Brady wrote:
-> > >> In today's Austin Group meeting, I was tasked to open a new bug that
-> > >> would state specifically how the empty symlink is resolved; the intent
-> > >> is to allow both Solaris behavior (current directory) and BSD behavior
-> > >> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel
-> > >> has a bug for rejecting the creation of an empty symlink, but once that
-> > >> bug is fixed, then Linux can choose either Solaris or BSD behavior for
-> > >> how to resolve such a symlink.
-> 
-> Austin Group Is At It Again, Demands at 11...
-> 
-> Would you mind explaining who's "everyone" and why would we possibly
-> want to honour that agreement of yours?  Functionality in question is
-> utterly pointless, seeing that semantics of such symlinks is OS-dependent
-> anyway *and* that blanket refusal to traverse such beasts is a legitimate
-> option.  What's the point in allowing to create them in the first
-> place?
 
-BSD may have created them. Or evil sysadmin (me) might have created
-them with hex editor.
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-AFAICT we seem to have the Solaris behavior (current directory):
+On Fri, May 17, 2013 at 02:49:43PM +0300, Arto Merilainen wrote:
+> From: Terje Bergstrom <tbergstrom@nvidia.com>
+>=20
+> This patch adds several fixes to host1x firewall:
+> - Host1x firewall does not survive if it expects a reloc, but user
+>   space didn't pass any relocs. Also it reset the reloc table for
+>   each gather, whereas they should be reset only per submit. Also
+>   class does not need to be reset for each class - once per submit
+>   is enough.
+> - For INCR opcode the check was not working properly at all.
+> - The firewall verified gather buffers before copying them. This
+>   allowed a malicious application to rewrite the buffer content by
+>   timing the rewrite carefully. This patch makes the buffer
+>   validation occur after copying the buffers.
 
-pavel@amd:/mnt/foo$ ls -al link2/
-total 3
-drwxr-xr-x 2 pavel pavel 1024 May 26 11:34 .
-drwxr-xr-x 4 pavel pavel 1024 May 26 11:29 ..
--rw-r--r-- 1 pavel pavel    5 May 26 11:29 file1
-lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 link1 -> file1
-lrwxrwxrwx 1 pavel pavel   21 May 26 11:34 link2 -> 
-lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 this_will_be_null_link ->
-file1
-pavel@amd:/mnt/foo$ cd link2/
-pavel@amd:/mnt/foo/link2$ ls -al
-total 3
-drwxr-xr-x 2 pavel pavel 1024 May 26 11:34 .
-drwxr-xr-x 4 pavel pavel 1024 May 26 11:29 ..
--rw-r--r-- 1 pavel pavel    5 May 26 11:29 file1
-lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 link1 -> file1
-lrwxrwxrwx 1 pavel pavel   21 May 26 11:34 link2 -> 
-lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 this_will_be_null_link ->
-file1
-pavel@amd:/mnt/foo/link2$ cd link2/
-pavel@amd:/mnt/foo/link2/link2$ ls 
-file1  link1  link2  this_will_be_null_link
-pavel@amd:/mnt/foo/link2/link2$ cd ..
+Can these be split into separate patches, please? It's not only always
+good to split logical changes into separate patches but it also makes
+reviewing a lot more pleasant. It's hard to tell from this combined
+patch which changes belong together.
 
-They are _not_ detected as broken during runtime (ext2 fs is not marked as
-containing errors) but fsck seems to handle them correctly.
+I have a few additional comments inline.
 
-pavel@amd:~/misc$ /sbin/fsck.ext2 -f delme2.fs 
-e2fsck 1.41.12 (17-May-2010)
-Pass 1: Checking inodes, blocks, and sizes
-Pass 2: Checking directory structure
-Symlink /foo/link2 (inode #7717) is invalid.
-Clear<y>? yes
+> diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+> index f665d67..4f3c004 100644
+> --- a/drivers/gpu/host1x/job.c
+> +++ b/drivers/gpu/host1x/job.c
+> @@ -228,17 +228,15 @@ static unsigned int do_relocs(struct host1x_job *jo=
+b, struct host1x_bo *cmdbuf)
+>  	void *cmdbuf_page_addr =3D NULL;
+> =20
+>  	/* pin & patch the relocs for one gather */
+> -	while (i < job->num_relocs) {
+> +	for (i =3D 0; i < job->num_relocs; ++i) {
 
-Pass 3: Checking directory connectivity
-Pass 4: Checking reference counts
-Pass 5: Checking group summary information
+Nit: I prefer post-increment where possible. For consistency.
 
-delme2.fs: ***** FILE SYSTEM WAS MODIFIED *****
-delme2.fs: 15/25064 files (0.0% non-contiguous), 4724/100000 blocks
-pavel@amd:~/misc$ 
+> @@ -268,15 +263,15 @@ static unsigned int do_relocs(struct host1x_job *jo=
+b, struct host1x_bo *cmdbuf)
+>  	return 0;
+>  }
+> =20
+> -static int check_reloc(struct host1x_reloc *reloc, struct host1x_bo *cmd=
+buf,
+> -		       unsigned int offset)
+> +static bool check_reloc(struct host1x_reloc *reloc, struct host1x_bo *cm=
+dbuf,
+> +			unsigned int offset)
+>  {
+>  	offset *=3D sizeof(u32);
+> =20
+> -	if (reloc->cmdbuf !=3D cmdbuf || reloc->cmdbuf_offset !=3D offset)
+> -		return -EINVAL;
+> +	if (!reloc || reloc->cmdbuf !=3D cmdbuf || reloc->cmdbuf_offset !=3D of=
+fset)
 
-I was looking for nice kernel crash but alas, nothing :-).
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Is the additional !reloc check really necessary? Looking at the callers,
+they always pass in fw->relocarray, which in turn is only NULL if no
+buffers are to be relocated.
+
+> +		return true;
+> =20
+> -	return 0;
+> +	return false;
+>  }
+
+I wonder whether we should be changing the logic here and have the
+check_reloc() function return true if the relocation is good. I find
+that to be more intuitive.
+
+> @@ -376,69 +371,58 @@ static int check_nonincr(struct host1x_firewall *fw)
+>  	return 0;
+>  }
+> =20
+> -static int validate(struct host1x_job *job, struct device *dev,
+> -		    struct host1x_job_gather *g)
+> +static int validate_gather(struct host1x_firewall *fw,
+> +			   struct host1x_job_gather *g)
+
+I don't think we necessarily need to rename the function. However since
+you modify each line that the rename touches anyway it's okay.
+
+> @@ -508,6 +502,7 @@ int host1x_job_pin(struct host1x_job *job, struct dev=
+ice *dev)
+>  	int err;
+>  	unsigned int i, j;
+>  	struct host1x *host =3D dev_get_drvdata(dev->parent);
+> +
+>  	DECLARE_BITMAP(waitchk_mask, host1x_syncpt_nb_pts(host));
+
+This is an unnecessary whitespace change.
+
+Thierry
+
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRod2/AAoJEN0jrNd/PrOh7CQP/jjAjChtNnGFQykWms4o0laW
+k4yUTZvC5BxGERohx57ssx+bA7pQVTcX9r+YMGi6D+MfocP0yp0BMI5rw8KnymPI
+ub5V6WoikyRrgLnwhZUKpDpe+qNSqgsyVFiYV4d2quvtBjMcf48d/p4rd6qD0TpS
+kcRgn5U0wN+2N7Rgi7+c78tOgHyjMTE3ai7FwhVuJubkpsTUAb/FCQToSJO2FnLo
+b572mKuBZHDWRY3C6/ZKwF+52GgSOeFGAOpowVC59wCDO9c3/n/MM1CI23i5jWRr
+GptGVvHHTbu9/nJAd4B+batdCZsC9jHVFvQZW8ssL6nrp593dQTmYMs8OCvo5LfQ
+cH3ga+n6Pe0aSp2L+D4+rL9juVq5UAzPVlq1pgusDaJTVHbi23OjXLV0lUXDX8MP
+avhrga05xUD0QTOEaCqoGzTcuBJvmRtTCaH7wg2+OqrgM2p+3sZJ32ZU/XxrNHSg
+WoznBwAs2mkdqBP1QN21cy6bXdCkQaLKSXS9W4/fRk96ziMk61XYuCTJTiRCQpJc
+ptWtIVLFz9+eMQTci4M7eD7oA5ctdq5BeHyz57/LqnXHDQS+yDh0L3UD/YXEEulv
+7/GHpV8bCtuSbazxsR5KSqLLFihiMnoqFxEVLVkGUyhb50aoPWJs4etaPdJHYaDr
+ixG4R+PHRjHi22+r+MYc
+=vwd0
+-----END PGP SIGNATURE-----
+
+--17pEHd4RhPHOinZp--
