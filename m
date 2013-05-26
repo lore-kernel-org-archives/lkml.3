@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759064Ab3EZDs2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 23:48:28 -0400
-Received: from correo.capufe.gob.mx ([200.94.22.17]:13284 "EHLO
-	correo2.capufe.gob.mx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759006Ab3EZDs1 convert rfc822-to-8bit (ORCPT
+	id S1751075Ab3EZEEu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 00:04:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43361 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3EZEEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 23:48:27 -0400
-X-Greylist: delayed 6056 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 May 2013 23:48:27 EDT
-Message-ID: <468829.1369532764076.SLOX.WebMail.wwwrun@correo2.capufe.gob.mx>
-Date: Sat, 25 May 2013 20:46:04 -0500 (CDT)
-From: Miriam Sanchez Lopez <msanchez@capufe.gob.mx>
-Reply-To: mrs.shufangcong@yahoo.com.hk
-To: i@i.net
-Subject: ACTIAVE SU WEBMAIL AHORA
+	Sun, 26 May 2013 00:04:47 -0400
+Date: Sat, 25 May 2013 21:04:41 -0700 (PDT)
+Message-Id: <20130525.210441.818472895703230779.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: buytenh@wantstofly.org, jason@lakedaemon.net, andrew@lunn.ch,
+        benh@kernel.crashing.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address
+ workaround on DT ethernet
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3 (normal)
-X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
-X-Operating-System: Linux 2.4.21-295-smp i386 (JVM 1.3.1_13)
-Organization: CAPUFE
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Se trata de que le avise de revalidar su buzón como lo ha superado el
-límite de almacenamiento que las establecidas por el administrador, y
-usted no podrá recibir nuevos correos hasta que vuelva a validar.
- 
-Haga clic aquí para revalidar: http://correoupdated.webs.com/
- 
-Webmail System Administrator
-Enviar Help Desk
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Date: Wed, 22 May 2013 22:04:01 +0200
 
+> +			memcpy((void *)p->value, reg, 6);
+
+This cast is completely unnecessary, non-void to void pointer casts
+are automatic.
+
+If it is necessary, because p->value is const, then you are trying
+to change something behind the OF layer's back and need to use
+the appropriate interface to change the property contents.
