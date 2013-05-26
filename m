@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab3EZA0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:26:44 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37958 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758474Ab3EZA0k (ORCPT
+	id S1758441Ab3EZA0w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 20:26:52 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:38817 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab3EZA0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:26:40 -0400
+	Sat, 25 May 2013 20:26:48 -0400
 From: David Ahern <dsahern@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
         peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
         xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 06/16] perf kvm: handle realloc failures
-Date: Sat, 25 May 2013 18:24:46 -0600
-Message-Id: <1369527896-3650-7-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 09/16] perf stats: add max and min stats
+Date: Sat, 25 May 2013 18:24:49 -0600
+Message-Id: <1369527896-3650-10-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
 References: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
@@ -23,7 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save previous pointer and free on failure.
+Need an initialization function to set min to -1 to
+differentiate from an actual min of 0.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -35,33 +36,52 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/stat.c |    6 ++++++
+ tools/perf/util/stat.h |    9 +++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 533501e..24b78ae 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -328,6 +328,7 @@ static int kvm_events_hash_fn(u64 key)
- static bool kvm_event_expand(struct kvm_event *event, int vcpu_id)
+diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+index 7c59c28..6506b3d 100644
+--- a/tools/perf/util/stat.c
++++ b/tools/perf/util/stat.c
+@@ -10,6 +10,12 @@ void update_stats(struct stats *stats, u64 val)
+ 	delta = val - stats->mean;
+ 	stats->mean += delta / stats->n;
+ 	stats->M2 += delta*(val - stats->mean);
++
++	if (val > stats->max)
++		stats->max = val;
++
++	if (val < stats->min)
++		stats->min = val;
+ }
+ 
+ double avg_stats(struct stats *stats)
+diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+index 588367c..ae8ccd7 100644
+--- a/tools/perf/util/stat.h
++++ b/tools/perf/util/stat.h
+@@ -6,6 +6,7 @@
+ struct stats
  {
- 	int old_max_vcpu = event->max_vcpu;
-+	void *prev;
+ 	double n, mean, M2;
++	u64 max, min;
+ };
  
- 	if (vcpu_id < event->max_vcpu)
- 		return true;
-@@ -335,9 +336,11 @@ static bool kvm_event_expand(struct kvm_event *event, int vcpu_id)
- 	while (event->max_vcpu <= vcpu_id)
- 		event->max_vcpu += DEFAULT_VCPU_NUM;
+ void update_stats(struct stats *stats, u64 val);
+@@ -13,4 +14,12 @@ double avg_stats(struct stats *stats);
+ double stddev_stats(struct stats *stats);
+ double rel_stddev_stats(double stddev, double avg);
  
-+	prev = event->vcpu;
- 	event->vcpu = realloc(event->vcpu,
- 			      event->max_vcpu * sizeof(*event->vcpu));
- 	if (!event->vcpu) {
-+		free(prev);
- 		pr_err("Not enough memory\n");
- 		return false;
- 	}
++static inline void init_stats(struct stats *stats)
++{
++	stats->n    = 0.0;
++	stats->mean = 0.0;
++	stats->M2   = 0.0;
++	stats->min  = (u64) -1;
++	stats->max  = 0;
++}
+ #endif
 -- 
 1.7.10.1
 
