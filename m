@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3EZOjA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:39:00 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:48064 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753217Ab3EZOi7 (ORCPT
+	id S1753978Ab3EZOrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:47:10 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:54559 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab3EZOrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:38:59 -0400
-Date: Sun, 26 May 2013 16:38:56 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Kevin Strasser <kevin.strasser@linux.intel.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-watchdog@vger.kernel.org, Darren Hart <dvhart@linux.intel.com>,
-        Michael Brunner <mibru@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 4/4] watchdog: Kontron PLD watchdog timer
-Message-ID: <20130526143856.GC7603@spo001.leaseweb.com>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com> <1365441321-21952-4-git-send-email-kevin.strasser@linux.intel.com> <20130410164717.GA19533@roeck-us.net> <20130410165733.GA2769@wrk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410165733.GA2769@wrk>
-User-Agent: Mutt/1.4.1i
+	Sun, 26 May 2013 10:47:08 -0400
+Message-ID: <51A22068.6000605@cogentembedded.com>
+Date: Sun, 26 May 2013 18:47:04 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/9] media: davinci: vpif_capture: move the freeing
+ of irq and global variables to remove()
+References: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com> <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hello.
 
-> On Wed, Apr 10, 2013 at 09:47:17AM -0700, Guenter Roeck wrote:
-> > On Mon, Apr 08, 2013 at 10:15:21AM -0700, Kevin Strasser wrote:
-> > > From: Michael Brunner <michael.brunner@kontron.com>
-> > > 
-> > > Add watchdog timer support for the on-board PLD found on some Kontron
-> > > embedded modules.
-> > > 
-> > > Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-> > > Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> > 
-> > Personally I would prefer two separate patches for the two drivers,
-> > and to have the drivers converted to the watchdog infrastructure.
-> > Wim's call, of course.
-> > 
-> Thanks for the feedback. I'm happy to do both if Wim thinks it's
-> necessary.
+On 26-05-2013 16:00, Prabhakar Lad wrote:
 
-Yes, 2 patches with conversion to the new watchdog infrastructure please.
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Kind regards,
-Wim.
+> Ideally the freeing of irq's and the global variables needs to be
+> done in the remove() rather than module_exit(), this patch moves
+> the freeing up of irq's and freeing the memory allocated to channel
+> objects to remove() callback of struct platform_driver.
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   drivers/media/platform/davinci/vpif_capture.c |   31 ++++++++++--------------
+>   1 files changed, 13 insertions(+), 18 deletions(-)
+
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+> index caaf4fe..f8b7304 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -2225,17 +2225,29 @@ vpif_int_err:
+>    */
+>   static int vpif_remove(struct platform_device *device)
+>   {
+> -	int i;
+> +	struct platform_device *pdev;
+>   	struct channel_obj *ch;
+> +	struct resource *res;
+> +	int irq_num, i = 0;
+> +
+> +	pdev = container_of(vpif_dev, struct platform_device, dev);
+
+    Why you need this if you should be already called with the correct 
+platform device?
+
+WBR, Sergei
 
