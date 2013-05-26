@@ -1,158 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab3EZVfe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 17:35:34 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55253 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab3EZVfd (ORCPT
+	id S1755282Ab3EZVgD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 17:36:03 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:43150 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab3EZVgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 17:35:33 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 26 May 2013 23:35:13 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: How to get driver_data of struct ieee1394_device_id in kernel
- driver module?
-Message-ID: <20130526233513.1a95d0d5@stein>
-In-Reply-To: <51A20AEE.7060201@sakamocchi.jp>
-References: <51A20AEE.7060201@sakamocchi.jp>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 26 May 2013 17:36:00 -0400
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH v5 0/8] posix timers fixlet
+Date: Sun, 26 May 2013 17:35:39 -0400
+Message-Id: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding LKML and Greg KH, in case that there are general opinions about
-how a bus_type should work.)
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-On May 26 Takashi Sakamoto wrote:
-> Hi all,
-> 
-> I'm a newbile for Linux Firewire subsystem and not used to IEEE 1394 bus
-> programing in Linux.
-> So I happy to get your advices.
-> 
-> Currently I'm working for some drivers of ALSA in kernel land.
-> Then some devices to which the same module applies need to handle its
-> own operations.
-> To implement these operations, I think it good to utilize driver_data of
-> struct ieee1394_evice_id entry.
-> 
-> This is example.
-> For entry:
-> https://github.com/takaswie/snd-firewire-improve/blob/f509e4587c3f7b18eda70d07b616ef01be3546ef/bebob/bebob.c#L462
-> For usage:
-> https://github.com/takaswie/snd-firewire-improve/blob/f509e4587c3f7b18eda70d07b616ef01be3546ef/bebob/bebob.c#L362
-> 
-> (In this case, I use the cast between (kernel_ulong_t) and (struct
-> snd_bebob_ops *) but I have no confidence that this is better...)
-> 
-> Anyway, this module need to know the id for the current device in
-> device_id table but I have no idea to get the id. Do you know good way
-> to get it in module's probing process?
-> 
-> 
-> Regards
-> 
-> Takashi Sakamoto
+Glibc's posix timer testcase found a lot of bugs in posix timer code.
+This series, hopefully, fixes all of them. All patches are independent 
+each other logically.
 
-I think your approach is sensible.  There is of course just the little
-problem that firewire-core keeps the matching device_id table entry as a
-secret to itself.  Therefore, struct ieee1394_device_id.driver_data is
-currently totally useless.
+Changes from v4
+ - [1/8] comments colarification, fix account_group_{user_system}_time too.
+ - [8/8] added CPUCLOCK_VIRT and CPUCLOCK_PROF timer initialization fix
 
-How about we make it available like in the following patch?
-
-Besides being useful to your presently out-of-tree work, the in-tree
-sound/firewire/speakers.c::fwspk_detect() could be rewritten to use this
-approach.  Maybe I will post an expanded version of this patch which
-incorporates such a first in-tree usage.
-
--------- 8< --------
-
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] firewire: pass matching ieee1394_device_id to drivers via struct fw_unit
-
-FireWire audio unit drivers will need to apply various model-specific
-operations.  The struct ieee1394_device_id.driver_data member can be
-used to store respective flags or function pointer tables.
-
-But until now drivers had no way to know which driver->id_table index
-was matched with an fw_unit instance.  Other bus subsystems like pci or
-usb pass this information via an own driver probe method, whereas the
-firewire subsystem uses the stock struct device_driver.probe().
-
-We could introduce a struct fw_driver.probe() which works similarly to
-struct pci_driver.probe() or struct usb_driver.probe().  But it seems
-simpler to just add a new member to struct fw_unit which caches the
-matching ieee1394_device_id, so this is what is done here.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/core-device.c |    7 +++++--
- include/linux/firewire.h       |    5 +++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -169,6 +169,7 @@ static bool is_fw_unit(struct device *de
- 
- static int fw_unit_match(struct device *dev, struct device_driver *drv)
- {
-+	struct fw_unit *unit = fw_unit(dev);
- 	const struct ieee1394_device_id *id_table =
- 			container_of(drv, struct fw_driver, driver)->id_table;
- 	int id[] = {0, 0, 0, 0};
-@@ -177,11 +178,13 @@ static int fw_unit_match(struct device *
- 	if (!is_fw_unit(dev))
- 		return 0;
- 
--	get_modalias_ids(fw_unit(dev), id);
-+	get_modalias_ids(unit, id);
- 
- 	for (; id_table->match_flags != 0; id_table++)
--		if (match_ids(id_table, id))
-+		if (match_ids(id_table, id)) {
-+			unit->device_id = id_table;
- 			return 1;
-+		}
- 
- 	return 0;
- }
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -216,12 +216,15 @@ static inline int fw_device_is_shutdown(
- 
- int fw_device_enable_phys_dma(struct fw_device *device);
- 
-+struct ieee1394_device_id;
-+
- /*
-  * fw_unit.directory must not be accessed after device_del(&fw_unit.device).
-  */
- struct fw_unit {
- 	struct device device;
- 	const u32 *directory;
-+	const struct ieee1394_device_id *device_id;
- 	struct fw_attribute_group attribute_group;
- };
- 
-@@ -247,8 +250,6 @@ static inline struct fw_device *fw_paren
- 	return fw_device(unit->device.parent);
- }
- 
--struct ieee1394_device_id;
--
- struct fw_driver {
- 	struct device_driver driver;
- 	/* Called when the parent device sits through a bus reset. */
+Changes from v3
+ - task_sched_runtime() micro optimization add to care tsk->on_cpu.
+   suggested Paul Turner.
+ - fixed several typo in changelogs.
 
 
--- 
-Stefan Richter
--=====-===-= -=-= ==-=-
-http://arcgraph.de/sr/
+KOSAKI Motohiro (8):
+  posix-cpu-timers: don't account cpu timer after stopped thread
+    runtime accounting
+  posix-cpu-timers: fix acounting delta_exec twice
+  posix-cpu-timers: fix wrong timer initialization
+  posix-cpu-timers: timer functions should use timer time instead of
+    clock time
+  posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
+  sched: task_sched_runtime introduce micro optimization
+  posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
+  posix-cpu-timers: fix cputimer initialization mistake for {u,s}time
+
+ fs/binfmt_elf.c             |    2 +-
+ fs/binfmt_elf_fdpic.c       |    2 +-
+ include/linux/kernel_stat.h |    5 --
+ include/linux/sched.h       |    5 +-
+ kernel/posix-cpu-timers.c   |  163 ++++++++++++++++++++++++++-----------------
+ kernel/sched/core.c         |   34 +++++----
+ kernel/sched/cputime.c      |   17 ++++-
+ kernel/sched/stats.h        |   33 ++++++++-
+ 8 files changed, 167 insertions(+), 94 deletions(-)
+
