@@ -1,91 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3EZOPY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:15:24 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:59807 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab3EZOPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:15:23 -0400
-Message-ID: <51A218F7.7050804@cogentembedded.com>
-Date: Sun, 26 May 2013 18:15:19 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1753240Ab3EZOVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:21:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752923Ab3EZOVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 10:21:50 -0400
+Date: Sun, 26 May 2013 17:21:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: [PATCH v3-resend 00/11] uaccess: better might_sleep/might_fault
+ behavior
+Message-ID: <1369575487-26176-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v2 2/5] media: davinci: vpif: Convert to devm_* api
-References: <1369499796-18762-1-git-send-email-prabhakar.csengg@gmail.com> <1369499796-18762-3-git-send-email-prabhakar.csengg@gmail.com> <1492638.E2728sugZv@avalon>
-In-Reply-To: <1492638.E2728sugZv@avalon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
+X-Mutt-Fcc: =sent
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+I seem to have mis-sent v3.  Trying again with same patches after
+fixing the message id for the cover letter. I hope the duplicates
+that are thus created don't inconvenience people too much.
+If they do, I apologize.
+I have pared down the Cc list to reduce the noise.
+sched maintainers are Cc'd on all patches since that's
+the tree I aim for with these patches.
 
-On 26-05-2013 4:49, Laurent Pinchart wrote:
+This improves the might_fault annotations used
+by uaccess routines:
 
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+1. The only reason uaccess routines might sleep
+   is if they fault. Make this explicit for
+   all architectures.
+2. a voluntary preempt point in uaccess functions
+   means compiler can't inline them efficiently,
+   this breaks assumptions that they are very
+   fast and small that e.g. net code seems to make.
+   remove this preempt point so behaviour
+   matches what callers assume.
+3. Accesses (e.g through socket ops) to kernel memory
+   with KERNEL_DS like net/sunrpc does will never sleep.
+   Remove an unconditinal might_sleep in the inline
+   might_fault in kernel.h
+   (used when PROVE_LOCKING is not set).
+4. Accesses with pagefault_disable return EFAULT
+   but won't cause caller to sleep.
+   Check for that and avoid might_sleep when
+   PROVE_LOCKING is set.
 
->> Use devm_ioremap_resource instead of reques_mem_region()/ioremap().
->> This ensures more consistent error values and simplifies error paths.
+I'd like these changes to go in for 3.11:
+besides a general benefit of improved
+consistency and performance, I would also like them
+for the vhost driver where we want to call socket ops
+under a spinlock, and fall back on slower thread handler
+on error.
 
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>   drivers/media/platform/davinci/vpif.c |   27 ++++-----------------------
->>   1 files changed, 4 insertions(+), 23 deletions(-)
+If the changes look good, would sched maintainers
+please consider merging them through sched/core because of the
+interaction with the scheduler?
 
->> diff --git a/drivers/media/platform/davinci/vpif.c
->> b/drivers/media/platform/davinci/vpif.c index 761c825..164c1b7 100644
->> --- a/drivers/media/platform/davinci/vpif.c
->> +++ b/drivers/media/platform/davinci/vpif.c
-[...]
->> @@ -421,23 +419,12 @@ EXPORT_SYMBOL(vpif_channel_getfid);
->>
->>   static int vpif_probe(struct platform_device *pdev)
->>   {
->> -	int status = 0;
->> +	static struct resource	*res;
->>
->>   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -	if (!res)
->> -		return -ENOENT;
->> -
->> -	res_len = resource_size(res);
->> -
->> -	res = request_mem_region(res->start, res_len, res->name);
->> -	if (!res)
->> -		return -EBUSY;
->> -
->> -	vpif_base = ioremap(res->start, res_len);
->> -	if (!vpif_base) {
->> -		status = -EBUSY;
->> -		goto fail;
->> -	}
->> +	vpif_base = devm_ioremap_resource(&pdev->dev, res);
->> +	if (IS_ERR(vpif_base))
->> +		return PTR_ERR(vpif_base);
+Please review, and consider for 3.11.
 
-> You're loosing the request_mem_region().
+Note on arch code updates:
+I tested x86_64 code.
+Other architectures were build-tested.
+I don't have cross-build environment for arm64, tile, microblaze and
+mn10300 architectures. arm64 and tile got acks.
+The arch changes look generally safe enough
+but would appreciate review/acks from arch maintainers.
+core changes naturally need acks from sched maintainers.
 
-    He's not losing anything, first look at how devm_ioremp_resource() 
-is defined.
+Version 1 of this change was titled
+	x86: uaccess s/might_sleep/might_fault/
 
-> You should use devm_request_and_ioremap()
+Changes from v2:
+	add a patch removing a colunatry preempt point
+	in uaccess functions when PREEMPT_VOLUNATRY is set.
+		Addresses comments by Arnd Bergmann,
+		and Peter Zijlstra.
+	comment on future possible simplifications in the git log
+		for the powerpc patch. Addresses a comment
+		by Arnd Bergmann.
+	
+Changes from v1:
+	add more architectures
+	fix might_fault() scheduling differently depending
+	on CONFIG_PROVE_LOCKING, as suggested by Ingo
 
-     Already deprecated by now.
+Michael S. Tsirkin (11):
+  asm-generic: uaccess s/might_sleep/might_fault/
+  arm64: uaccess s/might_sleep/might_fault/
+  frv: uaccess s/might_sleep/might_fault/
+  m32r: uaccess s/might_sleep/might_fault/
+  microblaze: uaccess s/might_sleep/might_fault/
+  mn10300: uaccess s/might_sleep/might_fault/
+  powerpc: uaccess s/might_sleep/might_fault/
+  tile: uaccess s/might_sleep/might_fault/
+  x86: uaccess s/might_sleep/might_fault/
+  kernel: drop voluntary schedule from might_fault
+  kernel: uaccess in atomic with pagefault_disable
 
-> function instead of devm_ioremap_resource(). With
-> that change,
+ arch/arm64/include/asm/uaccess.h      |  4 ++--
+ arch/frv/include/asm/uaccess.h        |  4 ++--
+ arch/m32r/include/asm/uaccess.h       | 12 ++++++------
+ arch/microblaze/include/asm/uaccess.h |  6 +++---
+ arch/mn10300/include/asm/uaccess.h    |  4 ++--
+ arch/powerpc/include/asm/uaccess.h    | 16 ++++++++--------
+ arch/tile/include/asm/uaccess.h       |  2 +-
+ arch/x86/include/asm/uaccess_64.h     |  2 +-
+ include/asm-generic/uaccess.h         | 10 +++++-----
+ include/linux/kernel.h                |  7 ++-----
+ mm/memory.c                           | 10 +++++++---
+ 11 files changed, 39 insertions(+), 38 deletions(-)
 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-WBR, Sergei
-
+-- 
+MST
