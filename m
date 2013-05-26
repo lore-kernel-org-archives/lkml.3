@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab3EZOaE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:30:04 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46167 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3EZOaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:30:03 -0400
-Message-ID: <51A21C63.4010606@gmail.com>
-Date: Sun, 26 May 2013 22:29:55 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1753496Ab3EZOao (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:30:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753041Ab3EZOam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 10:30:42 -0400
+Date: Sun, 26 May 2013 17:30:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Subject: [PATCH v3-resend 01/11] asm-generic: uaccess
+ s/might_sleep/might_fault/
+Message-ID: <1369577426-26721-1-git-send-email-mst@redhat.com>
+References: <1369575487-26176-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2 1/4] mm/memory-hotplug: fix lowmem count overflow when
- offline pages
-References: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com> <51A16268.4000401@gmail.com>
-In-Reply-To: <51A16268.4000401@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369575487-26176-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2013 09:16 AM, KOSAKI Motohiro wrote:
->> ---
->>  mm/page_alloc.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 98cbdf6..23b921f 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
->>  		list_del(&page->lru);
->>  		rmv_page_order(page);
->>  		zone->free_area[order].nr_free--;
->> +		if (PageHighMem(page))
->> +			totalhigh_pages -= 1 << order;
->>  		for (i = 0; i < (1 << order); i++)
->>  			SetPageReserved((page+i));
->>  		pfn += (1 << order);
-> 
-> memory hotplug don't support 32bit since it was born, at least, when the system has highmem. 
-> Why can't we disable memory hotremove when 32bit at compile time?
-Hi KOSAKI,
-	Could you please help to give more information on the background
-about why 32bit platforms with highmem can't support memory hot-removal?
-We are trying to enable memory hot-removal on some 32bit platforms with
-highmem, really appreciate your help here!
-Thanks!
-Gerry
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/asm-generic/uaccess.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
+index c184aa8..dc1269c 100644
+--- a/include/asm-generic/uaccess.h
++++ b/include/asm-generic/uaccess.h
+@@ -163,7 +163,7 @@ static inline __must_check long __copy_to_user(void __user *to,
+ 
+ #define put_user(x, ptr)					\
+ ({								\
+-	might_sleep();						\
++	might_fault();						\
+ 	access_ok(VERIFY_WRITE, ptr, sizeof(*ptr)) ?		\
+ 		__put_user(x, ptr) :				\
+ 		-EFAULT;					\
+@@ -225,7 +225,7 @@ extern int __put_user_bad(void) __attribute__((noreturn));
+ 
+ #define get_user(x, ptr)					\
+ ({								\
+-	might_sleep();						\
++	might_fault();						\
+ 	access_ok(VERIFY_READ, ptr, sizeof(*ptr)) ?		\
+ 		__get_user(x, ptr) :				\
+ 		-EFAULT;					\
+@@ -255,7 +255,7 @@ extern int __get_user_bad(void) __attribute__((noreturn));
+ static inline long copy_from_user(void *to,
+ 		const void __user * from, unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (access_ok(VERIFY_READ, from, n))
+ 		return __copy_from_user(to, from, n);
+ 	else
+@@ -265,7 +265,7 @@ static inline long copy_from_user(void *to,
+ static inline long copy_to_user(void __user *to,
+ 		const void *from, unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (access_ok(VERIFY_WRITE, to, n))
+ 		return __copy_to_user(to, from, n);
+ 	else
+@@ -336,7 +336,7 @@ __clear_user(void __user *to, unsigned long n)
+ static inline __must_check unsigned long
+ clear_user(void __user *to, unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (!access_ok(VERIFY_WRITE, to, n))
+ 		return n;
+ 
+-- 
+MST
