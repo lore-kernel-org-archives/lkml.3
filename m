@@ -1,107 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab3EZBLq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 21:11:46 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:47674 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758476Ab3EZBLm (ORCPT
+	id S1758796Ab3EZBO0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 21:14:26 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59292 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758476Ab3EZBOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 21:11:42 -0400
+	Sat, 25 May 2013 21:14:24 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/5] media: davinci: vpif_capture: Convert to devm_* api
+Date: Sun, 26 May 2013 03:14:21 +0200
+Message-ID: <1395615.ytVps5UbEx@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369499796-18762-5-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369499796-18762-1-git-send-email-prabhakar.csengg@gmail.com> <1369499796-18762-5-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk> <20130523104154.GA23650@twins.programming.kicks-ass.net>
- <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
- <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
- <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
- <20130524140114.GK23650@twins.programming.kicks-ass.net> <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sat, 25 May 2013 21:11:21 -0400
-Message-ID: <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-rdma@vger.kernel.org,
-        Or Gerlitz <or.gerlitz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 11:40 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Fri, 24 May 2013, Peter Zijlstra wrote:
->
->> Patch bc3e53f682 ("mm: distinguish between mlocked and pinned pages")
->> broke RLIMIT_MEMLOCK.
->
-> Nope the patch fixed a problem with double accounting.
->
-> The problem that we seem to have is to define what mlocked and pinned mean
-> and how this relates to RLIMIT_MEMLOCK.
->
-> mlocked pages are pages that are movable (not pinned!!!) and that are
-> marked in some way by user space actions as mlocked (POSIX semantics).
-> They are marked with a special page flag (PG_mlocked).
->
-> Pinned pages are pages that have an elevated refcount because the hardware
-> needs to use these pages for I/O. The elevated refcount may be temporary
-> (then we dont care about this) or for a longer time (such as the memory
-> registration of the IB subsystem). That is when we account the memory as
-> pinned. The elevated refcount stops page migration and other things from
-> trying to move that memory.
->
-> Pages can be both pinned and mlocked. Before my patch some pages those two
-> issues were conflated since the same counter was used and therefore these
->
-pages were counted twice. If an RDMA application was running using
-> mlockall() and was performing large scale I/O then the counters could show
-> extraordinary large numbers and the VM would start to behave erratically.
->
-> It is important for the VM to know which pages cannot be evicted but that
-> involves many more pages due to dirty pages etc etc.
->
-> So far the assumption has been that RLIMIT_MEMLOCK is a limit on the pages
-> that userspace has mlocked.
->
-> You want the counter to mean something different it seems. What is it?
->
-> I think we need to be first clear on what we want to accomplish and what
-> these counters actually should count before changing things.
+Hi Prabhakar,
 
-Hm.
-If pinned and mlocked are totally difference intentionally, why IB uses
-RLIMIT_MEMLOCK. Why don't IB uses IB specific limit and why only IB raise up
-number of pinned pages and other gup users don't.
-I can't guess IB folk's intent.
+Thank you for the patch.
 
-And now ever IB code has duplicated RLIMIT_MEMLOCK
-check and at least __ipath_get_user_pages() forget to check
-capable(CAP_IPC_LOCK).
-That's bad.
+On Saturday 25 May 2013 22:06:35 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> use devm_request_irq() instead of request_irq().
+> This ensures more consistent error values and simplifies error paths.
+> 
+> use module_platform_driver to simplify the code.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
+There's two separate changes in this patch, could you split it in two if you 
+resubmit the series ? It would then be good to work on removing the vpif_obj 
+and vpif_dev global variables.
 
-> Certainly would appreciate improvements in this area but resurrecting the
-> conflation between mlocked and pinned pages is not the way to go.
->
->> This patch proposes to properly fix the problem by introducing
->> VM_PINNED. This also provides the groundwork for a possible mpin()
->> syscall or MADV_PIN -- although these are not included.
->
-> Maybe add a new PIN page flag? Pages are not pinned per vma as the patch
-> seems to assume.
+Same comment for patch 5/5.
 
-Generically, you are right. But if VM_PINNED is really only for IB,
-this is acceptable
-limitation. They can split vma for their own purpose.
+> ---
+>  drivers/media/platform/davinci/vpif_capture.c |   73 ++++------------------
+>  1 files changed, 13 insertions(+), 60 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c
+> b/drivers/media/platform/davinci/vpif_capture.c index caaf4fe..f37adf1
+> 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -2082,14 +2082,13 @@ static __init int vpif_probe(struct platform_device
+> *pdev)
+> 
+>  	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
+>  		for (i = res->start; i <= res->end; i++) {
+> -			if (request_irq(i, vpif_channel_isr, IRQF_SHARED,
+> -					"VPIF_Capture", (void *)
+> -					(&vpif_obj.dev[res_idx]->channel_id))) {
+> -				err = -EBUSY;
+> -				for (j = 0; j < i; j++)
+> -					free_irq(j, (void *)
+> -					(&vpif_obj.dev[res_idx]->channel_id));
+> -				goto vpif_int_err;
+> +			err = devm_request_irq(&pdev->dev, i, vpif_channel_isr,
+> +					     IRQF_SHARED, "VPIF_Capture",
+> +					     (void *)(&vpif_obj.dev[res_idx]->
+> +					     channel_id));
+> +			if (err) {
+> +				err = -EINVAL;
+> +				goto vpif_unregister;
+>  			}
+>  		}
+>  		res_idx++;
+> @@ -2106,7 +2105,7 @@ static __init int vpif_probe(struct platform_device
+> *pdev) video_device_release(ch->video_dev);
+>  			}
+>  			err = -ENOMEM;
+> -			goto vpif_int_err;
+> +			goto vpif_unregister;
+>  		}
+> 
+>  		/* Initialize field of video device */
+> @@ -2207,13 +2206,8 @@ vpif_sd_error:
+>  		/* Note: does nothing if ch->video_dev == NULL */
+>  		video_device_release(ch->video_dev);
+>  	}
+> -vpif_int_err:
+> +vpif_unregister:
+>  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+> -	for (i = 0; i < res_idx; i++) {
+> -		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+> -		for (j = res->start; j <= res->end; j++)
+> -			free_irq(j, (void *)(&vpif_obj.dev[i]->channel_id));
+> -	}
+>  	return err;
+>  }
+> 
+> @@ -2229,14 +2223,16 @@ static int vpif_remove(struct platform_device
+> *device) struct channel_obj *ch;
+> 
+>  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+> -
+> +	kfree(vpif_obj.sd);
+>  	/* un-register device */
+>  	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+>  		/* Get the pointer to the channel object */
+>  		ch = vpif_obj.dev[i];
+>  		/* Unregister video device */
+>  		video_unregister_device(ch->video_dev);
+> +		kfree(vpif_obj.dev[i]);
+>  	}
+> +
+>  	return 0;
+>  }
+> 
+> @@ -2326,47 +2322,4 @@ static __refdata struct platform_driver vpif_driver =
+> { .remove = vpif_remove,
+>  };
+> 
+> -/**
+> - * vpif_init: initialize the vpif driver
+> - *
+> - * This function registers device and driver to the kernel, requests irq
+> - * handler and allocates memory
+> - * for channel objects
+> - */
+> -static __init int vpif_init(void)
+> -{
+> -	return platform_driver_register(&vpif_driver);
+> -}
+> -
+> -/**
+> - * vpif_cleanup : This function clean up the vpif capture resources
+> - *
+> - * This will un-registers device and driver to the kernel, frees
+> - * requested irq handler and de-allocates memory allocated for channel
+> - * objects.
+> - */
+> -static void vpif_cleanup(void)
+> -{
+> -	struct platform_device *pdev;
+> -	struct resource *res;
+> -	int irq_num;
+> -	int i = 0;
+> -
+> -	pdev = container_of(vpif_dev, struct platform_device, dev);
+> -	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+> -		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+> -			free_irq(irq_num,
+> -				 (void *)(&vpif_obj.dev[i]->channel_id));
+> -		i++;
+> -	}
+> -
+> -	platform_driver_unregister(&vpif_driver);
+> -
+> -	kfree(vpif_obj.sd);
+> -	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++)
+> -		kfree(vpif_obj.dev[i]);
+> -}
+> -
+> -/* Function for module initialization and cleanup */
+> -module_init(vpif_init);
+> -module_exit(vpif_cleanup);
+> +module_platform_driver(vpif_driver);
+-- 
+Regards,
 
-Anyway, I agree we should clearly understand the semantics of IB pinning and
-the userland usage and assumption.
+Laurent Pinchart
+
