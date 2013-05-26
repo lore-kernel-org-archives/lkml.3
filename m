@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab3EZVgD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 17:36:03 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:43150 "EHLO
+	id S1755297Ab3EZVgP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 17:36:15 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:44346 "EHLO
 	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab3EZVgA (ORCPT
+	with ESMTP id S1755224Ab3EZVgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 17:36:00 -0400
+	Sun, 26 May 2013 17:36:10 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -14,49 +14,103 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH v5 0/8] posix timers fixlet
-Date: Sun, 26 May 2013 17:35:39 -0400
-Message-Id: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+Subject: [PATCH 1/8] posix-cpu-timers: don't account cpu timer after stopped thread runtime accounting
+Date: Sun, 26 May 2013 17:35:41 -0400
+Message-Id: <1369604149-13016-3-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Glibc's posix timer testcase found a lot of bugs in posix timer code.
-This series, hopefully, fixes all of them. All patches are independent 
-each other logically.
+When tsk->signal->cputimer->running is 1, signal->cputimer (i.e. per process
+timer account) and tsk->sum_sched_runtime (i.e. per thread timer account)
+increase at the same pace because update_curr() increases both accounting.
 
-Changes from v4
- - [1/8] comments colarification, fix account_group_{user_system}_time too.
- - [8/8] added CPUCLOCK_VIRT and CPUCLOCK_PROF timer initialization fix
+However, there is one exception. When thread exiting, __exit_signal() turns
+over task's sum_shced_runtime to sig->sum_sched_runtime, but it doesn't stop
+signal->cputimer accounting.
 
-Changes from v3
- - task_sched_runtime() micro optimization add to care tsk->on_cpu.
-   suggested Paul Turner.
- - fixed several typo in changelogs.
+This inconsistency makes POSIX timer wake up too early. This patch fixes it.
 
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ kernel/sched/stats.h |   33 ++++++++++++++++++++++++++++++---
+ 1 files changed, 30 insertions(+), 3 deletions(-)
 
-KOSAKI Motohiro (8):
-  posix-cpu-timers: don't account cpu timer after stopped thread
-    runtime accounting
-  posix-cpu-timers: fix acounting delta_exec twice
-  posix-cpu-timers: fix wrong timer initialization
-  posix-cpu-timers: timer functions should use timer time instead of
-    clock time
-  posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
-  sched: task_sched_runtime introduce micro optimization
-  posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
-  posix-cpu-timers: fix cputimer initialization mistake for {u,s}time
-
- fs/binfmt_elf.c             |    2 +-
- fs/binfmt_elf_fdpic.c       |    2 +-
- include/linux/kernel_stat.h |    5 --
- include/linux/sched.h       |    5 +-
- kernel/posix-cpu-timers.c   |  163 ++++++++++++++++++++++++++-----------------
- kernel/sched/core.c         |   34 +++++----
- kernel/sched/cputime.c      |   17 ++++-
- kernel/sched/stats.h        |   33 ++++++++-
- 8 files changed, 167 insertions(+), 94 deletions(-)
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 2ef90a5..8a0567f 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -162,6 +162,33 @@ sched_info_switch(struct task_struct *prev, struct task_struct *next)
+  */
+ 
+ /**
++ * cputimer_running - return true if cputimer is running
++ *
++ * @tsk:	Pointer to target task.
++ */
++static inline bool cputimer_running(struct task_struct *tsk)
++
++{
++	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
++
++	if (!cputimer->running)
++		return false;
++
++	/*
++	 * After turning over se.sum_exec_runtime's time accounting to
++	 * sig->sum_sched_runtime in __exit_signal(), a per-thread cputime
++	 * of the thread is going to be lost. We must not account exec_runtime
++	 * here too because we need to keep consistent cputime between
++	 * per-thread and per-process. Otherwise, the inconsistency is
++	 * observable when single thread program run.
++	 */
++	if (unlikely(!tsk->sighand))
++		return false;
++
++	return true;
++}
++
++/**
+  * account_group_user_time - Maintain utime for a thread group.
+  *
+  * @tsk:	Pointer to task structure.
+@@ -176,7 +203,7 @@ static inline void account_group_user_time(struct task_struct *tsk,
+ {
+ 	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
+ 
+-	if (!cputimer->running)
++	if (!cputimer_running(tsk))
+ 		return;
+ 
+ 	raw_spin_lock(&cputimer->lock);
+@@ -199,7 +226,7 @@ static inline void account_group_system_time(struct task_struct *tsk,
+ {
+ 	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
+ 
+-	if (!cputimer->running)
++	if (!cputimer_running(tsk))
+ 		return;
+ 
+ 	raw_spin_lock(&cputimer->lock);
+@@ -222,7 +249,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
+ {
+ 	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
+ 
+-	if (!cputimer->running)
++	if (!cputimer_running(tsk))
+ 		return;
+ 
+ 	raw_spin_lock(&cputimer->lock);
+-- 
+1.7.1
 
