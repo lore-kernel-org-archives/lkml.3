@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3EZJfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 05:35:10 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:47427 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab3EZJfI (ORCPT
+	id S1751879Ab3EZJkA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 05:40:00 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33639 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3EZJj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 05:35:08 -0400
-Date: Sun, 26 May 2013 11:35:03 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Message-ID: <20130526093503.GH17847@lukather>
-References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
- <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
- <51969EA9.1060602@free-electrons.com>
- <5197B82F.8010809@schinagl.nl>
- <519FE0AE.2010102@schinagl.nl>
- <20130525122208.GD17847@lukather>
- <51A1103F.6000702@schinagl.nl>
+	Sun, 26 May 2013 05:39:57 -0400
+Date: Sun, 26 May 2013 11:39:54 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: P??draig Brady <P@draigBrady.com>, linux-kernel@vger.kernel.org,
+        Eric Blake <eblake@redhat.com>
+Subject: Re: RFC: allow empty symlink targets
+Message-ID: <20130526093954.GB7225@amd.pavel.ucw.cz>
+References: <1358427833-3847-1-git-send-email-P@draigBrady.com>
+ <50F8252C.2060404@draigBrady.com>
+ <519381D8.5080206@draigBrady.com>
+ <20130515220335.GV25399@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51A1103F.6000702@schinagl.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130515220335.GV25399@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 09:25:51PM +0200, Oliver Schinagl wrote:
-> On 05/25/13 14:22, Maxime Ripard wrote:
-> >What about:
-> >
-> >val = ioread32be(base + (key / 4));
-> >val >>= (key % 4) * 8;
-> >return val & 0xff;
-> >
-> >No lookup table, no weird swich statement, and you get the endianness
-> >conversion only when you need it.
-> Ok I think I like the Endianess, ioread32be does the right thing
-> then? I'll read up on that.
-> As for key / 4; how will that work without the lut?
+On Wed 2013-05-15 23:03:35, Al Viro wrote:
+> On Wed, May 15, 2013 at 01:38:48PM +0100, P??draig Brady wrote:
+> > >> In today's Austin Group meeting, I was tasked to open a new bug that
+> > >> would state specifically how the empty symlink is resolved; the intent
+> > >> is to allow both Solaris behavior (current directory) and BSD behavior
+> > >> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel
+> > >> has a bug for rejecting the creation of an empty symlink, but once that
+> > >> bug is fixed, then Linux can choose either Solaris or BSD behavior for
+> > >> how to resolve such a symlink.
 > 
-> Lets take byte 14 (out of the available 16). Byte 14 (0x0e) is
-> located in SID_KEY3, so base + 0x0c. We need to write a whole 32bit
-> word to keep with alignment, the registers go wakko if you do
-> unaligned reads. So we need to read the entire 32 bits, then find
-> our byte.
+> Austin Group Is At It Again, Demands at 11...
 > 
-> key / 4 for 14 yields 0x03. So we have base + 0x03, which is not
-> what we want. We want base + 0x0c, which is either ((key >> 2) <<
-> 2)) Or, ((key / 4) * 4)) which to me, are both equally confusing.
+> Would you mind explaining who's "everyone" and why would we possibly
+> want to honour that agreement of yours?  Functionality in question is
+> utterly pointless, seeing that semantics of such symlinks is OS-dependent
+> anyway *and* that blanket refusal to traverse such beasts is a legitimate
+> option.  What's the point in allowing to create them in the first
+> place?
 
-The statement you make that 3 isn't the index you want depends on your
-pointer type so it might be what you want, or might not.
+BSD may have created them. Or evil sysadmin (me) might have created
+them with hex editor.
 
-If it's still not what you want, you can always use round_down(key, 4).
+AFAICT we seem to have the Solaris behavior (current directory):
 
-> So we either use the look up table, which is a little cleaner and is a
-> bit more future proof if either a) there's more 'eeprom like'
-> storage which can be combined herein or b) 'a' next version has
-> non-continuing regions. Granted neither is something to worry about
-> right now.
+pavel@amd:/mnt/foo$ ls -al link2/
+total 3
+drwxr-xr-x 2 pavel pavel 1024 May 26 11:34 .
+drwxr-xr-x 4 pavel pavel 1024 May 26 11:29 ..
+-rw-r--r-- 1 pavel pavel    5 May 26 11:29 file1
+lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 link1 -> file1
+lrwxrwxrwx 1 pavel pavel   21 May 26 11:34 link2 -> 
+lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 this_will_be_null_link ->
+file1
+pavel@amd:/mnt/foo$ cd link2/
+pavel@amd:/mnt/foo/link2$ ls -al
+total 3
+drwxr-xr-x 2 pavel pavel 1024 May 26 11:34 .
+drwxr-xr-x 4 pavel pavel 1024 May 26 11:29 ..
+-rw-r--r-- 1 pavel pavel    5 May 26 11:29 file1
+lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 link1 -> file1
+lrwxrwxrwx 1 pavel pavel   21 May 26 11:34 link2 -> 
+lrwxrwxrwx 1 pavel pavel    5 May 26 11:29 this_will_be_null_link ->
+file1
+pavel@amd:/mnt/foo/link2$ cd link2/
+pavel@amd:/mnt/foo/link2/link2$ ls 
+file1  link1  link2  this_will_be_null_link
+pavel@amd:/mnt/foo/link2/link2$ cd ..
 
-I don't see how it's cleaner (you have three indirections to get
-the value that is actually used) or future proof (you have to extend
-this lookup table every time you have a slightly larger size).
+They are _not_ detected as broken during runtime (ext2 fs is not marked as
+containing errors) but fsck seems to handle them correctly.
 
-So I'm sorry but this lookup table holding only the index times 4 is
-a non-sense, could we please stop arguing about this?
+pavel@amd:~/misc$ /sbin/fsck.ext2 -f delme2.fs 
+e2fsck 1.41.12 (17-May-2010)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Symlink /foo/link2 (inode #7717) is invalid.
+Clear<y>? yes
 
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+
+delme2.fs: ***** FILE SYSTEM WAS MODIFIED *****
+delme2.fs: 15/25064 files (0.0% non-contiguous), 4724/100000 blocks
+pavel@amd:~/misc$ 
+
+I was looking for nice kernel crash but alas, nothing :-).
+									Pavel
 -- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
