@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3EZT3P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 15:29:15 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:64175 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754906Ab3EZT3N convert rfc822-to-8bit (ORCPT
+	id S1754980Ab3EZTcq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 15:32:46 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:33275 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834Ab3EZTcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 15:29:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,746,1363158000"; 
-   d="scan'208";a="27009112"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
-Thread-Index: AQHOWkdMlh/BeZobHUCorW7Ysq7D0Q==
-Date: Sun, 26 May 2013 19:29:11 +0000
-Message-ID: <1369596545.12593.1.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <95DABB31C50AA94A9ABE73D18B3E7F94@hq.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Sun, 26 May 2013 15:32:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130526191124.GB32729@thunk.org>
+References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com>
+	<CA+55aFw_ic=4OvH0Ys2CUjgotdbfdbuxUsx77RYEYPGrbqzbAA@mail.gmail.com>
+	<20130525165710.GC25399@ZenIV.linux.org.uk>
+	<51A1040A.80003@schaufler-ca.com>
+	<20130526120251.GA32729@thunk.org>
+	<51A25305.90101@schaufler-ca.com>
+	<20130526191124.GB32729@thunk.org>
+Date: Sun, 26 May 2013 12:32:44 -0700
+X-Google-Sender-Auth: BreCp1eUdSoMimMCBssX_aTwKxI
+Message-ID: <CA+55aFxueg-wBRdUw=S=TOAnHy3BorGYMzffiDkjU90BCTzcig@mail.gmail.com>
+Subject: Re: Stupid VFS name lookup interface..
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Casey Schaufler <casey@schaufler-ca.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, May 26, 2013 at 12:11 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+>
+> And if we can't rip out that fundamental assumption, it's not obvious
+> to me it will be possible to simplify the core LSM architecture.
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+One thing that may be sufficient is to maintain a complex model as a
+*possible* case, but make sure that we handle the simple cases well.
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+For example, a "security cache" *might* be as simple as a single bit
+saying "this inode has no special file permissions outside the normal
+UNIX ones".
 
-are available in the git repository at:
+For example, the biggest win in the whole POSIX ACL cache was not
+actually caching POSIX ACL's at all - even though it does that - but
+caching the fact that a particular file did *not* have any POSIX ACL's
+associated with it. So the POSIX AXL cache was very much designed to
+have separate states for "I don't have a cache entry" and "I have an
+empty cache entry". And 99% of the time, that negative cache is
+sufficient.
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.10-3
+Similarly, for at least the filesystem security case, if we had a "the
+owner of this file can do all the normal operations on it" bit, that
+would generally take care of 99% of all home directory operations. If,
+in addition to that, there's some way to mark other "normal"
+directories as having only normal UNIX security semantics (ie /home
+and /usr), that would take care of most of the rest.
 
-for you to fetch changes up to 83c168bf8017212a9d502536f9dcd0b54d24e330:
+Having to call into the security layer when you cross some special
+boundary is fine. It's doing it for every single path component, and
+every single 'stat' of a regular file - *THAT* is what kills us.
 
-  NFS: Fix SETCLIENTID fallback if GSS is not available (2013-05-23 18:50:40 -0400)
+So complexity could be ok. As long as the common case isn't complex,
+and as long as there's a simple way to check that. We don't
+necessarily need to simplify things in the general case.
 
-----------------------------------------------------------------
-NFS client bugfixes for 3.10
-
-- Stable fix to prevent an rpc_task wakeup race
-- Fix a NFSv4.1 session drain deadlock
-- Fix a NFSv4/v4.1 mount regression when not running rpc.gssd
-- Ensure auth_gss pipe detection works in namespaces
-- Fix SETCLIENTID fallback if rpcsec_gss is not available
-
-----------------------------------------------------------------
-Andy Adamson (1):
-      NFSv4.1 Fix a pNFS session draining deadlock
-
-Chuck Lever (1):
-      NFS: Fix SETCLIENTID fallback if GSS is not available
-
-Trond Myklebust (4):
-      SUNRPC: Fix a bug in gss_create_upcall
-      SUNRPC: Faster detection if gssd is actually running
-      SUNRPC: Convert auth_gss pipe detection to work in namespaces
-      SUNRPC: Prevent an rpc_task wakeup race
-
- fs/nfs/callback_proc.c         |  2 +-
- fs/nfs/callback_xdr.c          |  2 +-
- fs/nfs/nfs4client.c            |  2 +-
- fs/nfs/nfs4proc.c              |  2 +-
- fs/nfs/nfs4session.c           |  4 +--
- fs/nfs/nfs4session.h           | 13 +++++----
- fs/nfs/nfs4state.c             | 15 +++++-----
- net/sunrpc/auth_gss/auth_gss.c | 62 ++++++++++++++++++++++++++++--------------
- net/sunrpc/netns.h             |  4 +++
- net/sunrpc/rpc_pipe.c          |  5 ++++
- net/sunrpc/sched.c             |  8 +++++-
- 11 files changed, 78 insertions(+), 41 deletions(-)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+             Linus
