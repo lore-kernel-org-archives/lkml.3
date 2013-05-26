@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab3EZJJW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 05:09:22 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43255 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3EZJJR (ORCPT
+	id S1751678Ab3EZJKT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 05:10:19 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:62027 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab3EZJKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 05:09:17 -0400
+	Sun, 26 May 2013 05:10:17 -0400
 From: Manfred Spraul <manfred@colorfullife.com>
 To: Rik van Riel <riel@redhat.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,41 +14,97 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 0/4] ipc/sem.c: Bug fixes, regression fixes, v3
-Date: Sun, 26 May 2013 11:08:51 +0200
-Message-Id: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
+Subject: [PATCH 1/4] ipc/sem.c: Fix missing wakeups in do_smart_update_queue()
+Date: Sun, 26 May 2013 11:08:52 +0200
+Message-Id: <1369559335-13491-2-git-send-email-manfred@colorfullife.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
+References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've split my patch into 4 parts:
-- 1: Fix-missing-wakeups-in-do_smart_update
-- 2: seperate-wait-for-zero-and-alter-tasks
-- 3: Always-use-only-one-queue-for-alter-operations
-- 4: Rename-try_atomic_semop-to-perform_atomic
+do_smart_update_queue() is called when an operation
+(semop, semctl(SETVAL), semctl(SETALL), ...) modified the array.
+It must check which of the sleeping tasks can proceed.
 
-Linus:
-- Patch 1 should be merged immediately: It fixes bugs,
-  the current code misses wakeups.
+do_smart_update_queue() missed a few wakeups:
+- if a sleeping complex op was completed, then all per-semaphore queues
+  must be scanned - not only those that were modified by *sops
+- if a sleeping simple op proceeded, then the global queue
+  must be scanned again
 
-- Patch 2 and 3 restore the behavior of linux <=3.0.9.
-  I would propose that they are merged, too: I can't rule out that
-  changing the priority of the wakeups breaks user space apps.
+And:
+- the test for "|sops == NULL) before scanning the global
+  queue is not required: If the global queue is empty, then
+  it doesn't need to be scanned - regardless of the reason
+  for calling do_smart_update_queue()
 
-- Patch 4 is trivial, no code changes at all.
-  If 2+3 are merged, then 4 should be merged, too.
+The patch is not optimized, i.e. even completing a wait-for-zero
+operation causes a rescan. This is done to keep the patch as simple as
+possible.
+Avoiding unnecessary scans is implemented in the following patches.
 
-I have tested patch 1 seperately and 1+2+3+4:
-With patch 1 applied, there are no more missed wakeups.
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ ipc/sem.c | 27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
 
-With all 4 applied, linux-3.0.10-rc1 behaves as linux <=3.0.9.
+diff --git a/ipc/sem.c b/ipc/sem.c
+index a7e40ed..70480a3 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -752,19 +752,29 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+ 			int otime, struct list_head *pt)
+ {
+ 	int i;
++	int progress;
+ 
+-	if (sma->complex_count || sops == NULL) {
+-		if (update_queue(sma, -1, pt))
++	progress = 1;
++retry_global:
++	if (sma->complex_count) {
++		if (update_queue(sma, -1, pt)) {
++			progress = 1;
+ 			otime = 1;
++			sops = NULL;
++		}
+ 	}
++	if (!progress)
++		goto done;
+ 
+ 	if (!sops) {
+ 		/* No semops; something special is going on. */
+ 		for (i = 0; i < sma->sem_nsems; i++) {
+-			if (update_queue(sma, i, pt))
++			if (update_queue(sma, i, pt)) {
+ 				otime = 1;
++				progress = 1;
++			}
+ 		}
+-		goto done;
++		goto done_checkretry;
+ 	}
+ 
+ 	/* Check the semaphores that were modified. */
+@@ -772,8 +782,15 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+ 		if (sops[i].sem_op > 0 ||
+ 			(sops[i].sem_op < 0 &&
+ 				sma->sem_base[sops[i].sem_num].semval == 0))
+-			if (update_queue(sma, sops[i].sem_num, pt))
++			if (update_queue(sma, sops[i].sem_num, pt)) {
+ 				otime = 1;
++				progress = 1;
++			}
++	}
++done_checkretry:
++	if (progress) {
++		progress = 0;
++		goto retry_global;
+ 	}
+ done:
+ 	if (otime)
+-- 
+1.8.1.4
 
-With regards to the scalability, I do not expect any degradation:
-Operations on seperate semaphores in an array remain parallelized.
-
-Apps that use lots of wait-for-zero semop are probably even faster,
-because the wait-for-zero ops are now only scanned if a semval is 0.
-
---
-	Manfred
