@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3EZMCi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 08:02:38 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38635 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab3EZMCg (ORCPT
+	id S1752879Ab3EZMCu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 08:02:50 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50624 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3EZMCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 08:02:36 -0400
+	Sun, 26 May 2013 08:02:47 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -15,9 +15,9 @@ To: Hans Verkuil <hans.verkuil@cisco.com>,
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v3 4/9] media: davinci: vpif_capture: move the freeing of irq and global variables to remove()
-Date: Sun, 26 May 2013 17:30:07 +0530
-Message-Id: <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v3 5/9] media: davinci: vpif_capture: use module_platform_driver()
+Date: Sun, 26 May 2013 17:30:08 +0530
+Message-Id: <1369569612-30915-6-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -27,76 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Ideally the freeing of irq's and the global variables needs to be
-done in the remove() rather than module_exit(), this patch moves
-the freeing up of irq's and freeing the memory allocated to channel
-objects to remove() callback of struct platform_driver.
+This patch uses module_platform_driver() to simplify the code.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpif_capture.c |   31 ++++++++++--------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
+ drivers/media/platform/davinci/vpif_capture.c |   28 +------------------------
+ 1 files changed, 1 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index caaf4fe..f8b7304 100644
+index f8b7304..38c1fba 100644
 --- a/drivers/media/platform/davinci/vpif_capture.c
 +++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -2225,17 +2225,29 @@ vpif_int_err:
-  */
- static int vpif_remove(struct platform_device *device)
- {
--	int i;
-+	struct platform_device *pdev;
- 	struct channel_obj *ch;
-+	struct resource *res;
-+	int irq_num, i = 0;
-+
-+	pdev = container_of(vpif_dev, struct platform_device, dev);
-+	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
-+		for (irq_num = res->start; irq_num <= res->end; irq_num++)
-+			free_irq(irq_num,
-+				 (void *)(&vpif_obj.dev[i]->channel_id));
-+		i++;
-+	}
+@@ -2338,30 +2338,4 @@ static __refdata struct platform_driver vpif_driver = {
+ 	.remove = vpif_remove,
+ };
  
- 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
- 
-+	kfree(vpif_obj.sd);
- 	/* un-register device */
- 	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
- 		/* Get the pointer to the channel object */
- 		ch = vpif_obj.dev[i];
- 		/* Unregister video device */
- 		video_unregister_device(ch->video_dev);
-+		kfree(vpif_obj.dev[i]);
- 	}
- 	return 0;
- }
-@@ -2347,24 +2359,7 @@ static __init int vpif_init(void)
-  */
- static void vpif_cleanup(void)
- {
--	struct platform_device *pdev;
--	struct resource *res;
--	int irq_num;
--	int i = 0;
+-/**
+- * vpif_init: initialize the vpif driver
+- *
+- * This function registers device and driver to the kernel, requests irq
+- * handler and allocates memory
+- * for channel objects
+- */
+-static __init int vpif_init(void)
+-{
+-	return platform_driver_register(&vpif_driver);
+-}
 -
--	pdev = container_of(vpif_dev, struct platform_device, dev);
--	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
--		for (irq_num = res->start; irq_num <= res->end; irq_num++)
--			free_irq(irq_num,
--				 (void *)(&vpif_obj.dev[i]->channel_id));
--		i++;
--	}
+-/**
+- * vpif_cleanup : This function clean up the vpif capture resources
+- *
+- * This will un-registers device and driver to the kernel, frees
+- * requested irq handler and de-allocates memory allocated for channel
+- * objects.
+- */
+-static void vpif_cleanup(void)
+-{
+-	platform_driver_unregister(&vpif_driver);
+-}
 -
- 	platform_driver_unregister(&vpif_driver);
--
--	kfree(vpif_obj.sd);
--	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++)
--		kfree(vpif_obj.dev[i]);
- }
- 
- /* Function for module initialization and cleanup */
+-/* Function for module initialization and cleanup */
+-module_init(vpif_init);
+-module_exit(vpif_cleanup);
++module_platform_driver(vpif_driver);
 -- 
 1.7.0.4
 
