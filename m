@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3EZOas (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:30:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7906 "EHLO mx1.redhat.com"
+	id S1753166Ab3EZOa5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:30:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab3EZOar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:30:47 -0400
-Date: Sun, 26 May 2013 17:30:47 +0300
+	id S1753535Ab3EZOas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 10:30:48 -0400
+Date: Sun, 26 May 2013 17:30:42 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>
-Subject: [PATCH v3-resend 03/11] frv: uaccess s/might_sleep/might_fault/
-Message-ID: <1369577426-26721-3-git-send-email-mst@redhat.com>
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3-resend 02/11] arm64: uaccess s/might_sleep/might_fault/
+Message-ID: <1369577426-26721-2-git-send-email-mst@redhat.com>
 References: <1369575487-26176-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,30 +30,32 @@ The only reason uaccess routines might sleep
 is if they fault. Make this explicit.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/frv/include/asm/uaccess.h | 4 ++--
+ arch/arm64/include/asm/uaccess.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/frv/include/asm/uaccess.h b/arch/frv/include/asm/uaccess.h
-index 0b67ec5..3ac9a59 100644
---- a/arch/frv/include/asm/uaccess.h
-+++ b/arch/frv/include/asm/uaccess.h
-@@ -280,14 +280,14 @@ extern long __memcpy_user(void *dst, const void *src, unsigned long count);
- static inline unsigned long __must_check
- __copy_to_user(void __user *to, const void *from, unsigned long n)
- {
--       might_sleep();
-+       might_fault();
-        return __copy_to_user_inatomic(to, from, n);
- }
+diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
+index 008f848..edb3d5c 100644
+--- a/arch/arm64/include/asm/uaccess.h
++++ b/arch/arm64/include/asm/uaccess.h
+@@ -166,7 +166,7 @@ do {									\
  
- static inline unsigned long
- __copy_from_user(void *to, const void __user *from, unsigned long n)
- {
--       might_sleep();
-+       might_fault();
-        return __copy_from_user_inatomic(to, from, n);
- }
+ #define get_user(x, ptr)						\
+ ({									\
+-	might_sleep();							\
++	might_fault();							\
+ 	access_ok(VERIFY_READ, (ptr), sizeof(*(ptr))) ?			\
+ 		__get_user((x), (ptr)) :				\
+ 		((x) = 0, -EFAULT);					\
+@@ -227,7 +227,7 @@ do {									\
  
+ #define put_user(x, ptr)						\
+ ({									\
+-	might_sleep();							\
++	might_fault();							\
+ 	access_ok(VERIFY_WRITE, (ptr), sizeof(*(ptr))) ?		\
+ 		__put_user((x), (ptr)) :				\
+ 		-EFAULT;						\
 -- 
 MST
