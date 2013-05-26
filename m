@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab3EZOVw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 10:21:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab3EZOVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 10:21:50 -0400
-Date: Sun, 26 May 2013 17:21:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v3-resend 00/11] uaccess: better might_sleep/might_fault
- behavior
-Message-ID: <1369575487-26176-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
+	id S1753473Ab3EZOWP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 10:22:15 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:48051 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752923Ab3EZOWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 10:22:06 -0400
+Date: Sun, 26 May 2013 16:22:01 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, linux-kernel@vger.kernel.org,
+        Dom Cobley <popcornmix@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
+Message-ID: <20130526142200.GA7603@spo001.leaseweb.com>
+References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk> <1364402424-19503-1-git-send-email-lkundrak@v3.sk> <5153B24D.1010408@wwwdotorg.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
-X-Mutt-Fcc: =sent
-X-Mutt-Fcc: =sent
+In-Reply-To: <5153B24D.1010408@wwwdotorg.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I seem to have mis-sent v3.  Trying again with same patches after
-fixing the message id for the cover letter. I hope the duplicates
-that are thus created don't inconvenience people too much.
-If they do, I apologize.
-I have pared down the Cc list to reduce the noise.
-sched maintainers are Cc'd on all patches since that's
-the tree I aim for with these patches.
+Hi Lubomir,
 
-This improves the might_fault annotations used
-by uaccess routines:
+> On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
+> > This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> > used in Raspberry Pi and Roku 2 devices.
+> > 
+> > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> > Signed-off-by: Dom Cobley <popcornmix@gmail.com>
+> 
+> Those two s-o-b lines should be swapped, since if Dom did sign off on
+> any part of this patch, he did it before you did.
+> 
+> That said...
+> 
+> I wonder if it's actually appropriate to include Dom's s-o-b here, since
+> I don't think he really wrote this patch itself. I think you mentioned
+> that you hadn't use much of the downstream driver except for some defines?
+> 
+> To be clear, I mentioned the existence of the S-o-b line downstream
+> simply to demonstrate that the commits you were getting information from
+> had correctly followed the process described in
+> Documentation/SubmittingPatches, and so it was OK to use that
+> information while creating a GPL'd driver.
+> 
+> So there are a couple of ways that this patch could have been created:
+> 
+> 1) You took the downstream commit itself, cherry-picked it into the
+> upstream kernel, modified it to suit upstream, and then submitted that.
+> The modifications might be extensive, such as renaming the file,
+> removing parts of the code that the upstream watchdog core now handles,
+> adding some new features, fixing bugs, cleanup, etc.; whatever is needed
+> to upstream the patch.
+> 
+> In this case, I believe it would be appropriate to maintain any S-o-b
+> lines from the original downstream commit, and add yours. But, I believe
+> you should also (a) maintain the git author field from the original
+> downstream commit (b) include a list of the changes you made to the
+> patch in the commit description, so you can be blamed for them rather
+> than the original author:-)
+> 
+> 2) You read the downstream commit for information, but created a
+> completely new driver for the upstream kernel, using the downstream
+> driver just as a reference. In this case, I believe it's fine for the
+> git author field to be you, and for the only s-o-b line present to be
+> yours, since you really did write the patch from scratch. However, you
+> should credit the downstream work in the (c) header and/or commit
+> description.
+> 
+> This current patch sees to be a slight hybrid of both approaches (you're
+> listed as the git author, but have included Dom's s-o-b line on a patch
+> I don't think he created, and wasn't directly derived from one he created).
+> 
+> I'm not sure if I'm being too picky. I guess I'll leave it up to Wim Van
+> Sebroeck, since he's the watchdog maintainer and would be the person who
+> applies this patch.
 
-1. The only reason uaccess routines might sleep
-   is if they fault. Make this explicit for
-   all architectures.
-2. a voluntary preempt point in uaccess functions
-   means compiler can't inline them efficiently,
-   this breaks assumptions that they are very
-   fast and small that e.g. net code seems to make.
-   remove this preempt point so behaviour
-   matches what callers assume.
-3. Accesses (e.g through socket ops) to kernel memory
-   with KERNEL_DS like net/sunrpc does will never sleep.
-   Remove an unconditinal might_sleep in the inline
-   might_fault in kernel.h
-   (used when PROVE_LOCKING is not set).
-4. Accesses with pagefault_disable return EFAULT
-   but won't cause caller to sleep.
-   Check for that and avoid might_sleep when
-   PROVE_LOCKING is set.
+Can you create a patch v5 with yourselve as author and add the necessary (c)
+and references in it so that I can do the final review? (That is if situation
+2 is indeed the case. If however it is situation 1 then we should get the
+original code and have that as a patch and then add a second patch with your
+modifications.).
 
-I'd like these changes to go in for 3.11:
-besides a general benefit of improved
-consistency and performance, I would also like them
-for the vhost driver where we want to call socket ops
-under a spinlock, and fall back on slower thread handler
-on error.
+Kind regards,
+Wim.
 
-If the changes look good, would sched maintainers
-please consider merging them through sched/core because of the
-interaction with the scheduler?
-
-Please review, and consider for 3.11.
-
-Note on arch code updates:
-I tested x86_64 code.
-Other architectures were build-tested.
-I don't have cross-build environment for arm64, tile, microblaze and
-mn10300 architectures. arm64 and tile got acks.
-The arch changes look generally safe enough
-but would appreciate review/acks from arch maintainers.
-core changes naturally need acks from sched maintainers.
-
-Version 1 of this change was titled
-	x86: uaccess s/might_sleep/might_fault/
-
-Changes from v2:
-	add a patch removing a colunatry preempt point
-	in uaccess functions when PREEMPT_VOLUNATRY is set.
-		Addresses comments by Arnd Bergmann,
-		and Peter Zijlstra.
-	comment on future possible simplifications in the git log
-		for the powerpc patch. Addresses a comment
-		by Arnd Bergmann.
-	
-Changes from v1:
-	add more architectures
-	fix might_fault() scheduling differently depending
-	on CONFIG_PROVE_LOCKING, as suggested by Ingo
-
-Michael S. Tsirkin (11):
-  asm-generic: uaccess s/might_sleep/might_fault/
-  arm64: uaccess s/might_sleep/might_fault/
-  frv: uaccess s/might_sleep/might_fault/
-  m32r: uaccess s/might_sleep/might_fault/
-  microblaze: uaccess s/might_sleep/might_fault/
-  mn10300: uaccess s/might_sleep/might_fault/
-  powerpc: uaccess s/might_sleep/might_fault/
-  tile: uaccess s/might_sleep/might_fault/
-  x86: uaccess s/might_sleep/might_fault/
-  kernel: drop voluntary schedule from might_fault
-  kernel: uaccess in atomic with pagefault_disable
-
- arch/arm64/include/asm/uaccess.h      |  4 ++--
- arch/frv/include/asm/uaccess.h        |  4 ++--
- arch/m32r/include/asm/uaccess.h       | 12 ++++++------
- arch/microblaze/include/asm/uaccess.h |  6 +++---
- arch/mn10300/include/asm/uaccess.h    |  4 ++--
- arch/powerpc/include/asm/uaccess.h    | 16 ++++++++--------
- arch/tile/include/asm/uaccess.h       |  2 +-
- arch/x86/include/asm/uaccess_64.h     |  2 +-
- include/asm-generic/uaccess.h         | 10 +++++-----
- include/linux/kernel.h                |  7 ++-----
- mm/memory.c                           | 10 +++++++---
- 11 files changed, 39 insertions(+), 38 deletions(-)
-
--- 
-MST
