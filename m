@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab3EZBoG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 21:44:06 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:33631 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758789Ab3EZBoE (ORCPT
+	id S1758876Ab3EZCFm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 22:05:42 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:40638 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758815Ab3EZCFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 21:44:04 -0400
-Message-ID: <51A168E0.3020305@gmail.com>
-Date: Sat, 25 May 2013 21:44:00 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2 1/4] mm/memory-hotplug: fix lowmem count overflow when
- offline pages
-References: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com> <51A16268.4000401@gmail.com> <51a1642b.077c320a.3884.161cSMTPIN_ADDED_BROKEN@mx.google.com>
-In-Reply-To: <51a1642b.077c320a.3884.161cSMTPIN_ADDED_BROKEN@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 25 May 2013 22:05:39 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v2 1/2] f2fs: return proper error from start_gc_thread
+Date: Sun, 26 May 2013 11:05:32 +0900
+Message-Id: <1369533932-6921-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/25/13 9:23 PM), Wanpeng Li wrote:
-> Hi KOSAKI,
-> On Sat, May 25, 2013 at 09:16:24PM -0400, KOSAKI Motohiro wrote:
->>> ---
->>>  mm/page_alloc.c | 2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index 98cbdf6..23b921f 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
->>>  		list_del(&page->lru);
->>>  		rmv_page_order(page);
->>>  		zone->free_area[order].nr_free--;
->>> +		if (PageHighMem(page))
->>> +			totalhigh_pages -= 1 << order;
->>>  		for (i = 0; i < (1 << order); i++)
->>>  			SetPageReserved((page+i));
->>>  		pfn += (1 << order);
->>
->> memory hotplug don't support 32bit since it was born, at least, when the system has highmem. 
->> Why can't we disable memory hotremove when 32bit at compile time?
-> 
-> Here is logic memory remove instead of ACPI based memory remove. ;-)
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-I know.
+when there is an error from kthread_run, then return proper error
+rather than returning -ENOMEM.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/f2fs/gc.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 25b083c..ddc2c67 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -91,23 +91,28 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
+ {
+ 	struct f2fs_gc_kthread *gc_th;
+ 	dev_t dev = sbi->sb->s_bdev->bd_dev;
++	int err = 0;
+ 
+ 	if (!test_opt(sbi, BG_GC))
+-		return 0;
++		goto out;
+ 	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
+-	if (!gc_th)
+-		return -ENOMEM;
++	if (!gc_th) {
++		err = -ENOMEM;
++		goto out;
++	}
+ 
+ 	sbi->gc_thread = gc_th;
+ 	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
+ 	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
+ 			"f2fs_gc-%u:%u", MAJOR(dev), MINOR(dev));
+ 	if (IS_ERR(gc_th->f2fs_gc_task)) {
++		err = PTR_ERR(gc_th->f2fs_gc_task);
+ 		kfree(gc_th);
+ 		sbi->gc_thread = NULL;
+-		return -ENOMEM;
+ 	}
+-	return 0;
++
++out:
++	return err;
+ }
+ 
+ void stop_gc_thread(struct f2fs_sb_info *sbi)
+-- 
+1.7.9.5
 
