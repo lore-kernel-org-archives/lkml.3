@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3EZQcV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 12:32:21 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:49341 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab3EZQcU (ORCPT
+	id S1754416Ab3EZQvm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 12:51:42 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:48130 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754217Ab3EZQvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 12:32:20 -0400
-Message-ID: <51A23911.3060802@gmail.com>
-Date: Sun, 26 May 2013 12:32:17 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
-        kzak@redhat.com, jmoyer@redhat.com, kosaki.motohiro@gmail.com,
-        riel@redhat.com, lwoodman@redhat.com, mgorman@suse.de
-Subject: Re: [PATCH 02/02] swapon: allow a more flexible swap discard policy
-References: <cover.1369529143.git.aquini@redhat.com> <6346c223ca2acb30b35480b9d51638466aac5fe6.1369530033.git.aquini@redhat.com>
-In-Reply-To: <6346c223ca2acb30b35480b9d51638466aac5fe6.1369530033.git.aquini@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Sun, 26 May 2013 12:51:41 -0400
+Date: Sun, 26 May 2013 18:51:39 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Hector Palacios <hector.palacios@digi.com>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux@roeck-us.net
+Subject: Re: [PATCH v3] watchdog: core: don't try to stop device if not running
+Message-ID: <20130526165139.GA8365@spo001.leaseweb.com>
+References: <1365433592-25687-1-git-send-email-hector.palacios@digi.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365433592-25687-1-git-send-email-hector.palacios@digi.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/26/13 12:31 AM), Rafael Aquini wrote:
-> Introduce the necessary changes to swapon(8) allowing a sysadmin to leverage
-> the new changes introduced to sys_swapon by "swap: discard while swapping
-> only if SWAP_FLAG_DISCARD_PAGES", therefore allowing a more flexible set of
-> choices when selection the discard policy for mounted swap areas.
-> This patch introduces the following optional arguments to the already
-> existent swapon(8) "--discard" option, in order to allow a discard type to 
-> be selected at swapon time:
->  * once    : only single-time area discards are issued. (swapon)
->  * pages   : discard freed pages before they are reused.
-> If no policy is selected both discard types are enabled. (default)
+Hi Hector,
+
+> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
+> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
+> operation, watchdog_release() is called and status bits checked for
+> stopping it. Besides, if the device has not been unregistered a critical
+> message "watchdog did not stop!" is printed, although the ioctl may have
+> successfully stopped it already.
 > 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Without the patch a user application sample code like this will successfully
+> stop the watchdog, but the kernel will output the message
+> "watchdog did not stop!":
+> 
+> 	wd_fd = open("/dev/watchdog", O_RDWR);
+> 
+> 	flags = WDIOS_DISABLECARD;
+> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
+> 
+> 	close(wd_fd);
+> 
+> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+> ---
+> 
+> Changes from v1:
+>  - Make it less intrusive with 'if/else if' clauses.
+>  - Change the logic of 'err' variable for better readability of code.
+>  - Remove one-liner if brackets that broke coding sytle.
+> Changes from v2:
+>  - Revert "Change the logic of 'err'..." from v1 because otherwise the
+>    'else if' can't be reached if the watchdog is running.
+> 
+>  drivers/watchdog/watchdog_dev.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Patch added to linux-watchdog-next.
 
-
+Kind regards,
+Wim.
 
