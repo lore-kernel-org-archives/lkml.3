@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3EZAvc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 20:51:32 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59191 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758500Ab3EZAva (ORCPT
+	id S1758617Ab3EZA6j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 20:58:39 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:44884 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758448Ab3EZA6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 20:51:30 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/5] media: davinci: vpif: remove unnecessary braces around defines
-Date: Sun, 26 May 2013 02:51:27 +0200
-Message-ID: <9072131.neW5PtBrWa@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1369499796-18762-4-git-send-email-prabhakar.csengg@gmail.com>
-References: <1369499796-18762-1-git-send-email-prabhakar.csengg@gmail.com> <1369499796-18762-4-git-send-email-prabhakar.csengg@gmail.com>
+	Sat, 25 May 2013 20:58:38 -0400
+Message-ID: <51A15E2F.7010308@gmail.com>
+Date: Sun, 26 May 2013 08:58:23 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Simon Horman <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        davej@redhat.com
+Subject: Re: [PATCH 2/7] Documentation/devices.txt: Remove /dev/oldmem description
+References: <51A02E50.5020507@gmail.com> <51A02F59.8000103@gmail.com> <87vc668x4w.fsf@xmission.com>
+In-Reply-To: <87vc668x4w.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-Thank you for the patch.
-
-On Saturday 25 May 2013 22:06:34 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+于 2013年05月26日 07:20, Eric W. Biederman 写道:
+> Zhang Yanfei <zhangyanfei.yes@gmail.com> writes:
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/media/platform/davinci/vpif.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+>> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 > 
-> diff --git a/drivers/media/platform/davinci/vpif.c
-> b/drivers/media/platform/davinci/vpif.c index 164c1b7..d9269c9 100644
-> --- a/drivers/media/platform/davinci/vpif.c
-> +++ b/drivers/media/platform/davinci/vpif.c
-> @@ -32,10 +32,10 @@
->  MODULE_DESCRIPTION("TI DaVinci Video Port Interface driver");
->  MODULE_LICENSE("GPL");
+> Won't we want to keep this reservation around to so that this number
+> doesn't get reused, and cause people confusion when
+> upgrading/downgrading kernels?
+
+Ah, yes. I will just keep this and add a note to make people know that
+it is removed in the next version.
+
+Thanks
+Zhang
+
 > 
-> -#define VPIF_CH0_MAX_MODES	(22)
-> -#define VPIF_CH1_MAX_MODES	(02)
-> -#define VPIF_CH2_MAX_MODES	(15)
-> -#define VPIF_CH3_MAX_MODES	(02)
-> +#define VPIF_CH0_MAX_MODES	22
-> +#define VPIF_CH1_MAX_MODES	02
-> +#define VPIF_CH2_MAX_MODES	15
-> +#define VPIF_CH3_MAX_MODES	02
-
-Could you also replace 02 with 2 while you're at it ? 02 is an octal constant. 
-While it still evaluates to 2 in this case, it would be a good practice to use 
-decimal when decimal is intended.
-
-With that change,
-
-Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
->  spinlock_t vpif_lock;
--- 
-Regards,
-
-Laurent Pinchart
+>> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>> Cc: Dave Jones <davej@redhat.com>
+>> ---
+>>  Documentation/devices.txt |    2 --
+>>  1 files changed, 0 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+>> index 08f01e7..4f85739 100644
+>> --- a/Documentation/devices.txt
+>> +++ b/Documentation/devices.txt
+>> @@ -100,8 +100,6 @@ Your cooperation is appreciated.
+>>  		 10 = /dev/aio		Asynchronous I/O notification interface
+>>  		 11 = /dev/kmsg		Writes to this come out as printk's, reads
+>>  					export the buffered printk records.
+>> -		 12 = /dev/oldmem	Used by crashdump kernels to access
+>> -					the memory of the kernel that crashed.
+>>  
+>>    1 block	RAM disk
+>>  		  0 = /dev/ram0		First RAM disk
 
