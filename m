@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3EZP67 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 11:58:59 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:56799 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab3EZP64 (ORCPT
+	id S1754645Ab3EZP7L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 11:59:11 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:48137 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab3EZP7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 11:58:56 -0400
+	Sun, 26 May 2013 11:59:08 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -15,10 +15,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH v3, part2 14/20] PCI, DRM: use hotplug-safe iterators to walk PCI buses
-Date: Sun, 26 May 2013 23:53:11 +0800
-Message-Id: <1369583597-3801-15-git-send-email-jiang.liu@huawei.com>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Daniel Drake <dsd@laptop.org>, Jonathan Corbet <corbet@lwn.net>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        linux-media@vger.kernel.org
+Subject: [PATCH v3, part2 16/20] PCI, via-camera: use hotplug-safe iterators to walk PCI buses
+Date: Sun, 26 May 2013 23:53:13 +0800
+Message-Id: <1369583597-3801-17-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
 References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
@@ -26,34 +29,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance DRM drvier to use hotplug-safe iterators to walk PCI buses.
+Enhance via-camera drviers to use hotplug-safe iterators to walk
+PCI buses.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Daniel Drake <dsd@laptop.org>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/gpu/drm/drm_fops.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/platform/via-camera.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
-index 429e07d..dc8c40b 100644
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -359,9 +359,11 @@ static int drm_open_helper(struct inode *inode, struct file *filp,
- 			pci_dev_put(pci_dev);
- 		}
- 		if (!dev->hose) {
--			struct pci_bus *b = pci_bus_b(pci_root_buses.next);
--			if (b)
-+			struct pci_bus *b = pci_get_next_root_bus(NULL);
-+			if (b) {
- 				dev->hose = b->sysdata;
-+				pci_bus_put(b);
-+			}
- 		}
+diff --git a/drivers/media/platform/via-camera.c b/drivers/media/platform/via-camera.c
+index a794cd6..3ea3fac 100644
+--- a/drivers/media/platform/via-camera.c
++++ b/drivers/media/platform/via-camera.c
+@@ -1284,7 +1284,8 @@ static struct video_device viacam_v4l_template = {
+ 
+ static bool viacam_serial_is_enabled(void)
+ {
+-	struct pci_bus *pbus = pci_find_bus(0, 0);
++	struct pci_bus *pbus = pci_get_bus(0, 0);
++	bool ret = false;
+ 	u8 cbyte;
+ 
+ 	if (!pbus)
+@@ -1292,18 +1293,21 @@ static bool viacam_serial_is_enabled(void)
+ 	pci_bus_read_config_byte(pbus, VIACAM_SERIAL_DEVFN,
+ 			VIACAM_SERIAL_CREG, &cbyte);
+ 	if ((cbyte & VIACAM_SERIAL_BIT) == 0)
+-		return false; /* Not enabled */
++		goto out; /* Not enabled */
+ 	if (override_serial == 0) {
+ 		printk(KERN_NOTICE "Via camera: serial port is enabled, " \
+ 				"refusing to load.\n");
+ 		printk(KERN_NOTICE "Specify override_serial=1 to force " \
+ 				"module loading.\n");
+-		return true;
++		ret = true;
++		goto out;
  	}
- #endif
+ 	printk(KERN_NOTICE "Via camera: overriding serial port\n");
+ 	pci_bus_write_config_byte(pbus, VIACAM_SERIAL_DEVFN,
+ 			VIACAM_SERIAL_CREG, cbyte & ~VIACAM_SERIAL_BIT);
+-	return false;
++out:
++	pci_bus_put(pbus);
++	return ret;
+ }
+ 
+ static struct ov7670_config sensor_cfg = {
 -- 
 1.8.1.2
 
