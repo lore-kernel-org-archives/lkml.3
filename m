@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab3EZBQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 21:16:29 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:46847 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758505Ab3EZBQ1 (ORCPT
+	id S1758836Ab3EZBUt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 21:20:49 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59327 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758505Ab3EZBUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 21:16:27 -0400
-Message-ID: <51A16268.4000401@gmail.com>
-Date: Sat, 25 May 2013 21:16:24 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Sat, 25 May 2013 21:20:47 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] media: i2c: ths7303 cleanup
+Date: Sun, 26 May 2013 03:20:44 +0200
+Message-ID: <2855590.yx9zfYZLis@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v2 1/4] mm/memory-hotplug: fix lowmem count overflow when
- offline pages
-References: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ---
->  mm/page_alloc.c | 2 ++
->  1 file changed, 2 insertions(+)
+On Saturday 25 May 2013 23:09:32 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 98cbdf6..23b921f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
->  		list_del(&page->lru);
->  		rmv_page_order(page);
->  		zone->free_area[order].nr_free--;
-> +		if (PageHighMem(page))
-> +			totalhigh_pages -= 1 << order;
->  		for (i = 0; i < (1 << order); i++)
->  			SetPageReserved((page+i));
->  		pfn += (1 << order);
+> Trivial cleanup of the driver.
+> 
+> Changes for v2:
+> 1: Dropped the asynchronous probing and, OF
+>    support patches will be handling them independently because of
+> dependencies. 2: Arranged the patches logically so that git bisect
+>    succeeds.
+> 
+> Lad, Prabhakar (4):
+>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
+>   media: i2c: ths7303: remove init_enable option from pdata
+>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
+>   media: i2c: ths7303: make the pdata as a constant pointer
+> 
+>  arch/arm/mach-davinci/board-dm365-evm.c |    1 -
+>  drivers/media/i2c/ths7303.c             |   48 ++++++++--------------------
+>  include/media/ths7303.h                 |    2 -
+>  3 files changed, 12 insertions(+), 39 deletions(-)
 
-memory hotplug don't support 32bit since it was born, at least, when the system has highmem. 
-Why can't we disable memory hotremove when 32bit at compile time?
+For the whole series,
 
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+-- 
+Regards,
+
+Laurent Pinchart
 
