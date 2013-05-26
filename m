@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab3EZTva (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 15:51:30 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:64122 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab3EZTv2 (ORCPT
+	id S1755061Ab3EZUHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 16:07:08 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:50538 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab3EZUHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 15:51:28 -0400
-From: Jakob Normark <jakobnormark@gmail.com>
-To: Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakob Normark <jakobnormark@gmail.com>
-Subject: [PATCH 1/1] bfa: Fix for possible null pointer dereference
-Date: Sun, 26 May 2013 21:51:17 +0200
-Message-Id: <1369597877-3160-1-git-send-email-jakobnormark@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 26 May 2013 16:07:06 -0400
+Message-ID: <51A26B62.4050009@gmail.com>
+Date: Sun, 26 May 2013 22:06:58 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: buytenh@wantstofly.org, jason@lakedaemon.net, andrew@lunn.ch,
+        benh@kernel.crashing.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address workaround
+ on DT ethernet
+References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130525.210441.818472895703230779.davem@davemloft.net>
+In-Reply-To: <20130525.210441.818472895703230779.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for cppcheck error in bfa_fcs_lport.c
+On 05/26/2013 06:04 AM, David Miller wrote:
+> From: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+> Date: Wed, 22 May 2013 22:04:01 +0200
+>
+>> +			memcpy((void *)p->value, reg, 6);
+>
+> This cast is completely unnecessary, non-void to void pointer casts
+> are automatic.
+>
+> If it is necessary, because p->value is const, then you are trying
+> to change something behind the OF layer's back and need to use
+> the appropriate interface to change the property contents.
 
-Kernel version: v3.10-rc2
+David,
 
-Signed-off-by: Jakob Normark <jakobnormark@gmail.com>
----
- drivers/scsi/bfa/bfa_fcs_lport.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+good you mention it. I added Grant on Cc and will give a short
+sum-up why I casted the const from property->value away here.
 
-diff --git a/drivers/scsi/bfa/bfa_fcs_lport.c b/drivers/scsi/bfa/bfa_fcs_lport.c
-index 1224d04..a37c45a 100644
---- a/drivers/scsi/bfa/bfa_fcs_lport.c
-+++ b/drivers/scsi/bfa/bfa_fcs_lport.c
-@@ -5615,13 +5615,14 @@ bfa_fcs_lport_get_rport_max_speed(bfa_fcs_lport_t *port)
- 	bfa_port_speed_t max_speed = 0;
- 	struct bfa_port_attr_s port_attr;
- 	bfa_port_speed_t port_speed, rport_speed;
--	bfa_boolean_t trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
-+	bfa_boolean_t trl_enabled;
- 
- 
- 	if (port == NULL)
- 		return 0;
- 
- 	fcs = port->fcs;
-+	trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
- 
- 	/* Get Physical port's current speed */
- 	bfa_fcport_get_attr(port->fcs->bfa, &port_attr);
--- 
-1.7.9.5
+Maybe I overlooked the API for modifying the DT property but as
+far as I've seen - there is no API for modifying it. And yes,
+you are right, it is kind of an abuse of DT here.
 
+As Kirkwoods loose their MAC address on clock gating, I was looking
+for a place to store it early. (a) DT property "local-mac-address"
+looked as a good place as it will allow the driver to find it without
+any extra code. Of course, I am doing severaly sanity checks if it is
+safe to overwrite it, i.e. no other MAC set, property is there, long
+enough.
+
+If Grant also NACKs modifying the DT we basically have two more options
+left for Kirkwood: (b) have MAC stored early in two global arrays in
+board init and reference that from mv643xx_eth or (c) leave the clock
+ungated unconditionally on all Kirkwoods.
+
+I can live with all three, just name it and I prepare a final patch set.
+
+Sebastian
