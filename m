@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab3EZC6T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 May 2013 22:58:19 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:45059 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758497Ab3EZC6R (ORCPT
+	id S1758955Ab3EZC6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 May 2013 22:58:24 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55981 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758497Ab3EZC6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 22:58:17 -0400
+	Sat, 25 May 2013 22:58:20 -0400
+From: Stephen Mell <sub.atomic.fusion@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: proc: add nsfd mount option to allow mounting for pid namespaces other than the current
+Date: Sun, 26 May 2013 03:00:05 +0000
+Message-ID: <1823955.4fAi8iUinf@pegasus>
+User-Agent: KMail/4.9.5 (Linux/3.9.3; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <519F877F.3050801@wwwdotorg.org>
-References: <1369379407-12764-1-git-send-email-acourbot@nvidia.com> <519F877F.3050801@wwwdotorg.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sun, 26 May 2013 11:57:57 +0900
-Message-ID: <CAAVeFuJvDOuFAHz1zDNaUBFccZenaz9djOBWH5v8GSmbNSLzbQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: tegra114: correctly output clk_32k
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 12:30 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/24/2013 01:10 AM, Alexandre Courbot wrote:
->> Tegra has a blink timer register that allows to modulate the
->> clk_32k clock before outputting it. Since clk_32k is presented to the
->> kernel as a fixed clock, make sure this register does not tamper with
->> the clock frequency and that clk_32k is outputted as-is, similarly to
->> what is done on t20 and t30.
->
-> drivers/clk changes should go to Mike Turquette now that there aren't
-> any inter-dependencies between core Tegra and Tegra clk driver patches.
->
-> I CC'd him here, but perhaps he'll want this resent if he doesn't have
-> the original email still.
+From: Stephen Mell <sub.atomic.fusion@gmail.com>
 
-I just resent the patch to make things easier.
+Currently, there is no userspace method to mount proc for a pid namespace other than the current one. In light of the new namespace filedescriptors, this patch adds a mount option to use the namespace represented by the specified filedescriptor instead of the current pid namespace. This patch depends on "proc: move proc mount options out of pid_namespace".
 
-Thanks,
-Alex.
+Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
+---
+ fs/proc/root.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 5a2b6ff..6a9a46d 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -39,10 +39,11 @@ static int proc_set_super(struct super_block *sb, void *data)
+ }
+ 
+ enum {
+-	Opt_gid, Opt_hidepid, Opt_err,
++	Opt_nsfd, Opt_gid, Opt_hidepid, Opt_err,
+ };
+ 
+ static const match_table_t tokens = {
++	{Opt_nsfd, "nsfd=%u"},
+ 	{Opt_hidepid, "hidepid=%u"},
+ 	{Opt_gid, "gid=%u"},
+ 	{Opt_err, NULL},
+@@ -53,6 +54,8 @@ static int proc_parse_options(char *options, struct proc_sb_info *fsi)
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int option;
++	struct proc_ns *ei;
++	struct file *file;
+ 
+ 	if (!options)
+ 		return 1;
+@@ -65,6 +68,24 @@ static int proc_parse_options(char *options, struct proc_sb_info *fsi)
+ 		args[0].to = args[0].from = NULL;
+ 		token = match_token(p, tokens, args);
+ 		switch (token) {
++		case Opt_nsfd:
++			if (match_int(&args[0], &option))
++				return 0;
++			file = proc_ns_fget(option);
++			if (IS_ERR(file)) {
++				pr_err("proc: nsfd value must refer to a pid namespace.\n");
++				return 0;
++			}
++			ei = get_proc_ns(file_inode(file));
++			if (!(ei->ns_ops->type & CLONE_NEWPID)) {
++				pr_err("proc: nsfd value must refer to a pid namespace.\n");
++				return 0;
++			}
++			if (fsi->ns)
++				put_pid_ns(fsi->ns);
++			fsi->ns = ei->ns;
++			get_pid_ns(fsi->ns);
++			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+
