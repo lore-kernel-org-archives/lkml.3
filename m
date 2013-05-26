@@ -1,125 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3EZNzr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 09:55:47 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:41420 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab3EZNzo (ORCPT
+	id S1753423Ab3EZN4K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 09:56:10 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:36681 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab3EZN4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 09:55:44 -0400
-Message-ID: <51A21456.50400@gmail.com>
-Date: Sun, 26 May 2013 21:55:34 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Sonic Zhang <sonic.adi@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH v5, part4 16/41] mm/blackfin: prepare for removing num_physpages
- and simplify mem_init()
-References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com> <1368028298-7401-17-git-send-email-jiang.liu@huawei.com> <CAJxxZ0Ous_4_QCM7dyDkDHyHiLiib3Gr70Z22-ac0u275shfSQ@mail.gmail.com>
-In-Reply-To: <CAJxxZ0Ous_4_QCM7dyDkDHyHiLiib3Gr70Z22-ac0u275shfSQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 26 May 2013 09:56:07 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: [PATCH] media: i2c: ths7303: add OF support
+Date: Sun, 26 May 2013 19:25:33 +0530
+Message-Id: <1369576533-11277-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 25 May 2013 09:25:47 PM CST, Sonic Zhang wrote:
-> Hi Jiang
->
-> On Wed, May 8, 2013 at 11:51 PM, Jiang Liu <liuj97@gmail.com> wrote:
->> Prepare for removing num_physpages and simplify mem_init().
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Mike Frysinger <vapier@gentoo.org>
->> Cc: Bob Liu <lliubbo@gmail.com>
->> Cc: uclinux-dist-devel@blackfin.uclinux.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  arch/blackfin/mm/init.c |   38 ++++++--------------------------------
->>  1 file changed, 6 insertions(+), 32 deletions(-)
->>
->> diff --git a/arch/blackfin/mm/init.c b/arch/blackfin/mm/init.c
->> index 1cc8607..e4b6e11 100644
->> --- a/arch/blackfin/mm/init.c
->> +++ b/arch/blackfin/mm/init.c
->> @@ -90,43 +90,17 @@ asmlinkage void __init init_pda(void)
->>
->>  void __init mem_init(void)
->>  {
->> -       unsigned int codek = 0, datak = 0, initk = 0;
->> -       unsigned int reservedpages = 0, freepages = 0;
->> -       unsigned long tmp;
->> -       unsigned long start_mem = memory_start;
->> -       unsigned long end_mem = memory_end;
->> +       char buf[64];
->>
->> -       end_mem &= PAGE_MASK;
->> -       high_memory = (void *)end_mem;
->> -
->> -       start_mem = PAGE_ALIGN(start_mem);
->> -       max_mapnr = num_physpages = MAP_NR(high_memory);
->> -       printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", num_physpages);
->> +       high_memory = (void *)(memory_end & PAGE_MASK);
->> +       max_mapnr = MAP_NR(high_memory);
->> +       printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", max_mapnr);
->>
->>         /* This will put all low memory onto the freelists. */
->>         free_all_bootmem();
->>
->> -       reservedpages = 0;
->> -       for (tmp = ARCH_PFN_OFFSET; tmp < max_mapnr; tmp++)
->> -               if (PageReserved(pfn_to_page(tmp)))
->> -                       reservedpages++;
->> -       freepages =  max_mapnr - ARCH_PFN_OFFSET - reservedpages;
->> -
->> -       /* do not count in kernel image between _rambase and _ramstart */
->> -       reservedpages -= (_ramstart - _rambase) >> PAGE_SHIFT;
->> -#if (defined(CONFIG_BFIN_EXTMEM_ICACHEABLE) && ANOMALY_05000263)
->> -       reservedpages += (_ramend - memory_end - DMA_UNCACHED_REGION) >> PAGE_SHIFT;
->> -#endif
->> -
->> -       codek = (_etext - _stext) >> 10;
->> -       initk = (__init_end - __init_begin) >> 10;
->> -       datak = ((_ramstart - _rambase) >> 10) - codek - initk;
->> -
->> -       printk(KERN_INFO
->> -            "Memory available: %luk/%luk RAM, "
->> -               "(%uk init code, %uk kernel code, %uk data, %uk dma, %uk reserved)\n",
->> -               (unsigned long) freepages << (PAGE_SHIFT-10), (_ramend - CONFIG_PHY_RAM_BASE_ADDRESS) >> 10,
->> -               initk, codek, datak, DMA_UNCACHED_REGION >> 10, (reservedpages << (PAGE_SHIFT-10)));
->
-> You can't remove all these memory information for blackfin. They are
-> useful on blackfin platform.
->
-> Regards,
->
-> Sonic
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Hi Sonic,
-           Thanks for review!
-           We are not trying to remove these code, but replacing it 
-with a generic
-helper function mem_init_print_info(), which will print similar (actual 
-more info)
-boot message. I have no blackfin platforms to generate a real boot 
-message,
-so could only share an example boot messages on x86:
-Memory: 7744624K/8074824K available (6969K kernel code, 1011K data, 
-2828K rodata, 1016K init, 9640K bss, 330200K reserved)
+add OF support for the ths7303 driver.
 
-Regards!
-Gerry
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+---
+ .../devicetree/bindings/media/i2c/ths73x3.txt      |   50 ++++++++++++++++++++
+ drivers/media/i2c/ths7303.c                        |   40 +++++++++++++++-
+ 2 files changed, 89 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/i2c/ths73x3.txt
+
+diff --git a/Documentation/devicetree/bindings/media/i2c/ths73x3.txt b/Documentation/devicetree/bindings/media/i2c/ths73x3.txt
+new file mode 100644
+index 0000000..62f63e8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/i2c/ths73x3.txt
+@@ -0,0 +1,50 @@
++* Texas Instruments THS7303/THS7353 video amplifier
++
++The THS7303/THS7353 device is a low power 3-channel integrated video buffer
++which can be configured individually via i2c for all the functions which makes
++it flexible for any application. It incorporates a selectable fifth-order
++Butterworth filter to eliminate data converter images.
++
++Required Properties :
++- compatible : value should be either one among the following
++	(a) "ti,ths7303" for ths7303 video amplifier.
++	(b) "ti,ths7353" for ths7353 video amplifier.
++
++- ti,ths73x3-ch1-bias: Bias value for channel 1.
++
++- ti,ths73x3-ch2-bias: Bias value for channel 2.
++
++- ti,ths73x3-ch3-bias: Bias value for channel 3.
++
++Bias values for channel-1/2/3 can be following (values default to zero):-
++ - 0: Disable Channel - Conserves Power
++ - 1: Channel On - Mute Function - No Output
++ - 2: Channel On - DC Bias Select
++ - 3: Channel On - DC Bias + 250 mV Offset Select
++ - 4: Channel On - AC Bias Select
++ - 5: Channel On - Sync Tip Clam with low bias
++ - 6: Channel On - Sync Tip Clam with mid bias
++ - 7: Channel On - Sync Tip Clam with high bias
++
++For further reading of port node refer Documentation/devicetree/bindings/media/
++video-interfaces.txt.
++
++Example:
++
++	i2c0@1c22000 {
++		...
++		...
++		ths7303@2c {
++			compatible = "ti,ths7303";
++			reg = <0x2c>;
++
++			port {
++				ths7303_1: endpoint {
++					ti,ths73x3-ch1-bias = <3>;
++					ti,ths73x3-ch2-bias = <3>;
++					ti,ths73x3-ch3-bias = <3>;
++				};
++			};
++		};
++		...
++	};
+diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
+index b954195..b218b0f 100644
+--- a/drivers/media/i2c/ths7303.c
++++ b/drivers/media/i2c/ths7303.c
+@@ -28,6 +28,7 @@
+ #include <media/ths7303.h>
+ #include <media/v4l2-chip-ident.h>
+ #include <media/v4l2-device.h>
++#include <media/v4l2-of.h>
+ 
+ #define THS7303_CHANNEL_1	1
+ #define THS7303_CHANNEL_2	2
+@@ -349,10 +350,37 @@ static const struct v4l2_subdev_ops ths7303_ops = {
+ 	.video 	= &ths7303_video_ops,
+ };
+ 
++static struct ths7303_platform_data *
++ths7303_get_pdata(struct i2c_client *client)
++{
++	struct ths7303_platform_data *pdata;
++	struct device_node *endpoint;
++
++	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
++		return client->dev.platform_data;
++
++	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
++	if (!endpoint)
++		return NULL;
++
++	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		goto done;
++
++	of_property_read_u8(endpoint, "ti,ths73x3-ch1-bias", &pdata->ch_1);
++	of_property_read_u8(endpoint, "ti,ths73x3-ch2-bias", &pdata->ch_2);
++	of_property_read_u8(endpoint, "ti,ths73x3-ch3-bias", &pdata->ch_3);
++
++done:
++	of_node_put(endpoint);
++
++	return pdata;
++}
++
+ static int ths7303_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+ {
+-	struct ths7303_platform_data *pdata = client->dev.platform_data;
++	struct ths7303_platform_data *pdata = ths7303_get_pdata(client);
+ 	struct ths7303_state *state;
+ 	struct v4l2_subdev *sd;
+ 
+@@ -405,8 +433,18 @@ static const struct i2c_device_id ths7303_id[] = {
+ 
+ MODULE_DEVICE_TABLE(i2c, ths7303_id);
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id ths73x3_of_match[] = {
++	{ .compatible = "ti,ths7303", },
++	{ .compatible = "ti,ths7353", },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, ths73x3_of_match);
++#endif
++
+ static struct i2c_driver ths7303_driver = {
+ 	.driver = {
++		.of_match_table = of_match_ptr(ths73x3_of_match),
+ 		.owner	= THIS_MODULE,
+ 		.name	= "ths73x3",
+ 	},
+-- 
+1.7.0.4
+
