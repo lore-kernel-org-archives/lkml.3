@@ -1,45 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab3E0ILI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 04:11:08 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756769Ab3E0ILH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 04:11:07 -0400
-Message-ID: <51A3150C.7080009@nod.at>
-Date: Mon, 27 May 2013 10:10:52 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1757019Ab3E0INB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 04:13:01 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59715 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756863Ab3E0IM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 04:12:59 -0400
+X-AuditID: 9c93016f-b7cfdae000002fc1-35-51a315880224
+Date: Mon, 27 May 2013 17:12:56 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Minkyung Kim <minkyung88@lge.com>
+Subject: Re: [PATCH v5 0/7] Per process reclaim
+Message-ID: <20130527081256.GB5157@blaptop>
+References: <1368084089-24576-1-git-send-email-minchan@kernel.org>
+ <20130521161656.d6d24d1ce226b0034e02abdf@linux-foundation.org>
 MIME-Version: 1.0
-To: Thomas Weber <thomas@tomweber.eu>
-CC: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, wang bo <wang.bo116@zte.com.cn>
-Subject: Re: [PATCH] UBI: Fastmap: Fix memory leak
-References: <CAFLxGvw5gj-dfQeMKQVJpHPAXi4ZeNTaG3u3yXOAkshJRavXVA@mail.gmail.com> <1369641744-13534-1-git-send-email-thomas@tomweber.eu>
-In-Reply-To: <1369641744-13534-1-git-send-email-thomas@tomweber.eu>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521161656.d6d24d1ce226b0034e02abdf@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello Andrew,
 
-Am 27.05.2013 10:02, schrieb Thomas Weber:
-> Signed-off-by: wang bo <wang.bo116@zte.com.cn>
->
-> [fix whitespace errors]
->
-> Tested with linux-v3.10-rc3 on Devkit8000.
-> Signed-off-by: Thomas Weber <thomas@tomweber.eu>
->
-> The discussion about this patch can be found:
-> https://lkml.org/lkml/2013/5/2/118
+Sorry for the late response.
+It was bad timing because I was off during last week.
 
-Thanks a lot for fixing the whitespace issues!
-Am I allowed to add a Tested-by: Thomas Weber <thomas@tomweber.eu>?
-IOW did you test the patch? :D
+On Tue, May 21, 2013 at 04:16:56PM -0700, Andrew Morton wrote:
+> On Thu,  9 May 2013 16:21:22 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > These day, there are many platforms avaiable in the embedded market
+> > and they are smarter than kernel which has very limited information
+> > about working set so they want to involve memory management more heavily
+> > like android's lowmemory killer and ashmem or recent many lowmemory
+> > notifier(there was several trial for various company NOKIA, SAMSUNG,
+> > Linaro, Google ChromeOS, Redhat).
+> > 
+> > One of the simple imagine scenario about userspace's intelligence is that
+> > platform can manage tasks as forground and backgroud so it would be
+> > better to reclaim background's task pages for end-user's *responsibility*
+> > although it has frequent referenced pages.
+> > 
+> > The patch[1] prepares that force_reclaim in shrink_page_list can
+> > handle anonymous pages as well as file-backed pages.
+> > 
+> > The patch[2] adds new knob "reclaim under proc/<pid>/" so task manager
+> > can reclaim any target process anytime, anywhere. It could give another
+> > method to platform for using memory efficiently.
+> > 
+> > It can avoid process killing for getting free memory, which was really
+> > terrible experience because I lost my best score of game I had ever
+> > after I switch the phone call while I enjoyed the game.
+> > 
+> > Reclaim file-backed pages only.
+> > 	echo file > /proc/PID/reclaim
+> > Reclaim anonymous pages only.
+> > 	echo anon > /proc/PID/reclaim
+> > Reclaim all pages
+> > 	echo all > /proc/PID/reclaim
+> 
+> Oh boy.  I think I do agree with the overall intent, but there are so
+> many ways of doing this.
+> 
+> - Do we reclaim the pages altogether, or should we just give them one
+>   round of aging?  If the latter then you'd need to run "echo anon >
+>   /proc/PID/reclaim" four times to firmly whack the pages, but that's
+>   more flexible.
 
-Thanks,
-//richard
+The concern of idea you suggested is that it's tied up to kernel's
+reclaim implementation(active/inactive/referenced) so if we changes
+the logic, user's behavior would be broken easily.
+
+> 
+> - Why do it via the pid at all?  Would it be better to instead do
+>   this to a memcg and require that the admin put these processes into
+>   memcgs?  In fact existing memcg controls could get us at least
+>   partway to this feature.
+
+Hmm, I don't have an idea to handle this with memcg.
+
+1) Is there any way to reclaim anon pages as top prioirty
+   rather than file pages? Many embedded system uses zram as swap device
+   so somecase, anon reclaim could be cheaper rather than file-backd pages
+   reclaim on really slow storage.
+   Of course, we can control it with "swappiness" but at most, it makes
+   balancing ratio 1:1.
+   Should we expand the value to 200? I have no idea.
+   What I want is VM smarter that it can understand swap storage's speed
+   so that it can balance anon/file more smart. But it's not a simple
+   problem, I think.
+   
+2) Another usecase,
+   We used per process reclaim to make smart snapshot image which is
+   like hibernation image. As we know well, embedded system's boot time
+   is very critical to lunch the product so a few of system have used
+   snapshot booting. Snapshot booting's core technology is to minimise
+   snapshot image size but it includes working set pages which will
+   be needed soon after resuming so we can profile working set pages
+   ,discard unnecessary pages via per-process reclaim, then make snapshot
+   images.
+
+ 
+> 
+> - I don't understand the need for "Enhance per process reclaim to
+>   consider shared pages".  If "echo file > /proc/PID/reclaim" causes
+>   PID's mm's file-backed pte's to be unmapped (which seems to be the
+>   correct effect) then we get this automatically: unshared file pages
+>   will be freed and shared file pages will remain in core until the
+>   other sharing process's also unmap them.
+
+In current implemenation, even shared page is detached from all of
+processes and is freed.
+
+> 
+> 
+> Overall, I'm unsure whether/how to proceed with this.  I'd like to hear
+> from a lot of the potential users, and hear them say "yes, we can use
+> this".
+
+We already used it for creating snapshot image and have a plan to use it
+for reducing system latency and avoiding frequent OOM killing.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
