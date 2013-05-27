@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab3E0IWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 04:22:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36939 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3E0IWI (ORCPT
+	id S1757177Ab3E0I0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 04:26:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49343 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756974Ab3E0I0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 04:22:08 -0400
-Date: Mon, 27 May 2013 10:21:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+	Mon, 27 May 2013 04:26:43 -0400
+Message-ID: <51A318BF.7010109@canonical.com>
+Date: Mon, 27 May 2013 10:26:39 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
         dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         robclark@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
         mingo@elte.hu, linux-media@vger.kernel.org,
         Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks, v3
-Message-ID: <20130527082149.GE2781@laptop>
-References: <20130428165914.17075.57751.stgit@patser>
- <20130428170407.17075.80082.stgit@patser>
- <20130430191422.GA5763@phenom.ffwll.local>
- <519CA976.9000109@canonical.com>
- <20130522161831.GQ18810@twins.programming.kicks-ass.net>
- <519CFF56.90600@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CFF56.90600@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks,
+ v3
+References: <20130428165914.17075.57751.stgit@patser> <20130428170407.17075.80082.stgit@patser> <20130430191422.GA5763@phenom.ffwll.local> <519CA976.9000109@canonical.com> <20130522161831.GQ18810@twins.programming.kicks-ass.net> <519CFF56.90600@canonical.com> <20130527080019.GD2781@laptop>
+In-Reply-To: <20130527080019.GD2781@laptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 07:24:38PM +0200, Maarten Lankhorst wrote:
-> >> +static inline void ww_acquire_init(struct ww_acquire_ctx *ctx,
-> >> +				   struct ww_class *ww_class)
-> >> +{
-> >> +	ctx->task = current;
-> >> +	do {
-> >> +		ctx->stamp = atomic_long_inc_return(&ww_class->stamp);
-> >> +	} while (unlikely(!ctx->stamp));
-> > I suppose we'll figure something out when this becomes a bottleneck. Ideally
-> > we'd do something like:
-> >
-> >  ctx->stamp = local_clock();
-> >
-> > but for now we cannot guarantee that's not jiffies, and I suppose that's a tad
-> > too coarse to work for this.
-> This might mess up when 2 cores happen to return exactly the same time, how do you choose a winner in that case?
-> EDIT: Using pointer address like you suggested below is fine with me. ctx pointer would be static enough.
+Op 27-05-13 10:00, Peter Zijlstra schreef:
+> On Wed, May 22, 2013 at 07:24:38PM +0200, Maarten Lankhorst wrote:
+>>>> +- Functions to only acquire a single w/w mutex, which results in the exact same
+>>>> +  semantics as a normal mutex. These functions have the _single postfix.
+>>> This is missing rationale.
+>> trylock_single is useful when iterating over a list, and you want to evict a bo, but only the first one that can be acquired.
+>> lock_single is useful when only a single bo needs to be acquired, for example to lock a buffer during mmap.
+> OK, so given that its still early, monday and I haven't actually spend
+> much time thinking on this; would it be possible to make:
+> ww_mutex_lock(.ctx=NULL) act like ww_mutex_lock_single()?
+>
+> The idea is that if we don't provide a ctx, we'll get a different
+> lockdep annotation; mutex_lock() vs mutex_lock_nest_lock(). So if we
+> then go and make a mistake, lockdep should warn us.
+>
+> Would that work or should I stock up on morning juice?
+>
+It's easy to merge unlock_single and unlock, which I did in the next version I'll post.
+Lockdep will already warn if ww_mutex_lock and ww_mutex_lock_single are both
+used. ww_test_block_context and ww_test_context_block in lib/locking-selftest.c
+are the testcases for this.
 
-Right, but for now I suppose the 'global' atomic is ok, if/when we find
-it hurts performance we can revisit. I was just spewing ideas :-)
+The locking paths are too different, it will end up with doing "if (ctx == NULL) mutex_lock(); else ww_mutex_lock();"
 
-> > Also, why is 0 special?
-> Oops, 0 is no longer special.
-> 
-> I used to set the samp directly on the lock, so 0 used to mean no ctx set.
-
-Ah, ok :-)
-
-> >> +static inline int __must_check ww_mutex_trylock_single(struct ww_mutex *lock)
-> >> +{
-> >> +	return mutex_trylock(&lock->base);
-> >> +}
-> > trylocks can never deadlock they don't block per definition, I don't see the
-> > point of the _single() thing here.
-> I called it single because they weren't annotated into any ctx. I can drop the _single suffix though,
-> but you'd still need to unlock with unlock_single, or we need to remove that distinction altogether,
-> lose a few lockdep checks and only have a one unlock function.
-
-Again, early.. monday.. would a trylock, even if successful still need
-the ctx?
-
+~Maarten
 
