@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab3E0Nus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 09:50:48 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:47244 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562Ab3E0Num (ORCPT
+	id S932670Ab3E0Nun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 09:50:43 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:33259 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932653Ab3E0Nuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 09:50:42 -0400
+	Mon, 27 May 2013 09:50:40 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tj@kernel.org, msnitzer@redhat.com, ksievers@redhat.com,
-        jbottomley@parallels.com, axboe@kernel.dk
-Subject: [RFC PATCH 4/4] scsi: lock out SG_IO by default to unprivileged users
-Date: Mon, 27 May 2013 15:50:22 +0200
-Message-Id: <1369662622-5959-5-git-send-email-pbonzini@redhat.com>
+        jbottomley@parallels.com, axboe@kernel.dk, linux-scsi@vger.kernel.org
+Subject: [RFC PATCH 3/4] block: add back command filter modification via sysfs
+Date: Mon, 27 May 2013 15:50:21 +0200
+Message-Id: <1369662622-5959-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369662622-5959-1-git-send-email-pbonzini@redhat.com>
 References: <1369662622-5959-1-git-send-email-pbonzini@redhat.com>
@@ -21,89 +21,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move policy on SG_IO access to userspace.  Some level of checking
-at the kernel level (compared to just having an opt-out for the
-default whitelist) is needed because any userspace whitelist is too
-easily circumvented by doing ptrace on the program that has a file
-descriptor open.  This would be a regression for those who are using Unix
-permissions, security modules or the device cgroup to confine programs.
+This adds two new sysfs attributes to the queue kobject.  The attributes
+allow reading and writing the whitelist of unprivileged commands.
 
-A meaningful whitelist can then be set by udev, for example.
+This is again a bit different from what was removed in commit 018e044
+(block: get rid of queue-private command filter, 2009-06-26), but the idea
+is the same.  One difference is that it does not use a separate kobject.
+Also, the supported sysfs syntax is a bit more expressive: it includes
+ranges, the ability to replace all of the filter with a single command,
+and does not force usage of hexadecimal.
 
+Since the names are different, and the old ones were anyway never really
+enabled, the different API is not a problem.
+
+Cc: linux-scsi@vger.kernel.org
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
-	This is not yet usable, because sg devices do not have a link
-	to the queue object.
+ Documentation/block/queue-sysfs.txt |  16 ++++++
+ block/Kconfig                       |  10 ++++
+ block/blk-sysfs.c                   |  41 ++++++++++++++
+ block/scsi_ioctl.c                  | 106 ++++++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h              |  21 +++++++
+ 5 files changed, 194 insertions(+)
 
- block/Kconfig      | 12 ++++++++++++
- block/scsi_ioctl.c | 10 ++++++----
- 2 files changed, 18 insertions(+), 4 deletions(-)
-
+diff --git a/Documentation/block/queue-sysfs.txt b/Documentation/block/queue-sysfs.txt
+index e54ac1d..1152b38 100644
+--- a/Documentation/block/queue-sysfs.txt
++++ b/Documentation/block/queue-sysfs.txt
+@@ -133,6 +133,22 @@ control of this block device to that new IO scheduler. Note that writing
+ an IO scheduler name to this file will attempt to load that IO scheduler
+ module, if it isn't already present in the system.
+ 
++sgio_read_filter (RW)
++---------------------
++When read, this file will display a list of SCSI commands (i.e. values of
++the first byte of a CDB) that are always available for unprivileged users
++(via /dev/bsg, /dev/sgNN, or ioctls such as SG_IO and CDROM_SEND_PACKET).
++When written, the list of commands will be modified.  By default it
++will be completely replaced; writing a string that begins with '+' will
++add new commands, and writing a string that begins with '-' will remove
++some commands.  Ranges of commands are supported, for example '0x00-0xff'.
++
++sgio_write_filter (RW)
++----------------------
++When read, this file will display a list of SCSI commands (i.e. values of
++the first byte of a CDB) that are available for unprivileged users
++when the block device is open for writing.  Writing to this file behaves
++as for sgio_read_filter.
+ 
+ 
+ Jens Axboe <jens.axboe@oracle.com>, February 2009
 diff --git a/block/Kconfig b/block/Kconfig
-index e89d6a2..67d1f68 100644
+index a7e40a7..e89d6a2 100644
 --- a/block/Kconfig
 +++ b/block/Kconfig
-@@ -75,6 +75,18 @@ config BLK_DEV_SG_FILTER_SYSFS
+@@ -65,6 +65,16 @@ config BLK_DEV_BSG
  
  	  If unsure, say Y.
  
-+config BLK_DEV_SG_FILTER_MMC
-+	bool "Backwards-compatible default SG_IO filter"
++config BLK_DEV_SG_FILTER_SYSFS
++	bool "Customizable SG_IO filters in sysfs"
 +	default y
 +	help
-+	  Saying Y here will let you send several commands (mostly based
-+	  on the MMC command set) by default to SCSI devices via /dev/sg,
-+	  /dev/bsg or ioctls such as SG_IO) even for unprivileged users.
-+	  Saying N will restrict the set of commands that unprivileged
-+	  users can send to the bare minimum.
++	  Saying Y here will let you use sysfs to customize the list
++	  of SCSI commands that are available (via /dev/sg, /dev/bsg or
++	  ioctls such as SG_IO) to unprivileged users.
 +
 +	  If unsure, say Y.
 +
  config BLK_DEV_BSGLIB
  	bool "Block layer SG support v4 helper lib"
  	default n
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 2539f8d..3e4ffeb 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -429,6 +429,43 @@ static struct queue_sysfs_entry queue_random_entry = {
+ 	.store = queue_store_random,
+ };
+ 
++#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
++static ssize_t queue_sgio_filter_read_show(struct request_queue *q, char *page)
++{
++	return blk_filter_show(q, page, READ);
++}
++
++static ssize_t queue_sgio_filter_write_show(struct request_queue *q,
++				 char *page)
++{
++	return blk_filter_show(q, page, WRITE);
++}
++
++static ssize_t queue_sgio_filter_read_store(struct request_queue *q,
++				    const char *page, size_t count)
++{
++	return blk_filter_store(q, page, count, READ);
++}
++
++static ssize_t queue_sgio_filter_write_store(struct request_queue *q,
++				     const char *page, size_t count)
++{
++	return blk_filter_store(q, page, count, WRITE);
++}
++
++static struct queue_sysfs_entry queue_sgio_filter_read_entry = {
++	.attr = { .name = "sgio_filter_read", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_sgio_filter_read_show,
++	.store = queue_sgio_filter_read_store,
++};
++
++static struct queue_sysfs_entry queue_sgio_filter_write_entry = {
++	.attr = {.name = "sgio_filter_write", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_sgio_filter_write_show,
++	.store = queue_sgio_filter_write_store,
++};
++#endif
++
+ static struct attribute *default_attrs[] = {
+ 	&queue_requests_entry.attr,
+ 	&queue_ra_entry.attr,
+@@ -452,6 +489,10 @@ static struct attribute *default_attrs[] = {
+ 	&queue_rq_affinity_entry.attr,
+ 	&queue_iostats_entry.attr,
+ 	&queue_random_entry.attr,
++#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
++	&queue_sgio_filter_read_entry.attr,
++	&queue_sgio_filter_write_entry.attr,
++#endif
+ 	NULL,
+ };
+ 
 diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 5db39b5..079dfa2 100644
+index 22b925f..5db39b5 100644
 --- a/block/scsi_ioctl.c
 +++ b/block/scsi_ioctl.c
-@@ -113,9 +113,12 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
+@@ -18,6 +18,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
++#include <linux/ctype.h>
+ #include <linux/string.h>
+ #include <linux/module.h>
+ #include <linux/blkdev.h>
+@@ -111,6 +112,8 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
+ 
  static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
  {
- 	memset(filter, 0, sizeof(*filter));
--
--	/* Basic read-only commands */
-+	__set_bit(INQUIRY, filter->read_ok);
- 	__set_bit(TEST_UNIT_READY, filter->read_ok);
-+	__set_bit(REPORT_LUNS, filter->read_ok);
++	memset(filter, 0, sizeof(*filter));
 +
-+#ifdef BLK_DEV_SG_FILTER_MMC
-+	/* Basic read-only commands */
+ 	/* Basic read-only commands */
+ 	__set_bit(TEST_UNIT_READY, filter->read_ok);
  	__set_bit(REQUEST_SENSE, filter->read_ok);
- 	__set_bit(READ_6, filter->read_ok);
- 	__set_bit(READ_10, filter->read_ok);
-@@ -125,14 +128,12 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	__set_bit(READ_DEFECT_DATA, filter->read_ok);
- 	__set_bit(READ_CAPACITY, filter->read_ok);
- 	__set_bit(READ_LONG, filter->read_ok);
--	__set_bit(INQUIRY, filter->read_ok);
- 	__set_bit(MODE_SENSE, filter->read_ok);
- 	__set_bit(MODE_SENSE_10, filter->read_ok);
- 	__set_bit(LOG_SENSE, filter->read_ok);
- 	__set_bit(START_STOP, filter->read_ok);
- 	__set_bit(GPCMD_VERIFY_10, filter->read_ok);
- 	__set_bit(VERIFY_16, filter->read_ok);
--	__set_bit(REPORT_LUNS, filter->read_ok);
- 	__set_bit(SERVICE_ACTION_IN, filter->read_ok);
- 	__set_bit(RECEIVE_DIAGNOSTIC, filter->read_ok);
- 	__set_bit(MAINTENANCE_IN, filter->read_ok);
-@@ -193,6 +194,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	__set_bit(GPCMD_LOAD_UNLOAD, filter->write_ok);
- 	__set_bit(GPCMD_SET_STREAMING, filter->write_ok);
- 	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
+@@ -739,6 +742,109 @@ int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
+ }
+ EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
+ 
++#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
++ssize_t blk_filter_show(struct request_queue *q, char *page, int rw)
++{
++	struct blk_cmd_filter *filter;
++	char *p = page;
++	unsigned long *okbits;
++	int i;
++
++	filter = q->cmd_filter;
++	if (!filter)
++		filter = &blk_default_cmd_filter;
++
++	if (rw == READ)
++		okbits = filter->read_ok;
++	else
++		okbits = filter->write_ok;
++
++	for (i = 0; i < BLK_SCSI_MAX_CMDS; i++)
++		if (test_bit(i, okbits))
++			p += sprintf(p, "0x%02x ", i);
++
++	if (p > page)
++		p[-1] = '\n';
++
++	return p - page;
++}
++EXPORT_SYMBOL_GPL(blk_filter_show);
++
++ssize_t blk_filter_store(struct request_queue *q,
++			 const char *page, size_t count, int rw)
++{
++	unsigned long okbits[BLK_SCSI_CMD_PER_LONG], *target_okbits;
++	bool set;
++	const char *p = page;
++	char *endp;
++	int start = -1, cmd;
++
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	if (!q->cmd_filter) {
++		q->cmd_filter = kmalloc(sizeof(struct blk_cmd_filter),
++					GFP_KERNEL);
++		if (!q->cmd_filter)
++			return -ENOMEM;
++
++		blk_set_cmd_filter_defaults(q->cmd_filter);
++	}
++
++	if (rw == READ)
++		target_okbits = q->cmd_filter->read_ok;
++	else
++		target_okbits = q->cmd_filter->write_ok;
++
++	set = (p[0] != '-');
++	if (p[0] != '-' && p[0] != '+')
++		memset(okbits, 0, sizeof(okbits));
++	else {
++		memcpy(okbits, target_okbits, sizeof(okbits));
++		p++;
++	}
++
++	while (p < page + count) {
++		if (start == -1 && isspace(*p)) {
++			p++;
++			continue;
++		}
++
++		cmd = simple_strtol(p, &endp, 0);
++
++		/* all of these cases means invalid input, so do nothing. */
++		if (endp == p || cmd < 0 || cmd >= BLK_SCSI_MAX_CMDS ||
++		    (start != -1 && endp < page + count && !isspace(*endp)))
++			return -EINVAL;
++
++		p = endp;
++		if (p < page + count && *p == '-') {
++			BUG_ON(start != -1);
++			start = cmd;
++			p++;
++			continue;
++		}
++
++		if (start == -1)
++			start = cmd;
++
++		for (; start <= cmd; start++)
++			if (set)
++				__set_bit(start, okbits);
++			else
++				__clear_bit(start, okbits);
++		start = -1;
++	}
++
++	if (start != -1)
++		return -EINVAL;
++
++	memcpy(target_okbits, okbits, sizeof(okbits));
++	return count;
++}
++EXPORT_SYMBOL_GPL(blk_filter_store);
 +#endif
++
+ static int __init blk_scsi_ioctl_init(void)
+ {
+ 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 9a8434d..25eccc0f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1096,9 +1096,30 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
+ 				    gfp_mask);
  }
  
- int blk_verify_command(struct blk_cmd_filter *filter,
++/*
++ * command filter functions
++ */
+ extern int blk_verify_command(struct blk_cmd_filter *filter,
+ 			      unsigned char *cmd, fmode_t has_write_perm);
+ 
++#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
++ssize_t blk_filter_show(struct request_queue *q, char *page, int rw);
++ssize_t blk_filter_store(struct request_queue *q,
++			 const char *page, size_t count, int rw);
++#else
++static inline ssize_t blk_filter_show(struct request_queue *q, char *page, int rw)
++{
++	return -EINVAL;
++}
++
++static inline ssize_t blk_filter_store(struct request_queue *q,
++				       const char *page, size_t count, int rw)
++{
++	return -EINVAL;
++}
++#endif /* CONFIG_BLK_DEV_SG_FILTER_SYSFS */
++
++
+ enum blk_default_limits {
+ 	BLK_MAX_SEGMENTS	= 128,
+ 	BLK_SAFE_MAX_SECTORS	= 255,
 -- 
 1.8.1.4
+
 
