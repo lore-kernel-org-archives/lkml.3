@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab3E0Kaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:30:30 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:64866 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3E0Ka2 (ORCPT
+	id S1757461Ab3E0Kby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:31:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57298 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411Ab3E0Kbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:30:28 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 2/2] driver core: firmware loader: kill FW_ACTION_NOHOTPLUG requests before suspend
-Date: Mon, 27 May 2013 18:30:04 +0800
-Message-Id: <1369650604-27941-3-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369650604-27941-1-git-send-email-ming.lei@canonical.com>
-References: <1369650604-27941-1-git-send-email-ming.lei@canonical.com>
+	Mon, 27 May 2013 06:31:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>, Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
+Date: Mon, 27 May 2013 12:31:40 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305262323.29519.arnd@arndb.de> <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
+In-Reply-To: <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305271231.40693.arnd@arndb.de>
+X-Provags-ID: V02:K0:dNd5Q6iIl1ZrtXqySWeDtOpaxF7Nr12F0+JtZjEbAV6
+ tIza3Ne18q1kr2lywF92A4o/SclT1OvSm0/NbH9EIRVGTP755r
+ adkdLDXlERsD4z3dIrPiZYCuyzjMMbv+Aev+JWrhPd4uqkqS2z
+ br40JLy1oaAe3GGz1sFkYEAY71CaYKwEvFB6jv9K2+/Xs78i2U
+ kcOw4jnajWB4lmR+5+y5ccpG7fAwT+YKcFSNv6lIIEZyoH6VDH
+ ecf2JoeYgEqevrNrzgHSMuq9TI3HQN+M8nYRKzQtashPchXbrM
+ Hmzc8/+0gS8xVDKNGwRMwqZrgOaLYi7O/O7r4CQkKI57XsVVGm
+ ZqRlOITtGUwIrgglUc/M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch kills the firmware loading requests of FW_ACTION_NOHOTPLUG
-before suspend to avoid blocking suspend because there is no timeout
-for these requests.
+On Monday 27 May 2013, Daniel Tang wrote:
+> > The one remaining bit that sticks out is the clcd platform data. As I
+> > said before, I won't require you to convert that to DT in order to
+> > get your code merged, but I'd also really like to see that happen,
+> > as we will also need that to get rid of auxdata on the ARM reference
+> > platforms (integrator, versatile, realview, vexpress).
+> 
+> How would you like me to convert the platform data to DT? AFAIK, the clcd
+> driver isn't aware of DT so the only way is to use the AUXDATA right now.
 
-Cc: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
+Linus Walleij mentioned on IRC that Pawel Moll already posted a series
+that adds DT support for clcd:
 
-This patch depends on Takashi Iwai's patch of "firmware: Avoid deadlock of
-usermodehelper lock at shutdown"
+http://lists.freedesktop.org/archives/dri-devel/2013-April/037519.html
 
- drivers/base/firmware_class.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+The series does a few more things, but you can probbly split out the
+parts you need and base on that.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 64e7870..5690e72 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -128,6 +128,7 @@ struct firmware_buf {
- 	size_t size;
- #ifdef CONFIG_FW_LOADER_USER_HELPER
- 	bool is_paged_buf;
-+	bool need_uevent;
- 	struct page **pages;
- 	int nr_pages;
- 	int page_array_size;
-@@ -873,6 +874,7 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
- 	}
- 
- 	if (uevent) {
-+		buf->need_uevent = true;
- 		dev_set_uevent_suppress(f_dev, false);
- 		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
- 		if (timeout != MAX_SCHEDULE_TIMEOUT)
-@@ -1407,6 +1409,20 @@ static void __device_uncache_fw_images(void)
- 	spin_unlock(&fwc->name_lock);
- }
- 
-+/* kill pending requests without uevent to avoid blocking suspend */
-+static void kill_requests_without_uevent(void)
-+{
-+	struct firmware_buf *buf;
-+	struct firmware_buf *next;
-+
-+	mutex_lock(&fw_lock);
-+	list_for_each_entry_safe(buf, next, &pending_fw_head, pending_list) {
-+		if (!buf->need_uevent)
-+			 fw_load_abort(buf);
-+	}
-+	mutex_unlock(&fw_lock);
-+}
-+
- /**
-  * device_cache_fw_images - cache devices' firmware
-  *
-@@ -1486,6 +1502,7 @@ static int fw_pm_notify(struct notifier_block *notify_block,
- 	switch (mode) {
- 	case PM_HIBERNATION_PREPARE:
- 	case PM_SUSPEND_PREPARE:
-+		kill_requests_without_uevent();
- 		device_cache_fw_images();
- 		break;
- 
--- 
-1.7.9.5
-
+	Arnd
