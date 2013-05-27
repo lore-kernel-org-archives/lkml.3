@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3E0Mr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:47:28 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51824 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab3E0Mr1 (ORCPT
+	id S932539Ab3E0Mru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:47:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57051 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932507Ab3E0Mrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:47:27 -0400
-Message-ID: <51A355BC.6090309@free-electrons.com>
-Date: Mon, 27 May 2013 14:46:52 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 27 May 2013 08:47:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        andrew@lunn.ch, jason@lakedaemon.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, buytenh@wantstofly.org,
+        grant.likely@linaro.org, David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address workaround on DT ethernet
+Date: Mon, 27 May 2013 14:47:35 +0200
+Message-ID: <2255648.0KEmXfjCx5@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-21-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369655404.3557.33.camel@pasglop>
+References: <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com> <51A33447.80305@gmail.com> <1369655404.3557.33.camel@pasglop>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <51A34BF9.5000905@atmel.com>
-In-Reply-To: <51A34BF9.5000905@atmel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:AESAecNuhxKZK1V7tPDZezcwzFKWi5tTBNiZDDcGnJo
+ qAxwDSwrLegQ6Ldcy5+ZyGDxD3GjhvDFn/YP1wq9CpAcjqAW4n
+ iChKal+zunJBy7K+S5Vm6cPyuBv+MEcj6IZ8uDQumtJEDdGodW
+ X0yXml3jWfn2E/AXCI7hsAWqkaodMRCFylSELej4lQoyUq5wNl
+ WL5cmZZAgbjp4Vd0wz9SCOggrMqfcZfAvMREhUa/Gpzd91CCU7
+ Zmw0X4DplQpVGDPHWRRxb7mTKRAuaTHElYN+VlTOG5LPi0Qfkh
+ LH/CfeRLrPt9ONoNKuBnG/tFgKmpqaHd/UUxU9CEQz6A6IfO+U
+ TZpSCIq2B4JH5fBHUOz8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2013 14:05, Nicolas Ferre wrote:
-> On 27/05/2013 12:48, Alexandre Belloni :
->> Fixes:
->> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
->> :(.text+0x1174): undefined reference to `mdiobus_write'
->> :(.text+0x1188): undefined reference to `mdiobus_write'
->> :(.text+0x119c): undefined reference to `mdiobus_write'
->> :(.text+0x11b0): undefined reference to `mdiobus_write'
->> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
->> :(.init.text+0x1e34): undefined reference to
->> `phy_register_fixup_for_uid'
->>
->> when CONFIG_PHYLIB is not selected.
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
->> ---
->> Changes in v3:
->>     added SoB
->>     added Acked-By
->
-> A v3 is not needed simply for this. Thanks, anyway!
->
+On Monday 27 May 2013 21:50:04 Benjamin Herrenschmidt wrote:
+> However, that wouldn't help much with the allocation/leak problem,
+> though at least it would be easier to use. It could also *try* to re-use
+> the current allocation if the new content is of smaller or equal size.
 
-It was not much and I have to stop forgetting my SoB ;)
+I thought that dtc tried to aggressively save space by folding identical
+strings. If you tried to reuse a property that had its contents shared
+with another one, you would get interesting results I guess.
 
-> One question though: why not just add
->
->         select PHYLIB
->
-> In Kconfig entry:
->
->  config MACH_SAMA5_DT
->
-> ?
->
-
-That would simply mean that you have to enable NET when using a SAMA5
-which is not what every user will want.
-
-Regards,
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+	Arnd
