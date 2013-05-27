@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3E0CCn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:02:43 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58780 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab3E0CCm (ORCPT
+	id S1755917Ab3E0CEl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:04:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42556 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab3E0CEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:02:42 -0400
-Message-ID: <51A2BEB5.9030900@linux.vnet.ibm.com>
-Date: Mon, 27 May 2013 10:02:29 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 26 May 2013 22:04:40 -0400
+Date: Mon, 27 May 2013 11:04:59 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/4] ipc/sem.c: Bug fixes, regression fixes, v3
+Message-ID: <20130527020459.GA7365@kroah.com>
+References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 03/11] KVM: MMU: fast invalidate all pages
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130524202307.GA4525@amt.cnet>
-In-Reply-To: <20130524202307.GA4525@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052701-7014-0000-0000-000003134C7F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
-
-On 05/25/2013 04:23 AM, Marcelo Tosatti wrote:
-
->> +static void kvm_zap_obsolete_pages(struct kvm *kvm)
->> +{
->> +	struct kvm_mmu_page *sp, *node;
->> +	LIST_HEAD(invalid_list);
->> +
->> +restart:
->> +	list_for_each_entry_safe_reverse(sp, node,
->> +	      &kvm->arch.active_mmu_pages, link) {
->> +		/*
->> +		 * No obsolete page exists before new created page since
->> +		 * active_mmu_pages is the FIFO list.
->> +		 */
->> +		if (!is_obsolete_sp(kvm, sp))
->> +			break;
+On Sun, May 26, 2013 at 11:08:51AM +0200, Manfred Spraul wrote:
+> I've split my patch into 4 parts:
+> - 1: Fix-missing-wakeups-in-do_smart_update
+> - 2: seperate-wait-for-zero-and-alter-tasks
+> - 3: Always-use-only-one-queue-for-alter-operations
+> - 4: Rename-try_atomic_semop-to-perform_atomic
 > 
-> Can you add a comment to list_add(x, active_mmu_pages) callsites
-> mentioning this case?
-> 
-> Because it'll break silently if people do list_add_tail().
+> Linus:
+> - Patch 1 should be merged immediately: It fixes bugs,
+>   the current code misses wakeups.
 
-Sure, I will do it in the next version.
+Should this patch be backported to 3.9 and maybe older kernels as well?
 
-And i totally agree with Gleb's points that reply your other questions
-in this patch.
+thanks,
 
-Thank you all!
-
+greg k-h
