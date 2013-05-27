@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab3E0Jiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:38:50 -0400
-Received: from linuxdingsda.de ([87.106.20.67]:48471 "EHLO serverteil.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755115Ab3E0Jis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:38:48 -0400
-X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 05:38:48 EDT
-Message-ID: <51A327A4.7020908@linuxdingsda.de>
-Date: Mon, 27 May 2013 11:30:12 +0200
-From: Tobias Winter <tobias@linuxdingsda.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1755479Ab3E0Jlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:41:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35280 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755001Ab3E0Jlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 05:41:44 -0400
+Date: Mon, 27 May 2013 02:41:16 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-fc1f7d5606487ae28d6c84e95401952927d7379e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, jamie@jamieiles.com,
+        magnus.damm@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        magnus.damm@gmail.com, jamie@jamieiles.com
+In-Reply-To: <20130425143435.558006195@linutronix.de>
+References: <20130425143435.558006195@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] clocksource: apb_timer: Remove unsused function
+Git-Commit-ID: fc1f7d5606487ae28d6c84e95401952927d7379e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: linux-usb@vger.kernel.org
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Raise the maximum number of usb-serial devices to 256
-References: <519F7195.8090306@linuxdingsda.de> <20130524172354.GA1402@kroah.com>
-In-Reply-To: <20130524172354.GA1402@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raise the maximum number of usb-serial devices to 256, which is the
-actual limit supported by the codebase.
+Commit-ID:  fc1f7d5606487ae28d6c84e95401952927d7379e
+Gitweb:     http://git.kernel.org/tip/fc1f7d5606487ae28d6c84e95401952927d7379e
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 25 Apr 2013 20:31:43 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 16 May 2013 11:09:13 +0200
 
-Signed-off-by: Jakob-Tobias Winter <tobias@linuxdingsda.de>
-Tested-by: Jakob-Tobias Winter <tobias@linuxdingsda.de>
+clocksource: apb_timer: Remove unsused function
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Stultz <john.stultz@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Acked-by: Jamie Iles <jamie@jamieiles.com>
+Link: http://lkml.kernel.org/r/20130425143435.558006195@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/usb/serial.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clocksource/dw_apb_timer.c | 12 ------------
+ include/linux/dw_apb_timer.h       |  1 -
+ 2 files changed, 13 deletions(-)
 
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 302ddf5..c0ce5ed 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -20,7 +20,7 @@
- #include <linux/kfifo.h>
-
- #define SERIAL_TTY_MAJOR       188     /* Nice legal number now */
--#define SERIAL_TTY_MINORS      254     /* loads of devices :) */
-+#define SERIAL_TTY_MINORS      256     /* loads of devices :) */
- #define SERIAL_TTY_NO_MINOR    255     /* No minor was assigned */
-
- /* The maximum number of ports one device can grab at once */
--- 
-1.7.10.4
-
+diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
+index 8c2a35f..e54ca10 100644
+--- a/drivers/clocksource/dw_apb_timer.c
++++ b/drivers/clocksource/dw_apb_timer.c
+@@ -387,15 +387,3 @@ cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs)
+ {
+ 	return (cycle_t)~apbt_readl(&dw_cs->timer, APBTMR_N_CURRENT_VALUE);
+ }
+-
+-/**
+- * dw_apb_clocksource_unregister() - unregister and free a clocksource.
+- *
+- * @dw_cs:	The clocksource to unregister/free.
+- */
+-void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs)
+-{
+-	clocksource_unregister(&dw_cs->cs);
+-
+-	kfree(dw_cs);
+-}
+diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
+index dd755ce..b1cd959 100644
+--- a/include/linux/dw_apb_timer.h
++++ b/include/linux/dw_apb_timer.h
+@@ -51,7 +51,6 @@ dw_apb_clocksource_init(unsigned rating, const char *name, void __iomem *base,
+ void dw_apb_clocksource_register(struct dw_apb_clocksource *dw_cs);
+ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs);
+ cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs);
+-void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs);
+ 
+ extern void dw_apb_timer_init(void);
+ #endif /* __DW_APB_TIMER_H__ */
