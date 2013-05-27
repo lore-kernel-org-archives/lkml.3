@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3E0IPD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 04:15:03 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:54750 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab3E0IPB convert rfc822-to-8bit (ORCPT
+	id S1757071Ab3E0IRe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 04:17:34 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:44807 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756774Ab3E0IRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 04:15:01 -0400
+	Mon, 27 May 2013 04:17:32 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A31669.7080309@asianux.com>
+Date: Mon, 27 May 2013 16:16:41 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1369641266-16913-1-git-send-email-icycoder@gmail.com>
-References: <1369641266-16913-1-git-send-email-icycoder@gmail.com>
-Date: Mon, 27 May 2013 16:15:00 +0800
-Message-ID: <CAPQBkrOtJkn_M+7hBJC-amxZ7SHQ+E_7gf2XiVzxCBbeEkxapw@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: fix a wrong header file path in util/unwind.c
-From: Runzhen Wang <icycoder@gmail.com>
-To: acme@redhat.com
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>, zhangyanfei@cn.fujitsu.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] arch: x86: platform: mrst: pr_err() need notice that
+ 'sdev->modalias' may not a NUL terminated string.
+References: <51A1CCCE.1020103@asianux.com> <20130527070634.GA1494@breakpoint.cc>
+In-Reply-To: <20130527070634.GA1494@breakpoint.cc>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I made a mistake.....
-There is no bug,  please ignore my patch.
-Sorry again. I will be careful next time.
+On 05/27/2013 03:06 PM, Sebastian Andrzej Siewior wrote:
+> On Sun, May 26, 2013 at 04:50:22PM +0800, Chen Gang wrote:
+>> > 
+>> > According to the areas which use "%16.16s" within this file, the
+>> > 'sdev->modalias' may not always be a NUL terminated string.
+>> > 
+>> > So need use "%.16s" instead of "%s" in pr_err(), or may cause issue.
+> No. spi_match_id() expects a NULL terminated string and I would be suprised if
+> it would be otherwise. Therefore moorsetown or this files has to learn to NULL
+> terminate its strings.
+> 
 
-On Mon, May 27, 2013 at 3:54 PM, Runzhen Wang <icycoder@gmail.com> wrote:
-> For the latest perf core tree:
-> (git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git),
-> in util/unwind.c line 29 includes "perf_regs.h". That means compiler
-> will search for this header file in current directory, so, gcc will
-> puts the following error messages:
->
-> util/unwind.c: In function ‘access_mem’:
-> util/unwind.c:400:50: error: ‘PERF_REG_SP’ undeclared (first use in this
-> function)
-> util/unwind.c:400:50: note: each undeclared identifier is reported only
-> once for each function it appears in
-> util/unwind.c: In function ‘unwind__get_entries’:
-> util/unwind.c:562:41: error: ‘PERF_REG_IP’ undeclared (first use in this
-> function)
->
-> Changing #include "perf_regs.h" to #include <perf_regs.h> will fix the
-> error.
->
-> Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-> ---
->  tools/perf/util/unwind.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-> index 958723b..50e14f7 100644
-> --- a/tools/perf/util/unwind.c
-> +++ b/tools/perf/util/unwind.c
-> @@ -26,7 +26,7 @@
->  #include <libunwind-ptrace.h>
->  #include "thread.h"
->  #include "session.h"
-> -#include "perf_regs.h"
-> +#include <perf_regs.h>
->  #include "unwind.h"
->  #include "util.h"
->
-> --
-> 1.7.9.5
->
+In spi_match_id(), it is 'spi_device', not 'spi_board_info'. ;-)
+
+But all together, it is my fault, the original implementation has no
+issue: "I treated SFI_NAME_LEN as SPI_NAME_LEN when strncpy()".
+
+BTW: 'pentry->name' in sfi_parse_devs() may not always be a NUL
+terminated string, could you give a check, too ?  ;-)
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
