@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab3E0LYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 07:24:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50204 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab3E0LYG (ORCPT
+	id S1757965Ab3E0L1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 07:27:03 -0400
+Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:49840 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755866Ab3E0L1B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 07:24:06 -0400
-Message-ID: <51A34250.6040601@canonical.com>
-Date: Mon, 27 May 2013 13:24:00 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks,
- v3
-References: <20130428165914.17075.57751.stgit@patser> <20130428170407.17075.80082.stgit@patser> <20130430191422.GA5763@phenom.ffwll.local> <519CA976.9000109@canonical.com> <20130522161831.GQ18810@twins.programming.kicks-ass.net> <519CFF56.90600@canonical.com> <20130527082149.GE2781@laptop> <51A32F0E.9000206@canonical.com> <20130527102457.GA4341@laptop> <51A33AD0.4030406@canonical.com> <20130527111557.GB4341@laptop>
-In-Reply-To: <20130527111557.GB4341@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 27 May 2013 07:27:01 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com>
+Date: Mon, 27 May 2013 19:26:47 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E0B30581-DD0A-46C5-B541-08F389F17018@jcrosoft.com>
+References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+X-Mailer: Apple Mail (2.1503)
+X-Ovh-Tracer-Id: 4827858802210286483
+X-Ovh-Remote: 116.230.102.237 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedruddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedruddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 27-05-13 13:15, Peter Zijlstra schreef:
-> On Mon, May 27, 2013 at 12:52:00PM +0200, Maarten Lankhorst wrote:
->> The reason ttm needed it was because there was another lock that interacted
->> with the ctx lock in a weird way. The ww lock it was using was inverted with another
->> lock, so it had to grab that lock first, perform a trylock on the ww lock, and if that failed
->> unlock the lock, wait for it to be unlocked, then retry the same thing again.
->> I'm so glad I managed to fix that mess, if you really need ww_mutex_trylock with a ctx,
->> it's an indication your locking is wrong.
->>
->> For ww_mutex_trylock with a context to be of any use you would also need to return
->> 0 or a -errno, (-EDEADLK, -EBUSY (already locked by someone else), or -EALREADY).
->> This would make the trylock very different from other trylocks, and very confusing because
->> if (ww_mutex_trylock(lock, ctx)) would not do what you would think it would do.
-> Yuck ;-)
->
-> Anyway, what I was thinking of is something like:
->
-> 	T0		T1
->
-> 	try A
-> 			lock B
-> 	lock B
-> 			lock A
->
-> Now, if for some reason T1 won the lottery such that T0 would have to be
-> wounded, T0's context would indicate its the first entry and not return
-> -EDEADLK.
-And this sounds like something lockdep is designed to complain about.
 
-Nothing stops you from doing try A then doing try B, which would be the correct way to deal with this situation.
-Why would you trylock one, and then not do the same for another?
+On May 27, 2013, at 6:48 PM, Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-> OTOH, anybody doing creative things like that might well deserve
-> whatever they get ;-)
-Indeed!
+> Fixes:
+> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
+> :(.text+0x1174): undefined reference to `mdiobus_write'
+> :(.text+0x1188): undefined reference to `mdiobus_write'
+> :(.text+0x119c): undefined reference to `mdiobus_write'
+> :(.text+0x11b0): undefined reference to `mdiobus_write'
+> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
+> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
+> 
+> when CONFIG_PHYLIB is not selected.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 
->>> The thing is; if there could exist something like:
->>>
->>>   ww_mutex_trylock(struct ww_mutex *, struct ww_acquire_ctx *ctx);
->>>
->>> Then we should not now take away that name and make it mean something
->>> else; namely: ww_mutex_trylock_single().
->>>
->>> Unless we want to allow .ctx=NULL to mean _single.
->>>
->>> As to why I proposed that (.ctx=NULL meaning _single); I suppose because
->>> I'm a minimalist at heart.
->> Minimalism isn't bad, it's just knowing when to sto
-> :-)
->
+no for this change
+
+add an inline version of phy_register_fixup_for_uid
+
+this will do the same for every platform
+
+> ---
+> Changes in v3:
+> 	added SoB
+> 	added Acked-By
+> 
+> Changes in v2:
+> 	use IS_BUILTIN
+> 	use CONFIG_PHYLIB and not CONFIG_PHY
+> 
+> arch/arm/mach-at91/board-dt-sama5.c | 22 ++++++++++++----------
+> 1 file changed, 12 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+> index 705305e..e9ce541 100644
+> --- a/arch/arm/mach-at91/board-dt-sama5.c
+> +++ b/arch/arm/mach-at91/board-dt-sama5.c
+> @@ -47,22 +47,24 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
+> #define GMII_ERCR	11
+> #define GMII_ERDWR	12
+> 
+> -	/* Set delay values */
+> -	value = GMII_RCCPSR | 0x8000;
+> -	phy_write(phy, GMII_ERCR, value);
+> -	value = 0xF2F4;
+> -	phy_write(phy, GMII_ERDWR, value);
+> -	value = GMII_RRDPSR | 0x8000;
+> -	phy_write(phy, GMII_ERCR, value);
+> -	value = 0x2222;
+> -	phy_write(phy, GMII_ERDWR, value);
+> +	if (IS_BUILTIN(CONFIG_PHYLIB)) {
+> +		/* Set delay values */
+> +		value = GMII_RCCPSR | 0x8000;
+> +		phy_write(phy, GMII_ERCR, value);
+> +		value = 0xF2F4;
+> +		phy_write(phy, GMII_ERDWR, value);
+> +		value = GMII_RRDPSR | 0x8000;
+> +		phy_write(phy, GMII_ERCR, value);
+> +		value = 0x2222;
+> +		phy_write(phy, GMII_ERDWR, value);
+> +	}
+> 
+> 	return 0;
+> }
+> 
+> static void __init sama5_dt_device_init(void)
+> {
+> -	if (of_machine_is_compatible("atmel,sama5d3xcm"))
+> +	if (of_machine_is_compatible("atmel,sama5d3xcm") && IS_BUILTIN(CONFIG_PHYLIB))
+> 		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
+> 			ksz9021rn_phy_fixup);
+> 
+> -- 
+> 1.8.1.2
+> 
 
