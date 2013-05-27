@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3E0JpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:45:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35330 "EHLO
+	id S1755888Ab3E0Jqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:46:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35340 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab3E0JpQ (ORCPT
+	with ESMTP id S1755520Ab3E0Jqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:45:16 -0400
-Date: Mon, 27 May 2013 02:45:06 -0700
+	Mon, 27 May 2013 05:46:37 -0400
+Date: Mon, 27 May 2013 02:46:22 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-09ac369c825d9d593404306d59062d854b321e9b@git.kernel.org>
+Message-ID: <tip-f5a2e34375a5e2b711aea488ac3ae50eeba6d57c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de, magnus.damm@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
         linux-kernel@vger.kernel.org, tglx@linutronix.de,
         magnus.damm@gmail.com
-In-Reply-To: <20130425143435.762417789@linutronix.de>
-References: <20130425143435.762417789@linutronix.de>
+In-Reply-To: <20130425143435.834965397@linutronix.de>
+References: <20130425143435.834965397@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] clocksource: Add module refcount
-Git-Commit-ID: 09ac369c825d9d593404306d59062d854b321e9b
+Subject: [tip:timers/core] clocksource:
+  Allow clocksource select to skip current clocksource
+Git-Commit-ID: f5a2e34375a5e2b711aea488ac3ae50eeba6d57c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,83 +33,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  09ac369c825d9d593404306d59062d854b321e9b
-Gitweb:     http://git.kernel.org/tip/09ac369c825d9d593404306d59062d854b321e9b
+Commit-ID:  f5a2e34375a5e2b711aea488ac3ae50eeba6d57c
+Gitweb:     http://git.kernel.org/tip/f5a2e34375a5e2b711aea488ac3ae50eeba6d57c
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 25 Apr 2013 20:31:44 +0000
+AuthorDate: Thu, 25 Apr 2013 20:31:45 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 16 May 2013 11:09:14 +0200
+CommitDate: Thu, 16 May 2013 11:09:15 +0200
 
-clocksource: Add module refcount
+clocksource: Allow clocksource select to skip current clocksource
 
-Add a module refcount, so the current clocksource cannot be removed
-unconditionally.
+Preparatory patch for clocksource unbind support.
+
+Split out code from clocksource_select and modify it, so it skips the
+current clocksource on request and tries to find a fallback
+clocksource. Convert all existing users. No functional change.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Stultz <john.stultz@linaro.org>
 Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20130425143435.762417789@linutronix.de
+Link: http://lkml.kernel.org/r/20130425143435.834965397@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/clocksource.h |  3 +++
- kernel/time/timekeeping.c   | 19 ++++++++++++++-----
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ kernel/time/clocksource.c | 31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index aa6ba44..32a895b 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -21,6 +21,7 @@
- /* clocksource cycle base type */
- typedef u64 cycle_t;
- struct clocksource;
-+struct module;
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index 1923a34..9782997 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -553,7 +553,7 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
  
- #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
- #include <asm/clocksource.h>
-@@ -162,6 +163,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
-  * @suspend:		suspend function for the clocksource, if necessary
-  * @resume:		resume function for the clocksource, if necessary
-  * @cycle_last:		most recent cycle counter value seen by ::read()
-+ * @owner:		module reference, must be set by clocksource in modules
-  */
- struct clocksource {
- 	/*
-@@ -195,6 +197,7 @@ struct clocksource {
- 	cycle_t cs_last;
- 	cycle_t wd_last;
- #endif
-+	struct module *owner;
- } ____cacheline_aligned;
+ #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
  
- /*
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index da6e10c..933efa4 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -627,11 +627,20 @@ static int change_clocksource(void *data)
- 	write_seqcount_begin(&timekeeper_seq);
+-static struct clocksource *clocksource_find_best(bool oneshot)
++static struct clocksource *clocksource_find_best(bool oneshot, bool skipcur)
+ {
+ 	struct clocksource *cs;
  
- 	timekeeping_forward_now(tk);
--	if (!new->enable || new->enable(new) == 0) {
--		old = tk->clock;
--		tk_setup_internals(tk, new);
--		if (old->disable)
--			old->disable(old);
-+	/*
-+	 * If the cs is in module, get a module reference. Succeeds
-+	 * for built-in code (owner == NULL) as well.
-+	 */
-+	if (try_module_get(new->owner)) {
-+		if (!new->enable || new->enable(new) == 0) {
-+			old = tk->clock;
-+			tk_setup_internals(tk, new);
-+			if (old->disable)
-+				old->disable(old);
-+			module_put(old->owner);
-+		} else {
-+			module_put(new->owner);
-+		}
+@@ -566,6 +566,8 @@ static struct clocksource *clocksource_find_best(bool oneshot)
+ 	 * the best rating.
+ 	 */
+ 	list_for_each_entry(cs, &clocksource_list, list) {
++		if (skipcur && cs == curr_clocksource)
++			continue;
+ 		if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
+ 			continue;
+ 		return cs;
+@@ -573,26 +575,20 @@ static struct clocksource *clocksource_find_best(bool oneshot)
+ 	return NULL;
+ }
+ 
+-/**
+- * clocksource_select - Select the best clocksource available
+- *
+- * Private function. Must hold clocksource_mutex when called.
+- *
+- * Select the clocksource with the best rating, or the clocksource,
+- * which is selected by userspace override.
+- */
+-static void clocksource_select(void)
++static void __clocksource_select(bool skipcur)
+ {
+ 	bool oneshot = tick_oneshot_mode_active();
+ 	struct clocksource *best, *cs;
+ 
+ 	/* Find the best suitable clocksource */
+-	best = clocksource_find_best(oneshot);
++	best = clocksource_find_best(oneshot, skipcur);
+ 	if (!best)
+ 		return;
+ 
+ 	/* Check for the override clocksource. */
+ 	list_for_each_entry(cs, &clocksource_list, list) {
++		if (skipcur && cs == curr_clocksource)
++			continue;
+ 		if (strcmp(cs->name, override_name) != 0)
+ 			continue;
+ 		/*
+@@ -618,6 +614,19 @@ static void clocksource_select(void)
  	}
- 	timekeeping_update(tk, true, true);
+ }
  
++/**
++ * clocksource_select - Select the best clocksource available
++ *
++ * Private function. Must hold clocksource_mutex when called.
++ *
++ * Select the clocksource with the best rating, or the clocksource,
++ * which is selected by userspace override.
++ */
++static void clocksource_select(void)
++{
++	return __clocksource_select(false);
++}
++
+ #else /* !CONFIG_ARCH_USES_GETTIMEOFFSET */
+ 
+ static inline void clocksource_select(void) { }
