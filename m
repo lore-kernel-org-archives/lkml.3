@@ -1,65 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3E0JdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:33:23 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:32228 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab3E0JdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:33:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgsFAFQno1GQ/khN/2dsb2JhbABagwiDa75KgQUWdIIjAQEFI1YQCxgCAiYCAlcGE4gNq3mRJYEmjXcHgkGBEwOXO4obhyWBWIE5Og
-X-IronPort-AV: E=Sophos;i="4.87,750,1363132800"; 
-   d="scan'208";a="154591511"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Libo Chen <libo.chen@huawei.com>
-Subject: Re: [PATCH 22/24] drivers/media/radio/radio-maxiradio: Convert to module_pci_driver
-Date: Mon, 27 May 2013 11:32:57 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9-2.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: mchehab@redhat.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        gregkh@linuxfoundation.org
-References: <1369621919-12800-1-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1369621919-12800-1-git-send-email-libo.chen@huawei.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755266Ab3E0JhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:37:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44200 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755001Ab3E0JhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 05:37:20 -0400
+Message-ID: <1369647373.3557.25.camel@pasglop>
+Subject: Re: [PATCH v3-resend 07/11] powerpc: uaccess
+ s/might_sleep/might_fault/
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Date: Mon, 27 May 2013 19:36:13 +1000
+In-Reply-To: <1369577426-26721-7-git-send-email-mst@redhat.com>
+References: <1369575487-26176-1-git-send-email-mst@redhat.com>
+	 <1369577426-26721-7-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305271132.57946.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 27 May 2013 04:31:59 Libo Chen wrote:
-> use module_pci_driver instead of init/exit, make code clean
+On Sun, 2013-05-26 at 17:31 +0300, Michael S. Tsirkin wrote:
+> The only reason uaccess routines might sleep
+> is if they fault. Make this explicit.
 > 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> Arnd Bergmann suggested that the following code
+> 	if (!is_kernel_addr((unsigned long)__pu_addr))
+> 		might_fault();
+> can be further simplified by adding a version of might_fault
+> that includes the kernel addr check.
+> 
+> Will be considered as a further optimization in future.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+As long as Peter is happy with the general semantics of might_fault()
+and you have at least build-tested it, then I'm happy.
+
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
 > ---
->  drivers/media/radio/radio-maxiradio.c |   13 +------------
->  1 files changed, 1 insertions(+), 12 deletions(-)
+>  arch/powerpc/include/asm/uaccess.h | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/media/radio/radio-maxiradio.c b/drivers/media/radio/radio-maxiradio.c
-> index bd4d3a7..1d1c9e1 100644
-> --- a/drivers/media/radio/radio-maxiradio.c
-> +++ b/drivers/media/radio/radio-maxiradio.c
-> @@ -200,15 +200,4 @@ static struct pci_driver maxiradio_driver = {
->  	.remove		= maxiradio_remove,
->  };
+> diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
+> index 4db4959..9485b43 100644
+> --- a/arch/powerpc/include/asm/uaccess.h
+> +++ b/arch/powerpc/include/asm/uaccess.h
+> @@ -178,7 +178,7 @@ do {								\
+>  	long __pu_err;						\
+>  	__typeof__(*(ptr)) __user *__pu_addr = (ptr);		\
+>  	if (!is_kernel_addr((unsigned long)__pu_addr))		\
+> -		might_sleep();					\
+> +		might_fault();					\
+>  	__chk_user_ptr(ptr);					\
+>  	__put_user_size((x), __pu_addr, (size), __pu_err);	\
+>  	__pu_err;						\
+> @@ -188,7 +188,7 @@ do {								\
+>  ({									\
+>  	long __pu_err = -EFAULT;					\
+>  	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
+> -	might_sleep();							\
+> +	might_fault();							\
+>  	if (access_ok(VERIFY_WRITE, __pu_addr, size))			\
+>  		__put_user_size((x), __pu_addr, (size), __pu_err);	\
+>  	__pu_err;							\
+> @@ -268,7 +268,7 @@ do {								\
+>  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+>  	__chk_user_ptr(ptr);					\
+>  	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+> -		might_sleep();					\
+> +		might_fault();					\
+>  	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+>  	(x) = (__typeof__(*(ptr)))__gu_val;			\
+>  	__gu_err;						\
+> @@ -282,7 +282,7 @@ do {								\
+>  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+>  	__chk_user_ptr(ptr);					\
+>  	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+> -		might_sleep();					\
+> +		might_fault();					\
+>  	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+>  	(x) = (__typeof__(*(ptr)))__gu_val;			\
+>  	__gu_err;						\
+> @@ -294,7 +294,7 @@ do {								\
+>  	long __gu_err = -EFAULT;					\
+>  	unsigned long  __gu_val = 0;					\
+>  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
+> -	might_sleep();							\
+> +	might_fault();							\
+>  	if (access_ok(VERIFY_READ, __gu_addr, (size)))			\
+>  		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+>  	(x) = (__typeof__(*(ptr)))__gu_val;				\
+> @@ -419,14 +419,14 @@ static inline unsigned long __copy_to_user_inatomic(void __user *to,
+>  static inline unsigned long __copy_from_user(void *to,
+>  		const void __user *from, unsigned long size)
+>  {
+> -	might_sleep();
+> +	might_fault();
+>  	return __copy_from_user_inatomic(to, from, size);
+>  }
 >  
-> -static int __init maxiradio_init(void)
-> -{
-> -	return pci_register_driver(&maxiradio_driver);
-> -}
-> -
-> -static void __exit maxiradio_exit(void)
-> -{
-> -	pci_unregister_driver(&maxiradio_driver);
-> -}
-> -
-> -module_init(maxiradio_init);
-> -module_exit(maxiradio_exit);
-> +module_pci_driver(maxiradio_driver);
-> 
+>  static inline unsigned long __copy_to_user(void __user *to,
+>  		const void *from, unsigned long size)
+>  {
+> -	might_sleep();
+> +	might_fault();
+>  	return __copy_to_user_inatomic(to, from, size);
+>  }
+>  
+> @@ -434,7 +434,7 @@ extern unsigned long __clear_user(void __user *addr, unsigned long size);
+>  
+>  static inline unsigned long clear_user(void __user *addr, unsigned long size)
+>  {
+> -	might_sleep();
+> +	might_fault();
+>  	if (likely(access_ok(VERIFY_WRITE, addr, size)))
+>  		return __clear_user(addr, size);
+>  	if ((unsigned long)addr < TASK_SIZE) {
+
+
