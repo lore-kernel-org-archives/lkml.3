@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3E0KeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:34:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49983 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3E0KeE (ORCPT
+	id S1757515Ab3E0KhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:37:23 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51043 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757425Ab3E0KhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:34:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Jonathan Cameron'" <jic23@kernel.org>
-Subject: Re: [PATCH 3.9-stable] staging:iio:light:tsl2x7x: fix the error handling in tsl2x7x_probe()
-References: <000101ce5828$545e10b0$fd1a3210$%choi@samsung.com>
-Date: Mon, 27 May 2013 11:33:59 +0100
-In-Reply-To: <000101ce5828$545e10b0$fd1a3210$%choi@samsung.com> (Jonghwan
-	Choi's message of "Fri, 24 May 2013 11:42:27 +0900")
-Message-ID: <871u8sogo8.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+	Mon, 27 May 2013 06:37:21 -0400
+Message-ID: <51A3375B.3090205@free-electrons.com>
+Date: Mon, 27 May 2013 12:37:15 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+References: <1369467542-25519-1-git-send-email-alexandre.belloni@free-electrons.com> <20130525200557.GO24476@game.jcrosoft.org> <20130527080909.GB2919@ludovic.desroches@atmel.com>
+In-Reply-To: <20130527080909.GB2919@ludovic.desroches@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonghwan,
+On 27/05/2013 10:09, Ludovic Desroches wrote:
+> On Sat, May 25, 2013 at 10:05:57PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On 09:39 Sat 25 May     , Alexandre Belloni wrote:
+>>> Fixes:
+>>> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
+>>> :(.text+0x1174): undefined reference to `mdiobus_write'
+>>> :(.text+0x1188): undefined reference to `mdiobus_write'
+>>> :(.text+0x119c): undefined reference to `mdiobus_write'
+>>> :(.text+0x11b0): undefined reference to `mdiobus_write'
+>>> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
+>>> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
+>>>
+>>> when CONFIG_PHYLIB is not selected.
+> Signed-off-by missing.
+>
+> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+>
 
-Jonghwan Choi <jhbird.choi@samsung.com> writes:
+I'll send a v3...
 
-> This patch looks like it should be in the 3.9-stable tree, should we apply
-> it?
+>>> ---
+>>> Changes in v2:
+>>> 	use IS_BUILTIN
+>>> 	use CONFIG_PHYLIB and not CONFIG_PHY
+>>>
+>> I do not like this, I prefer we just drop the fixup by adding the dt support
+>> to the micrel phy as done for broadcom
+>>
+> Yes it will be a better solution but we don't have it. Even if we add dt
+> support for micrel phy it won't go into 3.10 so it has to be fixed before the
+> release.
 
-I'm queuing this patch to the 3.5 kernel as well, as it looks like it
-is also applicable.
+The fixup is also done like that on i.mx6. I think we'll have to stick
+to that for now.
 
-Cheers,
+>> if !PHYLIB just add an inline declaration of 
+>> phy_register_fixup_for_uid
+>>
+>> so gcc will drop ksz9021rn_phy_fixup automatically
+
+By using IS_BUILTIN, gcc is already optimizing out the offeding lines,
+else you would still get the linking error.
+
+
 -- 
-Luis
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-
->
-> ------------------
->
-> From: "Wei Yongjun <yongjun_wei@trendmicro.com.cn>"
->
-> commit 3b813798aa7030f1beef638c75f8b0008f737a82 upstream
->
-> Fix to return -EINVAL in the i2c device found error handling
-> case instead of 0, as done elsewhere in this function.
-> And also correct the fail1 and fail2 lable to do the right thing.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  drivers/staging/iio/light/tsl2x7x_core.c |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/iio/light/tsl2x7x_core.c
-> b/drivers/staging/iio/light/tsl2x7x_core.c
-> index a58731e..2d40c03 100644
-> --- a/drivers/staging/iio/light/tsl2x7x_core.c
-> +++ b/drivers/staging/iio/light/tsl2x7x_core.c
-> @@ -1869,6 +1869,7 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
->  		dev_info(&chip->client->dev,
->  				"%s: i2c device found does not match
-> expected id\n",
->  				__func__);
-> +		ret = -EINVAL;
->  		goto fail1;
->  	}
->  
-> @@ -1907,7 +1908,7 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
->  		if (ret) {
->  			dev_err(&clientp->dev,
->  				"%s: irq request failed", __func__);
-> -			goto fail2;
-> +			goto fail1;
->  		}
->  	}
->  
-> @@ -1920,17 +1921,17 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
->  	if (ret) {
->  		dev_err(&clientp->dev,
->  			"%s: iio registration failed\n", __func__);
-> -		goto fail1;
-> +		goto fail2;
->  	}
->  
->  	dev_info(&clientp->dev, "%s Light sensor found.\n", id->name);
->  
->  	return 0;
->  
-> -fail1:
-> +fail2:
->  	if (clientp->irq)
->  		free_irq(clientp->irq, indio_dev);
-> -fail2:
-> +fail1:
->  	iio_device_free(indio_dev);
->  
->  	return ret;
