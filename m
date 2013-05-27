@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab3E0BCo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 21:02:44 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:62035 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab3E0BCm (ORCPT
+	id S1755730Ab3E0BUP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 21:20:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53178 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635Ab3E0BUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 21:02:42 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-22-51a2b0b1bd2a
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Nikolay Balandin'" <nbalandin@dev.rtsoft.ru>,
-        "'Devendra Naga'" <devendra.aaru@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 1/1] rtc: rtc-ds1307: use devm_*() functions
-Date: Mon, 27 May 2013 10:02:40 +0900
-Message-id: <000401ce5a75$e32ffed0$a98ffc70$@samsung.com>
+	Sun, 26 May 2013 21:20:12 -0400
+X-AuditID: cbfee68e-b7f276d000002279-5f-51a2b4ca77e9
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
+        "'Dirk Brandewie'" <dirk.j.brandewie@intel.com>, cpgs@samsung.com
+References: 
+In-reply-to: 
+Subject: [PATCH 3.9-stable] cpufreq / intel_pstate: Add additional supported
+ CPU ID
+Date: Mon, 27 May 2013 10:20:09 +0900
+Message-id: <002601ce5a78$5479b200$fd6d1600$%choi@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5adXINSGALIOzMRCao3fUfVIH2JA==
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zA92NGxYFGiw/yGux5OJVdos569ew
-	WbQfv8hkcXnhJVaLy7vmsFn8f/qc3WJ/ZwejA7vHgmk/mDx2zrrL7rFn4kk2jxMzfrN49G1Z
-	xegxfd5PJo/Pm+QC2KO4bFJSczLLUov07RK4Mp40d7EVfOarWNRzkrGB8QBXFyMnh4SAicTH
-	Q10sELaYxIV769lAbCGBZYwSk88XwtR8mnecsYuRCyi+iFHi3Nw/zBDOL0aJ1QdvgHWwCahJ
-	fPlymB3EFhGIlXi36B5YEbPADkaJA0dfMoMkhAUcJBqP3QVrYBFQlXjytwusgVfAUuLFpDus
-	ELagxI/J98BOYhbQkli/8zgThC0vsXnNW2aIkxQkdpx9zQixTE9i379JrBA1IhL7XrwDO1VC
-	4B67xO5vO6CWCUh8m3wIaCgHUEJWYtMBqDmSEgdX3GCZwCg2C8nqWUhWz0KyehaSFQsYWVYx
-	iqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihETpxB2M9w9YH2JMBlo/kVlKNDkfGOV5JfGGxmZG
-	FqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamA8+Hcb90+BDsbb
-	D2Y8YTw7+/faqsoLzx6UR822D9eXSOavUF+t2f7g6uVjK45NfKQrGHG/fdOlQ8z35l4tLLs8
-	beFkd2cfw8elWu32zc3TDFNZnKdrul35UZqlz+N/gEPOX8lSONJqkdzdKU63GlOl5nFIi639
-	M7mKd1bPm9ntsnKhoufPTxJRYinOSDTUYi4qTgQAhM7hK+gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jAd2NGxYFGrxYwGmx5OJVdos569ew
-	WbQfv8hkcXnhJVaLy7vmsFn8f/qc3WJ/ZwejA7vHgmk/mDx2zrrL7rFn4kk2jxMzfrN49G1Z
-	xegxfd5PJo/Pm+QC2KMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNT
-	bZVcfAJ03TJzgC5SUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWY8ae5i
-	K/jMV7Go5yRjA+MBri5GTg4JAROJT/OOM0LYYhIX7q1n62Lk4hASWMQocW7uH2YI5xejxOqD
-	N9hAqtgE1CS+fDnMDmKLCMRKvFt0D6yIWWAHo8SBoy+ZQRLCAg4SjcfugjWwCKhKPPnbBdbA
-	K2Ap8WLSHVYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMkOcpCCx4+xrRohlehL7/k1ihagR
-	kdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwE
-	nkntYFzZYHGIUYCDUYmH98esRYFCrIllxZW5hxglOJiVRHgTooFCvCmJlVWpRfnxRaU5qcWH
-	GJOBPp3ILCWanA9MUHkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
-	wSnVwDjp+cNr26wPiiXsbz7KuuZx+t6MaKayLQG686bcnpbjUqK3qjd+ivkz8/USMx3esb89
-	oGSxseRs1VEpz1tOAlKuK5ZJas87ZLFrVo7ycRZ7466Kyhy3nnWcd85xRxyWYzbKKz2bVTPD
-	WXH5Q73SuJ45Ku4zHK8ZTV9mnRzQcmlHuHlysKrQFCWW4oxEQy3mouJEAEJTiNxGAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zfd1TWxYFGnxulrd4eUjT4vhzTYsl
+	zdwWl3fNYbN4vOItu8WCjY8YHdg8Fu95yeTRt2UVo8fnTXIBzFFcNimpOZllqUX6dglcGTPO
+	/mEr+MVesfC3WQPjM7YuRk4OCQETiYf3WlggbDGJC/fWA8W5OIQEljFKzLrWwgRTNGvCVBaI
+	xCJGib6rbewQzl9Gid+z54FVsQnoShxbv4UVxBYR8JY4NeUXM0gRs8BERoklf3uBEhxAHdwS
+	q5uDQGo4BXgk1v3pZAYJCwuESmxvVwcJswioShzsOwZ2Ea+AncS9G5vYIWxBiR+T74HFmQW0
+	JNbvPM4EYctLbF7zFmyMhIC6xKO/uhAXtDBK3DmnDFEiIrHvxTtGkGskBM6xS8zpms4IsUtA
+	4tvkQywQvbISmw4wQ/wrKXFwxQ2WCcAgQLJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFRnrF
+	ibnFpXnpesn5uZsYIXHZt4Px5gHrQ4zJQOsnMkuJJucD4zqvJN7Q2MzIwtTE1NjI3NKMNGEl
+	cV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzK2iuVNvx9ZDXFc47kFscnqxZ9aLJ/
+	s0PsR8andZO6rr5+fYu3epkM61WpBpMbL6vSTm55q5S/0Me5/jbDa65UboYQ7Rtr3jm5aJnZ
+	+9YYyr47ODdi001bO1E242/ml76dkZl0ePu+PylfLT8crTlvNzXeychT6fXzrtn7giNmxSgd
+	jN/178d3JZbijERDLeai4kQAQAADauECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jAd1TWxYFGvzcJmXx8pCmxfHnmhZL
+	mrktLu+aw2bxeMVbdosFGx8xOrB5LN7zksmjb8sqRo/Pm+QCmKMaGG0yUhNTUosUUvOS81My
+	89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgLYqKZQl5pQChQISi4uV9O0wTQgN
+	cdO1gGmM0PUNCYLrMTJAAwnrGDNmnP3DVvCLvWLhb7MGxmdsXYycHBICJhKzJkxlgbDFJC7c
+	Ww8U5+IQEljEKNF3tY0dwvnLKPF79jwmkCo2AV2JY+u3sILYIgLeEqem/GIGKWIWmMgoseRv
+	L1CCA6iDW2J1cxBIDacAj8S6P53MIGFhgVCJ7e3qIGEWAVWJg33HwBbzCthJ3LuxiR3CFpT4
+	MfkeWJxZQEti/c7jTBC2vMTmNW/BxkgIqEs8+qsLcUELo8Sdc8oQJSIS+168Y5zAKDQLyaRZ
+	SCbNQjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/6Z1A7GlQ0WhxgFOBiV
+	eHh/zFoUKMSaWFZcmXuIUYKDWUmENyEaKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wISU
+	VxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MKxikrgiujHni
+	MGuK+NanSV0vs582iz49JLzb/dpiYy3hjt7D8y7wL1pyfpFinrjH8g26ptHarpseFjHYMtQl
+	fahd4Bd5vn3d1sY4va/qG0sz7+etSObKU25bb/rC5JdmJU+j3fWsiT8nyp8/X1D4eknJTL9/
+	f5/VMtoE/gv7u6Rk3v3/yTGblViKMxINtZiLihMBevNX/j4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,72 +56,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 25, 2013 10:51 AM, Devendra Naga wrote:
-> On Sat, May 25, 2013 at 10:41 AM, Nikolay Balandin wrote:
-> > From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+This patch looks like it should be in the 3.9-stable tree, should we apply
+it?
 
-[.....]
+------------------
 
-> >
-> > -       ds1307->rtc = rtc_device_register(client->name, &client->dev,
-> > +       ds1307->rtc = devm_rtc_device_register(&client->dev, client->name,
-> >                                 &ds13xx_rtc_ops, THIS_MODULE);
+From: "Dirk Brandewie <dirk.j.brandewie@intel.com>"
 
-Hi Nikolay Baladin, Devendra Naga,
+commit c96d53d600643ee0adfd1cb90814bd9510e62b71 upstream
 
-Here, "devm"_rtc_device_register() is used.
-Thus, rtc_device_unregister() will be called after remove() or
-on probe failure.
+Add CPU ID for Ivybrigde processor.
 
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/cpufreq/intel_pstate.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> >         if (IS_ERR(ds1307->rtc)) {
-> >                 err = PTR_ERR(ds1307->rtc);
-> >                 dev_err(&client->dev,
-> >                         "unable to register the class device\n");
-> > -               goto exit_free;
-> > +               return err;
-> >         }
-
-[.....]
-
-> > -exit_nvram:
-> > -exit_irq:
-> > -       rtc_device_unregister(ds1307->rtc);
->
-> Please dont remove this unregister, there's no devm_* for the rtc subsystem.
-
-Above mentioned, rtc_device_unregister() can be removed, because
-"devm"_rtc_device_register() was already called.
-
-If I am wrong, please let me know kindly. :)
-See you.
-
-
-Best regards,
-Jingoo Han
-
->
->
-> > -exit_free:
-> > -       kfree(ds1307);
-> > -       return err;
-> >  }
-> >
-> >  static int ds1307_remove(struct i2c_client *client)
-> > @@ -992,13 +981,9 @@ static int ds1307_remove(struct i2c_client *client)
-> >                 cancel_work_sync(&ds1307->work);
-> >         }
-> >
-> > -       if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags)) {
-> > +       if (test_and_clear_bit(HAS_NVRAM, &ds1307->flags))
-> >                 sysfs_remove_bin_file(&client->dev.kobj, ds1307->nvram);
-> > -               kfree(ds1307->nvram);
-> > -       }
-> >
-> > -       rtc_device_unregister(ds1307->rtc);
->
-> Here too.
->
->
-
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index d8a8c9b..bd9fae6 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -570,6 +570,7 @@ static void intel_pstate_timer_func(unsigned long
+__data)
+ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
+ 	ICPU(0x2a, default_policy),
+ 	ICPU(0x2d, default_policy),
++	ICPU(0x3a, default_policy),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
+-- 
+1.7.9.5
 
