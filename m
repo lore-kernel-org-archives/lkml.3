@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab3E0QVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:21:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63552 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432Ab3E0QTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:19:16 -0400
-Date: Mon, 27 May 2013 18:20:27 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Brian King <brking@linux.vnet.ibm.com>
-Subject: [PATCH] powerpc/pseries: Force 32 bit MSIs when tearing down
-Message-ID: <20130527162027.GA18182@dhcp-26-207.brq.redhat.com>
+	id S1754615Ab3E0Q2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:28:04 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.208]:32860 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab3E0Q2D convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 12:28:03 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-132.messagelabs.com!1369672081!11178467!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        "mcrapet@gmail.com" <mcrapet@gmail.com>
+Date: Mon, 27 May 2013 11:27:01 -0500
+Subject: RE: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion to
+ PWM framework
+Thread-Topic: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion
+ to PWM framework
+Thread-Index: Ac5a7bBUg1AJ7Ay6RTev1TYDm2X5RQACFAeM
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DA666D43D@AUSP01VMBX24.collaborationhost.net>
+References: <201305241619.52328.hartleys@visionengravers.com>,<201305271720.08146.arnd@arndb.de>
+In-Reply-To: <201305271720.08146.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix just adds a missed call to a new PAPR function
-which should have been done with commit e61133d ("powerpc/
-pseries: Force 32 bit MSIs for devices that require it")
+On Monday, May 27, 2013 8:20 AM, Arnd Bergmann wrote:
+> On Saturday 25 May 2013, H Hartley Sweeten wrote:
+>> This driver needs to be converted to the new PWM framework.
+>>
+>> Before converting it clean up all the cruft,
+>>
+>> H Hartley Sweeten (14):
+>>   misc/ep93xx_pwm: use managed device resources
+>>   misc/ep93xx_pwm: use {read,write}* instead of __raw_* versions for io
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_{write,read}l() inline functions
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_write_tc() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_write_dc() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_enable() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_disable() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_invert() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_normal() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_read_tc() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_is_enabled() inline function
+>>   misc/ep93xx_pwm: remove ep93xx_pwm_is_inverted() inline function
+>>   misc/ep93xx_pwm: use module_platform_driver()
+>>   misc/ep93xx_pwm: use kstrtol instead of strict_strtol
+>
+> Whole series:
+>
+> Acked-by: Arnd Bergmann arnd@arndb.de
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/powerpc/platforms/pseries/msi.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+Arnd,
 
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 40c7db3..2b80a68 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -90,6 +90,7 @@ static int rtas_change_msi(struct pci_dn *pdn, u32 func, u32 num_irqs)
- static void rtas_disable_msi(struct pci_dev *pdev)
- {
- 	struct pci_dn *pdn;
-+	int rc;
- 
- 	pdn = get_pdn(pdev);
- 	if (!pdn)
-@@ -98,7 +99,12 @@ static void rtas_disable_msi(struct pci_dev *pdev)
- 	/*
- 	 * disabling MSI with the explicit interface also disables MSI-X
- 	 */
--	if (rtas_change_msi(pdn, RTAS_CHANGE_MSI_FN, 0) != 0) {
-+	if (pdn->force_32bit_msi)
-+		rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, 0);
-+	else
-+		rc = rtas_change_msi(pdn, RTAS_CHANGE_MSI_FN, 0);
-+
-+	if ((rc != 0) && !pdn->force_32bit_msi) {
- 		/* 
- 		 * may have failed because explicit interface is not
- 		 * present
--- 
-1.7.7.6
+Ryan Mallon has also provided a Reviewed-by for this series.
 
+Will you be the one that merges this? I would like it to be in linux-next
+before I convert it to the PWM framework.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Also, I have a question about the conversion.
+
+If I strip the sysfs support out of this driver the conversion is quite simple.
+But, my use for this driver requires user space control of the PWM.
+
+Should I:
+1) convert the driver to the PWM framework and leave the sysfs stuff in it
+2) work out a generic sysfs support for the PWM framework and then
+    convert the driver
+3) other...
+
+I've been looking at 2) by doing something like how gpiolib does it. Do
+you think that would be acceptable?
+
+Thanks,
+Hartley
