@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab3E0CTV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:19:21 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:37641 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755779Ab3E0CTU (ORCPT
+	id S1756013Ab3E0CUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:20:25 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38323 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779Ab3E0CUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:19:20 -0400
-Date: Mon, 27 May 2013 10:19:18 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Chen <tim.c.chen@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the crypto tree
-Message-ID: <20130527021917.GA16087@gondor.apana.org.au>
-References: <20130521114548.a7bc47b2247f39ec40c44e33@canb.auug.org.au>
- <20130524095715.GA1410@gondor.apana.org.au>
+	Sun, 26 May 2013 22:20:23 -0400
+Message-ID: <51A2C2DC.6080403@linux.vnet.ibm.com>
+Date: Mon, 27 May 2013 10:20:12 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524095715.GA1410@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 04/11] KVM: MMU: zap pages in batch
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130524203432.GB4525@amt.cnet>
+In-Reply-To: <20130524203432.GB4525@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052702-9264-0000-0000-000003D22C05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 05:57:15PM +0800, Herbert Xu wrote:
-> On Tue, May 21, 2013 at 11:45:48AM +1000, Stephen Rothwell wrote:
-> > Hi Herbert,
-> > 
-> > After merging the crypto tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > arch/x86/crypto/crct10dif-pclmul_glue.c: In function 'crct10dif_intel_mod_init':
-> > arch/x86/crypto/crct10dif-pclmul_glue.c:140:3: error: implicit declaration of function 'crc_t10dif_update_lib' [-Werror=implicit-function-declaration]
-> >    crc_t10dif_update_lib();
-> >    ^
-> > cc1: some warnings being treated as errors
-> > 
-> > Caused by commit b85ed9f056ee ("crypto: crct10dif - Glue code to cast
-> > accelerated CRCT10DIF assembly as a crypto transform").
-> > 
-> > I have used the version of the crypto tree from next-20130520 for today.
+On 05/25/2013 04:34 AM, Marcelo Tosatti wrote:
+> On Thu, May 23, 2013 at 03:55:53AM +0800, Xiao Guangrong wrote:
+>> Zap at lease 10 pages before releasing mmu-lock to reduce the overload
+>> caused by requiring lock
+>>
+>> After the patch, kvm_zap_obsolete_pages can forward progress anyway,
+>> so update the comments
+>>
+>> [ It improves kernel building 0.6% ~ 1% ]
 > 
-> Sorry for the late response, it should be fixed now.
+> Can you please describe the overload in more detail? Under what scenario
+> is kernel building improved?
 
-Hi Stephen, did you get a chance to switch back to the current
-cryptodev tree?
+Yes.
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+The scenario is we do kernel building, meanwhile, repeatedly read PCI rom
+every one second.
+
+[
+   echo 1 > /sys/bus/pci/devices/0000\:00\:03.0/rom
+   cat /sys/bus/pci/devices/0000\:00\:03.0/rom > /dev/null
+]
+
