@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3E0Qol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:44:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48106 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab3E0Qok (ORCPT
+	id S1753278Ab3E0RB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 13:01:27 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59138 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3E0RBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:44:40 -0400
-Date: Mon, 27 May 2013 18:44:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Meelis Roos <mroos@linux.ee>
-cc: Borislav Petkov <bp@alien8.de>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 3.10-rc3: WARNING: at kernel/time/tick-broadcast.c:578
-In-Reply-To: <alpine.SOC.1.00.1305271849130.2372@math.ut.ee>
-Message-ID: <alpine.LFD.2.02.1305271841130.4220@ionos>
-References: <alpine.SOC.1.00.1305271406050.2372@math.ut.ee> <20130527123520.GA4806@pd.tnic> <alpine.LFD.2.02.1305271456280.4220@ionos> <alpine.SOC.1.00.1305271849130.2372@math.ut.ee>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 27 May 2013 13:01:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CACVXFVNBhsECz59Wx=O6xfRq==cNss+8cmP_5PMZYresuYPLfQ@mail.gmail.com>
+References: <1369650604-27941-1-git-send-email-ming.lei@canonical.com>
+	<1369650604-27941-2-git-send-email-ming.lei@canonical.com>
+	<CAK7N6vozJ-dNDCj4QEo_nO=Tb_nEq3h6bmSF0rvaJ5NYgyK3fw@mail.gmail.com>
+	<s5h1u8sr4rd.wl%tiwai@suse.de>
+	<CAK7N6vqU0t7oR6KwMnMN=1h6Q6PLy5=R4dwfdx_5bS7MNHzpBw@mail.gmail.com>
+	<CACVXFVNBhsECz59Wx=O6xfRq==cNss+8cmP_5PMZYresuYPLfQ@mail.gmail.com>
+Date: Mon, 27 May 2013 22:31:24 +0530
+Message-ID: <CAK7N6vpKPNq3rXgBttGGO7Ddx5gVnRt85x2O2mGU5NjLJeAbXQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] driver core: firmware loader: don't cache
+ FW_ACTION_NOHOTPLUG firmware
+From: anish singh <anish198519851985@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 May 2013, Meelis Roos wrote:
-> > So we need to move the WARN_ON into the section where we actually set
-> > the broadcast stuff up.
-> 
-> Are you sure? This is a UP machine.
+On Mon, May 27, 2013 at 6:52 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Mon, May 27, 2013 at 8:40 PM, anish singh
+> <anish198519851985@gmail.com> wrote:
+>> On Mon, May 27, 2013 at 5:53 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> At Mon, 27 May 2013 17:26:22 +0530,
+>>> anish singh wrote:
+>>>>
+>>>> On Mon, May 27, 2013 at 4:00 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>>>> > Generally there are only two drivers which don't need uevent to
+>>>> > handle firmware loading, so don't cache these firmwares during
+>> Sorry but it confuses me further,
+>
+> Please put one blank line before your reply, otherwise it is a bit
+> difficult to find your reply in email.
 
-Ooops.
- 
-> Tested the patch - no effect, warning is still there :(
+sorry.
 
-Found another possibility how we end up with the stale flag.
+>
+>> If driver doesn't have information about these firmware then how
+>> does it cache it?
+>
+> Driver only needs firmware's name for caching it, but driver can choose
+> if it generates uevent to let userspace handle it. Without one uevent, the
+> user space still can handle the request by waiting for the firmware sysfs
+> device in advance. But if there is no one user space to handle the request,
+> the request in kernel won't be completed and there is no timeout for this
+> case, so will block suspend.
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 24938d5..0c73942 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -511,6 +511,12 @@ again:
- 		}
- 	}
- 
-+	/*
-+	 * Remove the current cpu from the pending mask. The event is
-+	 * delivered immediately in tick_do_broadcast() !
-+	 */
-+	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
-+
- 	/* Take care of enforced broadcast requests */
- 	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
- 	cpumask_clear(tick_broadcast_force_mask);
-@@ -575,8 +581,8 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
--		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
-+			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
- 			/*
- 			 * We only reprogram the broadcast timer if we
+Now makes sense.Thanks!!
+>
+>
+> Thanks,
+> --
+> Ming Lei
