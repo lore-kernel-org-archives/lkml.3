@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3E0Qaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:30:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46866 "EHLO
+	id S1755118Ab3E0Qfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:35:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46925 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab3E0Qai (ORCPT
+	with ESMTP id S1752566Ab3E0Qfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:30:38 -0400
-Date: Mon, 27 May 2013 18:30:23 +0200
+	Mon, 27 May 2013 12:35:37 -0400
+Date: Mon, 27 May 2013 18:35:30 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-Message-ID: <20130527163023.GA19373@twins.programming.kicks-ass.net>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <519A4429.30405@amd.com>
- <20130521091157.GD26912@twins.programming.kicks-ass.net>
- <519B76CB.1000208@amd.com>
- <20130521135231.GK26912@twins.programming.kicks-ass.net>
- <20130521142523.GD7424@8bytes.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3-resend 00/11] uaccess: better might_sleep/might_fault
+ behavior
+Message-ID: <20130527163530.GB19373@twins.programming.kicks-ass.net>
+References: <1369575487-26176-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130521142523.GD7424@8bytes.org>
+In-Reply-To: <1369575487-26176-1-git-send-email-mst@redhat.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 04:25:23PM +0200, Joerg Roedel wrote:
-> Hi Peter,
+On Sun, May 26, 2013 at 05:21:30PM +0300, Michael S. Tsirkin wrote:
+> If the changes look good, would sched maintainers
+> please consider merging them through sched/core because of the
+> interaction with the scheduler?
 > 
-> On Tue, May 21, 2013 at 03:52:31PM +0200, Peter Zijlstra wrote:
-> > OK, I'll take them and will push them to Ingo.
-> 
-> Please wait with that until I had a look at the IOMMU pieces.
+> Please review, and consider for 3.11.
 
-Have you had time to look at this yet? -- mostly sending this email to
-make sure I don't forget about these patches.
+I'll stick them in my queue, we'll see if anything falls over ;-)
