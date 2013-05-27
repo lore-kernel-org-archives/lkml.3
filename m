@@ -1,286 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab3E0NgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 09:36:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54853 "EHLO comal.ext.ti.com"
+	id S932592Ab3E0NhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 09:37:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22056 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab3E0NgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 09:36:17 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
-        <ldewangan@nvidia.com>, <gg@slimlogic.co.uk>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <george.cherian@ti.com>, <kishon@ti.com>,
-        <sameo@linux.intel.com>
-Subject: [PATCH v2] usb: dwc3: use extcon fwrk to receive connect/disconnect notification
-Date: Mon, 27 May 2013 19:05:40 +0530
-Message-ID: <1369661740-15966-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369405896-30246-1-git-send-email-kishon@ti.com>
-References: <1369405896-30246-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932356Ab3E0NhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 09:37:17 -0400
+Message-ID: <1369661830.2646.183.camel@ul30vt.home>
+Subject: Re: [PATCH 2/2] vfio: hugepage support for vfio_iommu_type1
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "chegu_vinod@hp.com" <chegu_vinod@hp.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 May 2013 07:37:10 -0600
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D552685@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <20130524171613.14229.84050.stgit@bling.home>
+	 <20130524172438.14229.59476.stgit@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D552685@039-SN2MPN1-013.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modified dwc3-omap to receive connect and disconnect notification using
-extcon framework. Also did the necessary cleanups required after
-adapting to extcon framework.
+On Mon, 2013-05-27 at 08:41 +0000, Sethi Varun-B16395 wrote:
+> 
+> > -----Original Message-----
+> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> > bounces@lists.linux-foundation.org] On Behalf Of Alex Williamson
+> > Sent: Friday, May 24, 2013 10:55 PM
+> > To: alex.williamson@redhat.com
+> > Cc: iommu@lists.linux-foundation.org; chegu_vinod@hp.com; qemu-
+> > devel@nongnu.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: [PATCH 2/2] vfio: hugepage support for vfio_iommu_type1
+> > 
+> > We currently send all mappings to the iommu in PAGE_SIZE chunks, which
+> > prevents the iommu from enabling support for larger page sizes.
+> > We still need to pin pages, which means we step through them in PAGE_SIZE
+> > chunks, but we can batch up contiguous physical memory chunks to allow
+> > the iommu the opportunity to use larger pages.  The approach here is a
+> > bit different that the one currently used for legacy KVM device
+> > assignment.  Rather than looking at the vma page size and using that as
+> > the maximum size to pass to the iommu, we instead simply look at whether
+> > the next page is physically contiguous.  This means we might ask the
+> > iommu to map a 4MB region, while legacy KVM might limit itself to a
+> 
+[Sethi Varun-B16395] Wouldn't this depend on the IOMMU page alignment
+constraints?
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
----
-Changes from v1:
-* regulator enable/disable is now done here instead of palmas-usb as some users
-of palmas-usb wont need regulator.
- drivers/usb/dwc3/dwc3-omap.c  | 103 ++++++++++++++++++++++++++++++++++--------
- include/linux/usb/dwc3-omap.h |  30 ------------
- 2 files changed, 85 insertions(+), 48 deletions(-)
- delete mode 100644 include/linux/usb/dwc3-omap.h
+The iommu_map() function handles this.
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 34638b9..158f903 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -43,13 +43,14 @@
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
- #include <linux/platform_data/dwc3-omap.h>
--#include <linux/usb/dwc3-omap.h>
- #include <linux/pm_runtime.h>
- #include <linux/dma-mapping.h>
- #include <linux/ioport.h>
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/extcon.h>
-+#include <linux/regulator/consumer.h>
- 
- #include <linux/usb/otg.h>
- 
-@@ -124,9 +125,21 @@ struct dwc3_omap {
- 	u32			utmi_otg_status;
- 
- 	u32			dma_status:1;
-+
-+	struct extcon_specific_cable_nb extcon_vbus_dev;
-+	struct extcon_specific_cable_nb extcon_id_dev;
-+	struct notifier_block	vbus_nb;
-+	struct notifier_block	id_nb;
-+
-+	struct regulator	*vbus_reg;
- };
- 
--static struct dwc3_omap		*_omap;
-+enum omap_dwc3_vbus_id_status {
-+	OMAP_DWC3_ID_FLOAT,
-+	OMAP_DWC3_ID_GROUND,
-+	OMAP_DWC3_VBUS_OFF,
-+	OMAP_DWC3_VBUS_VALID,
-+};
- 
- static inline u32 dwc3_omap_readl(void __iomem *base, u32 offset)
- {
-@@ -138,18 +151,21 @@ static inline void dwc3_omap_writel(void __iomem *base, u32 offset, u32 value)
- 	writel(value, base + offset);
- }
- 
--int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
-+static void dwc3_omap_set_mailbox(struct dwc3_omap *omap,
-+	enum omap_dwc3_vbus_id_status status)
- {
--	u32			val;
--	struct dwc3_omap	*omap = _omap;
--
--	if (!omap)
--		return -EPROBE_DEFER;
-+	int	ret;
-+	u32	val;
- 
- 	switch (status) {
- 	case OMAP_DWC3_ID_GROUND:
- 		dev_dbg(omap->dev, "ID GND\n");
- 
-+		ret = regulator_enable(omap->vbus_reg);
-+		if (ret) {
-+			dev_dbg(omap->dev, "regulator enable failed\n");
-+			return;
-+		}
- 		val = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 		val &= ~(USBOTGSS_UTMI_OTG_STATUS_IDDIG
- 				| USBOTGSS_UTMI_OTG_STATUS_VBUSVALID
-@@ -162,6 +178,11 @@ int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
- 	case OMAP_DWC3_VBUS_VALID:
- 		dev_dbg(omap->dev, "VBUS Connect\n");
- 
-+		ret = regulator_enable(omap->vbus_reg);
-+		if (ret) {
-+			dev_dbg(omap->dev, "regulator enable failed\n");
-+			return;
-+		}
- 		val = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 		val &= ~USBOTGSS_UTMI_OTG_STATUS_SESSEND;
- 		val |= USBOTGSS_UTMI_OTG_STATUS_IDDIG
-@@ -182,15 +203,13 @@ int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
- 		val |= USBOTGSS_UTMI_OTG_STATUS_SESSEND
- 				| USBOTGSS_UTMI_OTG_STATUS_IDDIG;
- 		dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, val);
-+		regulator_disable(omap->vbus_reg);
- 		break;
- 
- 	default:
--		dev_dbg(omap->dev, "ID float\n");
-+		dev_dbg(omap->dev, "invalid state\n");
- 	}
--
--	return 0;
- }
--EXPORT_SYMBOL_GPL(dwc3_omap_mailbox);
- 
- static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
- {
-@@ -282,6 +301,32 @@ static void dwc3_omap_disable_irqs(struct dwc3_omap *omap)
- 
- static u64 dwc3_omap_dma_mask = DMA_BIT_MASK(32);
- 
-+static int dwc3_omap_id_notifier(struct notifier_block *nb,
-+	unsigned long event, void *ptr)
-+{
-+	struct dwc3_omap *omap = container_of(nb, struct dwc3_omap, id_nb);
-+
-+	if (event)
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
-+	else
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_FLOAT);
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static int dwc3_omap_vbus_notifier(struct notifier_block *nb,
-+	unsigned long event, void *ptr)
-+{
-+	struct dwc3_omap *omap = container_of(nb, struct dwc3_omap, vbus_nb);
-+
-+	if (event)
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
-+	else
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_OFF);
-+
-+	return NOTIFY_DONE;
-+}
-+
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
- 	struct device_node	*node = pdev->dev.of_node;
-@@ -289,6 +334,8 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	struct dwc3_omap	*omap;
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
-+	struct extcon_dev	*edev;
-+	struct regulator	*vbus_reg;
- 
- 	int			ret = -ENOMEM;
- 	int			irq;
-@@ -330,19 +377,32 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	edev = extcon_get_extcon_dev("palmas-usb");
-+	if (!edev) {
-+		dev_dbg(dev, "couldn't get extcon device\n");
-+		return -EPROBE_DEFER;
-+	}
-+
-+	vbus_reg = devm_regulator_get(&pdev->dev, "vbus");
-+	if (IS_ERR(vbus_reg)) {
-+		dev_err(dev, "vbus init failed\n");
-+		return PTR_ERR(vbus_reg);
-+	}
-+
- 	spin_lock_init(&omap->lock);
- 
- 	omap->dev	= dev;
- 	omap->irq	= irq;
- 	omap->base	= base;
-+	omap->vbus_reg	= vbus_reg;
-+	omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
-+	extcon_register_interest(&omap->extcon_vbus_dev, "palmas-usb", "USB",
-+		&omap->vbus_nb);
-+	omap->id_nb.notifier_call = dwc3_omap_id_notifier;
-+	extcon_register_interest(&omap->extcon_id_dev, "palmas-usb", "USB-HOST",
-+		&omap->id_nb);
- 	dev->dma_mask	= &dwc3_omap_dma_mask;
- 
--	/*
--	 * REVISIT if we ever have two instances of the wrapper, we will be
--	 * in big trouble
--	 */
--	_omap	= omap;
--
- 	pm_runtime_enable(dev);
- 	ret = pm_runtime_get_sync(dev);
- 	if (ret < 0) {
-@@ -387,6 +447,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	if (extcon_get_cable_state(edev, "USB") == true)
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
-+	if (extcon_get_cable_state(edev, "USB-HOST") == true)
-+		dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
-+
- 	return 0;
- }
- 
-@@ -394,6 +459,8 @@ static int dwc3_omap_remove(struct platform_device *pdev)
- {
- 	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
- 
-+	extcon_unregister_interest(&omap->extcon_vbus_dev);
-+	extcon_unregister_interest(&omap->extcon_id_dev);
- 	dwc3_omap_disable_irqs(omap);
- 	pm_runtime_put_sync(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
-diff --git a/include/linux/usb/dwc3-omap.h b/include/linux/usb/dwc3-omap.h
-deleted file mode 100644
-index 5615f4d..0000000
---- a/include/linux/usb/dwc3-omap.h
-+++ /dev/null
-@@ -1,30 +0,0 @@
--/*
-- * Copyright (C) 2013 by Texas Instruments
-- *
-- * The Inventra Controller Driver for Linux is free software; you
-- * can redistribute it and/or modify it under the terms of the GNU
-- * General Public License version 2 as published by the Free Software
-- * Foundation.
-- */
--
--#ifndef __DWC3_OMAP_H__
--#define __DWC3_OMAP_H__
--
--enum omap_dwc3_vbus_id_status {
--	OMAP_DWC3_UNKNOWN = 0,
--	OMAP_DWC3_ID_GROUND,
--	OMAP_DWC3_ID_FLOAT,
--	OMAP_DWC3_VBUS_VALID,
--	OMAP_DWC3_VBUS_OFF,
--};
--
--#if (defined(CONFIG_USB_DWC3) || defined(CONFIG_USB_DWC3_MODULE))
--extern int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status);
--#else
--static inline int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
--{
--	return -ENODEV;
--}
--#endif
--
--#endif	/* __DWC3_OMAP_H__ */
--- 
-1.8.1.2
+> > maximum of 2MB.
+> > 
+> > Splitting our mapping path also allows us to be smarter about locked
+> > memory because we can more easily unwind if the user attempts to exceed
+> > the limit.  Therefore, rather than assuming that a mapping will result in
+> > locked memory, we test each page as it is pinned to determine whether it
+> > locks RAM vs an mmap'd MMIO region.  This should result in better locking
+> > granularity and less locked page fudge factors in userspace.
+> > 
+> > The unmap path uses the same algorithm as legacy KVM.  We don't want to
+> > track the pfn for each mapping ourselves, but we need the pfn in order to
+> > unpin pages.  We therefore ask the iommu for the iova to physical address
+> > translation, ask it to unpin a page, and see how many pages were actually
+> > unpinned.  iommus supporting large pages will often return something
+> > bigger than a page here, which we know will be physically contiguous and
+> > we can unpin a batch of pfns.  iommus not supporting large mappings won't
+> > see an improvement in batching here as they only unmap a page at a time.
+> > 
+> > With this change, we also make a clarification to the API for mapping and
+> > unmapping DMA.  We can only guarantee unmaps at the same granularity as
+> > used for the original mapping.  In other words, unmapping a subregion of
+> > a previous mapping is not guaranteed and may result in a larger or
+> > smaller unmapping than requested.  The size field in the unmapping
+> > structure is updated to reflect this.
+> > Previously this was unmodified on mapping, always returning the the
+> > requested unmap size.  This is now updated to return the actual unmap
+> > size on success, allowing userspace to appropriately track mappings.
+> > 
+> [Sethi Varun-B16395] The main problem here is that the user space
+> application is oblivious of the physical memory contiguity, right?
+
+Yes.
+
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  drivers/vfio/vfio_iommu_type1.c |  523 +++++++++++++++++++++++++--------
+> > ------
+> > +static long vfio_unpin_pages(unsigned long pfn, long npage,
+> > +			     int prot, bool do_accounting)
+> > +{
+> > +	unsigned long unlocked = 0;
+> > +	long i;
+> > +
+> > +	for (i = 0; i < npage; i++)
+> > +		unlocked += put_pfn(pfn++, prot);
+> > +
+> > +	if (do_accounting)
+> > +		vfio_lock_acct(-unlocked);
+> > +
+> > +	return unlocked;
+> > +}
+> > +
+> > +static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma
+> > *dma,
+> > +			    dma_addr_t iova, size_t *size)
+> > +{
+> > +	dma_addr_t start = iova, end = iova + *size;
+> > +	long unlocked = 0;
+> > +
+> > +	while (iova < end) {
+> > +		size_t unmapped;
+> > +		phys_addr_t phys;
+> > +
+> >  		/*
+> > -		 * Only add actual locked pages to accounting
+> > -		 * XXX We're effectively marking a page locked for every
+> > -		 * IOVA page even though it's possible the user could be
+> > -		 * backing multiple IOVAs with the same vaddr.  This over-
+> > -		 * penalizes the user process, but we currently have no
+> > -		 * easy way to do this properly.
+> > +		 * We use the IOMMU to track the physical address.  This
+> > +		 * saves us from having a lot more entries in our mapping
+> > +		 * tree.  The downside is that we don't track the size
+> > +		 * used to do the mapping.  We request unmap of a single
+> > +		 * page, but expect IOMMUs that support large pages to
+> > +		 * unmap a larger chunk.
+> >  		 */
+> > -		if (!is_invalid_reserved_pfn(pfn))
+> > -			locked++;
+> > -
+> > -		ret = iommu_map(iommu->domain, iova,
+> > -				(phys_addr_t)pfn << PAGE_SHIFT,
+> > -				PAGE_SIZE, prot);
+> > -		if (ret) {
+> > -			/* Back out mappings on error */
+> > -			put_pfn(pfn, prot);
+> > -			__vfio_dma_do_unmap(iommu, start, i, prot);
+> > -			return ret;
+> > +		phys = iommu_iova_to_phys(iommu->domain, iova);
+> > +		if (WARN_ON(!phys)) {
+> [Sethi Varun-B16395] When can this happen? Why won't this be treated
+> as an error? 
+
+I think this should never happen, which is why I just have a WARN and
+continue path vs return error out to the user.
+
+> > +			iova += PAGE_SIZE;
+> > +			continue;
+> >  		}
+> > +
+> > +		unmapped = iommu_unmap(iommu->domain, iova, PAGE_SIZE);
+> > +		if (!unmapped)
+> > +			break;
+> > +
+> > +		unlocked += vfio_unpin_pages(phys >> PAGE_SHIFT,
+> > +					     unmapped >> PAGE_SHIFT,
+> > +					     dma->prot, false);
+> > +		iova += unmapped;
+> >  	}
+> > -	vfio_lock_acct(locked);
+> > +
+> > +	vfio_lock_acct(-unlocked);
+> > +
+> > +	*size = iova - start;
+> > +
+> >  	return 0;
+> >  }
+> > 
+> >  static int vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t
+> > start,
+> > -				   size_t size, struct vfio_dma *dma)
+> > +				   size_t *size, struct vfio_dma *dma)
+> >  {
+> > +	size_t offset, overlap, tmp;
+> >  	struct vfio_dma *split;
+> > -	long npage_lo, npage_hi;
+> > +	int ret;
+> > +
+> > +	/*
+> > +	 * Existing dma region is completely covered, unmap all.  This is
+> > +	 * the likely case since userspace tends to map and unmap buffers
+> > +	 * in one shot rather than multiple mappings within a buffer.
+> > +	 */
+> > +	if (likely(start <= dma->iova &&
+> > +		   start + *size >= dma->iova + dma->size)) {
+> > +		*size = dma->size;
+> > +		ret = vfio_unmap_unpin(iommu, dma, dma->iova, size);
+> > +		if (ret)
+> > +			return ret;
+> > +
+> > +		/*
+> > +		 * Did we remove more than we have?  Should never happen
+> > +		 * since a vfio_dma is contiguous in iova and vaddr.
+> > +		 */
+> > +		WARN_ON(*size != dma->size);
+> [Sethi Varun-B16395] Doesn't this indicate something wrong with the IOMMU mappings?
+
+Yes, we should always be able to remove one of our struct vfio_dma
+tracking structures entirely because it will be a superset of previous
+mappings that are both contiguous in virtual address and iova.  This is
+a sanity check WARN to make sure that's true.  Thanks,
+
+Alex
+
 
