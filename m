@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab3E0P2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 11:28:45 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21539
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751193Ab3E0P2o (ORCPT
+	id S1752953Ab3E0P36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 11:29:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47795 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3E0P35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 11:28:44 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <mturquette@linaro.org>
-CC: <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] ARM: mxs: Include clk mxs header file
-Date: Mon, 27 May 2013 12:28:25 -0300
-Message-ID: <1369668505-14499-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 27 May 2013 11:29:57 -0400
+Date: Mon, 27 May 2013 17:29:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86, clocksource, fix !CONFIG_CLOCKSOURCE_WATCHDOG
+ compile
+In-Reply-To: <51A36FB3.9050607@redhat.com>
+Message-ID: <alpine.LFD.2.02.1305271729170.4220@ionos>
+References: <1361563736-28241-1-git-send-email-prarit@redhat.com> <alpine.LFD.2.02.1305271200220.4220@ionos> <51A36FB3.9050607@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following sparse warnings:
+On Mon, 27 May 2013, Prarit Bhargava wrote:
 
-drivers/clk/mxs/clk-imx28.c:72:5: warning: symbol 'mxs_saif_clkmux_select' was not declared. Should it be static?
-drivers/clk/mxs/clk-imx28.c:156:12: warning: symbol 'mx28_clocks_init' was not declared. Should it be static?
+> 
+> 
+> On 05/27/2013 06:00 AM, Thomas Gleixner wrote:
+> > On Fri, 22 Feb 2013, Prarit Bhargava wrote:
+> > 
+> >> If I explicitly disable the clocksource watchdog in the x86 Kconfig,
+> > 
+> > And why do you want to do that?
+> 
+> Hey Thomas, I was debugging something and stumbled across this.
+> 
+> IIRC the issue was that there some weirdness on a series of new AMD systems and
+> unfortunately the watchdog would fire and switch clocksources on me :(  That
+> resulted in me not being able to debug the HW because the clocksource I wanted
+> was no longer available.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/clk/mxs/clk-imx28.c | 1 +
- 1 file changed, 1 insertion(+)
+tsc=reliable on the kernel command line kills the watchdog
+requirement.
 
-diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-index d0e5eed..4faf0af 100644
---- a/drivers/clk/mxs/clk-imx28.c
-+++ b/drivers/clk/mxs/clk-imx28.c
-@@ -10,6 +10,7 @@
-  */
- 
- #include <linux/clk.h>
-+#include <linux/clk/mxs.h>
- #include <linux/clkdev.h>
- #include <linux/err.h>
- #include <linux/init.h>
--- 
-1.8.1.2
+Thanks,
 
-
+	tglx
