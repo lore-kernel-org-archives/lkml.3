@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab3E0FfC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 01:35:02 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46404 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab3E0Fe6 (ORCPT
+	id S1753229Ab3E0FiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 01:38:13 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:9219 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab3E0FiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 01:34:58 -0400
-X-AuditID: cbfee68e-b7f276d000002279-7a-51a2f0804f0f
-Message-id: <51A2F07F.8070009@samsung.com>
-Date: Mon, 27 May 2013 14:34:55 +0900
+	Mon, 27 May 2013 01:38:10 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-a3-51a2f13fad51
+Message-id: <51A2F13F.80703@samsung.com>
+Date: Mon, 27 May 2013 14:38:07 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
@@ -22,41 +22,42 @@ Cc: myungjoo.ham@samsung.com, balbi@ti.com, ldewangan@nvidia.com,
         linux-omap@vger.kernel.org, grant.likely@linaro.org,
         rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
         george.cherian@ti.com, sameo@linux.intel.com
-Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
+Subject: Re: [PATCH 3/3] usb: dwc3: use extcon fwrk to receive
+ connect/disconnect notification
 References: <1369405896-30246-1-git-send-email-kishon@ti.com>
- <1369405896-30246-3-git-send-email-kishon@ti.com>
-In-reply-to: <1369405896-30246-3-git-send-email-kishon@ti.com>
+ <1369405896-30246-4-git-send-email-kishon@ti.com>
+In-reply-to: <1369405896-30246-4-git-send-email-kishon@ti.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsWyRsSkULfhw6JAg+0b+S0O3q+3mPrwCZvF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsWyRsSkSNfh46JAg1n/mCwO3q+3mPrwCZvF
 	gdkPWS1OHVzOatG/xcXiwJ8djBbNi9ezWVx42sNmsXTfahaLb1c6mCwWti1hsbi8aw6bxewl
 	/SwWi5a1MlvcblzBZnF4xQEmi3Uvp7NYnO5mdRDyWPD5CrvHzll32T02repk83i1eiarx51r
 	e9g85p0M9Ng/dw27x/kZCxk9epvfsXn0bVnF6DF1yl9Gj+M3tjN5fN4kF8AbxWWTkpqTWZZa
-	pG+XwJXx7KFvQecExor5yztZGhg/lHQxcnJICJhIXFqykB3CFpO4cG89WxcjF4eQwFJGif0v
-	ZzPDFB16cAEqsYhR4v6m6awQzgtGid7uB2BVvAJaEptW3wIbxSKgKvHofy8LiM0GFN//4gYb
-	iC0qECaxcvoVFoh6QYkfk++B2SJANad3/gCbwyywmlmiaXMYiC0sYCHxYctZsBohgUKJnh8v
-	weZwCthJ7Gk7zQhRryOxv3UaG4QtL7F5zVuoqy9wSHyclA1xj4DEt8mHgOZwAMVlJTYdgCqR
-	lDi44gbLBEaxWUgumoVk6iwkUxcwMq9iFE0tSC4oTkovMtIrTswtLs1L10vOz93ECEwWp/89
-	69vBePOA9SHGZKCVE5mlRJPzgckmryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU
-	1ILUovii0pzU4kOMTBycUg2MC89PqfuZludzwEjvyLSOlafr96Vlnbyi+Z+3uf/h4z2ZLA47
-	v21hK+F4rlbRem2xQ7Wn10GOyGllB/h5Y9f9Ulq1MsJNQmTZNO4PWzl+ir5e1Kvo17ry2owD
-	yjGOpbNmrYjkPvUz+6ukhbrj76rFttfYw9iXNzP/StV0yTGvUnzYsasgZ7m9EktxRqKhFnNR
-	cSIAHUUtTiwDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOKsWRmVeSWpSXmKPExsVy+t9jAd2GD4sCDd61MlocvF9vMfXhEzaL
+	pG+XwJWxdOo8poI5rBVzFl9lbGBcz9LFyMkhIWAi8X5eLxuELSZx4d56IJuLQ0hgKaPEnQuL
+	2WGKpl1cxwiRmM4o0TfvNCNIQkjgBaPEhwtMIDavgIbEjQ+rwRpYBFQlnm/vA5vKJqAlsf/F
+	DTBbVCBMYuX0KywQ9YISPybfA7NFgGpO7/zBDGIzC6xmlmjaHNbFyMEhLJAgMfV8NogpJFAo
+	seEsH0gFp4CdxMaDD9kgqnUk9rdOg7LlJTavecsMcfIVDonJq1khrhGQ+Db5EAvIGAkBWYlN
+	B6BKJCUOrrjBMoFRbBaSe2YhmToLydQFjMyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MQLT
+	xOl/z3p3MN4+YH2IMRlo5URmKdHkfGCaySuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2x
+	JDU7NbUgtSi+qDQntfgQIxMHp1QDY0/wuyWZ+/cwJBg0lrcqvgxoDn/bKZy73HdlD9uKL46K
+	/HzNAmZZYea+Xkn5B8867quLSwhZdXXC5daWXysFpU/bGvbNUSvYI3v9rKbP9JWGJ2U+xj9j
+	UbgVPH1Zl9qcv+7L3IvCG+PsgkySJrXtXxD+trdmReSmmqQ3vBM+vVzKueVy6r/FSizFGYmG
+	WsxFxYkA4MhD3CkDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCKsWRmVeSWpSXmKPExsVy+t9jQV37j4sCDVZ1mlscvF9vMfXhEzaL
 	A7MfslqcOric1aJ/i4vFgT87GC2aF69ns7jwtIfNYum+1SwW3650MFksbFvCYnF51xw2i9lL
 	+lksFi1rZba43biCzeLwigNMFuteTmexON3N6iDkseDzFXaPnbPusntsWtXJ5vFq9UxWjzvX
 	9rB5zDsZ6LF/7hp2j/MzFjJ69Da/Y/Po27KK0WPqlL+MHsdvbGfy+LxJLoA3qoHRJiM1MSW1
 	SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoRSWFssScUqBQQGJx
-	sZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxrOHvgWdExgr5i/vZGlg/FDSxcjJISFgInHo
-	wQU2CFtM4sK99UA2F4eQwCJGifubprNCOC8YJXq7HzCDVPEKaElsWn2LHcRmEVCVePS/lwXE
-	ZgOK739xA2ySqECYxMrpV1gg6gUlfky+B2aLANWc3vkDbA6zwGpmiabNYSC2sICFxIctZ8Fq
-	hAQKJXp+vASbwylgJ7Gn7TQjRL2OxP7WaWwQtrzE5jVvmScwCsxCsmIWkrJZSMoWMDKvYhRN
-	LUguKE5KzzXSK07MLS7NS9dLzs/dxAhORs+kdzCuarA4xCjAwajEw7tgxqJAIdbEsuLK3EOM
-	EhzMSiK8CdFAId6UxMqq1KL8+KLSnNTiQ4zJwBCYyCwlmpwPTJR5JfGGxiZmRpZG5oYWRsbm
-	pAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cAow80ko91R+6jT84NC5sVfIi8uN+4Om9tZ
-	tEh71TuHNTFfcz7w2oTw3XWwmFx+MWtpcM6WwDVbvyzJe9yw59mPo5HX93ZZdQpyf7zmlfPB
-	xjNsonl6TfmTMztSdiWLusnbSa4OmWScdnYD2wYlB6u3GUFftL7PvpJ5b1LEHssP0+vLVhTL
-	uSsqsRRnJBpqMRcVJwIAh/FerYoDAAA=
+	sZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxtKp85gK5rBWzFl8lbGBcT1LFyMnh4SAicS0
+	i+sYIWwxiQv31rN1MXJxCAlMZ5Tom3caLCEk8IJR4sMFJhCbV0BD4saH1ewgNouAqsTz7X1s
+	IDabgJbE/hc3wGxRgTCJldOvsEDUC0r8mHwPzBYBqjm98wcziM0ssJpZomlzWBcjB4ewQILE
+	1PPZIKaQQKHEhrN8IBWcAnYSGw8+ZIOo1pHY3zoNypaX2LzmLfMERoFZSBbMQlI2C0nZAkbm
+	VYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBaeiZ9A7GVQ0WhxgFOBiVeHgXzFgUKMSaWFZc
+	mXuIUYKDWUmENyEaKMSbklhZlVqUH19UmpNafIgxGej/icxSosn5wBSZVxJvaGxiZmRpZG5o
+	YWRsTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MTd84hIuXdx0y82++YP06Y+4koQQF
+	R/PCOcdLVoYk5FbPnVz+4G/Qz1UngiSKzZdw8Re/25tywIDfe0dkyHHhD1diFqyVWuYduV7h
+	TupLm6qPunuWb/571O+PtNf8kKwF1yYdTViR59Szsvo876+sHy+cstYt2BC4eHrW4l/BcYut
+	vjS9faooqcRSnJFoqMVcVJwIABOZP7CHAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,565 +65,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-I have some comment about this patch
-and upload modified patch to following repository (extcon-for-palmas).
-- http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
-
-This patchset include patch related to other module
-,so I need your opinion to apply this patchset to git repository.
-
 On 05/24/2013 11:31 PM, Kishon Vijay Abraham I wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
+> Modified dwc3-omap to receive connect and disconnect notification using
+> extcon framework. Also did the necessary cleanups required after
+> adapting to extcon framework.
 >
-> This is the driver for the USB comparator built into the palmas chip. It
-> handles the various USB OTG events that can be generated by cable
-> insertion/removal.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
-> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
 > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> [kishon@ti.com: adapted palmas usb driver to use the extcon framework]
-> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
 > ---
-> Changes from v4:
-> * removed no_control_vbus property (to be used if the platform wants to use
-> its own vbus control.
-> * removed unnecessary headers
-> * moved the palmas_usb_state to palmas.h
-> * misc cleanups
-> *A checkpatch warning "WARNING: static const char * array should
->  probably be static const char * const"is ignored since it introduces a
->  compilation warning.
-> Changes from v3:
-> * adapted the driver to extcon framework (so moved to drivers/extcon)
-> * removed palmas_usb_(write/read) and replaced all calls with
->   palmas_(read/write).
-> * ignored a checkpatch warning in the line 
-> 	static const char *palmas_extcon_cable[] = {
->   as it seemed to be incorrect?
-> * removed all references to OMAP in this driver.
-> * couldn't test this driver with mainline as omap5 panda is not booting
->   with mainline.
-> * A comment to change to platform_get_irq from regmap is not done as I felt
->   the data should come from regmap in this case. Graeme?
-> Changes from v2:
-> * Moved the driver to drivers/usb/phy/
-> * Added a bit more explanation in Kconfig
->  .../devicetree/bindings/extcon/extcon-twl.txt      |  16 +
->  drivers/extcon/Kconfig                             |   7 +
->  drivers/extcon/Makefile                            |   1 +
->  drivers/extcon/extcon-palmas.c                     | 341 +++++++++++++++++++++
->  include/linux/mfd/palmas.h                         |  25 +-
->  5 files changed, 380 insertions(+), 10 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-twl.txt
->  create mode 100644 drivers/extcon/extcon-palmas.c
+>  drivers/usb/dwc3/dwc3-omap.c  | 80 +++++++++++++++++++++++++++++++++----------
+>  include/linux/usb/dwc3-omap.h | 30 ----------------
+>  2 files changed, 62 insertions(+), 48 deletions(-)
+>  delete mode 100644 include/linux/usb/dwc3-omap.h
 >
-> diff --git a/Documentation/devicetree/bindings/extcon/extcon-twl.txt b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
-> new file mode 100644
-> index 0000000..8ffdeed
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
-> @@ -0,0 +1,15 @@
-> +EXTCON FOR TWL CHIPS
-> +
-> +PALMAS USB COMPARATOR
-> +Required Properties:
-> + - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
-> + - vbus-supply : phandle to the regulator device tree node.
-> +
-> +Optional Properties:
-> + - ti,wakeup : To enable the wakeup comparator in probe
-> +
-> +palmas-usb {
-> +       compatible = "ti,twl6035-usb", "ti,palmas-usb";
-> +       vbus-supply = <&smps10_reg>;
-> +       ti,wakeup;
-> +};
-> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-> index 3297301..63f454e 100644
-> --- a/drivers/extcon/Kconfig
-> +++ b/drivers/extcon/Kconfig
-> @@ -53,4 +53,11 @@ config EXTCON_ARIZONA
->  	  with Wolfson Arizona devices. These are audio CODECs with
->  	  advanced audio accessory detection support.
->  
-> +config EXTCON_PALMAS
-> +	tristate "Palmas USB EXTCON support"
-> +	depends on MFD_PALMAS
-You should add REGULATOR_PALMAS dependency because
-palmas_set_switch_smps10() is defined in palmas regulator driver.
+>
+I check the code about extcon framework.
 
-+    depends on MFD_PALMAS && REGULATOR_PALMAS
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-> +	help
-> +	  Say Y here to enable support for USB peripheral and USB host
-> +	  detection by palmas usb.
-> +
->  endif # MULTISTATE_SWITCH
-> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> index f98a3c4..540e2c3 100644
-> --- a/drivers/extcon/Makefile
-> +++ b/drivers/extcon/Makefile
-> @@ -8,3 +8,4 @@ obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
->  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
->  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
->  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
-> +obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
-> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-> new file mode 100644
-> index 0000000..9e613e9
-> --- /dev/null
-> +++ b/drivers/extcon/extcon-palmas.c
-> @@ -0,0 +1,341 @@
-> +/*
-> + * Palmas USB transceiver driver
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * Author: Graeme Gregory <gg@slimlogic.co.uk>
-> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * Based on twl6030_usb.c
-> + *
-> + * Author: Hema HK <hemahk@ti.com>
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/phy_companion.h>
-> +#include <linux/err.h>
-> +#include <linux/mfd/palmas.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +
-> +static const char *palmas_extcon_cable[] = {
-> +	[0] = "USB",
-> +	[1] = "USB-HOST",
-> +	NULL,
-> +};
-> +
-> +static const int mutually_exclusive[] = {0x3, 0x0};
-> +
-> +static void palmas_usb_wakeup(struct palmas *palmas, int enable)
-> +{
-> +	if (enable)
-> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP,
-> +			PALMAS_USB_WAKEUP_ID_WK_UP_COMP);
-> +	else
-> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP, 0);
-> +}
-> +
-> +static irqreturn_t palmas_vbus_irq_handler(int irq, void *_palmas_usb)
-> +{
-> +	int ret;
-> +	struct palmas_usb *palmas_usb = _palmas_usb;
-> +	unsigned int vbus_line_state;
-> +
-> +	palmas_read(palmas_usb->palmas, PALMAS_INTERRUPT_BASE,
-> +		PALMAS_INT3_LINE_STATE, &vbus_line_state);
-> +
-> +	if (vbus_line_state & PALMAS_INT3_LINE_STATE_VBUS) {
-> +		if (palmas_usb->linkstat != PALMAS_USB_STATE_VBUS) {
-> +			if (palmas_usb->vbus_reg) {
-> +				ret = regulator_enable(palmas_usb->vbus_reg);
-> +				if (ret) {
-> +					dev_dbg(palmas_usb->dev,
-> +						"regulator enable failed\n");
-> +					goto ret0;
-
-I prefer to use consistent name of goto statement becuase you use
-'fail_' prefix in palmas_usb_probe()
--                    goto ret0;
-+                    goto fail;
-
-> +				}
-> +			}
-> +			palmas_usb->linkstat = PALMAS_USB_STATE_VBUS;
-> +			extcon_set_cable_state(&palmas_usb->edev, "USB", true);
-> +		} else {
-> +			dev_dbg(palmas_usb->dev,
-> +				"Spurious connect event detected\n");
-> +		}
-> +	} else if (!(vbus_line_state & PALMAS_INT3_LINE_STATE_VBUS)) {
-> +		if (palmas_usb->linkstat == PALMAS_USB_STATE_VBUS) {
-> +			if (palmas_usb->vbus_reg)
-> +				regulator_disable(palmas_usb->vbus_reg);
-> +			palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
-> +			extcon_set_cable_state(&palmas_usb->edev, "USB", false);
-> +		} else {
-> +			dev_dbg(palmas_usb->dev,
-> +				"Spurious disconnect event detected\n");
-> +		}
-> +	}
-> +
-> +ret0:
-ditto.
-
--ret0:
-+fail:
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
-> +{
-> +	int			ret;
-> +	unsigned int		set;
-> +	struct palmas_usb	*palmas_usb = _palmas_usb;
-You should use space instead of tab when defined local variables.
-
-+    int ret;
-+    unsigned int set;
-+    struct palmas_usb *palmas_usb = _palmas_usb;
-
-> +
-> +	palmas_read(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_ID_INT_LATCH_SET, &set);
-> +
-> +	if (set & PALMAS_USB_ID_INT_SRC_ID_GND) {
-> +		palmas_set_switch_smps10(palmas_usb->palmas, 1);
-> +		if (palmas_usb->vbus_reg) {
-> +			ret = regulator_enable(palmas_usb->vbus_reg);
-> +			if (ret) {
-> +				dev_dbg(palmas_usb->dev,
-> +					"regulator enable failed\n");
-> +				goto ret0;
-
-ditto.
-
-> +			}
-> +		}
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_EN_HI_SET,
-> +			PALMAS_USB_ID_INT_EN_HI_SET_ID_FLOAT);
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR_ID_GND);
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_LATCH_CLR,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR_ID_GND);
-> +		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
-> +		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
-> +	} else if (set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) {
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_EN_HI_SET,
-> +			PALMAS_USB_ID_INT_EN_HI_SET_ID_GND);
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR_ID_FLOAT);
-> +		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +			PALMAS_USB_ID_INT_LATCH_CLR,
-> +			PALMAS_USB_ID_INT_EN_HI_CLR_ID_FLOAT);
-> +		if (palmas_usb->vbus_reg)
-> +			regulator_disable(palmas_usb->vbus_reg);
-> +		palmas_set_switch_smps10(palmas_usb->palmas, 0);
-> +		palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
-> +		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", false);
-> +	}
-> +
-> +ret0:
-
-ditto.
-
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void palmas_enable_irq(struct palmas_usb *palmas_usb)
-> +{
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_SET,
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_ACT_COMP);
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_ID_CTRL_SET, PALMAS_USB_ID_CTRL_SET_ID_ACT_COMP);
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_ID_INT_EN_HI_SET,
-> +		PALMAS_USB_ID_INT_EN_HI_SET_ID_GND);
-> +
-> +	palmas_vbus_irq_handler(palmas_usb->vbus_irq, palmas_usb);
-> +
-> +	/* cold plug for host mode needs this delay */
-> +	msleep(30);
-> +	palmas_id_irq_handler(palmas_usb->id_irq, palmas_usb);
-> +}
-> +
-> +static void palmas_set_vbus_work(struct work_struct *data)
-> +{
-> +	int ret;
-> +	struct palmas_usb *palmas_usb = container_of(data, struct palmas_usb,
-> +								set_vbus_work);
-> +
-> +	/*
-> +	 * Start driving VBUS. Set OPA_MODE bit in CHARGERUSB_CTRL1
-> +	 * register. This enables boost mode.
-> +	 */
-> +
-> +	if (palmas_usb->vbus_enable) {
-> +		ret = regulator_enable(palmas_usb->vbus_reg);
-> +		if (ret)
-> +			dev_dbg(palmas_usb->dev, "regulator enable failed\n");
-> +	} else {
-> +		regulator_disable(palmas_usb->vbus_reg);
-> +	}
-> +}
-> +
-> +static int palmas_set_vbus(struct phy_companion *comparator, bool enabled)
-> +{
-> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-> +
-> +	palmas_usb->vbus_enable = enabled;
-> +	schedule_work(&palmas_usb->set_vbus_work);
-> +
-> +	return 0;
-> +}
-> +
-> +static int palmas_start_srp(struct phy_companion *comparator)
-> +{
-> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_SET, PALMAS_USB_VBUS_CTRL_SET_VBUS_DISCHRG
-> +		| PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_SET,
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
-> +
-> +	msleep(100);
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_CLR,
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS);
-> +
-> +	return 0;
-> +}
-> +
-> +static int palmas_usb_probe(struct platform_device *pdev)
-> +{
-> +	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-> +	struct palmas_usb_platform_data	*pdata = pdev->dev.platform_data;
-> +	struct device_node *node = pdev->dev.of_node;
-> +	struct palmas_usb *palmas_usb;
-> +	int status;
-> +
-> +	if (node && !pdata) {
-> +		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +
-> +		if (!pdata)
-> +			return -ENOMEM;
-> +
-> +		pdata->wakeup = of_property_read_bool(node, "ti,wakeup");
-> +	}
-> +
-> +	if (!pdata)
-> +		return -EINVAL;
-I think that if condition of first if statement is true,
-second if statement is unnecessary. So, I prefer
-to modify if/else statement as following:
-
-+	} else if (!pdata) {
-		return -EINVAL;
-+	}
-
- 
-> +
-> +	palmas_usb = devm_kzalloc(&pdev->dev, sizeof(*palmas_usb), GFP_KERNEL);
-> +	if (!palmas_usb)
-> +		return -ENOMEM;
-> +
-> +	palmas->usb		= palmas_usb;
-> +	palmas_usb->palmas	= palmas;
-> +
-> +	palmas_usb->dev		= &pdev->dev;
-
-You should use space instead of tab when assign some value to variables.
-
-+	palmas->usb = palmas_usb;
-+	palmas_usb->palmas = palmas;
-+
-+	palmas_usb->dev= &pdev->dev;
-
-
-> +
-> +	palmas_usb->id_otg_irq = regmap_irq_get_virq(palmas->irq_data,
-> +						PALMAS_ID_OTG_IRQ);
-> +	palmas_usb->id_irq = regmap_irq_get_virq(palmas->irq_data,
-> +						PALMAS_ID_IRQ);
-> +	palmas_usb->vbus_otg_irq = regmap_irq_get_virq(palmas->irq_data,
-> +						PALMAS_VBUS_OTG_IRQ);
-> +	palmas_usb->vbus_irq = regmap_irq_get_virq(palmas->irq_data,
-> +						PALMAS_VBUS_IRQ);
-> +
-> +	palmas_usb->comparator.set_vbus	= palmas_set_vbus;
-> +	palmas_usb->comparator.start_srp = palmas_start_srp;
-> +
-> +	palmas_usb_wakeup(palmas, pdata->wakeup);
-> +
-> +	palmas_usb->vbus_reg = devm_regulator_get(&pdev->dev, "vbus");
-> +	if (IS_ERR(palmas_usb->vbus_reg)) {
-> +		dev_err(&pdev->dev, "vbus init failed\n");
-> +		return PTR_ERR(palmas_usb->vbus_reg);
-> +	}
-> +
-> +	INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
-> +
-> +	platform_set_drvdata(pdev, palmas_usb);
-> +
-> +	palmas_usb->edev.name = "palmas-usb";
-> +	palmas_usb->edev.supported_cable = palmas_extcon_cable;
-> +	palmas_usb->edev.mutually_exclusive = mutually_exclusive;
-> +
-> +	status = extcon_dev_register(&palmas_usb->edev, palmas_usb->dev);
-> +	if (status) {
-> +		dev_err(&pdev->dev, "failed to register extcon device\n");
-> +		goto fail_irq;
-> +	}
-> +
-> +	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->id_irq,
-> +			NULL, palmas_id_irq_handler,
-> +			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-> +			"palmas_usb_id", palmas_usb);
-> +	if (status < 0) {
-> +		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
-> +					palmas_usb->id_irq, status);
-> +		goto fail_extcon;
-> +	}
-> +
-> +	status = devm_request_threaded_irq(palmas_usb->dev,
-> +			palmas_usb->vbus_irq, NULL, palmas_vbus_irq_handler,
-> +			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-> +			"palmas_usb_vbus", palmas_usb);
-> +	if (status < 0) {
-> +		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
-> +					palmas_usb->vbus_irq, status);
-> +		goto fail_extcon;
-> +	}
-> +
-> +	palmas_enable_irq(palmas_usb);
-> +
-> +	return 0;
-> +
-> +fail_extcon:
-> +	extcon_dev_unregister(&palmas_usb->edev);
-> +
-> +fail_irq:
-> +	cancel_work_sync(&palmas_usb->set_vbus_work);
-> +
-> +	return status;
-> +}
-> +
-> +static int palmas_usb_remove(struct platform_device *pdev)
-> +{
-> +	struct palmas_usb *palmas_usb = platform_get_drvdata(pdev);
-> +
-> +		cancel_work_sync(&palmas_usb->set_vbus_work);
-> +	extcon_dev_unregister(&palmas_usb->edev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id of_palmas_match_tbl[] = {
-> +	{ .compatible = "ti,palmas-usb", },
-> +	{ .compatible = "ti,twl6035-usb", },
-> +	{ /* end */ }
-> +};
-> +
-> +static struct platform_driver palmas_usb_driver = {
-> +	.probe = palmas_usb_probe,
-> +	.remove = palmas_usb_remove,
-> +	.driver = {
-> +		.name = "palmas-usb",
-> +		.of_match_table = of_palmas_match_tbl,
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(palmas_usb_driver);
-> +
-> +MODULE_ALIAS("platform:palmas-usb");
-> +MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
-> +MODULE_DESCRIPTION("Palmas USB transceiver driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
-> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> index 6df375d..eb4846b 100644
-> --- a/include/linux/mfd/palmas.h
-> +++ b/include/linux/mfd/palmas.h
-> @@ -20,6 +20,8 @@
->  #include <linux/leds.h>
->  #include <linux/regmap.h>
->  #include <linux/regulator/driver.h>
-> +#include <linux/extcon.h>
-> +#include <linux/usb/phy_companion.h>
->  
->  #define PALMAS_NUM_CLIENTS		3
->  
-> @@ -37,6 +39,12 @@ struct palmas_gpadc;
->  struct palmas_resource;
->  struct palmas_usb;
->  
-> +enum palmas_usb_state {
-> +	PALMAS_USB_STATE_DISCONNECT,
-> +	PALMAS_USB_STATE_VBUS,
-> +	PALMAS_USB_STATE_ID,
-> +};
-> +
->  struct palmas {
->  	struct device *dev;
->  
-> @@ -180,9 +188,6 @@ struct palmas_pmic_platform_data {
->  };
->  
->  struct palmas_usb_platform_data {
-> -	/* Set this if platform wishes its own vbus control */
-> -	int no_control_vbus;
-> -
->  	/* Do we enable the wakeup comparator on probe */
->  	int wakeup;
->  };
-> @@ -350,22 +355,22 @@ struct palmas_usb {
->  	struct palmas *palmas;
->  	struct device *dev;
->  
-> -	/* for vbus reporting with irqs disabled */
-> -	spinlock_t lock;
-> +	struct extcon_dev edev;
-> +	struct phy_companion comparator;
->  
->  	struct regulator *vbus_reg;
->  
->  	/* used to set vbus, in atomic path */
->  	struct work_struct set_vbus_work;
->  
-> -	int irq1;
-> -	int irq2;
-> -	int irq3;
-> -	int irq4;
-> +	int id_otg_irq;
-> +	int id_irq;
-> +	int vbus_otg_irq;
-> +	int vbus_irq;
->  
->  	int vbus_enable;
->  
-> -	u8 linkstat;
-> +	enum palmas_usb_state linkstat;
->  };
->  
->  #define comparator_to_palmas(x) container_of((x), struct palmas_usb, comparator)
-
+Thanks,
+Chanwoo Choi
