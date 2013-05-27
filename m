@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3E0CBG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:01:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:61916 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718Ab3E0CBC (ORCPT
+	id S1755910Ab3E0CCn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:02:43 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58780 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab3E0CCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:01:02 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A2BE2C.2000004@asianux.com>
-Date: Mon, 27 May 2013 10:00:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
+	Sun, 26 May 2013 22:02:42 -0400
+Message-ID: <51A2BEB5.9030900@linux.vnet.ibm.com>
+Date: Mon, 27 May 2013 10:02:29 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, vgupta@synopsys.com,
-        Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v2] arch: arm64: kernel: sprintf(), 'str' needs additional
- 1 byte for failure processing
-References: <51A1E3B3.4060901@asianux.com>
-In-Reply-To: <51A1E3B3.4060901@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 03/11] KVM: MMU: fast invalidate all pages
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130524202307.GA4525@amt.cnet>
+In-Reply-To: <20130524202307.GA4525@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052701-7014-0000-0000-000003134C7F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Marcelo,
 
-When failure occurs at the last looping cycle (when 'i == 0'), it will
-print "bad PC value" instead of "(%08x) ", which needs additional 1
-byte.
+On 05/25/2013 04:23 AM, Marcelo Tosatti wrote:
 
-If not add 1 byte, the 'str' may be memory overflow.
+>> +static void kvm_zap_obsolete_pages(struct kvm *kvm)
+>> +{
+>> +	struct kvm_mmu_page *sp, *node;
+>> +	LIST_HEAD(invalid_list);
+>> +
+>> +restart:
+>> +	list_for_each_entry_safe_reverse(sp, node,
+>> +	      &kvm->arch.active_mmu_pages, link) {
+>> +		/*
+>> +		 * No obsolete page exists before new created page since
+>> +		 * active_mmu_pages is the FIFO list.
+>> +		 */
+>> +		if (!is_obsolete_sp(kvm, sp))
+>> +			break;
+> 
+> Can you add a comment to list_add(x, active_mmu_pages) callsites
+> mentioning this case?
+> 
+> Because it'll break silently if people do list_add_tail().
 
+Sure, I will do it in the next version.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arm64/kernel/traps.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And i totally agree with Gleb's points that reply your other questions
+in this patch.
 
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-index 61d7dd2..c2f68d2 100644
---- a/arch/arm64/kernel/traps.c
-+++ b/arch/arm64/kernel/traps.c
-@@ -100,7 +100,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
- {
- 	unsigned long addr = instruction_pointer(regs);
- 	mm_segment_t fs;
--	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
-+	char str[sizeof("00000000 ") * 5 + 2 + 1 + 1], *p = str;
- 	int i;
- 
- 	/*
--- 
-1.7.7.6
-
+Thank you all!
 
