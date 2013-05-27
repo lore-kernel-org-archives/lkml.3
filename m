@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3E0H6U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 03:58:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46725 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756280Ab3E0H6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 03:58:19 -0400
-Subject: MAINTAINERS: Fix tape driver file mappings
-From: Jean Delvare <jdelvare@suse.de>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Cc: Willem Riede <osst@riede.org>,
-        Kai =?ISO-8859-1?Q?M=E4kisara?= <Kai.Makisara@kolumbus.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Mon, 27 May 2013 09:58:10 +0200
-Message-ID: <1369641490.4497.5.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1756847Ab3E0H6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 03:58:45 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61667 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3E0H6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 03:58:44 -0400
+From: Runzhen Wang <icycoder@gmail.com>
+To: acme@redhat.com
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, dsahern@gmail.com,
+        Runzhen Wang <icycoder@gmail.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: [PATCH] perf tools: fix a wrong header file path in util/unwind.c
+Date: Mon, 27 May 2013 15:54:26 +0800
+Message-Id: <1369641266-16913-1-git-send-email-icycoder@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The masks for the st and osst tape drivers in MAINTAINERS are too
-broad and include unrelated files. Make the file list accurate so that
-maintainers of these drivers aren't bothered with unrelated work.
+For the latest perf core tree:
+(git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git),
+in util/unwind.c line 29 includes "perf_regs.h". That means compiler
+will search for this header file in current directory, so, gcc will
+puts the following error messages:
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Willem Riede <osst@riede.org>
-Cc: Kai Mäkisara <Kai.Makisara@kolumbus.fi>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+util/unwind.c: In function ‘access_mem’:
+util/unwind.c:400:50: error: ‘PERF_REG_SP’ undeclared (first use in this
+function)
+util/unwind.c:400:50: note: each undeclared identifier is reported only
+once for each function it appears in
+util/unwind.c: In function ‘unwind__get_entries’:
+util/unwind.c:562:41: error: ‘PERF_REG_IP’ undeclared (first use in this
+function)
+
+Changing #include "perf_regs.h" to #include <perf_regs.h> will fix the
+error.
+
+Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
-Already sent on:
- * 2013-02-28
+ tools/perf/util/unwind.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- MAINTAINERS |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
---- linux-3.10-rc3.orig/MAINTAINERS	2013-05-27 08:40:52.698827124 +0200
-+++ linux-3.10-rc3/MAINTAINERS	2013-05-27 08:41:24.194555638 +0200
-@@ -5923,8 +5923,10 @@ M:	Willem Riede <osst@riede.org>
- L:	osst-users@lists.sourceforge.net
- L:	linux-scsi@vger.kernel.org
- S:	Maintained
--F:	drivers/scsi/osst*
--F:	drivers/scsi/st*
-+F:	Documentation/scsi/osst.txt
-+F:	drivers/scsi/osst.*
-+F:	drivers/scsi/osst_*.h
-+F:	drivers/scsi/st.h
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 958723b..50e14f7 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -26,7 +26,7 @@
+ #include <libunwind-ptrace.h>
+ #include "thread.h"
+ #include "session.h"
+-#include "perf_regs.h"
++#include <perf_regs.h>
+ #include "unwind.h"
+ #include "util.h"
  
- OPENCORES I2C BUS DRIVER
- M:	Peter Korsgaard <jacmet@sunsite.dk>
-@@ -7064,7 +7066,8 @@ M:	Kai Mäkisara <Kai.Makisara@kolumbus.
- L:	linux-scsi@vger.kernel.org
- S:	Maintained
- F:	Documentation/scsi/st.txt
--F:	drivers/scsi/st*
-+F:	drivers/scsi/st.*
-+F:	drivers/scsi/st_*.h
- 
- SCTP PROTOCOL
- M:	Vlad Yasevich <vyasevich@gmail.com>
-
 -- 
-Jean Delvare
-Suse L3
+1.7.9.5
 
