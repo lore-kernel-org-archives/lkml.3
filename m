@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab3E0M0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:26:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47081 "EHLO
+	id S932309Ab3E0M2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:28:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47098 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab3E0M0t (ORCPT
+	with ESMTP id S932143Ab3E0M2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:26:49 -0400
-Date: Mon, 27 May 2013 14:26:36 +0200 (CEST)
+	Mon, 27 May 2013 08:28:47 -0400
+Date: Mon, 27 May 2013 14:28:39 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH REBASE] irqchip: Add TB10x interrupt controller driver
-In-Reply-To: <1367930258-27056-1-git-send-email-christian.ruppert@abilis.com>
-Message-ID: <alpine.LFD.2.02.1305271414270.4220@ionos>
-References: <1365686252-9828-1-git-send-email-christian.ruppert@abilis.com> <1367930258-27056-1-git-send-email-christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: Daniel Tang <dt.tangr@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC PATCHv4 4/6] clocksource: TI-Nspire timer support
+In-Reply-To: <CACRpkda4Qe1e+dkcSgPLf5dcHASvOG=Y=Dvrnv=oGnon+FRzzg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1305271427320.4220@ionos>
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <1369480087-24786-5-git-send-email-dt.tangr@gmail.com> <CACRpkda4Qe1e+dkcSgPLf5dcHASvOG=Y=Dvrnv=oGnon+FRzzg@mail.gmail.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,77 +33,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 May 2013, Christian Ruppert wrote:
-> +#include <linux/interrupt.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/io.h>
-> +#include <linux/slab.h>
-> +#include "../../drivers/irqchip/irqchip.h"
+On Mon, 27 May 2013, Linus Walleij wrote:
+> > +static void zevio_timer_set_mode(enum clock_event_mode mode,
+> > +               struct clock_event_device *dev)
+> > +{
+> > +       unsigned long flags;
+> > +       struct zevio_timer *timer = container_of(dev,
+> > +                       struct zevio_timer,
+> > +                       clkevt);
+> > +
+> > +       local_irq_save(flags);
+> > +
+> > +       switch (mode) {
+> > +       case CLOCK_EVT_MODE_PERIODIC:
+> > +               /* Unsupported */
+> > +               break;
+> > +       case CLOCK_EVT_MODE_RESUME:
+> > +       case CLOCK_EVT_MODE_ONESHOT:
+> > +               /* Enable timer interrupts */
+> > +               writel(TIMER_INTR_MSK, timer->interrupt_regs + IO_INTR_MSK);
+> > +               writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
+> > +               dev->mode = mode;
+> > +               break;
+> > +       case CLOCK_EVT_MODE_SHUTDOWN:
+> > +       case CLOCK_EVT_MODE_UNUSED:
+> > +               /* Disable timer interrupts */
+> > +               writel(0, timer->interrupt_regs + IO_INTR_MSK);
+> > +               writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
+> > +               /* Stop timer */
+> > +               writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
+> > +               dev->mode = mode;
+> > +               break;
+> > +       }
+> 
+> Surely both the compiler and checkpatch is complaining that this
+> switch does not contain a default: clause?
 
-#include "irqchip.h" perhaps?
-
-> +#define AB_IRQCTL_INT_ENABLE   (0x00)
-
-What's the purpose of the parens? Decrease readability?
-
-> +static void tb10x_irq_unmask(struct irq_data *data)
-> +{
-> +	struct tb10x_ictl *ictl = irq_data_get_irq_chip_data(data);
-> +	unsigned int hwirq = irqd_to_hwirq(data);
-> +
-> +	ab_irqctl_writereg(ictl, AB_IRQCTL_INT_ENABLE,
-> +		ab_irqctl_readreg(ictl, AB_IRQCTL_INT_ENABLE) | (1 << hwirq));
-
-Another implementation of the generic interrupt chip functionality.
-
-> +static int tb10x_irq_map(struct irq_domain *d, unsigned int irq,
-> +				irq_hw_number_t hw)
-> +{
-> +	irq_set_chip_data(irq, d->host_data);
-> +	irq_set_chip_and_handler(irq, &irq_tb10x_chip, handle_level_irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int tb10x_irq_xlate(struct irq_domain *d, struct device_node *node,
-> +			const u32 *intspec, unsigned int intsize,
-> +			unsigned long *out_hwirq, unsigned int *out_type)
-> +{
-> +	static const unsigned int tb10x_xlate_types[] = {
-> +		IRQ_TYPE_EDGE_RISING,
-> +		IRQ_TYPE_LEVEL_LOW,
-> +		IRQ_TYPE_LEVEL_HIGH,
-> +		IRQ_TYPE_EDGE_FALLING,
-
-Why do you need to introduce another format for specifying the
-interrupt type instead of using the IRQ_TYPE values and
-irq_domain_xlate_twocell()?
-
-> +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	struct tb10x_ictl *ictl = irq_desc_get_handler_data(desc);
-> +
-> +	generic_handle_irq(irq_find_mapping(ictl->domain, irq));
-> +}
-> +
-> +static int __init of_tb10x_init_irq(struct device_node *ictl,
-> +					struct device_node *parent)
-> +{
-> +	int i;
-> +	int ret;
-> +	int nrirqs = of_irq_count(ictl);
-
-One line for all those ints please
-
-> +	ic->domain = irq_domain_add_tree(ictl, &irq_tb10x_domain_ops, ic);
-
-Why do you want a tree, if you require that the interrupts are mapped
-1:1 to the hardware interrupt numbers? This doesn't make any sense at
-all and makes the above cascade handler a pointless waste of cpu cycles.
+Well, if you have a switch with an enum, the compiler complains if you
+do not have a case for each enum value and the above has all enum
+values covered AFAICT. :)
 
 Thanks,
 
 	tglx
+
