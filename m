@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab3E0Ja4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:30:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45017 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754641Ab3E0Jaz convert rfc822-to-8bit (ORCPT
+	id S1755190Ab3E0JdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:33:23 -0400
+Received: from ams-iport-1.cisco.com ([144.254.224.140]:32228 "EHLO
+	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3E0JdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:30:55 -0400
-From: "Cherian, George" <george.cherian@ti.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Balbi, Felipe" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH 1/4] usb: dwc3: gadget: free trb pool only from epnum 2
-Thread-Topic: [PATCH 1/4] usb: dwc3: gadget: free trb pool only from epnum 2
-Thread-Index: AQHOWrlm2TasGCDxhEGL78RrJBXuH5kYxBmQ
-Date: Mon, 27 May 2013 09:30:49 +0000
-Message-ID: <BD228B1E3C6D7740B44C214F9AEEACE335E02F@DBDE04.ent.ti.com>
-References: <1369645549-14867-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1369645549-14867-1-git-send-email-george.cherian@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 May 2013 05:33:22 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgsFAFQno1GQ/khN/2dsb2JhbABagwiDa75KgQUWdIIjAQEFI1YQCxgCAiYCAlcGE4gNq3mRJYEmjXcHgkGBEwOXO4obhyWBWIE5Og
+X-IronPort-AV: E=Sophos;i="4.87,750,1363132800"; 
+   d="scan'208";a="154591511"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Libo Chen <libo.chen@huawei.com>
+Subject: Re: [PATCH 22/24] drivers/media/radio/radio-maxiradio: Convert to module_pci_driver
+Date: Mon, 27 May 2013 11:32:57 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-2.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: mchehab@redhat.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        gregkh@linuxfoundation.org
+References: <1369621919-12800-1-git-send-email-libo.chen@huawei.com>
+In-Reply-To: <1369621919-12800-1-git-send-email-libo.chen@huawei.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305271132.57946.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Cherian, George
-> Sent: Monday, May 27, 2013 2:36 PM
-> To: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: Balbi, Felipe; gregkh@linuxfoundation.org; Cherian, George
-> Subject: [PATCH 1/4] usb: dwc3: gadget: free trb pool only from epnum 2
-
-Please read [PATCH 1/4] as [PATCH 1/1].
+On Mon 27 May 2013 04:31:59 Libo Chen wrote:
+> use module_pci_driver instead of init/exit, make code clean
 > 
-> we never allocate a TRB pool for physical endpoints
-> 0 and 1 so trying to free it (a invalid TRB pool pointer)
-> will lead us in a warning while removing dwc3.ko module.
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+
+> ---
+>  drivers/media/radio/radio-maxiradio.c |   13 +------------
+>  1 files changed, 1 insertions(+), 12 deletions(-)
 > 
-> In order to fix the situation, all we have to do is skip
-> dwc3_free_trb_pool() for physical endpoints 0 and 1 just
-> as we while deleting endpoints from the endpoints list.
+> diff --git a/drivers/media/radio/radio-maxiradio.c b/drivers/media/radio/radio-maxiradio.c
+> index bd4d3a7..1d1c9e1 100644
+> --- a/drivers/media/radio/radio-maxiradio.c
+> +++ b/drivers/media/radio/radio-maxiradio.c
+> @@ -200,15 +200,4 @@ static struct pci_driver maxiradio_driver = {
+>  	.remove		= maxiradio_remove,
+>  };
+>  
+> -static int __init maxiradio_init(void)
+> -{
+> -	return pci_register_driver(&maxiradio_driver);
+> -}
+> -
+> -static void __exit maxiradio_exit(void)
+> -{
+> -	pci_unregister_driver(&maxiradio_driver);
+> -}
+> -
+> -module_init(maxiradio_init);
+> -module_exit(maxiradio_exit);
+> +module_pci_driver(maxiradio_driver);
 > 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
