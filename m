@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3E0P7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 11:59:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab3E0P73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 11:59:29 -0400
-Date: Mon, 27 May 2013 18:59:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: virtualization@lists.linux-foundation.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH rusty/virtio-pci-new-layout] virtio: new layout minor header
- fixups
-Message-ID: <20130527155943.GA18246@redhat.com>
+	id S1754029Ab3E0QEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:04:21 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52832 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab3E0QET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 12:04:19 -0400
+Message-ID: <51A38401.5000103@free-electrons.com>
+Date: Mon, 27 May 2013 18:04:17 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <E0B30581-DD0A-46C5-B541-08F389F17018@jcrosoft.com> <51A356A2.4050502@free-electrons.com> <8424D480-48DA-4094-AE68-6A6A66F8FE2B@jcrosoft.com>
+In-Reply-To: <8424D480-48DA-4094-AE68-6A6A66F8FE2B@jcrosoft.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix issues observed with the new layout code, seen
-when implementing device in qemu:
-	- use of uXX in uapi header
-	- incorrect readonly tag on one field
-	- unconditional warning breaks builds with -Werr
+On 27/05/2013 14:59, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>
+> no will not as you do ifdef CONFIG_PHYLIB and if CONFIG_PHYLIB=m the macro is defended
+>
+> we do this all the time in the kernel
+>
+> I add the IS_BUILTIN & co to be used when a simple inline is not sufficient
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Ok, it took me a while to understand what you were trying to explain.
+I'm sending a patch set now. I don't believe it will be taken in for
+3.10 though.
 
-This patch is on top of rusty/virtio-pci-new-layout.
+Regards,
 
- include/uapi/linux/virtio_pci.h | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/include/uapi/linux/virtio_pci.h b/include/uapi/linux/virtio_pci.h
-index 3e61d55..cda688f 100644
---- a/include/uapi/linux/virtio_pci.h
-+++ b/include/uapi/linux/virtio_pci.h
-@@ -86,8 +86,10 @@
- #define VIRTIO_PCI_LEGACY_VRING_ALIGN		4096
- 
- #ifndef VIRTIO_PCI_NO_LEGACY
-+#ifndef VIRTIO_PCI_LEGACY_COMPAT_NAMES
- /* Don't break compile of old userspace code.  These will go away. */
- #warning "Please support virtio_pci non-legacy mode!"
-+#endif
- #define VIRTIO_PCI_HOST_FEATURES VIRTIO_PCI_LEGACY_HOST_FEATURES
- #define VIRTIO_PCI_GUEST_FEATURES VIRTIO_PCI_LEGACY_GUEST_FEATURES
- #define VIRTIO_PCI_QUEUE_PFN VIRTIO_PCI_LEGACY_QUEUE_PFN
-@@ -125,10 +127,10 @@
- 
- /* This is the PCI capability header: */
- struct virtio_pci_cap {
--	u8 cap_vndr;	/* Generic PCI field: PCI_CAP_ID_VNDR */
--	u8 cap_next;	/* Generic PCI field: next ptr. */
--	u8 cfg_type;	/* One of the VIRTIO_PCI_CAP_*_CFG. */
--	u8 bar;		/* Where to find it. */
-+	__u8 cap_vndr;	/* Generic PCI field: PCI_CAP_ID_VNDR */
-+	__u8 cap_next;	/* Generic PCI field: next ptr. */
-+	__u8 cfg_type;	/* One of the VIRTIO_PCI_CAP_*_CFG. */
-+	__u8 bar;		/* Where to find it. */
- 	__le32 offset;	/* Offset within bar. */
- 	__le32 length;	/* Length. */
- };
-@@ -144,7 +146,7 @@ struct virtio_pci_common_cfg {
- 	__le32 device_feature_select;	/* read-write */
- 	__le32 device_feature;		/* read-only */
- 	__le32 guest_feature_select;	/* read-write */
--	__le32 guest_feature;		/* read-only */
-+	__le32 guest_feature;		/* read-write */
- 	__le16 msix_config;		/* read-write */
- 	__le16 num_queues;		/* read-only */
- 	__u8 device_status;		/* read-write */
 -- 
-MST
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
