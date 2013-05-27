@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab3E0UNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 16:13:09 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52256 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757283Ab3E0UNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 16:13:08 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+XmRFC2e+XjV02O8fAHoj+laK7hmMPS3C0SraoNP
-	wBg0s5obELPpIh
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: James Morris <jmorris@namei.org>
-Subject: [PULL] TPM: fix regression caused by section type conflict of tpm_dev_release() in ppc builds
-Date: Mon, 27 May 2013 22:18:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8.11; KDE/4.9.5; x86_64; ; )
-Cc: Tony Camuso <tcamuso@redhat.com>, linux-kernel@vger.kernel.org,
-        LeonidasDaSilvaBarbosa <leosilva@linux.vnet.ibm.com>,
-        AshleyLai <ashley@ashleylai.com>, sfr@canb.auug.org.au,
-        tpmdd-devel@lists.sourceforge.net
-References: <51A39A0C.8040405@redhat.com> <1369684307-11014-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1369684307-11014-1-git-send-email-peterhuewe@gmx.de>
+	id S1757466Ab3E0US2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 16:18:28 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:42111 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756959Ab3E0US1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 16:18:27 -0400
+Date: Mon, 27 May 2013 16:18:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/2] dma-unmap: allow to only unmap completed DMA
+ buffer
+In-Reply-To: <1369671187-24430-1-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1305271614570.26364-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305272218.41915.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Tue, 28 May 2013, Ming Lei wrote:
 
-The following changes since commit 5b88e270253db6d817e6a2f61909d1e53620e990:
+> This patchset tries to loose the check on DMA buffer size in check_unmap()
+> of dma-debug first, then only unmap the actual completed DMA buffer in USB
+> unmap path.
+> 
+> Considered that DMA unmapping often runs in hard irq context, the patch set
+> may save irq handling time. And the improvement can be observed on
+> ARMv7(Pandaboard) with the chage, at average ~25us is saved about ehci irq
+> handling under usbnet ping test case.
 
- maintainers: Remove Kent from maintainers	
+Are you aware that these changes directly contradict the advice in 
+Documentation/DMA-API.txt?  That file says:
 
-are available in the git repository at:
 
-  git://github.com/PeterHuewe/linux-tpmdd.git for-james
+void
+dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
+                 enum dma_data_direction direction)
 
-for you to fetch changes up to e2fa3d799b7471f00adae59ff36260ad8237929f:
+Unmaps the region previously mapped.  All the parameters passed in
+must be identical to those passed in (and returned) by the mapping
+API.
 
- tpm: fix regression caused by section type conflict of tpm_dev_release() in ppc builds
 
-----------------------------------------------------------------
-Peter Huewe (1):
-      tpm: fix regression caused by section type conflict of tpm_dev_release() in ppc builds
+If you are going to make a change like this then you have to change the 
+documentation too.  But in fact I doubt that the proposed change will 
+work correctly in all circumstances.  For example, if an IOMMU is 
+present.
 
- drivers/char/tpm/tpm.c | 2 +-
- drivers/char/tpm/tpm.h | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Alan Stern
 
-Thanks,
-Peter
