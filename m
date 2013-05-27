@@ -1,142 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab3E0INB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 04:13:01 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59715 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab3E0IM7 (ORCPT
+	id S932099Ab3E0IPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 04:15:03 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:54750 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904Ab3E0IPB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 04:12:59 -0400
-X-AuditID: 9c93016f-b7cfdae000002fc1-35-51a315880224
-Date: Mon, 27 May 2013 17:12:56 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Minkyung Kim <minkyung88@lge.com>
-Subject: Re: [PATCH v5 0/7] Per process reclaim
-Message-ID: <20130527081256.GB5157@blaptop>
-References: <1368084089-24576-1-git-send-email-minchan@kernel.org>
- <20130521161656.d6d24d1ce226b0034e02abdf@linux-foundation.org>
+	Mon, 27 May 2013 04:15:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521161656.d6d24d1ce226b0034e02abdf@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1369641266-16913-1-git-send-email-icycoder@gmail.com>
+References: <1369641266-16913-1-git-send-email-icycoder@gmail.com>
+Date: Mon, 27 May 2013 16:15:00 +0800
+Message-ID: <CAPQBkrOtJkn_M+7hBJC-amxZ7SHQ+E_7gf2XiVzxCBbeEkxapw@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: fix a wrong header file path in util/unwind.c
+From: Runzhen Wang <icycoder@gmail.com>
+To: acme@redhat.com
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+Sorry, I made a mistake.....
+There is no bug,  please ignore my patch.
+Sorry again. I will be careful next time.
 
-Sorry for the late response.
-It was bad timing because I was off during last week.
-
-On Tue, May 21, 2013 at 04:16:56PM -0700, Andrew Morton wrote:
-> On Thu,  9 May 2013 16:21:22 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > These day, there are many platforms avaiable in the embedded market
-> > and they are smarter than kernel which has very limited information
-> > about working set so they want to involve memory management more heavily
-> > like android's lowmemory killer and ashmem or recent many lowmemory
-> > notifier(there was several trial for various company NOKIA, SAMSUNG,
-> > Linaro, Google ChromeOS, Redhat).
-> > 
-> > One of the simple imagine scenario about userspace's intelligence is that
-> > platform can manage tasks as forground and backgroud so it would be
-> > better to reclaim background's task pages for end-user's *responsibility*
-> > although it has frequent referenced pages.
-> > 
-> > The patch[1] prepares that force_reclaim in shrink_page_list can
-> > handle anonymous pages as well as file-backed pages.
-> > 
-> > The patch[2] adds new knob "reclaim under proc/<pid>/" so task manager
-> > can reclaim any target process anytime, anywhere. It could give another
-> > method to platform for using memory efficiently.
-> > 
-> > It can avoid process killing for getting free memory, which was really
-> > terrible experience because I lost my best score of game I had ever
-> > after I switch the phone call while I enjoyed the game.
-> > 
-> > Reclaim file-backed pages only.
-> > 	echo file > /proc/PID/reclaim
-> > Reclaim anonymous pages only.
-> > 	echo anon > /proc/PID/reclaim
-> > Reclaim all pages
-> > 	echo all > /proc/PID/reclaim
-> 
-> Oh boy.  I think I do agree with the overall intent, but there are so
-> many ways of doing this.
-> 
-> - Do we reclaim the pages altogether, or should we just give them one
->   round of aging?  If the latter then you'd need to run "echo anon >
->   /proc/PID/reclaim" four times to firmly whack the pages, but that's
->   more flexible.
-
-The concern of idea you suggested is that it's tied up to kernel's
-reclaim implementation(active/inactive/referenced) so if we changes
-the logic, user's behavior would be broken easily.
-
-> 
-> - Why do it via the pid at all?  Would it be better to instead do
->   this to a memcg and require that the admin put these processes into
->   memcgs?  In fact existing memcg controls could get us at least
->   partway to this feature.
-
-Hmm, I don't have an idea to handle this with memcg.
-
-1) Is there any way to reclaim anon pages as top prioirty
-   rather than file pages? Many embedded system uses zram as swap device
-   so somecase, anon reclaim could be cheaper rather than file-backd pages
-   reclaim on really slow storage.
-   Of course, we can control it with "swappiness" but at most, it makes
-   balancing ratio 1:1.
-   Should we expand the value to 200? I have no idea.
-   What I want is VM smarter that it can understand swap storage's speed
-   so that it can balance anon/file more smart. But it's not a simple
-   problem, I think.
-   
-2) Another usecase,
-   We used per process reclaim to make smart snapshot image which is
-   like hibernation image. As we know well, embedded system's boot time
-   is very critical to lunch the product so a few of system have used
-   snapshot booting. Snapshot booting's core technology is to minimise
-   snapshot image size but it includes working set pages which will
-   be needed soon after resuming so we can profile working set pages
-   ,discard unnecessary pages via per-process reclaim, then make snapshot
-   images.
-
- 
-> 
-> - I don't understand the need for "Enhance per process reclaim to
->   consider shared pages".  If "echo file > /proc/PID/reclaim" causes
->   PID's mm's file-backed pte's to be unmapped (which seems to be the
->   correct effect) then we get this automatically: unshared file pages
->   will be freed and shared file pages will remain in core until the
->   other sharing process's also unmap them.
-
-In current implemenation, even shared page is detached from all of
-processes and is freed.
-
-> 
-> 
-> Overall, I'm unsure whether/how to proceed with this.  I'd like to hear
-> from a lot of the potential users, and hear them say "yes, we can use
-> this".
-
-We already used it for creating snapshot image and have a plan to use it
-for reducing system latency and avoiding frequent OOM killing.
-
-> 
+On Mon, May 27, 2013 at 3:54 PM, Runzhen Wang <icycoder@gmail.com> wrote:
+> For the latest perf core tree:
+> (git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git),
+> in util/unwind.c line 29 includes "perf_regs.h". That means compiler
+> will search for this header file in current directory, so, gcc will
+> puts the following error messages:
+>
+> util/unwind.c: In function ‘access_mem’:
+> util/unwind.c:400:50: error: ‘PERF_REG_SP’ undeclared (first use in this
+> function)
+> util/unwind.c:400:50: note: each undeclared identifier is reported only
+> once for each function it appears in
+> util/unwind.c: In function ‘unwind__get_entries’:
+> util/unwind.c:562:41: error: ‘PERF_REG_IP’ undeclared (first use in this
+> function)
+>
+> Changing #include "perf_regs.h" to #include <perf_regs.h> will fix the
+> error.
+>
+> Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/unwind.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+> index 958723b..50e14f7 100644
+> --- a/tools/perf/util/unwind.c
+> +++ b/tools/perf/util/unwind.c
+> @@ -26,7 +26,7 @@
+>  #include <libunwind-ptrace.h>
+>  #include "thread.h"
+>  #include "session.h"
+> -#include "perf_regs.h"
+> +#include <perf_regs.h>
+>  #include "unwind.h"
+>  #include "util.h"
+>
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+> 1.7.9.5
+>
