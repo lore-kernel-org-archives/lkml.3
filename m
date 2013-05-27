@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3E0Gzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 02:55:46 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7091 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756499Ab3E0Gzo convert rfc822-to-8bit (ORCPT
+	id S1756647Ab3E0G44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 02:56:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56771 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756499Ab3E0G4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 02:55:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 26 May 2013 23:55:39 -0700
-Message-ID: <51A3038E.3030405@nvidia.com>
-Date: Mon, 27 May 2013 12:26:14 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 27 May 2013 02:56:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [RFC PATCHv4 1/6] arm: TI-Nspire platform code
+Date: Mon, 27 May 2013 08:56:19 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305262246.12803.arnd@arndb.de> <3ED6FFF2-89E2-4426-8DDC-10B4E6C79F26@gmail.com>
+In-Reply-To: <3ED6FFF2-89E2-4426-8DDC-10B4E6C79F26@gmail.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Chanwoo Choi <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "george.cherian@ti.com" <george.cherian@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
-References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-3-git-send-email-kishon@ti.com> <51A2F07F.8070009@samsung.com> <51A2F512.2090907@ti.com> <51A2F84D.9030605@samsung.com> <51A2FB88.9000303@nvidia.com> <51A2FDD2.10309@ti.com> <51A2FEE9.1060905@nvidia.com> <51A30026.2090001@ti.com>
-In-Reply-To: <51A30026.2090001@ti.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305270856.19456.arnd@arndb.de>
+X-Provags-ID: V02:K0:C543HM5Pi6/xNhE9zHUNlgvg2cR0KCozv3l6pfZ9aAO
+ UvZQvK9ynidQkUF+uD0rJIr13XDsS2JzXi6h6Iymi5wh0hNEqW
+ gPEpSoPFF0O+v3fmaC0yb+B/RNIA4a0n2opmGAvfk4pCkSpUeL
+ 1I9zjjkQMcDexslsvIx/k5jsGwuTiY/nnUmj+eDNRrRcrJLGN/
+ pDfWE2LrOPjq3MdoTouiGsDnSc3eGjUZpbJW4iG6JAUFB7v0eY
+ G5EDyo3BvB/KxnnzyIMe2SbZT2xi6P9Tcaqrpn9W4tsMC8igpF
+ wNP3nFjQ/JB9TcgHuW5uUszBz0P8xs80vSuYh6Il10e5tKB7sm
+ +iOS/5U5a5MZXQWEaJpI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 May 2013 12:11 PM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Monday 27 May 2013 12:06 PM, Laxman Dewangan wrote:
->> On Monday 27 May 2013 12:01 PM, Kishon Vijay Abraham I wrote:
->>> Hi,
->>>
->>> On Monday 27 May 2013 11:52 AM, Laxman Dewangan wrote:
->>>> On Monday 27 May 2013 11:38 AM, Chanwoo Choi wrote:
->>>>> On 05/27/2013 02:54 PM, Kishon Vijay Abraham I wrote:
->>>>>> Hi,
->>>>>>
->>>>>> On Monday 27 May 2013 11:04 AM, Chanwoo Choi wrote:
->>>>>>> Hi Kishon,
->>>>>>>
->>>>>>> I have some comment about this patch
->>>>>>> and upload modified patch to following repository
->>>>>>> (extcon-for-palmas).
->>>>>>> -
->>>>>>> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> This patchset include patch related to other module
->>>>>>> ,so I need your opinion to apply this patchset to git repository.
->>>>>> yeah.. Still there is some confusion with palmas_set_switch_smps10().
->>>>>> I think we can remove it for now and add it separately later. By this
->>>>>> at least we can have device mode fully functional in OMAP5. What do
->>>>>> you think?
->>>>>>
->>>>>     I agree your opinion.
->>>>>
->>>>> But, I propose some fixes about palmas_set_switch_smps10().
->>>>> I dont' prefer to call global function in exton-palmas.c from
->>>>> palmas-regulator.c.
->>>>> So, Why don't you use regulator consumer instead of global function?
->>>>> You can register specific regulator for enabling or disabling
->>>>> SMPS10_SWITCH_EN
->>>>> and then control SMPS10_SWITCH_EN bit through regulator framework in
->>>>> extcon-palmas.c
->>>>> without calling global function.
->>>> Along with this, I also like to make the VBUS regulator control to be
->>>> optional here. Currently it is mandatory.
->>> But dint you just tell on my v4 of this patch that you don’t require
->>> this.
->>> http://www.spinics.net/lists/linux-doc/msg10638.html
->> In V4, I said remove this VBUS control and my mean was to remove all
->> regulator calls for VBUS enabled/disable.
->> I saw you just remove the platform data option to have this control and
->> made VBUS mandatory.
->>
->> Probably some gap here.
-> Indeed..
-> I think then we should stick back to how it was with my v4 or else it
-> would break OMAP. The regulator calls can't be moved anywhere else as it
-> is specific to PALMAS.
->
+On Monday 27 May 2013, Daniel Tang wrote:
+> 
+> On 27/05/2013, at 6:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > 
+> > 
+> >> +    {
+> >> +            .virtual        =  NSPIRE_PWR_VIRT_BASE,
+> >> +            .pfn            = __phys_to_pfn(NSPIRE_PWR_PHYS_BASE),
+> >> +            .length         = SZ_4K,
+> >> +            .type           = MT_DEVICE
+> >> +    }
+> >> +};
+> > 
+> > And I think this one can be replaced with a call to of_iomap:
+> 
+> Does of_iomap work that early in the boot process?
 
-I was thinking that extcon driver just detect the cable type and notify 
-to the client. After cable detection, the next level of configuration 
-should be done in the respective client.
+Not from map_io, but soon after. What is the fist place you
+really need it?
 
-On Tegra platform,  for ID pin detection, Tegra SOC is capable of detect 
-the ID pin presence or Palma is capable. Depending on the board design, 
-how the ID pin routed from USB connector to PMIC or to Tegra, we enable 
-corresponding detection logic.
-Once the USB driver got notification for ID pin presence (by any means), 
-the enabling of VBUS (as the Tegra will work as Host now and need to 
-supply VBUS), is done in USB driver.
-Not sure about the OMAP here.
-
-
-So in above context, I really do not want to have the VBUS control on 
-extcon driver from Tegra context. If it is require in OMAP context then 
-please make it as optional so that we can satisfy for Tegra and Omap 
-platform.
-
+	Arnd
