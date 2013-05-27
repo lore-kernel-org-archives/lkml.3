@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738Ab3E0LHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 07:07:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56039 "EHLO bear.ext.ti.com"
+	id S1757806Ab3E0LHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 07:07:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57921 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757695Ab3E0LHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 07:07:31 -0400
+	id S1757703Ab3E0LHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 07:07:35 -0400
 From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
 To: Kevin Hilman <khilman@linaro.org>, J Keerthy <j-keerthy@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
-Date: Mon, 27 May 2013 14:07:24 +0300
-Message-ID: <1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
+Subject: [PATCH v1 3/3] PM / AVS: SmartReflex: fix driver name
+Date: Mon, 27 May 2013 14:07:26 +0300
+Message-ID: <1369652846-14412-4-git-send-email-andrii.tseglytskyi@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
 References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
@@ -21,59 +21,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+DRIVER_NAME was undefined for SmartReflex. Now it is
+defined with valid value "smartreflex". It is needed
+to define proper value for:
+MODULE_ALIAS("platform:" DRIVER_NAME);
 
-vpboundsintr_en is available inside the IP block as an re-sycned
-version and one which is not. Due to this, there is an 1 sysclk
-cycle window where interruptz could be asserted low for 1 cycle.
-IF, intr_en is cleared on the exact same cycle as the irqclr, an
-additional pulse is generated which indicates for VP that
-an additional adjustment of voltage is required.
-
-This results in VP doing two voltage adjustments for the SRERR
-(based on configuration, upto 4 steps), instead of the needed
-1 step.
-Due to the unexpected pulse from AVS which breaks the AVS-VP
-communication protocol, VP also ends up in a stuck condition by
-entering a state where VP module remains non-responsive
-to any futher AVS adjustment events. This creates the symptom
-called "TRANXDONE Timeout" scenario.
-
-By disabling errgen prior to disable of intr_en, this situation
-can be avoided.
-
-Signed-off-by: Vincent Bour <v-bour@ti.com>
-Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
+Signed-off-by: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Acked-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/power/avs/smartreflex.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/power/avs/smartreflex.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-index 6b2238b..f34d34d 100644
+index 9b56648..002005e 100644
 --- a/drivers/power/avs/smartreflex.c
 +++ b/drivers/power/avs/smartreflex.c
-@@ -449,12 +449,17 @@ int sr_disable_errgen(struct voltagedomain *voltdm)
- 		return -EINVAL;
- 	}
+@@ -27,6 +27,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/power/smartreflex.h>
  
--	/* Disable the interrupts of ERROR module */
--	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
--
- 	/* Disable the Sensor and errorgen */
- 	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SENENABLE | SRCONFIG_ERRGEN_EN, 0);
- 
-+	/*
-+	 * Disable the interrupts of ERROR module
-+	 * NOTE: modify is a read, modify,write - an implicit OCP barrier
-+	 * which is required is present here - sequencing is critical
-+	 * at this point (after errgen is disabled, vpboundint disable)
-+	 */
-+	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
-+
- 	return 0;
- }
++#define DRIVER_NAME	"smartreflex"
+ #define SMARTREFLEX_NAME_LEN	16
+ #define NVALUE_NAME_LEN		40
+ #define SR_DISABLE_TIMEOUT	200
+@@ -1070,7 +1071,7 @@ static struct platform_driver smartreflex_driver = {
+ 	.remove         = omap_sr_remove,
+ 	.shutdown	= omap_sr_shutdown,
+ 	.driver		= {
+-		.name	= "smartreflex",
++		.name	= DRIVER_NAME,
+ 	},
+ };
  
 -- 
 1.7.9.5
