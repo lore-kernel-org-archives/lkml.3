@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab3E0R0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 13:26:11 -0400
-Received: from 8bytes.org ([85.214.48.195]:57846 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753595Ab3E0R0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 13:26:09 -0400
-Date: Mon, 27 May 2013 19:26:06 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-Message-ID: <20130527172606.GA2575@8bytes.org>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <519A4429.30405@amd.com>
- <20130521091157.GD26912@twins.programming.kicks-ass.net>
- <519B76CB.1000208@amd.com>
- <20130521135231.GK26912@twins.programming.kicks-ass.net>
- <20130521142523.GD7424@8bytes.org>
- <20130527163023.GA19373@twins.programming.kicks-ass.net>
+	id S1756053Ab3E0Rha (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 13:37:30 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:53139 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab3E0Rh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 13:37:29 -0400
+Message-ID: <51A399D6.8030000@free-electrons.com>
+Date: Mon, 27 May 2013 19:37:26 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130527163023.GA19373@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon May 27 19:26:07 2013
-X-DSPAM-Confidence: 0.9987
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51a3972f20861881814089
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/3] net: phy: prevent linking breakage
+References: <1369671524-14797-1-git-send-email-alexandre.belloni@free-electrons.com> <1369671524-14797-2-git-send-email-alexandre.belloni@free-electrons.com> <20130527163913.GO32299@pengutronix.de>
+In-Reply-To: <20130527163913.GO32299@pengutronix.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 27/05/2013 18:39, Sascha Hauer wrote:
+> On Mon, May 27, 2013 at 06:18:42PM +0200, Alexandre Belloni wrote:
+>> phy_register_fixup{,_for_uid,_for_id} are called from arch/, quite
+>> often, there is no protection to check whether CONFIG_PHYLIB=y which is
+>> the only case where this would work. Having phylib as a module or not
+>> compiled at all will result in that kind of linking failure:
+>>
+>> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
+>> :(.text+0x1174): undefined reference to `mdiobus_write'
+>> :(.text+0x1188): undefined reference to `mdiobus_write'
+>> :(.text+0x119c): undefined reference to `mdiobus_write'
+>> :(.text+0x11b0): undefined reference to `mdiobus_write'
+>> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
+>> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> ---
+>>  drivers/net/phy/phy_device.c |  6 ++++++
+>>  include/linux/phy.h          | 12 ++++++++++++
+>>  2 files changed, 18 insertions(+)
+>>
+>> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+>> index 3657b4a..df36367 100644
+>> --- a/drivers/net/phy/phy_device.c
+>> +++ b/drivers/net/phy/phy_device.c
+>> @@ -64,6 +64,11 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+>>  			     u32 flags, phy_interface_t interface);
+>>  
+>>  /*
+>> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
+>> + *  work unless phylib is compiled in the kernel.
+>> + */
+>> +#ifdef CONFIG_PHYLIB
+>> +/*
+>>   * Creates a new phy_fixup and adds it to the list
+>>   * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
+>>   * @phy_uid: Used to match against phydev->phy_id (the UID of the PHY)
+>> @@ -109,6 +114,7 @@ int phy_register_fixup_for_id(const char *bus_id,
+>>  	return phy_register_fixup(bus_id, PHY_ANY_UID, 0xffffffff, run);
+>>  }
+>>  EXPORT_SYMBOL(phy_register_fixup_for_id);
+>> +#endif /* CONFIG_PHYLIB */
+>>  
+>>  /*
+>>   * Returns 1 if fixup matches phydev in bus_id and phy_uid.
+>> diff --git a/include/linux/phy.h b/include/linux/phy.h
+>> index 9e11039..3f998a6 100644
+>> --- a/include/linux/phy.h
+>> +++ b/include/linux/phy.h
+>> @@ -556,12 +556,24 @@ int phy_start_interrupts(struct phy_device *phydev);
+>>  void phy_print_status(struct phy_device *phydev);
+>>  void phy_device_free(struct phy_device *phydev);
+>>  
+>> +/*
+>> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
+>> + *  work unless phylib is compiled in the kernel.
+>> + *  Defining stubs allows to prevent linking errors.
+>> + */
+>> +#ifdef CONFIG_PHYLIB
+>>  int phy_register_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask,
+>>  		int (*run)(struct phy_device *));
+>>  int phy_register_fixup_for_id(const char *bus_id,
+>>  		int (*run)(struct phy_device *));
+>>  int phy_register_fixup_for_uid(u32 phy_uid, u32 phy_uid_mask,
+>>  		int (*run)(struct phy_device *));
+>> +#else
+>> +#define phy_register_fixup(a, b, c, d) do { } while (0)
+>> +#define phy_register_fixup_for_id(a, b) do { } while (0)
+>> +#define phy_register_fixup_for_uid(a, b, c) do { } while (0)
+> Use static inline functions here. This breaks if someone does result
+> checking on the functions which then expands to ret = do {} while (0);
+> Also we still have type safety for !CONFIG_PHYLIB.
 
-On Mon, May 27, 2013 at 06:30:23PM +0200, Peter Zijlstra wrote:
-> Have you had time to look at this yet? -- mostly sending this email to
-> make sure I don't forget about these patches.
+Right, I tried that first but forgot static so I had issues with
+redefinition of the functions. I even played with __weak at some point...
 
-Sorry about that, I didn't forget it. But I was traveling last week and
-had an outage of my root-server (where all my email is) over the
-weekend. But it should all be back to normal now and I will look at
-these patches tomorrow.
+I'll wait a bit for comments before sending v2.
 
-Thanks,
-
-	Joerg
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
