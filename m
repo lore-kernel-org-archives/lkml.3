@@ -1,122 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3E0JY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:24:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51904 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab3E0JYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:24:54 -0400
-Message-ID: <51A3263C.5040400@ti.com>
-Date: Mon, 27 May 2013 14:54:12 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Chanwoo Choi <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "george.cherian@ti.com" <george.cherian@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
-References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-3-git-send-email-kishon@ti.com> <51A2F07F.8070009@samsung.com> <51A2F512.2090907@ti.com> <51A2F84D.9030605@samsung.com> <51A2FB88.9000303@nvidia.com> <51A2FDD2.10309@ti.com> <51A2FEE9.1060905@nvidia.com> <51A30026.2090001@ti.com> <51A3038E.3030405@nvidia.com>
-In-Reply-To: <51A3038E.3030405@nvidia.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754853Ab3E0J2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:28:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56725 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985Ab3E0J2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 05:28:49 -0400
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, kernel@pengutronix.de,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: [PATCH v2] pwm: add pca9685 driver
+Date: Mon, 27 May 2013 11:28:27 +0200
+Message-Id: <1369646907-18424-1-git-send-email-s.trumtrar@pengutronix.de>
+X-Mailer: git-send-email 1.8.2.rc2
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add pwm driver for the NXP pca9685 16 channel pwm-led controller.
 
-On Monday 27 May 2013 12:26 PM, Laxman Dewangan wrote:
-> On Monday 27 May 2013 12:11 PM, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Monday 27 May 2013 12:06 PM, Laxman Dewangan wrote:
->>> On Monday 27 May 2013 12:01 PM, Kishon Vijay Abraham I wrote:
->>>> Hi,
->>>>
->>>> On Monday 27 May 2013 11:52 AM, Laxman Dewangan wrote:
->>>>> On Monday 27 May 2013 11:38 AM, Chanwoo Choi wrote:
->>>>>> On 05/27/2013 02:54 PM, Kishon Vijay Abraham I wrote:
->>>>>>> Hi,
->>>>>>>
->>>>>>> On Monday 27 May 2013 11:04 AM, Chanwoo Choi wrote:
->>>>>>>> Hi Kishon,
->>>>>>>>
->>>>>>>> I have some comment about this patch
->>>>>>>> and upload modified patch to following repository
->>>>>>>> (extcon-for-palmas).
->>>>>>>> -
->>>>>>>> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>> This patchset include patch related to other module
->>>>>>>> ,so I need your opinion to apply this patchset to git repository.
->>>>>>> yeah.. Still there is some confusion with
->>>>>>> palmas_set_switch_smps10().
->>>>>>> I think we can remove it for now and add it separately later. By
->>>>>>> this
->>>>>>> at least we can have device mode fully functional in OMAP5. What do
->>>>>>> you think?
->>>>>>>
->>>>>>     I agree your opinion.
->>>>>>
->>>>>> But, I propose some fixes about palmas_set_switch_smps10().
->>>>>> I dont' prefer to call global function in exton-palmas.c from
->>>>>> palmas-regulator.c.
->>>>>> So, Why don't you use regulator consumer instead of global function?
->>>>>> You can register specific regulator for enabling or disabling
->>>>>> SMPS10_SWITCH_EN
->>>>>> and then control SMPS10_SWITCH_EN bit through regulator framework in
->>>>>> extcon-palmas.c
->>>>>> without calling global function.
->>>>> Along with this, I also like to make the VBUS regulator control to be
->>>>> optional here. Currently it is mandatory.
->>>> But dint you just tell on my v4 of this patch that you don’t require
->>>> this.
->>>> http://www.spinics.net/lists/linux-doc/msg10638.html
->>> In V4, I said remove this VBUS control and my mean was to remove all
->>> regulator calls for VBUS enabled/disable.
->>> I saw you just remove the platform data option to have this control and
->>> made VBUS mandatory.
->>>
->>> Probably some gap here.
->> Indeed..
->> I think then we should stick back to how it was with my v4 or else it
->> would break OMAP. The regulator calls can't be moved anywhere else as it
->> is specific to PALMAS.
->>
->
-> I was thinking that extcon driver just detect the cable type and notify
-> to the client. After cable detection, the next level of configuration
-> should be done in the respective client.
->
-> On Tegra platform,  for ID pin detection, Tegra SOC is capable of detect
-> the ID pin presence or Palma is capable. Depending on the board design,
-> how the ID pin routed from USB connector to PMIC or to Tegra, we enable
-> corresponding detection logic.
-> Once the USB driver got notification for ID pin presence (by any means),
-> the enabling of VBUS (as the Tegra will work as Host now and need to
-> supply VBUS), is done in USB driver.
-> Not sure about the OMAP here.
+The driver is really barebones at this stage. E.g. the OE' pin and
+therefore the according registers are not supported.
+The driver was tested on a HW where this pin is tied to GND.
 
-I think I got your point here. Will check and send a patch.
+Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+---
+Changes since v1:
+	- fix typo in documentation example
 
-Thanks
-Kishon
+ .../devicetree/bindings/pwm/nxp,pca9685-pwmled.txt |  28 +++
+ drivers/pwm/Kconfig                                |   9 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-pca9685-led.c                      | 245 +++++++++++++++++++++
+ 4 files changed, 283 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/nxp,pca9685-pwmled.txt
+ create mode 100644 drivers/pwm/pwm-pca9685-led.c
+
+diff --git a/Documentation/devicetree/bindings/pwm/nxp,pca9685-pwmled.txt b/Documentation/devicetree/bindings/pwm/nxp,pca9685-pwmled.txt
+new file mode 100644
+index 0000000..6646980
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/nxp,pca9685-pwmled.txt
+@@ -0,0 +1,28 @@
++NXP PCA9685 16-channel 12-bit PWM LED controller
++================================================
++
++Required properties:
++  - compatible: "nxp,pca9685-pwmled"
++  - #pwm-cells: should be 2.  The first cell specifies the per-chip index
++    of the PWM to use and the second cell is the period in nanoseconds.
++    The index 16 is the ALLCALL channel, that sets all pwm channels at the same
++    time.
++
++Optional properties:
++  - invrt:  <0> output logic state not inverted
++	    <1> output logic state inverted
++  - outdrv: <0> configure outputs with open-drain structure
++	    <1> configure outputs with totem pole structure
++
++Example:
++
++For LEDs that are directly connected to the pca, the following setting is
++applicable:
++
++pca: pca@41 {
++	compatible = "nxp,pca9685-pwmled";
++	#pwm-cells = <2>;
++	reg = <0x41>;
++	invrt = <1>;
++	outdrv = <0>;
++};
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 115b644..8696f61 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -97,6 +97,15 @@ config PWM_MXS
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-mxs.
+ 
++config PWM_PCA9685_LED
++	tristate "NXP PCA9685 PWM support for LED drivers"
++	depends on OF
++	help
++	  Generic PWM framework driver for NXP PCA9685 LED controller.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-pca9685-led.
++
+ config PWM_PUV3
+ 	tristate "PKUnity NetBook-0916 PWM support"
+ 	depends on ARCH_PUV3
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 94ba21e..1924f03 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
++obj-$(CONFIG_PWM_PCA9685_LED)	+= pwm-pca9685-led.o
+ obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
+ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
+ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
+diff --git a/drivers/pwm/pwm-pca9685-led.c b/drivers/pwm/pwm-pca9685-led.c
+new file mode 100644
+index 0000000..c5e78b0
+--- /dev/null
++++ b/drivers/pwm/pwm-pca9685-led.c
+@@ -0,0 +1,245 @@
++/*
++ * Driver for PCA9685 16-channel 12-bit PWM LED controller
++ *
++ * Copyright (C) 2013 Steffen Trumtrar <s.trumtrar@pengutronix.de>
++ *
++ * based on the pwm-twl-led.c driver
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++
++#define PCA9685_MODE1		0x00
++#define PCA9685_MODE2		0x01
++#define PCA9685_SUBADDR1	0x02
++#define PCA9685_SUBADDR2	0x03
++#define PCA9685_SUBADDR3	0x04
++#define PCA9685_ALLCALLADDR	0x05
++#define PCA9685_LEDX_ON_L	0x06
++#define PCA9685_LEDX_ON_H	0x07
++#define PCA9685_LEDX_OFF_L	0x08
++#define PCA9685_LEDX_OFF_H	0x09
++
++#define PCA9685_ALL_LED_ON_L	0xFA
++#define PCA9685_ALL_LED_ON_H	0xFB
++#define PCA9685_ALL_LED_OFF_L	0xFC
++#define PCA9685_ALL_LED_OFF_H	0xFD
++#define PCA9685_PRESCALE	0xFE
++
++#define PCA9685_NUMREGS		0xFF
++#define PCA9685_MAXCHAN		0x10
++
++#define LED_FULL		(1 << 4)
++#define MODE1_SLEEP		(1 << 4)
++#define MODE2_INVRT		(1 << 4)
++#define MODE2_OUTDRV		(1 << 2)
++
++#define LED_N_ON_H(N)		(PCA9685_LEDX_ON_H + (4 * (N)))
++#define LED_N_ON_L(N)		(PCA9685_LEDX_ON_L + (4 * (N)))
++#define LED_N_OFF_H(N)		(PCA9685_LEDX_OFF_H + (4 * (N)))
++#define LED_N_OFF_L(N)		(PCA9685_LEDX_OFF_L + (4 * (N)))
++
++struct pca9685 {
++	struct pwm_chip chip;
++	struct regmap *regmap;
++	struct device *dev;
++};
++
++static inline struct pca9685 *to_pca(struct pwm_chip *chip)
++{
++	return container_of(chip, struct pca9685, chip);
++}
++
++static int pca9685_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			      int duty_ns, int period_ns)
++{
++	struct pca9685 *pca = to_pca(chip);
++	unsigned long long duty;
++	unsigned int reg;
++
++	if (duty_ns < 1)
++		return 0;
++
++	if (duty_ns == period_ns) {
++		reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_ON_H
++						: LED_N_ON_H(pwm->hwpwm);
++		regmap_write(pca->regmap, reg, LED_FULL);
++		return 0;
++	}
++
++	duty = 4096 * (unsigned long long)duty_ns;
++	duty = DIV_ROUND_UP_ULL(duty, period_ns);
++
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_OFF_L
++					: LED_N_OFF_L(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, 0xff & (int)duty);
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_OFF_H
++					: LED_N_OFF_H(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, 0xf & ((int)duty >> 8));
++
++	return 0;
++}
++
++static int pca9685_pwmled_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct pca9685 *pca = to_pca(chip);
++	unsigned int reg;
++
++	/* the PWM subsystem does not support a pre-delay */
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_ON_L
++						: LED_N_ON_L(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, 0);
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_ON_H
++						: LED_N_ON_H(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, 0);
++
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_OFF_H
++						: LED_N_OFF_H(pwm->hwpwm);
++	regmap_update_bits(pca->regmap, reg, LED_FULL, 0x0);
++
++	return 0;
++}
++
++static void pca9685_pwmled_disable(struct pwm_chip *chip,
++				   struct pwm_device *pwm)
++{
++	struct pca9685 *pca = to_pca(chip);
++	unsigned int reg;
++
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_OFF_H
++						: LED_N_OFF_H(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, LED_FULL);
++	reg = (pwm->hwpwm == PCA9685_MAXCHAN) ? PCA9685_ALL_LED_OFF_L
++					: LED_N_OFF_L(pwm->hwpwm);
++	regmap_write(pca->regmap, reg, 0x0);
++}
++
++static int pca9685_pwmled_request(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct pca9685 *pca = to_pca(chip);
++
++	return regmap_update_bits(pca->regmap, PCA9685_MODE1, MODE1_SLEEP, 0x0);
++}
++
++static const struct pwm_ops pca9685_pwmled_ops = {
++	.enable = pca9685_pwmled_enable,
++	.disable = pca9685_pwmled_disable,
++	.config = pca9685_pwmled_config,
++	.request = pca9685_pwmled_request,
++};
++
++static struct regmap_config pca9685_regmap_i2c_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = PCA9685_NUMREGS,
++	.cache_type = REGCACHE_NONE,
++};
++
++static int pca9685_pwmled_probe(struct i2c_client *client,
++				const struct i2c_device_id *id)
++{
++	struct device_node *np = client->dev.of_node;
++	struct pca9685 *pca;
++	int ret;
++	int val;
++	int mode2;
++
++	pca = devm_kzalloc(&client->dev, sizeof(*pca), GFP_KERNEL);
++	if (!pca)
++		return -ENOMEM;
++
++	pca->regmap = devm_regmap_init_i2c(client, &pca9685_regmap_i2c_config);
++	if (IS_ERR(pca->regmap)) {
++		ret = PTR_ERR(pca->regmap);
++		dev_err(&client->dev, "Failed to initialize register map: %d\n",
++				ret);
++		return ret;
++	}
++
++	i2c_set_clientdata(client, pca);
++	pca->dev = &client->dev;
++
++	regmap_read(pca->regmap, PCA9685_MODE2, &mode2);
++	if (!of_property_read_u32(np, "invrt", &val)) {
++		if (val)
++			mode2 |= MODE2_INVRT;
++		else
++			mode2 &= ~MODE2_INVRT;
++	}
++	if (!of_property_read_u32(np, "outdrv", &val)) {
++		if (val)
++			mode2 |= MODE2_OUTDRV;
++		else
++			mode2 &= ~MODE2_OUTDRV;
++	}
++	regmap_write(pca->regmap, PCA9685_MODE2, mode2);
++
++	/* clear all "full off" bits */
++	regmap_write(pca->regmap, PCA9685_ALL_LED_OFF_L, 0);
++	regmap_write(pca->regmap, PCA9685_ALL_LED_OFF_H, 0);
++
++	pca->chip.ops = &pca9685_pwmled_ops;
++	/* add an extra channel for ALL_LED */
++	pca->chip.npwm = PCA9685_MAXCHAN + 1;
++
++	pca->chip.dev = &client->dev;
++	pca->chip.base = -1;
++	pca->chip.can_sleep = true;
++
++	ret = pwmchip_add(&pca->chip);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static int pca9685_pwmled_remove(struct i2c_client *client)
++{
++	struct pca9685 *pca = i2c_get_clientdata(client);
++
++	return pwmchip_remove(&pca->chip);
++}
++
++static const struct i2c_device_id pca9685_id[] = {
++	{"pca9685", 0},
++	{},
++};
++MODULE_DEVICE_TABLE(i2c, pca9685_id);
++
++static const struct of_device_id pca9685_dt_ids[] = {
++	{ .compatible = "nxp,pca9685-pwmled", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, pca9685_dt_ids);
++
++static struct i2c_driver pca9685_i2c_driver = {
++	.driver = {
++		   .name = "pca9685",
++		   .owner = THIS_MODULE,
++		   .of_match_table = pca9685_dt_ids,
++		   },
++	.probe = pca9685_pwmled_probe,
++	.remove = pca9685_pwmled_remove,
++	.id_table = pca9685_id,
++};
++
++module_i2c_driver(pca9685_i2c_driver);
++
++MODULE_AUTHOR("Steffen Trumtrar <s.trumtrar@pengutronix.de>");
++MODULE_DESCRIPTION("PWM driver for PCA9685 LED outputs");
++MODULE_LICENSE("GPL");
+-- 
+1.8.2.rc2
+
