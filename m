@@ -1,52 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3E0Dos (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 23:44:48 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:57898 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756175Ab3E0Doq (ORCPT
+	id S1756456Ab3E0Dxu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 23:53:50 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3878 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235Ab3E0Dxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 23:44:46 -0400
-Date: Mon, 27 May 2013 11:44:43 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Chen <tim.c.chen@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the crypto tree
-Message-ID: <20130527034443.GA16425@gondor.apana.org.au>
-References: <20130521114548.a7bc47b2247f39ec40c44e33@canb.auug.org.au>
- <20130524095715.GA1410@gondor.apana.org.au>
- <20130527021917.GA16087@gondor.apana.org.au>
- <20130527134301.f5dcfe3a17ac9914e35fe2ca@canb.auug.org.au>
+	Sun, 26 May 2013 23:53:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 26 May 2013 20:53:48 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Rob Clark <robclark@gmail.com>, <linux-fbdev@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-rpi-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2] video: simplefb: add mode parsing function
+Date: Mon, 27 May 2013 12:53:41 +0900
+Message-ID: <1369626821-28494-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130527134301.f5dcfe3a17ac9914e35fe2ca@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 01:43:01PM +1000, Stephen Rothwell wrote:
-> Hi Herbert,
-> 
-> On Mon, 27 May 2013 10:19:18 +0800 Herbert Xu <herbert@gondor.apana.org.au> wrote:
-> >
-> > Hi Stephen, did you get a chance to switch back to the current
-> > cryptodev tree?
-> 
-> Not quite sure what you mean?  I fetch your tree every morning (that I
-> build linux-next) so I got an update from you this morning.  I haven't
-> got to merging and building it yet, but it looks good.
+The naming scheme of simplefb's mode is precise enough to allow building
+the mode structure from it instead of using a static list of modes. This
+patch introduces a function that does this. In case exotic modes that
+cannot be represented from their name alone are needed, the static list
+of modes is still available as a backup.
 
-Great!
+It also changes the order in which colors are declared from MSB first to
+the more standard LSB first.
 
-The reason I asked is because I got a build failure from the
-kbuild robot over the weekend that was using a two-week old
-version of cryptodev.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+Changes from v1:
+- amended documentation following Stephen's suggestion
+- allow parsing of bitfields larger than 9 bits
+- made it clear that the parsing order of bits is changed with respect
+  to the original patch
 
-Thanks,
+Andrew, since this patch introduces a (small) change in the DT bindings,
+could we try to merge it during the -rc cycle so we don't have to come
+with a more complex solution in the future?
+
+ .../bindings/video/simple-framebuffer.txt          | 12 +++-
+ drivers/video/simplefb.c                           | 72 +++++++++++++++++++++-
+ 2 files changed, 80 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+index 3ea4605..18d03e2 100644
+--- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
++++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+@@ -10,8 +10,16 @@ Required properties:
+ - width: The width of the framebuffer in pixels.
+ - height: The height of the framebuffer in pixels.
+ - stride: The number of bytes in each line of the framebuffer.
+-- format: The format of the framebuffer surface. Valid values are:
+-  - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
++- format: The format of the framebuffer surface. Described as a sequence of
++	channel/num-bits pairs, where each pair describes how many bits are used
++	by a given color channel. Value channels are "r" (red), "g" (green),
++	"b" (blue), "a" (alpha) and "x" (unused). Channels are listed in bit
++	order, starting from the LSB. For instance, a format named "r5g6b5"
++	describes a 16-bit format where red is encoded in the 5 less significant
++	bits, green in the 6 following ones, and blue in the 5 last:
++				BBBBBGGG GGGRRRRR
++				^               ^
++			       MSB             LSB
+ 
+ Example:
+ 
+diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+index e2e9e3e..1430752 100644
+--- a/drivers/video/simplefb.c
++++ b/drivers/video/simplefb.c
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include <linux/errno.h>
++#include <linux/ctype.h>
+ #include <linux/fb.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
+@@ -82,8 +83,72 @@ struct simplefb_format {
+ 	struct fb_bitfield transp;
+ };
+ 
++static struct simplefb_format *simplefb_parse_format(struct device *dev,
++						     const char *str)
++{
++	struct simplefb_format *format;
++	unsigned int offset = 0;
++	unsigned int i = 0;
++
++	format = devm_kzalloc(dev, sizeof(*format), GFP_KERNEL);
++	if (!format)
++		return ERR_PTR(-ENOMEM);
++
++	while (str[i] != 0) {
++		struct fb_bitfield *field = NULL;
++		int length = 0;
++
++		switch (str[i++]) {
++		case 'r':
++		case 'R':
++			field = &format->red;
++			break;
++		case 'g':
++		case 'G':
++			field = &format->green;
++			break;
++		case 'b':
++		case 'B':
++			field = &format->blue;
++			break;
++		case 'a':
++		case 'A':
++			field = &format->transp;
++			break;
++		case 'x':
++		case 'X':
++			break;
++		default:
++			goto error;
++		}
++
++		if (!isdigit(str[i]))
++			goto error;
++
++		while (isdigit(str[i])) {
++			length = length * 10 + (str[i++] - '0');
++		}
++
++		if (field) {
++			field->offset = offset;
++			field->length = length;
++		}
++
++		offset += length;
++	}
++
++	format->bits_per_pixel = (offset + 7) & ~0x7;
++	format->name = str;
++	return format;
++
++error:
++	dev_err(dev, "Invalid format string\n");
++	return ERR_PTR(-EINVAL);
++}
++
++/* if you use exotic modes that simplefb_parse_format cannot decode, you can
++   specify them here. */
+ static struct simplefb_format simplefb_formats[] = {
+-	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+ };
+ 
+ struct simplefb_params {
+@@ -131,7 +196,10 @@ static int simplefb_parse_dt(struct platform_device *pdev,
+ 		params->format = &simplefb_formats[i];
+ 		break;
+ 	}
+-	if (!params->format) {
++	if (!params->format)
++		params->format = simplefb_parse_format(&pdev->dev, format);
++
++	if (IS_ERR(params->format)) {
+ 		dev_err(&pdev->dev, "Invalid format value\n");
+ 		return -EINVAL;
+ 	}
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.8.3
+
