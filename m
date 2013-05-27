@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab3E0GbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 02:31:21 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:44592 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab3E0GbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 02:31:19 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A2FD85.6080808@asianux.com>
-Date: Mon, 27 May 2013 14:30:29 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756508Ab3E0Gce (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 02:32:34 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36099 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753616Ab3E0Gcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 02:32:32 -0400
+Message-ID: <51A2FDD2.10309@ti.com>
+Date: Mon, 27 May 2013 12:01:46 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: tony.luck@intel.com, fenghua.yu@intel.com,
-        Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-ia64@vger.kernel.org,
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: ia64: kernel: flow control, need use 'return' instead
- of 'break'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "george.cherian@ti.com" <george.cherian@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
+References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-3-git-send-email-kishon@ti.com> <51A2F07F.8070009@samsung.com> <51A2F512.2090907@ti.com> <51A2F84D.9030605@samsung.com> <51A2FB88.9000303@nvidia.com>
+In-Reply-To: <51A2FB88.9000303@nvidia.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-In this case, the original author did not provide the related reason
-string for die_if_kernel(), so the 'buf' is not initialized.
+On Monday 27 May 2013 11:52 AM, Laxman Dewangan wrote:
+> On Monday 27 May 2013 11:38 AM, Chanwoo Choi wrote:
+>> On 05/27/2013 02:54 PM, Kishon Vijay Abraham I wrote:
+>>> Hi,
+>>>
+>>> On Monday 27 May 2013 11:04 AM, Chanwoo Choi wrote:
+>>>> Hi Kishon,
+>>>>
+>>>> I have some comment about this patch
+>>>> and upload modified patch to following repository (extcon-for-palmas).
+>>>> -
+>>>> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
+>>>>
+>>>>
+>>>> This patchset include patch related to other module
+>>>> ,so I need your opinion to apply this patchset to git repository.
+>>> yeah.. Still there is some confusion with palmas_set_switch_smps10().
+>>> I think we can remove it for now and add it separately later. By this
+>>> at least we can have device mode fully functional in OMAP5. What do
+>>> you think?
+>>>
+>>   I agree your opinion.
+>>
+>> But, I propose some fixes about palmas_set_switch_smps10().
+>> I dont' prefer to call global function in exton-palmas.c from
+>> palmas-regulator.c.
+>> So, Why don't you use regulator consumer instead of global function?
+>> You can register specific regulator for enabling or disabling
+>> SMPS10_SWITCH_EN
+>> and then control SMPS10_SWITCH_EN bit through regulator framework in
+>> extcon-palmas.c
+>> without calling global function.
+>
+> Along with this, I also like to make the VBUS regulator control to be
+> optional here. Currently it is mandatory.
 
-The original author wants to generic a 'SIGSEGV' and 'return', not want
-to 'break' to fall to die.
+But dint you just tell on my v4 of this patch that you don’t require this.
+http://www.spinics.net/lists/linux-doc/msg10638.html
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/ia64/kernel/traps.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/ia64/kernel/traps.c b/arch/ia64/kernel/traps.c
-index f7f9f9c..d3636e6 100644
---- a/arch/ia64/kernel/traps.c
-+++ b/arch/ia64/kernel/traps.c
-@@ -630,7 +630,7 @@ ia64_fault (unsigned long vector, unsigned long isr, unsigned long ifa,
- 		printk(KERN_ERR "  iip - 0x%lx, ifa - 0x%lx, isr - 0x%lx\n",
- 		       iip, ifa, isr);
- 		force_sig(SIGSEGV, current);
--		break;
-+		return;
- 
- 	      case 46:
- 		printk(KERN_ERR "Unexpected IA-32 intercept trap (Trap 46)\n");
--- 
-1.7.7.6
+Thanks
+Kishon
