@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab3E0CqA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:46:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:57041 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755779Ab3E0Cp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:45:59 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: <virtualization@lists.linux-foundation.org>
-Subject: Re: BUG_ON in virtio-ring.c
-In-Reply-To: <CAPM=9tyLrJ8VAdGCw_1guRS-ogCPE1Qp7faE_nrx_dAm2gvHLQ@mail.gmail.com>
-References: <CAPM=9tyLrJ8VAdGCw_1guRS-ogCPE1Qp7faE_nrx_dAm2gvHLQ@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 27 May 2013 11:12:24 +0930
-Message-ID: <87vc65p5a7.fsf@rustcorp.com.au>
+	id S1756185Ab3E0CrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:47:10 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36370 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab3E0CrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 May 2013 22:47:08 -0400
+From: Libo Chen <libo.chen@huawei.com>
+To: <oliver@neukum.org>, <aliakc@web.de>, <lenehan@twibble.org>,
+        <JBottomley@parallels.com>
+CC: <dc395x@twibble.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <libo.chen@huawei.com>, <gregkh@linuxfoundation.org>
+Subject: [PATCH 02/24] drivers/scsi/dc395x: Convert to module_pci_driver
+Date: Mon, 27 May 2013 10:46:29 +0800
+Message-ID: <1369622789-7876-1-git-send-email-libo.chen@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie <airlied@gmail.com> writes:
-> Hi Rusty,
->
-> current virtio-ring.c has a BUG_ON in virtqueue_add that checks
-> total_sg > vg->vring.num, however I'm not sure it really is 100%
-> correct.
->
-> If I have an indirect ring and I'm adding sgs to it and the host is
-> delayed (say I've got a thread consuming things from the vring and its
-> off doing something interesting),
-> I'd really like to get ENOSPC back from virtqueue_add. However if the
-> indirect addition fails due to free_sg being 0, we hit the BUG_ON
-> before we ever get to the ENOSPC check.
+use module_pci_driver instead of init/exit, make code clean.
 
-It is correct for the moment: drivers can't assume indirect buffer
-support in the transport.
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/scsi/dc395x.c |   24 +-----------------------
+ 1 files changed, 1 insertions(+), 23 deletions(-)
 
-BUT for a new device, we could say "this depends on indirect descriptor
-support", put the appropriate check in the device init, and then remove
-the BUG_ON().
+diff --git a/drivers/scsi/dc395x.c b/drivers/scsi/dc395x.c
+old mode 100644
+new mode 100755
+index 694e13c..e73445b
+--- a/drivers/scsi/dc395x.c
++++ b/drivers/scsi/dc395x.c
+@@ -4882,29 +4882,7 @@ static struct pci_driver dc395x_driver = {
+ 	.remove         = dc395x_remove_one,
+ };
+ 
+-
+-/**
+- * dc395x_module_init - Module initialization function
+- *
+- * Used by both module and built-in driver to initialise this driver.
+- **/
+-static int __init dc395x_module_init(void)
+-{
+-	return pci_register_driver(&dc395x_driver);
+-}
+-
+-
+-/**
+- * dc395x_module_exit - Module cleanup function.
+- **/
+-static void __exit dc395x_module_exit(void)
+-{
+-	pci_unregister_driver(&dc395x_driver);
+-}
+-
+-
+-module_init(dc395x_module_init);
+-module_exit(dc395x_module_exit);
++module_pci_driver(dc395x_driver);
+ 
+ MODULE_AUTHOR("C.L. Huang / Erich Chen / Kurt Garloff");
+ MODULE_DESCRIPTION("SCSI host adapter driver for Tekram TRM-S1040 based adapters: Tekram DC395 and DC315 series");
+-- 
+1.7.1
 
-> the BUG_ON is quite valid in the no indirect case, but when we have
-> indirect buffers it doesn't seem like it always makes sense.
->
-> Not sure best way to fix it, I'm just a virtio newbie :)
 
-Mailing me and the list was the right thing, since this raises question
-of the spec as well as the Linux implementation.
-
-Good luck!
-Rusty.
