@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab3E0MWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:22:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56571 "EHLO mx2.suse.de"
+	id S932321Ab3E0MX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:23:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56606 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab3E0MWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:22:46 -0400
-Date: Mon, 27 May 2013 14:23:02 +0200
-Message-ID: <s5h1u8sr4rd.wl%tiwai@suse.de>
+	id S932110Ab3E0MX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 08:23:57 -0400
+Date: Mon, 27 May 2013 14:24:13 +0200
+Message-ID: <s5hzjvgpq4y.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 1/2] driver core: firmware loader: don't cache FW_ACTION_NOHOTPLUG firmware
-In-Reply-To: <CAK7N6vozJ-dNDCj4QEo_nO=Tb_nEq3h6bmSF0rvaJ5NYgyK3fw@mail.gmail.com>
+In-Reply-To: <1369650604-27941-2-git-send-email-ming.lei@canonical.com>
 References: <1369650604-27941-1-git-send-email-ming.lei@canonical.com>
 	<1369650604-27941-2-git-send-email-ming.lei@canonical.com>
-	<CAK7N6vozJ-dNDCj4QEo_nO=Tb_nEq3h6bmSF0rvaJ5NYgyK3fw@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,88 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 27 May 2013 17:26:22 +0530,
-anish singh wrote:
+At Mon, 27 May 2013 18:30:03 +0800,
+Ming Lei wrote:
 > 
-> On Mon, May 27, 2013 at 4:00 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> > Generally there are only two drivers which don't need uevent to
-> > handle firmware loading, so don't cache these firmwares during
-> Sorry but this statement confuses me i.e. "drivers which don't need
-> uevent to handle firmware loading". Does this mean that driver is
-> dependent on uevent to load the firmware?
+> Generally there are only two drivers which don't need uevent to
+> handle firmware loading, so don't cache these firmwares during
+> suspend for these drivers since doing that may block firmware
+> loading forever.
+> 
+> Both the two drivers are involved in private firmware images, so
+> they don't hit in direct loading too.
+> 
+> Cc: Takashi Iwai <tiwai@suse.de>
 
-No.
-
-> or does this mean
-> that driver generates uevent to userspace and userpace in turn
-> provides the firmware?
-
-No.
-
-The userspace doesn't require uevent, and the driver doesn't generate
-uevent, either.  The userspace just loads the file when ready.
-See Documentation/dell_rbu.txt for example.  (And yes, it's a bad
-design.)
+Reviewed-by: Takashi Iwai <tiwai@suse.de>
 
 
-Takashi
-
-> > suspend for these drivers since doing that may block firmware
-> > loading forever.
-> Explanation about why would it block would really help me or
-> for that matter anyone who reads this commit. Or may be
-> a url which discussed this problem.
-> >
-> > Both the two drivers are involved in private firmware images, so
-> > they don't hit in direct loading too.
-> >
-> > Cc: Takashi Iwai <tiwai@suse.de>
-> > Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> > ---
-> >  drivers/base/firmware_class.c |    9 ++++++---
-> >  1 file changed, 6 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> > index e650c25..64e7870 100644
-> > --- a/drivers/base/firmware_class.c
-> > +++ b/drivers/base/firmware_class.c
-> > @@ -993,7 +993,8 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
-> >         return 1; /* need to load */
-> >  }
-> >
-> > -static int assign_firmware_buf(struct firmware *fw, struct device *device)
-> > +static int assign_firmware_buf(struct firmware *fw, struct device *device,
-> > +                               bool skip_cache)
-> >  {
-> >         struct firmware_buf *buf = fw->priv;
-> >
-> > @@ -1010,7 +1011,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device)
-> >          * device may has been deleted already, but the problem
-> >          * should be fixed in devres or driver core.
-> >          */
-> > -       if (device)
-> > +       if (device && !skip_cache)
-> >                 fw_add_devm_name(device, buf->fw_id);
-> >
-> >         /*
-> > @@ -1066,8 +1067,10 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
-> >         if (!fw_get_filesystem_firmware(device, fw->priv))
-> >                 ret = fw_load_from_user_helper(fw, name, device,
-> >                                                uevent, nowait, timeout);
-> > +
-> > +       /* don't cache firmware handled without uevent */
-> >         if (!ret)
-> > -               ret = assign_firmware_buf(fw, device);
-> > +               ret = assign_firmware_buf(fw, device, !uevent);
-> >
-> >         usermodehelper_read_unlock();
-> >
-> > --
-> > 1.7.9.5
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/base/firmware_class.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index e650c25..64e7870 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -993,7 +993,8 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
+>  	return 1; /* need to load */
+>  }
+>  
+> -static int assign_firmware_buf(struct firmware *fw, struct device *device)
+> +static int assign_firmware_buf(struct firmware *fw, struct device *device,
+> +				bool skip_cache)
+>  {
+>  	struct firmware_buf *buf = fw->priv;
+>  
+> @@ -1010,7 +1011,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device)
+>  	 * device may has been deleted already, but the problem
+>  	 * should be fixed in devres or driver core.
+>  	 */
+> -	if (device)
+> +	if (device && !skip_cache)
+>  		fw_add_devm_name(device, buf->fw_id);
+>  
+>  	/*
+> @@ -1066,8 +1067,10 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>  	if (!fw_get_filesystem_firmware(device, fw->priv))
+>  		ret = fw_load_from_user_helper(fw, name, device,
+>  					       uevent, nowait, timeout);
+> +
+> +	/* don't cache firmware handled without uevent */
+>  	if (!ret)
+> -		ret = assign_firmware_buf(fw, device);
+> +		ret = assign_firmware_buf(fw, device, !uevent);
+>  
+>  	usermodehelper_read_unlock();
+>  
+> -- 
+> 1.7.9.5
 > 
