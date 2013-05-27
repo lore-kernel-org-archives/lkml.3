@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3E0Ep5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 00:45:57 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35998 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab3E0Epz convert rfc822-to-8bit (ORCPT
+	id S1752422Ab3E0E6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 00:58:03 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:7996 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab3E0E6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 00:45:55 -0400
+	Mon, 27 May 2013 00:58:00 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A2E7A5.5000904@asianux.com>
+Date: Mon, 27 May 2013 12:57:09 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1369619214.10521.25.camel@kjgkr>
-References: <1369533945-6955-1-git-send-email-linkinjeon@gmail.com>
-	<1369619214.10521.25.camel@kjgkr>
-Date: Mon, 27 May 2013 13:45:55 +0900
-Message-ID: <CAKYAXd_QZronHD536LOfeFWLmtCoweRq3gbH94R4_7oKC7hv3w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] f2fs: add sysfs support for controlling the gc_thread
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+CC: Parisc List <linux-parisc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: parisc: kernel: memory overflow, 'name' length is too
+ short for using
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/27, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi Namjae,
-Hi Jaegeuk.
 
-First, Thanks for your interest.
->
-> This is an interesting functionality.
-> Could you describe why and when we need to do this?
-> What are pros and cons?
-> How can we use this?
-As the default size of the F2FS parameter can vary as per the storage
-size, so we can figure out the default values for Garbage collection
-on each device.
-It will be good if we can provide an interface which helps in tunning
-these timing parameters to optimize the behavior of GC thread.
+'path.bc[i]' can be asigned by PCI_SLOT() which can '> 10', so sizeof(6
+* "%u:" + "%u" + '\0') may be 21.
 
-As you know, we can see performance dropping suddenly by GC thread. GC
-thread is working more roughly for big size disk. And on other hand,
-it is more work hard for very small partition.
+Since 'name' length is 20, it may be memory overflow.
 
-And If App didn't access f2fs partition for a while. We can use this
-time to make possible valid blocks using foregound gc thread working.
-So we should need gc thread fg start and stop functionality.
-We will describe how to use it and more detail in patch changelog(v2).
+And 'path.bc[i]' is 'unsigned char' for printing, we can be sure the
+max length of 'name' must be less than 28.
 
->
-> IMO, when users try to control IO latencies, it seems that they can
-> trigger such the explicit GCs, but in order to do that, they also need
-> to know the status of current f2fs in more precisely. Does the debugfs
-> show it enoughly?
-First important thing before running the GC thread forecefully from
-the user level ‘sysfs’ is to have diagnostic values of the FLASH
-partition. So, we are trying to figure out how we can check the stats
-regarding running the GC thread.
+So simplify thinking, we can use 28 instead of 20 directly, and do not
+think of whether 'patchc.bc[i]' can '> 100'.
 
-I have thought more after getting your reply.
-f2fs_cleaner(a tentative name) is that provide the following several
-options to control gc thread.
-1. start forground gc thread to clean all invalid blocks.
-2. stop number 1(fg) working.
-3. set new tunning parameter (min/max/no_gc).
-4. get status of current f2fs.
 
-We will provide user level util in f2fs tools and sysfs at the same time.
-It is useful if the console level user/App user can change them easily.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/parisc/kernel/drivers.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->
-> Afterwards, it is worth to add some information to
-> Document/filesystems/f2fs.txt.
-Yes, It will be included in next series patches.
-How do you think ? If you agree my suggestion, I will start to work
-the above jobs.
-
-Let me know your opinion.
-
-Thanks.
->
-> Thanks,
->
+diff --git a/arch/parisc/kernel/drivers.c b/arch/parisc/kernel/drivers.c
+index 5709c5e..14285ca 100644
+--- a/arch/parisc/kernel/drivers.c
++++ b/arch/parisc/kernel/drivers.c
+@@ -394,7 +394,7 @@ EXPORT_SYMBOL(print_pci_hwpath);
+ static void setup_bus_id(struct parisc_device *padev)
+ {
+ 	struct hardware_path path;
+-	char name[20];
++	char name[28];
+ 	char *output = name;
+ 	int i;
+ 
+-- 
+1.7.7.6
