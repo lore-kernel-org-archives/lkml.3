@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab3E0KhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:37:23 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51043 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425Ab3E0KhV (ORCPT
+	id S1757523Ab3E0KlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:41:07 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41393 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341Ab3E0KlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:37:21 -0400
-Message-ID: <51A3375B.3090205@free-electrons.com>
-Date: Mon, 27 May 2013 12:37:15 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 27 May 2013 06:41:05 -0400
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-References: <1369467542-25519-1-git-send-email-alexandre.belloni@free-electrons.com> <20130525200557.GO24476@game.jcrosoft.org> <20130527080909.GB2919@ludovic.desroches@atmel.com>
-In-Reply-To: <20130527080909.GB2919@ludovic.desroches@atmel.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <1369232581-18923-8-git-send-email-lee.jones@linaro.org>
+References: <1369232581-18923-1-git-send-email-lee.jones@linaro.org>
+	<1369232581-18923-8-git-send-email-lee.jones@linaro.org>
+Date: Mon, 27 May 2013 12:41:04 +0200
+Message-ID: <CACRpkdYyZZSy4VgFc+Uo=5iAF++EPmHM0U2pHcLdkDZc=Xb_sQ@mail.gmail.com>
+Subject: Re: [PATCH 7/7] Documentation: Update binding for Nomadik and DBx5x
+ based platforms
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2013 10:09, Ludovic Desroches wrote:
-> On Sat, May 25, 2013 at 10:05:57PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 09:39 Sat 25 May     , Alexandre Belloni wrote:
->>> Fixes:
->>> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
->>> :(.text+0x1174): undefined reference to `mdiobus_write'
->>> :(.text+0x1188): undefined reference to `mdiobus_write'
->>> :(.text+0x119c): undefined reference to `mdiobus_write'
->>> :(.text+0x11b0): undefined reference to `mdiobus_write'
->>> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
->>> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
->>>
->>> when CONFIG_PHYLIB is not selected.
-> Signed-off-by missing.
+On Wed, May 22, 2013 at 4:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+
+> Change compatible string to something more standard.
 >
-> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 >
+> diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+> index 9a2f3f4..c3d8a89 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+> @@ -1,8 +1,8 @@
+>  ST Ericsson Nomadik pinmux controller
+>
+>  Required properties:
+> -- compatible: "stericsson,nmk-pinctrl", "stericsson,nmk-pinctrl-db8540",
+> -              "stericsson,nmk-pinctrl-stn8815"
+> +- compatible: "stericsson,db8500-pinctrl", "stericsson,db8540-pinctrl",
+> +              "stericsson,stn8815-pinctrl"
 
-I'll send a v3...
+OK...
 
->>> ---
->>> Changes in v2:
->>> 	use IS_BUILTIN
->>> 	use CONFIG_PHYLIB and not CONFIG_PHY
->>>
->> I do not like this, I prefer we just drop the fixup by adding the dt support
->> to the micrel phy as done for broadcom
->>
-> Yes it will be a better solution but we don't have it. Even if we add dt
-> support for micrel phy it won't go into 3.10 so it has to be fixed before the
-> release.
+>         pinctrl@80157000 {
+> -               compatible = "stericsson,nmk-pinctrl";
+> +               compatible = "stericsson,u8500-pinctrl";
 
-The fixup is also done like that on i.mx6. I think we'll have to stick
-to that for now.
+This does not look like a supported compatible string?
 
->> if !PHYLIB just add an inline declaration of 
->> phy_register_fixup_for_uid
->>
->> so gcc will drop ksz9021rn_phy_fixup automatically
-
-By using IS_BUILTIN, gcc is already optimizing out the offeding lines,
-else you would still get the linking error.
-
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+Yours,
+Linus Walleij
