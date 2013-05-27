@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3E0KcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:32:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50176 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3E0KcH (ORCPT
+	id S1757484Ab3E0KeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:34:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49983 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411Ab3E0KeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:32:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
-Date: Mon, 27 May 2013 12:32:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>
-References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305262323.29519.arnd@arndb.de> <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
-In-Reply-To: <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
+	Mon, 27 May 2013 06:34:04 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
+        "'Jonathan Cameron'" <jic23@kernel.org>
+Subject: Re: [PATCH 3.9-stable] staging:iio:light:tsl2x7x: fix the error handling in tsl2x7x_probe()
+References: <000101ce5828$545e10b0$fd1a3210$%choi@samsung.com>
+Date: Mon, 27 May 2013 11:33:59 +0100
+In-Reply-To: <000101ce5828$545e10b0$fd1a3210$%choi@samsung.com> (Jonghwan
+	Choi's message of "Fri, 24 May 2013 11:42:27 +0900")
+Message-ID: <871u8sogo8.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305271232.03644.arnd@arndb.de>
-X-Provags-ID: V02:K0:ST5qXj1Gd3OfM47KCcaoRS7KahrC+j/iI19H0i6gWIz
- NvmQAhRTt2MpyBr/hbfhGWGSU6nu09c5vMwIblrFvLlqNGeTG9
- AeDjqv59taDo4kSAIN9Lc0d8P4M8WM/QbpRAPFsPzt0uD58/Bc
- 1Q2yOdxrKCovewGQMYQB4JgFB+srlWiqLJ3YirtW6BrRVQOh4h
- 6vPgCMapJvR9CTl+qZ5DfxBasOBbx+xWO/aXx4hMZWD2xxEkS9
- VVDVEReyBKHFx3BQXQlgcBmMARxq+dtiS9JCLGqjkTpuedB7Ij
- oeITQf5NGWcc1ykPdfKaBUWt1p7jYiiN6XobOcby7EzYnpQbbb
- kmFpLTlZ2CVGLbFgpCfU=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 May 2013, Daniel Tang wrote:
-> > On Saturday 25 May 2013, Daniel Tang wrote:
+Hi Jonghwan,
 
-> > The one remaining bit that sticks out is the clcd platform data. As I
-> > said before, I won't require you to convert that to DT in order to
-> > get your code merged, but I'd also really like to see that happen,
-> > as we will also need that to get rid of auxdata on the ARM reference
-> > platforms (integrator, versatile, realview, vexpress).
-> 
-> How would you like me to convert the platform data to DT? AFAIK, the
-> clcd driver isn't aware of DT so the only way is to use the AUXDATA right now.
+Jonghwan Choi <jhbird.choi@samsung.com> writes:
 
-There are two basica approaches we could take:
+> This patch looks like it should be in the 3.9-stable tree, should we apply
+> it?
 
-a) add DT support to the clcd driver, using the of_get_videomode()
-helper and any other properties that need to be added.
+I'm queuing this patch to the 3.5 kernel as well, as it looks like it
+is also applicable.
 
-b) add a new KMS driver for this hardware that can be used as an
-alternative to the existing one and that works with DT.
+Cheers,
+-- 
+Luis
 
-	Arnd
+
+>
+> ------------------
+>
+> From: "Wei Yongjun <yongjun_wei@trendmicro.com.cn>"
+>
+> commit 3b813798aa7030f1beef638c75f8b0008f737a82 upstream
+>
+> Fix to return -EINVAL in the i2c device found error handling
+> case instead of 0, as done elsewhere in this function.
+> And also correct the fail1 and fail2 lable to do the right thing.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  drivers/staging/iio/light/tsl2x7x_core.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/iio/light/tsl2x7x_core.c
+> b/drivers/staging/iio/light/tsl2x7x_core.c
+> index a58731e..2d40c03 100644
+> --- a/drivers/staging/iio/light/tsl2x7x_core.c
+> +++ b/drivers/staging/iio/light/tsl2x7x_core.c
+> @@ -1869,6 +1869,7 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
+>  		dev_info(&chip->client->dev,
+>  				"%s: i2c device found does not match
+> expected id\n",
+>  				__func__);
+> +		ret = -EINVAL;
+>  		goto fail1;
+>  	}
+>  
+> @@ -1907,7 +1908,7 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
+>  		if (ret) {
+>  			dev_err(&clientp->dev,
+>  				"%s: irq request failed", __func__);
+> -			goto fail2;
+> +			goto fail1;
+>  		}
+>  	}
+>  
+> @@ -1920,17 +1921,17 @@ static int tsl2x7x_probe(struct i2c_client *clientp,
+>  	if (ret) {
+>  		dev_err(&clientp->dev,
+>  			"%s: iio registration failed\n", __func__);
+> -		goto fail1;
+> +		goto fail2;
+>  	}
+>  
+>  	dev_info(&clientp->dev, "%s Light sensor found.\n", id->name);
+>  
+>  	return 0;
+>  
+> -fail1:
+> +fail2:
+>  	if (clientp->irq)
+>  		free_irq(clientp->irq, indio_dev);
+> -fail2:
+> +fail1:
+>  	iio_device_free(indio_dev);
+>  
+>  	return ret;
