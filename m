@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3E0QEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:04:21 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52832 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab3E0QET (ORCPT
+	id S1753561Ab3E0QMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:12:09 -0400
+Received: from ms.ltcvs.ilc.edu.tw ([120.101.177.6]:53360 "EHLO
+	ms.ltcvs.ilc.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab3E0QMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:04:19 -0400
-Message-ID: <51A38401.5000103@free-electrons.com>
-Date: Mon, 27 May 2013 18:04:17 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 27 May 2013 12:12:08 -0400
+X-Greylist: delayed 2015 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 12:12:08 EDT
+From: "Webmail Help Desk" <noreply@ms.ltcvs.ilc.edu.tw>
+Reply-To: noreply@ms.ltcvs.ilc.edu.tw
+Subject: Attention Webmail User!
+Date: Mon, 27 May 2013 23:38:31 +0800
+Message-Id: <20130527153831.M96759@ms.ltcvs.ilc.edu.tw>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 123.136.106.32 (venessakuaw)
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <E0B30581-DD0A-46C5-B541-08F389F17018@jcrosoft.com> <51A356A2.4050502@free-electrons.com> <8424D480-48DA-4094-AE68-6A6A66F8FE2B@jcrosoft.com>
-In-Reply-To: <8424D480-48DA-4094-AE68-6A6A66F8FE2B@jcrosoft.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=big5
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2013 14:59, Jean-Christophe PLAGNIOL-VILLARD wrote:
->
-> no will not as you do ifdef CONFIG_PHYLIB and if CONFIG_PHYLIB=m the macro is defended
->
-> we do this all the time in the kernel
->
-> I add the IS_BUILTIN & co to be used when a simple inline is not sufficient
+Dear Webmail User, 
 
-Ok, it took me a while to understand what you were trying to explain.
-I'm sending a patch set now. I don't believe it will be taken in for
-3.10 though.
+This is to inform you that you have exceeded your quota limit of 325MB in our 
+database e-mail and you need to increase your quota limit of email 
+because in less than 48hours your e-mail will be disabled. Increase the share 
+of e-mail limit and continue to use your webmail account.
+To increase your quota limit of email to 2.2GB, Click or copy the below link 
+into your broswer.
 
-Regards,
+Click Link: http://ltcvsadmintw.phpforms.net/f/firstform
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thank You. 
 
+Copyright &#169; 2013 Webmail Help Desk 
+Administrator All rights reserved.
