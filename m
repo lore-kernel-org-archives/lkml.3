@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3E0Rha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 13:37:30 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:53139 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab3E0Rh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 13:37:29 -0400
-Message-ID: <51A399D6.8030000@free-electrons.com>
-Date: Mon, 27 May 2013 19:37:26 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756020Ab3E0RjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 13:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752603Ab3E0RjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 13:39:21 -0400
+Message-ID: <51A39A3F.8080903@redhat.com>
+Date: Mon, 27 May 2013 13:39:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/3] net: phy: prevent linking breakage
-References: <1369671524-14797-1-git-send-email-alexandre.belloni@free-electrons.com> <1369671524-14797-2-git-send-email-alexandre.belloni@free-electrons.com> <20130527163913.GO32299@pengutronix.de>
-In-Reply-To: <20130527163913.GO32299@pengutronix.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: atomlin@redhat.com
+CC: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
+        aquini@redhat.com, sergei.shtylyov@cogentembedded.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1369599557-22677-1-git-send-email-atomlin@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2013 18:39, Sascha Hauer wrote:
-> On Mon, May 27, 2013 at 06:18:42PM +0200, Alexandre Belloni wrote:
->> phy_register_fixup{,_for_uid,_for_id} are called from arch/, quite
->> often, there is no protection to check whether CONFIG_PHYLIB=y which is
->> the only case where this would work. Having phylib as a module or not
->> compiled at all will result in that kind of linking failure:
->>
->> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
->> :(.text+0x1174): undefined reference to `mdiobus_write'
->> :(.text+0x1188): undefined reference to `mdiobus_write'
->> :(.text+0x119c): undefined reference to `mdiobus_write'
->> :(.text+0x11b0): undefined reference to `mdiobus_write'
->> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
->> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->> ---
->>  drivers/net/phy/phy_device.c |  6 ++++++
->>  include/linux/phy.h          | 12 ++++++++++++
->>  2 files changed, 18 insertions(+)
->>
->> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
->> index 3657b4a..df36367 100644
->> --- a/drivers/net/phy/phy_device.c
->> +++ b/drivers/net/phy/phy_device.c
->> @@ -64,6 +64,11 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
->>  			     u32 flags, phy_interface_t interface);
->>  
->>  /*
->> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
->> + *  work unless phylib is compiled in the kernel.
->> + */
->> +#ifdef CONFIG_PHYLIB
->> +/*
->>   * Creates a new phy_fixup and adds it to the list
->>   * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
->>   * @phy_uid: Used to match against phydev->phy_id (the UID of the PHY)
->> @@ -109,6 +114,7 @@ int phy_register_fixup_for_id(const char *bus_id,
->>  	return phy_register_fixup(bus_id, PHY_ANY_UID, 0xffffffff, run);
->>  }
->>  EXPORT_SYMBOL(phy_register_fixup_for_id);
->> +#endif /* CONFIG_PHYLIB */
->>  
->>  /*
->>   * Returns 1 if fixup matches phydev in bus_id and phy_uid.
->> diff --git a/include/linux/phy.h b/include/linux/phy.h
->> index 9e11039..3f998a6 100644
->> --- a/include/linux/phy.h
->> +++ b/include/linux/phy.h
->> @@ -556,12 +556,24 @@ int phy_start_interrupts(struct phy_device *phydev);
->>  void phy_print_status(struct phy_device *phydev);
->>  void phy_device_free(struct phy_device *phydev);
->>  
->> +/*
->> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
->> + *  work unless phylib is compiled in the kernel.
->> + *  Defining stubs allows to prevent linking errors.
->> + */
->> +#ifdef CONFIG_PHYLIB
->>  int phy_register_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask,
->>  		int (*run)(struct phy_device *));
->>  int phy_register_fixup_for_id(const char *bus_id,
->>  		int (*run)(struct phy_device *));
->>  int phy_register_fixup_for_uid(u32 phy_uid, u32 phy_uid_mask,
->>  		int (*run)(struct phy_device *));
->> +#else
->> +#define phy_register_fixup(a, b, c, d) do { } while (0)
->> +#define phy_register_fixup_for_id(a, b) do { } while (0)
->> +#define phy_register_fixup_for_uid(a, b, c) do { } while (0)
-> Use static inline functions here. This breaks if someone does result
-> checking on the functions which then expands to ret = do {} while (0);
-> Also we still have type safety for !CONFIG_PHYLIB.
+On 05/26/2013 04:19 PM, atomlin@redhat.com wrote:
+> From: Aaron Tomlin <atomlin@redhat.com>
+>
+> Since v1:
+>   - Removed unnecessary parentheses
+>
+> ---8<---
+>
+> Failed GFP_ATOMIC allocations by the network stack result in dropped
+> packets, which will be received on a subsequent retransmit, and an
+> unnecessary, noisy warning with a kernel backtrace.
+>
+> These warnings are harmless, but they still cause users to panic and
+> file bug reports over dropped packets. It would be better to hide the
+> failed allocation warnings and backtraces, and let retransmits handle
+> dropped packets quietly.
 
-Right, I tried that first but forgot static so I had issues with
-redefinition of the functions. I even played with __weak at some point...
+Yes please. Getting memory management bug reports for
+dropped network packets got old years ago.  Lets get
+rid of those messages.
 
-I'll wait a bit for comments before sending v2.
+> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
