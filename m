@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3E0KGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:06:02 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:41258 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab3E0KF6 (ORCPT
+	id S1757360Ab3E0KHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:07:04 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:58494 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755907Ab3E0KHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:05:58 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A32FD4.4000001@asianux.com>
-Date: Mon, 27 May 2013 18:05:08 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 27 May 2013 06:07:02 -0400
+Message-ID: <51A3300A.2060403@synopsys.com>
+Date: Mon, 27 May 2013 15:36:02 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: ben-linux@fluff.org, "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] ARM: S5PV210: dependency issue, S5P_SLEEP is depend on
- ARM_CPU_SUSPEND
-References: <5199E4AF.7040607@asianux.com>
-In-Reply-To: <5199E4AF.7040607@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.documentation,gmane.linux.drivers.devicetree,gmane.linux.kernel
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH REBASE] irqchip: Add TB10x interrupt controller driver
+References: <1365686252-9828-1-git-send-email-christian.ruppert@abilis.com> <1367930258-27056-1-git-send-email-christian.ruppert@abilis.com>
+In-Reply-To: <1367930258-27056-1-git-send-email-christian.ruppert@abilis.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.192]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
-
-Please help check this patch whether OK, when you have time.
-
-
-Thanks.
-
-On 05/20/2013 04:54 PM, Chen Gang wrote:
+On 05/07/2013 06:07 PM, Christian Ruppert wrote:
+> The SOC interrupt controller driver for the Abilis Systems TB10x series of
+> SOCs based on ARC700 CPUs.
 > 
-> When randconfig with MMU for arm s5pv210 (and select all cpu type),
-> need let S5P_SLEEP depend on ARM_CPU_SUSPEND, or will cause issue below:
+> This driver is required to boot the arch/arc/plat-tb10x platform already
+> present in linux-next. Please consider this patch for inclusion in 3.10.
+> This is the rebase of a previous version on linux-next.
 > 
->   arch/arm/plat-samsung/built-in.o: In function `s3c_cpu_resume':
->   arch/arm/plat-samsung/s5p-sleep.S:83: undefined reference to `cpu_resume'
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arm/plat-samsung/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index f8ed2de..1d38541 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -483,6 +483,7 @@ config S5P_PM
->  
->  config S5P_SLEEP
->  	bool
-> +	select ARM_CPU_SUSPEND
->  	help
->  	  Internal config node to apply common S5P sleep management code.
->  	  Can be selected by S5P and newer SoCs with similar sleep procedure.
-> 
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 
+Looks good to me !
 
--- 
-Chen Gang
+Reviewed-by: Vineet Gupta <vgupta@synopsys.com>
 
-Asianux Corporation
+P.S. @tglx can you please review this at your earliest convenience and provide any
+feedback to Chrisitian. This driver is essential to their platform and it would be
+nice to have it in mainline in 3.11
+
+Thx,
+-Vineet
