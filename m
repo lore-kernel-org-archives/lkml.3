@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3E0RNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 13:13:45 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:38135 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab3E0RNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 13:13:42 -0400
-Message-ID: <51A39441.9000609@cogentembedded.com>
-Date: Mon, 27 May 2013 21:13:37 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 2/2] USB: hcd: only unmap the actual completed DMA buffer
-References: <1369671187-24430-1-git-send-email-ming.lei@canonical.com> <1369671187-24430-3-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1369671187-24430-3-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755979Ab3E0ROJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 13:14:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38019 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755650Ab3E0RNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 13:13:40 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 3/3] memcg: Track all children over limit in the root
+Date: Mon, 27 May 2013 19:13:11 +0200
+Message-Id: <1369674791-13861-4-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1369674791-13861-1-git-send-email-mhocko@suse.cz>
+References: <20130517160247.GA10023@cmpxchg.org>
+ <1369674791-13861-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Children in soft limit excess are currently tracked up the hierarchy
+in memcg->children_in_excess. Nevertheless there still might exist
+tons of groups that are not in hierarchy relation to the root cgroup
+(e.g. all first level groups if root_mem_cgroup->use_hierarchy ==
+false).
 
-On 27-05-2013 20:13, Ming Lei wrote:
+As the whole tree walk has to be done when the iteration starts at
+root_mem_cgroup the iterator should be able to skip the walk if there
+is no child above the limit without iterating them. This can be done
+easily if the root tracks all children rather than only hierarchical
+children. This is done by this patch which updates root_mem_cgroup
+children_in_excess if root_mem_cgroup->use_hierarchy == false so the
+root knows about all children in excess.
 
-> This patch only unmap the actual completed DMA buffer instead of
-> the whole transfer buffer.
+Please note that this is not an issue for inner memcgs which have
+use_hierarchy == false because then only the single group is visited so
+no special optimization is necessary.
 
-     Who will unmap the rest of the buffer?
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-> It is common to see only part of DMA transfer is completed, especially
-> in case of DMA_FROM_DEVICE because the length of incoming traffic often
-> is unknown before submitting URB, so this patch may improve USB
-> DMA unmapping which runs in hard irq context.
-
-> The patch has been tested on ARMv7(Pandaboard), and it is observed that
-> at average ~25us is saved about ehci interrupt handling on below usbnet
-> test case:
-
-> 	- Pandaboard: IP address is IP_A
-> 	- on one x86 box, run below command:
-> 		#ping -f -s 1472 IP_A
-> 	- compute ehci interrupt handling time on Pandaboard during ping
-> 	  test
-
-    This seems just crazy to me. What has been mapped, should be unmapped.
-
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->   drivers/usb/core/hcd.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
-
-WBR, Sergei
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 592df10..7fb063f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -932,9 +932,15 @@ static void mem_cgroup_update_soft_limit(struct mem_cgroup *memcg)
+ 	/*
+ 	 * Necessary to update all ancestors when hierarchy is used
+ 	 * because their event counter is not touched.
++	 * We track children even outside the hierarchy for the root
++	 * cgroup because tree walk starting at root should visit
++	 * all cgroups and we want to prevent from pointless tree
++	 * walk if no children is below the limit.
+ 	 */
+ 	while (delta && (parent = parent_mem_cgroup(parent)))
+ 		atomic_add(delta, &parent->children_in_excess);
++	if (memcg != root_mem_cgroup && !root_mem_cgroup->use_hierarchy)
++		atomic_add(delta, &root_mem_cgroup->children_in_excess);
+ 	spin_unlock(&memcg->soft_lock);
+ }
+ 
+@@ -6200,6 +6206,9 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+ 	if (memcg->soft_contributed) {
+ 		while ((memcg = parent_mem_cgroup(memcg)))
+ 			atomic_dec(&memcg->children_in_excess);
++
++		if (memcg != root_mem_cgroup && !root_mem_cgroup->use_hierarchy)
++			atomic_dec(&root_mem_cgroup->children_in_excess);
+ 	}
+ 	mem_cgroup_destroy_all_caches(memcg);
+ }
+-- 
+1.7.10.4
 
