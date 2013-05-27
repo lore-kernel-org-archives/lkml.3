@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab3E0OcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 10:32:22 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:52359 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758054Ab3E0OcV (ORCPT
+	id S1758261Ab3E0Ode (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 10:33:34 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:38119 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758207Ab3E0Odc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 10:32:21 -0400
+	Mon, 27 May 2013 10:33:32 -0400
+Message-ID: <51A36EB4.9010305@ozlabs.ru>
+Date: Tue, 28 May 2013 00:33:24 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Date: Mon, 27 May 2013 15:32:19 +0100
-Message-ID: <CAMGf+V48=xZjkiJ2siYD+5bDFt7yqWU2NNggo8cEKCrpJEJqgQ@mail.gmail.com>
-Subject: [PATCH] vfs: Trivial libfs.c warning formatting
-From: Colin Fowler <elethiomel@gmail.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 1/4] KVM: PPC: Add support for multiple-TCE hcalls
+References: <1369105607-20957-1-git-send-email-aik@ozlabs.ru> <1369105607-20957-2-git-send-email-aik@ozlabs.ru> <51A330AB.8060805@redhat.com>
+In-Reply-To: <51A330AB.8060805@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Fowler <elethiomel@gmail.com>
-Kernel Version: 3.10-rc3.
-Description: Add a space between "array" and "with" in
-simple_fill_super() warning message
+On 05/27/2013 08:08 PM, Paolo Bonzini wrote:
+> Il 21/05/2013 05:06, Alexey Kardashevskiy ha scritto:
+>> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
+>> H_STUFF_TCE hypercalls for QEMU emulated devices such as virtio
+>> devices or emulated PCI.
+> 
+> Do you mean vio?  virtio (without getting into whether that's good or
+> bad) will bypass the iommu.
 
-Signed-off-by: Colin Fowler <elethiomel@gmail.com>
----
---- linux-3.10-rc3/fs/libfs.c.orig	2013-05-27 14:48:36.741568310 +0100
-+++ linux-3.10-rc3/fs/libfs.c	2013-05-27 14:49:05.675027823 +0100
-@@ -505,7 +505,7 @@ int simple_fill_super(struct super_block
+yes, mistake, should be VIO. thanks!
 
- 		/* warn if it tries to conflict with the root inode */
- 		if (unlikely(i == 1))
--			printk(KERN_WARNING "%s: %s passed in a files array"
-+			printk(KERN_WARNING "%s: %s passed in a files array "
- 				"with an index of 1!\n", __func__,
- 				s->s_type->name);
+
+-- 
+Alexey
