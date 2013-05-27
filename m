@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab3E0WR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 18:17:59 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43121 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3E0WR5 (ORCPT
+	id S1757969Ab3E0WUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 18:20:18 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:60628 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757635Ab3E0WUQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 18:17:57 -0400
-Date: Mon, 27 May 2013 15:17:44 -0700 (PDT)
-Message-Id: <20130527.151744.1526437556583356156.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: arnd@arndb.de, linuxppc-dev@lists.ozlabs.org,
-        sebastian.hesselbarth@gmail.com, andrew@lunn.ch, jason@lakedaemon.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        buytenh@wantstofly.org, grant.likely@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address
- workaround on DT ethernet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369691406.3557.35.camel@pasglop>
-References: <1369655404.3557.33.camel@pasglop>
-	<2255648.0KEmXfjCx5@wuerfel>
-	<1369691406.3557.35.camel@pasglop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 27 May 2013 18:20:16 -0400
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+In-Reply-To: <51A399D6.8030000@free-electrons.com>
+References: <1369671524-14797-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1369671524-14797-2-git-send-email-alexandre.belloni@free-electrons.com>
+	<20130527163913.GO32299@pengutronix.de>
+	<51A399D6.8030000@free-electrons.com>
+Date: Tue, 28 May 2013 00:20:05 +0200
+Message-Id: <201305272320.08296.f.fainelli@gmail.com>
+Subject: Re: [PATCH 1/3] net: phy: prevent linking breakage
+From: Florian Fainelli <f.fainelli@gmail.com>
+X-Length: 11966
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Tue, 28 May 2013 07:50:06 +1000
+Hi,
 
-> On Mon, 2013-05-27 at 14:47 +0200, Arnd Bergmann wrote:
->> On Monday 27 May 2013 21:50:04 Benjamin Herrenschmidt wrote:
->> > However, that wouldn't help much with the allocation/leak problem,
->> > though at least it would be easier to use. It could also *try* to re-use
->> > the current allocation if the new content is of smaller or equal size.
->> 
->> I thought that dtc tried to aggressively save space by folding identical
->> strings. If you tried to reuse a property that had its contents shared
->> with another one, you would get interesting results I guess.
-> 
-> It used to be only property names, unless that has changed in recent
-> dtc. But that's a good point, we probably want a flag in struct property
-> like we have for nodes, indicating whether it comes from the original
-> fdt data pool or not.
+Le 27 mai 2013 19:38, "Alexandre Belloni" <alexandre.belloni@free-
+electrons.com> a écrit :
 
-This is similar to what the "OF_IS_DYNAMIC()" thing on sparc
-indicates.
+[snip]
+
+> >> +/*
+> >> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this 
+won't
+> >> + *  work unless phylib is compiled in the kernel.
+> >> + *  Defining stubs allows to prevent linking errors.
+> >> + */
+> >> +#ifdef CONFIG_PHYLIB
+> >>  int phy_register_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask,
+> >>              int (*run)(struct phy_device *));
+> >>  int phy_register_fixup_for_id(const char *bus_id,
+> >>              int (*run)(struct phy_device *));
+> >>  int phy_register_fixup_for_uid(u32 phy_uid, u32 phy_uid_mask,
+> >>              int (*run)(struct phy_device *));
+> >> +#else
+> >> +#define phy_register_fixup(a, b, c, d) do { } while (0)
+> >> +#define phy_register_fixup_for_id(a, b) do { } while (0)
+> >> +#define phy_register_fixup_for_uid(a, b, c) do { } while (0)
+> > Use static inline functions here. This breaks if someone does result
+> > checking on the functions which then expands to ret = do {} while (0);
+> > Also we still have
+> Right, I tried that first but forgot static so I had issues with
+> redefinition of the functions. I even played with __weak at some point...
+
+You might even want to make these static inlines as mentionned earlier, and 
+return something like -ENOTSUPP so that someone using these in board code and 
+wondering why they do not work gets a chance to enable CONIFG_PHYLIB.
+--
+Florian
