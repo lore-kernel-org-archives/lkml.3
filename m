@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab3E0Gpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 02:45:46 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.140]:24472 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756499Ab3E0Gpp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 02:45:45 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-10.tower-178.messagelabs.com!1369637141!28045576!2
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 27 May 2013 08:45:42 +0200
-From: "Thumshirn, Johannes Tobias" <Johannes.Thumshirn@men.de>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: AW: [PATCH v3] watchdog: New watchdog driver for MEN A21 watchdogs
-Thread-Topic: [PATCH v3] watchdog: New watchdog driver for MEN A21 watchdogs
-Thread-Index: AQHOUZypETFHwwre50CoMr2e5t9vq5kXd2KAgAEwMCA=
-Date: Mon, 27 May 2013 06:45:39 +0000
-Message-ID: <42A09AAC7DAAF64ABE4E4C1AD5F5E295094C82A0@MEN-EX1.intra.men.de>
-References: <1368560034.24692.4.camel@joe-AO722>
- <1368643810-2789-1-git-send-email-johannes.thumshirn@men.de>
- <20130526143403.GB7603@spo001.leaseweb.com>
-In-Reply-To: <20130526143403.GB7603@spo001.leaseweb.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.6.58]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756591Ab3E0Gsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 02:48:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756499Ab3E0Gsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 02:48:31 -0400
+Date: Mon, 27 May 2013 08:48:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: Re: [patch v2 3/6] mm/memory_hotplug: Disable memory hotremove for
+ 32bit
+Message-ID: <20130527064808.GA27274@dhcp22.suse.cz>
+References: <1369547921-24264-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1369547921-24264-3-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130526090054.GE10651@dhcp22.suse.cz>
+ <20130526090617.GA28604@hacker.(null)>
+ <20130526181209.GB20270@dhcp22.suse.cz>
+ <20130526235138.GA3223@hacker.(null)>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 27 May 2013 06:45:41.0017 (UTC) FILETIME=[CDDBF090:01CE5AA5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130526235138.GA3223@hacker.(null)>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+On Mon 27-05-13 07:51:38, Wanpeng Li wrote:
+> On Sun, May 26, 2013 at 08:12:09PM +0200, Michal Hocko wrote:
+> >On Sun 26-05-13 17:06:17, Wanpeng Li wrote:
+> >> On Sun, May 26, 2013 at 11:00:54AM +0200, Michal Hocko wrote:
+> >> >On Sun 26-05-13 13:58:38, Wanpeng Li wrote:
+> >> >> As KOSAKI Motohiro mentioned, memory hotplug don't support 32bit since 
+> >> >> it was born, 
+> >> >
+> >> >Why? any reference? This reasoning is really weak.
+> >> >
+> >> 
+> >> http://marc.info/?l=linux-mm&m=136953099010171&w=2
+> >
+> >I have seen the email but that email just states that the feature is
+> >broken. Maybe it is obvious to you _what_ is actually broken but it
+> >doesn't need to be others especially those who would be reading such
+> >changelog later. So if you consider this configuration broken then be
+> >specific what is broken.
+> >
+> 
+> Sorry for the not enough information. KOSAKI explain more here:
+> http://marc.info/?l=linux-mm&m=136958040921274&w=2 
 
-> +static int a21_wdt_notify_sys(struct notifier_block *notify, unsigned long code,
-> +			void *unused)
-> +{
-> +	if (code == SYS_DOWN || code == SYS_HALT)
-> +		gpio_set_value(GPIO_WD_ENAB, 0);
-> +
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block a21_wdt_notifier = {
-> +	.notifier_call = a21_wdt_notify_sys, };
-...
-> +	ret = register_reboot_notifier(&a21_wdt_notifier);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Cannot register reboot notifier\n");
-> +		goto err_register_notif;
-> +	unregister_reboot_notifier(&a21_wdt_notifier);
-...
-> +	unregister_reboot_notifier(&a21_wdt_notifier);
-...
-> +static struct platform_driver a21_wdt_driver = {
-> +	.probe = a21_wdt_probe,
-> +	.remove = a21_wdt_remove,
-> +	.driver = {
-> +		.name = "a21-watchdog",
-> +		.of_match_table = a21_wdt_ids,
-> +	},
-> +};
+There are still just general claims that _something_ is not highmem
+aware.
 
-I prefer to have the reboot_notifier is being replaced by a platform .shutdown function.
-Can you also split the sysfs stuff as a second patch so that I can review that seperately?
+Anyway, as it seems that there are some attempts to revive this code
+then this discussion is moot. But, just for the future, make sure you
+are really specific when you claim that something is broken. Somebody
+said it was broken is _not_ a reasoning that would fly.
 
-Kind regards,
-Wim.
-
-
-Hi Wim,
-
-Of cause I'll do, but unfortunately I probably won't be able to do it today, mind if you get the patch tomorrow?
-
-Regards,
-Johannes.
+-- 
+Michal Hocko
+SUSE Labs
