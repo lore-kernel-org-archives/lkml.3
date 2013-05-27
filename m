@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab3E0NYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 09:24:51 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:37244 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325Ab3E0NYt (ORCPT
+	id S932472Ab3E0N3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 09:29:35 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:38429 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017Ab3E0N3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 09:24:49 -0400
+	Mon, 27 May 2013 09:29:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <8856294.KaD55h4g0a@vostro.rjw.lan>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-	<20130524132036.7e7d5ffe@amdc308.digital.local>
-	<CAKohpo=Kw4RsDJL8BdH1uE7Aj-X=K5A7af5NRqJXyjRUNvv5ag@mail.gmail.com>
-	<8856294.KaD55h4g0a@vostro.rjw.lan>
-Date: Mon, 27 May 2013 18:54:49 +0530
-Message-ID: <CAKohpom4sSwJG7r67+aNMjAdr7CToAqCbdcbd+vSCTEQkiTkcg@mail.gmail.com>
-Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
- governor - tests results
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Vicent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
+In-Reply-To: <1368822464-4887-1-git-send-email-rabin@rab.in>
+References: <1368822464-4887-1-git-send-email-rabin@rab.in>
+From: Rabin Vincent <rabin@rab.in>
+Date: Mon, 27 May 2013 15:28:53 +0200
+X-Google-Sender-Auth: aMWENSDyHSv53qu6R2RCOfQf8Rc
+Message-ID: <CAH+eYFC9F6cLpwYPg7iC2cOsKBJ3P9zEB=VTdA-fFDTPi1bTmQ@mail.gmail.com>
+Subject: Re: [PATCH] tools lib lk: respect CROSS_COMPILE
+To: acme@redhat.com, mingo@kernel.org, paulus@samba.org,
+        a.p.zijlstra@chello.nl
+Cc: bp@suse.de, linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Well, this really looks like software turbo modes, so let's call them
-> "TURBO" instead of "OVERDRIVE"
+2013/5/17 Rabin Vincent <rabin@rab.in>:
+> Make lk use CROSS_COMPILE, in order to be able to cross compile perf
+> again.
+>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 
-Yes, it looks better.
+Ping.  Would be nice if this was merged so that perf cross compile is no longer
+broken.
 
-> and I seem to remember having a switch for
-> disabling/enabling turbo modes already.
-
-This was added in intel_pstate driver and shows up in
-/sys/devices/system/cpu/cpufreq/ directory..
-
-But this feature belongs to a governor instance and so
-will be present inside governor directory..
-
-Specially for big LITTLE we want it to be per policy
-specific. So may need to add a new one.
+> ---
+>  tools/lib/lk/Makefile | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
+> index 926cbf3..2c5a197 100644
+> --- a/tools/lib/lk/Makefile
+> +++ b/tools/lib/lk/Makefile
+> @@ -1,5 +1,8 @@
+>  include ../../scripts/Makefile.include
+>
+> +CC = $(CROSS_COMPILE)gcc
+> +AR = $(CROSS_COMPILE)ar
+> +
+>  # guard against environment variables
+>  LIB_H=
+>  LIB_OBJS=
+> --
+> 1.8.1.2
+>
