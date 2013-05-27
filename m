@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab3E0Hn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 03:43:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1305 "EHLO mga02.intel.com"
+	id S932089Ab3E0HoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 03:44:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25079 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364Ab3E0Hn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 03:43:56 -0400
+	id S1754364Ab3E0HoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 03:44:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,749,1363158000"; 
-   d="scan'208";a="320053172"
+   d="scan'208";a="308336828"
 From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v5 net-next 0/5] net: low latency Ethernet device polling
+Subject: [PATCH v5 net-next 1/5] net: add napi_id and hash
 To: Dave Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -21,8 +21,10 @@ Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Eilon Greenstien <eilong@broadcom.com>,
         Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
         Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 27 May 2013 10:43:51 +0300
-Message-ID: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>
+Date: Mon, 27 May 2013 10:44:01 +0300
+Message-ID: <20130527074401.29882.98135.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>
+References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -31,68 +33,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave,
+Adds a napi_id and a hashing mechanism to lookup a napi by id.
+This will be used by subsequent patches to implement low latency
+Ethernet device polling.
+Based on a code sample by Eric Dumazet.
 
-There are many small changes from the last time.
-The two big changes are:
-* Skb and sk now store a napi_id instead of a pointer.
-* Very naive poll/select support. There is a dramatic improvement in both
-  latencey and jitter, but clearly more work needs to be done here.
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
-Please consider applying.
+ include/linux/netdevice.h |   29 +++++++++++++++++++++++++++++
+ net/core/dev.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 0 deletions(-)
 
-some rough poll/select results:
-Using the optimized kernel from v2
-testing with the sysctl value set to 50 and 0
-sockperf using poll   on 10 udp sockets 7.0us vs. 51.9us
-sockperf using select on 10 udp sockets 7.2us vs. 51.8us
-sockperf using poll   on 10 tcp sockets 7.1us vs. 53.2us
-sockperf using selct  on 10 tcp sockets 7.4us vs. 52.8us
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index ea7b6bc..d1ec8b1 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -324,12 +324,15 @@ struct napi_struct {
+ 	struct sk_buff		*gro_list;
+ 	struct sk_buff		*skb;
+ 	struct list_head	dev_list;
++	struct hlist_node	napi_hash_node;
++	int			napi_id;
+ };
+ 
+ enum {
+ 	NAPI_STATE_SCHED,	/* Poll is scheduled */
+ 	NAPI_STATE_DISABLE,	/* Disable pending */
+ 	NAPI_STATE_NPSVC,	/* Netpoll - don't dequeue from poll_list */
++	NAPI_STATE_HASHED,	/* In NAPI hash */
+ };
+ 
+ enum gro_result {
+@@ -446,6 +449,32 @@ extern void __napi_complete(struct napi_struct *n);
+ extern void napi_complete(struct napi_struct *n);
+ 
+ /**
++ *	napi_hash_add - add a NAPI to global hashtable
++ *	@napi: napi context
++ *
++ * generate a new napi_id and store a @napi under it in napi_hash
++ */
++extern void napi_hash_add(struct napi_struct *napi);
++
++/**
++ *	napi_hash_del - remove a NAPI from blobal table
++ *	@napi: napi context
++ *
++ * Warning: caller must observe rcu grace period
++ * before freeing memory containing @NAPI
++ */
++extern void napi_hash_del(struct napi_struct *napi);
++
++/**
++ *	napi_by_is - lookup a NAPI by napi_id
++ *	@napi_id: hashed napi_id
++ *
++ * lookup napi_id in napi_hash table
++ * must be called under rcu_read_lock()
++ */
++extern struct napi_struct *napi_by_id(int napi_id);
++
++/**
+  *	napi_disable - prevent NAPI from scheduling
+  *	@n: napi context
+  *
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 50c02de..283ab14 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -129,6 +129,7 @@
+ #include <linux/inetdevice.h>
+ #include <linux/cpu_rmap.h>
+ #include <linux/static_key.h>
++#include <linux/hashtable.h>
+ 
+ #include "net-sysfs.h"
+ 
+@@ -166,6 +167,10 @@ static struct list_head offload_base __read_mostly;
+ DEFINE_RWLOCK(dev_base_lock);
+ EXPORT_SYMBOL(dev_base_lock);
+ 
++atomic_t napi_gen_id;
++
++DEFINE_HASHTABLE(napi_hash, 8);
++
+ seqcount_t devnet_rename_seq;
+ 
+ static inline void dev_base_seq_inc(struct net *net)
+@@ -4113,6 +4118,45 @@ void napi_complete(struct napi_struct *n)
+ }
+ EXPORT_SYMBOL(napi_complete);
+ 
++void napi_hash_add(struct napi_struct *napi)
++{
++	if (!test_and_set_bit(NAPI_STATE_HASHED, &napi->state)) {
++
++		/* 0 is not a valid id */
++		napi->napi_id = 0;
++		while (!napi->napi_id)
++			napi->napi_id = atomic_inc_return(&napi_gen_id);
++
++		hlist_add_head_rcu(&napi->napi_hash_node,
++			&napi_hash[napi->napi_id % HASH_SIZE(napi_hash)]);
++	}
++}
++EXPORT_SYMBOL_GPL(napi_hash_add);
++
++/* Warning : caller is responsible to make sure rcu grace period
++ * is respected before freeing memory containing @napi
++ */
++void napi_hash_del(struct napi_struct *napi)
++{
++	if (test_and_clear_bit(NAPI_STATE_HASHED, &napi->state))
++		hlist_del_rcu(&napi->napi_hash_node);
++}
++EXPORT_SYMBOL_GPL(napi_hash_del);
++
++/* must be called under rcu_read_lock(), as we dont take a reference */
++struct napi_struct *napi_by_id(int napi_id)
++{
++	unsigned int hash = napi_id % HASH_SIZE(napi_hash);
++	struct napi_struct *napi;
++
++	hlist_for_each_entry_rcu(napi, &napi_hash[hash], napi_hash_node)
++		if (napi->napi_id == napi_id)
++			return napi;
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(napi_by_id);
++
+ void netif_napi_add(struct net_device *dev, struct napi_struct *napi,
+ 		    int (*poll)(struct napi_struct *, int), int weight)
+ {
 
-Note to anyone doing testing: the sysctl value has moved to net.core 
-
-change log
-v5
-- corrections suggested by Ben Hutchings:
-  fixed typos, moved the config option and sysctl value from IPv4 to net
-- moved sk_mark_ll() to the protocol handlers
-- removed global id mechanism, replaced with a hashed napi_id.
-  based on code sample from Eric Dumazet
-  Note that ixgbe_free_q_vector() already waits an rcu grace period
-  before freeing the q_vector, so nothing additional needs to be done
-  when adding a call to napi_hash_del().
-- simple poll/select support
-
-v4
-- removed separate config option for TCP as suggested Eric Dumazet.
-- added linux mib counter for packets received through the low latency path,
-  as suggested by Andi Kleen.
-- re-allow module unloading, remove module param, use a global generation id
-  instead to prevent the use of a stale napi pointer, as suggested
-  by Eric Dumazet
-- updated Documentation/networking/ip-sysctl.txt text
-
-v3
-- coding style changes suggested by Dave Miller
-
-v2
-- the sysctl knob is now in microseconds. The default value is now 0 (off).
-- for now the code depends at configure time on CONFIG_I86_TSC 
-- the napi reference in struct skb is now a union with the dma cookie
-  since the former is only used on RX and the latter on TX,
-  as suggested by Eric Dumazet.
-- we do a better job at honoring non-blocking operations.
-- removed busy-polling support for tcp_read_sock()
-- remove dynamic disabling of GRO
-- coding style fixes
-- disallow unloading the device module after the feature has been used
-
-Credit:
-Jesse Brandeburg, Arun Chekhov Ilango, Julie Cummings,
-Alexander Duyck, Eric Geisler, Jason Neighbors, Yadong Li,
-Mike Polehn, Anil Vasudevan, Don Wood
-Special thanks for finding bugs in earlier versions:
-Willem de Bruijn and Andi Kleen
-
-Thanks,
-Eliezer
