@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3E0PxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 11:53:14 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:55151 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752724Ab3E0PxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 11:53:13 -0400
-Date: Mon, 27 May 2013 18:53:08 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Borislav Petkov <bp@alien8.de>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 3.10-rc3: WARNING: at kernel/time/tick-broadcast.c:578
-In-Reply-To: <alpine.LFD.2.02.1305271456280.4220@ionos>
-Message-ID: <alpine.SOC.1.00.1305271849130.2372@math.ut.ee>
-References: <alpine.SOC.1.00.1305271406050.2372@math.ut.ee> <20130527123520.GA4806@pd.tnic> <alpine.LFD.2.02.1305271456280.4220@ionos>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1753497Ab3E0P5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 11:57:16 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56073 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3E0P5P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 11:57:15 -0400
+Message-ID: <51A38257.2020804@colorfullife.com>
+Date: Mon, 27 May 2013 17:57:11 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/4] ipc/sem.c: Bug fixes, regression fixes, v3
+References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com> <1369601453.2259.15.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1369601453.2259.15.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On Mon, May 27, 2013 at 02:09:33PM +0300, Meelis Roos wrote:
-> > > I enabled the new full dynctick on one of my test PCs - Intel 815 
-> > 
-> > Do you mean CONFIG_NO_HZ_FULL? If so, it is not enabled in the .config
-> > below.
+Hi Davidlohr,
 
-Yes. I meant that - but obviously I did not enable it on this machine. I 
-enabled it on every machine wehere this was offered for me by make 
-oldconfig.
+On 05/26/2013 10:50 PM, Davidlohr Bueso wrote:
+>
+> In lack of getting my swingbench DSS environment back, I ran these
+> changes against the semop-multi program on my laptop. For 256 threads,
+> with Manfred's patchset the ops/sec suffers around -7.3%.
 
-> > Also, there are a bunch of timers fixes from Thomas in tip - you could
-> > try to merge tip/master ontop of -rc3 and retest.
-> 
-> All related fixes are already in Linus tree.
+Could you also check the performance of only patch#1?
+I fear that it might be slower than all 4 together.
 
-OK, will not check tip/master.
+With regards to semop-multi:
+Is this the tool?
+http://marc.info/?l=linux-kernel&m=136208613626892&q=p3
 
-> That brilliant cpuidle stuff calls
-> clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER) twice. So what happens is:
-> 
-> CPU0			CPU1
-> 			cpuidle_idle_call()
-> 			  clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER)
-> 			    set cpu in tick_broadcast_oneshot_mask
->  broadcast interrupt
->   event expired for cpu1
->   set pending bit
-> 			  acpi_idle_enter_simple()
-> 			   clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER)
-> 			   WARN_ON(pending bit)
-> 
-> So we need to move the WARN_ON into the section where we actually set
-> the broadcast stuff up.
+I think the logic is the wrong:
+Locking a semaphore is substraction, unlocking adding.
+Thus multiple tasks can run in parallel - and the task switch code is 
+never triggered.
+Could you double check that the number of context switches matches the 
+output?
 
-Are you sure? This is a UP machine.
+I usually use this tool:
+http://marc.info/?l=linux-kernel&m=125038376609750
 
-Tested the patch - no effect, warning is still there :(
 
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index 24938d5..ec21dc0 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -575,8 +575,8 @@ void tick_broadcast_oneshot_control(unsigned long reason)
->  
->  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
->  	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
-> -		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
->  		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
-> +			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
->  			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
->  			/*
->  			 * We only reprogram the broadcast timer if we
-> 
-
--- 
-Meelis Roos (mroos@ut.ee)      http://www.cs.ut.ee/~mroos/
+--
+     Manfred
