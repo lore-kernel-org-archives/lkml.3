@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3E0JoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 05:44:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35305 "EHLO
+	id S1755871Ab3E0JpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 05:45:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35330 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab3E0JoG (ORCPT
+	with ESMTP id S1755543Ab3E0JpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 05:44:06 -0400
-Date: Mon, 27 May 2013 02:43:49 -0700
+	Mon, 27 May 2013 05:45:16 -0400
+Date: Mon, 27 May 2013 02:45:06 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-ba919d1caa2e624eb8c6cae1f2ce0a253e697d45@git.kernel.org>
+Message-ID: <tip-09ac369c825d9d593404306d59062d854b321e9b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de, magnus.damm@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
         linux-kernel@vger.kernel.org, tglx@linutronix.de,
         magnus.damm@gmail.com
-In-Reply-To: <20130425143435.696321912@linutronix.de>
-References: <20130425143435.696321912@linutronix.de>
+In-Reply-To: <20130425143435.762417789@linutronix.de>
+References: <20130425143435.762417789@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] clocksource:
-  Let timekeeping_notify return success/error
-Git-Commit-ID: ba919d1caa2e624eb8c6cae1f2ce0a253e697d45
+Subject: [tip:timers/core] clocksource: Add module refcount
+Git-Commit-ID: 09ac369c825d9d593404306d59062d854b321e9b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,83 +32,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ba919d1caa2e624eb8c6cae1f2ce0a253e697d45
-Gitweb:     http://git.kernel.org/tip/ba919d1caa2e624eb8c6cae1f2ce0a253e697d45
+Commit-ID:  09ac369c825d9d593404306d59062d854b321e9b
+Gitweb:     http://git.kernel.org/tip/09ac369c825d9d593404306d59062d854b321e9b
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Thu, 25 Apr 2013 20:31:44 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 16 May 2013 11:09:14 +0200
 
-clocksource: Let timekeeping_notify return success/error
+clocksource: Add module refcount
 
-timekeeping_notify() can fail due cs->enable() failure. Though the
-caller does not notice and happily keeps the wrong clocksource as the
-current one.
-
-Let the caller know about failure, so the current clocksource will be
-shown correctly in sysfs.
+Add a module refcount, so the current clocksource cannot be removed
+unconditionally.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: John Stultz <john.stultz@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>
 Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20130425143435.696321912@linutronix.de
+Link: http://lkml.kernel.org/r/20130425143435.762417789@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/clocksource.h | 2 +-
- kernel/time/clocksource.c   | 6 +++---
- kernel/time/timekeeping.c   | 5 +++--
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ include/linux/clocksource.h |  3 +++
+ kernel/time/timekeeping.c   | 19 ++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 7279b94..aa6ba44 100644
+index aa6ba44..32a895b 100644
 --- a/include/linux/clocksource.h
 +++ b/include/linux/clocksource.h
-@@ -321,7 +321,7 @@ static inline void __clocksource_updatefreq_khz(struct clocksource *cs, u32 khz)
- }
+@@ -21,6 +21,7 @@
+ /* clocksource cycle base type */
+ typedef u64 cycle_t;
+ struct clocksource;
++struct module;
  
+ #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
+ #include <asm/clocksource.h>
+@@ -162,6 +163,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
+  * @suspend:		suspend function for the clocksource, if necessary
+  * @resume:		resume function for the clocksource, if necessary
+  * @cycle_last:		most recent cycle counter value seen by ::read()
++ * @owner:		module reference, must be set by clocksource in modules
+  */
+ struct clocksource {
+ 	/*
+@@ -195,6 +197,7 @@ struct clocksource {
+ 	cycle_t cs_last;
+ 	cycle_t wd_last;
+ #endif
++	struct module *owner;
+ } ____cacheline_aligned;
  
--extern void timekeeping_notify(struct clocksource *clock);
-+extern int timekeeping_notify(struct clocksource *clock);
- 
- extern cycle_t clocksource_mmio_readl_up(struct clocksource *);
- extern cycle_t clocksource_mmio_readl_down(struct clocksource *);
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index dda5c71..1923a34 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -611,10 +611,10 @@ static void clocksource_select(void)
- 			best = cs;
- 		break;
- 	}
--	if (curr_clocksource != best) {
--		printk(KERN_INFO "Switching to clocksource %s\n", best->name);
-+
-+	if (curr_clocksource != best && !timekeeping_notify(best)) {
-+		pr_info("Switched to clocksource %s\n", best->name);
- 		curr_clocksource = best;
--		timekeeping_notify(curr_clocksource);
- 	}
- }
- 
+ /*
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 98cd470..da6e10c 100644
+index da6e10c..933efa4 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -648,14 +648,15 @@ static int change_clocksource(void *data)
-  * This function is called from clocksource.c after a new, better clock
-  * source has been registered. The caller holds the clocksource_mutex.
-  */
--void timekeeping_notify(struct clocksource *clock)
-+int timekeeping_notify(struct clocksource *clock)
- {
- 	struct timekeeper *tk = &timekeeper;
+@@ -627,11 +627,20 @@ static int change_clocksource(void *data)
+ 	write_seqcount_begin(&timekeeper_seq);
  
- 	if (tk->clock == clock)
--		return;
-+		return 0;
- 	stop_machine(change_clocksource, clock, NULL);
- 	tick_clock_notify();
-+	return tk->clock == clock ? 0 : -1;
- }
+ 	timekeeping_forward_now(tk);
+-	if (!new->enable || new->enable(new) == 0) {
+-		old = tk->clock;
+-		tk_setup_internals(tk, new);
+-		if (old->disable)
+-			old->disable(old);
++	/*
++	 * If the cs is in module, get a module reference. Succeeds
++	 * for built-in code (owner == NULL) as well.
++	 */
++	if (try_module_get(new->owner)) {
++		if (!new->enable || new->enable(new) == 0) {
++			old = tk->clock;
++			tk_setup_internals(tk, new);
++			if (old->disable)
++				old->disable(old);
++			module_put(old->owner);
++		} else {
++			module_put(new->owner);
++		}
+ 	}
+ 	timekeeping_update(tk, true, true);
  
- /**
