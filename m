@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab3E0UTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 16:19:03 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40938 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab3E0UTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 16:19:01 -0400
-Date: Mon, 27 May 2013 13:18:57 -0700 (PDT)
-Message-Id: <20130527.131857.945196320286011406.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: sebastian.hesselbarth@gmail.com, buytenh@wantstofly.org,
-        jason@lakedaemon.net, andrew@lunn.ch, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org
-Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address
- workaround on DT ethernet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369655404.3557.33.camel@pasglop>
-References: <1369647565.3557.28.camel@pasglop>
-	<51A33447.80305@gmail.com>
-	<1369655404.3557.33.camel@pasglop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1757502Ab3E0Ubm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 16:31:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757261Ab3E0Ubl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 16:31:41 -0400
+Date: Mon, 27 May 2013 22:27:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] proc: first_tid() fix/cleanup
+Message-ID: <20130527202751.GA19250@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Mon, 27 May 2013 21:50:04 +1000
+Hello.
 
-> It would be handy to be able to just do something like
-> 
-> 	of_set_property(node, name, ptr, len);
-> 
-> However, that wouldn't help much with the allocation/leak problem,
-> though at least it would be easier to use. It could also *try* to re-use
-> the current allocation if the new content is of smaller or equal size.
+next_thread() should be avoided, probably next_tid() is the
+only "valid" user.
 
-And this is so much better of an interface because it allows the
-OF implementation to decide how to deal with memory allocation
-and freeing.
+But now we have another reason to avoid (and probably even kill)
+it, we are going to replace or fix while_each_thread(), almost
+every lockless usage is wrong.
+
+I was going to send more changes, but this initial series nearly
+killed me. And I think first_tid() needs another cleanup, ->f_pos
+truncation doesn't look nice, tomorrow.
+
+Oleg.
+
