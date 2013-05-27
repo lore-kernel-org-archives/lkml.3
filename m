@@ -1,51 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab3EZB2M (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 25 May 2013 21:28:12 -0400
-Received: from reverso145.hoteldaweb.com.br ([184.173.27.64]:49350 "EHLO
-	binformatica84.hoteldaweb.com.br" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758560Ab3EZB2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 May 2013 21:28:10 -0400
-X-Greylist: delayed 4285 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 May 2013 21:28:10 EDT
+	id S1757029Ab3E0IFH (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 27 May 2013 04:05:07 -0400
+Received: from GAXGPMX41VS01.southernco.com ([146.126.61.60]:39801 "EHLO
+	gaxgpmx41vs.southernco.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756889Ab3E0IFD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 04:05:03 -0400
+X-Greylist: delayed 1063 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 04:05:03 EDT
+From: "Spiers, Mary A." <MASPIERS@southernco.com>
+Date: Mon, 27 May 2013 02:45:25 -0500
+Subject: We offer Loan worldwide at 0.2%. Contact us for more
+ info.{Sonalilendrs@msn.com}
+Thread-Topic: We offer Loan worldwide at 0.2%. Contact us for more
+ info.{Sonalilendrs@msn.com}
+Thread-Index: AQHOWq4m7zzgT91MBEOqTpQh9Ed63w==
+Message-ID: <5AC608B9ECC8D44ABC5CA36B692B9C1D7E6929773A@FMXAPEX82PR.southernco.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 25 May 2013 21:15:23 -0300
-From: "Dr. Ken Oboute" <backpagefinance@wss-id.org>
-To: undisclosed-recipients:;
-Subject: Loan Offer
-Reply-To: <backpagefinance@wss-id.org>
-Mail-Reply-To: <backpagefinance@wss-id.org>
-Message-ID: <f5d3b115ce55a009cc25b3e42b0d1385@l23multisuprimentos.com.br>
-User-Agent: Roundcube Webmail/0.8.5
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - binformatica84.hoteldaweb.com.br
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - wss-id.org
-X-Get-Message-Sender-Via: binformatica84.hoteldaweb.com.br: authenticated_id: claudioandrade@l23multisuprimentos.com.br
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-05-27_02:2013-05-27,2013-05-27,1970-01-01 signatures=0
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do you need loan to meet your demands? We offer all kinds of loans to 0.2% per year. Apply now with your NAME: ADDRESS: PHONE Amount NEEDED: DURATION: OCCUPATION:
+NOTE: PLEASE SEND YOUR APPLICATION TO EMAIL: Sonalilendrs@msn.com<mailto:Sonalilendrs@msn.com>
 
 
--- 
-Hello
-
-We can help you with the loan. We are registered and approved loan 
-lending
-company, we offer all kinds of loan at low interest rate of 4%, your
-satisfaction is our pride and we are committed to serve you better. Do 
-not
-hesitate if you are interested in taking loan, contact us now via 
-email:
-backpagefinance@wss-id.org
-
-Thanks
-
-Dr. Ken Oboute
