@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab3E0Nuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 09:50:39 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:65156 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562Ab3E0Nuf (ORCPT
+	id S932683Ab3E0Nus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 09:50:48 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:47244 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932562Ab3E0Num (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 09:50:35 -0400
+	Mon, 27 May 2013 09:50:42 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tj@kernel.org, msnitzer@redhat.com, ksievers@redhat.com,
-        jbottomley@parallels.com, axboe@kernel.dk, linux-scsi@vger.kernel.org
-Subject: [RFC PATCH 1/4] block: add back queue-private command filter
-Date: Mon, 27 May 2013 15:50:19 +0200
-Message-Id: <1369662622-5959-2-git-send-email-pbonzini@redhat.com>
+        jbottomley@parallels.com, axboe@kernel.dk
+Subject: [RFC PATCH 4/4] scsi: lock out SG_IO by default to unprivileged users
+Date: Mon, 27 May 2013 15:50:22 +0200
+Message-Id: <1369662622-5959-5-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369662622-5959-1-git-send-email-pbonzini@redhat.com>
 References: <1369662622-5959-1-git-send-email-pbonzini@redhat.com>
@@ -21,161 +21,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The command filter used to be mutable via sysfs, but this was broken
-and backed out.  Let's add it back.  This patch adds the infrastructure
-for filtering, but unlike the old code this one just adds a pointer to
-request_queue, so as to make it cheaper in the majority of cases where
-no special filtering is desired.
+Move policy on SG_IO access to userspace.  Some level of checking
+at the kernel level (compared to just having an opt-out for the
+default whitelist) is needed because any userspace whitelist is too
+easily circumvented by doing ptrace on the program that has a file
+descriptor open.  This would be a regression for those who are using Unix
+permissions, security modules or the device cgroup to confine programs.
 
-This is a partial (and massaged) revert of commit 018e044 (block: get
-rid of queue-private command filter, 2009-06-26).
+A meaningful whitelist can then be set by udev, for example.
 
-Cc: linux-scsi@vger.kernel.org
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- block/blk-sysfs.c      |  2 ++
- block/bsg.c            |  2 +-
- block/scsi_ioctl.c     | 17 +++++------------
- drivers/scsi/sg.c      |  4 +++-
- include/linux/blkdev.h | 10 +++++++++-
- 5 files changed, 20 insertions(+), 15 deletions(-)
+	This is not yet usable, because sg devices do not have a link
+	to the queue object.
 
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 5efc5a6..2539f8d 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -530,6 +530,8 @@ static void blk_release_queue(struct kobject *kobj)
+ block/Kconfig      | 12 ++++++++++++
+ block/scsi_ioctl.c | 10 ++++++----
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/block/Kconfig b/block/Kconfig
+index e89d6a2..67d1f68 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -75,6 +75,18 @@ config BLK_DEV_SG_FILTER_SYSFS
  
- 	blkcg_exit_queue(q);
+ 	  If unsure, say Y.
  
-+	kfree(q->cmd_filter);
++config BLK_DEV_SG_FILTER_MMC
++	bool "Backwards-compatible default SG_IO filter"
++	default y
++	help
++	  Saying Y here will let you send several commands (mostly based
++	  on the MMC command set) by default to SCSI devices via /dev/sg,
++	  /dev/bsg or ioctls such as SG_IO) even for unprivileged users.
++	  Saying N will restrict the set of commands that unprivileged
++	  users can send to the bare minimum.
 +
- 	if (q->elevator) {
- 		spin_lock_irq(q->queue_lock);
- 		ioc_clear_queue(q);
-diff --git a/block/bsg.c b/block/bsg.c
-index 420a5a9..fe16cae 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -187,7 +187,7 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
- 		return -EFAULT;
- 
- 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
--		if (blk_verify_command(rq->cmd, has_write_perm))
-+		if (blk_verify_command(q->cmd_filter, rq->cmd, has_write_perm))
- 			return -EPERM;
- 	} else if (!capable(CAP_SYS_RAWIO))
- 		return -EPERM;
++	  If unsure, say Y.
++
+ config BLK_DEV_BSGLIB
+ 	bool "Block layer SG support v4 helper lib"
+ 	default n
 diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a5ffcc9..22b925f 100644
+index 5db39b5..079dfa2 100644
 --- a/block/scsi_ioctl.c
 +++ b/block/scsi_ioctl.c
-@@ -34,11 +34,6 @@
- #include <scsi/scsi_ioctl.h>
- #include <scsi/scsi_cmnd.h>
- 
--struct blk_cmd_filter {
--	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
--	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
--};
+@@ -113,9 +113,12 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
+ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ {
+ 	memset(filter, 0, sizeof(*filter));
 -
- static struct blk_cmd_filter blk_default_cmd_filter;
- 
- /* Command group 3 is reserved and should never be used.  */
-@@ -197,17 +192,15 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+-	/* Basic read-only commands */
++	__set_bit(INQUIRY, filter->read_ok);
+ 	__set_bit(TEST_UNIT_READY, filter->read_ok);
++	__set_bit(REPORT_LUNS, filter->read_ok);
++
++#ifdef BLK_DEV_SG_FILTER_MMC
++	/* Basic read-only commands */
+ 	__set_bit(REQUEST_SENSE, filter->read_ok);
+ 	__set_bit(READ_6, filter->read_ok);
+ 	__set_bit(READ_10, filter->read_ok);
+@@ -125,14 +128,12 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	__set_bit(READ_DEFECT_DATA, filter->read_ok);
+ 	__set_bit(READ_CAPACITY, filter->read_ok);
+ 	__set_bit(READ_LONG, filter->read_ok);
+-	__set_bit(INQUIRY, filter->read_ok);
+ 	__set_bit(MODE_SENSE, filter->read_ok);
+ 	__set_bit(MODE_SENSE_10, filter->read_ok);
+ 	__set_bit(LOG_SENSE, filter->read_ok);
+ 	__set_bit(START_STOP, filter->read_ok);
+ 	__set_bit(GPCMD_VERIFY_10, filter->read_ok);
+ 	__set_bit(VERIFY_16, filter->read_ok);
+-	__set_bit(REPORT_LUNS, filter->read_ok);
+ 	__set_bit(SERVICE_ACTION_IN, filter->read_ok);
+ 	__set_bit(RECEIVE_DIAGNOSTIC, filter->read_ok);
+ 	__set_bit(MAINTENANCE_IN, filter->read_ok);
+@@ -193,6 +194,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	__set_bit(GPCMD_LOAD_UNLOAD, filter->write_ok);
+ 	__set_bit(GPCMD_SET_STREAMING, filter->write_ok);
  	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
++#endif
  }
  
--int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
-+int blk_verify_command(struct blk_cmd_filter *filter,
-+		       unsigned char *cmd, fmode_t has_write_perm)
- {
--	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
--
- 	/* root can do any command. */
- 	if (capable(CAP_SYS_RAWIO))
- 		return 0;
- 
--	/* if there's no filter set, assume we're filtering everything out */
- 	if (!filter)
--		return -EPERM;
-+		filter = &blk_default_cmd_filter;
- 
- 	/* Anybody who can open the device can do a read-safe command */
- 	if (test_bit(cmd[0], filter->read_ok))
-@@ -226,7 +219,7 @@ static int blk_fill_sghdr_rq(struct request_queue *q, struct request *rq,
- {
- 	if (copy_from_user(rq->cmd, hdr->cmdp, hdr->cmd_len))
- 		return -EFAULT;
--	if (blk_verify_command(rq->cmd, mode & FMODE_WRITE))
-+	if (blk_verify_command(q->cmd_filter, rq->cmd, mode & FMODE_WRITE))
- 		return -EPERM;
- 
- 	/*
-@@ -473,7 +466,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	if (in_len && copy_from_user(buffer, sic->data + cmdlen, in_len))
- 		goto error;
- 
--	err = blk_verify_command(rq->cmd, mode & FMODE_WRITE);
-+	err = blk_verify_command(q->cmd_filter, rq->cmd, mode & FMODE_WRITE);
- 	if (err)
- 		goto error;
- 
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index df5e961..5f64202 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -218,11 +218,13 @@ static void sg_put_dev(Sg_device *sdp);
- static int sg_allow_access(struct file *filp, unsigned char *cmd)
- {
- 	struct sg_fd *sfp = filp->private_data;
-+	struct request_queue *q = sfp->parentdp->device->request_queue;
- 
- 	if (sfp->parentdp->device->type == TYPE_SCANNER)
- 		return 0;
- 
--	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
-+	return blk_verify_command(q->cmd_filter,
-+				  cmd, filp->f_mode & FMODE_WRITE);
- }
- 
- static int get_exclude(Sg_device *sdp)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2fdb4a4..9a8434d 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -259,6 +259,11 @@ struct blk_queue_tag {
- #define BLK_SCSI_MAX_CMDS	(256)
- #define BLK_SCSI_CMD_PER_LONG	(BLK_SCSI_MAX_CMDS / (sizeof(long) * 8))
- 
-+struct blk_cmd_filter {
-+	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
-+	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
-+};
-+
- struct queue_limits {
- 	unsigned long		bounce_pfn;
- 	unsigned long		seg_boundary_mask;
-@@ -437,6 +442,8 @@ struct request_queue {
- 	struct bsg_class_device bsg_dev;
- #endif
- 
-+	struct blk_cmd_filter	*cmd_filter;
-+
- #ifdef CONFIG_BLK_CGROUP
- 	struct list_head	all_q_node;
- #endif
-@@ -1089,7 +1096,8 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
- 				    gfp_mask);
- }
- 
--extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
-+extern int blk_verify_command(struct blk_cmd_filter *filter,
-+			      unsigned char *cmd, fmode_t has_write_perm);
- 
- enum blk_default_limits {
- 	BLK_MAX_SEGMENTS	= 128,
+ int blk_verify_command(struct blk_cmd_filter *filter,
 -- 
 1.8.1.4
-
 
