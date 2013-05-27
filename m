@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab3E0O4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 10:56:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21325 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab3E0O4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 10:56:23 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-66-51a37415fd18
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] spi: s3c64xx: Fix pm_runtime_get_sync() return value check
-Date: Mon, 27 May 2013 16:56:00 +0200
-Message-id: <1369666560-12436-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t9jQV3RksWBBpNvKlj8m32KzeLAnx2M
-	Fmeb3rBbXN41h81ixvl9TBaH37SzOrB53Lm2h83j5cTfbB59W1YxenzeJBfAEsVlk5Kak1mW
-	WqRvl8CV8WlhesEtjopZzzcxNTD2sHcxcnJICJhIrJz9F8oWk7hwbz1bFyMXh5DAdEaJ3+++
-	MUM4HUwS8+d0sYBUsQkYSvQe7WPsYuTgEBFQl9h6XAekhllgF6PEt32f2UBqhAW8JVr/fQar
-	ZxFQlXi28yEjiM0r4Cax6doVdpBeCQEFiTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqX
-	rpecn7uJERwOz6R3MK5qsDjEKMDBqMTDOyF7caAQa2JZcWXuIUYJDmYlEV4pM6AQb0piZVVq
-	UX58UWlOavEhRmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGRpnGtOXrCyy/9oezPV/+
-	oM/eteHLh+0+fhYCXetfKh2/MbErIHAW87uz3D893mjGLdNtU4hdOddW6P/b+RGbq892zXdM
-	S8oWcdLUv5K66X8A1zHmt5ffbjH6FaK4139VqsHmKwGbWxbYXz2/fHHUdm059n4zfbGHdncr
-	Hs2RujM789dk75onB5RYijMSDbWYi4oTAa/7llYDAgAA
+	id S932837Ab3E0PCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 11:02:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57429 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756230Ab3E0PCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 11:02:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,751,1363158000"; 
+   d="scan'208";a="247259925"
+Date: Mon, 27 May 2013 19:55:23 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>, Dan Williams <djbw@fb.com>,
+        Rabin Vincent <rabin@rab.in>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dmaengine: ste_dma40: fix pm runtime ref counting
+Message-ID: <20130527142523.GD30200@intel.com>
+References: <1369663420-3881-1-git-send-email-rabin.vincent@stericsson.com>
+ <CACRpkdbHYeU3wgNkVtGEeuLUUKjFHZkdz01vpObgN4KVO8BvVw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbHYeU3wgNkVtGEeuLUUKjFHZkdz01vpObgN4KVO8BvVw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the device is already in a runtime PM enabled state
-pm_runtime_get_sync() will return 1, so a test for negative
-value should be used to check for errors.
+On Mon, May 27, 2013 at 04:05:57PM +0200, Linus Walleij wrote:
+> On Mon, May 27, 2013 at 4:03 PM, Rabin Vincent
+> <rabin.vincent@stericsson.com> wrote:
+> 
+> > The pm runtime reference counting of the driver is broken for the case
+> > when there is more than one transfer queued, leading to the device being
+> > runtime suspend while active.  Fix it.
+> >
+> > Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+> 
+> Looks good to me.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Vinod, are you taking this for fixes?
+Sure, applied to fixes. CCed stable as well
 
-Without this patch there are seen errors like:
-
-[    8.540000] s3c64xx-spi 13930000.spi: Failed to enable device: 1
-[    8.545000] spi_master spi1: failed to prepare transfer hardware
-
-Likely because the driver uses synchronous API to runtime enable
-the device and asychronous one to disable it.
-
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/spi/spi-s3c64xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 5000586..71cc3e6 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -444,7 +444,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
- 	}
- 
- 	ret = pm_runtime_get_sync(&sdd->pdev->dev);
--	if (ret != 0) {
-+	if (ret < 0) {
- 		dev_err(dev, "Failed to enable device: %d\n", ret);
- 		goto out_tx;
- 	}
--- 
-1.7.9.5
-
+--
+~Vinod
