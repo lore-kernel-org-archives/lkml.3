@@ -1,110 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3E0PUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 11:20:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab3E0PUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 11:20:42 -0400
-Date: Mon, 27 May 2013 17:16:30 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] coredump: kill call_count, add core_name_size
-Message-ID: <20130527151630.GA30933@redhat.com>
-References: <20130515201158.GA14606@redhat.com> <20130515201232.GA14648@redhat.com> <20130524125323.861541a12992c3da0145f0d9@linux-foundation.org>
+	id S1752608Ab3E0P2D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 11:28:03 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:57022 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3E0P2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 11:28:01 -0400
+From: Runzhen Wang <icycoder@gmail.com>
+To: linux-kernel@vger.kernel.org, jolsa@redhat.com
+Cc: acme@redhat.com, mingo@kernel.org, dsahern@gmail.com,
+        Runzhen Wang <icycoder@gmail.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: [PATCH] perf tools: fix an error introduced by commit 93cbb398
+Date: Mon, 27 May 2013 23:27:35 +0800
+Message-Id: <1369668455-6246-1-git-send-email-icycoder@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524125323.861541a12992c3da0145f0d9@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24, Andrew Morton wrote:
->
-> On Wed, 15 May 2013 22:12:32 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > Imho, "atomic_t call_count" is ugly and should die. It buys
-> > nothing and in fact it can grow more than necessary, expand
-> > doesn't check if it was already incremented by another task.
-> >
-> > Kill it, and introduce "static int core_name_size" updated by
-> > expand_corename(). This is obviously racy too but harmless,
-> > and core_name_size never grows for no reason.
-> >
-> > We do not bother to to calculate the "right" new size, we
-> > simply do kmalloc(size_we_need) and use ksize() to rely on
-> > kmalloc_index's decision.
-> >
-> > Finally change format_corename() to use expand_corename(),
-> > krealloc(NULL) is fine.
->
-> The code still looks like a bunch of fluff.  I look at it and think
-> "wtf, why doesn't it just use kasprintf()".
+commit 0a720538e5dd3f424bfcc15c1e4af09df0becf92
+and
+commit 93cbb3985d5de867fb32e6e130fcfb1b5de4142b
+move some contents of Makefile from perf/Makefile to
+perf/config/Makefile.
 
-But how?
+However, that introduce the following error messages when compile perf:
 
-kasprintf() can't replace cn_printf(), and it can't make it simpler.
+util/unwind.c: In function ‘access_mem’:
+util/unwind.c:400:50: error: ‘PERF_REG_SP’ undeclared (first use in this
+function)
+util/unwind.c:400:50: note: each undeclared identifier is reported only
+once for each function it appears in
+util/unwind.c: In function ‘unwind__get_entries’:
+util/unwind.c:562:41: error: ‘PERF_REG_IP’ undeclared (first use in this
+function)
 
-If it was possible to create va_list dinamically then format_corename()
-could construct "char *fmt" and call kvasprintf() once.
+That because the assignment statement of 'BASIC_CFLAGS' is behind
+'BASIC_CFLAGS += -DHAVE_PERF_REGS', which will rewrite the value of
+'BASIC_CFLAGS'.
 
-Or we can change this code to avoid *printk* altogether, we only need
-a very limited subset of "enum format_type". Not sure this makes sense.
+Without the definition of 'HAVE_PERF_REGS', perf/util/perf_regs.h can't
+include perf/arch/x86/include/perf_regs.h, that will cause the error.
 
-> If there were any comments in there at all which explained the reason
-> for the code's existence, perhaps I wouldn't think that.  But there
-> aren't, so I do.
+The solution is to move the assignment statement of BASIC_CFLAGS ahead of
+BASIC_CFLAGS += -DHAVE_PERF_REGS.
 
-If you meant "why do we need expand_corename" I can't answer because
-I do not know ;) I mean, if CORENAME_MAX_SIZE == 128 is not enough we
-can probably just increase it and simplify the code.
-
-Please see 1b0d300b "core_pattern: fix truncation by core_pattern handler
-with long parameters" which introduced this.
-
-And yes, we can keep "expand" but simply kill "atomic_t call_count"
-(replaced by core_name_size in this patch), I do not think it buys
-too much. But at least with this patch this logic becomes really
-trivial.
-
-
-Andrew, it seems that you missed the last patch in this series,
-attached below. I sent it a bit later as 7/6 because I didn't notice
-this problem when I started these changes.
-
-Oleg.
-
--------------------------------------------------------------------------------
-[PATCH 7/6] coredump: avoid the uninitialized cn->corename if core_pattern is empty
-
-If core_pattern is "" or "|", cn->corename is used uninitialized
-by filp_open() or call_usermodehelper_exec().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- fs/coredump.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/config/Makefile |   33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 5968064..72f816d 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -165,6 +165,7 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
- 	cn->corename = NULL;
- 	if (expand_corename(cn, core_name_size))
- 		return -ENOMEM;
-+	cn->corename[0] = '\0';
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 1f12a55..a8ec66f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -5,6 +5,23 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+ 				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++
++BASIC_CFLAGS = \
++	-Iutil/include \
++	-Iarch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
++	-I$(srctree)/arch/$(ARCH)/include/uapi \
++	-I$(srctree)/arch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
++	-I$(srctree)/include/uapi \
++	-I$(srctree)/include \
++	-I$(OUTPUT)util \
++	-Iutil \
++	-I. \
++	-I$(TRACE_EVENT_DIR) \
++	-I../lib/ \
++	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++
+ NO_PERF_REGS := 1
  
- 	if (ispipe)
- 		++pat_ptr;
+ # Additional ARCH settings for x86
+@@ -84,22 +101,6 @@ ifndef PERF_DEBUG
+ 	endif
+ endif
+ 
+-BASIC_CFLAGS = \
+-	-Iutil/include \
+-	-Iarch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+-	-I$(srctree)/arch/$(ARCH)/include/uapi \
+-	-I$(srctree)/arch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
+-	-I$(srctree)/include/uapi \
+-	-I$(srctree)/include \
+-	-I$(OUTPUT)util \
+-	-Iutil \
+-	-I. \
+-	-I$(TRACE_EVENT_DIR) \
+-	-I../lib/ \
+-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-
+ BASIC_LDFLAGS =
+ 
+ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
 -- 
-1.5.5.1
-
+1.7.9.5
 
