@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3E0CcL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:32:11 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40747 "EHLO
+	id S1756218Ab3E0CcV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:32:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40829 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab3E0CcI (ORCPT
+	with ESMTP id S1755849Ab3E0CcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:32:08 -0400
+	Sun, 26 May 2013 22:32:16 -0400
 From: Libo Chen <libo.chen@huawei.com>
-To: <mchehab@redhat.com>
-CC: <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+To: <akpm@linux-foundation.org>
+CC: <linux-pcmcia@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <lizefan@huawei.com>, <libo.chen@huawei.com>,
         <gregkh@linuxfoundation.org>
-Subject: [PATCH 20/24] drivers/media/pci/pluto2/pluto2: Convert to module_pci_driver
-Date: Mon, 27 May 2013 10:31:53 +0800
-Message-ID: <1369621913-30532-1-git-send-email-libo.chen@huawei.com>
+Subject: [PATCH 23/24] drivers/pcmcia/pd6729: Convert to module_pci_driver
+Date: Mon, 27 May 2013 10:32:03 +0800
+Message-ID: <1369621923-16368-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,33 +28,30 @@ use module_pci_driver instead of init/exit, make code clean.
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/media/pci/pluto2/pluto2.c |   13 +------------
+ drivers/pcmcia/pd6729.c |   13 +------------
  1 files changed, 1 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/media/pci/pluto2/pluto2.c b/drivers/media/pci/pluto2/pluto2.c
-index 2290fae..4938285 100644
---- a/drivers/media/pci/pluto2/pluto2.c
-+++ b/drivers/media/pci/pluto2/pluto2.c
-@@ -796,18 +796,7 @@ static struct pci_driver pluto2_driver = {
- 	.remove = pluto2_remove,
+diff --git a/drivers/pcmcia/pd6729.c b/drivers/pcmcia/pd6729.c
+index b29d97e..9a7fc88 100644
+--- a/drivers/pcmcia/pd6729.c
++++ b/drivers/pcmcia/pd6729.c
+@@ -775,15 +775,4 @@ static struct pci_driver pd6729_pci_driver = {
+ 	.remove		= pd6729_pci_remove,
  };
  
--static int __init pluto2_init(void)
+-static int pd6729_module_init(void)
 -{
--	return pci_register_driver(&pluto2_driver);
+-	return pci_register_driver(&pd6729_pci_driver);
 -}
 -
--static void __exit pluto2_exit(void)
+-static void pd6729_module_exit(void)
 -{
--	pci_unregister_driver(&pluto2_driver);
+-	pci_unregister_driver(&pd6729_pci_driver);
 -}
 -
--module_init(pluto2_init);
--module_exit(pluto2_exit);
-+module_pci_driver(pluto2_driver);
- 
- MODULE_AUTHOR("Andreas Oberritter <obi@linuxtv.org>");
- MODULE_DESCRIPTION("Pluto2 driver");
+-module_init(pd6729_module_init);
+-module_exit(pd6729_module_exit);
++module_pci_driver(pd6729_pci_driver);
 -- 
 1.7.1
 
