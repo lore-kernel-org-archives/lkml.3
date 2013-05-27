@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab3E0TqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 15:46:17 -0400
-Received: from mout.gmx.net ([212.227.17.20]:54082 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab3E0TqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 15:46:16 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/XCbJ2HazXdSLkrD1E3dLLyQxODmZJdCl3/jkd8T
-	J6Ws6dvflspSWP
-From: Peter Huewe <peterhuewe@gmx.de>
-To: peterhuewe@gmx.de, James Morris <jmorris@namei.org>
-Cc: Tony Camuso <tcamuso@redhat.com>, linux-kernel@vger.kernel.org,
-        LeonidasDaSilvaBarbosa <leosilva@linux.vnet.ibm.com>,
-        AshleyLai <ashley@ashleylai.com>, <sfr@canb.auug.org.au>
-Subject: [PATCH] tpm: fix regression caused by section type conflict of tpm_dev_release() in ppc builds
-Date: Mon, 27 May 2013 21:51:47 +0200
-Message-Id: <1369684307-11014-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <51A39A0C.8040405@redhat.com>
-References: <51A39A0C.8040405@redhat.com>
-X-Y-GMX-Trusted: 0
+	id S1757243Ab3E0Txs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 15:53:48 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:52122 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756887Ab3E0Txr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 15:53:47 -0400
+Message-ID: <51A3B9C7.7040300@colorfullife.com>
+Date: Mon, 27 May 2013 21:53:43 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/4] ipc/sem.c: Fix missing wakeups in do_smart_update_queue()
+References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com> <1369559335-13491-2-git-send-email-manfred@colorfullife.com> <51A39D19.4070400@redhat.com>
+In-Reply-To: <51A39D19.4070400@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 8119807 commit reintroduced a regression
-(error: __ksymtab_tpm_dev_release causes a section type conflict) that was fixed by commit
-cbb2ed4.
-Fix it for good by adding the prototype to tpm.h so sparse doesn't
-complain about it anymore.
+Hi Rik,
 
-Reported-by: Tony Camuso <tcamuso@redhat.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-James, can you please take this one directly and push it to next please?
-As it causes a build failure on ppc
+On 05/27/2013 07:51 PM, Rik van Riel wrote:
+>
+> Very much not optimized, but we need to fix the regression.
+>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
- drivers/char/tpm/tpm.c | 2 +-
- drivers/char/tpm/tpm.h | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Thanks for the review.
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 7c3b3dc..e3c974a 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1472,7 +1472,7 @@ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
-  * Once all references to platform device are down to 0,
-  * release all allocated structures.
-  */
--static void tpm_dev_release(struct device *dev)
-+void tpm_dev_release(struct device *dev)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 4334232..a7bfc17 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -332,6 +332,7 @@ extern struct tpm_chip* tpm_register_hardware(struct device *,
- 				 const struct tpm_vendor_specific *);
- extern int tpm_open(struct inode *, struct file *);
- extern int tpm_release(struct inode *, struct file *);
-+extern void tpm_dev_release(struct device *dev);
- extern void tpm_dev_vendor_release(struct tpm_chip *);
- extern ssize_t tpm_write(struct file *, const char __user *, size_t,
- 			 loff_t *);
--- 
-1.8.1.5
+I was afraid that the differences would be noticeable but they aren't:
+At least on my laptop, the differences between the patches are within 
+the noise:
+
+# ./cat /proc/stat | grep ctxt;./osim 2 2 1000000 0 0;cat /proc/stat | 
+grep ctxt
+runtime: stock    patch 1    patch 1-4
+2,0088875    2,041084    1,997367
+
+# ./cat /proc/stat | grep ctxt;./osim 2 20 1000000 0 0;cat /proc/stat | 
+grep ctxt
+4,32541    4,295956    4,277817
+
+(assuming 2 cpus, otherwise increase "2" and "20" accordingly)
+
+Here is the link to the tool:
+http://marc.info/?l=linux-kernel&m=125038376609750
+
+--
+     Manfred
 
