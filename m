@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab3E0QMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:12:09 -0400
-Received: from ms.ltcvs.ilc.edu.tw ([120.101.177.6]:53360 "EHLO
-	ms.ltcvs.ilc.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab3E0QMI (ORCPT
+	id S1753940Ab3E0QN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:13:27 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40790 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab3E0QN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:12:08 -0400
-X-Greylist: delayed 2015 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 12:12:08 EDT
-From: "Webmail Help Desk" <noreply@ms.ltcvs.ilc.edu.tw>
-Reply-To: noreply@ms.ltcvs.ilc.edu.tw
-Subject: Attention Webmail User!
-Date: Mon, 27 May 2013 23:38:31 +0800
-Message-Id: <20130527153831.M96759@ms.ltcvs.ilc.edu.tw>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 123.136.106.32 (venessakuaw)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=big5
-To: undisclosed-recipients:;
+	Mon, 27 May 2013 12:13:26 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/2] dma-unmap: allow to only unmap completed DMA buffer
+Date: Tue, 28 May 2013 00:13:05 +0800
+Message-Id: <1369671187-24430-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Webmail User, 
+This patchset tries to loose the check on DMA buffer size in check_unmap()
+of dma-debug first, then only unmap the actual completed DMA buffer in USB
+unmap path.
 
-This is to inform you that you have exceeded your quota limit of 325MB in our 
-database e-mail and you need to increase your quota limit of email 
-because in less than 48hours your e-mail will be disabled. Increase the share 
-of e-mail limit and continue to use your webmail account.
-To increase your quota limit of email to 2.2GB, Click or copy the below link 
-into your broswer.
+Considered that DMA unmapping often runs in hard irq context, the patch set
+may save irq handling time. And the improvement can be observed on
+ARMv7(Pandaboard) with the chage, at average ~25us is saved about ehci irq
+handling under usbnet ping test case.
 
-Click Link: http://ltcvsadmintw.phpforms.net/f/firstform
+Thanks,
+--
+Ming Lei
 
-Thank You. 
 
-Copyright &#169; 2013 Webmail Help Desk 
-Administrator All rights reserved.
