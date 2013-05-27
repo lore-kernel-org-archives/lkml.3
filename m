@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3E0US2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 16:18:28 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:42111 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756959Ab3E0US1 (ORCPT
+	id S1757539Ab3E0UTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 16:19:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40938 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959Ab3E0UTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 16:18:27 -0400
-Date: Mon, 27 May 2013 16:18:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] dma-unmap: allow to only unmap completed DMA
- buffer
-In-Reply-To: <1369671187-24430-1-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1305271614570.26364-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 27 May 2013 16:19:01 -0400
+Date: Mon, 27 May 2013 13:18:57 -0700 (PDT)
+Message-Id: <20130527.131857.945196320286011406.davem@davemloft.net>
+To: benh@kernel.crashing.org
+Cc: sebastian.hesselbarth@gmail.com, buytenh@wantstofly.org,
+        jason@lakedaemon.net, andrew@lunn.ch, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org
+Subject: Re: [PATCH 1/2] ARM: kirkwood: proper retain MAC address
+ workaround on DT ethernet
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369655404.3557.33.camel@pasglop>
+References: <1369647565.3557.28.camel@pasglop>
+	<51A33447.80305@gmail.com>
+	<1369655404.3557.33.camel@pasglop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Ming Lei wrote:
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Mon, 27 May 2013 21:50:04 +1000
 
-> This patchset tries to loose the check on DMA buffer size in check_unmap()
-> of dma-debug first, then only unmap the actual completed DMA buffer in USB
-> unmap path.
+> It would be handy to be able to just do something like
 > 
-> Considered that DMA unmapping often runs in hard irq context, the patch set
-> may save irq handling time. And the improvement can be observed on
-> ARMv7(Pandaboard) with the chage, at average ~25us is saved about ehci irq
-> handling under usbnet ping test case.
+> 	of_set_property(node, name, ptr, len);
+> 
+> However, that wouldn't help much with the allocation/leak problem,
+> though at least it would be easier to use. It could also *try* to re-use
+> the current allocation if the new content is of smaller or equal size.
 
-Are you aware that these changes directly contradict the advice in 
-Documentation/DMA-API.txt?  That file says:
-
-
-void
-dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
-                 enum dma_data_direction direction)
-
-Unmaps the region previously mapped.  All the parameters passed in
-must be identical to those passed in (and returned) by the mapping
-API.
-
-
-If you are going to make a change like this then you have to change the 
-documentation too.  But in fact I doubt that the proposed change will 
-work correctly in all circumstances.  For example, if an IOMMU is 
-present.
-
-Alan Stern
-
+And this is so much better of an interface because it allows the
+OF implementation to decide how to deal with memory allocation
+and freeing.
