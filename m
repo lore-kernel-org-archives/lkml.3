@@ -1,103 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab3E0Mot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:44:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52004 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932318Ab3E0Mor (ORCPT
+	id S932489Ab3E0MqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:46:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34352 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932363Ab3E0MqU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:44:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-Date: Mon, 27 May 2013 14:42:12 +0200
-Message-ID: <6343931.uK9ItNlUFg@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-21-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51A34BF9.5000905@atmel.com>
-References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <51A34BF9.5000905@atmel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Mon, 27 May 2013 08:46:20 -0400
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: RE: [PATCH] ARM: dts: omap2plus: remove interrupt-parent property
+Thread-Topic: [PATCH] ARM: dts: omap2plus: remove interrupt-parent property
+Thread-Index: AQHOHj8sT/H/Rx7soEuCgw71s8VNApjSVYhwgEceKCA=
+Date: Mon, 27 May 2013 12:45:35 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F470159537D@DBDE04.ent.ti.com>
+References: <1362996002-15552-1-git-send-email-manishv.b@ti.com>
+ <A4887BF146CD57468F700B415D2F470158738C@DBDE01.ent.ti.com>
+In-Reply-To: <A4887BF146CD57468F700B415D2F470158738C@DBDE01.ent.ti.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:kfkp8aGCLpUYG6ZV6oWUm52FlUbSqe6TEqnWAlJHfTT
- e6BImG7OdYlbBs5UKOIhWNTCxX3QCUIK9ipsCIo/SmaJQUHtvk
- 4Zw+uo7yakRd5KX1GJotnO0wjr+UVEimEiTxNEglNhua0F1sFc
- V5TXaTYoPWCqbynakTY4YDYyy+a8PHJcXK+pOExw38nU0/2NqP
- 27GVfos6F8FRnaA50Z/vBhUtuSER0cCvnr9q4/DAMmkFnb9i/9
- hzkLQ0L+qEFVurtDPjzecqsXgYOZ4M6Uoj4sVfYyRjaNx94Zvs
- a5R0Vd9bSXCjSEz4N8jI8bg/PxH9jui0loqMj6XsppJ+HxOHly
- 2Dsc2u1ISqzvnSKk1zuQ=
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 May 2013 14:05:13 Nicolas Ferre wrote:
-> On 27/05/2013 12:48, Alexandre Belloni :
-> A v3 is not needed simply for this. Thanks, anyway!
-> 
-> One question though: why not just add
-> 
->          select PHYLIB
-> 
-> In Kconfig entry:
-> 
->   config MACH_SAMA5_DT
-> 
-> ?
-> 
-> (note that I like to play with everybody's nerves ;-))
+Hi Benoit,
 
-That would make it impossible to build a sama5 kernel without networking
-support, which is probably not what you want.
+Are there any review comments on this patch?
+Could you please accept this patch if there are not any review comments?
 
-Jean-Christophe's suggestion to add the inline helper is best. Aside from
-that, please note that
+Thanks and Regards
+Manish Badarkhe
 
-> > diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-> > index 705305e..e9ce541 100644
-> > --- a/arch/arm/mach-at91/board-dt-sama5.c
-> > +++ b/arch/arm/mach-at91/board-dt-sama5.c
-> > @@ -47,22 +47,24 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
-> >   #define GMII_ERCR	11
-> >   #define GMII_ERDWR	12
-> >
-> > -	/* Set delay values */
-> > -	value = GMII_RCCPSR | 0x8000;
-> > -	phy_write(phy, GMII_ERCR, value);
-> > -	value = 0xF2F4;
-> > -	phy_write(phy, GMII_ERDWR, value);
-> > -	value = GMII_RRDPSR | 0x8000;
-> > -	phy_write(phy, GMII_ERCR, value);
-> > -	value = 0x2222;
-> > -	phy_write(phy, GMII_ERDWR, value);
-> > +	if (IS_BUILTIN(CONFIG_PHYLIB)) {
-> > +		/* Set delay values */
-> > +		value = GMII_RCCPSR | 0x8000;
-> > +		phy_write(phy, GMII_ERCR, value);
-> > +		value = 0xF2F4;
-> > +		phy_write(phy, GMII_ERDWR, value);
-> > +		value = GMII_RRDPSR | 0x8000;
-> > +		phy_write(phy, GMII_ERCR, value);
-> > +		value = 0x2222;
-> > +		phy_write(phy, GMII_ERDWR, value);
-> > +	}
-> >
-> >   	return 0;
-> >   }
+-----Original Message-----
+From: Vishwanathrao Badarkhe, Manish 
+Sent: Friday, April 12, 2013 12:20 PM
+To: Vishwanathrao Badarkhe, Manish; devicetree-discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org
+Cc: tony@atomide.com; Cousson, Benoit; linux@arm.linux.org.uk
+Subject: RE: [PATCH] ARM: dts: omap2plus: remove interrupt-parent property
 
-This part of the patch is not actually needed if you
+Hi Benoit,
+Are there any review comments on this patch? 
+Could you please accept this patch if there are not any review comments?
 
-> >   static void __init sama5_dt_device_init(void)
-> >   {
-> > -	if (of_machine_is_compatible("atmel,sama5d3xcm"))
-> > +	if (of_machine_is_compatible("atmel,sama5d3xcm") && IS_BUILTIN(CONFIG_PHYLIB))
-> >   		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
-> >   			ksz9021rn_phy_fixup);
+Thanks
+Manish Badarkhe
 
-do this change, or the inline helper.
+-----Original Message-----
+From: Vishwanathrao Badarkhe, Manish 
+Sent: Monday, March 11, 2013 3:30 PM
+To: devicetree-discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org
+Cc: tony@atomide.com; Cousson, Benoit; linux@arm.linux.org.uk; Vishwanathrao Badarkhe, Manish
+Subject: [PATCH] ARM: dts: omap2plus: remove interrupt-parent property
 
-	Arnd
+Removed interrupt-parent property from dts file as it is already
+with root node in dtsi file.
+
+Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+---
+:100644 100644 f624dc8... 36e839a... M	arch/arm/boot/dts/omap3-beagle.dts
+:100644 100644 e8ba1c2... a5375fd... M	arch/arm/boot/dts/omap3-evm.dts
+:100644 100644 4122efe... 389c9c7... M	arch/arm/boot/dts/omap4-panda.dts
+:100644 100644 43e5258... cdf5dfd... M	arch/arm/boot/dts/omap4-sdp.dts
+:100644 100644 6601e6a... 1d4a9d4... M	arch/arm/boot/dts/omap4-var-som.dts
+ arch/arm/boot/dts/omap3-beagle.dts  |    1 -
+ arch/arm/boot/dts/omap3-evm.dts     |    1 -
+ arch/arm/boot/dts/omap4-panda.dts   |    2 --
+ arch/arm/boot/dts/omap4-sdp.dts     |    2 --
+ arch/arm/boot/dts/omap4-var-som.dts |    1 -
+ 5 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index f624dc8..36e839a 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -46,7 +46,6 @@
+ 	twl: twl@48 {
+ 		reg = <0x48>;
+ 		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+-		interrupt-parent = <&intc>;
+ 	};
+ };
+ 
+diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+index e8ba1c2..a5375fd 100644
+--- a/arch/arm/boot/dts/omap3-evm.dts
++++ b/arch/arm/boot/dts/omap3-evm.dts
+@@ -34,7 +34,6 @@
+ 	twl: twl@48 {
+ 		reg = <0x48>;
+ 		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+-		interrupt-parent = <&intc>;
+ 	};
+ };
+ 
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 4122efe..389c9c7 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -119,7 +119,6 @@
+ 		reg = <0x48>;
+ 		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
+ 		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
+-		interrupt-parent = <&gic>;
+ 	};
+ 
+ 	twl6040: twl@4b {
+@@ -127,7 +126,6 @@
+ 		reg = <0x4b>;
+ 		/* SPI = 0, IRQ# = 119, 4 = active high level-sensitive */
+ 		interrupts = <0 119 4>; /* IRQ_SYS_2N cascaded to gic */
+-		interrupt-parent = <&gic>;
+ 		ti,audpwron-gpio = <&gpio4 31 0>;  /* gpio line 127 */
+ 
+ 		vio-supply = <&v1v8>;
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 43e5258..cdf5dfd 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -221,7 +221,6 @@
+ 		reg = <0x48>;
+ 		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
+ 		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
+-		interrupt-parent = <&gic>;
+ 	};
+ 
+ 	twl6040: twl@4b {
+@@ -229,7 +228,6 @@
+ 		reg = <0x4b>;
+ 		/* SPI = 0, IRQ# = 119, 4 = active high level-sensitive */
+ 		interrupts = <0 119 4>; /* IRQ_SYS_2N cascaded to gic */
+-		interrupt-parent = <&gic>;
+ 		ti,audpwron-gpio = <&gpio4 31 0>;  /* gpio line 127 */
+ 
+ 		vio-supply = <&v1v8>;
+diff --git a/arch/arm/boot/dts/omap4-var-som.dts b/arch/arm/boot/dts/omap4-var-som.dts
+index 6601e6a..1d4a9d4 100644
+--- a/arch/arm/boot/dts/omap4-var-som.dts
++++ b/arch/arm/boot/dts/omap4-var-som.dts
+@@ -35,7 +35,6 @@
+ 		reg = <0x48>;
+ 		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
+ 		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
+-		interrupt-parent = <&gic>;
+ 	};
+ };
+ 
+-- 
+1.7.4.1
+
