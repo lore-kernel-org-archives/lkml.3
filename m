@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3E0NDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 09:03:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58074 "EHLO mx2.suse.de"
+	id S932521Ab3E0NDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 09:03:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423Ab3E0NDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 09:03:08 -0400
+	id S932353Ab3E0NDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 09:03:05 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -17,9 +17,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/4] mm: vmscan: Take page buffers dirty and locked state into account
-Date: Mon, 27 May 2013 14:02:58 +0100
-Message-Id: <1369659778-6772-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/4] mm: vmscan: Stall page reclaim and writeback pages based on dirty/writepage pages encountered
+Date: Mon, 27 May 2013 14:02:56 +0100
+Message-Id: <1369659778-6772-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369659778-6772-1-git-send-email-mgorman@suse.de>
 References: <1369659778-6772-1-git-send-email-mgorman@suse.de>
@@ -27,147 +27,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page reclaim keeps track of dirty and under writeback pages and uses it to
-determine if wait_iff_congested() should stall or if kswapd should begin
-writing back pages. This fails to account for buffer pages that can be under
-writeback but not PageWriteback which is the case for filesystems like ext3
-ordered mode. Furthermore, PageDirty buffer pages can have all the buffers
-clean and writepage does no IO so it should not be accounted as congested.
+The patch "mm: vmscan: Have kswapd writeback pages based on dirty pages
+encountered, not priority" decides whether to writeback pages from reclaim
+context based on the number of dirty pages encountered. This situation
+is flagged too easily and flushers are not given the chance to catch up
+resulting in more pages being written from reclaim context and potentially
+impacting IO performance. The check for PageWriteback is also misplaced
+as it happens within a PageDirty check which is nonsense as the dirty may
+have been cleared for IO. The accounting is updated very late and pages
+that are already under writeback, were reactivated, could not unmapped or
+could not be released are all missed. Finally, it considers stalling and
+writing back filesystem pages due to encountering dirty anonymous pages
+at the tail of the LRU which is dumb.
 
-This patch adds an address_space operation that filesystems may
-optionally use to check if a page is really dirty or really under
-writeback. An implementation is provided for for buffer_heads is added
-and used for block operations and ext3 in ordered mode. By default the
-page flags are obeyed.
-
-Credit goes to Jan Kara for identifying that the page flags alone are
-not sufficient for ext3 and sanity checking a number of ideas on how
-the problem could be addressed.
+This patch causes kswapd to begin writing filesystem pages from reclaim
+context only if page reclaim found that all filesystem pages at the tail of
+the LRU were unqueued dirty pages. Before it starts writing filesystem pages,
+it will stall to give flushers a chance to catch up. The decision on whether
+wait_iff_congested is also now determined by dirty filesystem pages only.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/block_dev.c              |  1 +
- fs/buffer.c                 | 34 ++++++++++++++++++++++++++++++++++
- fs/ext3/inode.c             |  1 +
- include/linux/buffer_head.h |  3 +++
- include/linux/fs.h          |  1 +
- mm/vmscan.c                 |  8 ++++++++
- 6 files changed, 48 insertions(+)
+ mm/vmscan.c | 52 ++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 10 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 2091db8..9c8ebe4 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1583,6 +1583,7 @@ static const struct address_space_operations def_blk_aops = {
- 	.writepages	= generic_writepages,
- 	.releasepage	= blkdev_releasepage,
- 	.direct_IO	= blkdev_direct_IO,
-+	.is_dirty_writeback = buffer_check_dirty_writeback,
- };
- 
- const struct file_operations def_blk_fops = {
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1aa0836..4247aa9 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -91,6 +91,40 @@ void unlock_buffer(struct buffer_head *bh)
- EXPORT_SYMBOL(unlock_buffer);
- 
- /*
-+ * Returns if the page has dirty or writeback buffers. If all the buffers
-+ * are unlocked and clean then the PageDirty information is stale. If
-+ * any of the pages are locked, it is assumed they are locked for IO.
-+ */
-+void buffer_check_dirty_writeback(struct page *page,
-+				     bool *dirty, bool *writeback)
-+{
-+	struct buffer_head *head, *bh;
-+	*dirty = false;
-+	*writeback = false;
-+
-+	BUG_ON(!PageLocked(page));
-+
-+	if (!page_has_buffers(page))
-+		return;
-+
-+	if (PageWriteback(page))
-+		*writeback = true;
-+
-+	head = page_buffers(page);
-+	bh = head;
-+	do {
-+		if (buffer_locked(bh))
-+			*writeback = true;
-+
-+		if (buffer_dirty(bh))
-+			*dirty = true;
-+
-+		bh = bh->b_this_page;
-+	} while (bh != head);
-+}
-+EXPORT_SYMBOL(buffer_check_dirty_writeback);
-+
-+/*
-  * Block until a buffer comes unlocked.  This doesn't stop it
-  * from becoming locked again - you have to lock it yourself
-  * if you want to preserve its state.
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 23c7128..8e590bd 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -1984,6 +1984,7 @@ static const struct address_space_operations ext3_ordered_aops = {
- 	.direct_IO		= ext3_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
-+	.is_dirty_writeback	= buffer_check_dirty_writeback,
- 	.error_remove_page	= generic_error_remove_page,
- };
- 
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 6d9f5a2..d458880 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -139,6 +139,9 @@ BUFFER_FNS(Prio, prio)
- 	})
- #define page_has_buffers(page)	PagePrivate(page)
- 
-+void buffer_check_dirty_writeback(struct page *page,
-+				     bool *dirty, bool *writeback);
-+
- /*
-  * Declarations
-  */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0a9a6766..96f857f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -380,6 +380,7 @@ struct address_space_operations {
- 	int (*launder_page) (struct page *);
- 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
- 					unsigned long);
-+	void (*is_dirty_writeback) (struct page *, bool *, bool *);
- 	int (*error_remove_page)(struct address_space *, struct page *);
- 
- 	/* swapfile support */
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f576bcc..6237725 100644
+index 4a43c28..be8e445 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -688,6 +688,14 @@ static void page_check_dirty_writeback(struct page *page,
- 	/* By default assume that the page flags are accurate */
- 	*dirty = PageDirty(page);
- 	*writeback = PageWriteback(page);
-+
-+	/* Verify dirty/writeback state if the filesystem supports it */
-+	if (!page_has_private(page))
-+		return;
-+
-+	mapping = page_mapping(page);
-+	if (mapping && mapping->a_ops->is_dirty_writeback)
-+		mapping->a_ops->is_dirty_writeback(page, dirty, writeback);
+@@ -669,6 +669,27 @@ static enum page_references page_check_references(struct page *page,
+ 	return PAGEREF_RECLAIM;
  }
  
++/* Check if a page is dirty or under writeback */
++static void page_check_dirty_writeback(struct page *page,
++				       bool *dirty, bool *writeback)
++{
++	struct address_space *mapping;
++
++	/*
++	 * Anonymous pages are not handled by flushers and must be written
++	 * from reclaim context. Do not stall reclaim based on them
++	 */
++	if (!page_is_file_cache(page)) {
++		*dirty = false;
++		*writeback = false;
++		return;
++	}
++
++	/* By default assume that the page flags are accurate */
++	*dirty = PageDirty(page);
++	*writeback = PageWriteback(page);
++}
++
  /*
+  * shrink_page_list() returns the number of reclaimed pages
+  */
+@@ -697,6 +718,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		struct page *page;
+ 		int may_enter_fs;
+ 		enum page_references references = PAGEREF_RECLAIM_CLEAN;
++		bool dirty, writeback;
+ 
+ 		cond_resched();
+ 
+@@ -725,6 +747,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
+ 
+ 		/*
++		 * The number of dirty pages determines if a zone is marked
++		 * reclaim_congested which affects wait_iff_congested. kswapd
++		 * will stall and start writing pages if the tail of the LRU
++		 * is all dirty unqueued pages.
++		 */
++		page_check_dirty_writeback(page, &dirty, &writeback);
++		if (dirty || writeback)
++			nr_dirty++;
++
++		if (dirty && !writeback)
++			nr_unqueued_dirty++;
++
++		/*
+ 		 * If a page at the tail of the LRU is under writeback, there
+ 		 * are three cases to consider.
+ 		 *
+@@ -841,11 +876,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		}
+ 
+ 		if (PageDirty(page)) {
+-			nr_dirty++;
+-
+-			if (!PageWriteback(page))
+-				nr_unqueued_dirty++;
+-
+ 			/*
+ 			 * Only kswapd can writeback filesystem pages to
+ 			 * avoid risk of stack overflow but only writeback
+@@ -1318,7 +1348,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	unsigned long nr_scanned;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_taken;
+-	unsigned long nr_dirty = 0;
++	unsigned long nr_unqueued_dirty = 0;
+ 	unsigned long nr_writeback = 0;
+ 	isolate_mode_t isolate_mode = 0;
+ 	int file = is_file_lru(lru);
+@@ -1361,7 +1391,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		return 0;
+ 
+ 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+-					&nr_dirty, &nr_writeback, false);
++				&nr_unqueued_dirty, &nr_writeback, false);
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1416,11 +1446,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	/*
+ 	 * Similarly, if many dirty pages are encountered that are not
+ 	 * currently being written then flag that kswapd should start
+-	 * writing back pages.
++	 * writing back pages and stall to give a chance for flushers
++	 * to catch up.
+ 	 */
+-	if (global_reclaim(sc) && nr_dirty &&
+-			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
++	if (global_reclaim(sc) && nr_unqueued_dirty == nr_taken) {
++		congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 		zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
++	}
+ 
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
 -- 
 1.8.1.4
 
