@@ -1,120 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab3E0QjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:39:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46646 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3E0QjR (ORCPT
+	id S1755433Ab3E0Qol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:44:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48106 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab3E0Qok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:39:17 -0400
-Date: Mon, 27 May 2013 18:39:13 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/3] net: phy: prevent linking breakage
-Message-ID: <20130527163913.GO32299@pengutronix.de>
-References: <1369671524-14797-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1369671524-14797-2-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 27 May 2013 12:44:40 -0400
+Date: Mon, 27 May 2013 18:44:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Meelis Roos <mroos@linux.ee>
+cc: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: 3.10-rc3: WARNING: at kernel/time/tick-broadcast.c:578
+In-Reply-To: <alpine.SOC.1.00.1305271849130.2372@math.ut.ee>
+Message-ID: <alpine.LFD.2.02.1305271841130.4220@ionos>
+References: <alpine.SOC.1.00.1305271406050.2372@math.ut.ee> <20130527123520.GA4806@pd.tnic> <alpine.LFD.2.02.1305271456280.4220@ionos> <alpine.SOC.1.00.1305271849130.2372@math.ut.ee>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369671524-14797-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:37:30 up 338 days,  7:49, 107 users,  load average: 12.97,
- 10.38, 6.15
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 06:18:42PM +0200, Alexandre Belloni wrote:
-> phy_register_fixup{,_for_uid,_for_id} are called from arch/, quite
-> often, there is no protection to check whether CONFIG_PHYLIB=y which is
-> the only case where this would work. Having phylib as a module or not
-> compiled at all will result in that kind of linking failure:
+On Mon, 27 May 2013, Meelis Roos wrote:
+> > So we need to move the WARN_ON into the section where we actually set
+> > the broadcast stuff up.
 > 
-> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
-> :(.text+0x1174): undefined reference to `mdiobus_write'
-> :(.text+0x1188): undefined reference to `mdiobus_write'
-> :(.text+0x119c): undefined reference to `mdiobus_write'
-> :(.text+0x11b0): undefined reference to `mdiobus_write'
-> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
-> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  drivers/net/phy/phy_device.c |  6 ++++++
->  include/linux/phy.h          | 12 ++++++++++++
->  2 files changed, 18 insertions(+)
-> 
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index 3657b4a..df36367 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -64,6 +64,11 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
->  			     u32 flags, phy_interface_t interface);
->  
->  /*
-> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
-> + *  work unless phylib is compiled in the kernel.
-> + */
-> +#ifdef CONFIG_PHYLIB
-> +/*
->   * Creates a new phy_fixup and adds it to the list
->   * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
->   * @phy_uid: Used to match against phydev->phy_id (the UID of the PHY)
-> @@ -109,6 +114,7 @@ int phy_register_fixup_for_id(const char *bus_id,
->  	return phy_register_fixup(bus_id, PHY_ANY_UID, 0xffffffff, run);
->  }
->  EXPORT_SYMBOL(phy_register_fixup_for_id);
-> +#endif /* CONFIG_PHYLIB */
->  
->  /*
->   * Returns 1 if fixup matches phydev in bus_id and phy_uid.
-> diff --git a/include/linux/phy.h b/include/linux/phy.h
-> index 9e11039..3f998a6 100644
-> --- a/include/linux/phy.h
-> +++ b/include/linux/phy.h
-> @@ -556,12 +556,24 @@ int phy_start_interrupts(struct phy_device *phydev);
->  void phy_print_status(struct phy_device *phydev);
->  void phy_device_free(struct phy_device *phydev);
->  
-> +/*
-> + *  phy_register_fixup{,_for_uid,_for_id} are called from arch/ so this won't
-> + *  work unless phylib is compiled in the kernel.
-> + *  Defining stubs allows to prevent linking errors.
-> + */
-> +#ifdef CONFIG_PHYLIB
->  int phy_register_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask,
->  		int (*run)(struct phy_device *));
->  int phy_register_fixup_for_id(const char *bus_id,
->  		int (*run)(struct phy_device *));
->  int phy_register_fixup_for_uid(u32 phy_uid, u32 phy_uid_mask,
->  		int (*run)(struct phy_device *));
-> +#else
-> +#define phy_register_fixup(a, b, c, d) do { } while (0)
-> +#define phy_register_fixup_for_id(a, b) do { } while (0)
-> +#define phy_register_fixup_for_uid(a, b, c) do { } while (0)
+> Are you sure? This is a UP machine.
 
-Use static inline functions here. This breaks if someone does result
-checking on the functions which then expands to ret = do {} while (0);
-Also we still have type safety for !CONFIG_PHYLIB.
+Ooops.
+ 
+> Tested the patch - no effect, warning is still there :(
 
-Sascha
+Found another possibility how we end up with the stale flag.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 24938d5..0c73942 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -511,6 +511,12 @@ again:
+ 		}
+ 	}
+ 
++	/*
++	 * Remove the current cpu from the pending mask. The event is
++	 * delivered immediately in tick_do_broadcast() !
++	 */
++	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
++
+ 	/* Take care of enforced broadcast requests */
+ 	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
+ 	cpumask_clear(tick_broadcast_force_mask);
+@@ -575,8 +581,8 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
+-		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
+ 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
++			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+ 			/*
+ 			 * We only reprogram the broadcast timer if we
