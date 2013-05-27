@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3E0FkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 01:40:04 -0400
-Received: from ozlabs.org ([203.10.76.45]:34215 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268Ab3E0FkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 01:40:02 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: BUG_ON in virtio-ring.c
-In-Reply-To: <CAPM=9tzw8jEv8yoLr7ktjO2DHCDzA+mURmJ-DXby_nsWUUNoyg@mail.gmail.com>
-References: <CAPM=9tyLrJ8VAdGCw_1guRS-ogCPE1Qp7faE_nrx_dAm2gvHLQ@mail.gmail.com> <87vc65p5a7.fsf@rustcorp.com.au> <CAPM=9tzw8jEv8yoLr7ktjO2DHCDzA+mURmJ-DXby_nsWUUNoyg@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 27 May 2013 15:08:25 +0930
-Message-ID: <87li71oucu.fsf@rustcorp.com.au>
+	id S1753445Ab3E0Frg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 01:47:36 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:46326 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab3E0Frd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 01:47:33 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A2F342.8060907@asianux.com>
+Date: Mon, 27 May 2013 13:46:42 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "dhowells@redhat.com" <dhowells@redhat.com>, jesper.nilsson@axis.com,
+        Richard Kuo <rkuo@codeaurora.org>, Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: frv: kernel: using vsnprintf() instead of vsprintf()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie <airlied@gmail.com> writes:
->>> correct.
->>>
->>> If I have an indirect ring and I'm adding sgs to it and the host is
->>> delayed (say I've got a thread consuming things from the vring and its
->>> off doing something interesting),
->>> I'd really like to get ENOSPC back from virtqueue_add. However if the
->>> indirect addition fails due to free_sg being 0, we hit the BUG_ON
->>> before we ever get to the ENOSPC check.
->>
->> It is correct for the moment: drivers can't assume indirect buffer
->> support in the transport.
->>
->> BUT for a new device, we could say "this depends on indirect descriptor
->> support", put the appropriate check in the device init, and then remove
->> the BUG_ON().
->
-> But if the transport has indirect buffer support, can it change its
-> mind at runtime?
 
-It's a layering violation.  The current rule is simple:
-
-        A driver should never submit a buffer which can't fit in the
-        ring.
-
-This has the nice property that OOM (ie. indirect buffer alloction
-fail) just slows things down, doesn't break things.
-
-> In this case we have vq->indirect set, but the device has run out of
-> free buffers,
-> but it isn't a case that in+out would overflow it if it had free
-> buffers since it would use
-> an indirect and succeed.
-
-OK, but when do you re-xmit?  What if the ring is empty, and you
-submitted a buffer that needs indirect?  You won't get interrupted
-again, because the device has consumed all the buffers.  You need to
-have your own timer or something equally hackish.
-
-> Getting -ENOSPC is definitely what should happen from what I can see,
-> not a BUG_ON,
-> I should get a BUG_ON only if the device reports no indirect support.
-
-I think we should return -ENOMEM if we can't indirect because of failed
-allocation and it doesn't fit in the ring, ie:
-
-This:
-	BUG_ON(total_sg > vq->vring.num);
-	BUG_ON(total_sg == 0);
-
-	if (vq->vq.num_free < total_sg) {
-		pr_debug("Can't add buf len %i - avail = %i\n",
-			 total_sg, vq->vq.num_free);
-		/* FIXME: for historical reasons, we force a notify here if
-		 * there are outgoing parts to the buffer.  Presumably the
-		 * host should service the ring ASAP. */
-		if (out_sgs)
-			vq->notify(&vq->vq);
-		END_USE(vq);
-		return -ENOSPC;
-	}
-
-Becomes (untested):
-
-	BUG_ON(total_sg == 0);
-
-	if (vq->vq.num_free < total_sg) {
-                if (total_sg > vq->vring.num) {
-                        BUG_ON(!vq->indirect);
-                       /* Return -ENOMEM only if we have nothing else to do */
-                       if (vq->vq.num_free == vq->vring.num)
-                               return -ENOMEM;
-                }
-		pr_debug("Can't add buf len %i - avail = %i\n",
-			 total_sg, vq->vq.num_free);
-		/* FIXME: for historical reasons, we force a notify here if
-		 * there are outgoing parts to the buffer.  Presumably the
-		 * host should service the ring ASAP. */
-		if (out_sgs)
-			vq->notify(&vq->vq);
-		END_USE(vq);
-		return -ENOSPC;
-	}
-
-Cheers,
-Rusty.
+Since die_if_kernel() is an extern common used function, better always
+check the buffer length to avoid memory overflow by a long 'str'.
 
 
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/frv/kernel/traps.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/frv/kernel/traps.c b/arch/frv/kernel/traps.c
+index 4bff48c..a6d105d 100644
+--- a/arch/frv/kernel/traps.c
++++ b/arch/frv/kernel/traps.c
+@@ -523,7 +523,7 @@ void die_if_kernel(const char *str, ...)
+ 		return;
+ 
+ 	va_start(va, str);
+-	vsprintf(buffer, str, va);
++	vsnprintf(buffer, sizeof(buffer), str, va);
+ 	va_end(va);
+ 
+ 	console_verbose();
+-- 
+1.7.7.6
