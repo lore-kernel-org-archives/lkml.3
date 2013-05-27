@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab3E0Ozu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 10:55:50 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44869 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932720Ab3E0Ozs (ORCPT
+	id S932817Ab3E0O4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 10:56:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:21325 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932643Ab3E0O4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 10:55:48 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAKMK7uEG1t5ahSfCkUm39vK-K-A=XgnPK_2RKcCYU7pHuc1v1g@mail.gmail.com>
-References: <20130428165914.17075.57751.stgit@patser>
-	<20130428170407.17075.80082.stgit@patser>
-	<20130430191422.GA5763@phenom.ffwll.local>
-	<519CA976.9000109@canonical.com>
-	<20130522161831.GQ18810@twins.programming.kicks-ass.net>
-	<519CFF56.90600@canonical.com>
-	<20130527082149.GE2781@laptop>
-	<CAKMK7uEG1t5ahSfCkUm39vK-K-A=XgnPK_2RKcCYU7pHuc1v1g@mail.gmail.com>
-Date: Mon, 27 May 2013 16:55:47 +0200
-X-Google-Sender-Auth: xBoqqPZM_KzSiIEeu9ho2JtiBwY
-Message-ID: <CAKMK7uHgEKsBT97c0zBeNfj7E3MSZwOUN9cj-AN6cyO_vm0+kw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks, v3
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        rob clark <robclark@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 May 2013 10:56:23 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-66-51a37415fd18
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] spi: s3c64xx: Fix pm_runtime_get_sync() return value check
+Date: Mon, 27 May 2013 16:56:00 +0200
+Message-id: <1369666560-12436-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t9jQV3RksWBBpNvKlj8m32KzeLAnx2M
+	Fmeb3rBbXN41h81ixvl9TBaH37SzOrB53Lm2h83j5cTfbB59W1YxenzeJBfAEsVlk5Kak1mW
+	WqRvl8CV8WlhesEtjopZzzcxNTD2sHcxcnJICJhIrJz9F8oWk7hwbz1bFyMXh5DAdEaJ3+++
+	MUM4HUwS8+d0sYBUsQkYSvQe7WPsYuTgEBFQl9h6XAekhllgF6PEt32f2UBqhAW8JVr/fQar
+	ZxFQlXi28yEjiM0r4Cax6doVdpBeCQEFiTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqX
+	rpecn7uJERwOz6R3MK5qsDjEKMDBqMTDOyF7caAQa2JZcWXuIUYJDmYlEV4pM6AQb0piZVVq
+	UX58UWlOavEhRmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGRpnGtOXrCyy/9oezPV/+
+	oM/eteHLh+0+fhYCXetfKh2/MbErIHAW87uz3D893mjGLdNtU4hdOddW6P/b+RGbq892zXdM
+	S8oWcdLUv5K66X8A1zHmt5ffbjH6FaK4139VqsHmKwGbWxbYXz2/fHHUdm059n4zfbGHdncr
+	Hs2RujM789dk75onB5RYijMSDbWYi4oTAa/7llYDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 4:47 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Mon, May 27, 2013 at 10:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, May 22, 2013 at 07:24:38PM +0200, Maarten Lankhorst wrote:
->>> >> +static inline void ww_acquire_init(struct ww_acquire_ctx *ctx,
->>> >> +                             struct ww_class *ww_class)
->>> >> +{
->>> >> +  ctx->task = current;
->>> >> +  do {
->>> >> +          ctx->stamp = atomic_long_inc_return(&ww_class->stamp);
->>> >> +  } while (unlikely(!ctx->stamp));
->>> > I suppose we'll figure something out when this becomes a bottleneck. Ideally
->>> > we'd do something like:
->>> >
->>> >  ctx->stamp = local_clock();
->>> >
->>> > but for now we cannot guarantee that's not jiffies, and I suppose that's a tad
->>> > too coarse to work for this.
->>> This might mess up when 2 cores happen to return exactly the same time, how do you choose a winner in that case?
->>> EDIT: Using pointer address like you suggested below is fine with me. ctx pointer would be static enough.
->>
->> Right, but for now I suppose the 'global' atomic is ok, if/when we find
->> it hurts performance we can revisit. I was just spewing ideas :-)
->
-> We could do a simple
->
-> ctx->stamp = (local_clock() << nr_cpu_shift) | local_processor_id()
->
-> to work around any bad luck in grabbing the ticket. With sufficient
-> fine clocks the bias towards smaller cpu ids would be rather
-> irrelevant. Just wanted to drop this idea before I'll forget about it
-> again ;-)
-Not a good idea to throw around random ideas right after a work-out.
-This is broken since different threads could end up with the same low
-bits. Comparing ctx pointers otoh on top of the timestamp should work.
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+If the device is already in a runtime PM enabled state
+pm_runtime_get_sync() will return 1, so a test for negative
+value should be used to check for errors.
+
+Without this patch there are seen errors like:
+
+[    8.540000] s3c64xx-spi 13930000.spi: Failed to enable device: 1
+[    8.545000] spi_master spi1: failed to prepare transfer hardware
+
+Likely because the driver uses synchronous API to runtime enable
+the device and asychronous one to disable it.
+
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/spi/spi-s3c64xx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index 5000586..71cc3e6 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -444,7 +444,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
+ 	}
+ 
+ 	ret = pm_runtime_get_sync(&sdd->pdev->dev);
+-	if (ret != 0) {
++	if (ret < 0) {
+ 		dev_err(dev, "Failed to enable device: %d\n", ret);
+ 		goto out_tx;
+ 	}
+-- 
+1.7.9.5
+
