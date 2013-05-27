@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab3E0MTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:19:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42902 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab3E0MTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:19:22 -0400
-Date: Mon, 27 May 2013 08:18:51 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Nikolay Balandin <n.a.balandin@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-Message-ID: <20130527121851.GC3660@sirena.org.uk>
-References: <1369518640-7480-1-git-send-email-n.a.balandin@gmail.com>
+	id S932239Ab3E0MUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:20:43 -0400
+Received: from mail.us.es ([193.147.175.20]:42762 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932177Ab3E0MUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 08:20:41 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.8/17272. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
+ Processed in 5.232836 secs); 27 May 2013 12:20:39 -0000
+X-Envelope-From: pneira@us.es
+Date: Mon, 27 May 2013 14:20:33 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org
+Subject: Re: [PATCH -resend 4/6] netfilter: Implement RFC 1123 for FTP
+ conntrack
+Message-ID: <20130527122033.GA16107@localhost>
+References: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
+ <1369227552-11743-4-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y5rl02BVI9TCfPar"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369518640-7480-1-git-send-email-n.a.balandin@gmail.com>
-X-Cookie: Today is what happened to yesterday.
+In-Reply-To: <1369227552-11743-4-git-send-email-jslaby@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.140.42
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regulator: lp397x: use devm_kzalloc() to make
- cleanup paths simpler
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---Y5rl02BVI9TCfPar
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sat, May 25, 2013 at 02:50:40PM -0700, Nikolay Balandin wrote:
-> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
->=20
-> Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+On Wed, May 22, 2013 at 02:59:10PM +0200, Jiri Slaby wrote:
+> From: Jeff Mahoney <jeffm@suse.com>
+> 
+>  The FTP conntrack code currently only accepts the following format for
+>  the 227 response for PASV:
+>  227 Entering Passive Mode (148,100,81,40,31,161).
+> 
+>  It doesn't accept the following format from an obscure server:
+>  227 Data transfer will passively listen to 67,218,99,134,50,144
+> 
+>  From RFC 1123:
+>  The format of the 227 reply to a PASV command is not
+>  well standardized.  In particular, an FTP client cannot
+>  assume that the parentheses shown on page 40 of RFC-959
+>  will be present (and in fact, Figure 3 on page 43 omits
+>  them).  Therefore, a User-FTP program that interprets
+>  the PASV reply must scan the reply for the first digit
+>  of the host and port numbers.
 
 Applied, thanks.
-
---Y5rl02BVI9TCfPar
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRo08oAAoJELSic+t+oim9NF4P/j02DIBaaEnUOIE7Q/DRcui2
-MJvSIxmCEPJlgoVRq/iJLCJkrak+HwvkXoMfCnKVxxd44sDoZRquYVBKPLqOzsEv
-ddiwR0KQ76pPqMYtRETxGdP+LPhYvp1n0pZlI2OF5zzhu5kk6mHQpmCAu87VEWb6
-vS7tjy0chRIYhPDMZWvmKdQg06EZVryXL8HpziPPZ3U5u8abZDWv3gw/i3LyrU4U
-yIILlulSi+9GNarDgFVY2H9N3IxWGeU1hnl6UvADaYHCuHgNFc/hKThN/KLbVN6t
-GgPFfAnuRq/PgHbPIouy7OueVIv1yKdO5a3SxopVOo6TEk+8aet/1/HSqDN27dAg
-/2WhBVpDL+zF8k+SGpoB7pBQ9xFmWzvzQG7NcrcomEMJh1HvvY/fPmLmzj3oAiek
-ffNL0wZy9naY8J2sR6nOyRQggjtgccGnIpTxnr0le5uK4DBJ8ANHddDiRDcmy0X3
-1asq55c0+TpXcDhywmKN8jD8dYdw0s1GoNJXWIOAwkiSIAa8CKfa1a4OO3cYGZmN
-gNflUj5wAqj/j8y/96Qaz2yEctPmS8/htG0J1+aNqVqx1qtanLEXJIjnaCeyERK9
-QOJO3F+fSjekx3utGb1K4xaQ6pKZSQKquSMm7jLWiXRLATGUTC7Q+E+TWSMxJfgE
-O19RhdBjCnDsFkrN1la2
-=zuM+
------END PGP SIGNATURE-----
-
---Y5rl02BVI9TCfPar--
