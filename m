@@ -1,101 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3E0GmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 02:42:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46208 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756499Ab3E0GmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 02:42:17 -0400
-Message-ID: <51A30026.2090001@ti.com>
-Date: Mon, 27 May 2013 12:11:42 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756626Ab3E0Gm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 02:42:29 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:58619 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756499Ab3E0Gm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 02:42:27 -0400
+Message-ID: <51A30052.5090206@gmail.com>
+Date: Mon, 27 May 2013 02:42:26 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Chanwoo Choi <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "george.cherian@ti.com" <george.cherian@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
-References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-3-git-send-email-kishon@ti.com> <51A2F07F.8070009@samsung.com> <51A2F512.2090907@ti.com> <51A2F84D.9030605@samsung.com> <51A2FB88.9000303@nvidia.com> <51A2FDD2.10309@ti.com> <51A2FEE9.1060905@nvidia.com>
-In-Reply-To: <51A2FEE9.1060905@nvidia.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v3 1/6] mm/memory-hotplug: fix lowmem count overflow when
+ offline pages
+References: <1369547921-24264-1-git-send-email-liwanp@linux.vnet.ibm.com> <CAHGf_=rOLAYrpkLQiM53jn-bHAuxw=rRZP0+pNV-8EUinJzP7w@mail.gmail.com> <51a2a2ab.a2f6420a.33bb.ffffda23SMTPIN_ADDED_BROKEN@mx.google.com>
+In-Reply-To: <51a2a2ab.a2f6420a.33bb.ffffda23SMTPIN_ADDED_BROKEN@mx.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Monday 27 May 2013 12:06 PM, Laxman Dewangan wrote:
-> On Monday 27 May 2013 12:01 PM, Kishon Vijay Abraham I wrote:
->> Hi,
+(5/26/13 8:02 PM), Wanpeng Li wrote:
+> On Sun, May 26, 2013 at 07:49:33AM -0400, KOSAKI Motohiro wrote:
+>> On Sun, May 26, 2013 at 1:58 AM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+>>> Changelog:
+>>>  v1 -> v2:
+>>>         * show number of HighTotal before hotremove
+>>>         * remove CONFIG_HIGHMEM
+>>>         * cc stable kernels
+>>>         * add Michal reviewed-by
+>>>
+>>> Logic memory-remove code fails to correctly account the Total High Memory
+>>> when a memory block which contains High Memory is offlined as shown in the
+>>> example below. The following patch fixes it.
+>>>
+>>> Stable for 2.6.24+.
+>>>
+>>> Before logic memory remove:
+>>>
+>>> MemTotal:        7603740 kB
+>>> MemFree:         6329612 kB
+>>> Buffers:           94352 kB
+>>> Cached:           872008 kB
+>>> SwapCached:            0 kB
+>>> Active:           626932 kB
+>>> Inactive:         519216 kB
+>>> Active(anon):     180776 kB
+>>> Inactive(anon):   222944 kB
+>>> Active(file):     446156 kB
+>>> Inactive(file):   296272 kB
+>>> Unevictable:           0 kB
+>>> Mlocked:               0 kB
+>>> HighTotal:       7294672 kB
+>>> HighFree:        5704696 kB
+>>> LowTotal:         309068 kB
+>>> LowFree:          624916 kB
+>>>
+>>> After logic memory remove:
+>>>
+>>> MemTotal:        7079452 kB
+>>> MemFree:         5805976 kB
+>>> Buffers:           94372 kB
+>>> Cached:           872000 kB
+>>> SwapCached:            0 kB
+>>> Active:           626936 kB
+>>> Inactive:         519236 kB
+>>> Active(anon):     180780 kB
+>>> Inactive(anon):   222944 kB
+>>> Active(file):     446156 kB
+>>> Inactive(file):   296292 kB
+>>> Unevictable:           0 kB
+>>> Mlocked:               0 kB
+>>> HighTotal:       7294672 kB
+>>> HighFree:        5181024 kB
+>>> LowTotal:       4294752076 kB
+>>> LowFree:          624952 kB
+>>>
+>>> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+>>> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+>>> ---
+>>>  mm/page_alloc.c | 2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index 98cbdf6..23b921f 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+>>>                 list_del(&page->lru);
+>>>                 rmv_page_order(page);
+>>>                 zone->free_area[order].nr_free--;
+>>> +               if (PageHighMem(page))
+>>> +                       totalhigh_pages -= 1 << order;
+>>>                 for (i = 0; i < (1 << order); i++)
+>>>                         SetPageReserved((page+i));
+>>>                 pfn += (1 << order);
 >>
->> On Monday 27 May 2013 11:52 AM, Laxman Dewangan wrote:
->>> On Monday 27 May 2013 11:38 AM, Chanwoo Choi wrote:
->>>> On 05/27/2013 02:54 PM, Kishon Vijay Abraham I wrote:
->>>>> Hi,
->>>>>
->>>>> On Monday 27 May 2013 11:04 AM, Chanwoo Choi wrote:
->>>>>> Hi Kishon,
->>>>>>
->>>>>> I have some comment about this patch
->>>>>> and upload modified patch to following repository
->>>>>> (extcon-for-palmas).
->>>>>> -
->>>>>> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
->>>>>>
->>>>>>
->>>>>>
->>>>>> This patchset include patch related to other module
->>>>>> ,so I need your opinion to apply this patchset to git repository.
->>>>> yeah.. Still there is some confusion with palmas_set_switch_smps10().
->>>>> I think we can remove it for now and add it separately later. By this
->>>>> at least we can have device mode fully functional in OMAP5. What do
->>>>> you think?
->>>>>
->>>>    I agree your opinion.
->>>>
->>>> But, I propose some fixes about palmas_set_switch_smps10().
->>>> I dont' prefer to call global function in exton-palmas.c from
->>>> palmas-regulator.c.
->>>> So, Why don't you use regulator consumer instead of global function?
->>>> You can register specific regulator for enabling or disabling
->>>> SMPS10_SWITCH_EN
->>>> and then control SMPS10_SWITCH_EN bit through regulator framework in
->>>> extcon-palmas.c
->>>> without calling global function.
->>> Along with this, I also like to make the VBUS regulator control to be
->>> optional here. Currently it is mandatory.
->> But dint you just tell on my v4 of this patch that you don’t require
->> this.
->> http://www.spinics.net/lists/linux-doc/msg10638.html
->
-> In V4, I said remove this VBUS control and my mean was to remove all
-> regulator calls for VBUS enabled/disable.
-> I saw you just remove the platform data option to have this control and
-> made VBUS mandatory.
->
-> Probably some gap here.
+>> Hm. I already NAKed and you didn't answered my question. isn't it?
+> 
+> Jiang makes his effort to support highmem for memory hotremove, he also
+> fix this bug, http://marc.info/?l=linux-mm&m=136957578620221&w=2
 
-Indeed..
-I think then we should stick back to how it was with my v4 or else it 
-would break OMAP. The regulator calls can't be moved anywhere else as it 
-is specific to PALMAS.
+OK, go ahead.
 
-Thanks
-Kishon
+
+
+
+
