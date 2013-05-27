@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab3E0Cv7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:51:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:14842 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab3E0Cv6 (ORCPT
+	id S1756214Ab3E0D3x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 23:29:53 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:64518 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab3E0D3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:51:58 -0400
-Message-ID: <51A2CA20.6020505@huawei.com>
-Date: Mon, 27 May 2013 10:51:12 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Sun, 26 May 2013 23:29:52 -0400
 MIME-Version: 1.0
-To: <JBottomley@parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <gregkh@linuxfoundation.org>,
-        Libo Chen <libo.chen@huawei.com>
-Subject: [PATCH RESEND 01/24] drivers/scsi/a100u2w: Convert to module_pci_driver
-References: <1369621707-6764-1-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1369621707-6764-1-git-send-email-libo.chen@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+In-Reply-To: <87vc65p5a7.fsf@rustcorp.com.au>
+References: <CAPM=9tyLrJ8VAdGCw_1guRS-ogCPE1Qp7faE_nrx_dAm2gvHLQ@mail.gmail.com>
+	<87vc65p5a7.fsf@rustcorp.com.au>
+Date: Mon, 27 May 2013 13:29:50 +1000
+Message-ID: <CAPM=9tzw8jEv8yoLr7ktjO2DHCDzA+mURmJ-DXby_nsWUUNoyg@mail.gmail.com>
+Subject: Re: BUG_ON in virtio-ring.c
+From: Dave Airlie <airlied@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> correct.
+>>
+>> If I have an indirect ring and I'm adding sgs to it and the host is
+>> delayed (say I've got a thread consuming things from the vring and its
+>> off doing something interesting),
+>> I'd really like to get ENOSPC back from virtqueue_add. However if the
+>> indirect addition fails due to free_sg being 0, we hit the BUG_ON
+>> before we ever get to the ENOSPC check.
+>
+> It is correct for the moment: drivers can't assume indirect buffer
+> support in the transport.
+>
+> BUT for a new device, we could say "this depends on indirect descriptor
+> support", put the appropriate check in the device init, and then remove
+> the BUG_ON().
 
-use module_pci_driver instead of init/exit, make code clean.
+But if the transport has indirect buffer support, can it change its
+mind at runtime?
 
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
----
- drivers/scsi/a100u2w.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+In this case we have vq->indirect set, but the device has run out of
+free buffers,
+but it isn't a case that in+out would overflow it if it had free
+buffers since it would use
+an indirect and succeed.
 
-* add "Signed-off-by: Libo Chen <libo.chen@huawei.com>"
+Getting -ENOSPC is definitely what should happen from what I can see,
+not a BUG_ON,
+I should get a BUG_ON only if the device reports no indirect support.
 
-diff --git a/drivers/scsi/a100u2w.c b/drivers/scsi/a100u2w.c
-old mode 100644
-new mode 100755
-index 0163457..db3710f
---- a/drivers/scsi/a100u2w.c
-+++ b/drivers/scsi/a100u2w.c
-@@ -1227,19 +1227,9 @@ static struct pci_driver inia100_pci_driver = {
- 	.remove		= inia100_remove_one,
- };
-
--static int __init inia100_init(void)
--{
--	return pci_register_driver(&inia100_pci_driver);
--}
--
--static void __exit inia100_exit(void)
--{
--	pci_unregister_driver(&inia100_pci_driver);
--}
-+module_pci_driver(inia100_pci_driver);
-
- MODULE_DESCRIPTION("Initio A100U2W SCSI driver");
- MODULE_AUTHOR("Initio Corporation");
- MODULE_LICENSE("Dual BSD/GPL");
-
--module_init(inia100_init);
--module_exit(inia100_exit);
--- 
-1.7.1
-
-
+Dave.
