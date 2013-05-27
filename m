@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3E0KCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:02:08 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14094 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab3E0KCE (ORCPT
+	id S1757290Ab3E0KCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:02:50 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50005 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3E0KCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:02:04 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A32EE9.1030704@asianux.com>
-Date: Mon, 27 May 2013 18:01:13 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 27 May 2013 06:02:49 -0400
+Message-ID: <51A32F1F.5020109@linux.vnet.ibm.com>
+Date: Mon, 27 May 2013 15:32:07 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        zhangyanfei@cn.fujitsu.com, Jiri Kosina <jkosina@suse.cz>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] PowerPC: kernel: need return the related error code
- when failure occurs
-References: <519B0ACA.6090008@asianux.com> <20130521081031.GA29303@iris.ozlabs.ibm.com> <519B3855.6050201@asianux.com> <519B3C72.9060405@asianux.com>
-In-Reply-To: <519B3C72.9060405@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Michael Ellerman <michael@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] powerpc, perf: Ignore separate BHRB privilege state
+ filter request
+References: <1369201667-9048-1-git-send-email-khandual@linux.vnet.ibm.com> <1369201667-9048-2-git-send-email-khandual@linux.vnet.ibm.com> <1369206855.12874.9.camel@concordia> <519C88D9.30009@linux.vnet.ibm.com>
+In-Reply-To: <519C88D9.30009@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052709-1618-0000-0000-000003F695E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+On 05/22/2013 02:29 PM, Anshuman Khandual wrote:
+>>
+>> Your description from patch 0 should be here.
+> Does it sound better ?
+> 
+>>
+>>> -	if ((br_privilege != 7) && (br_privilege != 0))
+>>> -		return -1;
+>>> +
+>>> +	if (br_privilege)
+>>> +		pr_info("BHRB privilege state filter request %llx ignored\n",
+>>> +								br_privilege);
+>>
+>> Don't do that. Ignoring the br_privilege is either the right thing to do
+>> in which case we do it and print nothing,
+> 
+> 
+> I thought the informational print would at least make the user aware
+> of the fact that the separate filter request for BHRB went ignored.
+> Can we add this some where in the documentation ?
 
-Please help check this patch whether is OK, when you have time.
-
-Thanks.
-
-On 05/21/2013 05:20 PM, Chen Gang wrote:
-> 
-> When error occurs, need return the related error code to let upper
-> caller know about it.
-> 
-> ppc_md.nvram_size() can return the error code (e.g. core99_nvram_size()
-> in 'arch/powerpc/platforms/powermac/nvram.c').
-> 
-> Also set ret value when only need it, so can save structions for normal
-> cases.
-> 
-> The original related patch: "f9ce299 [PATCH] powerpc: fix large nvram
-> access".
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/powerpc/kernel/nvram_64.c |   20 ++++++++++++++------
->  1 files changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
-> index 48fbc2b..8213ee1 100644
-> --- a/arch/powerpc/kernel/nvram_64.c
-> +++ b/arch/powerpc/kernel/nvram_64.c
-> @@ -84,22 +84,30 @@ static ssize_t dev_nvram_read(struct file *file, char __user *buf,
->  	char *tmp = NULL;
->  	ssize_t size;
->  
-> -	ret = -ENODEV;
-> -	if (!ppc_md.nvram_size)
-> +	if (!ppc_md.nvram_size) {
-> +		ret = -ENODEV;
->  		goto out;
-> +	}
->  
-> -	ret = 0;
->  	size = ppc_md.nvram_size();
-> -	if (*ppos >= size || size < 0)
-> +	if (size < 0) {
-> +		ret = size;
-> +		goto out;
-> +	}
-> +
-> +	if (*ppos >= size) {
-> +		ret = 0;
->  		goto out;
-> +	}
->  
->  	count = min_t(size_t, count, size - *ppos);
->  	count = min(count, PAGE_SIZE);
->  
-> -	ret = -ENOMEM;
->  	tmp = kmalloc(count, GFP_KERNEL);
-> -	if (!tmp)
-> +	if (!tmp) {
-> +		ret = -ENOMEM;
->  		goto out;
-> +	}
->  
->  	ret = ppc_md.nvram_read(tmp, count, ppos);
->  	if (ret <= 0)
-> 
+So, what we decide here ? We will just ignore any separate BHRB
+privilege state filter request without printing any informational
+event or warning ?
 
 
--- 
-Chen Gang
-
-Asianux Corporation
