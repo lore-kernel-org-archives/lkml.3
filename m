@@ -1,118 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab3E0Mkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:40:31 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:47223 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab3E0Mka (ORCPT
+	id S932382Ab3E0Mly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:41:54 -0400
+Received: from storage.astrosoft.ru ([195.218.158.6]:35089 "HELO
+	storage.astrosoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932143Ab3E0Mlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:40:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5h1u8sr4rd.wl%tiwai@suse.de>
-References: <1369650604-27941-1-git-send-email-ming.lei@canonical.com>
-	<1369650604-27941-2-git-send-email-ming.lei@canonical.com>
-	<CAK7N6vozJ-dNDCj4QEo_nO=Tb_nEq3h6bmSF0rvaJ5NYgyK3fw@mail.gmail.com>
-	<s5h1u8sr4rd.wl%tiwai@suse.de>
-Date: Mon, 27 May 2013 18:10:28 +0530
-Message-ID: <CAK7N6vqU0t7oR6KwMnMN=1h6Q6PLy5=R4dwfdx_5bS7MNHzpBw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] driver core: firmware loader: don't cache
- FW_ACTION_NOHOTPLUG firmware
-From: anish singh <anish198519851985@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 27 May 2013 08:41:53 -0400
+X-Greylist: delayed 913 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 08:41:52 EDT
+From: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Roy Zang <tie-fei.zang@freescale.com>,
+        Jia Hongtao <B38951@freescale.com>, Li Yang <leoli@freescale.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
+Subject: [PATCH 1/1] MPC831x: fix PCI express probing
+Date: Mon, 27 May 2013 14:29:43 +0200
+Message-Id: <1369657783-19962-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
+X-Mailer: git-send-email 1.7.11.7
+X-OriginalArrivalTime: 27 May 2013 12:29:53.0732 (UTC) FILETIME=[E3D62840:01CE5AD5]
+X-MS-Antispam-Report: v=1.1 cv=2q6Veme4G/q3pcE5bdlzCS6ieJhnhBtyc6jHFX2NKno= c=1 sm=1 a=WvVkE4Vu0esA:10 a=X7gM1dXb2OgA:10 a=XuZcRw/agxWFXBge871Jfw==:17 a=QyVQ8uDMAAAA:8 a=o7LM9JJRffF_vSSh4eQA:9 a=gDFPXOgAOVMA:10 a=XuZcRw/agxWFXBge871Jfw==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 5:53 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Mon, 27 May 2013 17:26:22 +0530,
-> anish singh wrote:
->>
->> On Mon, May 27, 2013 at 4:00 PM, Ming Lei <ming.lei@canonical.com> wrote:
->> > Generally there are only two drivers which don't need uevent to
->> > handle firmware loading, so don't cache these firmwares during
-Sorry but it confuses me further,
-If driver doesn't have information about these firmware then how
-does it cache it?
->> Sorry but this statement confuses me i.e. "drivers which don't need
->> uevent to handle firmware loading". Does this mean that driver is
->> dependent on uevent to load the firmware?
->
-> No.
->
->> or does this mean
->> that driver generates uevent to userspace and userpace in turn
->> provides the firmware?
->
-> No.
->
-> The userspace doesn't require uevent, and the driver doesn't generate
-> uevent, either.  The userspace just loads the file when ready.
-> See Documentation/dell_rbu.txt for example.  (And yes, it's a bad
-> design.)
->
->
-> Takashi
->
->> > suspend for these drivers since doing that may block firmware
->> > loading forever.
->> Explanation about why would it block would really help me or
->> for that matter anyone who reads this commit. Or may be
->> a url which discussed this problem.
->> >
->> > Both the two drivers are involved in private firmware images, so
->> > they don't hit in direct loading too.
->> >
->> > Cc: Takashi Iwai <tiwai@suse.de>
->> > Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> > ---
->> >  drivers/base/firmware_class.c |    9 ++++++---
->> >  1 file changed, 6 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> > index e650c25..64e7870 100644
->> > --- a/drivers/base/firmware_class.c
->> > +++ b/drivers/base/firmware_class.c
->> > @@ -993,7 +993,8 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
->> >         return 1; /* need to load */
->> >  }
->> >
->> > -static int assign_firmware_buf(struct firmware *fw, struct device *device)
->> > +static int assign_firmware_buf(struct firmware *fw, struct device *device,
->> > +                               bool skip_cache)
->> >  {
->> >         struct firmware_buf *buf = fw->priv;
->> >
->> > @@ -1010,7 +1011,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device)
->> >          * device may has been deleted already, but the problem
->> >          * should be fixed in devres or driver core.
->> >          */
->> > -       if (device)
->> > +       if (device && !skip_cache)
->> >                 fw_add_devm_name(device, buf->fw_id);
->> >
->> >         /*
->> > @@ -1066,8 +1067,10 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
->> >         if (!fw_get_filesystem_firmware(device, fw->priv))
->> >                 ret = fw_load_from_user_helper(fw, name, device,
->> >                                                uevent, nowait, timeout);
->> > +
->> > +       /* don't cache firmware handled without uevent */
->> >         if (!ret)
->> > -               ret = assign_firmware_buf(fw, device);
->> > +               ret = assign_firmware_buf(fw, device, !uevent);
->> >
->> >         usermodehelper_read_unlock();
->> >
->> > --
->> > 1.7.9.5
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->>
+For MPC831x the bus probing function also needs the fixup to assign
+addresses to the PCI devices as it was for MPC85xx and MPC86xx.
+The fixup of the bridge vendor and device ID should be done early in
+PCI probing. Else the bridge is not detected as FIXUP_HEADER is called
+too late.
+
+Signed-off-by: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
+---
+ arch/powerpc/sysdev/fsl_pci.c | 68 +++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 38 deletions(-)
+
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 028ac1f..94d1bd4 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -84,6 +84,34 @@ static int fsl_pcie_check_link(struct pci_controller *hose)
+ 	return 0;
+ }
+ 
++void fsl_pcibios_fixup_bus(struct pci_bus *bus)
++{
++	struct pci_controller *hose = (struct pci_controller *) bus->sysdata;
++	int i;
++
++
++	if ((bus->parent == hose->bus)
++		&& ((fsl_pcie_bus_fixup
++			&& pci_bus_find_capability(bus, 0, PCI_CAP_ID_EXP))
++			|| (hose->indirect_type
++				& PPC_INDIRECT_TYPE_NO_PCIE_LINK))) {
++		for (i = 0; i < 4; ++i) {
++			struct resource *res = bus->resource[i];
++			struct resource *par = bus->parent->resource[i];
++			if (res) {
++				res->start = 0;
++				res->end   = 0;
++				res->flags = 0;
++			}
++			if (res && par) {
++				res->start = par->start;
++				res->end   = par->end;
++				res->flags = par->flags;
++			}
++		}
++	}
++}
++
+ static int fsl_indirect_read_config(struct pci_bus *bus, unsigned int devfn,
+ 				    int offset, int len, u32 *val)
+ {
+@@ -419,43 +447,6 @@ static void __init setup_pci_cmd(struct pci_controller *hose)
+ 	}
+ }
+ 
+-void fsl_pcibios_fixup_bus(struct pci_bus *bus)
+-{
+-	struct pci_controller *hose = pci_bus_to_host(bus);
+-	int i, is_pcie = 0, no_link;
+-
+-	/* The root complex bridge comes up with bogus resources,
+-	 * we copy the PHB ones in.
+-	 *
+-	 * With the current generic PCI code, the PHB bus no longer
+-	 * has bus->resource[0..4] set, so things are a bit more
+-	 * tricky.
+-	 */
+-
+-	if (fsl_pcie_bus_fixup)
+-		is_pcie = early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP);
+-	no_link = !!(hose->indirect_type & PPC_INDIRECT_TYPE_NO_PCIE_LINK);
+-
+-	if (bus->parent == hose->bus && (is_pcie || no_link)) {
+-		for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; ++i) {
+-			struct resource *res = bus->resource[i];
+-			struct resource *par;
+-
+-			if (!res)
+-				continue;
+-			if (i == 0)
+-				par = &hose->io_resource;
+-			else if (i < 4)
+-				par = &hose->mem_resources[i-1];
+-			else par = NULL;
+-
+-			res->start = par ? par->start : 0;
+-			res->end   = par ? par->end   : 0;
+-			res->flags = par ? par->flags : 0;
+-		}
+-	}
+-}
+-
+ int __init fsl_add_bridge(struct platform_device *pdev, int is_primary)
+ {
+ 	int len;
+@@ -562,7 +553,8 @@ no_bridge:
+ }
+ #endif /* CONFIG_FSL_SOC_BOOKE || CONFIG_PPC_86xx */
+ 
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_FREESCALE, PCI_ANY_ID, quirk_fsl_pcie_header);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_FREESCALE, PCI_ANY_ID,
++	quirk_fsl_pcie_header);
+ 
+ #if defined(CONFIG_PPC_83xx) || defined(CONFIG_PPC_MPC512x)
+ struct mpc83xx_pcie_priv {
+-- 
+1.7.11.7
+
