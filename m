@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab3E0Ksc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 06:48:32 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51118 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab3E0Ksa (ORCPT
+	id S1757577Ab3E0Kur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 06:50:47 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:50617 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757456Ab3E0Kup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 06:48:30 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-Date: Mon, 27 May 2013 12:48:22 +0200
-Message-Id: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 27 May 2013 06:50:45 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A33A53.1050502@asianux.com>
+Date: Mon, 27 May 2013 18:49:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: ben-linux@fluff.org, "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Linux-Arch'" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] ARM: S5PV210: dependency issue, S5P_SLEEP is depend on
+ ARM_CPU_SUSPEND
+References: <5199E4AF.7040607@asianux.com> <51A32FD4.4000001@asianux.com> <158201ce5ac2$a7843de0$f68cb9a0$%kim@samsung.com>
+In-Reply-To: <158201ce5ac2$a7843de0$f68cb9a0$%kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes:
-arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
-:(.text+0x1174): undefined reference to `mdiobus_write'
-:(.text+0x1188): undefined reference to `mdiobus_write'
-:(.text+0x119c): undefined reference to `mdiobus_write'
-:(.text+0x11b0): undefined reference to `mdiobus_write'
-arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
-:(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
+On 05/27/2013 06:12 PM, Kukjin Kim wrote:
+>>>  config S5P_SLEEP
+>>> > >  	bool
+>>> > > +	select ARM_CPU_SUSPEND
+> Probably,
+> 
+> +	select ARM_CPU_SUSPEND if PM ?
+> 
+> selecting the S5P_SLEEP depends on PM though...
 
-when CONFIG_PHYLIB is not selected.
+After reference another platform, they are really all "select
+ARM_CPU_SUSPEND if PM", we'd really better to follow by to let readers
+easy understanding.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
-Changes in v3:
-	added SoB
-	added Acked-By
+I will send patch v2.
 
-Changes in v2:
-	use IS_BUILTIN
-	use CONFIG_PHYLIB and not CONFIG_PHY
 
- arch/arm/mach-at91/board-dt-sama5.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 705305e..e9ce541 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -47,22 +47,24 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
- #define GMII_ERCR	11
- #define GMII_ERDWR	12
- 
--	/* Set delay values */
--	value = GMII_RCCPSR | 0x8000;
--	phy_write(phy, GMII_ERCR, value);
--	value = 0xF2F4;
--	phy_write(phy, GMII_ERDWR, value);
--	value = GMII_RRDPSR | 0x8000;
--	phy_write(phy, GMII_ERCR, value);
--	value = 0x2222;
--	phy_write(phy, GMII_ERDWR, value);
-+	if (IS_BUILTIN(CONFIG_PHYLIB)) {
-+		/* Set delay values */
-+		value = GMII_RCCPSR | 0x8000;
-+		phy_write(phy, GMII_ERCR, value);
-+		value = 0xF2F4;
-+		phy_write(phy, GMII_ERDWR, value);
-+		value = GMII_RRDPSR | 0x8000;
-+		phy_write(phy, GMII_ERCR, value);
-+		value = 0x2222;
-+		phy_write(phy, GMII_ERDWR, value);
-+	}
- 
- 	return 0;
- }
- 
- static void __init sama5_dt_device_init(void)
- {
--	if (of_machine_is_compatible("atmel,sama5d3xcm"))
-+	if (of_machine_is_compatible("atmel,sama5d3xcm") && IS_BUILTIN(CONFIG_PHYLIB))
- 		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
- 			ksz9021rn_phy_fixup);
- 
+Thanks.
 -- 
-1.8.1.2
+Chen Gang
 
+Asianux Corporation
