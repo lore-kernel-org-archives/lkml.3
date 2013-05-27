@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3E0QOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 12:14:11 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:36339 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab3E0QOH (ORCPT
+	id S1754291Ab3E0QTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 12:19:17 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52923 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab3E0QTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 12:14:07 -0400
-Date: Mon, 27 May 2013 18:14:03 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: NVIDIA Tegra DRM tree
-Message-ID: <20130527161402.GA9676@mithrandir>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 May 2013 12:19:15 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/3] net: phy: prevent linking breakage
+Date: Mon, 27 May 2013 18:18:41 +0200
+Message-Id: <1369671524-14797-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is a linking issue when using phy_register_fixup{,_for_uid,_for_id} and
+CONFIG_PHYLIB is not a builtin:
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
+:(.text+0x1174): undefined reference to `mdiobus_write'
+:(.text+0x1188): undefined reference to `mdiobus_write'
+:(.text+0x119c): undefined reference to `mdiobus_write'
+:(.text+0x11b0): undefined reference to `mdiobus_write'
+arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
+:(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
 
-Hi Stephen,
+This has been solved for arch/arm/mach-mxs/ and arch/arm/mach-imx/ by testing
+IS_BUILTIN(CONFIG_PHYLIB) before calling the functions.
 
-In response to some fallout during the last merge window I've setup a
-tree for the Tegra DRM driver to be included in linux-next in the hope
-that it will help avoid more fallout in the future.
+The first patch is an attempt at solving that issue globally.
 
-The repository can be found here:
+The following patches remove the unnecessary IS_BUILTIN(CONFIG_PHYLIB) checks.
 
-  git://anongit.freedesktop.org/tegra/linux.git
+Quickly greping into the code shows that the issue may arise in:
 
-With the branch for linux-next being: drm/for-next
+arch/powerpc/platforms/85xx/mpc85xx_mds.c
+arch/arm/mach-davinci/board-dm644x-evm.c
+arch/arm/mach-orion5x/dns323-setup.c
+arch/arm/mach-at91/board-dt-sama5.c
 
-Thanks,
-Thierry
+Alexandre Belloni (3):
+  net: phy: prevent linking breakage
+  arm: mxs: don't check for CONFIG_PHYLIB as builtin
+  arm: imx: don't check for CONFIG_PHYLIB as builtin
 
---nFreZHaLTZJo0R7j
-Content-Type: application/pgp-signature
+ arch/arm/mach-imx/mach-imx6q.c | 23 ++++++++++-------------
+ arch/arm/mach-mxs/mach-mxs.c   |  5 ++---
+ drivers/net/phy/phy_device.c   |  6 ++++++
+ include/linux/phy.h            | 12 ++++++++++++
+ 4 files changed, 30 insertions(+), 16 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+-- 
+1.8.1.2
 
-iQIcBAEBAgAGBQJRo4ZKAAoJEN0jrNd/PrOhlGAP/2L6HRuRO06OYvHkduTlWvkZ
-HgJK551DgL/jYFlnZz8bRKIvKcXoZP6a5YjQ5SvMSK3NDrIiTR+96FKycKufMvZK
-376Tq7iMSYtdqJJAFEupZBQmCVdjeTJ9GV+g+uqZ7C/3tCSMqedF0np8fyQKKH2P
-7n86DAKZCysMiVNyfWmCkvDix1G4XF5jT5BuXLWMz4xCndI7/MlkAuEogBfPnlBx
-1/z5647Q2grz6GyxlnUDIfMTB+wjP0QXWsGI7PKUSx0ovoV7B5/08/iMc1MbvxrX
-KnImI8gaOUfYR4Ib1WCs0bzONYW23qiredimMaldq91OE+Em9p3VVx6QfayjzoWD
-4ovfBzVuQtiG8vSJl2OoTs3ZZ5FGAwLlQhbWeWU6XZwYjYgWKDT85z+NmMNYvfU5
-yYct3SRsVI2hoKOvbW28AGrEl4NQaYrBon+4fzqN6svZqGjqvQ3hJYLLoeXb1vBv
-1LTTbh4Y9dALzEzHTLmIoOVK+vZQvdhcr3QJHmHLjILKbpuFRGsjrTOelXh/8ak4
-wRySljU6Q7nc4e1FYXbr1SOEZdVedO5lOYldd0YZ6E1soSI1YadK9pe9u72dBiTn
-tWUHXl4eQQEeHpXZFGDWIkVKOAPQbScqgVsQa3wIlVyfjjpZQBY8pHAwQtaXmSzm
-P4d51bvC0yo1LOOhrw0g
-=fWXN
------END PGP SIGNATURE-----
-
---nFreZHaLTZJo0R7j--
