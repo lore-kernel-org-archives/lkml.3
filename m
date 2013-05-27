@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab3E0MQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 08:16:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60466 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab3E0MOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 08:14:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,750,1363158000"; 
-   d="scan'208";a="247199728"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 11/12] mmp_tdma: set cookies as well when asked for tx status
-Date: Mon, 27 May 2013 15:14:41 +0300
-Message-Id: <1369656882-25241-12-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S932279Ab3E0MQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 08:16:38 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:34420 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932179Ab3E0MQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 08:16:36 -0400
+Date: Mon, 27 May 2013 14:16:27 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH] ARM: ux500: select SND_SOC_UX500 for ux500
+Message-ID: <20130527121627.GA29935@balto.lan>
+References: <1369402093-27817-1-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkdbB7KjzUCf72gqN3ooiWYYkaaPrZUEDeG8HuLk3pTB72A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbB7KjzUCf72gqN3ooiWYYkaaPrZUEDeG8HuLk3pTB72A@mail.gmail.com>
+X-Operating-System: Linux balto 3.10.0-rc2-00332-g17fdfd0 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_set_residue() sets only residue value, so user can't rely on the returned
-values of cookies. That patch standardize the behaviour.
+On Mon, May 27, 2013 at 01:44:38PM +0200, Linus Walleij wrote:
+> On Fri, May 24, 2013 at 3:28 PM, Fabio Baltieri
+> <fabio.baltieri@linaro.org> wrote:
+> 
+> > Enable ux500 specific ALSA SoC drivers by default on u8500_defconfig.
+> >
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> 
+> Thanks, patch applied to my defconfig branch.
+> 
+> Now I can finally use the Snowball board to run sidplay.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/mmp_tdma.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Glad to be of help! :-)
 
-diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-index 43d5a6c..4472915 100644
---- a/drivers/dma/mmp_tdma.c
-+++ b/drivers/dma/mmp_tdma.c
-@@ -456,7 +456,8 @@ static enum dma_status mmp_tdma_tx_status(struct dma_chan *chan,
- {
- 	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
- 
--	dma_set_residue(txstate, tdmac->buf_len - tdmac->pos);
-+	dma_set_tx_state(txstate, chan->completed_cookie, chan->cookie,
-+			 tdmac->buf_len - tdmac->pos);
- 
- 	return tdmac->status;
- }
+Fabio
+
 -- 
-1.8.2.rc0.22.gb3600c3
-
+Fabio Baltieri
