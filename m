@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab3E0Cc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 May 2013 22:32:28 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40922 "EHLO
+	id S1756357Ab3E0Cci (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 May 2013 22:32:38 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41098 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3E0CcY (ORCPT
+	with ESMTP id S1756252Ab3E0Cca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 May 2013 22:32:24 -0400
+	Sun, 26 May 2013 22:32:30 -0400
 From: Libo Chen <libo.chen@huawei.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-pcmcia@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+To: <mchehab@redhat.com>
+CC: <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <lizefan@huawei.com>, <libo.chen@huawei.com>,
         <gregkh@linuxfoundation.org>
-Subject: [PATCH 24/24] drivers/pcmcia/yenta_socket: Convert to module_pci_driver
-Date: Mon, 27 May 2013 10:32:06 +0800
-Message-ID: <1369621926-22548-1-git-send-email-libo.chen@huawei.com>
+Subject: [PATCH 21/24] drivers/media/pci/pt1/pt1: Convert to module_pci_driver
+Date: Mon, 27 May 2013 10:31:56 +0800
+Message-ID: <1369621916-12580-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,35 +28,35 @@ use module_pci_driver instead of init/exit, make code clean.
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/pcmcia/yenta_socket.c |   16 +---------------
- 1 files changed, 1 insertions(+), 15 deletions(-)
+ drivers/media/pci/pt1/pt1.c |   15 +--------------
+ 1 files changed, 1 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
-index 6b4ff09..dc18a3a 100644
---- a/drivers/pcmcia/yenta_socket.c
-+++ b/drivers/pcmcia/yenta_socket.c
-@@ -1439,20 +1439,6 @@ static struct pci_driver yenta_cardbus_driver = {
- 	.driver.pm	= YENTA_PM_OPS,
+diff --git a/drivers/media/pci/pt1/pt1.c b/drivers/media/pci/pt1/pt1.c
+index e921108..75ce142 100644
+--- a/drivers/media/pci/pt1/pt1.c
++++ b/drivers/media/pci/pt1/pt1.c
+@@ -1225,20 +1225,7 @@ static struct pci_driver pt1_driver = {
+ 	.id_table	= pt1_id_table,
  };
  
 -
--static int __init yenta_socket_init(void)
+-static int __init pt1_init(void)
 -{
--	return pci_register_driver(&yenta_cardbus_driver);
+-	return pci_register_driver(&pt1_driver);
 -}
 -
 -
--static void __exit yenta_socket_exit(void)
+-static void __exit pt1_cleanup(void)
 -{
--	pci_unregister_driver(&yenta_cardbus_driver);
+-	pci_unregister_driver(&pt1_driver);
 -}
 -
--
--module_init(yenta_socket_init);
--module_exit(yenta_socket_exit);
-+module_pci_driver(yenta_cardbus_driver);
+-module_init(pt1_init);
+-module_exit(pt1_cleanup);
++module_pci_driver(pt1_driver);
  
- MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Takahito HIRANO <hiranotaka@zng.info>");
+ MODULE_DESCRIPTION("Earthsoft PT1/PT2 Driver");
 -- 
 1.7.1
 
