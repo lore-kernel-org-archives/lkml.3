@@ -1,71 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab3E0GVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 02:21:33 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6892 "EHLO
+	id S1755510Ab3E0G2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 02:28:49 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:7056 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab3E0GVb (ORCPT
+	with ESMTP id S1753616Ab3E0G2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 02:21:31 -0400
-X-Greylist: delayed 134463 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 02:21:30 EDT
+	Mon, 27 May 2013 02:28:48 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 02:28:47 EDT
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 26 May 2013 23:21:30 -0700
-Message-ID: <51A2FB88.9000303@nvidia.com>
-Date: Mon, 27 May 2013 11:52:00 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	by hqnvupgp07.nvidia.com on Sun, 26 May 2013 23:23:43 -0700
+Message-ID: <51A2FB97.4040505@nvidia.com>
+Date: Mon, 27 May 2013 09:22:15 +0300
+From: Arto Merilainen <amerilainen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "george.cherian@ti.com" <george.cherian@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 2/3] extcon: Palmas Extcon Driver
-References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-3-git-send-email-kishon@ti.com> <51A2F07F.8070009@samsung.com> <51A2F512.2090907@ti.com> <51A2F84D.9030605@samsung.com>
-In-Reply-To: <51A2F84D.9030605@samsung.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "airlied@linux.ie" <airlied@linux.ie>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] gpu: host1x: Fixes to host1x firewall
+References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com> <1368791388-31441-2-git-send-email-amerilainen@nvidia.com> <20130526100240.GA1652@mithrandir>
+In-Reply-To: <20130526100240.GA1652@mithrandir>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 May 2013 11:38 AM, Chanwoo Choi wrote:
-> On 05/27/2013 02:54 PM, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Monday 27 May 2013 11:04 AM, Chanwoo Choi wrote:
->>> Hi Kishon,
->>>
->>> I have some comment about this patch
->>> and upload modified patch to following repository (extcon-for-palmas).
->>> - http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-for-palmas&id=f2b7cb80699cbe1a5fd6c97ef2c600915f8d7f2c
->>>
->>> This patchset include patch related to other module
->>> ,so I need your opinion to apply this patchset to git repository.
->> yeah.. Still there is some confusion with palmas_set_switch_smps10(). I think we can remove it for now and add it separately later. By this at least we can have device mode fully functional in OMAP5. What do you think?
->>
->   I agree your opinion.
+On 05/26/2013 01:02 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
-> But, I propose some fixes about palmas_set_switch_smps10().
-> I dont' prefer to call global function in exton-palmas.c from palmas-regulator.c.
-> So, Why don't you use regulator consumer instead of global function?
-> You can register specific regulator for enabling or disabling SMPS10_SWITCH_EN
-> and then control SMPS10_SWITCH_EN bit through regulator framework in extcon-palmas.c
-> without calling global function.
+> On Fri, May 17, 2013 at 02:49:43PM +0300, Arto Merilainen wrote:
+>> From: Terje Bergstrom <tbergstrom@nvidia.com>
+>>
+>> This patch adds several fixes to host1x firewall:
+>> - Host1x firewall does not survive if it expects a reloc, but user
+>>    space didn't pass any relocs. Also it reset the reloc table for
+>>    each gather, whereas they should be reset only per submit. Also
+>>    class does not need to be reset for each class - once per submit
+>>    is enough.
+>> - For INCR opcode the check was not working properly at all.
+>> - The firewall verified gather buffers before copying them. This
+>>    allowed a malicious application to rewrite the buffer content by
+>>    timing the rewrite carefully. This patch makes the buffer
+>>    validation occur after copying the buffers.
+>
+> Can these be split into separate patches, please? It's not only always
+> good to split logical changes into separate patches but it also makes
+> reviewing a lot more pleasant. It's hard to tell from this combined
+> patch which changes belong together.
 
-Along with this, I also like to make the VBUS regulator control to be 
-optional here. Currently it is mandatory.
+Sure.
+
+>
+> I have a few additional comments inline.
+>
+>> diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+>> index f665d67..4f3c004 100644
+>> --- a/drivers/gpu/host1x/job.c
+>> +++ b/drivers/gpu/host1x/job.c
+>> @@ -228,17 +228,15 @@ static unsigned int do_relocs(struct host1x_job *job, struct host1x_bo *cmdbuf)
+>>   	void *cmdbuf_page_addr = NULL;
+>>
+>>   	/* pin & patch the relocs for one gather */
+>> -	while (i < job->num_relocs) {
+>> +	for (i = 0; i < job->num_relocs; ++i) {
+>
+> Nit: I prefer post-increment where possible. For consistency.
+
+Will do.
+
+>
+>> @@ -268,15 +263,15 @@ static unsigned int do_relocs(struct host1x_job *job, struct host1x_bo *cmdbuf)
+>>   	return 0;
+>>   }
+>>
+>> -static int check_reloc(struct host1x_reloc *reloc, struct host1x_bo *cmdbuf,
+>> -		       unsigned int offset)
+>> +static bool check_reloc(struct host1x_reloc *reloc, struct host1x_bo *cmdbuf,
+>> +			unsigned int offset)
+>>   {
+>>   	offset *= sizeof(u32);
+>>
+>> -	if (reloc->cmdbuf != cmdbuf || reloc->cmdbuf_offset != offset)
+>> -		return -EINVAL;
+>> +	if (!reloc || reloc->cmdbuf != cmdbuf || reloc->cmdbuf_offset != offset)
+>
+> Is the additional !reloc check really necessary? Looking at the callers,
+> they always pass in fw->relocarray, which in turn is only NULL if no
+> buffers are to be relocated.
+
+Yes, the additional check is necessary exactly for that reason. The code 
+will fail if the userspace does not deliver a relocation array and still 
+pushes data to an address register.
+
+However, the code *should* check that there are relocations left before 
+even coming here so I probably just fix this differently.
+
+>
+>> +		return true;
+>>
+>> -	return 0;
+>> +	return false;
+>>   }
+>
+> I wonder whether we should be changing the logic here and have the
+> check_reloc() function return true if the relocation is good. I find
+> that to be more intuitive.
+>
+
+I was also thinking that earlier. Will do.
+
+>> @@ -508,6 +502,7 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
+>>   	int err;
+>>   	unsigned int i, j;
+>>   	struct host1x *host = dev_get_drvdata(dev->parent);
+>> +
+>>   	DECLARE_BITMAP(waitchk_mask, host1x_syncpt_nb_pts(host));
+>
+> This is an unnecessary whitespace change.
+
+Ops. Will fix.
+
+- Arto
