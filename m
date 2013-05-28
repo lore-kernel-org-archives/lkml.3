@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213Ab3E1D4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52474 "EHLO
+	id S933468Ab3E1D4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52667 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758770Ab3E1DyZ (ORCPT
+	by vger.kernel.org with ESMTP id S1758952Ab3E1DyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:25 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Wang YanQing" <udknight@gmail.com>
+CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Jakub Zawadzki" <darkjames-ws@darkjames.pl>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.358315384@decadent.org.uk>
+Message-ID: <lsq.1369712993.469222141@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [14/94] ALSA: HDA: Fix Oops caused by dereference NULL pointer
+Subject: [84/94] packet: tpacket_v3: do not trigger bug() on wrong  header
+ status
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,40 +33,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 2195b063f6609e4c6268f291683902f25eaf9aa6 upstream.
+[ Upstream commit 8da3056c04bfc5f69f840ab038a38389e2de8189 ]
 
-The interrupt handler azx_interrupt will call azx_update_rirb,
-which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
-will dereference chip->bus pointer.
+Jakub reported that it is fairly easy to trigger the BUG() macro
+from user space with TPACKET_V3's RX_RING by just giving a wrong
+header status flag. We already had a similar situation in commit
+7f5c3e3a80e6654 (``af_packet: remove BUG statement in
+tpacket_destruct_skb'') where this was the case in the TX_RING
+side that could be triggered from user space. So really, don't use
+BUG() or BUG_ON() unless there's really no way out, and i.e.
+don't use it for consistency checking when there's user space
+involved, no excuses, especially not if you're slapping the user
+with WARN + dump_stack + BUG all at once. The two functions are
+of concern:
 
-The problem is we alloc chip->bus in azx_codec_create
-which will be called after we enable IRQ and enable unsolicited
-event in azx_probe.
+  prb_retire_current_block() [when block status != TP_STATUS_KERNEL]
+  prb_open_block() [when block_status != TP_STATUS_KERNEL]
 
-This will cause Oops due dereference NULL pointer. I meet it, good luck:)
+Calls to prb_open_block() are guarded by ealier checks if block_status
+is really TP_STATUS_KERNEL (racy!), but the first one BUG() is easily
+triggable from user space. System behaves still stable after they are
+removed. Also remove that yoda condition entirely, since it's already
+guarded.
 
-[Rearranged the NULL check before the tracepoint and added another
- NULL check of bus->workq -- tiwai]
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/hda_codec.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/packet/af_packet.c | 54 +++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 34 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -615,6 +615,9 @@ int snd_hda_queue_unsol_event(struct hda
- 	struct hda_bus_unsolicited *unsol;
- 	unsigned int wp;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 835fcea..5a70215 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -813,37 +813,27 @@ static void prb_open_block(struct tpacket_kbdq_core *pkc1,
  
-+	if (!bus || !bus->workq)
-+		return 0;
-+
- 	trace_hda_unsol_event(bus, res, res_ex);
- 	unsol = bus->unsol;
- 	if (!unsol)
+ 	smp_rmb();
+ 
+-	if (likely(TP_STATUS_KERNEL == BLOCK_STATUS(pbd1))) {
+-
+-		/* We could have just memset this but we will lose the
+-		 * flexibility of making the priv area sticky
+-		 */
+-		BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
+-		BLOCK_NUM_PKTS(pbd1) = 0;
+-		BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		getnstimeofday(&ts);
+-		h1->ts_first_pkt.ts_sec = ts.tv_sec;
+-		h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
+-		pkc1->pkblk_start = (char *)pbd1;
+-		pkc1->nxt_offset = (char *)(pkc1->pkblk_start +
+-		BLK_PLUS_PRIV(pkc1->blk_sizeof_priv));
+-		BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
+-		pbd1->version = pkc1->version;
+-		pkc1->prev = pkc1->nxt_offset;
+-		pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
+-		prb_thaw_queue(pkc1);
+-		_prb_refresh_rx_retire_blk_timer(pkc1);
+-
+-		smp_wmb();
+-
+-		return;
+-	}
++	/* We could have just memset this but we will lose the
++	 * flexibility of making the priv area sticky
++	 */
++	BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
++	BLOCK_NUM_PKTS(pbd1) = 0;
++	BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
++	getnstimeofday(&ts);
++	h1->ts_first_pkt.ts_sec = ts.tv_sec;
++	h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
++	pkc1->pkblk_start = (char *)pbd1;
++	pkc1->nxt_offset = (char *)(pkc1->pkblk_start +
++				    BLK_PLUS_PRIV(pkc1->blk_sizeof_priv));
++	BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
++	BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
++	pbd1->version = pkc1->version;
++	pkc1->prev = pkc1->nxt_offset;
++	pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
++	prb_thaw_queue(pkc1);
++	_prb_refresh_rx_retire_blk_timer(pkc1);
+ 
+-	WARN(1, "ERROR block:%p is NOT FREE status:%d kactive_blk_num:%d\n",
+-		pbd1, BLOCK_STATUS(pbd1), pkc1->kactive_blk_num);
+-	dump_stack();
+-	BUG();
++	smp_wmb();
+ }
+ 
+ /*
+@@ -934,10 +924,6 @@ static void prb_retire_current_block(struct tpacket_kbdq_core *pkc,
+ 		prb_close_block(pkc, pbd, po, status);
+ 		return;
+ 	}
+-
+-	WARN(1, "ERROR-pbd[%d]:%p\n", pkc->kactive_blk_num, pbd);
+-	dump_stack();
+-	BUG();
+ }
+ 
+ static int prb_curr_blk_in_use(struct tpacket_kbdq_core *pkc,
 
