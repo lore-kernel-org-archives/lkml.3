@@ -1,215 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133Ab3E1N3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:29:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50504 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933952Ab3E1N3C (ORCPT
+	id S934141Ab3E1NaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:30:24 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:65056 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933952Ab3E1NaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:29:02 -0400
-Date: Tue, 28 May 2013 06:28:23 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-7b959fc582741227a1c4cba710d6aff8fb183128@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, fche@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, davem@davemloft.net, anil.s.keshavamurthy@intel.com,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        timo.lindfors@iki.fi
-Reply-To: mingo@kernel.org, hpa@zytor.com, fche@redhat.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        davem@davemloft.net, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, timo.lindfors@iki.fi,
-        tglx@linutronix.de
-In-Reply-To: <20130522093409.9084.63554.stgit@mhiramat-M0-7522>
-References: <20130522093409.9084.63554.stgit@mhiramat-M0-7522>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes: Fix to free gone and unused optprobes
-Git-Commit-ID: 7b959fc582741227a1c4cba710d6aff8fb183128
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 28 May 2013 09:30:21 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <51A4676D.9010404@ti.com>
+References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com>
+	<CANsc=4WDM0q=RwaN2ZrcNqgJ=fDsgGHcBDcufnDek4EVWcnGfw@mail.gmail.com>
+	<201305272023.12281.arnd@arndb.de>
+	<51A4676D.9010404@ti.com>
+Date: Tue, 28 May 2013 09:30:20 -0400
+Message-ID: <CANsc=4W0j62vQYXdcKkdd199Jp+jsx_Xgs0n+5fM+WR00pD9Og@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
+From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Fainelli <florian@openwrt.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yannick Brosseau <yannick.brosseau@gmail.com>,
+        "Balbi, Felipe" <balbi@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7b959fc582741227a1c4cba710d6aff8fb183128
-Gitweb:     http://git.kernel.org/tip/7b959fc582741227a1c4cba710d6aff8fb183128
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 22 May 2013 18:34:09 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 10:37:59 +0200
+Dear Arnd and Roger, thank you for your answers.
 
-kprobes: Fix to free gone and unused optprobes
+2013/5/28 Roger Quadros <rogerq@ti.com>
+> Selecting NOP_USB_XCEIV is wrong as it in turn depends on USB_PHY.
+>
+> I'm not for depends as it would hide USB_EHCI_HCD_OMAP in menuconfig.
+> I'm for explicitly selecting both, as it makes the user's life much
+> easier.
+> But I'm afraid maintainers might object to that.
+>
+> The other option is to enable the required drivers in omap2plus_defconfig.
+> http://comments.gmane.org/gmane.linux.ports.arm.omap/97899
 
-Fix to free gone and unused optprobes. This bug will
-cause a kernel panic if the user reuses the killed and
-unused probe.
+This seems a good idea to me, since many OMAP users boot with NFS and
+need USB directly working (Ethernet over USB).
 
-Reported at:
+> Maybe you could just resend that patch after addressing Kevin's comments?
 
-  http://sourceware.org/ml/systemtap/2013-q2/msg00142.html
+It's sad that USB_EHCI_HCD is too instable to be added in omap2plus_defconfig.
+Still, USB_PHY and NOP_USB_XCEIV are needed since v3.10 for USB
+support (and harmless): should I send a patch adding those two in
+omap2plus_defconfig?
 
-In the normal path, an optprobe on an init function is
-unregistered when a module goes live.
-
-unregister_kprobe(kp)
- -> __unregister_kprobe_top
-   ->__disable_kprobe
-     ->disarm_kprobe(ap == op)
-       ->__disarm_kprobe
-        ->unoptimize_kprobe : the op is queued
-                              on unoptimizing_list
-and do nothing in __unregister_kprobe_bottom
-
-After a while (usually wait 5 jiffies), kprobe_optimizer
-runs to unoptimize and free optprobe.
-
-kprobe_optimizer
- ->do_unoptimize_kprobes
-   ->arch_unoptimize_kprobes : moved to free_list
- ->do_free_cleaned_kprobes
-   ->hlist_del: the op is removed
-   ->free_aggr_kprobe
-     ->arch_remove_optimized_kprobe
-     ->arch_remove_kprobe
-     ->kfree: the op is freed
-
-Here, if kprobes_module_callback is called and the delayed
-unoptimizing probe is picked BEFORE kprobe_optimizer runs,
-
-kprobes_module_callback
- ->kill_kprobe
-   ->kill_optimized_kprobe : dequeued from unoptimizing_list <=!!!
-     ->arch_remove_optimized_kprobe
-   ->arch_remove_kprobe
-   (but op is not freed, and on the kprobe hash table)
-
-This doesn't happen if the probe unregistration is done AFTER
-kprobes_module_callback is called (because at that time the op
-is gone), and kprobe-tracer does it.
-
-To fix this bug, this patch changes kprobes_module_callback to
-enqueue the op to freeing_list at kill_optimized_kprobe only
-if the op is unused. The unused probes on freeing_list will
-be freed in do_free_cleaned_kprobes.
-
-Note that this calls arch_remove_*kprobe twice on the
-same probe. Thus those functions have to check the double free.
-Fortunately, most of arch codes already checked that except
-for mips. This will be fixed in the next patch.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: systemtap@sourceware.org
-Cc: yrl.pp-manager.tt@hitachi.com
-Cc: David S. Miller <davem@davemloft.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Link: http://lkml.kernel.org/r/20130522093409.9084.63554.stgit@mhiramat-M0-7522
-[ Minor edits. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/kprobes.c | 30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3fed7f0..bddf3b2 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -467,6 +467,7 @@ static struct kprobe *__kprobes get_optimized_kprobe(unsigned long addr)
- /* Optimization staging list, protected by kprobe_mutex */
- static LIST_HEAD(optimizing_list);
- static LIST_HEAD(unoptimizing_list);
-+static LIST_HEAD(freeing_list);
- 
- static void kprobe_optimizer(struct work_struct *work);
- static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
-@@ -504,7 +505,7 @@ static __kprobes void do_optimize_kprobes(void)
-  * Unoptimize (replace a jump with a breakpoint and remove the breakpoint
-  * if need) kprobes listed on unoptimizing_list.
-  */
--static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
-+static __kprobes void do_unoptimize_kprobes(void)
- {
- 	struct optimized_kprobe *op, *tmp;
- 
-@@ -515,9 +516,9 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
- 	/* Ditto to do_optimize_kprobes */
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	arch_unoptimize_kprobes(&unoptimizing_list, free_list);
-+	arch_unoptimize_kprobes(&unoptimizing_list, &freeing_list);
- 	/* Loop free_list for disarming */
--	list_for_each_entry_safe(op, tmp, free_list, list) {
-+	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
- 		/* Disarm probes if marked disabled */
- 		if (kprobe_disabled(&op->kp))
- 			arch_disarm_kprobe(&op->kp);
-@@ -536,11 +537,11 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
- }
- 
- /* Reclaim all kprobes on the free_list */
--static __kprobes void do_free_cleaned_kprobes(struct list_head *free_list)
-+static __kprobes void do_free_cleaned_kprobes(void)
- {
- 	struct optimized_kprobe *op, *tmp;
- 
--	list_for_each_entry_safe(op, tmp, free_list, list) {
-+	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
- 		BUG_ON(!kprobe_unused(&op->kp));
- 		list_del_init(&op->list);
- 		free_aggr_kprobe(&op->kp);
-@@ -556,8 +557,6 @@ static __kprobes void kick_kprobe_optimizer(void)
- /* Kprobe jump optimizer */
- static __kprobes void kprobe_optimizer(struct work_struct *work)
- {
--	LIST_HEAD(free_list);
--
- 	mutex_lock(&kprobe_mutex);
- 	/* Lock modules while optimizing kprobes */
- 	mutex_lock(&module_mutex);
-@@ -566,7 +565,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
- 	 * Step 1: Unoptimize kprobes and collect cleaned (unused and disarmed)
- 	 * kprobes before waiting for quiesence period.
- 	 */
--	do_unoptimize_kprobes(&free_list);
-+	do_unoptimize_kprobes();
- 
- 	/*
- 	 * Step 2: Wait for quiesence period to ensure all running interrupts
-@@ -581,7 +580,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
- 	do_optimize_kprobes();
- 
- 	/* Step 4: Free cleaned kprobes after quiesence period */
--	do_free_cleaned_kprobes(&free_list);
-+	do_free_cleaned_kprobes();
- 
- 	mutex_unlock(&module_mutex);
- 	mutex_unlock(&kprobe_mutex);
-@@ -723,8 +722,19 @@ static void __kprobes kill_optimized_kprobe(struct kprobe *p)
- 	if (!list_empty(&op->list))
- 		/* Dequeue from the (un)optimization queue */
- 		list_del_init(&op->list);
--
- 	op->kp.flags &= ~KPROBE_FLAG_OPTIMIZED;
-+
-+	if (kprobe_unused(p)) {
-+		/* Enqueue if it is unused */
-+		list_add(&op->list, &freeing_list);
-+		/*
-+		 * Remove unused probes from the hash list. After waiting
-+		 * for synchronization, this probe is reclaimed.
-+		 * (reclaiming is done by do_free_cleaned_kprobes().)
-+		 */
-+		hlist_del_rcu(&op->kp.hlist);
-+	}
-+
- 	/* Don't touch the code, because it is already freed. */
- 	arch_remove_optimized_kprobe(op);
- }
+Cheers,
+Adrien
