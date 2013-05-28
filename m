@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab3E1R3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:29:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45241 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964786Ab3E1R3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:29:45 -0400
-Message-ID: <1369762185.22004.54.camel@joe-AO722>
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-From: Joe Perches <joe@perches.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
-        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
-        riel@redhat.com, aquini@redhat.com, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 28 May 2013 10:29:45 -0700
-In-Reply-To: <51A4D4AD.2010507@candelatech.com>
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
-	 <20130527224149.GA4384@electric-eye.fr.zoreil.com>
-	 <51A4D4AD.2010507@candelatech.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S964817Ab3E1Rc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:32:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964784Ab3E1Rc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 13:32:26 -0400
+Date: Tue, 28 May 2013 19:28:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: WARN_ONCE in arch/x86/kernel/hw_breakpoint.c
+Message-ID: <20130528172829.GA2810@redhat.com>
+References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130528170048.GA26906@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528170048.GA26906@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 09:00 -0700, Ben Greear wrote:
-> On 05/27/2013 03:41 PM, Francois Romieu wrote:
-> > atomlin@redhat.com <atomlin@redhat.com> :
-> > [...]
-> >> Failed GFP_ATOMIC allocations by the network stack result in dropped
-> >> packets, which will be received on a subsequent retransmit, and an
-> >> unnecessary, noisy warning with a kernel backtrace.
-[]
-> > Please don't paper over it just because some shit ends in your backyard.
-> We should rate-limit these messages at least.
+OK, Jiri explained me how can I use perf to install the hwbp ;)
 
-Already done.
-Look in mm/page_alloc:warn_alloc_failed()
+And indeed,
 
-void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
-{
-	unsigned int filter = SHOW_MEM_FILTER_NODES;
+	# perl -e 'sleep 1 while 1' &
+	[1] 507
+	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10,mem:0x10 -p `pidof perl`
+	
+triggers the same warn/problem.
 
-	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs) ||
-	    debug_guardpage_minorder() > 0)
-		return;
+Interestingly,
 
+	perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10,mem:0x10 true
+
+correctly fails with ENOSPC, this is because perf installs NR_CPUS counters
+for each cpu and the accounting works.
+
+IIRC, I already tried to complain that perf could be smarter in this case
+and install a single counter with event->cpu = -1, but this is offtopic.
+
+Oleg.
+
+On 05/28, Oleg Nesterov wrote:
+>
+> Well. I am not familiar with this code, and when I tried to read it
+> I feel I will be never able to understand it ;)
+>
+> On 05/20, Vince Weaver wrote:
+> >
+> > on 3.10-rc1 with the trinity fuzzer patched to exercise the
+> > perf_event_open() syscall I am triggering this WARN_ONCE:
+> >
+> > [   75.864822] ------------[ cut here ]------------
+> > [   75.864830] WARNING: at arch/x86/kernel/hw_breakpoint.c:121 arch_install_hw_breakpoint+0x5b/0xcb()
+> ...
+> > [   75.864916]  [<ffffffff81006fff>] ? arch_install_hw_breakpoint+0x5b/0xcb
+> > [   75.864919]  [<ffffffff810ab5a1>] ? event_sched_in+0x68/0x11c
+>
+> I am wondering if we should check attr->pinned before WARN_ONCE...
+>
+> But it seems that hw_breakpoint.c is buggy anyway.
+>
+> Suppose that attr.task != NULL and event->cpu = -1.
+>
+> __reserve_bp_slot() tries to calculate slots.pinned and calls
+> fetch_bp_busy_slots().
+>
+> In this case fetch_bp_busy_slots() does
+>
+> 	for_each_online_cpu(cpu)
+> 		...
+> 		nr += task_bp_pinned(cpu, bp, type);
+>
+> And task_bp_pinned() (in particular) checks cpu == event->cpu,
+> this will be never true.
+>
+> IOW, it seems that __reserve_bp_slot(task, cpu => -1) always
+> succeeds because task_bp_pinned() returns 0 and thus we can
+> create more than HWP_NUM breakpoints. Much more ;)
+>
+> As for _create, I guess we probably need something like
+>
+> --- x/kernel/events/hw_breakpoint.c
+> +++ x/kernel/events/hw_breakpoint.c
+> @@ -156,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots
+>  		if (!tsk)
+>  			nr += max_task_bp_pinned(cpu, type);
+>  		else
+> -			nr += task_bp_pinned(cpu, bp, type);
+> +			nr += task_bp_pinned(-1, bp, type);
+>
+>  		if (nr > slots->pinned)
+>  			slots->pinned = nr;
+>
+> But I simply can't understand toggle_bp_task_slot()->task_bp_pinned().
+>
+> Oleg.
 
