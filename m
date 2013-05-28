@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab3E1UDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:03:22 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:46842 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab3E1UDV (ORCPT
+	id S1755469Ab3E1UDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:03:55 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47528 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3E1UDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:03:21 -0400
-Message-ID: <51A50D86.2080200@linaro.org>
-Date: Tue, 28 May 2013 13:03:18 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 28 May 2013 16:03:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+CCKfoOmEUux/PZcQSUnC/Pkedj63kVRA=
+Date: Tue, 28 May 2013 16:03:25 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
+Message-ID: <20130528200325.GF31290@titan.lakedaemon.net>
+References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130528154047.GT31290@titan.lakedaemon.net>
+ <20130528175343.77c6353d@skate>
+ <20130528165401.GX31290@titan.lakedaemon.net>
+ <51A50D0F.5010909@gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
- RTC on system time step changes
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com> <5193CFA2.8010008@linaro.org> <51A4F6C6.8080808@citrix.com> <20130528183137.GA23213@phenom.dumpdata.com> <51A500DA.9000708@linaro.org> <20130528194849.GA25032@phenom.dumpdata.com>
-In-Reply-To: <20130528194849.GA25032@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A50D0F.5010909@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 12:48 PM, Konrad Rzeszutek Wilk wrote:
-> On Tue, May 28, 2013 at 12:09:14PM -0700, John Stultz wrote:
->> On 05/28/2013 11:31 AM, Konrad Rzeszutek Wilk wrote:
->>> On Tue, May 28, 2013 at 07:26:14PM +0100, David Vrabel wrote:
->>>> On 15/05/13 19:10, John Stultz wrote:
->>>>> Ok, so really, as soon as the Dom0 time is set by NTP, all guests will
->>>>> see the right time? That makes more sense, and means the window for
->>>>> these sorts of issues is reasonably quite small.
->>>> It's a small window but it's occurring in our automated test system.
->>>>
->>>>> David: So I'm less inclined to merge this individual change, but if you
->>>>> still feel strongly about it, let me know and we can circle around on it
->>>>> after you've addressed the specific issues I pointed out earlier.
->>>> This patch was the actual bug fix but I've reworked it to use the
->>>> pvclock_gtod notifier chain as this seemed to be what KVM hosts were
->>>> using to maintain a clock for guests.  Please review the new series, thanks.
->>> Looks good.
->>>
->>> John if you are OK I am thinking to push this to Linus shortly as it is
->>> fixing a bug.
->> I'm really not sure I'd call this a bug.  That seems like an
->> over-reaction to a misconfigured system.
->>
->> Or if there is a bug, I'm not sure its been clearly explained.
-> The #1 patch - b/c you try to set the RTC time and it actually never takes. Meaning
-> on the next time the machine is booted the time is again off.
+On Tue, May 28, 2013 at 10:01:19PM +0200, Sebastian Hesselbarth wrote:
+> On 05/28/2013 06:54 PM, Jason Cooper wrote:
+> >>On Tue, 28 May 2013 11:40:47 -0400, Jason Cooper wrote:
+> >>>I'm posting the revised version as replies to patches 1, 5 and 6. Please
+> >>>let me know if I messed it up.  I'd like to send the PR for these
+> >>>shortly.
+> >
+> >$ git checkout v3.10-rc3
+> >$ git merge mvebu/of_pci
+> >$ git merge mvebu/pcie
+> >$ git merge mvebu/seb_clk
+> 
+> After manually resolving a merge conflict in arch/arm/mach-mvebu/Kconfig
+> I can see no obvious regression on neither Dove nor Kirkwood.
 
-Ok. Yea, that one I'm fine with and have queued for 3.11.
+Great, thanks, Sebastian!
 
-If you want to push it as a bug fix for 3.10, I'll leave it to you to 
-push to Linus.
-
-thanks
--john
-
+Jason.
