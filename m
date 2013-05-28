@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934276Ab3E1ONi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:13:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52138 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933972Ab3E1ONg (ORCPT
+	id S934249Ab3E1OQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:16:53 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:59972 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933890Ab3E1OQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:13:36 -0400
-Date: Tue, 28 May 2013 10:13:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        <linux-pm@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM / Runtime: honor device autosuspend in
- pm_generic_runtime_idle()
-In-Reply-To: <1563745.Xy6YCbJQjl@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1305281009080.1030-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 28 May 2013 10:16:52 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] ASoC: ux500: Ensure consistent configuration between DAIs
+Date: Tue, 28 May 2013 16:16:39 +0200
+Message-Id: <1369750599-10795-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Rafael J. Wysocki wrote:
+Current implementation of mop500_ab8500 allows for inconsistent sample
+rate and channel count configuration between the playback and recording
+interfaces, through in the hardware the two MSP controllers share
+common clock and frame sync signals.
 
-> On Monday, May 13, 2013 01:50:18 PM Rafael J. Wysocki wrote:
-> > On Monday, May 13, 2013 02:05:27 PM Mika Westerberg wrote:
-> > > If the device is using autosuspend we should honor that and call
-> > > pm_runtime_autosuspend() instead of pm_runtime_suspend(). Failing to do so
-> > > causes the device to be suspended immediately even though it expects to be
-> > > suspended only when the autosuspend delay is expired.
-> > > 
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > ---
-> > >  drivers/base/power/generic_ops.c |    5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
-> > > index bfd898b..19786ca 100644
-> > > --- a/drivers/base/power/generic_ops.c
-> > > +++ b/drivers/base/power/generic_ops.c
-> > > @@ -29,7 +29,10 @@ int pm_generic_runtime_idle(struct device *dev)
-> > >  			return ret;
-> > >  	}
-> > >  
-> > > -	pm_runtime_suspend(dev);
-> > > +	if (dev->power.use_autosuspend)
-> > > +		pm_runtime_autosuspend(dev);
-> > > +	else
-> > > +		pm_runtime_suspend(dev);
-> > >  	return 0;
-> > 
-> > First of all, this is racy (power.use_autosuspend shoud be accessed under
-> > power.lock).
-> > 
-> > Second, this is not the only place we'd need to make this change (the analogous
-> > function for PCI is one example, but there may be others).
-> > 
-> > Finally, I'm not sure how to address this problem in general.  It may be better
-> > to simply modify rpm_idle() and remove pm_generic_runtime_idle() etc. entirely.
-> > 
-> > I'll have a look at that, thanks for pointing out the problem.
-> 
-> I'm not sure if the core is the right place to address this, because it's
-> not entirely clear if all drivers using autosuspend will have the same policy
-> with respect to pm_runtime_idle() (i.e. to avoid suspending immediately if
-> the suspend delay timer is active).
-> 
-> In my opinion it'd be better to address that in the driver by adding a
-> .runtime_idle() callback executing pm_runtime_autosuspend(dev) and returning
-> -EBUSY.
+This patch adds the necessary code to ensure that the two device are
+configure consistently.  The check is added at machine driver level, as
+how to lock DAI configuration depend of the actual hardware
+implementation.
 
-Remember that the return value from the runtime_idle callback is 
-ignored.  Are you suggesting that the PM core should start paying 
-attention to it?
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ sound/soc/ux500/mop500_ab8500.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-Alan Stern
+diff --git a/sound/soc/ux500/mop500_ab8500.c b/sound/soc/ux500/mop500_ab8500.c
+index 5e0f146..7e923ec 100644
+--- a/sound/soc/ux500/mop500_ab8500.c
++++ b/sound/soc/ux500/mop500_ab8500.c
+@@ -16,6 +16,7 @@
+ #include <linux/device.h>
+ #include <linux/io.h>
+ #include <linux/clk.h>
++#include <linux/mutex.h>
+ 
+ #include <sound/soc.h>
+ #include <sound/soc-dapm.h>
+@@ -44,6 +45,12 @@
+ static unsigned int tx_slots = DEF_TX_SLOTS;
+ static unsigned int rx_slots = DEF_RX_SLOTS;
+ 
++/* Configuration consistency parameters */
++static DEFINE_MUTEX(mop500_ab8500_params_lock);
++static unsigned long mop500_ab8500_usage;
++static int mop500_ab8500_rate;
++static int mop500_ab8500_channels;
++
+ /* Clocks */
+ static const char * const enum_mclk[] = {
+ 	"SYSCLK",
+@@ -231,6 +238,21 @@ static int mop500_ab8500_hw_params(struct snd_pcm_substream *substream,
+ 		substream->name,
+ 		substream->number);
+ 
++	/* Ensure configuration consistency between DAIs */
++	mutex_lock(&mop500_ab8500_params_lock);
++	if (mop500_ab8500_usage) {
++		if (mop500_ab8500_rate != params_rate(params) ||
++		    mop500_ab8500_channels != params_channels(params)) {
++			mutex_unlock(&mop500_ab8500_params_lock);
++			return -EBUSY;
++		}
++	} else {
++		mop500_ab8500_rate = params_rate(params);
++		mop500_ab8500_channels = params_channels(params);
++	}
++	__set_bit(cpu_dai->id, &mop500_ab8500_usage);
++	mutex_unlock(&mop500_ab8500_params_lock);
++
+ 	channels = params_channels(params);
+ 
+ 	switch (params_format(params)) {
+@@ -329,9 +351,22 @@ static int mop500_ab8500_hw_params(struct snd_pcm_substream *substream,
+ 	return 0;
+ }
+ 
++static int mop500_ab8500_hw_free(struct snd_pcm_substream *substream)
++{
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++
++	mutex_lock(&mop500_ab8500_params_lock);
++	__clear_bit(cpu_dai->id, &mop500_ab8500_usage);
++	mutex_unlock(&mop500_ab8500_params_lock);
++
++	return 0;
++}
++
+ struct snd_soc_ops mop500_ab8500_ops[] = {
+ 	{
+ 		.hw_params = mop500_ab8500_hw_params,
++		.hw_free = mop500_ab8500_hw_free,
+ 		.startup = mop500_ab8500_startup,
+ 		.shutdown = mop500_ab8500_shutdown,
+ 	}
+-- 
+1.8.2
 
