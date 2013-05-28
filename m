@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417Ab3E1INP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:13:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55603 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933328Ab3E1INM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:13:12 -0400
-Date: Tue, 28 May 2013 10:13:09 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 3/3] x86/microcode: early microcode patch loading
- support on AMD
-Message-ID: <20130528081309.GA29233@pd.tnic>
-References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
- <1369323618-5820-4-git-send-email-jacob.shin@amd.com>
+	id S933436Ab3E1IOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:14:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56713 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933328Ab3E1IOv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 04:14:51 -0400
+Message-ID: <51A4676D.9010404@ti.com>
+Date: Tue, 28 May 2013 11:14:37 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1369323618-5820-4-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QWRyaWVuIFZlcmfDqQ==?= <adrienverge@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Fainelli <florian@openwrt.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yannick Brosseau <yannick.brosseau@gmail.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
+References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com> <CANsc=4WDM0q=RwaN2ZrcNqgJ=fDsgGHcBDcufnDek4EVWcnGfw@mail.gmail.com> <201305272023.12281.arnd@arndb.de>
+In-Reply-To: <201305272023.12281.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 10:40:18AM -0500, Jacob Shin wrote:
-> Add support for early microcode patch loading on AMD.
+On 05/27/2013 09:23 PM, Arnd Bergmann wrote:
+> On Saturday 25 May 2013, Adrien Vergé wrote:
+>> On OMAP4 platforms, EHCI HCD needs the physical layer signalling
+>> activated, along with the NOP USB Transceiver driver. Otherwise, the
+>> kernel boots without registering any USB device.
 > 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  arch/x86/Kconfig                       |   16 +-
->  arch/x86/include/asm/microcode.h       |    1 -
->  arch/x86/include/asm/microcode_amd.h   |   17 ++
->  arch/x86/include/asm/microcode_intel.h |    1 +
->  arch/x86/kernel/microcode_amd.c        |  338 ++++++++++++++++++++++++++++----
->  arch/x86/kernel/microcode_core_early.c |    7 +
->  6 files changed, 333 insertions(+), 47 deletions(-)
->  create mode 100644 arch/x86/include/asm/microcode_amd.h
+> This does not actually sound like a critical error: If a user forgets
+> to enable a driver, that driver will not be loaded. Of course the
+> kernel should not just crash when a non-essential driver is missing,
+> and it should not fail to build, but your description sounds harmless.
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 3a5bced..fab72e7 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1090,8 +1090,18 @@ config MICROCODE_INTEL_LIB
->  	depends on MICROCODE_INTEL
->  
->  config MICROCODE_INTEL_EARLY
-> -	bool "Early load microcode"
-> +	def_bool n
->  	depends on MICROCODE_INTEL && BLK_DEV_INITRD
-> +
-> +config MICROCODE_AMD_EARLY
-> +	def_bool n
-> +	depends on MICROCODE_AMD && BLK_DEV_INITRD
-> +
-> +config MICROCODE_EARLY
-> +	bool "Early load microcode"
-> +	depends on (MICROCODE_INTEL || MICROCODE_AMD) && BLK_DEV_INITRD
-> +	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
-> +	select MICROCODE_AMD_EARLY if MICROCODE_AMD
->  	default y
->  	help
->  	  This option provides functionality to read additional microcode data
+> Am I missing something?
 
-This whole microcode Kconfig game seems kinda too granulary to me.
-I mean, distros will enable all of them anyway (both AMD and Intel
-microcode loading) and since we can safely enable early loading even if
-there's no microcode in the initrd, we can add in the early code too.
+Right, there is no crash or anything if the PHY drivers are not selected,
+just that OMAP USB host will not work.
 
-So how about simplifying this a lot by having only:
+> 
+>> This patch applies to Linux 3.10-rc2.
+>>
+>> Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
+>> ---
+>> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+>> index de94f26..47959d7 100644
+>> --- a/drivers/usb/host/Kconfig
+>> +++ b/drivers/usb/host/Kconfig
+>> @@ -44,6 +44,8 @@ endif # USB_XHCI_HCD
+>>  config USB_EHCI_HCD
+>>         tristate "EHCI HCD (USB 2.0) support"
+> 
+> This is the wrong place: it should be in USB_EHCI_HCD_OMAP
+> if any.
 
-config MICROCODE
-        tristate "CPU microcode loading support"
-        select FW_LOADER
+Right.
+> 
+>>         depends on USB_ARCH_HAS_EHCI
+>> +       select USB_PHY if ARCH_OMAP4
+>> +       select NOP_USB_XCEIV if ARCH_OMAP4
+>>         ---help---
+>>           The Enhanced Host Controller Interface (EHCI) is standard for USB 2.0
+>>           "high speed" (480 Mbit/sec, 60 Mbyte/sec) host controller hardware.
+> 
+> 'select'ing USB_PHY sounds wrong too, I think you mean 'depends on'.
+> 
+> Also note that Roger Quadros has just removed the 'select NOP_USB_XCEIV'
+> there, I think you should coordinate with him.
 
-config MICROCODE_EARLY
-	depends on BLK_DEV_INITRD && MICROCODE
+Selecting NOP_USB_XCEIV is wrong as it in turn depends on USB_PHY.
 
-and drop all this vendor differentiation. Microcode core code checks
-vendors so it won't be loaded on anything unsupported, etc.
+I'm not for depends as it would hide USB_EHCI_HCD_OMAP in menuconfig.
+I'm for explicitly selecting both, as it makes the user's life much easier.
+But I'm afraid maintainers might object to that.
 
-hpa, Ingo, what do you guys think?
+The other option is to enable the required drivers in omap2plus_defconfig.
+http://comments.gmane.org/gmane.linux.ports.arm.omap/97899
 
--- 
-Regards/Gruss,
-    Boris.
+Maybe you could just resend that patch after addressing Kevin's comments?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+cheers,
+-roger
