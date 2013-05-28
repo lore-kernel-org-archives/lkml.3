@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244Ab3E1Niv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:38:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50651 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934061Ab3E1Nit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:38:49 -0400
-Date: Tue, 28 May 2013 06:38:32 -0700
-From: tip-bot for David Cohen <tipbot@zytor.com>
-Message-ID: <tip-8c956b1b935ec98decb470a6abff8c1f8b28e9f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, david.a.cohen@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, david.a.cohen@intel.com
-In-Reply-To: <1367364015-12521-1-git-send-email-david.a.cohen@intel.com>
-References: <1367364015-12521-1-git-send-email-david.a.cohen@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irq/x86/io_apic: Fix number of pre-allocated irqs
-Git-Commit-ID: 8c956b1b935ec98decb470a6abff8c1f8b28e9f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S934220Ab3E1Nje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:39:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8794 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab3E1Njd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 09:39:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="344372462"
+Message-ID: <51A4B391.6060503@intel.com>
+Date: Tue, 28 May 2013 21:39:29 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: gregkh <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+References: <519ED65B.7040707@intel.com>
+In-Reply-To: <519ED65B.7040707@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c956b1b935ec98decb470a6abff8c1f8b28e9f0
-Gitweb:     http://git.kernel.org/tip/8c956b1b935ec98decb470a6abff8c1f8b28e9f0
-Author:     David Cohen <david.a.cohen@intel.com>
-AuthorDate: Tue, 30 Apr 2013 16:20:15 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 12:01:29 +0200
+On 05/24/2013 10:54 AM, Alex Shi wrote:
+> 
+> Ops, I just find a old patch left on my laptop. and it still works on latest
+> Linus tree. I don't remember there is a reasonable excuse to reject this patch.
+> 
+> So, anyone like to pick it up?
 
-irq/x86/io_apic: Fix number of pre-allocated irqs
+Ping ...
+> 
+> ------
+> From 6ae1b9e71f9b14be5774ae9c1b4cf57cd4e747ac Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Mon, 11 Jun 2012 15:10:18 +0800
+> Subject: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+> 
+> According to Felipe and Alan's comments the second parameter of irq
+> handler should be 'void *' not a specific structure pointer.
+> So change it.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/usb/host/xhci-ring.c |    2 +-
+>  drivers/usb/host/xhci.c      |    4 ++--
+>  drivers/usb/host/xhci.h      |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+> index 23b4aef..cc8a52f 100644
+> --- a/drivers/usb/host/xhci-ring.c
+> +++ b/drivers/usb/host/xhci-ring.c
+> @@ -2479,7 +2479,7 @@ hw_died:
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
+> +irqreturn_t xhci_msi_irq(int irq, void *hcd)
+>  {
+>  	return xhci_irq(hcd);
+>  }
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index afdc73e..f7d40c1 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -215,7 +215,7 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
+>  		return ret;
+>  	}
+>  
+> -	ret = request_irq(pdev->irq, (irq_handler_t)xhci_msi_irq,
+> +	ret = request_irq(pdev->irq, xhci_msi_irq,
+>  				0, "xhci_hcd", xhci_to_hcd(xhci));
+>  	if (ret) {
+>  		xhci_dbg(xhci, "disable MSI interrupt\n");
+> @@ -287,7 +287,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
+>  
+>  	for (i = 0; i < xhci->msix_count; i++) {
+>  		ret = request_irq(xhci->msix_entries[i].vector,
+> -				(irq_handler_t)xhci_msi_irq,
+> +				xhci_msi_irq,
+>  				0, "xhci_hcd", xhci_to_hcd(xhci));
+>  		if (ret)
+>  			goto disable_msix;
+> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> index de3d6e3..737ef54 100644
+> --- a/drivers/usb/host/xhci.h
+> +++ b/drivers/usb/host/xhci.h
+> @@ -1710,7 +1710,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
+>  
+>  int xhci_get_frame(struct usb_hcd *hcd);
+>  irqreturn_t xhci_irq(struct usb_hcd *hcd);
+> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
+> +irqreturn_t xhci_msi_irq(int irq, void *hcd);
+>  int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev);
+>  void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev);
+>  int xhci_alloc_tt_info(struct xhci_hcd *xhci,
+> 
 
-arch_probe_nr_irqs() has a typo when returning number of
-preallocated irqs. Instead of returning the calculated value, it
-returns a constant number NR_IRQ_LEGACY.
 
-This patch makes sure the calculated value is returned intead.
-
-Signed-off-by: David Cohen <david.a.cohen@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: joro@8bytes.org
-Link: http://lkml.kernel.org/r/1367364015-12521-1-git-send-email-david.a.cohen@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/io_apic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 9ed796c..7ef2bd9 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3437,7 +3437,7 @@ int __init arch_probe_nr_irqs(void)
- 	if (nr < nr_irqs)
- 		nr_irqs = nr;
- 
--	return NR_IRQS_LEGACY;
-+	return nr;
- }
- 
- int io_apic_set_pci_routing(struct device *dev, int irq,
+-- 
+Thanks
+    Alex
