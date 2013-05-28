@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934048Ab3E1NKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:10:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50204 "EHLO
+	id S934056Ab3E1NL2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:11:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50223 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933911Ab3E1NKI (ORCPT
+	with ESMTP id S934023Ab3E1NL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:10:08 -0400
-Date: Tue, 28 May 2013 06:09:20 -0700
+	Tue, 28 May 2013 09:11:26 -0400
+Date: Tue, 28 May 2013 06:10:36 -0700
 From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
-Message-ID: <tip-71b1da46ff70309a2ec12ce943aa0d192d2c8f0c@git.kernel.org>
+Message-ID: <tip-1ad4ec0dc740c4183acd6d6e367ca52b28e4fa94@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, efault@gmx.de, pjt@google.com,
         zhong@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         pjt@google.com, efault@gmx.de, peterz@infradead.org,
         zhong@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
         tglx@linutronix.de
-In-Reply-To: <1365724262-20142-3-git-send-email-fweisbec@gmail.com>
-References: <1365724262-20142-3-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1365724262-20142-4-git-send-email-fweisbec@gmail.com>
+References: <1365724262-20142-4-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched:
-  Update rq clock before setting fair group shares
-Git-Commit-ID: 71b1da46ff70309a2ec12ce943aa0d192d2c8f0c
+  Update rq clock before calling check_preempt_curr()
+Git-Commit-ID: 1ad4ec0dc740c4183acd6d6e367ca52b28e4fa94
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,21 +36,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  71b1da46ff70309a2ec12ce943aa0d192d2c8f0c
-Gitweb:     http://git.kernel.org/tip/71b1da46ff70309a2ec12ce943aa0d192d2c8f0c
+Commit-ID:  1ad4ec0dc740c4183acd6d6e367ca52b28e4fa94
+Gitweb:     http://git.kernel.org/tip/1ad4ec0dc740c4183acd6d6e367ca52b28e4fa94
 Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Fri, 12 Apr 2013 01:50:59 +0200
+AuthorDate: Fri, 12 Apr 2013 01:51:00 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:40:23 +0200
+CommitDate: Tue, 28 May 2013 09:40:24 +0200
 
-sched: Update rq clock before setting fair group shares
+sched: Update rq clock before calling check_preempt_curr()
 
-Because we may update the execution time in
+check_preempt_curr() of fair class needs an uptodate sched clock
+value to update runtime stats of the current task of the target's rq.
 
-    sched_group_set_shares()->update_cfs_shares()->reweight_entity()->update_curr()
-
-before reweighting the entity while setting the group shares and this requires
-an uptodate version of the runqueue clock.
+When a task is woken up, activate_task() is usually called right before
+ttwu_do_wakeup() unless the task is still in the runqueue. In the latter
+case we need to update the rq clock explicitly because activate_task()
+isn't here to do the job for us.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
@@ -58,23 +59,22 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Turner <pjt@google.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1365724262-20142-3-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1365724262-20142-4-git-send-email-fweisbec@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f62b16d..f76ca21 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6107,6 +6107,9 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- 		se = tg->se[i];
- 		/* Propagate contribution to hierarchy */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
-+
-+		/* Possible calls to update_curr() need rq clock */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7bf0418..46d0017 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1365,6 +1365,8 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+ 
+ 	rq = __task_rq_lock(p);
+ 	if (p->on_rq) {
++		/* check_preempt_curr() may use rq clock */
 +		update_rq_clock(rq);
- 		for_each_sched_entity(se)
- 			update_cfs_shares(group_cfs_rq(se));
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 		ttwu_do_wakeup(rq, p, wake_flags);
+ 		ret = 1;
+ 	}
