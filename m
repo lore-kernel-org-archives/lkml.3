@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934164Ab3E1Na7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:30:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11623 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933952Ab3E1Na5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:30:57 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=FuXyT9YstboA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=W9-82xvkzVUA:10 a=ayC55rCoAAAA:8 a=55xwRc_B_ddNZ_X0jRYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369747853.15552.9.camel@gandalf.local.home>
-Subject: Re: [PATCH] x86: Have debug/nmi restore the IDT it replaced
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>
-Date: Tue, 28 May 2013 09:30:53 -0400
-In-Reply-To: <20130528075441.GA28601@gmail.com>
-References: <1369360404.6828.219.camel@gandalf.local.home>
-	 <20130528075441.GA28601@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S934185Ab3E1NbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:31:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21755 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934144Ab3E1NbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 09:31:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="344368181"
+Message-ID: <51A4B19A.5090500@intel.com>
+Date: Tue, 28 May 2013 21:31:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Michael Wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        peterz@infradead.org, pjt@google.com
+CC: tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [patch 0/8]: use runnable load avg in balance
+References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <51948AD4.3020104@linux.vnet.ibm.com>
+In-Reply-To: <51948AD4.3020104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 09:54 +0200, Ingo Molnar wrote:
+On 05/16/2013 03:29 PM, Michael Wang wrote:
+>> > This version changed the runnable load avg value setting for new task
+>> > in patch 3rd.
+>> > 
+>> > We also tried to include blocked load avg in balance. but find many benchmark
+>> > performance dropping. Guess the too bigger cpu load drive task to be waken
+>> > on remote CPU, and cause wrong decision in periodic balance.
+>> > 
+>> > I retested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
+>> > benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf loopback
+>> > etc. The performance is better now. 
+>> > 
+>> > On SNB EP 4 sockets machine, the hackbench increased about 50%, and result
+>> > become stable. on other machines, hackbench increased about 2~10%.
+>> > oltp increased about 30% in NHM EX box.
+>> > netperf loopback also increased on SNB EP 4 sockets box.
+>> > no clear changes on other benchmarks.
+>> > 
+>> > Michael Wang had tested previous version on pgbench on his box:
+>> > https://lkml.org/lkml/2013/4/2/1022
+> Tested the latest patch set (new 3/8 and 6/8) with pgbench, tip
+> 3.10.0-rc1 and 12 cpu X86 box, works well and still benefit ;-)
 
-> Hm, patch got totally whitespace corrupted.
 
-Hmm, interesting, not sure what happened. OK, I'll resend. Maybe
-evolution did a nasty.
+Paul:
 
-Thanks,
+Would you like to give more comments/ideas of this patch set?
 
--- Steve
-
-
+-- 
+Thanks
+    Alex
