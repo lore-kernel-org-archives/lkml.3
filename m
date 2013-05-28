@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934009Ab3E1Vaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:30:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59792 "EHLO
+	id S934104Ab3E1VbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:31:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59782 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3E1VZq (ORCPT
+	with ESMTP id S933357Ab3E1VZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:46 -0400
+	Tue, 28 May 2013 17:25:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 59/78] sfc: Fix naming of MTD partitions for FPGA bitfiles
-Date: Tue, 28 May 2013 14:20:08 -0700
-Message-Id: <1369776027-17859-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 64/78] net_sched: act_ipt forward compat with xtables
+Date: Tue, 28 May 2013 14:20:13 -0700
+Message-Id: <1369776027-17859-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Jamal Hadi Salim <jhs@mojatatu.com>
 
-[ Upstream commit 89cc80a44b7c320e08599cb86f6aef0ead8986a1 ]
+[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
 
-efx_mcdi_get_board_cfg() uses a buffer for the firmware response that
-is only large enough to hold subtypes for the originally defined set
-of NVRAM partitions.  Longer responses are truncated, and we may read
-off the end of the buffer when copying out subtypes for additional
-partitions.  In particular, this can result in the MTD partition for
-an FPGA bitfile being named e.g. 'eth5 sfc_fpga:00' when it should be
-'eth5 sfc_fpga:01'.  This means the firmware update tool (sfupdate)
-can't tell which bitfile should be written to the partition.
+Deal with changes in newer xtables while maintaining backward
+compatibility. Thanks to Jan Engelhardt for suggestions.
 
-Correct the response buffer size.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/sfc/mcdi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sched/act_ipt.c | 33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
-index 0095ce9..97dd8f18 100644
---- a/drivers/net/ethernet/sfc/mcdi.c
-+++ b/drivers/net/ethernet/sfc/mcdi.c
-@@ -667,7 +667,7 @@ fail:
- int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
- 			   u16 *fw_subtype_list, u32 *capabilities)
+diff --git a/net/sched/act_ipt.c b/net/sched/act_ipt.c
+index 58fb3c7..c1a8138 100644
+--- a/net/sched/act_ipt.c
++++ b/net/sched/act_ipt.c
+@@ -8,7 +8,7 @@
+  *		as published by the Free Software Foundation; either version
+  *		2 of the License, or (at your option) any later version.
+  *
+- * Copyright:	Jamal Hadi Salim (2002-4)
++ * Copyright:	Jamal Hadi Salim (2002-13)
+  */
+ 
+ #include <linux/types.h>
+@@ -305,17 +305,44 @@ static struct tc_action_ops act_ipt_ops = {
+ 	.walk		=	tcf_generic_walker
+ };
+ 
+-MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
++static struct tc_action_ops act_xt_ops = {
++	.kind		=	"xt",
++	.hinfo		=	&ipt_hash_info,
++	.type		=	TCA_ACT_IPT,
++	.capab		=	TCA_CAP_NONE,
++	.owner		=	THIS_MODULE,
++	.act		=	tcf_ipt,
++	.dump		=	tcf_ipt_dump,
++	.cleanup	=	tcf_ipt_cleanup,
++	.lookup		=	tcf_hash_search,
++	.init		=	tcf_ipt_init,
++	.walk		=	tcf_generic_walker
++};
++
++MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
+ MODULE_DESCRIPTION("Iptables target actions");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("act_xt");
+ 
+ static int __init ipt_init_module(void)
  {
--	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMIN];
-+	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMAX];
- 	size_t outlen, offset, i;
- 	int port_num = efx_port_num(efx);
- 	int rc;
+-	return tcf_register_action(&act_ipt_ops);
++	int ret1, ret2;
++	ret1 = tcf_register_action(&act_xt_ops);
++	if (ret1 < 0)
++		printk("Failed to load xt action\n");
++	ret2 = tcf_register_action(&act_ipt_ops);
++	if (ret2 < 0)
++		printk("Failed to load ipt action\n");
++
++	if (ret1 < 0 && ret2 < 0)
++		return ret1;
++	else
++		return 0;
+ }
+ 
+ static void __exit ipt_cleanup_module(void)
+ {
++	tcf_unregister_action(&act_xt_ops);
+ 	tcf_unregister_action(&act_ipt_ops);
+ }
+ 
 -- 
 1.8.1.2
 
