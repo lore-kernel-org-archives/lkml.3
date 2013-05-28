@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab3E1Xjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:39:55 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53679 "EHLO hydra.sisk.pl"
+	id S1759348Ab3E1XmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:42:04 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53683 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759267Ab3E1Xjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:39:54 -0400
+	id S1759267Ab3E1XmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:42:01 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v1 1/2] ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
-Date: Wed, 29 May 2013 01:48:46 +0200
-Message-ID: <2988573.Onrd73VTTU@vostro.rjw.lan>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: System slow down from udev
+Date: Wed, 29 May 2013 01:50:55 +0200
+Message-ID: <4790010.08sMRz00G6@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3502693.GdBGlhPugI@vostro.rjw.lan>
-References: <1368536439-19421-1-git-send-email-jiang.liu@huawei.com> <CAErSpo6-xtrNgPYxu_4QRtZs76P9B6b4JXQPENhX6hyNPpKx+g@mail.gmail.com> <3502693.GdBGlhPugI@vostro.rjw.lan>
+In-Reply-To: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
+References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,134 +23,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 29, 2013 01:21:08 AM Rafael J. Wysocki wrote:
-> On Tuesday, May 28, 2013 04:37:03 PM Bjorn Helgaas wrote:
-> > On Tue, May 14, 2013 at 7:00 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> > > Now the global list acpi_pci_roots pci_root.c is useless, remove it.
-> > >
-> > > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> > > Cc: Len Brown <lenb@kernel.org>
-> > > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > > Cc: linux-acpi@vger.kernel.org
-> > > Cc: linux-kernel@vger.kernel.org
-> > > ---
-> > >  drivers/acpi/pci_root.c | 25 +++----------------------
-> > >  include/acpi/acpi_bus.h |  1 -
-> > >  2 files changed, 3 insertions(+), 23 deletions(-)
-> > 
-> > This and the "use acpi_handle_print()" patch look fine to me.
-> > 
-> > Rafael, I can take them, or if you want to take them yourself, you can add
-> > 
-> >   Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+On Tuesday, May 28, 2013 04:39:37 PM Yinghai Lu wrote:
+> Raphael:
 > 
-> OK, I'll take them.
+> Found one commit in your linus-pm cause user space very slow...
+> at least from udev start...
 
-Well, if I do that, there will be conflicts between our trees, so I think it's
-better if you handle them.
+I obviously can't reproduce it, so it would be great if you could give me
+more details.
 
-Please add
-
-	Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-to both.
+Is there anything unusual about your test system?
 
 Thanks,
 Rafael
 
 
-> > > diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> > > index b80e06e..91ddfd6 100644
-> > > --- a/drivers/acpi/pci_root.c
-> > > +++ b/drivers/acpi/pci_root.c
-> > > @@ -65,10 +65,6 @@ static struct acpi_scan_handler pci_root_handler = {
-> > >         .detach = acpi_pci_root_remove,
-> > >  };
-> > >
-> > > -/* Lock to protect both acpi_pci_roots lists */
-> > > -static DEFINE_MUTEX(acpi_pci_root_lock);
-> > > -static LIST_HEAD(acpi_pci_roots);
-> > > -
-> > >  static DEFINE_MUTEX(osc_lock);
-> > >
-> > >  /**
-> > > @@ -423,7 +419,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> > >                 }
-> > >         }
-> > >
-> > > -       INIT_LIST_HEAD(&root->node);
-> > >         root->device = device;
-> > >         root->segment = segment & 0xFFFF;
-> > >         strcpy(acpi_device_name(device), ACPI_PCI_ROOT_DEVICE_NAME);
-> > > @@ -501,10 +496,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> > >          * TBD: Need PCI interface for enumeration/configuration of roots.
-> > >          */
-> > >
-> > > -       mutex_lock(&acpi_pci_root_lock);
-> > > -       list_add_tail(&root->node, &acpi_pci_roots);
-> > > -       mutex_unlock(&acpi_pci_root_lock);
-> > > -
-> > >         /*
-> > >          * Scan the Root Bridge
-> > >          * --------------------
-> > > @@ -518,7 +509,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> > >                             "Bus %04x:%02x not present in PCI namespace\n",
-> > >                             root->segment, (unsigned int)root->secondary.start);
-> > >                 result = -ENODEV;
-> > > -               goto out_del_root;
-> > > +               goto end;
-> > >         }
-> > >
-> > >         /* ASPM setting */
-> > > @@ -538,20 +529,13 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> > >         if (system_state != SYSTEM_BOOTING) {
-> > >                 pcibios_resource_survey_bus(root->bus);
-> > >                 pci_assign_unassigned_bus_resources(root->bus);
-> > > -       }
-> > > -
-> > > -       /* need to after hot-added ioapic is registered */
-> > > -       if (system_state != SYSTEM_BOOTING)
-> > > +               /* need to after hot-added ioapic is registered */
-> > >                 pci_enable_bridges(root->bus);
-> > > +       }
-> > >
-> > >         pci_bus_add_devices(root->bus);
-> > >         return 1;
-> > >
-> > > -out_del_root:
-> > > -       mutex_lock(&acpi_pci_root_lock);
-> > > -       list_del(&root->node);
-> > > -       mutex_unlock(&acpi_pci_root_lock);
-> > > -
-> > >  end:
-> > >         kfree(root);
-> > >         return result;
-> > > @@ -568,9 +552,6 @@ static void acpi_pci_root_remove(struct acpi_device *device)
-> > >
-> > >         pci_remove_root_bus(root->bus);
-> > >
-> > > -       mutex_lock(&acpi_pci_root_lock);
-> > > -       list_del(&root->node);
-> > > -       mutex_unlock(&acpi_pci_root_lock);
-> > >         kfree(root);
-> > >  }
-> > >
-> > > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> > > index 22ba56e..4eb9a88 100644
-> > > --- a/include/acpi/acpi_bus.h
-> > > +++ b/include/acpi/acpi_bus.h
-> > > @@ -447,7 +447,6 @@ int register_acpi_bus_type(struct acpi_bus_type *);
-> > >  int unregister_acpi_bus_type(struct acpi_bus_type *);
-> > >
-> > >  struct acpi_pci_root {
-> > > -       struct list_head node;
-> > >         struct acpi_device * device;
-> > >         struct pci_bus *bus;
-> > >         u16 segment;
-> > > --
-> > > 1.8.1.2
-> > >
+> bisect to
 > 
+> ac212b6980d8d5eda705864fc5a8ecddc6d6eacc is the first bad commit
+> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Fri May 3 00:26:22 2013 +0200
+> 
+>     ACPI / processor: Use common hotplug infrastructure
+> 
+>     Split the ACPI processor driver into two parts, one that is
+>     non-modular, resides in the ACPI core and handles the enumeration
+>     and hotplug of processors and one that implements the rest of the
+>     existing processor driver functionality.
+> 
+>     The non-modular part uses an ACPI scan handler object to enumerate
+>     processors on the basis of information provided by the ACPI namespace
+>     and to hook up with the common ACPI hotplug infrastructure.  It also
+>     populates the ACPI handle of each processor device having a
+>     corresponding object in the ACPI namespace, which allows the driver
+>     proper to bind to those devices, and makes the driver bind to them
+>     if it is readily available (i.e. loaded) when the scan handler's
+>     .attach() routine is running.
+> 
+>     There are a few reasons to make this change.
+> 
+>     First, switching the ACPI processor driver to using the common ACPI
+>     hotplug infrastructure reduces code duplication and size considerably,
+>     even though a new file is created along with a header comment etc.
+> 
+>     Second, since the common hotplug code attempts to offline devices
+>     before starting the (non-reversible) removal procedure, it will abort
+>     (and possibly roll back) hot-remove operations involving processors
+>     if cpu_down() returns an error code for one of them instead of
+>     continuing them blindly (if /sys/firmware/acpi/hotplug/force_remove
+>     is unset).  That is a more desirable behavior than what the current
+>     code does.
+> 
+>     Finally, the separation of the scan/hotplug part from the driver
+>     proper makes it possible to simplify the driver's .remove() routine,
+>     because it doesn't need to worry about the possible cleanup related
+>     to processor removal any more (the scan/hotplug part is responsible
+>     for that now) and can handle device removal and driver removal
+>     symmetricaly (i.e. as appropriate).
+> 
+>     Some user-visible changes in sysfs are made (for example, the
+>     'sysdev' link from the ACPI device node to the processor device's
+>     directory is gone and a 'physical_node' link is present instead
+>     and a corresponding 'firmware_node' is present in the processor
+>     device's directory, the processor driver is now visible under
+>     /sys/bus/cpu/drivers/ and bound to the processor device), but
+>     that shouldn't affect the functionality that users care about
+>     (frequency scaling, C-states and thermal management).
+> 
+>     Tested on my venerable Toshiba Portege R500.
+> 
+>     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>     Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> :040000 040000 24925fd62fd97295be145d62f8d849004eeca284
+> 30c7f7f9ff26f17eaabf1770eb7d0b69c2767ba8 M    drivers
+> :040000 040000 8374b2dcd64a21abc1f65d3c7779ffa71adb01ba
+> 9375e83719e970b6f4b9a61fe6080bd638dfc51c M    include
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
