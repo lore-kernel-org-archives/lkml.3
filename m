@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934285Ab3E1ORA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:17:00 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44272 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934259Ab3E1OQ6 (ORCPT
+	id S934294Ab3E1OR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:17:27 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:55745 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934176Ab3E1OR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:16:58 -0400
+	Tue, 28 May 2013 10:17:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369738481.3148.9.camel@hornet>
-References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
-	<201305262323.29519.arnd@arndb.de>
-	<30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
-	<201305271232.03644.arnd@arndb.de>
-	<1369738481.3148.9.camel@hornet>
-Date: Tue, 28 May 2013 16:16:57 +0200
-Message-ID: <CACRpkdaQfaPQdJ1SDN--JDqcrXs8p6=FaDN+4KtKZF6nLtOvvw@mail.gmail.com>
-Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Tang <dt.tangr@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130524143759.GA4404@phenom.dumpdata.com>
+References: <1365692161-13735-1-git-send-email-dgdegra@tycho.nsa.gov>
+ <20130522191551.GB10617@phenom.dumpdata.com> <CAM0nabGSo9b7q1pGOsTGjFzJBi7cK=2s5mGmOgNjeAf-2+ZvDQ@mail.gmail.com>
+ <20130522205704.GB12923@phenom.dumpdata.com> <CAM0nabFO_tTqsX5c7Q-Z14CbRnqo9m11f__xkfzt6c8M026D_A@mail.gmail.com>
+ <20130524143759.GA4404@phenom.dumpdata.com>
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Tue, 28 May 2013 09:16:54 -0500
+Message-ID: <CAM0nabHdwNPad8FLk9YpLJ_MBcW++4+wBAajK8mRbRyDG9zCUA@mail.gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH v2] drivers/tpm: add xen tpmfront interface
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
+        Ian.Campbell@citrix.com, Jan Beulich <JBeulich@suse.com>,
+        xen-devel@lists.xen.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 12:54 PM, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Mon, 2013-05-27 at 11:32 +0100, Arnd Bergmann wrote:
->> b) add a new KMS driver for this hardware that can be used as an
->> alternative to the existing one and that works with DT.
+On Fri, May 24, 2013 at 9:37 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Wed, May 22, 2013 at 05:12:24PM -0500, Kent Yoder wrote:
+>> On Wed, May 22, 2013 at 3:57 PM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> > On Wed, May 22, 2013 at 02:47:01PM -0500, Kent Yoder wrote:
+>> >> >> +     notify_remote_via_evtchn(priv->evtchn);
+>> >> >> +
+>> >> >> +     ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+>> >> >
+>> >> > Um, + 6? Why? Is there an #define for that magic constant?
+>> >> > Should this value be read before you do the wait_for_tpm_stat stuff?
+>> >>
+>> >>   This is hardcoded to 6 even in tpm.c.  Time for a #define...
+>> >>
+>> >> > Otherwise it looks OK to me. Should this go through me or Kent?
+>> >> > And if so, is Kent waiting for my feedback?
+>> >>
+>> >>   My comments were minor -- I was expecting feedback on your earlier
+>> >> comments before merging.  I think this should go through the tpmdd
+>> >> maintainer if its going to live in drivers/char/tpm though.
+>> >
+>> > That is you I thought?
+>> >
+>> > konrad@phenom:~/mm$ scripts/get_maintainer.pl -f drivers/char/tpm
+>> > Kent Yoder <key@linux.vnet.ibm.com> (maintainer:TPM DEVICE DRIVER)
+>> > Rajiv Andrade <mail@srajiv.net> (maintainer:TPM DEVICE DRIVER)
+>> > Marcel Selhorst <tpmdd@selhorst.net> (maintainer:TPM DEVICE DRIVER)
+>> > Sirrix AG <tpmdd@sirrix.com> (maintainer:TPM DEVICE DRIVER)
+>> > tpmdd-devel@lists.sourceforge.net (moderated list:TPM DEVICE DRIVER)
+>> > linux-kernel@vger.kernel.org (open list)
+>>
+>> That was me until today. :-)  But I didn't see the response your comments yet.
 >
-> There are people working on this, just trying to jump through some legal
-> hoops to post a RFC. Once this is done we'll be in an interesting
-> position of two amba_bus drivers "competing" for the same amba_bus
-> device, which I'm not sure how to deal with right now...
+> Congratulations to you on a move to a new job!! Can you say what it is?
 
-Make them mutually exclusive in Kconfig?
+  Thanks, yeah I'm headed to Cisco -- the job will focus on pen
+testing and some security research.
 
-Yours,
-Linus Walleij
+Kent
+
+> I am sure Daniel will post a patch shortly, and will CC everybody that get_maintainer.pl
+> finds.
