@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967500Ab3E3Dmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 23:42:43 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52606 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759396Ab3E3Dmg (ORCPT
+	id S1750865Ab3E3EFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 00:05:05 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64868 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab3E3EE6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 23:42:36 -0400
-Date: Thu, 30 May 2013 11:42:28 +0800
-From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Runzhen Wang <icycoder@gmail.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@kernel.org, dsahern@gmail.com,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH] perf tools: fix an error introduced by commit 93cbb398
-Message-ID: <20130530034228.GA4592@rz>
-Reply-To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-References: <1369668455-6246-1-git-send-email-icycoder@gmail.com>
- <20130529115615.GA1232@krava.brq.redhat.com>
+	Thu, 30 May 2013 00:04:58 -0400
+Date: Tue, 28 May 2013 16:28:09 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation/pinctrl.txt: fix typo "with with"
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
+References: <1369733508-21392-1-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1369733508-21392-1-git-send-email-james.hogan@imgtec.com>
+	(from james.hogan@imgtec.com on Tue May 28 04:31:48 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1369776489.2776.43@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130529115615.GA1232@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13053003-5564-0000-0000-00000821D581
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 01:56:15PM +0200, Jiri Olsa wrote:
->On Mon, May 27, 2013 at 11:27:35PM +0800, Runzhen Wang wrote:
->> commit 0a720538e5dd3f424bfcc15c1e4af09df0becf92
->> and
->> commit 93cbb3985d5de867fb32e6e130fcfb1b5de4142b
->> move some contents of Makefile from perf/Makefile to
->> perf/config/Makefile.
->
->hi,
->so you based on latest acme's perf/core, right?
->
->I think it's fixed right now within the branch.
->The issue was there and got fixed by using:
->
->-BASIC_CFLAGS = \
->+BASIC_CFLAGS += \
->
-Yes, I based on the perf/core tree.
-I have fetched the latest code and found it had been fixed.
+On 05/28/2013 04:31:48 AM, James Hogan wrote:
+> Fix typo in "communicate directly with with the pinctrl subsystem".
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Rob Landley <rob@landley.net>
 
-thank you :)
-Runzhen Wang
->should work right now,
->
->thanks,
->jirka
->
+Acked-by: Rob Landley <rob@landley.net>
 
+Please send to trivial@kernel.org.
+
+Rob
