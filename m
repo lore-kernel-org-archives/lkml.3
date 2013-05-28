@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934756Ab3E1QUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:20:41 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:60416 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934660Ab3E1QUk (ORCPT
+	id S934741Ab3E1QVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:21:46 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:54217
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934576Ab3E1QVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:20:40 -0400
-Date: Tue, 28 May 2013 18:20:38 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: Basic perf PMU support for Haswell v12
-Message-ID: <20130528162038.GG6123@two.firstfloor.org>
-References: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
- <20130528062915.GA26467@gmail.com>
+	Tue, 28 May 2013 12:21:45 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(z551bizbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+Message-ID: <51A4D987.40700@freescale.com>
+Date: Tue, 28 May 2013 13:21:27 -0300
+From: Fabio Estevam <fabio.estevam@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528062915.GA26467@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hector Palacios <hector.palacios@digi.com>
+CC: Marek Vasut <marex@denx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: MXS USB otg device support
+References: <51A48677.5010900@digi.com>
+In-Reply-To: <51A48677.5010900@digi.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 08:29:15AM +0200, Ingo Molnar wrote:
-> 
-> * Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > All outstanding issues fixed I hope. And I added mem-loads/stores support.
-> > 
-> > Contains support for:
-> > - Basic Haswell PMU and PEBS support
-> > - Late unmasking of the PMI
-> > - mem-loads/stores support
-> > 
-> > v2: Addressed Stephane's feedback. See individual patches for details.
-> > v3: now even more bite-sized. Qualifier constraints merged earlier.
-> > v4: Rename some variables, add some comments and other minor changes.
-> > Add some Reviewed/Tested-bys.
-> > v5: Address some minor review feedback. Port to latest perf/core
-> > v6: Add just some variable names, add comments, edit descriptions, some
-> > more testing, rebased to latest perf/core
-> > v7: Expand comment
-> > v8: Rename structure field.
-> > v9: No wide counters, but add basic LBRs. Add some more 
-> > constraints. Rebase to 3.9rc1
-> > v10: Change some whitespace. Rebase to 3.9rc3
-> > v11: Rebase to perf/core. Fix extra regs. Rename INTX.
-> > v12: Rebase to 3.10-rc2
-> > Add mem-loads/stores support for parity with Sandy Bridge.
-> > Fix fixed counters (Thanks Ingo!)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > Make late ack optional
-> > Export new config bits in sysfs.
-> > Minor changes
-> 
-> I reported a pretty nasty regression with the previous version (v10) which 
-> made this series break default 'perf top' on non-Haswell systems - but 
-> it's unclear from this changelog to what extent you managed to reproduce 
-> the bug and fix it, and what the fix was?
+Hi Hector,
 
-Thanks for checking.
-I didn't reproduce it, but I found a problem by code review with the 
-fixed counter constraints.
+On 05/28/2013 07:27 AM, Hector Palacios wrote:
+> Hello,
+>
+> Am I right in assuming that the MXS USB on-the-go port does not
+> currently support the device (gadget) functionality?
+> Anybody out there working on that?
 
-I think I fixed it by adding this hunk:
+I am not aware of the latest status about chipidea usb otg support for i.mx.
 
-@@ -2227,7 +2313,7 @@ __init int intel_pmu_init(void)
-                 * counter, so do not extend mask to generic counters
-                 */
-                for_each_event_constraint(c, x86_pmu.event_constraints) {
--                       if (c->cmask != X86_RAW_EVENT_MASK
-+                       if (c->cmask != FIXED_EVENT_FLAGS
-                            || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
-                                continue;
-                        }
+Please post this question in the linux-usb list and add Peter Chen, the 
+folks from Pengutronix and Alexander Shishkin in Cc.
 
-It would be cleaner to detect the fixed counters in some other way,
-but that was the simplest fix I could find.
+Regards,
 
-Testing appreciated 
+Fabio Estevam
 
-> I'd really like to make progress with this feature - 11 iterations is 
-> ridiculous really.
 
-Thanks.
-
-There are actually more patches unfortunately, this is just a subset.
-I'll send the others once that one is in, probably split into less and
-more important ones.
-
-https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/log/?h=hsw/pmu6
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
