@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934083Ab3E1NYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:24:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50421 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab3E1NYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:24:07 -0400
-Date: Tue, 28 May 2013 06:23:18 -0700
-From: "tip-bot for Michael S. Tsirkin" <tipbot@zytor.com>
-Message-ID: <tip-f8abe86cc4fbd4ba083fd151b88e02fb3ce88b9c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, mst@redhat.com,
-        peterz@infradead.org, cmetcalf@tilera.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mst@redhat.com, torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, cmetcalf@tilera.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-In-Reply-To: <1369577426-26721-8-git-send-email-mst@redhat.com>
-References: <1369577426-26721-8-git-send-email-mst@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/mm] tile: uaccess s/might_sleep/might_fault/
-Git-Commit-ID: f8abe86cc4fbd4ba083fd151b88e02fb3ce88b9c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S934105Ab3E1NYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:24:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932491Ab3E1NYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 09:24:46 -0400
+Date: Mon, 27 May 2013 21:13:02 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce
+ kvm_mmu_prepare_zap_obsolete_page
+Message-ID: <20130528001302.GA1359@amt.cnet>
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f8abe86cc4fbd4ba083fd151b88e02fb3ce88b9c
-Gitweb:     http://git.kernel.org/tip/f8abe86cc4fbd4ba083fd151b88e02fb3ce88b9c
-Author:     Michael S. Tsirkin <mst@redhat.com>
-AuthorDate: Sun, 26 May 2013 17:31:48 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:41:09 +0200
+On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+> It is only used to zap the obsolete page. Since the obsolete page
+> will not be used, we need not spend time to find its unsync children
+> out. Also, we delete the page from shadow page cache so that the page
+> is completely isolated after call this function.
+> 
+> The later patch will use it to collapse tlb flushes
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 41 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 9b57faa..e676356 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>  {
+>  	ASSERT(is_empty_shadow_page(sp->spt));
+> -	hlist_del(&sp->hash_link);
+> +	hlist_del_init(&sp->hash_link);
+>  	list_del(&sp->link);
+>  	free_page((unsigned long)sp->spt);
+>  	if (!sp->role.direct)
+> @@ -2069,14 +2069,19 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+>  	return zapped;
+>  }
+>  
+> -static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+> -				    struct list_head *invalid_list)
+> +static int
+> +__kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+> +			   bool zap_unsync_children,
+> +			   struct list_head *invalid_list)
+>  {
+> -	int ret;
+> +	int ret = 0;
+>  
+>  	trace_kvm_mmu_prepare_zap_page(sp);
+>  	++kvm->stat.mmu_shadow_zapped;
+> -	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+> +
+> +	if (likely(zap_unsync_children))
+> +		ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+> +
 
-tile: uaccess s/might_sleep/might_fault/
+Why is this an important case to be optimized?
 
-The only reason uaccess routines might sleep
-is if they fault. Make this explicit.
+1) shadow is the uncommon, obsolete case.
+2) mmu_zap_unsync_children has
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1369577426-26721-8-git-send-email-mst@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/tile/include/asm/uaccess.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+        if (parent->role.level == PT_PAGE_TABLE_LEVEL)
+                return 0;
 
-diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
-index 8a082bc..e4d44bd 100644
---- a/arch/tile/include/asm/uaccess.h
-+++ b/arch/tile/include/asm/uaccess.h
-@@ -442,7 +442,7 @@ extern unsigned long __copy_in_user_inatomic(
- static inline unsigned long __must_check
- __copy_in_user(void __user *to, const void __user *from, unsigned long n)
- {
--	might_sleep();
-+	might_fault();
- 	return __copy_in_user_inatomic(to, from, n);
- }
- 
+So the large majority of pages are already optimized.
+
