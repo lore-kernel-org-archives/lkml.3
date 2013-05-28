@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab3E1JK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 05:10:58 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:53649 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933609Ab3E1JK5 (ORCPT
+	id S933744Ab3E1JQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 05:16:21 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:57730 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933615Ab3E1JQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 05:10:57 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51A47496.6000100@yandex-team.ru>
-Date: Tue, 28 May 2013 13:10:46 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 28 May 2013 05:16:20 -0400
+Date: Tue, 28 May 2013 17:16:15 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        "'Deepak Saxena'" <dsaxena@plexity.net>
+Subject: Re: [PATCH] hwrng: use platform_{get,set}_drvdata()
+Message-ID: <20130528091615.GB24414@gondor.apana.org.au>
+References: <002801ce57a0$1f004ba0$5d00e2e0$@samsung.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-References: <519B8908.9080007@yandex-team.ru>  <1369150693.3301.233.camel@edumazet-glaptop>  <519BB90B.6080706@yandex-team.ru>  <1369188080.3301.268.camel@edumazet-glaptop>  <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru>  <1369225837.3301.324.camel@edumazet-glaptop>  <519CC2FB.2010006@yandex-team.ru>  <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>  <20130525113715.GA3795@linux.vnet.ibm.com>  <51A39E11.5020405@yandex-team.ru> <1369699930.3301.494.camel@edumazet-glaptop>
-In-Reply-To: <1369699930.3301.494.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <002801ce57a0$1f004ba0$5d00e2e0$@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.05.2013 04:12, Eric Dumazet wrote:
-> On Mon, 2013-05-27 at 21:55 +0400, Roman Gushchin wrote:
->> Hi, Paul!
->>
->>> On 25.05.2013 15:37, Paul E. McKenney wrote:
->>>> Again, I believe that your retry logic needs to extend back into the
->>>> calling function for your some_func() example above.
->>
->> And what do you think about the following approach (diff below)?
->>
->> It seems to me, it's enough clear (especially with good accompanying comments)
->> and produces a good binary code (without significant overhead).
->> Also, we will remove a hidden reef in using rcu-protected (h)list traverses with restarts.
->>
->
->> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
->> index 2ae1371..4af5ee5 100644
->> --- a/include/linux/rculist_nulls.h
->> +++ b/include/linux/rculist_nulls.h
->> @@ -107,7 +107,8 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
->>     *
->>     */
->>    #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
->> -       for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
->> +       for (ACCESS_ONCE(*(head)),                                              \
->> +               pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));         \
->>                   (!is_a_nulls(pos)) &&                                           \
->>                   ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
->>                   pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
->
-> It looks like this still relies on gcc being friendly here.
->
-> I repeat again : @head here is a constant.
+On Thu, May 23, 2013 at 07:27:26PM +0900, Jingoo Han wrote:
+> Use the wrapper functions for getting and setting the driver data using
+> platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+> so we can directly pass a struct platform_device.
+> 
+> Also, unnecessary dev_set_drvdata() is removed, because the driver core
+> clears the driver data to NULL after device_release or on probe failure.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-No.
-Actually, there are two volatile objects: pointer to the first element (as a part of the head structure),
-and the first element by itself. So, to be strict, head as a structure contains a volatile field.
-Head->first should be treated as a volatile pointer to a volatile data. So, the whole head object is volatile.
+Sorry but this patch doesn't apply against the current cryptodev
+tree.  If you are basing your patch on another tree, please submit
+the patch there.
 
->
-> Macro already uses ACCESS_ONCE(), we only have to instruct gcc that
-> caching the value is forbidden if we restart the loop
-> (aka "goto begin;" see Documentation/RCU/rculist_nulls.txt line 146)
-
-My patch seems to be correct, because, ACCESS_ONCE(*(head)) will cause gcc to (re)read head data from the memory.
-According to gcc documentation:
-	"A scalar volatile object is read when it is accessed in a void context:
-      		volatile int *src = somevalue;
-      		*src;
-	Such expressions are rvalues, and GCC implements this as a read of the volatile object being pointed to."
-And this is exactly our case.
-
-> Adding a barrier() is probably what we want.
-
-I agree, inserting barrier() is also a correct and working fix.
-
-Thanks!
-
-Regards,
-Roman
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
