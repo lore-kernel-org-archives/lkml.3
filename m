@@ -1,113 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab3E1N0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:26:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50464 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933926Ab3E1N0i (ORCPT
+	id S934125Ab3E1N1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:27:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:18875 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933922Ab3E1N05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:26:38 -0400
-Date: Tue, 28 May 2013 06:25:51 -0700
-From: "tip-bot for Michael S. Tsirkin" <tipbot@zytor.com>
-Message-ID: <tip-114276ac0a3beb9c391a410349bd770653e185ce@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, mst@redhat.com,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mst@redhat.com, torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <1369577426-26721-10-git-send-email-mst@redhat.com>
-References: <1369577426-26721-10-git-send-email-mst@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/mm] mm, sched:
-  Drop voluntary schedule from might_fault()
-Git-Commit-ID: 114276ac0a3beb9c391a410349bd770653e185ce
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 28 May 2013 09:26:57 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-ba-51a4b0a0e39b
+Date: Tue, 28 May 2013 15:26:25 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
+ governor - tests results
+Message-id: <20130528152625.1b7833e5@amdc308.digital.local>
+In-reply-to: <2272781.tC3OqoQmKI@vostro.rjw.lan>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <20130528084035.13afa583@amdc308.digital.local>
+ <CAKohpo=6Tk3NmcJw_fqnePu_skHKNB0rFBOUzEsCDyeLqxg4xA@mail.gmail.com>
+ <2272781.tC3OqoQmKI@vostro.rjw.lan>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t9jAd0FG5YEGrR1SFs8bfrBbjHvs6xF
+	59knzBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZdBz5xmyx8auHA5fHnWt72DzWTXvL7NG3
+	ZRWjx6PFLYwenzfJBbBGcdmkpOZklqUW6dslcGU83LaLqeCTTMWOze9YGxivi3UxcnJICJhI
+	LL6wmBnCFpO4cG89WxcjF4eQwCJGiQ23DrBDOO1MEvObbjOBVLEIqErM+DGFEcRmE9CT+Hz3
+	KVhcRMBXYu3jy4wgDcwC3cwSZw6+BUsIC6RL/NvWBWbzClhLfL3RxAJicwoYSLRtmswKseE5
+	o8SzpZ1gCX4BSYn2fz+gbrKTOPdpAztEs6DEj8n3wGqYBbQkNm9rYoWw5SU2r3nLPIFRcBaS
+	sllIymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzg2nknvYFzVYHGIUYCDUYmH
+	d0L24kAh1sSy4srcQ4wSHMxKIryXVi4JFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEgg
+	PbEkNTs1tSC1CCbLxMEp1cDoePtblUHT5V0/Hy3/7p51/ndXYbt9ytJtHwJ3hK5fpFz4v+iq
+	fnru3wdr+w79a7DbLS1wf9Jcveln18zbmxZR4WkaKPmirLutqkN21uzyb/VMcm/+i293XbL3
+	vVOCUx6LtO9GpTI3sVw+ef72wrd7Ok/PqZqY5FjyW5ApVlyB5SPjs+2n5pUrsRRnJBpqMRcV
+	JwIASnKsz4kCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  114276ac0a3beb9c391a410349bd770653e185ce
-Gitweb:     http://git.kernel.org/tip/114276ac0a3beb9c391a410349bd770653e185ce
-Author:     Michael S. Tsirkin <mst@redhat.com>
-AuthorDate: Sun, 26 May 2013 17:32:13 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:41:11 +0200
+Hi Viresh, Rafael,
 
-mm, sched: Drop voluntary schedule from might_fault()
+> On Tuesday, May 28, 2013 03:14:26 PM Viresh Kumar wrote:
+> > On 28 May 2013 12:10, Lukasz Majewski <l.majewski@samsung.com>
+> > wrote:
+> > > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > <manually added by viresh>
+> > >> On Monday, May 27, 2013 06:54:49 PM Viresh Kumar wrote:
+> > >> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> I was talking about /sys/devices/system/cpu/cpufreq/boost that
+> > >> appears to have been added by commit 615b730 (acpi-cpufreq: Add
+> > >> support for disabling dynamic overclocking).
+> > >>
+> > >> That's in acpi-cpufreq, but since that setting seems to be
+> > >> generally useful, it may be a good idea to move it to the core
+> > >> somehow.
+> > 
+> > Problem is in breaking existing cpufreq userspace for this driver.
+> > Is this allowed?
+> > 
+> > > I think that Viresh wanted to add "boost" option to
+> > > /sys/devices/system/cpu/cpuX/cpufreq/ to be able to control boost
+> > > at separate cores (policies).
+> > >
+> > > The localization, which you have proposed:
+> > > /sys/devices/system/cpu/cpufreq/boost
+> > >
+> > > implies, that boost is a global feature (enabled for all cores
+> > > and for all available policies).
+> > >
+> > > Which approach shall be used then?
+> > 
+> > We can use: get_governor_parent_kobj() to get the best location
+> > for boost. But I had some other issues in mind:
+> > - boost is governor dependent.. i.e. It is only required for
+> > ondemand governor (And LAB if it makes it to mainline :) ).. Other
+> > governors doesn't need it. So, it would be better to add it in
+> > governor's directory.
+> 
 
-might_fault() is called from functions like copy_to_user()
-which most callers expect to be very fast, like a couple of
-instructions.
 
-So functions like memcpy_toiovec() call them many times in a loop.
+> I'm not sure about that.  On x86 boost will be used with all
+> governors if enabled (as currently defined in acpi-cpufreq).
 
-But might_fault() calls might_sleep() and with CONFIG_PREEMPT_VOLUNTARY
-this results in a function call.
+All governors can benefit from the overclocking code.
 
-Let's not do this - just call __might_sleep() that produces
-a diagnostic for sleep within atomic, but drop
-might_preempt().
 
-Here's a test sending traffic between the VM and the host,
-host is built with CONFIG_PREEMPT_VOLUNTARY:
+> 
+> Also it looks like this depends on the driver too, because if the
+> driver doesn't have "turbo" frequencies, the governor won't be able
+> use "turbo" anyway.
+> 
 
- before:
-	incoming: 7122.77   Mb/s
-	outgoing: 8480.37   Mb/s
+Rafael is correct here. The overclocking framework depends on
+cpufreq_driver (exynos-cpufreq in my case) to switch to overclocked
+frequency.
 
- after:
-	incoming: 8619.24   Mb/s
-	outgoing: 9455.42   Mb/s
 
-As a side effect, this fixes an issue pointed
-out by Ingo: might_fault might schedule differently
-depending on PROVE_LOCKING. Now there's no
-preemption point in both cases, so it's consistent.
+> > - This will break existing users of acpi-cpufreq driver.
+> > 
+> > @Rafael: Please suggest what to do here.
+> 
+> So first, it would make sense to use a per-driver "boost" attribute
+> indicating whether or not the given driver should present any "turbo"
+> frequencies to the governor.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1369577426-26721-10-git-send-email-mst@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/kernel.h | 2 +-
- mm/memory.c            | 3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+Now I'm using a device tree's cpufreq section (defined at
+exynos4412-redwood.dts) with overclocking = "okay" attribute defined.
+Then, on this basis, we could decide at cpufreq init time if we will
+export any overclocking related sysfs entries (or init overclocking at
+all). It would assure clearer code.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e9ef6d6..24719ea 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -198,7 +198,7 @@ void might_fault(void);
- #else
- static inline void might_fault(void)
- {
--	might_sleep();
-+	__might_sleep(__FILE__, __LINE__, 0);
- }
- #endif
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..c1f190f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4222,7 +4222,8 @@ void might_fault(void)
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return;
- 
--	might_sleep();
-+	__might_sleep(__FILE__, __LINE__, 0);
-+
- 	/*
- 	 * it would be nicer only to annotate paths which are not under
- 	 * pagefault_disable, however that requires a larger audit and
+
+>  That'd work along the lines of the
+> acpi-cpufreq "boost", but I don't think that the global_boost
+> attribute should be created by the driver (it'd be better if the
+> driver provided methods to the core for handling that).
+
+I think that global cpufreq device tree attribute shall be defined. The
+overclocking will be an integral part of the cpufreq framework.
+
+> 
+> Second, I'm not sure if an additional knob for the governor is
+> necessary.  It may just use the turbo frequencies if available (and
+> if the governor cannot use them, it simply won't use them).
+
+I cannot agree. It is welcome to be able to enable/disable the feature
+when needed. Turbo frequencies shall not be "available" for use all the
+time. For me this situation is far more dangerous.
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Poland (SRPOL) | Linux Platform Group
