@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab3E1LVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:21:15 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:27635 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab3E1LVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:21:04 -0400
-X-IronPort-AV: E=Sophos;i="4.87,757,1363132800"; 
-   d="scan'208";a="26379516"
-Date: Tue, 28 May 2013 12:05:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>, <xen-devel@lists.xensource.com>
-Subject: Re: [GIT PULL for 3.11] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.DEB.2.02.1305211522120.4799@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1305281205500.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305211522120.4799@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932930Ab3E1LVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:21:53 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52500 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932419Ab3E1LVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 07:21:50 -0400
+Date: Tue, 28 May 2013 07:21:44 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        akpm@linux-foundation.org, hughd@google.com
+Subject: Re: [PATCH v4 00/20] change invalidatepage prototype to accept length
+Message-ID: <20130528112144.GA11839@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	akpm@linux-foundation.org, hughd@google.com
+References: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
+ <alpine.LFD.2.00.1305211622330.2469@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1305211622330.2469@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On Tue, May 21, 2013 at 04:34:25PM +0200, Lukáš Czerner wrote:
+> On Tue, 14 May 2013, Lukas Czerner wrote:
+> 
+> > Date: Tue, 14 May 2013 18:37:14 +0200
+> > From: Lukas Czerner <lczerner@redhat.com>
+> > To: linux-mm@kvack.org
+> > Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+> >     linux-ext4@vger.kernel.org, akpm@linux-foundation.org, hughd@google.com,
+> >     lczerner@redhat.com
+> > Subject: [PATCH v4 00/20] change invalidatepage prototype to accept length
+> 
+> Hi Ted,
+> 
+> you've mentioned that you'll carry the changed in the ext4 tree. Are
+> you going to take it for the next merge window ?
+> 
+> However I still need some review on the mm part of the series,
+> Andrew, Hugh, anyone ?
 
+The ext4 tree now has the the v4 version of hte invalidatepage range
+patches in it.  So it will be showing up in the next linux-next tree,
+for the convenience of the mm folks.  :-)
 
-On Tue, 21 May 2013, Stefano Stabellini wrote:
-> Russell,
-> please pull (based on v3.10-rc2):
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.10-rc2-psci-ops-11-tag
-> 
-> 
-> It contains the generic PSCI patch and the smp_init patch that we
-> discussed so much about.
-> I think it would be helpful for other people if you could create a
-> stable branch with these patches so that SoC devs can base their work on
-> it.
-> 
-> 
-> Jon Medhurst (1):
->       ARM: Enable selection of SMP operations at boot time
-> 
-> Stefano Stabellini (1):
->       arm: introduce psci_smp_ops
-> 
->  arch/arm/include/asm/mach/arch.h |    5 ++
->  arch/arm/include/asm/psci.h      |    9 ++++
->  arch/arm/kernel/Makefile         |    5 ++-
->  arch/arm/kernel/psci.c           |    7 +--
->  arch/arm/kernel/psci_smp.c       |   84 ++++++++++++++++++++++++++++++++++++++
->  arch/arm/kernel/setup.c          |    9 ++++-
->  arch/arm/mach-virt/Makefile      |    1 -
->  arch/arm/mach-virt/platsmp.c     |   50 ----------------------
->  arch/arm/mach-virt/virt.c        |    3 -
->  9 files changed, 113 insertions(+), 60 deletions(-)
->  create mode 100644 arch/arm/kernel/psci_smp.c
->  delete mode 100644 arch/arm/mach-virt/platsmp.c
-> 
+					- Ted
