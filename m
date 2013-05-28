@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759954Ab3E3Tux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:50:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35043 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab3E3Tuo (ORCPT
+	id S1752874Ab3E3Tzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:55:48 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49502 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab3E3Tzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:50:44 -0400
-Date: Thu, 30 May 2013 21:50:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Ivo Sieben <meltedpianoman@gmail.com>, RT <linux-rt-users@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RFC: Set irq thread to RT priority on creation
-In-Reply-To: <1369925681.26799.6.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1305302147290.2905@ionos>
-References: <1369915975-28797-1-git-send-email-meltedpianoman@gmail.com>  <alpine.LFD.2.02.1305301602490.2905@ionos> <1369925681.26799.6.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 30 May 2013 15:55:42 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Subject: [PATCH v3 1/1] gpio: sx150x: convert to use devm_* functions
+Date: Tue, 28 May 2013 15:02:50 -0700
+Message-Id: <1369778570-23613-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013, Steven Rostedt wrote:
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-> On Thu, 2013-05-30 at 16:07 +0200, Thomas Gleixner wrote:
-> 
-> > > This patch solves an issue for me where a device driver is expected to handle an
-> > > interrupt immediatly after irq handlers are installed and interrupts enabled.
-> > 
-> > You miss to explain what kind of issue that is.
-> 
-> I could envision the case where the interrupt is initialized but doesn't
-> go off until much later. If it never ran, then it would still be in
-> SCHED_OTHER(), and that first interrupt could have a large delay.
+Use devm_* functions to make cleanup paths simpler.
 
-Nope. As Ivo explained it's about an interrupt coming in right away,
-i.e. before __setup_irq() reaches:
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+---
+ drivers/gpio/gpio-sx150x.c |   18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
-        if (new->thread)
-	   wake_up_process(new->thread);
-
-The ones which come much later do not have that issue as the thread
-code already sits in the waiting loop and already adjusted the
-priority.
-
-Thanks,
-
-	tglx
+diff --git a/drivers/gpio/gpio-sx150x.c b/drivers/gpio/gpio-sx150x.c
+index 796b6c4..f371732 100644
+--- a/drivers/gpio/gpio-sx150x.c
++++ b/drivers/gpio/gpio-sx150x.c
+@@ -548,7 +548,8 @@ static int sx150x_install_irq_chip(struct sx150x_chip *chip,
+ #endif
+ 	}
+ 
+-	err = request_threaded_irq(irq_summary,
++	err = devm_request_threaded_irq(&chip->client->dev,
++				irq_summary,
+ 				NULL,
+ 				sx150x_irq_thread_fn,
+ 				IRQF_SHARED | IRQF_TRIGGER_FALLING,
+@@ -567,8 +568,6 @@ static void sx150x_remove_irq_chip(struct sx150x_chip *chip)
+ 	unsigned n;
+ 	unsigned irq;
+ 
+-	free_irq(chip->irq_summary, chip);
+-
+ 	for (n = 0; n < chip->dev_cfg->ngpios; ++n) {
+ 		irq = chip->irq_base + n;
+ 		irq_set_chip_and_handler(irq, NULL, NULL);
+@@ -591,18 +590,19 @@ static int sx150x_probe(struct i2c_client *client,
+ 	if (!i2c_check_functionality(client->adapter, i2c_funcs))
+ 		return -ENOSYS;
+ 
+-	chip = kzalloc(sizeof(struct sx150x_chip), GFP_KERNEL);
++	chip = devm_kzalloc(&client->dev,
++		sizeof(struct sx150x_chip), GFP_KERNEL);
+ 	if (!chip)
+ 		return -ENOMEM;
+ 
+ 	sx150x_init_chip(chip, client, id->driver_data, pdata);
+ 	rc = sx150x_init_hw(chip, pdata);
+ 	if (rc < 0)
+-		goto probe_fail_pre_gpiochip_add;
++		return rc;
+ 
+ 	rc = gpiochip_add(&chip->gpio_chip);
+-	if (rc < 0)
+-		goto probe_fail_pre_gpiochip_add;
++	if (rc)
++		return rc;
+ 
+ 	if (pdata->irq_summary >= 0) {
+ 		rc = sx150x_install_irq_chip(chip,
+@@ -617,8 +617,6 @@ static int sx150x_probe(struct i2c_client *client,
+ 	return 0;
+ probe_fail_post_gpiochip_add:
+ 	WARN_ON(gpiochip_remove(&chip->gpio_chip) < 0);
+-probe_fail_pre_gpiochip_add:
+-	kfree(chip);
+ 	return rc;
+ }
+ 
+@@ -635,8 +633,6 @@ static int sx150x_remove(struct i2c_client *client)
+ 	if (chip->irq_summary >= 0)
+ 		sx150x_remove_irq_chip(chip);
+ 
+-	kfree(chip);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
