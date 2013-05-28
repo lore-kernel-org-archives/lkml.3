@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab3E1VZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:25:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59765 "EHLO
+	id S933632Ab3E1VZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:25:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59798 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3E1VZd (ORCPT
+	with ESMTP id S933534Ab3E1VZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:33 -0400
+	Tue, 28 May 2013 17:25:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 65/78] net: use netdev_features_t in skb_needs_linearize()
-Date: Tue, 28 May 2013 14:20:14 -0700
-Message-Id: <1369776027-17859-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 68/78] packet: tpacket_v3: do not trigger bug() on wrong header status
+Date: Tue, 28 May 2013 14:20:17 -0700
+Message-Id: <1369776027-17859-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,30 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 6708c9e5cc9bfc7c9a00ce9c0fdd0b1d4952b3d1 ]
+[ Upstream commit 8da3056c04bfc5f69f840ab038a38389e2de8189 ]
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Jakub reported that it is fairly easy to trigger the BUG() macro
+from user space with TPACKET_V3's RX_RING by just giving a wrong
+header status flag. We already had a similar situation in commit
+7f5c3e3a80e6654 (``af_packet: remove BUG statement in
+tpacket_destruct_skb'') where this was the case in the TX_RING
+side that could be triggered from user space. So really, don't use
+BUG() or BUG_ON() unless there's really no way out, and i.e.
+don't use it for consistency checking when there's user space
+involved, no excuses, especially not if you're slapping the user
+with WARN + dump_stack + BUG all at once. The two functions are
+of concern:
+
+  prb_retire_current_block() [when block status != TP_STATUS_KERNEL]
+  prb_open_block() [when block_status != TP_STATUS_KERNEL]
+
+Calls to prb_open_block() are guarded by ealier checks if block_status
+is really TP_STATUS_KERNEL (racy!), but the first one BUG() is easily
+triggable from user space. System behaves still stable after they are
+removed. Also remove that yoda condition entirely, since it's already
+guarded.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/packet/af_packet.c | 53 ++++++++++++++++++++++----------------------------
+ 1 file changed, 23 insertions(+), 30 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d592214..e55fb91 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2290,7 +2290,7 @@ EXPORT_SYMBOL(netif_skb_features);
-  *	2. skb is fragmented and the device does not support SG.
-  */
- static inline int skb_needs_linearize(struct sk_buff *skb,
--				      int features)
-+				      netdev_features_t features)
- {
- 	return skb_is_nonlinear(skb) &&
- 			((skb_has_frag_list(skb) &&
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index c111bd0..d376545 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -693,36 +693,33 @@ static void prb_open_block(struct tpacket_kbdq_core *pkc1,
+ 
+ 	smp_rmb();
+ 
+-	if (likely(TP_STATUS_KERNEL == BLOCK_STATUS(pbd1))) {
++	/* We could have just memset this but we will lose the
++	 * flexibility of making the priv area sticky
++	 */
+ 
+-		/* We could have just memset this but we will lose the
+-		 * flexibility of making the priv area sticky
+-		 */
+-		BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
+-		BLOCK_NUM_PKTS(pbd1) = 0;
+-		BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		getnstimeofday(&ts);
+-		h1->ts_first_pkt.ts_sec = ts.tv_sec;
+-		h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
+-		pkc1->pkblk_start = (char *)pbd1;
+-		pkc1->nxt_offset = pkc1->pkblk_start + BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
+-		pbd1->version = pkc1->version;
+-		pkc1->prev = pkc1->nxt_offset;
+-		pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
+-		prb_thaw_queue(pkc1);
+-		_prb_refresh_rx_retire_blk_timer(pkc1);
++	BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
++	BLOCK_NUM_PKTS(pbd1) = 0;
++	BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+ 
+-		smp_wmb();
++	getnstimeofday(&ts);
+ 
+-		return;
+-	}
++	h1->ts_first_pkt.ts_sec = ts.tv_sec;
++	h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
+ 
+-	WARN(1, "ERROR block:%p is NOT FREE status:%d kactive_blk_num:%d\n",
+-		pbd1, BLOCK_STATUS(pbd1), pkc1->kactive_blk_num);
+-	dump_stack();
+-	BUG();
++	pkc1->pkblk_start = (char *)pbd1;
++	pkc1->nxt_offset = pkc1->pkblk_start + BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
++
++	BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
++	BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
++
++	pbd1->version = pkc1->version;
++	pkc1->prev = pkc1->nxt_offset;
++	pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
++
++	prb_thaw_queue(pkc1);
++	_prb_refresh_rx_retire_blk_timer(pkc1);
++
++	smp_wmb();
+ }
+ 
+ /*
+@@ -813,10 +810,6 @@ static void prb_retire_current_block(struct tpacket_kbdq_core *pkc,
+ 		prb_close_block(pkc, pbd, po, status);
+ 		return;
+ 	}
+-
+-	WARN(1, "ERROR-pbd[%d]:%p\n", pkc->kactive_blk_num, pbd);
+-	dump_stack();
+-	BUG();
+ }
+ 
+ static int prb_curr_blk_in_use(struct tpacket_kbdq_core *pkc,
 -- 
 1.8.1.2
 
