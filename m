@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3E1UKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:10:42 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:42767 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755546Ab3E1UKl (ORCPT
+	id S1755872Ab3E1ULh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:11:37 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:55482 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab3E1ULg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:10:41 -0400
+	Tue, 28 May 2013 16:11:36 -0400
+Message-ID: <51A50F75.7040703@linaro.org>
+Date: Tue, 28 May 2013 13:11:33 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1369767800-31895-1-git-send-email-n.a.balandin@gmail.com>
-References: <1369767800-31895-1-git-send-email-n.a.balandin@gmail.com>
-Date: Tue, 28 May 2013 23:10:39 +0300
-Message-ID: <CAHp75VdYxMovRMVQmspn14d+W2fZfSf-6CxODqqRBq1xvbU3yg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers/misc: at2x: use devm_kzalloc() to make
- cleanup paths simpler
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Nikolay Balandin <n.a.balandin@gmail.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Nikolay Balandin <nbalandin@dev.rtsoft.ru>, linux-i2c@vger.kernel.org,
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
+ RTC on system time step changes
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com> <5193CFA2.8010008@linaro.org> <51A4F6C6.8080808@citrix.com> <20130528183137.GA23213@phenom.dumpdata.com> <51A500DA.9000708@linaro.org> <20130528194849.GA25032@phenom.dumpdata.com> <51A50D86.2080200@linaro.org>
+In-Reply-To: <51A50D86.2080200@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for updated version.
-Please, find few comments below.
-
-On Tue, May 28, 2013 at 10:03 PM, Nikolay Balandin
-<n.a.balandin@gmail.com> wrote:
-> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-
-Next time you may use --subject-prefix to specify the version of the
-patch. This one in particular is "PATCH v2".
-
-I'm pretty sure Greg or any maintainer will ask you to split your
-patch to two: one per driver.
-
-> Use devm_kzalloc() instead of kzalloc. Get rid of the "goto" statements
-> and useless dev_dbg() calls when driver probe fails.
-
-I think in the subject line is better to write something like
-"at24: convert to use devm_kzalloc".
-For at25 accordingly.
-
-> --- a/drivers/misc/eeprom/at24.c
-> +++ b/drivers/misc/eeprom/at24.c
-
-struct i2c_device_id *id)
->                 } else if (i2c_check_functionality(client->adapter,
->                                 I2C_FUNC_SMBUS_READ_BYTE_DATA)) {
->                         use_smbus = I2C_SMBUS_BYTE_DATA;
-> -               } else {
-> -                       err = -EPFNOSUPPORT;
-> -                       goto err_out;
-> -               }
-> +               } else
-> +                       return -EPFNOSUPPORT;
-
-It's good to keep the style here untouched, because it follows CodingStyle.
-thus
-} else {
- return ...
-}
-
-> @@ -596,11 +589,11 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
->                         at24->write_max = write_max;
+On 05/28/2013 01:03 PM, John Stultz wrote:
+> On 05/28/2013 12:48 PM, Konrad Rzeszutek Wilk wrote:
+>> On Tue, May 28, 2013 at 12:09:14PM -0700, John Stultz wrote:
+>>> On 05/28/2013 11:31 AM, Konrad Rzeszutek Wilk wrote:
+>>>> On Tue, May 28, 2013 at 07:26:14PM +0100, David Vrabel wrote:
+>>>>> On 15/05/13 19:10, John Stultz wrote:
+>>>>>> Ok, so really, as soon as the Dom0 time is set by NTP, all guests 
+>>>>>> will
+>>>>>> see the right time? That makes more sense, and means the window for
+>>>>>> these sorts of issues is reasonably quite small.
+>>>>> It's a small window but it's occurring in our automated test system.
+>>>>>
+>>>>>> David: So I'm less inclined to merge this individual change, but 
+>>>>>> if you
+>>>>>> still feel strongly about it, let me know and we can circle 
+>>>>>> around on it
+>>>>>> after you've addressed the specific issues I pointed out earlier.
+>>>>> This patch was the actual bug fix but I've reworked it to use the
+>>>>> pvclock_gtod notifier chain as this seemed to be what KVM hosts were
+>>>>> using to maintain a clock for guests.  Please review the new 
+>>>>> series, thanks.
+>>>> Looks good.
+>>>>
+>>>> John if you are OK I am thinking to push this to Linus shortly as 
+>>>> it is
+>>>> fixing a bug.
+>>> I'm really not sure I'd call this a bug.  That seems like an
+>>> over-reaction to a misconfigured system.
+>>>
+>>> Or if there is a bug, I'm not sure its been clearly explained.
+>> The #1 patch - b/c you try to set the RTC time and it actually never 
+>> takes. Meaning
+>> on the next time the machine is booted the time is again off.
 >
->                         /* buffer (data + address at the beginning) */
-> -                       at24->writebuf = kmalloc(write_max + 2, GFP_KERNEL);
-> -                       if (!at24->writebuf) {
-> -                               err = -ENOMEM;
-> -                               goto err_struct;
-> -                       }
-> +                       at24->writebuf = devm_kzalloc(&client->dev,
-> +                               write_max + 2, GFP_KERNEL);
-> +
-
-Redundant empty line
-
-> +                       if (!at24->writebuf)
-> +                               return -ENOMEM;
->                 } else {
->                         dev_warn(&client->dev,
->                                 "cannot write due to controller restrictions.");
-> @@ -647,12 +640,6 @@ err_clients:
->         for (i = 1; i < num_addresses; i++)
->                 if (at24->client[i])
->                         i2c_unregister_device(at24->client[i]);
-> -
-
-No need to remove this empty line.
-
-> @@ -666,9 +653,6 @@ static int at24_remove(struct i2c_client *client)
+> Ok. Yea, that one I'm fine with and have queued for 3.11.
 >
->         for (i = 1; i < at24->num_addresses; i++)
->                 i2c_unregister_device(at24->client[i]);
-> -
+> If you want to push it as a bug fix for 3.10, I'll leave it to you to 
+> push to Linus.
 
-Ditto.
+Probably obvious, but just in case its not clear:
 
---
-With Best Regards,
-Andy Shevchenko
+Though if that one patch goes to linus for 3.10, it needs to be reworked 
+to not depend on the mach_set_rtc_mmss() interface change it currently 
+depends on. The interface change is not bugfix material.
+
+thanks
+-john
+
