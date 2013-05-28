@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934209Ab3E1Nch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:32:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50558 "EHLO
+	id S934181Ab3E1Ndv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:33:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50588 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934122Ab3E1Nce (ORCPT
+	with ESMTP id S934122Ab3E1Ndt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:32:34 -0400
-Date: Tue, 28 May 2013 06:32:13 -0700
+	Tue, 28 May 2013 09:33:49 -0400
+Date: Tue, 28 May 2013 06:33:29 -0700
 From: tip-bot for Li Zefan <tipbot@zytor.com>
-Message-ID: <tip-08825c90af6e4bb902b3a51abb0ae6530199f682@git.kernel.org>
+Message-ID: <tip-c0ffaf3655fab1909a920c8f30ba1722932d01bb@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, dzickus@redhat.com, lizefan@huawei.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, lizefan@huawei.com, dzickus@redhat.com
-In-Reply-To: <51959678.6000802@huawei.com>
-References: <51959678.6000802@huawei.com>
+In-Reply-To: <51959687.9090305@huawei.com>
+References: <51959687.9090305@huawei.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] watchdog: Document watchdog_thresh sysctl
-Git-Commit-ID: 08825c90af6e4bb902b3a51abb0ae6530199f682
+Subject: [tip:perf/core] watchdog:
+  Remove softlockup_thresh from Documentation
+Git-Commit-ID: c0ffaf3655fab1909a920c8f30ba1722932d01bb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,49 +32,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08825c90af6e4bb902b3a51abb0ae6530199f682
-Gitweb:     http://git.kernel.org/tip/08825c90af6e4bb902b3a51abb0ae6530199f682
+Commit-ID:  c0ffaf3655fab1909a920c8f30ba1722932d01bb
+Gitweb:     http://git.kernel.org/tip/c0ffaf3655fab1909a920c8f30ba1722932d01bb
 Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Fri, 17 May 2013 10:31:20 +0800
+AuthorDate: Fri, 17 May 2013 10:31:35 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 11:28:19 +0200
+CommitDate: Tue, 28 May 2013 11:28:20 +0200
 
-watchdog: Document watchdog_thresh sysctl
+watchdog: Remove softlockup_thresh from Documentation
+
+The old softlockup detector has been replaced with new lockup
+detector long ago.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Acked-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/51959678.6000802@huawei.com
+Link: http://lkml.kernel.org/r/51959687.9090305@huawei.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/sysctl/kernel.txt | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ Documentation/sysctl/kernel.txt | 10 ----------
+ 1 file changed, 10 deletions(-)
 
 diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index ccd4258..e8fabd6 100644
+index e8fabd6..bcff3f9 100644
 --- a/Documentation/sysctl/kernel.txt
 +++ b/Documentation/sysctl/kernel.txt
-@@ -76,6 +76,7 @@ show up in /proc/sys/kernel:
+@@ -70,7 +70,6 @@ show up in /proc/sys/kernel:
+ - shmall
+ - shmmax                      [ sysv ipc ]
+ - shmmni
+-- softlockup_thresh
+ - stop-a                      [ SPARC only ]
+ - sysrq                       ==> Documentation/sysrq.txt
  - tainted
- - threads-max
- - unknown_nmi_panic
-+- watchdog_thresh
- - version
+@@ -605,15 +604,6 @@ without users and with a dead originative process will be destroyed.
  
  ==============================================================
-@@ -648,3 +649,16 @@ that time, kernel debugging information is displayed on console.
  
- NMI switch that most IA32 servers have fires unknown NMI up, for
- example.  If a system hangs up, try pressing the NMI switch.
-+
-+==============================================================
-+
-+watchdog_thresh:
-+
-+This value can be used to control the frequency of hrtimer and NMI
-+events and the soft and hard lockup thresholds. The default threshold
-+is 10 seconds.
-+
-+The softlockup threshold is (2 * watchdog_thresh). Setting this
-+tunable to zero will disable lockup detection altogether.
-+
-+==============================================================
+-softlockup_thresh:
+-
+-This value can be used to lower the softlockup tolerance threshold.  The
+-default threshold is 60 seconds.  If a cpu is locked up for 60 seconds,
+-the kernel complains.  Valid values are 1-60 seconds.  Setting this
+-tunable to zero will disable the softlockup detection altogether.
+-
+-==============================================================
+-
+ tainted:
+ 
+ Non-zero if the kernel has been tainted.  Numeric values, which
