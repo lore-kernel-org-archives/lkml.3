@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab3E1Vv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:51:26 -0400
-Received: from www.sr71.net ([198.145.64.142]:40170 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756730Ab3E1VvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:51:24 -0400
-Message-ID: <51A526D9.3020803@sr71.net>
-Date: Tue, 28 May 2013 14:51:21 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S932129Ab3E1VwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:52:15 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:45337 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757419Ab3E1VwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 17:52:13 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Shaohua Li <shli@kernel.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: mmotm-2013-05-22: Bad page state
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 28 May 2013 15:51:52 -0600
+Message-ID: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was rebasing my mapping->radix_tree lock batching patches on top of
-Mel's stuff.  It looks like something is jumping the gun and freeing a
-page before it has been written out.  Somebody probably did an extra
-put_page() or something.
+On Mon, May 13, 2013 at 3:05 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
 
-I'm running 3.10.0-rc2-mm1-00322-g8d4c612 from
+The subject would make more sense as "Allocate *only* as many MSIs as
+requested."
 
-	git://git.cmpxchg.org/linux-mmotm.git
+> When multiple MSIs are enabled with pci_enable_msi_block(), the
+> requested number of interrupts 'nvec' is rounded up to the nearest
+> power-of-two value.
 
-This is pretty reproducible.  I'll go try and test plain 3.10-rc2 next
-to make sure it's not coming from Linus's stuff.
+This rounding is just a consequence of the encodings of the Multiple
+Message Enable field in the Message Control register (PCI spec r3.0,
+sec 6.8.1.3), isn't it?
 
-> [ 1628.443800] BUG: Bad page state in process kswapd0  pfn:1fc86c9
-> [ 1628.449781] page:ffffea007f21b240 count:0 mapcount:0 mapping:          (null) index:0x1c15
-> [ 1628.458214] page flags: 0x400000000c2008(uptodate|writeback|reclaim|swapbacked)
-> [ 1628.465624] Modules linked in:
-> [ 1628.468721] CPU: 5 PID: 68 Comm: kswapd0 Tainted: G        W    3.10.0-rc2-mm1-00322-g8d4c612-dirty #183
-> [ 1628.478400] Hardware name: FUJITSU-SV PRIMEQUEST 1800E2/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.24 09/14/2011
-> [ 1628.489149]  0000000000000001 ffff881fd22498c8 ffffffff819163f2 0000000000005d42
-> [ 1628.496646]  ffffea007f21b240 ffff881fd22498e8 ffffffff811e2bd5 ffffea007f21b240
-> [ 1628.504159]  ffffea007f21b240 ffff881fd2249928 ffffffff811e3a7b ffff881fd2249948
-> [ 1628.511668] Call Trace:
-> [ 1628.514170]  [<ffffffff819163f2>] dump_stack+0x86/0xc3
-> [ 1628.519376]  [<ffffffff811e2bd5>] bad_page+0x145/0x180
-> [ 1628.524589]  [<ffffffff811e3a7b>] free_pages_prepare+0x1bb/0x1d0
-> [ 1628.530696]  [<ffffffff811e4658>] free_hot_cold_page+0x48/0x200
-> [ 1628.536701]  [<ffffffff811e4d8e>] free_hot_cold_page_list+0x6e/0x150
-> [ 1628.543154]  [<ffffffff811f32d5>] shrink_page_list+0x575/0xfc0
-> [ 1628.549065]  [<ffffffff811f3ef7>] shrink_inactive_list+0x1d7/0x730
-> [ 1628.555340]  [<ffffffff811f48a4>] shrink_lruvec+0x454/0x8b0
-> [ 1628.561002]  [<ffffffff8125b5d1>] ? __mem_cgroup_largest_soft_limit_node+0x31/0x160
-> [ 1628.568825]  [<ffffffff8125b5d1>] ? __mem_cgroup_largest_soft_limit_node+0x31/0x160
-> [ 1628.576659]  [<ffffffff811f4fe6>] shrink_zone+0x86/0x280
-> [ 1628.582038]  [<ffffffff811f5c67>] balance_pgdat+0x697/0x940
-> [ 1628.587694]  [<ffffffff811f6116>] kswapd+0x206/0x6e0
-> [ 1628.592732]  [<ffffffff8191de75>] ? __schedule+0x3e5/0xc10
-> [ 1628.598306]  [<ffffffff811015f0>] ? wake_up_bit+0x50/0x50
-> [ 1628.603779]  [<ffffffff811f5f10>] ? balance_pgdat+0x940/0x940
-> [ 1628.609614]  [<ffffffff8110033b>] kthread+0xcb/0xe0
-> [ 1628.614559]  [<ffffffff81100270>] ? __kthread_parkme+0xc0/0xc0
-> [ 1628.620481]  [<ffffffff8192cf5c>] ret_from_fork+0x7c/0xb0
-> [ 1628.625966]  [<ffffffff81100270>] ? __kthread_parkme+0xc0/0xc0
+> The result is then used for setting up the
+> number of MSI messages in the PCI device and allocation of
+> interrupt resources in the operating system (i.e. vector numbers).
+> Thus, in cases when a device driver requests some number of MSIs
+> and this number is not a power-of-two value, the extra operating
+> system resources (allocated as the result of rounding) are wasted.
+>
+> This fix introduces 'msi_desc::nvec' field to address the above
+> issue. When non-zero, it will report the actual number of MSIs the
+> device will send, as requested by the device driver. This value
+> should be used by architectures to properly set up and tear down
+> associated interrupt resources.
+
+This name needs a little more context, like "nvec_used" or something.
+
+I think the idea is that the Message Control register can only tell
+the OS that the device requires 1, 2, 4, 8, 16, or 32 vectors, and
+similarly the OS can only tell the device that 1, 2, 4, 8, 16, or 32
+vectors are assigned.  If a device can only make use of 18 vectors, it
+must advertise the next larger value (32 vectors).  As far as I can
+tell, a device *could* advertise 32 vectors in Multiple Message
+Capable even if it can only use 1 vector.
+
+These patches are to avoid allocating resources for the unused
+vectors, i.e., the ones between the last one the driver requested and
+the last one advertised in Multiple Message Capable.  The driver might
+request fewer than the maximum either because it knows the device
+isn't capable of using them all, or because the driver author decided
+not to use them all.
+
+(Sorry, just thinking out loud above, let me know if I'm not
+understanding this correctly.)
+
+> Note, although the existing 'msi_desc::multiple' field might seem
+> redundant, in fact in does not. In general case the number of MSIs a
+> PCI device is initialized with is not necessarily the closest power-
+> of-two value of the number of MSIs the device will send. Thus, in
+> theory it would not be always possible to derive the former from the
+> latter and we need to keep them both, to stress this corner case.
+> Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
+> would not save us any space.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/pci/msi.c   |   10 ++++++++--
+>  include/linux/msi.h |    1 +
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+
+I'd be happy to push these though my tree (given an Ack from Joerg),
+or they can go another way.  Let me know if you want me to take them.
+
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 00cc78c7..014b9d5 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -79,7 +79,10 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
+>                 int i, nvec;
+>                 if (entry->irq == 0)
+>                         continue;
+> -               nvec = 1 << entry->msi_attrib.multiple;
+> +               if (entry->nvec)
+> +                       nvec = entry->nvec;
+> +               else
+> +                       nvec = 1 << entry->msi_attrib.multiple;
+>                 for (i = 0; i < nvec; i++)
+>                         arch_teardown_msi_irq(entry->irq + i);
+>         }
+> @@ -340,7 +343,10 @@ static void free_msi_irqs(struct pci_dev *dev)
+>                 int i, nvec;
+>                 if (!entry->irq)
+>                         continue;
+> -               nvec = 1 << entry->msi_attrib.multiple;
+> +               if (entry->nvec)
+> +                       nvec = entry->nvec;
+> +               else
+> +                       nvec = 1 << entry->msi_attrib.multiple;
+>  #ifdef CONFIG_GENERIC_HARDIRQS
+>                 for (i = 0; i < nvec; i++)
+>                         BUG_ON(irq_has_action(entry->irq + i));
+> diff --git a/include/linux/msi.h b/include/linux/msi.h
+> index ce93a34..0e20dfc 100644
+> --- a/include/linux/msi.h
+> +++ b/include/linux/msi.h
+> @@ -35,6 +35,7 @@ struct msi_desc {
+>
+>         u32 masked;                     /* mask bits */
+>         unsigned int irq;
+> +       unsigned int nvec;              /* number of messages */
+>         struct list_head list;
+>
+>         union {
+> --
+> 1.7.7.6
+>
+>
+> --
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
