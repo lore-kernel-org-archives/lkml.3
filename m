@@ -1,76 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933222Ab3E1Vcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:32:55 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26835 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757394Ab3E1Vcw (ORCPT
+	id S933837Ab3E1Vc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:32:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23001 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933375Ab3E1Vc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:32:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4OAPchpVF5La3j/2dsb2JhbABZgwi9MYUcBAGBBRd0giMBAQU6HDMIAxgJJQ8FJQMhARKIDLwDFo1qgSSCc2EDlzqRQYMhKg
-Date: Wed, 29 May 2013 07:32:48 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
-Message-ID: <20130528213248.GC29338@dastard>
-References: <20130528161230.GA7577@redhat.com>
- <20130528211012.GX29466@dastard>
- <20130528211544.GB24342@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528211544.GB24342@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 May 2013 17:32:56 -0400
+X-Authority-Analysis: v=2.0 cv=IZAFqBWa c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=VhRo52qjFBkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=stgUqVwuSVcA:10 a=urRxcgwk523JuNt2tNAA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1369776773.15552.43.camel@gandalf.local.home>
+Subject: [BUG] with rcu nocb, don't call wake up holding rnp->lock (was:
+ rcu_read_lock() used illegally while idle!)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Date: Tue, 28 May 2013 17:32:53 -0400
+In-Reply-To: <20130528201329.GA24342@redhat.com>
+References: <20130521173100.GA2076@redhat.com>
+	 <20130522093624.GZ3578@linux.vnet.ibm.com>
+	 <1369226958.6828.175.camel@gandalf.local.home>
+	 <20130523164004.GJ16419@redhat.com>
+	 <1369403180.6828.223.camel@gandalf.local.home>
+	 <20130524142338.GB3106@redhat.com>
+	 <1369423420.6828.226.camel@gandalf.local.home>
+	 <20130525135959.GA1784@redhat.com>
+	 <1369506004.15552.5.camel@gandalf.local.home>
+	 <20130528201329.GA24342@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 05:15:44PM -0400, Dave Jones wrote:
-> On Wed, May 29, 2013 at 07:10:12AM +1000, Dave Chinner wrote:
->  > On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
->  > > box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
->  > > xfs chose to spew and then hang instead of replaying the journal and mounting :(
->  > > 
->  > > [   14.694731] SGI XFS with ACLs, security attributes, realtime, large block/inode numbers, debug enabled
->  > > [   14.722328] XFS (sda2): Mounting Filesystem
->  > > [   14.757801] XFS (sda2): Starting recovery (logdev: internal)
->  > > [   14.782049] XFS: Assertion failed: fs_is_ok, file: fs/xfs/xfs_dir2_data.c, line: 169
->  > 
->  > A directory block has an entry that is not in the hash index.
->  > Either there's an underlying corruption on disk, or there's an
->  > inconsistency in what has been logged and so an entire change has
->  > not been replayed. Hence the post recovery verification has thrown a
->  > corruption error....
->  > 
->  > If you haven't already repaired the filesystem, can you send me a
->  > metadump of the filesystem in question?
+Paul, this looks to be a nocb rcu bug.
+
+
+On Tue, 2013-05-28 at 16:13 -0400, Dave Jones wrote:
+
+> [12572.705832] ======================================================
+> [12572.750317] [ INFO: possible circular locking dependency detected ]
+> [12572.796978] 3.10.0-rc3+ #39 Not tainted
+> [12572.833381] -------------------------------------------------------
+> [12572.862233] trinity-child17/31341 is trying to acquire lock:
+> [12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12572.878859] 
+> but task is already holding lock:
+> [12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> [12572.903381] 
+> which lock already depends on the new lock.
 > 
-> Sorry, too late. If I can repro, I'll do so next time.
-> FYI, I ran xfs_repair and it just hung. Wouldn't even answer ctrl-c.
-> Rebooted, and then it mounted and recovered just fine!
+> [12572.927541] 
+> the existing dependency chain (in reverse order) is:
+> [12572.943736] 
+> -> #4 (&ctx->lock){-.-...}:
+> [12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
+> [12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
+> [12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
+> [12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
+> [12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
+> [12573.018321] 
+> -> #3 (&rq->lock){-.-.-.}:
+> [12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
+> [12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
+> [12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
+> [12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
+> [12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
+> [12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
+> [12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
+> [12573.109528] 
+> -> #2 (&p->pi_lock){-.-.-.}:
+> [12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> [12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
+> [12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
+> [12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
+> [12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
+> [12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
+> [12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> [12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> [12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> [12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> [12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+> [12573.221379] 
+> -> #1 (&rsp->gp_wq){..-.-.}:
+> [12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> [12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
+> [12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> [12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> [12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> [12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> [12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
 
-Strange. I can't think of any reason outside a kernel problem for
-xfs_repair going into an uninterruptible sleep. Did it happen after
-the repair completed (i.e. after phase 7)? If so, then closing the
-block device might have tripped the same problem that fsck.ext2
-hit....
+Notice the above call chain.
 
->  > > [   40.642521] BUG: soft lockup - CPU#0 stuck for 22s! [fsck.ext2:294]
->  > 
->  > I'm not sure what this has to do with the XFS problem - it's
->  > apparently stuck in invalidate_bh_lrus() walking a CPU mask....
+rcu_start_future_gp() is called with the rnp->lock held. Then it calls
+rcu_start_gp_advance, which does a wakeup.
+
+You can't do wakeups while holding the rnp->lock, as that would mean
+that you could not do a rcu_read_unlock() while holding the rq lock, or
+any lock that was taken while holding the rq lock. This is because...
+(See below).
+
+
+> [12573.295067] 
+> -> #0 (rcu_node_0){..-.-.}:
+> [12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> [12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> [12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> [12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> [12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> [12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> [12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+
+Notice the above trace.
+
+perf took its own ctx->lock, which can be taken while holding the rq
+lock. While holding this lock, it did a rcu_read_unlock(). The
+perf_lock_task_context() basically looks like:
+
+rcu_read_lock();
+raw_spin_lock(ctx->lock);
+rcu_read_unlock();
+
+Now, what looks to have happened, is that we scheduled after taking that
+first rcu_read_lock() but before taking the spin lock. When we scheduled
+back in and took the ctx->lock, the following rcu_read_unlock()
+triggered the "special" code.
+
+The rcu_read_unlock_special() takes the rnp->lock, which gives us a
+possible deadlock scenario.
+
+	CPU0		CPU1		CPU2
+	----		----		----
+
+				     rcu_nocb_kthread()
+    lock(rq->lock);
+		    lock(ctx->lock);
+				     lock(rnp->lock);
+
+				     wake_up();
+
+				     lock(rq->lock);
+
+		    rcu_read_unlock();
+
+		    rcu_read_unlock_special();
+
+		    lock(rnp->lock);
+    lock(ctx->lock);
+
+**** DEADLOCK ****
+
+
+> [12573.382068] 
+> other info that might help us debug this:
 > 
-> there for completion, it was sandwiched between the other xfs bits :)
+> [12573.403229] Chain exists of:
+>   rcu_node_0 --> &rq->lock --> &ctx->lock
+> 
+> [12573.424471]  Possible unsafe locking scenario:
+> 
+> [12573.438499]        CPU0                    CPU1
+> [12573.445599]        ----                    ----
+> [12573.452691]   lock(&ctx->lock);
+> [12573.459799]                                lock(&rq->lock);
+> [12573.467010]                                lock(&ctx->lock);
+> [12573.474192]   lock(rcu_node_0);
+> [12573.481262] 
+>  *** DEADLOCK ***
+> 
+> [12573.501931] 1 lock held by trinity-child17/31341:
+> [12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> [12573.516475] 
+> stack backtrace:
+> [12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
+> [12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
+> [12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
+> [12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
+> [12573.567856] Call Trace:
+> [12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
+> [12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
+> [12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> [12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
+> [12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> [12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> [12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
+> [12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
+> [12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
+> [12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> [12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> [12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
+> [12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> [12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> [12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
+> [12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> [12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
 
-*nod*
+Here's one solution, to delay the wakeup via a irq_work: This is what
+perf and ftrace use to perform wakeups in critical sections.
 
-You never know what might be relevant to the problem :)
+-- Steve
 
-Cheers,
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Index: linux-trace.git/init/Kconfig
+===================================================================
+--- linux-trace.git.orig/init/Kconfig
++++ linux-trace.git/init/Kconfig
+@@ -431,6 +431,7 @@ choice
+ config TREE_RCU
+ 	bool "Tree-based hierarchical RCU"
+ 	depends on !PREEMPT && SMP
++	select IRQ_WORK
+ 	help
+ 	  This option selects the RCU implementation that is
+ 	  designed for very large SMP system with hundreds or
+Index: linux-trace.git/kernel/rcutree.c
+===================================================================
+--- linux-trace.git.orig/kernel/rcutree.c
++++ linux-trace.git/kernel/rcutree.c
+@@ -1613,6 +1613,14 @@ static int __noreturn rcu_gp_kthread(voi
+ 	}
+ }
+ 
++static void rsp_wakeup(struct irq_work *work)
++{
++	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
++
++	/* Wake up rcu_gp_kthread() to start the grace period. */
++	wake_up(&rsp->gp_wq);
++}
++
+ /*
+  * Start a new RCU grace period if warranted, re-initializing the hierarchy
+  * in preparation for detecting the next grace period.  The caller must hold
+@@ -1637,8 +1645,12 @@ rcu_start_gp_advanced(struct rcu_state *
+ 	}
+ 	rsp->gp_flags = RCU_GP_FLAG_INIT;
+ 
+-	/* Wake up rcu_gp_kthread() to start the grace period. */
+-	wake_up(&rsp->gp_wq);
++	/*
++	 * We can't do wakeups while holding the rnp->lock, as that
++	 * could cause possible deadlocks with the rq->lock. Deter
++	 * the wakeup to interrupt context.
++	 */
++	irq_work_queue(&rsp->wakeup_work);
+ }
+ 
+ /*
+@@ -3235,6 +3247,7 @@ static void __init rcu_init_one(struct r
+ 
+ 	rsp->rda = rda;
+ 	init_waitqueue_head(&rsp->gp_wq);
++	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
+ 	rnp = rsp->level[rcu_num_lvls - 1];
+ 	for_each_possible_cpu(i) {
+ 		while (i > rnp->grphi)
+Index: linux-trace.git/kernel/rcutree.h
+===================================================================
+--- linux-trace.git.orig/kernel/rcutree.h
++++ linux-trace.git/kernel/rcutree.h
+@@ -27,6 +27,7 @@
+ #include <linux/threads.h>
+ #include <linux/cpumask.h>
+ #include <linux/seqlock.h>
++#include <linux/irq_work.h>
+ 
+ /*
+  * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
+@@ -442,6 +443,7 @@ struct rcu_state {
+ 	char *name;				/* Name of structure. */
+ 	char abbr;				/* Abbreviated name. */
+ 	struct list_head flavors;		/* List of RCU flavors. */
++	struct irq_work wakeup_work;		/* Postponed wakeups */
+ };
+ 
+ /* Values for rcu_state structure's gp_flags field. */
+
+
