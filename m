@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934905Ab3E1RG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:06:59 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:45180 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934848Ab3E1RG6 (ORCPT
+	id S964790Ab3E1RPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:15:45 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:52650 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934735Ab3E1RPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:06:58 -0400
+	Tue, 28 May 2013 13:15:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
-References: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
-Date: Tue, 28 May 2013 10:06:57 -0700
-X-Google-Sender-Auth: l-lEbJ5ha4ly_ceHZ-Oudc0Vte0
-Message-ID: <CA+55aFz34Hn5xLwJL4PS+agpK-L3fNjNxkcXAS4gNx8tqOOwFQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] MN10300: Fix ret_from_kernel_thread
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-am33-list@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ken Cox <jkc@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1369715506.2034.30.camel@joe-AO722>
+References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>
+	<51A39A3F.8080903@redhat.com>
+	<1369693520.3301.477.camel@edumazet-glaptop>
+	<1369715506.2034.30.camel@joe-AO722>
+Date: Tue, 28 May 2013 13:15:41 -0400
+Message-ID: <CAATkVEz9QzYfLhfv6LgGVatPxP3Q1v9DdWaSsFTKgfKrdvQYhw@mail.gmail.com>
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+From: Debabrata Banerjee <dbavatar@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
+        atomlin@redhat.com, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>, edumazet@google.com,
+        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
+        aquini@redhat.com, sergei.shtylyov@cogentembedded.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Banerjee, Debabrata" <dbanerje@akamai.com>,
+        Joshua Hunt <johunt@akamai.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What kernel version are these patches against?
+On Tue, May 28, 2013 at 12:31 AM, Joe Perches <joe@perches.com> wrote:
+>
+> I think the __alloc_skb alloc failure message is ok,
+> but maybe there shouldn't be something "scary" like
+> a dump_stack.
+>
+> Maybe this site should use a trivial debug error
+> message like below instead.
 
-You explicitly mention commit ddf23e87a804, but the patch contains
-ret_from_kernel_execve that was *removed* by that commit.
+The stack trace may or may not be important for debugging, however
+what is important is that we know how often this is happening. That
+implies that there should be a percpu counter of allocation failures
+here, regardless of a dump_stack, rate limited or not. I would suppose
+it's ok for no stack by default as long as there is a counter, for
+this specific call only.
 
-So the whole thing seems very confused. I'm dropping this series.
+There are some scary ways this code is called, for example from
+tcp_send_fin(). It does yield() in that loop, but otherwise it just
+spins.
 
-              Linus
-
-On Tue, May 28, 2013 at 7:34 AM, David Howells <dhowells@redhat.com> wrote:
-> ret_from_kernel_thread needs to set A2 to the thread_info pointer before
-> jumping to syscall_exit.
->
-> Without this, we never correctly start userspace.
->
-> This was caused by the rejuggling of the fork/exec paths in commit:
->
->         ddf23e87a804cbf6fa3818076b33fe023cce09fd
->         Author: Al Viro <viro@zeniv.linux.org.uk>
->         Date:   Thu Oct 11 17:32:41 2012 -0400
->         Subject: mn10300: switch to saner kernel_execve() semantics
->
-> Reported-by: Ken Cox <jkc@redhat.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Acked-by: Ken Cox <jkc@redhat.com>
-> Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-> ---
->
->  arch/mn10300/kernel/entry.S |    1 +
->  1 file changed, 1 insertion(+)
->
->
-> diff --git a/arch/mn10300/kernel/entry.S b/arch/mn10300/kernel/entry.S
-> index 0c631d3..92c3eea 100644
-> --- a/arch/mn10300/kernel/entry.S
-> +++ b/arch/mn10300/kernel/entry.S
-> @@ -60,6 +60,7 @@ ENTRY(ret_from_kernel_thread)
->         mov     (REG_D0,fp),d0
->         mov     (REG_A0,fp),a0
->         calls   (a0)
-> +       GET_THREAD_INFO a2              # A2 must be set on return from sys_exit()
->         jmp     sys_exit
->
->  ENTRY(ret_from_kernel_execve)
->
+-Deb
