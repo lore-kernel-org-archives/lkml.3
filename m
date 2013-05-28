@@ -1,91 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab3E1IOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:14:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56713 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933328Ab3E1IOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:14:51 -0400
-Message-ID: <51A4676D.9010404@ti.com>
-Date: Tue, 28 May 2013 11:14:37 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S933446Ab3E1IRD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:17:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21608 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933328Ab3E1IQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 04:16:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,756,1363158000"; 
+   d="scan'208";a="344243627"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: sfi-devel@simplefirmware.org, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH, resend 1/3] sfi: fix compiler warnings
+Date: Tue, 28 May 2013 11:16:52 +0300
+Message-Id: <1369729014-20974-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 MIME-Version: 1.0
-To: =?UTF-8?B?QWRyaWVuIFZlcmfDqQ==?= <adrienverge@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Florian Fainelli <florian@openwrt.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Yannick Brosseau <yannick.brosseau@gmail.com>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
-References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com> <CANsc=4WDM0q=RwaN2ZrcNqgJ=fDsgGHcBDcufnDek4EVWcnGfw@mail.gmail.com> <201305272023.12281.arnd@arndb.de>
-In-Reply-To: <201305272023.12281.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2013 09:23 PM, Arnd Bergmann wrote:
-> On Saturday 25 May 2013, Adrien Vergé wrote:
->> On OMAP4 platforms, EHCI HCD needs the physical layer signalling
->> activated, along with the NOP USB Transceiver driver. Otherwise, the
->> kernel boots without registering any USB device.
-> 
-> This does not actually sound like a critical error: If a user forgets
-> to enable a driver, that driver will not be loaded. Of course the
-> kernel should not just crash when a non-essential driver is missing,
-> and it should not fail to build, but your description sounds harmless.
-> 
-> Am I missing something?
+This fixes the following compiler warnings when build is done by make W=1.
 
-Right, there is no crash or anything if the PHY drivers are not selected,
-just that OMAP USB host will not work.
+drivers/sfi/sfi_acpi.c:154:5: warning: no previous prototype for ‘sfi_acpi_table_parse’ [-Wmissing-prototypes]
 
-> 
->> This patch applies to Linux 3.10-rc2.
->>
->> Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
->> ---
->> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
->> index de94f26..47959d7 100644
->> --- a/drivers/usb/host/Kconfig
->> +++ b/drivers/usb/host/Kconfig
->> @@ -44,6 +44,8 @@ endif # USB_XHCI_HCD
->>  config USB_EHCI_HCD
->>         tristate "EHCI HCD (USB 2.0) support"
-> 
-> This is the wrong place: it should be in USB_EHCI_HCD_OMAP
-> if any.
+drivers/sfi/sfi_core.c:164:26: warning: no previous prototype for ‘sfi_map_table’ [-Wmissing-prototypes]
+drivers/sfi/sfi_core.c:192:6: warning: no previous prototype for ‘sfi_unmap_table’ [-Wmissing-prototypes]
 
-Right.
-> 
->>         depends on USB_ARCH_HAS_EHCI
->> +       select USB_PHY if ARCH_OMAP4
->> +       select NOP_USB_XCEIV if ARCH_OMAP4
->>         ---help---
->>           The Enhanced Host Controller Interface (EHCI) is standard for USB 2.0
->>           "high speed" (480 Mbit/sec, 60 Mbyte/sec) host controller hardware.
-> 
-> 'select'ing USB_PHY sounds wrong too, I think you mean 'depends on'.
-> 
-> Also note that Roger Quadros has just removed the 'select NOP_USB_XCEIV'
-> there, I think you should coordinate with him.
+Indentation fixes are also included.
 
-Selecting NOP_USB_XCEIV is wrong as it in turn depends on USB_PHY.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/sfi/sfi_acpi.c   | 8 ++++----
+ drivers/sfi/sfi_core.c   | 4 ++--
+ include/linux/sfi_acpi.h | 2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-I'm not for depends as it would hide USB_EHCI_HCD_OMAP in menuconfig.
-I'm for explicitly selecting both, as it makes the user's life much easier.
-But I'm afraid maintainers might object to that.
+diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+index f5b4ca5..728a2e2 100644
+--- a/drivers/sfi/sfi_acpi.c
++++ b/drivers/sfi/sfi_acpi.c
+@@ -63,6 +63,7 @@
+ #include <acpi/acpi.h>
+ 
+ #include <linux/sfi.h>
++#include <linux/sfi_acpi.h>
+ #include "sfi_core.h"
+ 
+ /*
+@@ -152,7 +153,7 @@ static void sfi_acpi_put_table(struct acpi_table_header *table)
+  * Find specified table in XSDT, run handler on it and return its return value
+  */
+ int sfi_acpi_table_parse(char *signature, char *oem_id, char *oem_table_id,
+-			int(*handler)(struct acpi_table_header *))
++			 int(*handler)(struct acpi_table_header *))
+ {
+ 	struct acpi_table_header *table = NULL;
+ 	struct sfi_table_key key;
+@@ -175,8 +176,8 @@ int sfi_acpi_table_parse(char *signature, char *oem_id, char *oem_table_id,
+ }
+ 
+ static ssize_t sfi_acpi_table_show(struct file *filp, struct kobject *kobj,
+-			       struct bin_attribute *bin_attr, char *buf,
+-			       loff_t offset, size_t count)
++				   struct bin_attribute *bin_attr, char *buf,
++				   loff_t offset, size_t count)
+ {
+ 	struct sfi_table_attr *tbl_attr =
+ 	    container_of(bin_attr, struct sfi_table_attr, attr);
+@@ -199,7 +200,6 @@ static ssize_t sfi_acpi_table_show(struct file *filp, struct kobject *kobj,
+ 	return cnt;
+ }
+ 
+-
+ void __init sfi_acpi_sysfs_init(void)
+ {
+ 	u32 tbl_cnt, i;
+diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
+index 1e824fb..296db7a 100644
+--- a/drivers/sfi/sfi_core.c
++++ b/drivers/sfi/sfi_core.c
+@@ -161,7 +161,7 @@ static int sfi_verify_table(struct sfi_table_header *table)
+  * Check for common case that we can re-use mapping to SYST,
+  * which requires syst_pa, syst_va to be initialized.
+  */
+-struct sfi_table_header *sfi_map_table(u64 pa)
++static struct sfi_table_header *sfi_map_table(u64 pa)
+ {
+ 	struct sfi_table_header *th;
+ 	u32 length;
+@@ -189,7 +189,7 @@ struct sfi_table_header *sfi_map_table(u64 pa)
+  * Undoes effect of sfi_map_table() by unmapping table
+  * if it did not completely fit on same page as SYST.
+  */
+-void sfi_unmap_table(struct sfi_table_header *th)
++static void sfi_unmap_table(struct sfi_table_header *th)
+ {
+ 	if (!TABLE_ON_PAGE(syst_va, th, th->len))
+ 		sfi_unmap_memory(th, TABLE_ON_PAGE(th, th, th->len) ?
+diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+index 631af63..1a88ef6 100644
+--- a/include/linux/sfi_acpi.h
++++ b/include/linux/sfi_acpi.h
+@@ -60,7 +60,7 @@
+ #define _LINUX_SFI_ACPI_H
+ 
+ #ifdef CONFIG_SFI
+-#include <acpi/acpi.h>		/* struct acpi_table_header */
++#include <linux/acpi.h>		/* struct acpi_table_header */
+ 
+ extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+ 				char *oem_table_id,
+-- 
+1.8.2.rc0.22.gb3600c3
 
-The other option is to enable the required drivers in omap2plus_defconfig.
-http://comments.gmane.org/gmane.linux.ports.arm.omap/97899
-
-Maybe you could just resend that patch after addressing Kevin's comments?
-
-cheers,
--roger
