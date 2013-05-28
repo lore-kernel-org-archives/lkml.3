@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab3E1DzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52618 "EHLO
+	id S933059Ab3E1DzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52582 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758878Ab3E1DyM (ORCPT
+	by vger.kernel.org with ESMTP id S1758838Ab3E1DyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:12 -0400
+	Mon, 27 May 2013 23:54:09 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lv Zheng" <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Bob Moore" <robert.moore@intel.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>,
+        "Krzysztof Strasburger" <strasbur@chkw386.ch.pwr.wroc.pl>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.426004329@decadent.org.uk>
+Message-ID: <lsq.1369712993.278792880@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [16/94] ACPICA: Fix possible buffer overflow during a field unit
- read operation
+Subject: [59/94] fat: fix possible overflow for fat_clusters
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +33,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
-commit 61388f9e5d93053cf399a356414f31f9b4814c6d upstream.
+commit 7b92d03c3239f43e5b86c9cc9630f026d36ee995 upstream.
 
-Can only happen under these conditions: 1) The DSDT version is 1,
-meaning integers are 32-bits.  2) The field is between 33 and 64
-bits long.
+Intermediate value of fat_clusters can be overflowed on 32bits arch.
 
-It applies cleanly back to ACPICA 20100806+ (Linux v2.6.37+).
-
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/acpica/exfldio.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ fs/fat/inode.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/acpica/exfldio.c
-+++ b/drivers/acpi/acpica/exfldio.c
-@@ -702,7 +702,19 @@ acpi_ex_extract_from_field(union acpi_op
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1238,6 +1238,19 @@ static int fat_read_root(struct inode *i
+ 	return 0;
+ }
  
- 	if ((obj_desc->common_field.start_field_bit_offset == 0) &&
- 	    (obj_desc->common_field.bit_length == access_bit_width)) {
--		status = acpi_ex_field_datum_io(obj_desc, 0, buffer, ACPI_READ);
-+		if (buffer_length >= sizeof(u64)) {
-+			status =
-+			    acpi_ex_field_datum_io(obj_desc, 0, buffer,
-+						   ACPI_READ);
-+		} else {
-+			/* Use raw_datum (u64) to handle buffers < 64 bits */
++static unsigned long calc_fat_clusters(struct super_block *sb)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 +
-+			status =
-+			    acpi_ex_field_datum_io(obj_desc, 0, &raw_datum,
-+						   ACPI_READ);
-+			ACPI_MEMCPY(buffer, &raw_datum, buffer_length);
-+		}
++	/* Divide first to avoid overflow */
++	if (sbi->fat_bits != 12) {
++		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
++		return ent_per_sec * sbi->fat_length;
++	}
 +
- 		return_ACPI_STATUS(status);
- 	}
++	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++}
++
+ /*
+  * Read the super block of an MS-DOS FS.
+  */
+@@ -1434,7 +1447,7 @@ int fat_fill_super(struct super_block *s
+ 		sbi->fat_bits = (total_clusters > MAX_FAT12) ? 16 : 12;
  
+ 	/* check that FAT table does not overflow */
+-	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++	fat_clusters = calc_fat_clusters(sb);
+ 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
+ 	if (total_clusters > MAX_FAT(sb)) {
+ 		if (!silent)
 
