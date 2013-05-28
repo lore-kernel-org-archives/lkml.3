@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965000Ab3E1SRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:17:32 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:42191 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab3E1SRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:17:31 -0400
-Date: Tue, 28 May 2013 14:22:11 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-In-Reply-To: <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523125218.GB23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu> <20130523152611.GE23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
- <20130528085548.GA12193@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S965010Ab3E1STE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:19:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33599 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964914Ab3E1STB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:19:01 -0400
+Message-ID: <1369765141.22004.64.camel@joe-AO722>
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Rafael Aquini <aquini@redhat.com>, Ben Greear <greearb@candelatech.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
+        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
+        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 May 2013 11:19:01 -0700
+In-Reply-To: <1369758577.3301.543.camel@edumazet-glaptop>
+References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
+	 <20130527224149.GA4384@electric-eye.fr.zoreil.com>
+	 <51A4D4AD.2010507@candelatech.com>
+	 <20130528161518.GC11614@optiplex.redhat.com>
+	 <1369758577.3301.543.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Vince Weaver wrote:
+On Tue, 2013-05-28 at 09:29 -0700, Eric Dumazet wrote:
+> I would bump nopage_rs to somethin more reasonable, like one hour or one
+> day.
 
-> It looks like this is already in tip, but I can confirm that this 
-> patch seems to fix things on my machine and holds up against longer 
-> fuzzing runs.
+Reasonable is harder to specify but perhaps it could
+be made runtime configurable.
 
-OK, I take it back.  Even with the new patch applied, my fuzzer can still 
-make the kernel leak user->locked_vm
 
-I assume that the locked_vm value should go back to 0 once a process that 
-has a bunch of mmap'd perf_events opened exits?
-
-I admit this is sort of an obscure corner case, but it does mean that a 
-user can leak user->locked_vm to the point that "perf record" no longer 
-works.
-
-Vince
