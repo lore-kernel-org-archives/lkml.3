@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3E1TJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 15:09:18 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40231 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab3E1TJR (ORCPT
+	id S1754463Ab3E1TQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 15:16:15 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:35840 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab3E1TQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 15:09:17 -0400
-Message-ID: <51A500DA.9000708@linaro.org>
-Date: Tue, 28 May 2013 12:09:14 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+	Tue, 28 May 2013 15:16:14 -0400
+Date: Tue, 28 May 2013 20:16:08 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Leon Romanovsky <leon@leon.nu>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
- RTC on system time step changes
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com> <5193CFA2.8010008@linaro.org> <51A4F6C6.8080808@citrix.com> <20130528183137.GA23213@phenom.dumpdata.com>
-In-Reply-To: <20130528183137.GA23213@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
+Message-ID: <20130528191608.GB3012@gmail.com>
+References: <1368609586-20905-1-git-send-email-leon@leon.nu>
+ <20130523083751.GC22683@gmail.com>
+ <CALq1K=Las2mwV9x6ajEUDYg6nLbcK2KVLK8TH2B1f=9fQ7JfTg@mail.gmail.com>
+ <20130528090213.GB22683@gmail.com>
+ <CAHp75VdzX=8hjRX5PtO1q-uAa5AwNjoNN5P24ruR8ifvA-8umA@mail.gmail.com>
+ <CALq1K=LGuA4Jqa0qmenLNJZCbLf4XhZoA-wd-pkcR+bMbenBGw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALq1K=LGuA4Jqa0qmenLNJZCbLf4XhZoA-wd-pkcR+bMbenBGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 11:31 AM, Konrad Rzeszutek Wilk wrote:
-> On Tue, May 28, 2013 at 07:26:14PM +0100, David Vrabel wrote:
->> On 15/05/13 19:10, John Stultz wrote:
->>> Ok, so really, as soon as the Dom0 time is set by NTP, all guests will
->>> see the right time? That makes more sense, and means the window for
->>> these sorts of issues is reasonably quite small.
->> It's a small window but it's occurring in our automated test system.
->>
->>> David: So I'm less inclined to merge this individual change, but if you
->>> still feel strongly about it, let me know and we can circle around on it
->>> after you've addressed the specific issues I pointed out earlier.
->> This patch was the actual bug fix but I've reworked it to use the
->> pvclock_gtod notifier chain as this seemed to be what KVM hosts were
->> using to maintain a clock for guests.  Please review the new series, thanks.
-> Looks good.
->
-> John if you are OK I am thinking to push this to Linus shortly as it is
-> fixing a bug.
+On Tue, 28 May 2013, Leon Romanovsky wrote:
 
-I'm really not sure I'd call this a bug.  That seems like an 
-over-reaction to a misconfigured system.
+> On Tue, May 28, 2013 at 7:24 PM, Andy Shevchenko
+> <andy.shevchenko@gmail.com> wrote:
+> > On Tue, May 28, 2013 at 12:02 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> On Mon, 27 May 2013, Leon Romanovsky wrote:
+> >
+> >>> > > +     init_data = devm_kzalloc(&tps65912->dev,
+> >
+> > There is an obvious typo: no need of & here if I got it correctly.
+> >
+> >> drivers/mfd/tps65912-core.c: In function ‘tps65912_device_init’:
+> >> drivers/mfd/tps65912-core.c:131:18: warning: passing argument 1 of ‘devm_kzalloc’ from incompatible pointer type [enabled by default]
+> >> In file included from include/linux/platform_device.h:14:0,
+> >>                  from include/linux/mfd/core.h:17,
+> >>                  from drivers/mfd/tps65912-core.c:21:
+> >> include/linux/device.h:574:14: note: expected ‘struct device *’ but argument is of type ‘struct device **’
+> You are absolutely right, I sent the wrong patch with typo :(
+> 
+> Lee,
+> Do I need to resend it ? Or you can fix it by yourself ?
 
-Or if there is a bug, I'm not sure its been clearly explained.
+I've already fixed it up and tested.
 
-thanks
--john
+I just wanted to clarify exactly what happened, as it couldn't have
+been tested.
 
+No worries, patch applied.
 
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
