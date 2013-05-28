@@ -1,140 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab3E1XK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:10:26 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:55900 "EHLO kanga.kvack.org"
+	id S1759234Ab3E1XMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:12:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53653 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758201Ab3E1XKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:10:25 -0400
-Date: Tue, 28 May 2013 19:10:24 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] aio: Use call_rcu() instead of synchronize_rcu() in kill_ioctx()
-Message-ID: <20130528231024.GA24189@kvack.org>
-References: <1369776378-27921-1-git-send-email-koverstreet@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369776378-27921-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758461Ab3E1XMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:12:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v1 1/2] ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
+Date: Wed, 29 May 2013 01:21:08 +0200
+Message-ID: <3502693.GdBGlhPugI@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo6-xtrNgPYxu_4QRtZs76P9B6b4JXQPENhX6hyNPpKx+g@mail.gmail.com>
+References: <1368536439-19421-1-git-send-email-jiang.liu@huawei.com> <CAErSpo6-xtrNgPYxu_4QRtZs76P9B6b4JXQPENhX6hyNPpKx+g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 02:26:18PM -0700, Kent Overstreet wrote:
-> Just making ioctx shutdown asynchronous so as not to block io_destroy()
-> - and percpu refcounts for the ioctx are going to need a RCU barrier in
-> the same place anyways.
+On Tuesday, May 28, 2013 04:37:03 PM Bjorn Helgaas wrote:
+> On Tue, May 14, 2013 at 7:00 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> > Now the global list acpi_pci_roots pci_root.c is useless, remove it.
+> >
+> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> > Cc: Len Brown <lenb@kernel.org>
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Cc: linux-acpi@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/acpi/pci_root.c | 25 +++----------------------
+> >  include/acpi/acpi_bus.h |  1 -
+> >  2 files changed, 3 insertions(+), 23 deletions(-)
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Tested-by: Benjamin LaHaise <bcrl@kvack.org>
-
-I have reviewed and tested this, and it fixes the io_setup() returning 
-EAGAIN error from the first version of this patch.  Thanks Kent!
-
-		-ben
-
-> Cc: Zach Brown <zab@redhat.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Asai Thambi S P <asamymuthupa@micron.com>
-> Cc: Selvan Mani <smani@micron.com>
-> Cc: Sam Bradshaw <sbradshaw@micron.com>
-> Cc: Jeff Moyer <jmoyer@redhat.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> ---
->  fs/aio.c | 36 ++++++++++++++++--------------------
->  1 file changed, 16 insertions(+), 20 deletions(-)
+> This and the "use acpi_handle_print()" patch look fine to me.
 > 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 7fe5bde..2bbcacf 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -141,9 +141,6 @@ static void aio_free_ring(struct kioctx *ctx)
->  	for (i = 0; i < ctx->nr_pages; i++)
->  		put_page(ctx->ring_pages[i]);
->  
-> -	if (ctx->mmap_size)
-> -		vm_munmap(ctx->mmap_base, ctx->mmap_size);
-> -
->  	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages)
->  		kfree(ctx->ring_pages);
->  }
-> @@ -322,11 +319,6 @@ static void free_ioctx(struct kioctx *ctx)
->  
->  	aio_free_ring(ctx);
->  
-> -	spin_lock(&aio_nr_lock);
-> -	BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
-> -	aio_nr -= ctx->max_reqs;
-> -	spin_unlock(&aio_nr_lock);
-> -
->  	pr_debug("freeing %p\n", ctx);
->  
->  	/*
-> @@ -435,17 +427,24 @@ static void kill_ioctx(struct kioctx *ctx)
->  {
->  	if (!atomic_xchg(&ctx->dead, 1)) {
->  		hlist_del_rcu(&ctx->list);
-> -		/* Between hlist_del_rcu() and dropping the initial ref */
-> -		synchronize_rcu();
->  
->  		/*
-> -		 * We can't punt to workqueue here because put_ioctx() ->
-> -		 * free_ioctx() will unmap the ringbuffer, and that has to be
-> -		 * done in the original process's context. kill_ioctx_rcu/work()
-> -		 * exist for exit_aio(), as in that path free_ioctx() won't do
-> -		 * the unmap.
-> +		 * It'd be more correct to do this in free_ioctx(), after all
-> +		 * the outstanding kiocbs have finished - but by then io_destroy
-> +		 * has already returned, so io_setup() could potentially return
-> +		 * -EAGAIN with no ioctxs actually in use (as far as userspace
-> +		 *  could tell).
->  		 */
-> -		kill_ioctx_work(&ctx->rcu_work);
-> +		spin_lock(&aio_nr_lock);
-> +		BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
-> +		aio_nr -= ctx->max_reqs;
-> +		spin_unlock(&aio_nr_lock);
-> +
-> +		if (ctx->mmap_size)
-> +			vm_munmap(ctx->mmap_base, ctx->mmap_size);
-> +
-> +		/* Between hlist_del_rcu() and dropping the initial ref */
-> +		call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
->  	}
->  }
->  
-> @@ -495,10 +494,7 @@ void exit_aio(struct mm_struct *mm)
->  		 */
->  		ctx->mmap_size = 0;
->  
-> -		if (!atomic_xchg(&ctx->dead, 1)) {
-> -			hlist_del_rcu(&ctx->list);
-> -			call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
-> -		}
-> +		kill_ioctx(ctx);
->  	}
->  }
->  
-> -- 
-> 1.8.2.1
+> Rafael, I can take them, or if you want to take them yourself, you can add
+> 
+>   Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
+OK, I'll take them.
+
+Thanks,
+Rafael
+
+
+> > diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> > index b80e06e..91ddfd6 100644
+> > --- a/drivers/acpi/pci_root.c
+> > +++ b/drivers/acpi/pci_root.c
+> > @@ -65,10 +65,6 @@ static struct acpi_scan_handler pci_root_handler = {
+> >         .detach = acpi_pci_root_remove,
+> >  };
+> >
+> > -/* Lock to protect both acpi_pci_roots lists */
+> > -static DEFINE_MUTEX(acpi_pci_root_lock);
+> > -static LIST_HEAD(acpi_pci_roots);
+> > -
+> >  static DEFINE_MUTEX(osc_lock);
+> >
+> >  /**
+> > @@ -423,7 +419,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >                 }
+> >         }
+> >
+> > -       INIT_LIST_HEAD(&root->node);
+> >         root->device = device;
+> >         root->segment = segment & 0xFFFF;
+> >         strcpy(acpi_device_name(device), ACPI_PCI_ROOT_DEVICE_NAME);
+> > @@ -501,10 +496,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >          * TBD: Need PCI interface for enumeration/configuration of roots.
+> >          */
+> >
+> > -       mutex_lock(&acpi_pci_root_lock);
+> > -       list_add_tail(&root->node, &acpi_pci_roots);
+> > -       mutex_unlock(&acpi_pci_root_lock);
+> > -
+> >         /*
+> >          * Scan the Root Bridge
+> >          * --------------------
+> > @@ -518,7 +509,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >                             "Bus %04x:%02x not present in PCI namespace\n",
+> >                             root->segment, (unsigned int)root->secondary.start);
+> >                 result = -ENODEV;
+> > -               goto out_del_root;
+> > +               goto end;
+> >         }
+> >
+> >         /* ASPM setting */
+> > @@ -538,20 +529,13 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >         if (system_state != SYSTEM_BOOTING) {
+> >                 pcibios_resource_survey_bus(root->bus);
+> >                 pci_assign_unassigned_bus_resources(root->bus);
+> > -       }
+> > -
+> > -       /* need to after hot-added ioapic is registered */
+> > -       if (system_state != SYSTEM_BOOTING)
+> > +               /* need to after hot-added ioapic is registered */
+> >                 pci_enable_bridges(root->bus);
+> > +       }
+> >
+> >         pci_bus_add_devices(root->bus);
+> >         return 1;
+> >
+> > -out_del_root:
+> > -       mutex_lock(&acpi_pci_root_lock);
+> > -       list_del(&root->node);
+> > -       mutex_unlock(&acpi_pci_root_lock);
+> > -
+> >  end:
+> >         kfree(root);
+> >         return result;
+> > @@ -568,9 +552,6 @@ static void acpi_pci_root_remove(struct acpi_device *device)
+> >
+> >         pci_remove_root_bus(root->bus);
+> >
+> > -       mutex_lock(&acpi_pci_root_lock);
+> > -       list_del(&root->node);
+> > -       mutex_unlock(&acpi_pci_root_lock);
+> >         kfree(root);
+> >  }
+> >
+> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> > index 22ba56e..4eb9a88 100644
+> > --- a/include/acpi/acpi_bus.h
+> > +++ b/include/acpi/acpi_bus.h
+> > @@ -447,7 +447,6 @@ int register_acpi_bus_type(struct acpi_bus_type *);
+> >  int unregister_acpi_bus_type(struct acpi_bus_type *);
+> >
+> >  struct acpi_pci_root {
+> > -       struct list_head node;
+> >         struct acpi_device * device;
+> >         struct pci_bus *bus;
+> >         u16 segment;
+> > --
+> > 1.8.1.2
+> >
 -- 
-"Thought is the essence of where you are now."
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
