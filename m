@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934581Ab3E1V1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:27:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59875 "EHLO
+	id S934124Ab3E1V0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:26:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934340Ab3E1V0h (ORCPT
+	with ESMTP id S934015Ab3E1V0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:26:37 -0400
+	Tue, 28 May 2013 17:26:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 49/78] tracing: Fix leaks of filter preds
-Date: Tue, 28 May 2013 14:19:58 -0700
-Message-Id: <1369776027-17859-50-git-send-email-kamal@canonical.com>
+Cc: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>,
+        Josef Bacik <jbacik@fusionio.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 53/78] btrfs: don't stop searching after encountering the wrong item
+Date: Tue, 28 May 2013 14:20:02 -0700
+Message-Id: <1369776027-17859-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,61 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Gabriel de Perthuis <g2p.code@gmail.com>
 
-commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
+commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
 
-Special preds are created when folding a series of preds that
-can be done in serial. These are allocated in an ops field of
-the pred structure. But they were never freed, causing memory
-leaks.
+The search ioctl skips items that are too large for a result buffer, but
+inline items of a certain size occuring before any search result is
+found would trigger an overflow and stop the search entirely.
 
-This was discovered using the kmemleak checker:
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
 
-unreferenced object 0xffff8800797fd5e0 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
-  hex dump (first 32 bytes):
-    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
-    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
-    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
-    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
-    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
-    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
-    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
-    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
-    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
-    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
-    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
-    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
-    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
-
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/trace/trace_events_filter.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/btrfs/ioctl.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index e5b0ca8..5a8a53e 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -777,7 +777,11 @@ static int filter_set_pred(struct event_filter *filter,
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 338f259..47d5dcd 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1767,7 +1767,11 @@ static noinline int copy_to_sk(struct btrfs_root *root,
+ 		item_off = btrfs_item_ptr_offset(leaf, i);
+ 		item_len = btrfs_item_size_nr(leaf, i);
  
- static void __free_preds(struct event_filter *filter)
- {
-+	int i;
+-		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
++		btrfs_item_key_to_cpu(leaf, key, i);
++		if (!key_in_sk(key, sk))
++			continue;
 +
- 	if (filter->preds) {
-+		for (i = 0; i < filter->n_preds; i++)
-+			kfree(filter->preds[i].ops);
- 		kfree(filter->preds);
- 		filter->preds = NULL;
- 	}
++		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
+ 			item_len = 0;
+ 
+ 		if (sizeof(sh) + item_len + *sk_offset >
+@@ -1776,10 +1780,6 @@ static noinline int copy_to_sk(struct btrfs_root *root,
+ 			goto overflow;
+ 		}
+ 
+-		btrfs_item_key_to_cpu(leaf, key, i);
+-		if (!key_in_sk(key, sk))
+-			continue;
+-
+ 		sh.objectid = key->objectid;
+ 		sh.offset = key->offset;
+ 		sh.type = key->type;
 -- 
 1.8.1.2
 
