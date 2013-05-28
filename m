@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934816Ab3E1QT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:19:29 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:47837 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934660Ab3E1QT1 (ORCPT
+	id S934835Ab3E1QTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:19:38 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58212 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934660Ab3E1QTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:19:27 -0400
-Date: Tue, 28 May 2013 16:19:25 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-rdma@vger.kernel.org,
-        Or Gerlitz <or.gerlitz@gmail.com>
-Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
-In-Reply-To: <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
-Message-ID: <0000013eebefddd4-ace0f251-cfba-41cf-b48e-266cb13bcebd-000000@email.amazonses.com>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523104154.GA23650@twins.programming.kicks-ass.net> <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com> <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
- <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com> <20130524140114.GK23650@twins.programming.kicks-ass.net> <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
- <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 28 May 2013 12:19:36 -0400
+Message-ID: <51A4D90F.2020304@candelatech.com>
+Date: Tue, 28 May 2013 09:19:27 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.28-54.240.9.58
+To: Rafael Aquini <aquini@redhat.com>
+CC: Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
+        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
+        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+References: <1369601101-23057-1-git-send-email-atomlin@redhat.com> <20130527224149.GA4384@electric-eye.fr.zoreil.com> <51A4D4AD.2010507@candelatech.com> <20130528161518.GC11614@optiplex.redhat.com>
+In-Reply-To: <20130528161518.GC11614@optiplex.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 May 2013, KOSAKI Motohiro wrote:
+On 05/28/2013 09:15 AM, Rafael Aquini wrote:
+> On Tue, May 28, 2013 at 09:00:45AM -0700, Ben Greear wrote:
+>> On 05/27/2013 03:41 PM, Francois Romieu wrote:
+>>> atomlin@redhat.com <atomlin@redhat.com> :
+>>> [...]
+>>>> Failed GFP_ATOMIC allocations by the network stack result in dropped
+>>>> packets, which will be received on a subsequent retransmit, and an
+>>>> unnecessary, noisy warning with a kernel backtrace.
+>>>>
+>>>> These warnings are harmless, but they still cause users to panic and
+>>>> file bug reports over dropped packets. It would be better to hide the
+>>>> failed allocation warnings and backtraces, and let retransmits handle
+>>>> dropped packets quietly.
+>>>
+>>> Linux VM may be perfect but device drivers do stupid things.
+>>>
+>>> Please don't paper over it just because some shit ends in your backyard.
+>>
+>> We should rate-limit these messages at least.  When a system is low on memory
+>> the logs can quickly fill up with useless OOM messages, further slowing
+>> the system...
+>>
+>
+> The real problem seems to be that more and more the network stack (drivers, perhaps)
+> is relying on chunks of contiguous page-blocks without a fallback mechanism to
+> order-0 page allocations. When memory gets fragmented, these alloc failures
+> start to pop up more often and they scare ordinary sysadmins out of their paints.
+>
+> The big point of this change was to attempt to relief some of these warnings
+> which we believed as being useless, since the net stack would recover from it
+> by re-transmissions.
+> We might have misjudged the scenario, though. Perhaps a better approach would be
+> making the warning less verbose for all page-alloc failures. We could, perhaps,
+> only print a stack-dump out, if some debug flag is passed along, either as
+> reference, or by some CONFIG_DEBUG_ preprocessor directive.
 
-> If pinned and mlocked are totally difference intentionally, why IB uses
-> RLIMIT_MEMLOCK. Why don't IB uses IB specific limit and why only IB raise up
-> number of pinned pages and other gup users don't.
-> I can't guess IB folk's intent.
+I have seen the logs spam with 0rder-0 allocation errors.  Maybe the system had
+legitimate issues, but continuously spamming made it even harder to figure out
+the problem, and constantly trying to write that much text to the serial console
+has a big performance impact, further slowing the system when it should instead
+be clearing it's packet backlog or whatever.
 
-True another limit would be better. The reason that IB raises the
-pinned pages is because IB permanently pins those pages. Other users of
-gup do that temporarily.
+Maybe print the first OOM message with lots of details, and then use
+some rate-limiting stuff to print out summary details at most every 5 seconds
+or so after that.  Could reset the verbose timer after some period of no
+OOM messages.
 
-If there are other users that pin pages permanently should also account
-for it.
+Ben
+
+>
+> Rafael
+>
+>> Ben
+>>
+>>>
+>>
+>>
+>> --
+>> Ben Greear <greearb@candelatech.com>
+>> Candela Technologies Inc  http://www.candelatech.com
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
