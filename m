@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab3E1Dzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52627 "EHLO
+	id S933157Ab3E1Dzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52608 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758908Ab3E1DyN (ORCPT
+	by vger.kernel.org with ESMTP id S1758940Ab3E1DyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:13 -0400
+	Mon, 27 May 2013 23:54:16 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,12 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        "Terry Barnaby" <terry@beam.ltd.uk>, "Chris Ball" <cjb@laptop.org>
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Jens Axboe" <axboe@kernel.dk>,
+        "Brian Behlendorf" <behlendorf1@llnl.gov>,
+        "Chris Wedgwood" <cw@f00f.org>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.34123184@decadent.org.uk>
+Message-ID: <lsq.1369712993.153895933@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [05/94] mmc: atmel-mci: pio hang on block errors
+Subject: [65/94] drivers/block/brd.c: fix brd_lookup_page() race
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,83 +34,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Barnaby <terry@beam.ltd.uk>
+From: Brian Behlendorf <behlendorf1@llnl.gov>
 
-commit bdbc5d0c60f3e9de3eeccf1c1a18bdc11dca62cc upstream.
+commit dfd20b2b174d3a9b258ea3b7a35ead33576587b1 upstream.
 
-The driver is doing, by default, multi-block reads. When a block error
-occurs, card/block.c instigates a single block read: "mmcblk0: retrying
-using single block read".  It leaves the sg chain intact and just changes
-the length attribute for the first sg entry and the overall sg_len
-parameter.  When atmci_read_data_pio is called to read the single block
-of data it ignores the sg_len and expects to read more than 512 bytes as
-it sees there are multiple items in the sg list. No more data comes as
-the controller has only been commanded to get one block.
+The index on the page must be set before it is inserted in the radix
+tree.  Otherwise there is a small race which can occur during lookup
+where the page can be found with the incorrect index.  This will trigger
+the BUG_ON() in brd_lookup_page().
 
-Signed-off-by: Terry Barnaby <terry@beam.ltd.uk>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Brian Behlendorf <behlendorf1@llnl.gov>
+Reported-by: Chris Wedgwood <cw@f00f.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/atmel-mci.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/block/brd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -163,6 +163,7 @@ struct atmel_mci {
- 	void __iomem		*regs;
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -117,13 +117,13 @@ static struct page *brd_insert_page(stru
  
- 	struct scatterlist	*sg;
-+	unsigned int		sg_len;
- 	unsigned int		pio_offset;
+ 	spin_lock(&brd->brd_lock);
+ 	idx = sector >> PAGE_SECTORS_SHIFT;
++	page->index = idx;
+ 	if (radix_tree_insert(&brd->brd_pages, idx, page)) {
+ 		__free_page(page);
+ 		page = radix_tree_lookup(&brd->brd_pages, idx);
+ 		BUG_ON(!page);
+ 		BUG_ON(page->index != idx);
+-	} else
+-		page->index = idx;
++	}
+ 	spin_unlock(&brd->brd_lock);
  
- 	struct atmel_mci_slot	*cur_slot;
-@@ -751,6 +752,7 @@ static u32 atmci_prepare_data(struct atm
- 	data->error = -EINPROGRESS;
- 
- 	host->sg = data->sg;
-+	host->sg_len = data->sg_len;
- 	host->data = data;
- 	host->data_chan = NULL;
- 
-@@ -1573,7 +1575,8 @@ static void atmci_read_data_pio(struct a
- 			if (offset == sg->length) {
- 				flush_dcache_page(sg_page(sg));
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1586,7 +1589,8 @@ static void atmci_read_data_pio(struct a
- 
- 			flush_dcache_page(sg_page(sg));
- 			host->sg = sg = sg_next(sg);
--			if (!sg)
-+			host->sg_len--;
-+			if (!sg || !host->sg_len)
- 				goto done;
- 
- 			offset = 4 - remaining;
-@@ -1640,7 +1644,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += 4;
- 			if (offset == sg->length) {
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1654,7 +1659,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += remaining;
- 
- 			host->sg = sg = sg_next(sg);
--			if (!sg) {
-+			host->sg_len--;
-+			if (!sg || !host->sg_len) {
- 				atmci_writel(host, ATMCI_TDR, value);
- 				goto done;
- 			}
+ 	radix_tree_preload_end();
 
