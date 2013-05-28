@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934852Ab3E1Qm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:42:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48931 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934805Ab3E1QmZ (ORCPT
+	id S934857Ab3E1QsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:48:13 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:58879 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934692Ab3E1QsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:42:25 -0400
-Date: Tue, 28 May 2013 12:42:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, chegu_vinod@hp.com
-Subject: Re: [PATCH 3/2] vfio: Provide module option to disable
- vfio_iommu_type1 hugepage support
-Message-ID: <20130528164214.GC6073@phenom.dumpdata.com>
-References: <20130524171613.14229.84050.stgit@bling.home>
- <20130528162637.28848.76733.stgit@bling.home>
+	Tue, 28 May 2013 12:48:09 -0400
+Date: Tue, 28 May 2013 17:48:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 20/39] usb: musb: ux500: move channel number knowledge
+ into the driver
+Message-ID: <20130528164803.GA3012@gmail.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-21-git-send-email-lee.jones@linaro.org>
+ <CACRpkdYjjDp+7hzGtAchyy3+5Vxc8jK5THGCETkAO_V9Hj9Ssw@mail.gmail.com>
+ <20130528162715.GB28253@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130528162637.28848.76733.stgit@bling.home>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130528162715.GB28253@arwen.pp.htv.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 10:27:52AM -0600, Alex Williamson wrote:
-> Add a module option to vfio_iommu_type1 to disable IOMMU hugepage
-> support.  This causes iommu_map to only be called with single page
-> mappings, disabling the IOMMU driver's ability to use hugepages.
-> This option can be enabled by loading vfio_iommu_type1 with
-> disable_hugepages=1 or dynamically through sysfs.  If enabled
-> dynamically, only new mappings are restricted.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Hi Felipe
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
+> > > For all ux500 based platforms the maximum number of end-points are used.
+> > > Move this knowledge into the driver so we can relinquish the burden from
+> > > platform data. This also removes quite a bit of complexity from the driver
+> > > and will aid us when we come to enable the driver for Device Tree.
+> > >
+> > > Cc: Felipe Balbi <balbi@ti.com>
+> > > Cc: linux-usb@vger.kernel.org
+> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > > Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > I guess this stuff is dependent on the stuff Fabio has recently sent to
+> > Felipe for the ux500 musb DMA so these musb patches should
+> > primarily go through his tree.
+> > 
+> > It seems like the later changes to the platform code
+> > (arch/arm/mach-ux500) may be sufficiently orthogonal
+> > so it can be done out-of-order?
+> > 
+> > I can't merge any of this without Felipes ACKs in any
+> > case.
+> 
+> Do you want to take this yourself ? I haven't fully read the series yet,
+> but seems like this depends on the rest of the series. If you want to
+> take it, let me know I can ack the patches as soon as I'm done
+> reviewing.
 
-> 
-> As suggested by Konrad.  This is cleaner to add as a follow-on
-> 
->  drivers/vfio/vfio_iommu_type1.c |   11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-> index 6654a7e..8a2be4e 100644
-> --- a/drivers/vfio/vfio_iommu_type1.c
-> +++ b/drivers/vfio/vfio_iommu_type1.c
-> @@ -48,6 +48,12 @@ module_param_named(allow_unsafe_interrupts,
->  MODULE_PARM_DESC(allow_unsafe_interrupts,
->  		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
->  
-> +static bool disable_hugepages;
-> +module_param_named(disable_hugepages,
-> +		   disable_hugepages, bool, S_IRUGO | S_IWUSR);
-> +MODULE_PARM_DESC(disable_hugepages,
-> +		 "Disable VFIO IOMMU support for IOMMU hugepages.");
-> +
->  struct vfio_iommu {
->  	struct iommu_domain	*domain;
->  	struct mutex		lock;
-> @@ -270,6 +276,11 @@ static long vfio_pin_pages(unsigned long vaddr, long npage,
->  		return -ENOMEM;
->  	}
->  
-> +	if (unlikely(disable_hugepages)) {
-> +		vfio_lock_acct(1);
-> +		return 1;
-> +	}
-> +
->  	/* Lock all the consecutive pages from pfn_base */
->  	for (i = 1, vaddr += PAGE_SIZE; i < npage; i++, vaddr += PAGE_SIZE) {
->  		unsigned long pfn = 0;
-> 
+Yes that would be ideal, if you wouldn't mind.
+
+Kind regards,
+Lee
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
