@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab3E1D4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52697 "EHLO
+	id S1759293Ab3E1D4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52642 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758948Ab3E1DyT (ORCPT
+	by vger.kernel.org with ESMTP id S1758923Ab3E1DyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:19 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
+CC: akpm@linux-foundation.org, "Alexandre Bounine" <alexandre.bounine@idt.com>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ryusuke Konishi" <konishi.ryusuke@lab.ntt.co.jp>,
-        "Anthony Doggett" <Anthony2486@interfaces.org.uk>,
-        "Vyacheslav Dubeyko" <slava@dubeyko.com>
+        "Matt Porter" <mporter@kernel.crashing.org>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.736993733@decadent.org.uk>
+Message-ID: <lsq.1369712993.489005683@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [66/94] nilfs2: fix issue of nilfs_set_page_dirty() for page at
- EOF boundary
+Subject: [62/94] rapidio/tsi721: fix bug in MSI interrupt handling
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,151 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
+commit 1ccc819da6fda9bee10ab8b72e9adbb5ad3e4959 upstream.
 
-nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
+Fix bug in MSI interrupt handling which causes loss of event
+notifications.
 
-DESCRIPTION:
- There are use-cases when NILFS2 file system (formatted with block size
-lesser than 4 KB) can be remounted in RO mode because of encountering of
-"broken bmap" issue.
+Typical indication of lost MSI interrupts are stalled message and
+doorbell transfers between RapidIO endpoints.  To avoid loss of MSI
+interrupts all interrupts from the device must be disabled on entering
+the interrupt handler routine and re-enabled when exiting it.
+Re-enabling device interrupts will trigger new MSI message(s) if Tsi721
+registered new events since entering interrupt handler routine.
 
-The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
- "The machine I've been trialling nilfs on is running Debian Testing,
-  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
-  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
-  also reproduced it (identically) with Debian Unstable amd64 and Debian
-  Experimental (using the 3.8-trunk kernel).  The problematic partitions
-  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
+This patch is applicable to kernel versions starting from v3.2.
 
-SYMPTOMS:
-(1) System log contains error messages likewise:
-
-    [63102.496756] nilfs_direct_assign: invalid pointer: 0
-    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
-    [63102.496798]
-    [63102.524403] Remounting filesystem read-only
-
-(2) The NILFS2 file system is remounted in RO mode.
-
-REPRODUSING PATH:
-(1) Create volume group with name "unencrypted" by means of vgcreate utility.
-(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
-
-----------------[BEGIN SCRIPT]--------------------
-
-VG=unencrypted
-lvcreate --size 2G --name ntest $VG
-mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
-mkdir /var/tmp/n
-mkdir /var/tmp/n/ntest
-mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
-mkdir /var/tmp/n/ntest/thedir
-cd /var/tmp/n/ntest/thedir
-sleep 2
-date
-darcs init
-sleep 2
-dmesg|tail -n 5
-date
-darcs whatsnew || true
-date
-sleep 2
-dmesg|tail -n 5
-----------------[END SCRIPT]--------------------
-
-REPRODUCIBILITY: 100%
-
-INVESTIGATION:
-As it was discovered, the issue takes place during segment
-construction after executing such sequence of user-space operations:
-
-  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
-  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-  ftruncate(7, 60)
-
-The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
-bmap (inode number=28)" takes place because of trying to get block
-number for third block of the file with logical offset #3072 bytes.  As
-it is possible to see from above output, the file has 60 bytes of the
-whole size.  So, it is enough one block (1 KB in size) allocation for
-the whole file.  Trying to operate with several blocks instead of one
-takes place because of discovering several dirty buffers for this file
-in nilfs_segctor_scan_file() method.
-
-The root cause of this issue is in nilfs_set_page_dirty function which
-is called just before writing to an mmapped page.
-
-When nilfs_page_mkwrite function handles a page at EOF boundary, it
-fills hole blocks only inside EOF through __block_page_mkwrite().
-
-The __block_page_mkwrite() function calls set_page_dirty() after filling
-hole blocks, thus nilfs_set_page_dirty function (=
-a_ops->set_page_dirty) is called.  However, the current implementation
-of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
-at EOF boundary.
-
-As a result, buffers outside EOF are inconsistently marked dirty and
-queued for write even though they are not mapped with nilfs_get_block
-function.
-
-FIX:
-This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
-
-Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
-for this issue.
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
-Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
-
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -475,6 +475,10 @@ static irqreturn_t tsi721_irqhandler(int
+ 	u32 intval;
+ 	u32 ch_inte;
  
- static int nilfs_set_page_dirty(struct page *page)
- {
--	int ret = __set_page_dirty_buffers(page);
-+	int ret = __set_page_dirty_nobuffers(page);
- 
--	if (ret) {
-+	if (page_has_buffers(page)) {
- 		struct inode *inode = page->mapping->host;
--		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
-+		unsigned nr_dirty = 0;
-+		struct buffer_head *bh, *head;
- 
--		nilfs_set_file_dirty(inode, nr_dirty);
-+		/*
-+		 * This page is locked by callers, and no other thread
-+		 * concurrently marks its buffers dirty since they are
-+		 * only dirtied through routines in fs/buffer.c in
-+		 * which call sites of mark_buffer_dirty are protected
-+		 * by page lock.
-+		 */
-+		bh = head = page_buffers(page);
-+		do {
-+			/* Do not mark hole blocks dirty */
-+			if (buffer_dirty(bh) || !buffer_mapped(bh))
-+				continue;
++	/* For MSI mode disable all device-level interrupts */
++	if (priv->flags & TSI721_USING_MSI)
++		iowrite32(0, priv->regs + TSI721_DEV_INTE);
 +
-+			set_buffer_dirty(bh);
-+			nr_dirty++;
-+		} while (bh = bh->b_this_page, bh != head);
-+
-+		if (nr_dirty)
-+			nilfs_set_file_dirty(inode, nr_dirty);
+ 	dev_int = ioread32(priv->regs + TSI721_DEV_INT);
+ 	if (!dev_int)
+ 		return IRQ_NONE;
+@@ -548,6 +552,13 @@ static irqreturn_t tsi721_irqhandler(int
+ 			tsi721_pw_handler(mport);
  	}
- 	return ret;
+ 
++	/* For MSI mode re-enable device-level interrupts */
++	if (priv->flags & TSI721_USING_MSI) {
++		dev_int = TSI721_DEV_INT_SR2PC_CH | TSI721_DEV_INT_SRIO |
++			TSI721_DEV_INT_SMSG_CH | TSI721_DEV_INT_BDMA_CH;
++		iowrite32(dev_int, priv->regs + TSI721_DEV_INTE);
++	}
++
+ 	return IRQ_HANDLED;
  }
+ 
 
