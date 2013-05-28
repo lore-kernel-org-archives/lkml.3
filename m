@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab3E1Etc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:49:32 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:42972 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751896Ab3E1Etb (ORCPT
+	id S1758797Ab3E1EuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:50:02 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:58354 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752325Ab3E1EuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 00:49:31 -0400
+	Tue, 28 May 2013 00:50:01 -0400
 From: <yizhang.mrvl@gmail.com>
 To: <sameo@linux.intel.com>, <arnd@arndb.de>
 CC: <gregkh@linuxfoundation.org>, <cxie4@marvell.com>, <jtzhou@marvell.com>,
         <yizhang@marvell.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 0/4] mfd: 88pm800: bug fix and regulator support
-Date: Tue, 28 May 2013 12:48:57 +0800
-Message-ID: <1369716541-20034-1-git-send-email-yizhang.mrvl@gmail.com>
+Subject: [PATCH v2 3/4] mfd: 88pm800: fix probe bug
+Date: Tue, 28 May 2013 12:49:00 +0800
+Message-ID: <1369716541-20034-4-git-send-email-yizhang.mrvl@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1369716541-20034-1-git-send-email-yizhang.mrvl@gmail.com>
+References: <1369716541-20034-1-git-send-email-yizhang.mrvl@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,18 +25,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yi Zhang <yizhang@marvell.com>
 
-v2: fix an "&&" usage error of "mfd: 88pm800: fix probe bug" in v1
+1) return 0 when probe function is successful
+2) fine-tune pm800_pages_init()
 
-Yi Zhang (4):
-  mfd: 88pm800: fix NULL pointer error
-  mfd: 88pm800: remove "IRQF_TRIGGER_FALLING" flag
-  mfd: 88pm800: fix probe bug
-  mfd: 88pm800: add regulator support
+Signed-off-by: Yi Zhang <yizhang@marvell.com>
+---
+ drivers/mfd/88pm800.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
- drivers/mfd/88pm800.c       |  147 +++++++++++++++++++++++++++++++++++++++----
- include/linux/mfd/88pm80x.h |   48 ++++++++++++++
- 2 files changed, 182 insertions(+), 13 deletions(-)
-
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index 618a6b9..2c68cbc 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -369,32 +369,43 @@ static int pm800_pages_init(struct pm80x_chip *chip)
+ 	struct pm80x_subchip *subchip;
+ 	struct i2c_client *client = chip->client;
+ 
++	int ret = -ENODEV;
++
+ 	subchip = chip->subchip;
+ 	/* PM800 block power: i2c addr 0x31 */
+-	if (subchip->power_page_addr) {
++	if (subchip && (subchip->power_page_addr)) {
+ 		subchip->power_page =
+ 		    i2c_new_dummy(client->adapter, subchip->power_page_addr);
+ 		subchip->regmap_power =
+ 		    devm_regmap_init_i2c(subchip->power_page,
+ 					 &pm80x_regmap_config);
+ 		i2c_set_clientdata(subchip->power_page, chip);
+-	} else
++	} else {
+ 		dev_info(chip->dev,
+ 			 "PM800 block power 0x31: No power_page_addr\n");
++		return ret;
++	}
+ 
+ 	/* PM800 block GPADC: i2c addr 0x32 */
+-	if (subchip->gpadc_page_addr) {
++	if (subchip && (subchip->gpadc_page_addr)) {
+ 		subchip->gpadc_page = i2c_new_dummy(client->adapter,
+ 						    subchip->gpadc_page_addr);
+ 		subchip->regmap_gpadc =
+ 		    devm_regmap_init_i2c(subchip->gpadc_page,
+ 					 &pm80x_regmap_config);
+ 		i2c_set_clientdata(subchip->gpadc_page, chip);
+-	} else
++	} else {
+ 		dev_info(chip->dev,
+ 			 "PM800 block GPADC 0x32: No gpadc_page_addr\n");
++		goto out_gpadc_page;
++	}
+ 
+ 	return 0;
++
++out_gpadc_page:
++	regmap_exit(subchip->regmap_power);
++	i2c_unregister_device(subchip->power_page);
++	return ret;
+ }
+ 
+ static void pm800_pages_exit(struct pm80x_chip *chip)
+@@ -537,16 +548,18 @@ static int pm800_probe(struct i2c_client *client,
+ 	ret = device_800_init(chip, pdata);
+ 	if (ret) {
+ 		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
+-		goto err_subchip_alloc;
++		goto err_800_init;
+ 	}
+ 
+ 	if (pdata->plat_config)
+ 		pdata->plat_config(chip, pdata);
+ 
+-err_subchip_alloc:
+-	mfd_remove_devices(chip->dev);
+-	device_irq_exit_800(chip);
++	return 0;
++
++err_800_init:
++	pm800_pages_exit(chip);
+ err_page_init:
++err_subchip_alloc:
+ 	pm80x_deinit();
+ out_init:
+ 	return ret;
 -- 
 1.7.4.1
 
