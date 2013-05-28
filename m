@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab3E1Dz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52505 "EHLO
+	id S933345Ab3E1Dz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52532 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758793Ab3E1DyS (ORCPT
+	by vger.kernel.org with ESMTP id S1758873Ab3E1DyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:18 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tom Zanussi" <tzanussi@gmail.com>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        "Matthew Whitehead" <tedheadster@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.617201858@decadent.org.uk>
+Message-ID: <lsq.1369712993.934315728@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [39/94] tracing: Fix leaks of filter preds
+Subject: [85/94] 3c59x: fix freeing nonexistent resource on driver  unload
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,57 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
+[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
 
-Special preds are created when folding a series of preds that
-can be done in serial. These are allocated in an ops field of
-the pred structure. But they were never freed, causing memory
-leaks.
+When unloading the driver that drives an EISA board, a message similar to the
+following one is displayed:
 
-This was discovered using the kmemleak checker:
+Trying to free nonexistent resource <0000000000013000-000000000001301f>
 
-unreferenced object 0xffff8800797fd5e0 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
-  hex dump (first 32 bytes):
-    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
-    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
-    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
-    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
-    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
-    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
-    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
-    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
-    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
-    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
-    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
-    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
-    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
+Then an user is unable to reload the driver because the resource it requested in
+the previous load hasn't been freed. This happens most probably due to a typo in
+vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
+of 'edev->base_addr'...
 
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+Tested-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/trace_events_filter.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/ethernet/3com/3c59x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -769,7 +769,11 @@ static int filter_set_pred(struct event_
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index e0c5529..d1a6dbb 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(struct device *device)
  
- static void __free_preds(struct event_filter *filter)
- {
-+	int i;
-+
- 	if (filter->preds) {
-+		for (i = 0; i < filter->n_preds; i++)
-+			kfree(filter->preds[i].ops);
- 		kfree(filter->preds);
- 		filter->preds = NULL;
- 	}
+ 	unregister_netdev(dev);
+ 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
+-	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
++	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ 
+ 	free_netdev(dev);
+ 	return 0;
 
