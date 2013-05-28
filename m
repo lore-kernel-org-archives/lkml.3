@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab3E1D4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52561 "EHLO
+	id S933394Ab3E1D43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52672 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758832Ab3E1DyW (ORCPT
+	by vger.kernel.org with ESMTP id S1758939Ab3E1DyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:22 -0400
+	Mon, 27 May 2013 23:54:20 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Jamal Hadi Salim" <jhs@mojatatu.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Leonid Yegoshin" <Leonid.Yegoshin@imgtec.com>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "David Miller" <davem@davemloft.net>, "Rik van Riel" <riel@redhat.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Leonid Yegoshin" <yegoshin@mips.com>, "Mel Gorman" <mgorman@suse.de>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.272823052@decadent.org.uk>
+Message-ID: <lsq.1369712993.539037276@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [82/94] net_sched: act_ipt forward compat with xtables
+Subject: [63/94] mm compaction: fix of improper cache flush in migration code
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,78 +37,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jamal Hadi Salim <jhs@mojatatu.com>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
+commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
 
-Deal with changes in newer xtables while maintaining backward
-compatibility. Thanks to Jan Engelhardt for suggestions.
+Page 'new' during MIGRATION can't be flushed with flush_cache_page().
+Using flush_cache_page(vma, addr, pfn) is justified only if the page is
+already placed in process page table, and that is done right after
+flush_cache_page().  But without it the arch function has no knowledge
+of process PTE and does nothing.
 
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Besides that, flush_cache_page() flushes an application cache page, but
+the kernel has a different page virtual address and dirtied it.
+
+Replace it with flush_dcache_page(new) which is the proper usage.
+
+The old page is flushed in try_to_unmap_one() before migration.
+
+This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
+aliasing (but Harvard arch - separate I and D cache) in tight memory
+environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
+kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
+ON.
+
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Leonid Yegoshin <yegoshin@mips.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sched/act_ipt.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ mm/migrate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sched/act_ipt.c b/net/sched/act_ipt.c
-index 60f8f61..57827bf 100644
---- a/net/sched/act_ipt.c
-+++ b/net/sched/act_ipt.c
-@@ -8,7 +8,7 @@
-  *		as published by the Free Software Foundation; either version
-  *		2 of the License, or (at your option) any later version.
-  *
-- * Copyright:	Jamal Hadi Salim (2002-4)
-+ * Copyright:	Jamal Hadi Salim (2002-13)
-  */
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -147,7 +147,7 @@ static int remove_migration_pte(struct p
+ 	if (PageHuge(new))
+ 		pte = pte_mkhuge(pte);
+ #endif
+-	flush_cache_page(vma, addr, pte_pfn(pte));
++	flush_dcache_page(new);
+ 	set_pte_at(mm, addr, ptep, pte);
  
- #include <linux/types.h>
-@@ -299,17 +299,44 @@ static struct tc_action_ops act_ipt_ops = {
- 	.walk		=	tcf_generic_walker
- };
- 
--MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
-+static struct tc_action_ops act_xt_ops = {
-+	.kind		=	"xt",
-+	.hinfo		=	&ipt_hash_info,
-+	.type		=	TCA_ACT_IPT,
-+	.capab		=	TCA_CAP_NONE,
-+	.owner		=	THIS_MODULE,
-+	.act		=	tcf_ipt,
-+	.dump		=	tcf_ipt_dump,
-+	.cleanup	=	tcf_ipt_cleanup,
-+	.lookup		=	tcf_hash_search,
-+	.init		=	tcf_ipt_init,
-+	.walk		=	tcf_generic_walker
-+};
-+
-+MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
- MODULE_DESCRIPTION("Iptables target actions");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("act_xt");
- 
- static int __init ipt_init_module(void)
- {
--	return tcf_register_action(&act_ipt_ops);
-+	int ret1, ret2;
-+	ret1 = tcf_register_action(&act_xt_ops);
-+	if (ret1 < 0)
-+		printk("Failed to load xt action\n");
-+	ret2 = tcf_register_action(&act_ipt_ops);
-+	if (ret2 < 0)
-+		printk("Failed to load ipt action\n");
-+
-+	if (ret1 < 0 && ret2 < 0)
-+		return ret1;
-+	else
-+		return 0;
- }
- 
- static void __exit ipt_cleanup_module(void)
- {
-+	tcf_unregister_action(&act_xt_ops);
- 	tcf_unregister_action(&act_ipt_ops);
- }
- 
+ 	if (PageHuge(new)) {
 
