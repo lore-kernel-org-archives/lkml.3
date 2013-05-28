@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab3E1D4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52669 "EHLO
+	id S933424Ab3E1D4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52539 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758933Ab3E1DyY (ORCPT
+	by vger.kernel.org with ESMTP id S1758848Ab3E1DyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:24 -0400
+	Mon, 27 May 2013 23:54:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,18 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "Dave Hansen" <dave.hansen@intel.com>, "Mel Gorman" <mel@csn.ul.ie>,
-        "Johannes Weiner" <hannes@cmpxchg.org>, "Cliff Wickman" <cpw@sgi.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "David Sterba" <dsterba@suse.cz>,
-        "Andrea Arcangeli" <aarcange@redhat.com>,
-        "KOSAKI Motohiro" <kosaki.motohiro@gmail.com>
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.489066868@decadent.org.uk>
+Message-ID: <lsq.1369712993.703748756@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [69/94] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
+Subject: [10/94] net/eth/ibmveth: Fixup retrieval of MAC address
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,149 +32,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
+commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
 
-A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
-application has a VM_PFNMAP range.  It happened in-house when a
-benchmarker was trying to decipher the memory layout of his program.
+Some ancient pHyp versions used to create a 8 bytes local-mac-address
+property in the device-tree instead of a 6 bytes one for veth.
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+The Linux driver code to deal with that is an insane hack which also
+happens to break with some choices of MAC addresses in qemu by testing
+for a bit in the address rather than just looking at the size of the
+property.
 
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures.  And
-this is not usually true for VM_PFNMAP areas.  This can result in panics
-on kernel page faults when attempting to address those page structures.
+Sanitize this by doing the latter instead.
 
-There are a half dozen callers of walk_page_range() that walk through a
-task's entire page table (as N.  Horiguchi pointed out).  So rather than
-change all of them, this patch changes just walk_page_range() to ignore
-VM_PFNMAP areas.
-
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
-
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: David Sterba <dsterba@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/pagewalk.c |   70 +++++++++++++++++++++++++++++----------------------------
- 1 file changed, 36 insertions(+), 34 deletions(-)
+ drivers/net/ethernet/ibm/ibmveth.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
- }
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -1325,7 +1325,7 @@ static const struct net_device_ops ibmve
+ static int __devinit ibmveth_probe(struct vio_dev *dev,
+ 				   const struct vio_device_id *id)
+ {
+-	int rc, i;
++	int rc, i, mac_len;
+ 	struct net_device *netdev;
+ 	struct ibmveth_adapter *adapter;
+ 	unsigned char *mac_addr_p;
+@@ -1335,11 +1335,19 @@ static int __devinit ibmveth_probe(struc
+ 		dev->unit_address);
  
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	return NULL;
--}
--
- static int walk_hugetlb_range(struct vm_area_struct *vma,
- 			      unsigned long addr, unsigned long end,
- 			      struct mm_walk *walk)
-@@ -199,30 +178,53 @@ int walk_page_range(unsigned long addr,
- 	if (!walk->mm)
+ 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
+-							NULL);
++							&mac_len);
+ 	if (!mac_addr_p) {
+ 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
  		return -EINVAL;
+ 	}
++	/* Workaround for old/broken pHyp */
++	if (mac_len == 8)
++		mac_addr_p += 2;
++	else if (mac_len != 6) {
++		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
++			mac_len);
++		return -EINVAL;
++	}
  
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
+ 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
+ 						VETH_MCAST_FILTER_SIZE, NULL);
+@@ -1364,17 +1372,6 @@ static int __devinit ibmveth_probe(struc
  
- 		next = pgd_addr_end(addr, end);
+ 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
  
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * This function was not intended to be vma based.
-+		 * But there are vma special cases to be handled:
-+		 * - hugetlb vma's
-+		 * - VM_PFNMAP vma's
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
+-	/*
+-	 * Some older boxes running PHYP non-natively have an OF that returns
+-	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
+-	 * ignored) while newer boxes' OF return a 6-byte field. Note that
+-	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
+-	 * The RPA doc specifies that the first byte must be 10b, so we'll
+-	 * just look for it to solve this 8 vs. 6 byte field issue
+-	 */
+-	if ((*mac_addr_p & 0x3) != 0x02)
+-		mac_addr_p += 2;
+-
+ 	adapter->mac_addr = 0;
+ 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
  
- 		if (pgd_none_or_clear_bad(pgd)) {
 
