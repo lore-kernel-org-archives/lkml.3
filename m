@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934690Ab3E1Pyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:54:50 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:44822 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550Ab3E1Pyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:54:49 -0400
-Date: Tue, 28 May 2013 08:54:48 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Emil Goode <emilgoode@gmail.com>
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ceph: improve error handling in ceph_mdsmap_decode
-In-Reply-To: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
-Message-ID: <alpine.DEB.2.00.1305280854370.12414@cobra.newdream.net>
-References: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934698Ab3E1Pz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:55:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54189 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934550Ab3E1Pz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 11:55:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="247706855"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH, resend] pch_phub: re-use native MAC address parser
+Date: Tue, 28 May 2013 18:54:58 +0300
+Message-Id: <1369756498-5670-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to ceph tree; thanks!
+We have mac_pton() helper to parse MAC addresses.
 
-On Tue, 28 May 2013, Emil Goode wrote:
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/misc/pch_phub.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-> This patch makes the following improvements to the error handling
-> in the ceph_mdsmap_decode function:
-> 
-> - Add a NULL check for return value from kcalloc
-> - Make use of the variable err
-> 
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->  fs/ceph/mdsmap.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
-> index 9278dec..d4d3897 100644
-> --- a/fs/ceph/mdsmap.c
-> +++ b/fs/ceph/mdsmap.c
-> @@ -138,6 +138,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
->  				m->m_info[mds].export_targets =
->  					kcalloc(num_export_targets, sizeof(u32),
->  						GFP_NOFS);
-> +				if (m->m_info[mds].export_targets == NULL)
-> +					goto badmem;
->  				for (j = 0; j < num_export_targets; j++)
->  					m->m_info[mds].export_targets[j] =
->  					       ceph_decode_32(&pexport_targets);
-> @@ -170,7 +172,7 @@ bad:
->  		       DUMP_PREFIX_OFFSET, 16, 1,
->  		       start, end - start, true);
->  	ceph_mdsmap_destroy(m);
-> -	return ERR_PTR(-EINVAL);
-> +	return ERR_PTR(err);
->  }
->  
->  void ceph_mdsmap_destroy(struct ceph_mdsmap *m)
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 931e635..8b4d4fb 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -633,17 +633,13 @@ static ssize_t show_pch_mac(struct device *dev, struct device_attribute *attr,
+ static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
+ 			     const char *buf, size_t count)
+ {
+-	u8 mac[6];
++	u8 mac[ETH_ALEN];
+ 	ssize_t rom_size;
+ 	struct pch_phub_reg *chip = dev_get_drvdata(dev);
+ 
+-	if (count != 18)
++	if (!mac_pton(buf, mac))
+ 		return -EINVAL;
+ 
+-	sscanf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+-		(u32 *)&mac[0], (u32 *)&mac[1], (u32 *)&mac[2], (u32 *)&mac[3],
+-		(u32 *)&mac[4], (u32 *)&mac[5]);
+-
+ 	chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
+ 	if (!chip->pch_phub_extrom_base_address)
+ 		return -ENOMEM;
+-- 
+1.8.2.rc0.22.gb3600c3
+
