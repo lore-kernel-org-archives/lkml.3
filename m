@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab3E1Dy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52604 "EHLO
+	id S932894Ab3E1Dy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52556 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758867Ab3E1DyL (ORCPT
+	by vger.kernel.org with ESMTP id S1758858Ab3E1DyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:11 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -15,11 +15,12 @@ From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Hema Prathaban" <hemaklnce@gmail.com>
+        "Gomella, Andrew (NIH/NHLBI)=?UTF-8?Q?=20?=[F]" 
+	<andrew.gomella@nih.gov>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.68913852@decadent.org.uk>
+Message-ID: <lsq.1369712993.752324303@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [29/94] staging: vt6656: use free_netdev instead of kfree
+Subject: [48/94] USB: ftdi_sio: Add support for Newport CONEX motor drivers
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,28 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hema Prathaban <hemaklnce@gmail.com>
+From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
 
-commit 0a438d5b381e2bdfd5e02d653bf46fcc878356e3 upstream.
+commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
 
-use free_netdev() instead of kfree(pDevice->apdev)
+Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
 
-Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+The devices are the Newport Conex-AGP and Conex-CC motor controllers.
+(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
+(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
+
+usb-devices command yields:
+
+P:  Vendor=104d ProdID=3002 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-CC
+
+as well as
+
+P:  Vendor=104d ProdID=3006 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-AGP
+
+Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6656/hostap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/staging/vt6656/hostap.c
-+++ b/drivers/staging/vt6656/hostap.c
-@@ -153,7 +153,7 @@ static int hostap_disable_hostapd(PSDevi
-             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "%s: Netdevice %s unregistered\n",
- 		       pDevice->dev->name, pDevice->apdev->name);
- 	}
--	kfree(pDevice->apdev);
-+	free_netdev(pDevice->apdev);
- 	pDevice->apdev = NULL;
-     pDevice->bEnable8021x = FALSE;
-     pDevice->bEnableHostWEP = FALSE;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -197,6 +197,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
+ 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -772,6 +772,8 @@
+  */
+ #define NEWPORT_VID			0x104D
+ #define NEWPORT_AGILIS_PID		0x3000
++#define NEWPORT_CONEX_CC_PID		0x3002
++#define NEWPORT_CONEX_AGP_PID		0x3006
+ 
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
 
