@@ -1,99 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab3E1BsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 21:48:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52108 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755256Ab3E1BsR (ORCPT
+	id S1758580Ab3E1CA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 22:00:28 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41518 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758534Ab3E1CA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 21:48:17 -0400
-Message-ID: <1369705674.3469.413.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 22/42] sched/debug: Fix sd->*_idx limit range avoiding
- overflow
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Libin <huawei.libin@huawei.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, jiang.liu@huawei.com, guohanjun@huawei.com,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Tue, 28 May 2013 02:47:54 +0100
-In-Reply-To: <20130510075941.GB6364@gmail.com>
-References: <20130423215205.523980967@linuxfoundation.org>
-	 <20130423215207.778285571@linuxfoundation.org>
-	 <1368152071.17344.5.camel@deadeye.wl.decadent.org.uk>
-	 <20130510075941.GB6364@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Q2BfRcCnVb7nVWKjKyS9"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 27 May 2013 22:00:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369489718-25869-10-git-send-email-jiang.liu@huawei.com>
+References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com>
+	<1369489718-25869-10-git-send-email-jiang.liu@huawei.com>
+Date: Mon, 27 May 2013 19:00:26 -0700
+X-Google-Sender-Auth: prQSJDKMIyk6L1jveBstSpX7jaI
+Message-ID: <CAE9FiQX-3=U7YpEnRsL46Kn0Dyvk_+A1NC7UYijHe91KWjrKDA@mail.gmail.com>
+Subject: Re: [PATCH v3, part1 09/10] PCI, IOV: simplify IOV implementation
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Donald Dutile <ddutile@redhat.com>, Ram Pai <linuxram@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 25, 2013 at 6:48 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Trivial changes to IOV:
+> 1) use new PCI interfaces to simplify IOV implementation
+> 2) fix some reference count related race windows
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Donald Dutile <ddutile@redhat.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Ram Pai <linuxram@us.ibm.com>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/pci/iov.c | 58 +++++++++++++++++++++----------------------------------
+>  1 file changed, 22 insertions(+), 36 deletions(-)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index 8f1e117..3e33499 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -51,43 +51,30 @@ static struct pci_bus *virtfn_add_bus(struct pci_bus *bus, int busnr)
+>         return child;
+>  }
+>
+> -static void virtfn_remove_bus(struct pci_bus *bus, int busnr)
+> +static void virtfn_remove_bus(struct pci_bus *physbus, struct pci_bus *virtbus)
+>  {
+> -       struct pci_bus *child;
+> -
+> -       if (bus->number == busnr)
+> -               return;
+> -
+> -       child = pci_find_bus(pci_domain_nr(bus), busnr);
+> -       BUG_ON(!child);
+> -
+> -       if (list_empty(&child->devices))
+> -               pci_remove_bus(child);
+> +       if (physbus != virtbus && list_empty(&virtbus->devices))
+> +               pci_remove_bus(virtbus);
+>  }
+>
+>  static int virtfn_add(struct pci_dev *dev, int id, int reset)
+>  {
+>         int i;
+> -       int rc;
+> +       int rc = -ENOMEM;
+>         u64 size;
+>         char buf[VIRTFN_ID_LEN];
+> -       struct pci_dev *virtfn;
+> +       struct pci_dev *virtfn = NULL;
+>         struct resource *res;
+>         struct pci_sriov *iov = dev->sriov;
+>         struct pci_bus *bus;
+>
+> -       virtfn = pci_alloc_dev(NULL);
+> -       if (!virtfn)
+> -               return -ENOMEM;
+> -
+>         mutex_lock(&iov->dev->sriov->lock);
+>         bus = virtfn_add_bus(dev->bus, virtfn_bus(dev, id));
+> -       if (!bus) {
+> -               kfree(virtfn);
+> -               mutex_unlock(&iov->dev->sriov->lock);
+> -               return -ENOMEM;
+> -       }
+> -       virtfn->bus = pci_bus_get(bus);
+> +       if (bus)
+> +               virtfn = pci_alloc_dev(bus);
+> +       if (!virtfn)
+> +               goto failed0;
+> +
+>         virtfn->devfn = virtfn_devfn(dev, id);
+>         virtfn->vendor = dev->vendor;
+>         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
+> @@ -136,7 +123,8 @@ failed1:
+>         pci_dev_put(dev);
+>         mutex_lock(&iov->dev->sriov->lock);
+>         pci_stop_and_remove_bus_device(virtfn);
+> -       virtfn_remove_bus(dev->bus, virtfn_bus(dev, id));
+> +       virtfn_remove_bus(dev->bus, bus);
+> +failed0:
 
---=-Q2BfRcCnVb7nVWKjKyS9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+need to swap above two lines. otherwise virtual bus could not be removed.
 
-On Fri, 2013-05-10 at 09:59 +0200, Ingo Molnar wrote:
-> * Ben Hutchings <ben@decadent.org.uk> wrote:
->=20
-> > On Tue, 2013-04-23 at 14:52 -0700, Greg Kroah-Hartman wrote:
-> > > 3.8-stable review patch.  If anyone has any objections, please let me=
- know.
-> > >=20
-> > > ------------------
-> > >=20
-> > > From: libin <huawei.libin@huawei.com>
-> > >=20
-> > > commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
-> > >=20
-> > > Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-> > > sysctl") was an incomplete bug fix.
-> > [...]
-> >=20
-> > It seems like both these commits ought to be applied to earlier stable
-> > branches.  Or was the lack of range checking a regression after 3.4?
->=20
-> Both should be applied indeed.
->=20
-> They are not a huge problem as all these facilities are for debugging and=
-=20
-> are root-only, but the two fixes should be applied together or not at all=
-.
-
-I've queued up both of these for 3.2.
-
-Ben.
-
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
-
---=-Q2BfRcCnVb7nVWKjKyS9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUaQMyue/yOyVhhEJAQqetBAAl4WHThhR/+u92hy3RQjkxcGy1dGqAi0b
-pye43gpgTWGjVhgD5DiM8KLmGpoFvG3LWQTg7Rp3r/bm7dRiGpvt3RbE3DV8jAJ3
-/f6K9lB1sLMjwAE9xtUMi0gDvR1jacULxyO7HaXoyhV17fG8B9qmDCbMJYwD/sEM
-7A9/YWG1eCxYbp8uuRhn2gCzpuj5jaVjoPuiEt4kjkfBf1+S4hk3MIWFKQpcNGaB
-BH7QEYxvRsryYEn/cVZQg6J1iZPtBE4C0g2qlHHJm/eeecsub/aL5d0+Ux7JVclL
-ZvSH67399K5GYObzxKdqNMfm8VAJHBKL+cWJa8HAUsFoB44RpjMdkqMnPcpNH2nP
-Bo0HVx+knvb92C+Pbd2IT2Uf1l7DzDFdMSp1K3JG6ICqI90Wu2rAaZdpYV/RDViS
-JbWftIlV0q09H7qikTDGITgcEOBZuNMDiknTe9qkrNf7qCjx4boEdztx32vwT3L6
-tUnCiU9kulZFaF993Wn3oGqRSwbPi+d0sB2e13nGUVbftxR5oiZ7PS4IozqnA0LP
-KHiDHPwVlZhyPo56a+HCB9ui5XOjrNFOYTOayv97Z2ZEh1WqsaA19RDNfbwn6Jl5
-k+Qt0H10Tjpb0xh6uKNJ3cSAlTxbQmLxBFLWpZn+7I2ECehJJS9o1c9G6WbfJvLd
-OlzE4pHEfHk=
-=ae+a
------END PGP SIGNATURE-----
-
---=-Q2BfRcCnVb7nVWKjKyS9--
+>         mutex_unlock(&iov->dev->sriov->lock);
+>
+>         return rc;
+> @@ -145,20 +133,15 @@ failed1:
+>  static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+>  {
+>         char buf[VIRTFN_ID_LEN];
+> -       struct pci_bus *bus;
+>         struct pci_dev *virtfn;
+>         struct pci_sriov *iov = dev->sriov;
+>
+> -       bus = pci_find_bus(pci_domain_nr(dev->bus), virtfn_bus(dev, id));
+> -       if (!bus)
+> -               return;
+> -
+> -       virtfn = pci_get_slot(bus, virtfn_devfn(dev, id));
+> +       virtfn = pci_get_domain_bus_and_slot(pci_domain_nr(dev->bus),
+> +                                            virtfn_bus(dev, id),
+> +                                            virtfn_devfn(dev, id));
+>         if (!virtfn)
+>                 return;
+>
+> -       pci_dev_put(virtfn);
+> -
+>         if (reset) {
+>                 device_release_driver(&virtfn->dev);
+>                 __pci_reset_function(virtfn);
+> @@ -176,9 +159,11 @@ static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+>
+>         mutex_lock(&iov->dev->sriov->lock);
+>         pci_stop_and_remove_bus_device(virtfn);
+> -       virtfn_remove_bus(dev->bus, virtfn_bus(dev, id));
+> +       virtfn_remove_bus(dev->bus, virtfn->bus);
+>         mutex_unlock(&iov->dev->sriov->lock);
+>
+> +       /* balance pci_get_domain_bus_and_slot() */
+> +       pci_dev_put(virtfn);
+>         pci_dev_put(dev);
+>  }
+>
+> @@ -335,13 +320,14 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+>                 if (!pdev)
+>                         return -ENODEV;
+>
+> -               pci_dev_put(pdev);
+> -
+> -               if (!pdev->is_physfn)
+> +               if (!pdev->is_physfn) {
+> +                       pci_dev_put(pdev);
+>                         return -ENODEV;
+> +               }
+>
+>                 rc = sysfs_create_link(&dev->dev.kobj,
+>                                         &pdev->dev.kobj, "dep_link");
+> +               pci_dev_put(pdev);
+>                 if (rc)
+>                         return rc;
+>         }
+> --
+> 1.8.1.2
+>
