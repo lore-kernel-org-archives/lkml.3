@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3E1HQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 03:16:37 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:44364 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab3E1HQf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 03:16:35 -0400
-Date: Tue, 28 May 2013 09:16:30 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: linux-parisc@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-s390@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.10-rc3
-In-Reply-To: <alpine.DEB.2.00.1305280908430.28098@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1305280909260.29186@ayla.of.borg>
-References: <alpine.DEB.2.00.1305280908430.28098@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758884Ab3E1HTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 03:19:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab3E1HS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 03:18:59 -0400
+Date: Tue, 28 May 2013 09:20:22 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>
+Subject: Re: [PATCH] powerpc/pseries: Force 32 bit MSIs when tearing down
+Message-ID: <20130528072021.GA10576@dhcp-26-207.brq.redhat.com>
+References: <20130527162027.GA18182@dhcp-26-207.brq.redhat.com>
+ <1369691531.3557.36.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369691531.3557.36.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.10-rc3 to v3.10-rc2[3], the summaries are:
->   - build errors: +15/-10
+On Tue, May 28, 2013 at 07:52:11AM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-05-27 at 18:20 +0200, Alexander Gordeev wrote:
+> > This fix just adds a missed call to a new PAPR function
+> > which should have been done with commit e61133d ("powerpc/
+> > pseries: Force 32 bit MSIs for devices that require it")
+> 
+> Arguably, PAPR should allow to disable MSIs using either interface,
+> we shouldn't have to know whether the MSI was a forced-32-bit one to be
+> able to disable it.
 
-Ignoring the PPC64 relocation truncations in powerpc-allyesconfig:
+BTW, it is not clear why MSIs do not get disabled on powernv on teardown.
+Would this (pseudo-code) make sense?
 
-  + error: "__sync_fetch_and_and_4" [drivers/staging/line6/line6usb.ko] undefined!:  => N/A
-  + error: "__sync_fetch_and_or_4" [drivers/staging/line6/line6usb.ko] undefined!:  => N/A
 
-parisc-allmodconfig
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index 163bd74..1502c49 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -102,6 +102,7 @@ static void pnv_teardown_msi_irqs(struct pci_dev *pdev)
+ 	struct pci_controller *hose = pci_bus_to_host(pdev->bus);
+ 	struct pnv_phb *phb = hose->private_data;
+ 	struct msi_desc *entry;
++	unsigned int hwirq;
+ 
+ 	if (WARN_ON(!phb))
+ 		return;
+@@ -109,10 +110,15 @@ static void pnv_teardown_msi_irqs(struct pci_dev *pdev)
+ 	list_for_each_entry(entry, &pdev->msi_list, list) {
+ 		if (entry->irq == NO_IRQ)
+ 			continue;
++
+ 		irq_set_msi_desc(entry->irq, NULL);
++		hwirq = virq_to_hw(entry->irq);
+ 		msi_bitmap_free_hwirqs(&phb->msi_bmp,
+-			virq_to_hw(entry->irq) - phb->msi_base, 1);
++			hwirq - phb->msi_base, 1);
+ 		irq_dispose_mapping(entry->irq);
++		if (phb->msi_disable)
++			phb->msi_disable(phb, pdev, hwirq,
++					 entry->msi_attrib.is_64);
+ 	}
+ }
+ #endif /* CONFIG_PCI_MSI */
+diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
+index 25d76c4..049cbd3 100644
+--- a/arch/powerpc/platforms/powernv/pci.h
++++ b/arch/powerpc/platforms/powernv/pci.h
+@@ -79,10 +79,13 @@ struct pnv_phb {
+ 	unsigned int		msi_base;
+ 	unsigned int		msi32_support;
+ 	struct msi_bitmap	msi_bmp;
+-#endif
++
+ 	int (*msi_setup)(struct pnv_phb *phb, struct pci_dev *dev,
+ 			 unsigned int hwirq, unsigned int virq,
+ 			 unsigned int is_64, struct msi_msg *msg);
++	int (*msi_disable)(struct pnv_phb *phb, struct pci_dev *dev,
++			   unsigned int hwirq, unsigned int is_64);
++#endif
+ 	void (*dma_dev_setup)(struct pnv_phb *phb, struct pci_dev *pdev);
+ 	void (*fixup_phb)(struct pci_controller *hose);
+ 	u32 (*bdfn_to_pe)(struct pnv_phb *phb, struct pci_bus *bus, u32 devfn);
 
-  + error: "devm_request_threaded_irq" [drivers/i2c/busses/i2c-designware-pci.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/input/touchscreen/st1232.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/mfd/si476x-core.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/net/ethernet/marvell/mvmdio.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/staging/dwc2/dwc2.ko] undefined!:  => N/A
-  + error: "irq_create_mapping" [drivers/mfd/mfd-core.ko] undefined!:  => N/A
-  
-s390-allmodconfig, s390-allyesconfig
-
-Related warning for the last one:
-
-warning: (ARM_GIC && ARM_VIC && RENESAS_INTC_IRQPIN && RENESAS_IRQC && VERSATILE_FPGA_IRQ && REGMAP && GPIO_LYNXPOINT && GPIO_GRGPIO && GPIO_PCF857X && GPIO_LANGWELL && MFD_CORE && MFD_MAX77686 && MFD_MAX8997 && AB8500_CORE && MFD_LP8788 && MFD_TPS65910 && TWL4030_CORE && MFD_WM831X_I2C && MFD_WM831X_SPI && EXTCON_MAX77693) selects IRQ_DOMAIN which has unmet direct dependencies (HAVE_GENERIC_HARDIRQS)
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6268/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6246/ (all 120 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
