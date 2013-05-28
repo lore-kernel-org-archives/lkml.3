@@ -1,40 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab3E1GhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 02:37:11 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:49350 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab3E1GhG (ORCPT
+	id S933130Ab3E1Gk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 02:40:57 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:16170 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab3E1Gkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 02:37:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369412476-14245-5-git-send-email-james.hogan@imgtec.com>
-References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
-	<1369412476-14245-5-git-send-email-james.hogan@imgtec.com>
-Date: Tue, 28 May 2013 08:37:06 +0200
-Message-ID: <CACRpkdaFX0Fup_vuA5jmB-MCgNH341CxBRQk+5-YpMTxx_j3AA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/9] pinconf-generic: add drive strength to debugfs output
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 May 2013 02:40:55 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-36-51a451758384
+Date: Tue, 28 May 2013 08:40:35 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
+ governor - tests results
+Message-id: <20130528084035.13afa583@amdc308.digital.local>
+In-reply-to: <41528879.GuKxJgVhIe@vostro.rjw.lan>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <8856294.KaD55h4g0a@vostro.rjw.lan>
+ <CAKohpom4sSwJG7r67+aNMjAdr7CToAqCbdcbd+vSCTEQkiTkcg@mail.gmail.com>
+ <41528879.GuKxJgVhIe@vostro.rjw.lan>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAd3SwCWBBveOW1o8bfrBbjHvs6xF
+	59knzBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZdBz5xmyx8auHA5fHnWt72DzWTXvL7NG3
+	ZRWjx6PFLYwenzfJBbBGcdmkpOZklqUW6dslcGVMuCpVsICn4uPab0wNjMc5uxg5OSQETCSm
+	rDrIBmGLSVy4tx7I5uIQEljEKPFnehczhNPOJPH14FkmkCoWAVWJe9NOMoPYbAJ6Ep/vPgWL
+	iwDFtzz5zw7SwCywlVni0o1ORpCEsEC6xL9tXWBFvALWEovOb2QBsTkFDCVudB2A2nCHUWLK
+	iv1gRfwCkhLt/34wQ9xkJ3Hu0wZ2iGZBiR+T74E1MwtoSWze1sQKYctLbF7zlnkCo+AsJGWz
+	kJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwZDyT3sG4qsHiEKMAB6MSD++E
+	7MWBQqyJZcWVuYcYJTiYlUR4RfyXBArxpiRWVqUW5ccXleakFh9ilOZgURLnPdhqHSgkkJ5Y
+	kpqdmlqQWgSTZeLglGpgLLnu9XddzSbJYwdN9+beDzDL19KV2sPlpnYxikv/z84pSQdWtd9s
+	4EzInec3nfn+q38Rdxbwq5rdX7Tfo0D0z22PFcE6yWaNq39HnJl15oD1yslvD3MYp2rfXNTX
+	sSf3lHWxYZ2Gnte15uyWdStuNb3YGeW3Pd78isBGxesVbw67pX5N7ZzfpsRSnJFoqMVcVJwI
+	AI6q/QyIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
+Hi Rafael,
 
-> Add the drive strength pinconf to debugfs output (with the unit "mA").
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Changes in v2:
->  - add drive strength to generic pinconf debugfs output (patch 4)
+> On Monday, May 27, 2013 06:54:49 PM Viresh Kumar wrote:
+> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > Well, this really looks like software turbo modes, so let's call
+> > > them "TURBO" instead of "OVERDRIVE"
+> > 
+> > Yes, it looks better.
+> > 
+> > > and I seem to remember having a switch for
+> > > disabling/enabling turbo modes already.
+> > 
+> > This was added in intel_pstate driver and shows up in
+> > /sys/devices/system/cpu/cpufreq/ directory..
+> > 
+> > But this feature belongs to a governor instance and so
+> > will be present inside governor directory..
+> > 
+> > Specially for big LITTLE we want it to be per policy
+> > specific. So may need to add a new one.
+> 
+> I was talking about /sys/devices/system/cpu/cpufreq/boost that
+> appears to have been added by commit 615b730 (acpi-cpufreq: Add
+> support for disabling dynamic overclocking).
+> 
+> That's in acpi-cpufreq, but since that setting seems to be generally
+> useful, it may be a good idea to move it to the core somehow.
 
-This is fine.
+I think that Viresh wanted to add "boost" option to 
+/sys/devices/system/cpu/cpuX/cpufreq/ to be able to control boost
+at separate cores (policies).
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+The localization, which you have proposed:
+/sys/devices/system/cpu/cpufreq/boost
 
-Yours,
-Linus Walleij
+implies, that boost is a global feature (enabled for all cores and for
+all available policies).
+
+Which approach shall be used then? 
+
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Poland (SRPOL) | Linux Platform Group
