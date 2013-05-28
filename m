@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877Ab3E1Vaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:30:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933578Ab3E1Vac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:30:32 -0400
-Message-ID: <51A521DA.2080206@redhat.com>
-Date: Tue, 28 May 2013 17:30:02 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: atomlin@redhat.com, netdev@vger.kernel.org, davem@davemloft.net,
-        edumazet@google.com, pshelar@nicira.com, mst@redhat.com,
-        alexander.h.duyck@intel.com, aquini@redhat.com,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com> <20130527224149.GA4384@electric-eye.fr.zoreil.com>
-In-Reply-To: <20130527224149.GA4384@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S934009Ab3E1Vaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:30:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59792 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933163Ab3E1VZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 17:25:46 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 59/78] sfc: Fix naming of MTD partitions for FPGA bitfiles
+Date: Tue, 28 May 2013 14:20:08 -0700
+Message-Id: <1369776027-17859-60-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2013 06:41 PM, Francois Romieu wrote:
-> atomlin@redhat.com <atomlin@redhat.com> :
-> [...]
->> Failed GFP_ATOMIC allocations by the network stack result in dropped
->> packets, which will be received on a subsequent retransmit, and an
->> unnecessary, noisy warning with a kernel backtrace.
->>
->> These warnings are harmless, but they still cause users to panic and
->> file bug reports over dropped packets. It would be better to hide the
->> failed allocation warnings and backtraces, and let retransmits handle
->> dropped packets quietly.
->
-> Linux VM may be perfect but device drivers do stupid things.
->
-> Please don't paper over it just because some shit ends in your backyard.
+3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
 
-It is impossible to free memory at the speed at which
-10Gbit network packets can come in.
+------------------
 
-Dropped packets are a reality.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-The network stack already has statistics counters to
-keep track of dropped packets. There is absolutely
-no reason to print out an entire kernel backtrace
-for dropped network packets.
+[ Upstream commit 89cc80a44b7c320e08599cb86f6aef0ead8986a1 ]
 
-All that achieves is get people to file bug reports,
-which nothing can be done about. Oh, and distract
-them from whatever issue as causing their actual
-problem, and delay them fixing what was going on.
+efx_mcdi_get_board_cfg() uses a buffer for the firmware response that
+is only large enough to hold subtypes for the originally defined set
+of NVRAM partitions.  Longer responses are truncated, and we may read
+off the end of the buffer when copying out subtypes for additional
+partitions.  In particular, this can result in the MTD partition for
+an FPGA bitfile being named e.g. 'eth5 sfc_fpga:00' when it should be
+'eth5 sfc_fpga:01'.  This means the firmware update tool (sfupdate)
+can't tell which bitfile should be written to the partition.
+
+Correct the response buffer size.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/ethernet/sfc/mcdi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
+index 0095ce9..97dd8f18 100644
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -667,7 +667,7 @@ fail:
+ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 			   u16 *fw_subtype_list, u32 *capabilities)
+ {
+-	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMIN];
++	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMAX];
+ 	size_t outlen, offset, i;
+ 	int port_num = efx_port_num(efx);
+ 	int rc;
+-- 
+1.8.1.2
 
