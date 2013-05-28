@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824Ab3E1VZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:25:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59813 "EHLO
+	id S934054Ab3E1V0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:26:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59829 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933709Ab3E1VZ5 (ORCPT
+	with ESMTP id S933923Ab3E1V0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:57 -0400
+	Tue, 28 May 2013 17:26:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 44/78] powerpc/kexec: Fix kexec when using VMX optimised memcpy
-Date: Tue, 28 May 2013 14:19:53 -0700
-Message-Id: <1369776027-17859-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 51/78] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid memory overflow
+Date: Tue, 28 May 2013 14:20:00 -0700
+Message-Id: <1369776027-17859-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,56 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@au1.ibm.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit 79c66ce8f6448a3295a32efeac88c9debd7f7094 upstream.
+commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
 
-commit b3f271e86e5a (powerpc: POWER7 optimised memcpy using VMX and
-enhanced prefetch) uses VMX when it is safe to do so (ie not in
-interrupt). It also looks at the task struct to decide if we have to
-save the current tasks' VMX state.
+When calling memcpy, read_data and write_data need additional 2 bytes.
 
-kexec calls memcpy() at a point where the task struct may have been
-overwritten by the new kexec segments. If it has been overwritten
-then when memcpy -> enable_altivec looks up current->thread.regs->msr
-we get a cryptic oops or lockup.
+  write_data:
+    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
 
-I also notice we aren't initialising thread_info->cpu, which means
-smp_processor_id is broken. Fix that too.
+  read_data:
+    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/machine_kexec_64.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/char/ipmi/ipmi_bt_sm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index 466a290..611acdf 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -17,6 +17,7 @@
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/cpu.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/page.h>
- #include <asm/current.h>
-@@ -335,10 +336,13 @@ void default_machine_kexec(struct kimage *image)
- 	pr_debug("kexec: Starting switchover sequence.\n");
- 
- 	/* switch to a staticly allocated stack.  Based on irq stack code.
-+	 * We setup preempt_count to avoid using VMX in memcpy.
- 	 * XXX: the task struct will likely be invalid once we do the copy!
- 	 */
- 	kexec_stack.thread_info.task = current_thread_info()->task;
- 	kexec_stack.thread_info.flags = 0;
-+	kexec_stack.thread_info.preempt_count = HARDIRQ_OFFSET;
-+	kexec_stack.thread_info.cpu = current_thread_info()->cpu;
- 
- 	/* We need a static PACA, too; copy this CPU's PACA over and switch to
- 	 * it.  Also poison per_cpu_offset to catch anyone using non-static
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index cdd4c09f..a22a7a5 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -95,9 +95,9 @@ struct si_sm_data {
+ 	enum bt_states	state;
+ 	unsigned char	seq;		/* BT sequence number */
+ 	struct si_sm_io	*io;
+-	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		write_count;
+-	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		read_count;
+ 	int		truncated;
+ 	long		timeout;	/* microseconds countdown */
 -- 
 1.8.1.2
 
