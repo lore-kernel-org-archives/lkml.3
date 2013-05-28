@@ -1,189 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3E1UO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:14:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755994Ab3E1UO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:14:56 -0400
-Date: Tue, 28 May 2013 16:13:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: rcu_read_lock() used illegally while idle!
-Message-ID: <20130528201329.GA24342@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com,
-	Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-References: <20130521173100.GA2076@redhat.com>
- <20130522093624.GZ3578@linux.vnet.ibm.com>
- <1369226958.6828.175.camel@gandalf.local.home>
- <20130523164004.GJ16419@redhat.com>
- <1369403180.6828.223.camel@gandalf.local.home>
- <20130524142338.GB3106@redhat.com>
- <1369423420.6828.226.camel@gandalf.local.home>
- <20130525135959.GA1784@redhat.com>
- <1369506004.15552.5.camel@gandalf.local.home>
+	id S1755961Ab3E1UYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:24:21 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62020 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab3E1UYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 16:24:20 -0400
+Message-ID: <51A51271.2070506@linaro.org>
+Date: Tue, 28 May 2013 13:24:17 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369506004.15552.5.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Baruch Siach <baruch@tkos.co.il>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: Re: [RFC PATCH 2/2] clocksource: dw_apb: allow build for architectures
+ other than arm
+References: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
+In-Reply-To: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 02:20:04PM -0400, Steven Rostedt wrote:
- > On Sat, 2013-05-25 at 09:59 -0400, Dave Jones wrote:
- > > On Fri, May 24, 2013 at 03:23:40PM -0400, Steven Rostedt wrote:
- > >  > On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
- > >  > 
- > >  > > .config: http://paste.fedoraproject.org/14281/94052971/raw/
- > >  > > 
- > >  > > trace shows the problem process was 'cc1', so I was likely building a kernel
- > >  > > at the time.  There was also a trinity run going on in the background.
- > >  > > 
- > >  > > cmdline: nothing special..
- > >  > > 
- > >  > > BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
- > >  > > 
- > >  > 
- > >  > OK, I'm able to reproduce this. Looks like the same issue happens from
- > >  > other ways from userspace into the kernel (the next way was tracing
- > >  > system calls).
- > >  > 
- > >  > Forget the other patch. Here's a new patch that is more specific to
- > >  > tracing and context tracking.
- > >  > 
- > >  > Can you try this one out, please.
- > > 
- > > Took a lot longer to hit this..
- > 
- > This is a same but different bug ;-)
- > 
- > Looks like we fixed all the function tracing infrastructure problems,
- > but this is a function tracer user problem. Namely perf.
+On 05/26/2013 05:12 AM, Baruch Siach wrote:
+> ARM is the only architecture providing sched_clock.h and setup_sched_clock().
+> Implement sched_clock() for use by other architectures.
+>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jamie Iles <jamie@jamieiles.com>
+> Cc: Dinh Nguyen <dinguyen@altera.com>
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>   arch/arm/Kconfig                      |    1 +
+>   drivers/clocksource/Kconfig           |    3 +++
+>   drivers/clocksource/dw_apb_timer_of.c |   18 ++++++++++++++++++
+>   3 files changed, 22 insertions(+)
+>
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1cacda4..7489604 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -47,6 +47,7 @@ config ARM
+>   	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
+>   	select HAVE_PERF_EVENTS
+>   	select HAVE_REGS_AND_STACK_ACCESS_API
+> +	select HAVE_SETUP_SCHED_CLOCK
+>   	select HAVE_SYSCALL_TRACEPOINTS
+>   	select HAVE_UID16
+>   	select KTIME_SCALAR
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index e507ab7..0fd6d13 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -1,3 +1,6 @@
+> +config HAVE_SETUP_SCHED_CLOCK
+> +	bool
+> +
+>   config CLKSRC_OF
+>   	bool
+>   
+> diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+> index 5a61ebc..9fdb4d3 100644
+> --- a/drivers/clocksource/dw_apb_timer_of.c
+> +++ b/drivers/clocksource/dw_apb_timer_of.c
+> @@ -21,7 +21,11 @@
+>   #include <linux/of_address.h>
+>   #include <linux/of_irq.h>
+>   
+> +#ifdef CONFIG_HAVE_SETUP_SCHED_CLOCK
+>   #include <asm/sched_clock.h>
+> +#else
+> +#include <linux/sched.h>
+> +#endif
+>   
+>   static void timer_get_base_and_rate(struct device_node *np,
+>   				    void __iomem **base, u32 *rate)
+> @@ -73,6 +77,9 @@ static void add_clocksource(struct device_node *source_timer)
+>   }
+>   
+>   static void __iomem *sched_io_base;
+> +#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
+> +static u64 sched_clock_mult __read_mostly;
+> +#endif
+>   
+>   static u32 read_sched_clock(void)
+>   {
+> @@ -97,7 +104,11 @@ static void init_sched_clock(void)
+>   	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
+>   	of_node_put(sched_timer);
+>   
+> +#ifdef CONFIG_HAVE_SETUP_SCHED_CLOCK
+>   	setup_sched_clock(read_sched_clock, 32, rate);
+> +#else
+> +	sched_clock_mult = NSEC_PER_SEC / rate;
+> +#endif
+>   }
 
-another variant of the same ? or different different ?
+Can you rework this to not use #ifdefs within the function? They make it 
+annoying to read the code.
 
-[12572.705832] ======================================================
-[12572.750317] [ INFO: possible circular locking dependency detected ]
-[12572.796978] 3.10.0-rc3+ #39 Not tainted
-[12572.833381] -------------------------------------------------------
-[12572.862233] trinity-child17/31341 is trying to acquire lock:
-[12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-[12572.878859] 
-but task is already holding lock:
-[12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-[12572.903381] 
-which lock already depends on the new lock.
+Instead maybe have a local setup_sched_clock() function that sets the 
+mult value for the !CONFIG_HAVE_SETUP_SCHED_CLOCK case?
 
-[12572.927541] 
-the existing dependency chain (in reverse order) is:
-[12572.943736] 
--> #4 (&ctx->lock){-.-...}:
-[12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-[12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
-[12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
-[12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
-[12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
-[12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
-[12573.018321] 
--> #3 (&rq->lock){-.-.-.}:
-[12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-[12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
-[12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
-[12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
-[12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
-[12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
-[12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
-[12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
-[12573.109528] 
--> #2 (&p->pi_lock){-.-.-.}:
-[12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-[12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
-[12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
-[12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
-[12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
-[12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
-[12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-[12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-[12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-[12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
-[12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
-[12573.221379] 
--> #1 (&rsp->gp_wq){..-.-.}:
-[12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-[12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
-[12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-[12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-[12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-[12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
-[12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
-[12573.295067] 
--> #0 (rcu_node_0){..-.-.}:
-[12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-[12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-[12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-[12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-[12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-[12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-[12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-[12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-[12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
-[12573.382068] 
-other info that might help us debug this:
+>   
+>   static const struct of_device_id osctimer_ids[] __initconst = {
+> @@ -124,3 +135,10 @@ void __init dw_apb_timer_init(void)
+>   
+>   	init_sched_clock();
+>   }
+> +
+> +#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
+> +unsigned long long notrace sched_clock()
+> +{
+> +	return read_sched_clock() * sched_clock_mult;
+> +}
+> +#endif
 
-[12573.403229] Chain exists of:
-  rcu_node_0 --> &rq->lock --> &ctx->lock
+Also, can you try to condense the number of #ifndef 
+CONFIG_HAVE_SETUP_SCHED_CLOCK checks to one, and consolidate the needed 
+functions all in that one conditional?
 
-[12573.424471]  Possible unsafe locking scenario:
-
-[12573.438499]        CPU0                    CPU1
-[12573.445599]        ----                    ----
-[12573.452691]   lock(&ctx->lock);
-[12573.459799]                                lock(&rq->lock);
-[12573.467010]                                lock(&ctx->lock);
-[12573.474192]   lock(rcu_node_0);
-[12573.481262] 
- *** DEADLOCK ***
-
-[12573.501931] 1 lock held by trinity-child17/31341:
-[12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-[12573.516475] 
-stack backtrace:
-[12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
-[12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
-[12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
-[12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
-[12573.567856] Call Trace:
-[12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
-[12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
-[12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-[12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
-[12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-[12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-[12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-[12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-[12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-[12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
-[12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
-[12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
-[12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-[12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-[12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
-[12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-[12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-[12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
-[12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-[12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+thanks
+-john
 
