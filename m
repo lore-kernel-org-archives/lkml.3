@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759103Ab3E1ESB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:18:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52626 "EHLO
+	id S1759050Ab3E1ESA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:18:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52467 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758884Ab3E1Dy2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758762Ab3E1Dy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:28 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        "Johan Hovold" <jhovold@gmail.com>, "Chris Ball" <cjb@laptop.org>
+CC: akpm@linux-foundation.org, "Alasdair G Kergon" <agk@redhat.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.573801550@decadent.org.uk>
+Message-ID: <lsq.1369712993.915886107@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [02/94] mmc: at91/avr32/atmel-mci: fix DMA-channel leak on module
- unload
+Subject: [25/94] dm bufio: avoid a possible __vmalloc deadlock
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,92 +31,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 91cf54feecf815bec0b6a8d6d9dbd0e219f2f2cc upstream.
+commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
 
-Fix regression introduced by commit 796211b7953 ("mmc: atmel-mci: add
-pdc support and runtime capabilities detection") which removed the need
-for CONFIG_MMC_ATMELMCI_DMA but kept the Kconfig-entry as well as the
-compile guards around dma_release_channel() in remove(). Consequently,
-DMA is always enabled (if supported), but the DMA-channel is not
-released on module unload unless the DMA-config option is selected.
+This patch uses memalloc_noio_save to avoid a possible deadlock in
+dm-bufio.  (it could happen only with large block size, at most
+PAGE_SIZE << MAX_ORDER (typically 8MiB).
 
-Remove the no longer used CONFIG_MMC_ATMELMCI_DMA option completely.
+__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+used for allocation of requested pages, structures vmap_area, vmap_block
+and vm_struct and the radix tree nodes.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2: adjust context]
+However, the kernel pagetables are allocated always with GFP_KERNEL.
+Thus the allocation of pagetables can recurse back to the I/O layer and
+cause a deadlock.
+
+This patch uses the function memalloc_noio_save to set per-process
+PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+it. When this flag is set, all allocations in the process are done with
+implied GFP_NOIO flag, thus the deadlock can't happen.
+
+This should be backported to stable kernels, but they don't have the
+PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+functions. So, PF_MEMALLOC should be set and restored instead.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[bwh: Backported to 3.2 as recommended]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/configs/at91sam9g45_defconfig |    1 -
- arch/avr32/configs/favr-32_defconfig   |    1 -
- arch/avr32/configs/merisc_defconfig    |    1 -
- drivers/mmc/host/Kconfig               |   10 ----------
- drivers/mmc/host/atmel-mci.c           |    2 --
- 5 files changed, 15 deletions(-)
+ drivers/md/dm-bufio.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/arch/arm/configs/at91sam9g45_defconfig
-+++ b/arch/arm/configs/at91sam9g45_defconfig
-@@ -173,7 +173,6 @@ CONFIG_MMC=y
- # CONFIG_MMC_BLOCK_BOUNCE is not set
- CONFIG_SDIO_UART=m
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_LEDS_ATMEL_PWM=y
- CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGER_TIMER=y
---- a/arch/avr32/configs/favr-32_defconfig
-+++ b/arch/avr32/configs/favr-32_defconfig
-@@ -122,7 +122,6 @@ CONFIG_USB_G_SERIAL=m
- CONFIG_USB_CDC_COMPOSITE=m
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=m
---- a/arch/avr32/configs/merisc_defconfig
-+++ b/arch/avr32/configs/merisc_defconfig
-@@ -102,7 +102,6 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_LOGO=y
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=y
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -297,16 +297,6 @@ config MMC_ATMELMCI
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -322,6 +322,9 @@ static void __cache_size_refresh(void)
+ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 			       enum data_mode *data_mode)
+ {
++	unsigned noio_flag;
++	void *ptr;
++
+ 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+ 		*data_mode = DATA_MODE_SLAB;
+ 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+@@ -335,7 +338,28 @@ static void *alloc_buffer_data(struct dm
+ 	}
  
- endchoice
+ 	*data_mode = DATA_MODE_VMALLOC;
+-	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	/*
++	 * __vmalloc allocates the data pages and auxiliary structures with
++	 * gfp_flags that were specified, but pagetables are always allocated
++	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
++	 *
++	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
++	 * all allocations done by this process (including pagetables) are done
++	 * as if GFP_NOIO was specified.
++	 */
++
++	if (gfp_mask & __GFP_NORETRY) {
++		noio_flag = current->flags & PF_MEMALLOC;
++		current->flags |= PF_MEMALLOC;
++	}
++
++	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	if (gfp_mask & __GFP_NORETRY)
++		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
++
++	return ptr;
+ }
  
--config MMC_ATMELMCI_DMA
--	bool "Atmel MCI DMA support"
--	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
--	help
--	  Say Y here to have the Atmel MCI driver use a DMA engine to
--	  do data transfers and thus increase the throughput and
--	  reduce the CPU utilization.
--
--	  If unsure, say N.
--
- config MMC_IMX
- 	tristate "Motorola i.MX Multimedia Card Interface support"
- 	depends on ARCH_MX1
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -2167,10 +2167,8 @@ static int __exit atmci_remove(struct pl
- 	atmci_readl(host, ATMCI_SR);
- 	clk_disable(host->mck);
- 
--#ifdef CONFIG_MMC_ATMELMCI_DMA
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
--#endif
- 
- 	free_irq(platform_get_irq(pdev, 0), host);
- 	iounmap(host->regs);
+ /*
 
