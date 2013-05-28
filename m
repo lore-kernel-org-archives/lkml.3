@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3E1TFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 15:05:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24614 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab3E1TFj (ORCPT
+	id S1754301Ab3E1TGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 15:06:15 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:56339 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab3E1TGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 15:05:39 -0400
-Date: Tue, 28 May 2013 15:05:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86/xen: sync the CMOS RTC as well as the Xen
- wallclock
-Message-ID: <20130528190530.GA24303@phenom.dumpdata.com>
-References: <1369765368-10823-1-git-send-email-david.vrabel@citrix.com>
- <1369765368-10823-2-git-send-email-david.vrabel@citrix.com>
- <51A4FF25.8040908@linaro.org>
+	Tue, 28 May 2013 15:06:14 -0400
+Message-ID: <51A50023.8090306@linaro.org>
+Date: Tue, 28 May 2013 12:06:11 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A4FF25.8040908@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Jan Beulich <JBeulich@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
+ RTC on system time step changes
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com> <5193CFA2.8010008@linaro.org> <51A4F6C6.8080808@citrix.com>
+In-Reply-To: <51A4F6C6.8080808@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 12:01:57PM -0700, John Stultz wrote:
-> On 05/28/2013 11:22 AM, David Vrabel wrote:
-> >From: David Vrabel <david.vrabel@citrix.com>
-> >
-> >Adjustments to Xen's persistent_clock via update_persistent_clock()
-> >don't actually persist, as the xen_set_walltime() just notifies other
-> >domN guests that it has been updated, and does not modify the
-> >underlying CMOS clock.
-> >
-> >Thus, this patch modifies xen_set_wallclock() so it will set the
-> >underlying CMOS clock when called from dom0, ensuring the
-> >persistent_clock will be correct on the next hardware boot.
-> >
-> >Dom0 does not support accessing EFI runtime services and Xen does not
-> >run on Moorsetown platforms so the CMOS RTC is the only supported
-> >hardware clock.
-> >
-> >Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> >Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Ok, I've queued this for 3.11.
+On 05/28/2013 11:26 AM, David Vrabel wrote:
+> On 15/05/13 19:10, John Stultz wrote:
+>> Ok, so really, as soon as the Dom0 time is set by NTP, all guests will
+>> see the right time? That makes more sense, and means the window for
+>> these sorts of issues is reasonably quite small.
+> It's a small window but it's occurring in our automated test system.
 
-Thanks.
-> 
-> thanks
-> -john
-> 
+What is it with about your automated test system that causes a 
+misconfigured RTC & system such that xen guests are started before Dom0 
+has finished being initialized? Or am I still misunderstanding the 
+situation?
+
+1) Dom0 boots w/ misconfigured RTC
+2) Dom0 starts ntp, correcting the date
+3) After 11 minutes of sync the RTC is synced to NTP time.
+
+ From earlier discussions, the only problem would be with guests 
+starting between 1 and 2 (which seems a bit early for guests to be 
+starting). And after 3, with your patch 1/2 (that I've queued) the issue 
+should not recur again, as the RTC is corrected.
+
+
+>
+>> David: So I'm less inclined to merge this individual change, but if you
+>> still feel strongly about it, let me know and we can circle around on it
+>> after you've addressed the specific issues I pointed out earlier.
+> This patch was the actual bug fix but I've reworked it to use the
+> pvclock_gtod notifier chain as this seemed to be what KVM hosts were
+> using to maintain a clock for guests.  Please review the new series, thanks.
+
+I'm still not convinced that we should be changing the behavior we've 
+had for quite a long time.
+
+thanks
+-john
+
+
