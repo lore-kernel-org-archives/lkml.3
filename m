@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933567Ab3E1D44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52594 "EHLO
+	id S933552Ab3E1D4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52543 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758864Ab3E1DyM (ORCPT
+	by vger.kernel.org with ESMTP id S1758829Ab3E1DyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:12 -0400
+	Mon, 27 May 2013 23:54:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "libin" <huawei.libin@huawei.com>,
-        "Peter Zijlstra" <peterz@infradead.org>, "" <guohanjun@huawei.com>,
-        "" <jiang.liu@huawei.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Paul Wouters" <pwouters@redhat.com>,
+        "Josh Boyer" <jwboyer@redhat.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.315847334@decadent.org.uk>
+Message-ID: <lsq.1369712993.506617286@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [72/94] sched/debug: Fix sd->*_idx limit range avoiding overflow
+Subject: [87/94] if_cablemodem.h: Add parenthesis around ioctl macros
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: libin <huawei.libin@huawei.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
+[ Upstream commit 4f924b2aa4d3cb30f07e57d6b608838edcbc0d88 ]
 
-Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-sysctl") was an incomplete bug fix.
+Protect the SIOCGCM* ioctl macros with parenthesis.
 
-This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
-avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
-on sysctl.
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Cc: <jiang.liu@huawei.com>
-Cc: <guohanjun@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust filename]
+Reported-by: Paul Wouters <pwouters@redhat.com>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/if_cablemodem.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6673,7 +6673,7 @@ static void sd_free_ctl_entry(struct ctl
- }
+diff --git a/include/linux/if_cablemodem.h b/include/linux/if_cablemodem.h
+index 9ca1007..ee6b3c4 100644
+--- a/include/linux/if_cablemodem.h
++++ b/include/linux/if_cablemodem.h
+@@ -12,11 +12,11 @@
+  */
  
- static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX;
-+static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ /* some useful defines for sb1000.c e cmconfig.c - fv */
+-#define SIOCGCMSTATS		SIOCDEVPRIVATE+0	/* get cable modem stats */
+-#define SIOCGCMFIRMWARE		SIOCDEVPRIVATE+1	/* get cm firmware version */
+-#define SIOCGCMFREQUENCY	SIOCDEVPRIVATE+2	/* get cable modem frequency */
+-#define SIOCSCMFREQUENCY	SIOCDEVPRIVATE+3	/* set cable modem frequency */
+-#define SIOCGCMPIDS			SIOCDEVPRIVATE+4	/* get cable modem PIDs */
+-#define SIOCSCMPIDS			SIOCDEVPRIVATE+5	/* set cable modem PIDs */
++#define SIOCGCMSTATS		(SIOCDEVPRIVATE+0)	/* get cable modem stats */
++#define SIOCGCMFIRMWARE		(SIOCDEVPRIVATE+1)	/* get cm firmware version */
++#define SIOCGCMFREQUENCY	(SIOCDEVPRIVATE+2)	/* get cable modem frequency */
++#define SIOCSCMFREQUENCY	(SIOCDEVPRIVATE+3)	/* set cable modem frequency */
++#define SIOCGCMPIDS			(SIOCDEVPRIVATE+4)	/* get cable modem PIDs */
++#define SIOCSCMPIDS			(SIOCDEVPRIVATE+5)	/* set cable modem PIDs */
  
- static void
- set_table_entry(struct ctl_table *entry,
+ #endif
 
