@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab3E1Vk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:40:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59579 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab3E1VXe (ORCPT
+	id S1758248Ab3E1VlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:41:22 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:40802 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757627Ab3E1VlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:23:34 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 22/78] qmi_wwan/cdc_ether: add device IDs for Dell 5804 (Novatel E371) WWAN card
-Date: Tue, 28 May 2013 14:19:31 -0700
-Message-Id: <1369776027-17859-23-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
-References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+	Tue, 28 May 2013 17:41:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.8
+In-Reply-To: <20130528205842.GE32085@xanatos>
+References: <20130524210503.GC15788@xanatos>
+	<Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
+	<CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
+	<20130528205842.GE32085@xanatos>
+Date: Tue, 28 May 2013 14:41:18 -0700
+X-Google-Sender-Auth: n6H4Mr2-tUSITEUzKCmDda4roEc
+Message-ID: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky controllers.
+From: Julius Werner <jwerner@chromium.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Shawn Nematbakhsh <shawnn@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Dan Williams <dcbw@redhat.com>
-
-commit 7fdb7846c9ca6fc06e380de0976a1228703b498a upstream.
-
-A rebranded Novatel E371 for AT&T's LTE bands.  qmi_wwan should drive this
-device, while cdc_ether should ignore it.  Even though the USB descriptors
-are plain CDC-ETHER that USB interface is a QMI interface.
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/usb/cdc_ether.c | 7 +++++++
- drivers/net/usb/qmi_wwan.c  | 7 +++++++
- 2 files changed, 14 insertions(+)
-
-diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index 57136dc..299c53b 100644
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -615,6 +615,13 @@ static const struct usb_device_id	products [] = {
- 	.driver_info = 0,
- },
- 
-+/* Dell Wireless 5804 (Novatel E371) - handled by qmi_wwan */
-+{
-+	USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, 0x819b, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = 0,
-+},
-+
- /* AnyDATA ADU960S - handled by qmi_wwan */
- {
- 	USB_DEVICE_AND_INTERFACE_INFO(0x16d5, 0x650a, USB_CLASS_COMM,
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 968d5d5..38734fd 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -392,6 +392,13 @@ static const struct usb_device_id products[] = {
- 					      USB_CDC_PROTO_NONE),
- 		.driver_info        = (unsigned long)&qmi_wwan_info,
- 	},
-+	{	/* Dell Wireless 5804 (Novatel E371) */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x413C, 0x819b,
-+					      USB_CLASS_COMM,
-+					      USB_CDC_SUBCLASS_ETHERNET,
-+					      USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
- 	{	/* ADU960S */
- 		USB_DEVICE_AND_INTERFACE_INFO(0x16d5, 0x650a,
- 					      USB_CLASS_COMM,
--- 
-1.8.1.2
-
+The policy we want to achieve is to disable runtime PM iff there is a
+device connected that doesn't have persist_enabled or a reset_resume()
+handler and whose parent/root hub resets on resume, right? So couldn't
+we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
+generic USB_QUIRK_RESET_RESUME on the root hub instead? Then we could
+handle all of this in the USB core (during device initialization and
+when changing persist_enabled through sysfs) by just checking for
+udev->reset_resume on all parent hubs of the device in question (and
+use pm_runtime_get/put() on said device to prevent its parents from
+suspending as appropriate).
