@@ -1,107 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab3E1LWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:22:00 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:12184 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758755Ab3E1LV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:21:57 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A4931D.9090209@asianux.com>
-Date: Tue, 28 May 2013 19:21:01 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S933122Ab3E1LfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:35:05 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53225 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932878Ab3E1LfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 07:35:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] cpufreq: ondemand: Increase frequency to any value proportional to load
+Date: Tue, 28 May 2013 13:43:55 +0200
+Message-ID: <1733890.jTHBU7EacK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51A3C6CF.6080104@semaphore.gr>
+References: <51A3C6CF.6080104@semaphore.gr>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "vgupta@synopsys.com" <vgupta@synopsys.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: arm64: kernel: sprintf(), 'str' needs additional
- 1 byte for failure processing
-References: <51A1E3B3.4060901@asianux.com> <51A2BE2C.2000004@asianux.com> <20130528104250.GE10474@mudshark.cambridge.arm.com>
-In-Reply-To: <20130528104250.GE10474@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 06:42 PM, Will Deacon wrote:
-> Hello,
+On Monday, May 27, 2013 11:49:19 PM Stratos Karafotis wrote:
+> Ondemand increases frequency only if the load_freq is greater than
+> up_threshold. This seems to produce oscillations of frequency between
+> min and max because a relatively small load can easily saturate minimum
+> frequency and lead the CPU to max. Then, the CPU will decrease back to
+> min due to a small load_freq.
+
+I think this is a correct observation.
+
+> With this patch the frequency can be increased to any value,
+
+What exactly does "any value" mean here?
+
+> proportional to load, if the load is below up_threshold. Thus, middle
+> frequencies are used more. Absolute load is used for the calculation of
+> frequency.
 > 
-> On Mon, May 27, 2013 at 03:00:12AM +0100, Chen Gang wrote:
->> > 
->> > When failure occurs at the last looping cycle (when 'i == 0'), it will
->> > print "bad PC value" instead of "(%08x) ", which needs additional 1
->> > byte.
->> > 
->> > If not add 1 byte, the 'str' may be memory overflow.
->> > 
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  arch/arm64/kernel/traps.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> > 
->> > diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
->> > index 61d7dd2..c2f68d2 100644
->> > --- a/arch/arm64/kernel/traps.c
->> > +++ b/arch/arm64/kernel/traps.c
->> > @@ -100,7 +100,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
->> >  {
->> >  	unsigned long addr = instruction_pointer(regs);
->> >  	mm_segment_t fs;
->> > -	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
->> > +	char str[sizeof("00000000 ") * 5 + 2 + 1 + 1], *p = str;
->> >  	int i;
-> Whilst this code is difficult to follow, I don't think it's incorrect.
-> The size of the str array is:
+> Phoronix benchmark results of Linux Kernel Compilation 3.1 tests are
+> attached with and without this patch. cpufreq_stats (time_in_state) are
+> also included. Tested on Intel i7-3770 CPU @ 3.40GH and on 
+> Quad core 1500 MHz Krait.
+
+Can you please comment the results in the changelog?  Attachments don't
+show up in git logs. :-)
+
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  drivers/cpufreq/cpufreq_governor.c | 10 +---------
+>  drivers/cpufreq/cpufreq_governor.h |  1 -
+>  drivers/cpufreq/cpufreq_ondemand.c | 39 ++++++++------------------------------
+>  3 files changed, 9 insertions(+), 41 deletions(-)
 > 
-> 	sizeof("00000000 ") = 8 ('0's) + 1 (space) + 1 (NUL) = 10 bytes
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 5af40ad..eeab30a 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -97,7 +97,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>  
+>  	policy = cdbs->cur_policy;
+>  
+> -	/* Get Absolute Load (in terms of freq for ondemand gov) */
+> +	/* Get Absolute Load */
+>  	for_each_cpu(j, policy->cpus) {
+>  		struct cpu_dbs_common_info *j_cdbs;
+>  		u64 cur_wall_time, cur_idle_time;
+> @@ -148,14 +148,6 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>  
+>  		load = 100 * (wall_time - idle_time) / wall_time;
+>  
+> -		if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+> -			int freq_avg = __cpufreq_driver_getavg(policy, j);
+> -			if (freq_avg <= 0)
+> -				freq_avg = policy->cur;
+> -
+> -			load *= freq_avg;
+> -		}
+> -
+>  		if (load > max_load)
+>  			max_load = load;
+>  	}
+> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+> index e16a961..e899c11 100644
+> --- a/drivers/cpufreq/cpufreq_governor.h
+> +++ b/drivers/cpufreq/cpufreq_governor.h
+> @@ -169,7 +169,6 @@ struct od_dbs_tuners {
+>  	unsigned int sampling_rate;
+>  	unsigned int sampling_down_factor;
+>  	unsigned int up_threshold;
+> -	unsigned int adj_up_threshold;
+>  	unsigned int powersave_bias;
+>  	unsigned int io_is_busy;
+>  };
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index 4b9bb5d..bf2ae64 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -29,11 +29,9 @@
+>  #include "cpufreq_governor.h"
+>  
+>  /* On-demand governor macros */
+> -#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+>  #define DEF_FREQUENCY_UP_THRESHOLD		(80)
+>  #define DEF_SAMPLING_DOWN_FACTOR		(1)
+>  #define MAX_SAMPLING_DOWN_FACTOR		(100000)
+> -#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
+>  #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
+>  #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
+>  #define MIN_FREQUENCY_UP_THRESHOLD		(11)
+> @@ -159,14 +157,12 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
+>  
+>  /*
+>   * Every sampling_rate, we check, if current idle time is less than 20%
+> - * (default), then we try to increase frequency. Every sampling_rate, we look
+> - * for the lowest frequency which can sustain the load while keeping idle time
+> - * over 30%. If such a frequency exist, we try to decrease to this frequency.
+> + * (default), then we try to increase frequency. Else, we adjust the frequency
+> + * proportional to load.
+>   *
+> - * Any frequency increase takes it to the maximum frequency. Frequency reduction
+> - * happens at minimum steps of 5% (default) of current frequency
+> + * Any frequency increase takes it to the maximum frequency.
+>   */
+> -static void od_check_cpu(int cpu, unsigned int load_freq)
+> +static void od_check_cpu(int cpu, unsigned int load)
+>  {
+>  	struct od_cpu_dbs_info_s *dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
+>  	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
+> @@ -176,29 +172,17 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+>  	dbs_info->freq_lo = 0;
+>  
+>  	/* Check for frequency increase */
+> -	if (load_freq > od_tuners->up_threshold * policy->cur) {
+> +	if (load > od_tuners->up_threshold) {
+>  		/* If switching to max speed, apply sampling_down_factor */
+>  		if (policy->cur < policy->max)
+>  			dbs_info->rate_mult =
+>  				od_tuners->sampling_down_factor;
+>  		dbs_freq_increase(policy, policy->max);
+>  		return;
+> -	}
+> -
+> -	/* Check for frequency decrease */
+> -	/* if we cannot reduce the frequency anymore, break out early */
+> -	if (policy->cur == policy->min)
+> -		return;
+> -
+> -	/*
+> -	 * The optimal frequency is the frequency that is the lowest that can
+> -	 * support the current CPU usage without triggering the up policy. To be
+> -	 * safe, we focus 10 points under the threshold.
+> -	 */
+> -	if (load_freq < od_tuners->adj_up_threshold
+> -			* policy->cur) {
+> +	} else {
+> +		/* Calculate the next frequency proportional to load */
+>  		unsigned int freq_next;
+> -		freq_next = load_freq / od_tuners->adj_up_threshold;
+> +		freq_next = load * policy->max / 100;
 
-Oh, it is my fault, I miss the "1 (NUL)".
+Can you please explain why this is the right formula?
 
-> 	*5 = 50 bytes
-> 	+2 (for the two brackets when i == 0) = 52 bytes
-> 	+1 (this is for the "bad PC value") = 53 bytes
-> 
-> In the worst case (when the PC is bad) we print:
-> 
-> 	"%08x " x4 = (8 + 1 + 1) *4 = 40 bytes
+>  		/* No longer fully busy, reset rate_mult */
+>  		dbs_info->rate_mult = 1;
+> @@ -372,9 +356,6 @@ static ssize_t store_up_threshold(struct dbs_data *dbs_data, const char *buf,
+>  			input < MIN_FREQUENCY_UP_THRESHOLD) {
+>  		return -EINVAL;
+>  	}
+> -	/* Calculate the new adj_up_threshold */
+> -	od_tuners->adj_up_threshold += input;
+> -	od_tuners->adj_up_threshold -= od_tuners->up_threshold;
+>  
+>  	od_tuners->up_threshold = input;
+>  	return count;
+> @@ -523,8 +504,6 @@ static int od_init(struct dbs_data *dbs_data)
+>  	if (idle_time != -1ULL) {
+>  		/* Idle micro accounting is supported. Use finer thresholds */
+>  		tuners->up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
+> -		tuners->adj_up_threshold = MICRO_FREQUENCY_UP_THRESHOLD -
+> -			MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
+>  		/*
+>  		 * In nohz/micro accounting case we set the minimum frequency
+>  		 * not depending on HZ, but fixed (very low). The deferred
+> @@ -533,8 +512,6 @@ static int od_init(struct dbs_data *dbs_data)
+>  		dbs_data->min_sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
+>  	} else {
+>  		tuners->up_threshold = DEF_FREQUENCY_UP_THRESHOLD;
+> -		tuners->adj_up_threshold = DEF_FREQUENCY_UP_THRESHOLD -
+> -			DEF_FREQUENCY_DOWN_DIFFERENTIAL;
+>  
+>  		/* For correct statistics, we need 10 ticks for each measure */
+>  		dbs_data->min_sampling_rate = MIN_SAMPLING_RATE_RATIO *
 
-Actually, it is 36 bytes, for sprintf() return the length excluding NUL.
+Overall it looks like an improvement.
 
-  (although, we still need notice the last NUL)
-
-
-> 	"bad PC value" = 12 + 1 = 13 bytes
-> 
-> so again, 53 bytes.
->
-
-So again, 49 bytes. ;-)
+Thanks,
+Rafael
 
 
-> .. or have I missed a character somewhere?
-> 
-
-NO, I missed characters, but you 'find' more characters. :-)
-
-
-All together, this patch is incorrect, original implementation will not
-cause issue.
-
-
-Thanks
 -- 
-Chen Gang
-
-Asianux Corporation
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
