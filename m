@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401Ab3E1OpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:45:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934359Ab3E1OpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:45:20 -0400
-Date: Tue, 28 May 2013 10:44:47 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130528144447.GE7088@redhat.com>
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130524143644.GD18218@redhat.com>
- <20130524170626.2ac06efe@holzheu>
- <20130524152849.GF18218@redhat.com>
- <87mwrkatgu.fsf@xmission.com>
- <51A006CF.90105@gmail.com>
- <87k3mnahkf.fsf@xmission.com>
- <51A076FE.3060604@gmail.com>
- <20130525145217.0549138a@holzheu>
+	id S934416Ab3E1OqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:46:00 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53040 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934359Ab3E1Op7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 10:45:59 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 28 May 2013 07:46:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [GIT PULL] hwmon fixes for 3.10-rc2
+Message-ID: <20130528144624.GA20979@roeck-us.net>
+References: <20130515133311.GA14411@roeck-us.net>
+ <20130517115640.GA15916@roeck-us.net>
+ <CAADWXX-LBwadvbDjPv2sN50BzcGjeewQGCYuz1Cy1-vadWznNg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130525145217.0549138a@holzheu>
+In-Reply-To: <CAADWXX-LBwadvbDjPv2sN50BzcGjeewQGCYuz1Cy1-vadWznNg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 02:52:17PM +0200, Michael Holzheu wrote:
+On Tue, May 28, 2013 at 06:25:55AM -0700, Linus Torvalds wrote:
+> I'm going through my spam-box, and find this. Guenter, I don't know what
+> you've done to piss off gmail, but you should take a look at your email
+> setup, because if gmail thinks you send spam, I'll have a hard time ever
+> seeing your messages (and I don't go through spam very often)
+> 
+Guess that explains it. Thanks a lot for the note.
 
-[..]
-> Therefore, if necessary, IMHO we can switch to the ELF header memory
-> swap mechanism for s390 in the kernel. Of course we would then also
-> have to adjust the (disabled) kexec code.
+Too much spam out there lately, and small providers (like mine) get caught in
+the middle. I tried AT&T / Yahoo, but they tend to reject patch series
+as spam. So looks like I am caught between a rock and a hard place. On top
+of that there is Google and its policies, which seem to target small providers;
+I can not send any e-mail to a Google recipient (anyone@google.com) when using
+my primary provider. One has to wonder if there is a conflict of interest
+somewhere.
 
-I think it is a good idea to fix it in s390 kernel so that
-copy_oldmem_page() does not do any swapping and fix the ELF header
-generation logic and any swapping is done in ELF headers.
+Guenter
 
-Agreed that we need to fixed s390 kexec-tools too. I guess our best
-bet would be to parse the kernel version and fix headers only for
-newer kernel versions. This assumes that first kernel and second kernel
-are same but that's the case for majority of the people anyway. So for
-majority of people, change will be backward compatible.
-
-Thanks
-Vivek
+>           Linus
+> 
+> 
+> On Fri, May 17, 2013 at 4:56 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > Hi Linus,
+> >
+> > I noticed that you did not pull this series of patches.
+> >
+> > Did it get lost, is something wrong with it, or am I just impatient ?
+> >
+> > Thanks,
+> > Guenter
+> >
+> > On Wed, May 15, 2013 at 06:33:11AM -0700, Guenter Roeck wrote:
+> > > Hi Linus,
+> > >
+> > > Please pull hwmon fixes for Linux 3.10-rc2 from signed tag:
+> > >
+> > >     git://
+> > git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.githwmon-for-linus
+> > >
+> > > Thanks,
+> > > Guenter
+> > > ------
+> > >
+> > > The following changes since commit
+> > f722406faae2d073cc1d01063d1123c35425939e:
+> > >
+> > >   Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+> > >
+> > > are available in the git repository at:
+> > >
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.gittags/hwmon-for-linus
+> > >
+> > > for you to fetch changes up to ecacb0b17c08fae89f65468727f0e4b8e91da4e1:
+> > >
+> > >   hwmon: fix error return code in abituguru_probe() (2013-05-13 08:07:13
+> > -0700)
+> > >
+> > > ----------------------------------------------------------------
+> > > Error path fixes for abituguru and iio_hwmon drivers.
+> > > Drop erroneously created attributes from nct6775 driver.
+> > >
+> > > ----------------------------------------------------------------
+> > > Axel Lin (2):
+> > >       hwmon: (iio_hwmon) Fix missing iio_channel_release_all call if
+> > devm_kzalloc fail
+> > >       hwmon: (iio_hwmon) Fix null pointer dereference
+> > >
+> > > Guenter Roeck (1):
+> > >       hwmon: (nct6775) Do not create non-existing attributes
+> > >
+> > > Wei Yongjun (1):
+> > >       hwmon: fix error return code in abituguru_probe()
+> > >
+> > >  drivers/hwmon/abituguru.c |   16 ++++++++++------
+> > >  drivers/hwmon/iio_hwmon.c |    8 +++++---
+> > >  drivers/hwmon/nct6775.c   |    6 ++++--
+> > >  3 files changed, 19 insertions(+), 11 deletions(-)
+> >
+> >
+> >
+> > > _______________________________________________
+> > > lm-sensors mailing list
+> > > lm-sensors@lm-sensors.org
+> > > http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
+> >
+> >
