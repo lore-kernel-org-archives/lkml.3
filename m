@@ -1,151 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886Ab3E1Rna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:43:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964784Ab3E1Rn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:43:28 -0400
-Date: Tue, 28 May 2013 14:43:05 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
-        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
-        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-Message-ID: <20130528174304.GD11614@optiplex.redhat.com>
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
- <20130527224149.GA4384@electric-eye.fr.zoreil.com>
- <51A4D4AD.2010507@candelatech.com>
- <20130528161518.GC11614@optiplex.redhat.com>
- <1369758577.3301.543.camel@edumazet-glaptop>
+	id S964925Ab3E1RqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:46:08 -0400
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:52952
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964871Ab3E1RqE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 13:46:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1155h)
+Date: Tue, 28 May 2013 12:45:38 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+CC: David Gibson <david@gibson.dropbear.id.au>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <51A2C888.4050704@ozlabs.ru> (from aik@ozlabs.ru on Sun May 26
+	21:44:24 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1369763138.18630.3@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-In-Reply-To: <1369758577.3301.543.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 09:29:37AM -0700, Eric Dumazet wrote:
-> On Tue, 2013-05-28 at 13:15 -0300, Rafael Aquini wrote:
+On 05/26/2013 09:44:24 PM, Alexey Kardashevskiy wrote:
+> On 05/25/2013 12:45 PM, David Gibson wrote:
+> > On Wed, May 22, 2013 at 04:06:57PM -0500, Scott Wood wrote:
+> >> On 05/20/2013 10:06:46 PM, Alexey Kardashevskiy wrote:
+> >>> diff --git a/arch/powerpc/kvm/powerpc.c  
+> b/arch/powerpc/kvm/powerpc.c
+> >>> index 8465c2a..da6bf61 100644
+> >>> --- a/arch/powerpc/kvm/powerpc.c
+> >>> @@ -396,6 +396,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> >>> +++ b/arch/powerpc/kvm/powerpc.c
+> >>> 		break;
+> >>> #endif
+> >>> 	case KVM_CAP_SPAPR_MULTITCE:
+> >>> +	case KVM_CAP_SPAPR_TCE_IOMMU:
+> >>> 		r = 1;
+> >>> 		break;
+> >>> 	default:
+> >>
+> >> Don't advertise SPAPR capabilities if it's not book3s -- and
+> >> probably there's some additional limitation that would be
+> >> appropriate.
+> >
+> > So, in the case of MULTITCE, that's not quite right.  PR KVM can
+> > emulate a PAPR system on a BookE machine, and there's no reason not  
+> to
+> > allow TCE acceleration as well.  We can't make it dependent on PAPR
+> > mode being selected, because that's enabled per-vcpu, whereas these
+> > capabilities are queried on the VM before the vcpus are created.
+> >
+> > CAP_SPAPR_TCE_IOMMU should be dependent on the presence of suitable
+> > host side hardware (i.e. a PAPR style IOMMU), though.
 > 
-> > The real problem seems to be that more and more the network stack (drivers, perhaps)
-> > is relying on chunks of contiguous page-blocks without a fallback mechanism to
-> > order-0 page allocations. When memory gets fragmented, these alloc failures
-> > start to pop up more often and they scare ordinary sysadmins out of their paints.
-> > 
 > 
-> Where do you see that ?
->
-> I see exactly the opposite trend. 
-> 
-> We have less and less buggy drivers, and we want to catch last
-> offenders.
-> 
+> The capability says that the ioctl is supported. If there is no IOMMU  
+> group
+> registered, than it will fail with a reasonable error and nobody gets  
+> hurt.
+> What is the problem?
 
-Perhaps the explanation is because we're looking into old stuff bad effects,
-then. But just to list a few for your appreciation:
---------------------------------------------------------
-Apr 23 11:25:31 217-IDC kernel: httpd: page allocation failure. order:1,
-mode:0x20 Apr 23 11:25:31 217-IDC kernel: Pid: 19747, comm: httpd Not tainted
-2.6.32-358.2.1.el6.x86_64 #1 Apr 23 11:25:31 217-IDC kernel: Call Trace: Apr 23
-11:25:31 217-IDC kernel: <IRQ> [<ffffffff8112c207>] ?
-__alloc_pages_nodemask+0x757/0x8d0 Apr 23 11:25:31 217-IDC kernel:
-[<ffffffffa0337361>] ? bond_start_xmit+0x2f1/0x5d0 [bonding]
-....
---------------------------------------------------------
-Apr  4 18:51:32 exton kernel: swapper: page allocation failure. order:1,
-mode:0x20
-Apr  4 18:51:32 exton kernel: Pid: 0, comm: swapper Not tainted
-2.6.32-279.19.1.el6.x86_64 #1
-Apr  4 18:51:32 exton kernel: Call Trace:
-Apr  4 18:51:32 exton kernel: <IRQ>  [<ffffffff811231ff>] ?
-__alloc_pages_nodemask+0x77f/0x940
-Apr  4 18:51:32 exton kernel: [<ffffffff8115d1a2>] ? kmem_getpages+0x62/0x170
-Apr  4 18:51:32 exton kernel: [<ffffffff8115ddba>] ? fallback_alloc+0x1ba/0x270
-Apr  4 18:51:32 exton kernel: [<ffffffff8115d80f>] ? cache_grow+0x2cf/0x320
-Apr  4 18:51:32 exton kernel: [<ffffffff8115db39>] ?
-____cache_alloc_node+0x99/0x160
-Apr  4 18:51:32 exton kernel: [<ffffffff8115ed00>] ?
-kmem_cache_alloc_node_trace+0x90/0x200
-Apr  4 18:51:32 exton kernel: [<ffffffff8115ef1d>] ? __kmalloc_node+0x4d/0x60
-Apr  4 18:51:32 exton kernel: [<ffffffff8141ea1d>] ? __alloc_skb+0x6d/0x190
-Apr  4 18:51:32 exton kernel: [<ffffffff8141eb5d>] ? dev_alloc_skb+0x1d/0x40
-Apr  4 18:51:32 exton kernel: [<ffffffffa04f5f50>] ?
-ipoib_cm_alloc_rx_skb+0x30/0x430 [ib_ipoib]
-Apr  4 18:51:32 exton kernel: [<ffffffffa04f71ef>] ?
-ipoib_cm_handle_rx_wc+0x29f/0x770 [ib_ipoib]
-Apr  4 18:51:32 exton kernel: [<ffffffffa03c6a46>] ? mlx4_ib_poll_cq+0x2c6/0x7f0
-[mlx4_ib]
-....
---------------------------------------------------------
-May 14 09:00:34 ifil03 kernel: swapper: page allocation failure. order:1,
-mode:0x20
-May 14 09:00:34 ifil03 kernel: Pid: 0, comm: swapper Not tainted
-2.6.32-220.el6.x86_64 #1
-May 14 09:00:34 ifil03 kernel: Call Trace:
-May 14 09:00:34 ifil03 kernel: <IRQ>  [<ffffffff81123f0f>] ?
-__alloc_pages_nodemask+0x77f/0x940
-May 14 09:00:34 ifil03 kernel: [<ffffffff8115ddc2>] ? kmem_getpages+0x62/0x170
-May 14 09:00:34 ifil03 kernel: [<ffffffff8115e9da>] ? fallback_alloc+0x1ba/0x270
-May 14 09:00:34 ifil03 kernel: [<ffffffff8115e42f>] ? cache_grow+0x2cf/0x320
-May 14 09:00:34 ifil03 kernel: [<ffffffff8115e759>] ?
-____cache_alloc_node+0x99/0x160
-May 14 09:00:34 ifil03 kernel: [<ffffffff8115f53b>] ?
-kmem_cache_alloc+0x11b/0x190
-May 14 09:00:34 ifil03 kernel: [<ffffffff8141f528>] ? sk_prot_alloc+0x48/0x1c0
-May 14 09:00:34 ifil03 kernel: [<ffffffff8141f7b2>] ? sk_clone+0x22/0x2e0
-May 14 09:00:34 ifil03 kernel: [<ffffffff8146ca26>] ? inet_csk_clone+0x16/0xd0
-May 14 09:00:34 ifil03 kernel: [<ffffffff814858f3>] ?
-tcp_create_openreq_child+0x23/0x450
-May 14 09:00:34 ifil03 kernel: [<ffffffff814832dd>] ?
-tcp_v4_syn_recv_sock+0x4d/0x2a0
-May 14 09:00:34 ifil03 kernel: [<ffffffff814856b1>] ? tcp_check_req+0x201/0x420
-May 14 09:00:34 ifil03 kernel: [<ffffffff8147b166>] ?
-tcp_rcv_state_process+0x116/0xa30
-May 14 09:00:34 ifil03 kernel: [<ffffffff81482cfb>] ? tcp_v4_do_rcv+0x35b/0x430
-May 14 09:00:34 ifil03 kernel: [<ffffffff81484471>] ? tcp_v4_rcv+0x4e1/0x860
-May 14 09:00:34 ifil03 kernel: [<ffffffff814621fd>] ?
-ip_local_deliver_finish+0xdd/0x2d0
-May 14 09:00:34 ifil03 kernel: [<ffffffff81462488>] ? ip_local_deliver+0x98/0xa0
-May 14 09:00:34 ifil03 kernel: [<ffffffff8146194d>] ? ip_rcv_finish+0x12d/0x440
-May 14 09:00:34 ifil03 kernel: [<ffffffff8101bd86>] ?
-intel_pmu_enable_all+0xa6/0x150
-May 14 09:00:34 ifil03 kernel: [<ffffffff81461ed5>] ? ip_rcv+0x275/0x350
-May 14 09:00:34 ifil03 kernel: [<ffffffff8142bedb>] ?
-__netif_receive_skb+0x49b/0x6e0
-May 14 09:00:34 ifil03 kernel: [<ffffffff8142df88>] ?
-netif_receive_skb+0x58/0x60
-May 14 09:00:34 ifil03 kernel: [<ffffffffa00a0a9e>] ?
-vmxnet3_rq_rx_complete+0x36e/0x880 [vmxnet3]
-....
---------------------------------------------------------
+You could say that about a lot of the capabilities that just advertise  
+the existence of new ioctls. :-)
 
+Sometimes it's nice to know in advance whether it's supported, before  
+actually requesting that something happen.
 
- 
-> > The big point of this change was to attempt to relief some of these warnings 
-> > which we believed as being useless, since the net stack would recover from it
-> > by re-transmissions.
-> > We might have misjudged the scenario, though. Perhaps a better approach would be
-> > making the warning less verbose for all page-alloc failures. We could, perhaps,
-> > only print a stack-dump out, if some debug flag is passed along, either as
-> > reference, or by some CONFIG_DEBUG_ preprocessor directive.
+> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
+> >>> #define KVM_GET_DEVICE_ATTR	  _IOW(KVMIO,  0xe2, struct
+> >>> kvm_device_attr)
+> >>> #define KVM_HAS_DEVICE_ATTR	  _IOW(KVMIO,  0xe3, struct
+> >>> kvm_device_attr)
+> >>>
+> >>> +/* ioctl for SPAPR TCE IOMMU */
+> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
+> >>> kvm_create_spapr_tce_iommu)
+> >>
+> >> Shouldn't this go under the vm ioctl section?
 > 
 > 
-> warn_alloc_failed() uses the standard DEFAULT_RATELIMIT_INTERVAL which
-> is very small (5 * HZ)
-> 
-> I would bump nopage_rs to somethin more reasonable, like one hour or one
-> day.
->
+> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated  
+> devices) is
+> in this section so I decided to keep them together. Wrong?
 
-Neat! Worth to try, no doubts about that. Aaron?
+You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with  
+KVM_CREATE_SPAPR_TCE_IOMMU?
 
-Cheers!
--- Rafael 
+-Scott
