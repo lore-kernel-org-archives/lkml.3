@@ -1,36 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307Ab3E1AMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 20:12:14 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:33655 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758258Ab3E1AMN (ORCPT
+	id S1758318Ab3E1A0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 20:26:25 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53449 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758252Ab3E1A0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 20:12:13 -0400
-Message-ID: <1369699930.3301.494.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
+	Mon, 27 May 2013 20:26:23 -0400
+Message-ID: <1369700781.3301.497.camel@edumazet-glaptop>
+Subject: Re: [PATCH v5 net-next 2/5] net: implement support for low latency
+ socket polling
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Mon, 27 May 2013 17:12:10 -0700
-In-Reply-To: <51A39E11.5020405@yandex-team.ru>
-References: <519B8908.9080007@yandex-team.ru>
-	 <1369150693.3301.233.camel@edumazet-glaptop>
-	 <519BB90B.6080706@yandex-team.ru>
-	 <1369188080.3301.268.camel@edumazet-glaptop>
-	 <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru>
-	 <1369225837.3301.324.camel@edumazet-glaptop>
-	 <519CC2FB.2010006@yandex-team.ru>
-	 <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>
-	 <20130525113715.GA3795@linux.vnet.ibm.com>
-	 <51A39E11.5020405@yandex-team.ru>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 27 May 2013 17:26:21 -0700
+In-Reply-To: <20130527074411.29882.88391.stgit@ladj378.jer.intel.com>
+References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>
+	 <20130527074411.29882.88391.stgit@ladj378.jer.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -39,63 +33,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-27 at 21:55 +0400, Roman Gushchin wrote:
-> Hi, Paul!
-> 
-> > On 25.05.2013 15:37, Paul E. McKenney wrote:
-> >> Again, I believe that your retry logic needs to extend back into the
-> >> calling function for your some_func() example above.
-> 
-> And what do you think about the following approach (diff below)?
-> 
-> It seems to me, it's enough clear (especially with good accompanying comments)
-> and produces a good binary code (without significant overhead).
-> Also, we will remove a hidden reef in using rcu-protected (h)list traverses with restarts.
-> 
+On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
 
-> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> index 2ae1371..4af5ee5 100644
-> --- a/include/linux/rculist_nulls.h
-> +++ b/include/linux/rculist_nulls.h
-> @@ -107,7 +107,8 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
->    *
->    */
->   #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
-> -       for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
-> +       for (ACCESS_ONCE(*(head)),                                              \
-> +               pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));         \
->                  (!is_a_nulls(pos)) &&                                           \
->                  ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
->                  pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+> diff --git a/include/net/sock.h b/include/net/sock.h
+> index 66772cf..c7c3ea6 100644
+> --- a/include/net/sock.h
+> +++ b/include/net/sock.h
+> @@ -281,6 +281,7 @@ struct cg_proto;
+>    *	@sk_error_report: callback to indicate errors (e.g. %MSG_ERRQUEUE)
+>    *	@sk_backlog_rcv: callback to process the backlog
+>    *	@sk_destruct: called at sock freeing time, i.e. when all refcnt == 0
+> +  *	@sk_napi_id: id of the last napi context to receive data for sk
+>   */
+>  struct sock {
+>  	/*
+> @@ -399,6 +400,9 @@ struct sock {
+>  	int			(*sk_backlog_rcv)(struct sock *sk,
+>  						  struct sk_buff *skb);
+>  	void                    (*sk_destruct)(struct sock *sk);
+> +#ifdef CONFIG_NET_LL_RX_POLL
+> +	unsigned int		sk_napi_id;
+> +#endif
+>  };
 
-It looks like this still relies on gcc being friendly here.
+I believe this is a bad choice for data locality.
 
-I repeat again : @head here is a constant.
+I would rather move it in the same cache line than sk_rxhash
 
-Macro already uses ACCESS_ONCE(), we only have to instruct gcc that
-caching the value is forbidden if we restart the loop 
-(aka "goto begin;" see Documentation/RCU/rculist_nulls.txt line 146)
-
-Adding a barrier() is probably what we want.
-
-I cooked followed patch and it fixes the problem.
-
-diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-index 2ae1371..4dc51b2 100644
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -105,8 +105,12 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_nulls_node within the struct.
-  *
-+ * The barrier() is needed to make sure compiler doesn't cache first element,
-+ * as this loop can be restarted.
-+ * (cf Documentation/RCU/rculist_nulls.txt around line 146)
-  */
- #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
-+	barrier();								\
- 	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
- 		(!is_a_nulls(pos)) &&						\
- 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
 
 
