@@ -1,147 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934737Ab3E1V1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:27:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53598 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934555Ab3E1V1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934581Ab3E1V1p (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 28 May 2013 17:27:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jonas Heinrich <onny@project-insanity.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, len.brown@intel.com, pavel@ucw.cz,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
-Date: Tue, 28 May 2013 23:36:37 +0200
-Message-ID: <2675025.1aYjLKmY02@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1536388.1prjkW6Efo@vostro.rjw.lan>
-References: <20130218155439.GA902@onny> <20130503110705.GA3828@onny.Speedport_W_700V> <1536388.1prjkW6Efo@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Received: from youngberry.canonical.com ([91.189.89.112]:59875 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934340Ab3E1V0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 17:26:37 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 49/78] tracing: Fix leaks of filter preds
+Date: Tue, 28 May 2013 14:19:58 -0700
+Message-Id: <1369776027-17859-50-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 03, 2013 01:37:45 PM Rafael J. Wysocki wrote:
-> On Friday, May 03, 2013 11:07:05 AM Jonas Heinrich wrote:
-> > On 05-03 01:29, Rafael J. Wysocki wrote:
-> > > On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
-> > > > On 05-02 02:45, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
-> > > > > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
-> > > > > > > Well, you could give me instructions on how to debug this (I'll do 
-> > > > > > > everything ;)) or I could ship you the Thinkpad T43. I guess this
-> > > > > > > would worth the effort since this bug is somehow critical.
-> > > > > > > 
-> > > > > > > Best regards, Jonas
-> > > > > > 
-> > > > > > I'll put together a debug patch unless I can trick Rafael into doing
-> > > > > > it first...
-> > > > > 
-> > > > > I'm afraid that code has changed quite a bit since I looked at it last time.
-> > > > > [Jarkko Sakkinen seems to have worked on it lately, CCed.]
-> > > > > 
-> > > > > Jonas, I wonder what happens if you drop the first hunk of the patch (it just
-> > > > > uses a different register, which shouldn't matter)?  Does it still help then?
-> > > > 
-> > > > Hello Rafel, first of all, thank you for helping me out :)
-> > > > You're right, the patch still solves the suspend bug, after removing the first 
-> > > > hunk of the patch and applying it (see attachement:
-> > > > suspendfix_first_hunk_dropped.patch).
-> > > > 
-> > > > > 
-> > > > > If so, there are still a few things you can do to it, e.g:
-> > > > > (1) drop the
-> > > > > 
-> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
-> > > > > -       jnc     1f
-> > > > > 
-> > > > 
-> > > > Still works :) (used suspendfix_1.patch)
-> > > > 
-> > > > > lines,
-> > > > > (2) drop the
-> > > > > 
-> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
-> > > > > -       jnc     1f
-> > > > > 
-> > > > > lines,
-> > > > 
-> > > > Still works :) (used suspendfix_2.patch)
-> > > > 
-> > > > > (3) drop the
-> > > > > 
-> > > > > +       jecxz   1f
-> > > > > 
-> > > > 
-> > > > Still works :) (used suspendfix_3.patch)
-> > > > 
-> > > > > line,
-> > > > > (4) drop the
-> > > > > 
-> > > > > +       movl    %eax, %ecx
-> > > > > +       orl     %edx, %ecx
-> > > > > +       jz      1f
-> > > > > 
-> > > > 
-> > > > At this point, the bug reoccurs (used suspendfix_4.patch)! 
-> > > > But that doesn't mean these lines are the only critical, because the more
-> > > > minimal patch
-> > > > 
-> > > > @@ -119,6 +119,9 @@
-> > > >         jnc     1f
-> > > >         movl    pmode_efer, %eax
-> > > >         movl    pmode_efer + 4, %edx
-> > > > +       movl    %eax, %ecx
-> > > > +       orl     %edx, %ecx
-> > > > +       jz      1f
-> > > >         movl    $MSR_EFER, %ecx
-> > > >         wrmsr
-> > > >  1:
-> > > > 
-> > > > 
-> > > > with removing this part
-> > > > 
-> > > > -       movl    pmode_cr4, %eax
-> > > > -       movl    %eax, %cr4
-> > > > +       movl    pmode_cr4, %ecx
-> > > > +       movl    %ecx, %cr4
-> > > > 
-> > > > also doesn't fix the issue (see suspendfix_5.patch).
-> > > > 
-> > > > > lines and see what the minimal patch needed for things to work again is.
-> > > > > 
-> > > > 
-> > > > So the most minimal working patch is suspendfix_3.patch.
-> > > 
-> > > Thanks for doing that detective work!
-> > > 
-> > > The only explanation of why this particular patch can help that seems viable to
-> > > us at the moment is that we have a memory corruption in the code region modified
-> > > by it and the patch simply changes the alignment of the instructions that don't
-> > > get corrupted.
-> > > 
-> > > It looks like this may be verified by putting a bunch of nops into the region
-> > > in question, so can you please check if the attached patch helps too?
-> > 
-> > Unfortunately, your attached patch doesn't seem to fix the bug. 
-> > Hope you still have some ideas to address this issue :)
-> 
-> Well, not really.
-> 
-> We'll need a dump of the wakeup structure from your system I suppose.
-> I'll try to write a patch to get that over the weekend.
+3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Can you try 3.10-rc3 by the way?  There is a fix in there that *might* make
-a difference (although the odds are quite significant).
+------------------
 
-Thanks,
-Rafael
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
+commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
 
+Special preds are created when folding a series of preds that
+can be done in serial. These are allocated in an ops field of
+the pred structure. But they were never freed, causing memory
+leaks.
+
+This was discovered using the kmemleak checker:
+
+unreferenced object 0xffff8800797fd5e0 (size 32):
+  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
+  hex dump (first 32 bytes):
+    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
+    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
+    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
+    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
+    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
+    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
+    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
+    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
+    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
+    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
+    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
+    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
+    [<ffffffffffffffff>] 0xffffffffffffffff
+
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ kernel/trace/trace_events_filter.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index e5b0ca8..5a8a53e 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -777,7 +777,11 @@ static int filter_set_pred(struct event_filter *filter,
+ 
+ static void __free_preds(struct event_filter *filter)
+ {
++	int i;
++
+ 	if (filter->preds) {
++		for (i = 0; i < filter->n_preds; i++)
++			kfree(filter->preds[i].ops);
+ 		kfree(filter->preds);
+ 		filter->preds = NULL;
+ 	}
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.2
+
