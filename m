@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab3E1R3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:29:17 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:40816 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964786Ab3E1R3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:29:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130528164801.GA2345@srcf.ucam.org>
-References: <1369215782-32697-1-git-send-email-matt@console-pimps.org>
- <CAErSpo4id0RFARD6zCxeMo-uasPBnL7KpUFPqhW4zLgCxrF5fw@mail.gmail.com>
- <20130528113617.GR14575@console-pimps.org> <CAErSpo5DG61wvQEw_9z8vm6Lp=E0urq6LG5SOuWSawkNeDkF+A@mail.gmail.com>
- <20130528164801.GA2345@srcf.ucam.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 28 May 2013 11:28:54 -0600
-Message-ID: <CAErSpo5kxE=KgCV+H9=paaRXS1tOxhSD8qRf+nsn8PBMRiGRsA@mail.gmail.com>
-Subject: Re: [PATCH] x86/PCI: setup data may be in highmem
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S964823Ab3E1R3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:29:46 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45241 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964786Ab3E1R3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 13:29:45 -0400
+Message-ID: <1369762185.22004.54.camel@joe-AO722>
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+From: Joe Perches <joe@perches.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
+        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
+        riel@redhat.com, aquini@redhat.com, sergei.shtylyov@cogentembedded.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 May 2013 10:29:45 -0700
+In-Reply-To: <51A4D4AD.2010507@candelatech.com>
+References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
+	 <20130527224149.GA4384@electric-eye.fr.zoreil.com>
+	 <51A4D4AD.2010507@candelatech.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 10:48 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, May 28, 2013 at 10:31:51AM -0600, Bjorn Helgaas wrote:
->> On Tue, May 28, 2013 at 5:36 AM, Matt Fleming <matt@console-pimps.org> wrote:
->> > On Fri, 24 May, at 08:38:10AM, Bjorn Helgaas wrote:
->> >> pcibios_add_device() is mostly called at boot-time, when
->> >> early_ioremap() probably works well.  But it's also called when we
->> >> hot-add devices later, and it looks like early_ioremap() will then
->> >> generate warnings because "system_state != SYSTEM_BOOTING".
->> >
->> > Oops. Good point. Is there any reason we can't use ioremap()?
->>
->> I assume Matthew had some reason for avoiding that in the first place,
->> so I hope he'll chime in.
->
-> I have no recollection of why I did it that way. If this is all
-> happening late enough for ioremap() to work then that sounds fine.
+On Tue, 2013-05-28 at 09:00 -0700, Ben Greear wrote:
+> On 05/27/2013 03:41 PM, Francois Romieu wrote:
+> > atomlin@redhat.com <atomlin@redhat.com> :
+> > [...]
+> >> Failed GFP_ATOMIC allocations by the network stack result in dropped
+> >> packets, which will be received on a subsequent retransmit, and an
+> >> unnecessary, noisy warning with a kernel backtrace.
+[]
+> > Please don't paper over it just because some shit ends in your backyard.
+> We should rate-limit these messages at least.
 
-OK, hopefully somebody will do the analysis to verify that ioremap()
-is appropriate in both cases.  It seems likely, but I haven't looked
-in detail.
+Already done.
+Look in mm/page_alloc:warn_alloc_failed()
 
-Bjorn
+void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+{
+	unsigned int filter = SHOW_MEM_FILTER_NODES;
+
+	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs) ||
+	    debug_guardpage_minorder() > 0)
+		return;
+
+
