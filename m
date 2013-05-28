@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3E1VWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:22:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59545 "EHLO
+	id S1757450Ab3E1VWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:22:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59547 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757057Ab3E1VVW (ORCPT
+	with ESMTP id S1757067Ab3E1VVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 May 2013 17:21:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Dan Williams <dcbw@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 13/78] ath9k: fix key allocation error handling for powersave keys
-Date: Tue, 28 May 2013 14:19:22 -0700
-Message-Id: <1369776027-17859-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 21/78] qmi_wwan, cdc-ether: add ADU960S
+Date: Tue, 28 May 2013 14:19:30 -0700
+Message-Id: <1369776027-17859-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,54 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 upstream.
+commit 45d213f5f8733ab4b5b2424b21c0034d54c5a866 upstream.
 
-If no keycache slots are available, ath_key_config can return -ENOSPC.
-If the key index is not checked for errors, it can lead to logspam that
-looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
-This can cause follow-up errors if the invalid keycache index gets
-used for tx.
+It advertises a standard CDC-ETHER interface, which actually should be
+driven by qmi_wwan.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: selected for 3.8 stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/main.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/net/usb/cdc_ether.c | 7 +++++++
+ drivers/net/usb/qmi_wwan.c  | 7 +++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index dd91f8f..a929adc 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1236,6 +1236,7 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
- 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
- 	struct ieee80211_key_conf ps_key = { };
-+	int key;
+diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+index 3f3d12d..57136dc 100644
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -615,6 +615,13 @@ static const struct usb_device_id	products [] = {
+ 	.driver_info = 0,
+ },
  
- 	ath_node_attach(sc, sta, vif);
++/* AnyDATA ADU960S - handled by qmi_wwan */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(0x16d5, 0x650a, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = 0,
++},
++
+ /*
+  * WHITELIST!!!
+  *
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index b69ca0f..968d5d5 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -392,6 +392,13 @@ static const struct usb_device_id products[] = {
+ 					      USB_CDC_PROTO_NONE),
+ 		.driver_info        = (unsigned long)&qmi_wwan_info,
+ 	},
++	{	/* ADU960S */
++		USB_DEVICE_AND_INTERFACE_INFO(0x16d5, 0x650a,
++					      USB_CLASS_COMM,
++					      USB_CDC_SUBCLASS_ETHERNET,
++					      USB_CDC_PROTO_NONE),
++		.driver_info        = (unsigned long)&qmi_wwan_info,
++	},
  
-@@ -1243,7 +1244,9 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
- 	    vif->type != NL80211_IFTYPE_AP_VLAN)
- 		return 0;
- 
--	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
-+	key = ath_key_config(common, vif, sta, &ps_key);
-+	if (key > 0)
-+		an->ps_key = key;
- 
- 	return 0;
- }
-@@ -1260,6 +1263,7 @@ static void ath9k_del_ps_key(struct ath_softc *sc,
- 	    return;
- 
- 	ath_key_delete(common, &ps_key);
-+	an->ps_key = 0;
- }
- 
- static int ath9k_sta_remove(struct ieee80211_hw *hw,
+ 	/* 3. Combined interface devices matching on interface number */
+ 	{QMI_FIXED_INTF(0x0408, 0xea42, 4)},	/* Yota / Megafon M100-1 */
 -- 
 1.8.1.2
 
