@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab3E1MPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 08:15:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37203 "EHLO mga09.intel.com"
+	id S933844Ab3E1MSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 08:18:55 -0400
+Received: from 8bytes.org ([85.214.48.195]:58993 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933730Ab3E1MPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 08:15:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
-   d="scan'208";a="320703809"
-Message-ID: <51A49FDC.2020608@linux.intel.com>
-Date: Tue, 28 May 2013 15:15:24 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S933730Ab3E1MSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 08:18:54 -0400
+Date: Tue, 28 May 2013 14:18:50 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: suravee.suthikulpanit@amd.com
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 2/2 V3] perf/x86/amd: AMD IOMMU PC PERF uncore PMU
+ implementation
+Message-ID: <20130528121850.GC2575@8bytes.org>
+References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>, Dave Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v5 net-next 3/5] tcp: add TCP support for low latency
- receive poll.
-References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>  <20130527074421.29882.73968.stgit@ladj378.jer.intel.com> <1369701413.3301.506.camel@edumazet-glaptop> <51A46A21.9060305@linux.intel.com>
-In-Reply-To: <51A46A21.9060305@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue May 28 14:18:51 2013
+X-DSPAM-Confidence: 0.9996
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51a4a0ab20861693417632
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/05/2013 11:26, Eliezer Tamir wrote:
-> On 28/05/2013 03:36, Eric Dumazet wrote:
->> On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
->>>   #include <net/netdma.h>
->>>   #include <net/secure_seq.h>
->>>   #include <net/tcp_memcontrol.h>
->>> +#include <net/ll_poll.h>
->>>
->>>   #include <linux/inet.h>
->>>   #include <linux/ipv6.h>
->>> @@ -2011,6 +2012,7 @@ process:
->>>       if (sk_filter(sk, skb))
->>>           goto discard_and_relse;
->>>
->>> +    sk_mark_ll(sk, skb);
->>>       skb->dev = NULL;
->>>
->>>       bh_lock_sock_nested(sk);
->>
->> How IPv6 is handled ?
+On Fri, May 17, 2013 at 02:43:32PM -0500, Suthikulpanit, Suravee wrote:
+> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> index b0684e4..fcbd3b8 100644
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -30,7 +30,7 @@ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
+>  obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+>  
+>  ifdef CONFIG_PERF_EVENTS
+> -obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o
+> +obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o perf_event_amd_iommu.o
 
-It turns out that adding TCPv6/UDPv6 is very simple.
-I will add them, with a warning that I only did very limited testing.
+This should also depend on CONFIG_AMD_IOMMU. If no IOMMU driver is
+compiled in it doesn't make sense to have that PMU.
 
--Eliezer
+> +static int perf_iommu_event_init(struct perf_event *event)
+> +{
+> +	struct hw_perf_event *hwc = &event->hw;
+> +	struct perf_amd_iommu *perf_iommu;
+> +	u64 config, config1;
+> +
+> +	/* test the event attr type check for PMU enumeration */
+> +	if (event->attr.type != event->pmu->type)
+> +		return -ENOENT;
+> +
+> +	/*
+> +	 * IOMMU counters are shared across all cores.
+> +	 * Therefore, it does not support per-process mode.
+> +	 * Also, it does not support event sampling mode.
+> +	 */
+> +	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
+> +		return -EINVAL;
+> +
+> +	/* IOMMU counters do not have usr/os/guest/host bits */
+> +	if (event->attr.exclude_user || event->attr.exclude_kernel ||
+> +	    event->attr.exclude_host || event->attr.exclude_guest)
+> +		return -EINVAL;
+> +
+> +	if (event->cpu < 0)
+> +		return -EINVAL;
+> +
+> +	perf_iommu = &__perf_iommu;
+> +
+> +	if (event->pmu != &perf_iommu->pmu)
+> +		return -ENOENT;
+> +
+> +	if (perf_iommu) {
+> +		config = event->attr.config;
+> +		config1 = event->attr.config1;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* integrate with iommu base devid (0000), assume one iommu */
+> +	perf_iommu->max_banks =
+> +		amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID);
+> +	perf_iommu->max_counters =
+> +		amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID);
+> +
+> +	/* update the hw_perf_event struct with the iommu config data */
+> +	hwc->config = config;
+> +	hwc->extra_reg.config = config1;
+> +
+> +	return 0;
+> +}
+
+That implementation is very basic. Any reason for not using the event
+reporting mechanism of the IOMMU? You could implement a nice perf
+iommutop or something to see which devices do the most transactions or
+something like that.
+
+
+	Joerg
+
+
