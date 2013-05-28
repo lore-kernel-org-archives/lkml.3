@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab3E1VYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:24:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59611 "EHLO
+	id S1758393Ab3E1VYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:24:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59640 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab3E1VYF (ORCPT
+	with ESMTP id S932389Ab3E1VYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:05 -0400
+	Tue, 28 May 2013 17:24:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Drake <dsd@laptop.org>, "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 26/78] mwifiex: fix setting of multicast filter
-Date: Tue, 28 May 2013 14:19:35 -0700
-Message-Id: <1369776027-17859-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 43/78] ARM: 7720/1: ARM v6/v7 cmpxchg64 shouldn't clear upper 32 bits of the old/new value
+Date: Tue, 28 May 2013 14:19:52 -0700
+Message-Id: <1369776027-17859-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,68 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
 
-commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 upstream.
+commit 6eabb3301b1facee669d9938f7c5a0295c21d71d upstream.
 
-A small bug in this code was causing the ALLMULTI filter to be set
-when in fact we were just wanting to program a selective multicast list
-to the hardware.
+The implementation of cmpxchg64() for the ARM v6 and v7 architecture
+casts parameter 2 and 3 (the old and new 64bit values) to an unsigned
+long before calling the atomic_cmpxchg64() function. This clears
+the top 32 bits of the old and new values, resulting in the wrong
+values being compare-exchanged. Luckily, this only appears to be used
+for 64-bit sched_clock, which we don't (yet) have on ARM.
 
-Fix that bug and remove a redundant if condition in the code that
-follows.
+This bug was introduced by commit 3e0f5a15f500 ("ARM: 7404/1: cmpxchg64:
+use atomic64 and local64 routines for cmpxchg64").
 
-This fixes wakeup behaviour when multicast WOL is enabled. Previously,
-all multicast packets would wake up the system. Now, only those that the
-host intended to receive trigger wakeups.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/mwifiex/sta_ioctl.c | 21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
+ arch/arm/include/asm/cmpxchg.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
-index 1798bc7..902330c 100644
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -99,7 +99,7 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 	} else {
- 		/* Multicast */
- 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
--		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
-+		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
- 			dev_dbg(priv->adapter->dev,
- 				"info: Enabling All Multicast!\n");
- 			priv->curr_pkt_filter |=
-@@ -111,20 +111,11 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 				dev_dbg(priv->adapter->dev,
- 					"info: Set multicast list=%d\n",
- 				       mcast_list->num_multicast_addr);
--				/* Set multicast addresses to firmware */
--				if (old_pkt_filter == priv->curr_pkt_filter) {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				} else {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				}
-+				/* Send multicast addresses to firmware */
-+				ret = mwifiex_send_cmd_async(priv,
-+					HostCmd_CMD_MAC_MULTICAST_ADR,
-+					HostCmd_ACT_GEN_SET, 0,
-+					mcast_list);
- 			}
- 		}
- 	}
+diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
+index 7eb18c1..4f009c1 100644
+--- a/arch/arm/include/asm/cmpxchg.h
++++ b/arch/arm/include/asm/cmpxchg.h
+@@ -233,15 +233,15 @@ static inline unsigned long __cmpxchg_local(volatile void *ptr,
+ 	((__typeof__(*(ptr)))atomic64_cmpxchg(container_of((ptr),	\
+ 						atomic64_t,		\
+ 						counter),		\
+-					      (unsigned long)(o),	\
+-					      (unsigned long)(n)))
++					      (unsigned long long)(o),	\
++					      (unsigned long long)(n)))
+ 
+ #define cmpxchg64_local(ptr, o, n)					\
+ 	((__typeof__(*(ptr)))local64_cmpxchg(container_of((ptr),	\
+ 						local64_t,		\
+ 						a),			\
+-					     (unsigned long)(o),	\
+-					     (unsigned long)(n)))
++					     (unsigned long long)(o),	\
++					     (unsigned long long)(n)))
+ 
+ #endif	/* __LINUX_ARM_ARCH__ >= 6 */
+ 
 -- 
 1.8.1.2
 
