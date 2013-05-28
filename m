@@ -1,196 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab3E1LOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:14:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56259 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab3E1LOv (ORCPT
+	id S1758964Ab3E1LUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:20:52 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:30606 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758697Ab3E1LUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:14:51 -0400
-Message-ID: <51A491A3.5080702@canonical.com>
-Date: Tue, 28 May 2013 19:14:43 +0800
-From: Bruce <bruce.ma@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 28 May 2013 07:20:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,757,1363132800"; 
+   d="scan'208";a="26379483"
+Date: Tue, 28 May 2013 12:08:59 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>, <xen-devel@lists.xensource.com>
+Subject: Re: [GIT PULL for 3.11] arm: introduce psci_smp_ops
+In-Reply-To: <alpine.DEB.2.02.1305281205500.4799@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305281208010.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305211522120.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305281205500.4799@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: platform-driver-x86@vger.kernel.org
-CC: ibm-acpi-devel@lists.sourceforge.net,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] subsystem:  thinkpad-acpi.c
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Sorry for the noise, I have seen now that you pulled
+3.10-rc2-psci-ops-11-tag into "devel-stable".
 
-from: Bruce Ma
+Thanks,
 
-For some specific model of laptop, don't execute any led functions.
-
-Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
-- ---
-
-- --- old/thinkpad_acpi.c    2013-01-29 16:54:34.000000000 +0800
-+++ src/thinkpad_acpi.c    2013-01-29 16:52:46.000000000 +0800
-@@ -1787,6 +1787,90 @@ static const struct tpacpi_quirk tpacpi_
- #undef TPV_Q_X
- #undef TPV_Q
- +/*
-+check tpacpi_check_model()
-+
-+ * Model Name   , Number Model Name
-+ * Lenovo LM490s, 814YG01
-+
-+ "dmesg | grep thinkpad_acpi" shows:
-+ thinkpad_acpi: Lenovo Lenovo LM490s,      model 814YG01
-+
-+ How to add new model to blacklist:
-+ Add these lines like below into lenovo_blacklist[].
-+   {
-+    .model_s = "Lenovo K490s",
-+    .nummodel_s = "814YJ01",
-+   },
-+ */
-+
-+unsigned int no_led = 0 ;
-+
-+struct blacklist {
-+  struct list_head blist;
-+  char *model_s;
-+  char *nummodel_s;
-+};
-+
-+struct blacklist led_blacklist = {
-+  .model_s = NULL,
-+  .nummodel_s = NULL,
-+};
-+
-+struct blacklist lenovo_blacklist[] = {
-+  {
-+    .model_s = "Lenovo LM490s",
-+    .nummodel_s = "814YG01",
-+  },
-+  {
-+    .model_s = "ThinkPad Edge E430",
-+    .nummodel_s = "3254TNU",
-+  },
-+  {
-+    .model_s = "LENOVO",
-+    .nummodel_s = "914TK01",
-+  },
-+  {
-+    .model_s = "ThinkPad Twist",
-+    .nummodel_s = "334724C",
-+  },
-+  {
-+    .model_s = "Lenovo M490s",
-+    .nummodel_s = "914YG01",
-+  },
-+  {
-+    .model_s = "Lenovo K490s",
-+    .nummodel_s = "814YJ01",
-+  },
-+};
-+
-+static int __init tpacpi_check_model(void)
-+{
-+  unsigned int i ;
-+  struct blacklist *list_p;
-+
-+  /* If thinkpad_id.nummodel_str is "unkown". */
-+  if (!thinkpad_id.nummodel_str) {
-+    return 1;
-+  }
-+
-+  INIT_LIST_HEAD(&led_blacklist.blist);
-+
-+  for(i = 0; i < ARRAY_SIZE(lenovo_blacklist) ; i++) {
-+    INIT_LIST_HEAD(&lenovo_blacklist[i].blist);
-+    list_add(&lenovo_blacklist[i].blist, &led_blacklist.blist);
-+  }
-+
-+  list_for_each_entry(list_p,&led_blacklist.blist,blist) {
-+    if (!strcmp(list_p->model_s,thinkpad_id.model_str)
-+                  &&
-!strcmp(list_p->nummodel_s,thinkpad_id.nummodel_str)) {
-+      no_led = 1;
-+      pr_info("Disable led support for this model.\n");
-+    }
-+  }
-+  return 0;
-+}
-+
- static void __init tpacpi_check_outdated_fw(void)
- {
-     unsigned long fwvers;
-@@ -5235,6 +5319,10 @@ static enum led_brightness led_sysfs_get
-  static void led_exit(void)
- {
-+        if (no_led == 1 ) {
-+                 return 0;
-+  }
-+
-     unsigned int i;
-      for (i = 0; i < TPACPI_LED_NUMLEDS; i++) {
-@@ -5349,6 +5437,10 @@ static enum led_access_mode __init led_i
-  static int __init led_init(struct ibm_init_struct *iibm)
- {
-+        if (no_led == 1 ) {
-+           return 0;
-+        }
-+
-     unsigned int i;
-     int rc;
-     unsigned long useful_leds;
-@@ -5397,6 +5489,10 @@ static int __init led_init(struct ibm_in
-  static int led_read(struct seq_file *m)
- {
-+        if (no_led == 1 ) {
-+                return 0;
-+        }
-+
-     if (!led_supported) {
-         seq_printf(m, "status:\t\tnot supported\n");
-         return 0;
-@@ -5423,6 +5519,10 @@ static int led_read(struct seq_file *m)
-  static int led_write(char *buf)
- {
-+        if (no_led == 1 ) {
-+                return 0;
-+        }
-+
-     char *cmd;
-     int led, rc;
-     enum led_status_t s;
-@@ -9031,6 +9131,9 @@ static int __init thinkpad_acpi_module_i
-     /* Driver initialization */
-      thinkpad_acpi_init_banner();
-+
-+    tpacpi_check_model();
-+
-     tpacpi_check_outdated_fw();
-      TPACPI_ACPIHANDLE_INIT(ecrd);
+Stefano
 
 
-
-- ---
-Bruce Ma
-May 28,2013
-
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJRpJGjAAoJEFnPatyLvGg1rnMIAKqffR2XgBQfIaUv+Zqa3OE4
-38KGwctvA/qxiFHtxQ7sMJFiiQ01/WskfCVJeWgkh7bDtJt14/Nd5bpCEnjHDBSZ
-byqcziONeGt5o1yAXRAP2artuPwpIrdoRK3WYY9ODK+wJBFMb2wEc4EUuyfT5RAM
-ASNzal+UjZyqL/UT9vfwtiN4OxuIlJ2BHeTP8jRElYZux2nEUvjtP0Wqwq7Otybc
-ud6/p+Ldn1OOEJt+2sBBzdDo75mjOrewJxIsdZyHZoNnXPPZLnftvCM/k/mkEVw4
-+ElZEDDVJWKGHqzqiHPKnaJRCqrnEw3t1u1C5hEK7hGn/PVtdYflV78CoimGG5Q=
-=nLc0
------END PGP SIGNATURE-----
+On Tue, 28 May 2013, Stefano Stabellini wrote:
+> ping?
+> 
+> 
+> On Tue, 21 May 2013, Stefano Stabellini wrote:
+> > Russell,
+> > please pull (based on v3.10-rc2):
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.10-rc2-psci-ops-11-tag
+> > 
+> > 
+> > It contains the generic PSCI patch and the smp_init patch that we
+> > discussed so much about.
+> > I think it would be helpful for other people if you could create a
+> > stable branch with these patches so that SoC devs can base their work on
+> > it.
+> > 
+> > 
+> > Jon Medhurst (1):
+> >       ARM: Enable selection of SMP operations at boot time
+> > 
+> > Stefano Stabellini (1):
+> >       arm: introduce psci_smp_ops
+> > 
+> >  arch/arm/include/asm/mach/arch.h |    5 ++
+> >  arch/arm/include/asm/psci.h      |    9 ++++
+> >  arch/arm/kernel/Makefile         |    5 ++-
+> >  arch/arm/kernel/psci.c           |    7 +--
+> >  arch/arm/kernel/psci_smp.c       |   84 ++++++++++++++++++++++++++++++++++++++
+> >  arch/arm/kernel/setup.c          |    9 ++++-
+> >  arch/arm/mach-virt/Makefile      |    1 -
+> >  arch/arm/mach-virt/platsmp.c     |   50 ----------------------
+> >  arch/arm/mach-virt/virt.c        |    3 -
+> >  9 files changed, 113 insertions(+), 60 deletions(-)
+> >  create mode 100644 arch/arm/kernel/psci_smp.c
+> >  delete mode 100644 arch/arm/mach-virt/platsmp.c
+> > 
+> 
