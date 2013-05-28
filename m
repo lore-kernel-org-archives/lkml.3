@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab3E1VY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:24:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59683 "EHLO
+	id S932820Ab3E1VZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:25:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59709 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab3E1VYy (ORCPT
+	with ESMTP id S932747Ab3E1VZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:54 -0400
+	Tue, 28 May 2013 17:25:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 76/78] xfrm6: release dev before returning error
-Date: Tue, 28 May 2013 14:20:25 -0700
-Message-Id: <1369776027-17859-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 69/78] virtio: don't expose u16 in userspace api
+Date: Tue, 28 May 2013 14:20:18 -0700
+Message-Id: <1369776027-17859-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -29,39 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <amwang@redhat.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit 84c4a9dfbf430861e7588d95ae3ff61535dca351 ]
+[ Upstream commit 77d21f23a1e4db8639e3916547c903a3b3c7a07c ]
 
-We forget to call dev_put() on error path in xfrm6_fill_dst(),
-its caller doesn't handle this.
+Programs using virtio headers outside of kernel will no longer
+build because u16 type does not exist in userspace. All user ABI
+must use __u16 typedef instead.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
+Bug introduce by:
+  commit 986a4f4d452dec004697f667439d27c3fda9c928
+  Author: Jason Wang <jasowang@redhat.com>
+  Date:   Fri Dec 7 07:04:56 2012 +0000
+
+    virtio_net: multiqueue support
+
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/xfrm6_policy.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/uapi/linux/virtio_net.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/xfrm6_policy.c b/net/ipv6/xfrm6_policy.c
-index 8f32718..0ee0ab5 100644
---- a/net/ipv6/xfrm6_policy.c
-+++ b/net/ipv6/xfrm6_policy.c
-@@ -103,8 +103,10 @@ static int xfrm6_fill_dst(struct xfrm_dst *xdst, struct net_device *dev,
- 	dev_hold(dev);
+diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
+index 848e358..f3857ff 100644
+--- a/include/uapi/linux/virtio_net.h
++++ b/include/uapi/linux/virtio_net.h
+@@ -185,7 +185,7 @@ struct virtio_net_ctrl_mac {
+  * specified.
+  */
+ struct virtio_net_ctrl_mq {
+-	u16 virtqueue_pairs;
++	__u16 virtqueue_pairs;
+ };
  
- 	xdst->u.rt6.rt6i_idev = in6_dev_get(dev);
--	if (!xdst->u.rt6.rt6i_idev)
-+	if (!xdst->u.rt6.rt6i_idev) {
-+		dev_put(dev);
- 		return -ENODEV;
-+	}
- 
- 	rt6_transfer_peer(&xdst->u.rt6, rt);
- 
+ #define VIRTIO_NET_CTRL_MQ   4
 -- 
 1.8.1.2
 
