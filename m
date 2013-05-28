@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934820Ab3E1Q3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:29:41 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:50356 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934660Ab3E1Q3j (ORCPT
+	id S934775Ab3E1QcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:32:14 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:40227 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934675Ab3E1QcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:29:39 -0400
-Message-ID: <1369758577.3301.543.camel@edumazet-glaptop>
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
-        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
-        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 28 May 2013 09:29:37 -0700
-In-Reply-To: <20130528161518.GC11614@optiplex.redhat.com>
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
-	 <20130527224149.GA4384@electric-eye.fr.zoreil.com>
-	 <51A4D4AD.2010507@candelatech.com>
-	 <20130528161518.GC11614@optiplex.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 28 May 2013 12:32:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130528113617.GR14575@console-pimps.org>
+References: <1369215782-32697-1-git-send-email-matt@console-pimps.org>
+ <CAErSpo4id0RFARD6zCxeMo-uasPBnL7KpUFPqhW4zLgCxrF5fw@mail.gmail.com> <20130528113617.GR14575@console-pimps.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 28 May 2013 10:31:51 -0600
+Message-ID: <CAErSpo5DG61wvQEw_9z8vm6Lp=E0urq6LG5SOuWSawkNeDkF+A@mail.gmail.com>
+Subject: Re: [PATCH] x86/PCI: setup data may be in highmem
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 13:15 -0300, Rafael Aquini wrote:
+On Tue, May 28, 2013 at 5:36 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Fri, 24 May, at 08:38:10AM, Bjorn Helgaas wrote:
+>> pcibios_add_device() is mostly called at boot-time, when
+>> early_ioremap() probably works well.  But it's also called when we
+>> hot-add devices later, and it looks like early_ioremap() will then
+>> generate warnings because "system_state != SYSTEM_BOOTING".
+>
+> Oops. Good point. Is there any reason we can't use ioremap()?
 
-> The real problem seems to be that more and more the network stack (drivers, perhaps)
-> is relying on chunks of contiguous page-blocks without a fallback mechanism to
-> order-0 page allocations. When memory gets fragmented, these alloc failures
-> start to pop up more often and they scare ordinary sysadmins out of their paints.
-> 
-
-Where do you see that ?
-
-I see exactly the opposite trend. 
-
-We have less and less buggy drivers, and we want to catch last
-offenders.
-
-> The big point of this change was to attempt to relief some of these warnings 
-> which we believed as being useless, since the net stack would recover from it
-> by re-transmissions.
-> We might have misjudged the scenario, though. Perhaps a better approach would be
-> making the warning less verbose for all page-alloc failures. We could, perhaps,
-> only print a stack-dump out, if some debug flag is passed along, either as
-> reference, or by some CONFIG_DEBUG_ preprocessor directive.
-
-
-warn_alloc_failed() uses the standard DEFAULT_RATELIMIT_INTERVAL which
-is very small (5 * HZ)
-
-I would bump nopage_rs to somethin more reasonable, like one hour or one
-day.
-
-
-
-
+I assume Matthew had some reason for avoiding that in the first place,
+so I hope he'll chime in.
