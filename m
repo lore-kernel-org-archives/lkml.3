@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab3E1XPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:15:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42951 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758468Ab3E1XPF (ORCPT
+	id S1759262Ab3E1XRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:17:43 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:59521 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759091Ab3E1XRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:15:05 -0400
-Message-ID: <1369782894.21216.25.camel@smoke>
-Subject: Re: [PATCH 20/21] powerpc/ps3: remove inline marking of
- EXPORT_SYMBOL functions
-From: Geoff Levand <geoff@infradead.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Denis Efremov <yefremov.denis@gmail.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <trivial@kernel.org>, ldv-project@linuxtesting.org
-Date: Tue, 28 May 2013 16:14:54 -0700
-In-Reply-To: <CAMuHMdUU5+WJnYER8kO2Ne2iaBQESYp_bbBMTLDvTEJchDu15A@mail.gmail.com>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
-	 <1368095819-11011-9-git-send-email-yefremov.denis@gmail.com>
-	 <CAMuHMdUU5+WJnYER8kO2Ne2iaBQESYp_bbBMTLDvTEJchDu15A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 28 May 2013 19:17:41 -0400
+Date: Tue, 28 May 2013 16:17:40 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dianders@chromium.org, patches@linaro.org
+Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen
+ board
+Message-ID: <20130528231740.GA28879@quad.lixom.net>
+References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
+ <87sj1qzaov.fsf@linaro.org>
+ <5191AA89.6010901@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5191AA89.6010901@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Fri, 2013-05-17 at 18:05 +0200, Geert Uytterhoeven wrote:
-> On Thu, May 9, 2013 at 12:36 PM, Denis Efremov <yefremov.denis@gmail.com> wrote:
-> > -inline u64 ps3_get_spe_id(void *arg)
-> > +u64 ps3_get_spe_id(void *arg)
-> >  {
-> >         return spu_pdata(arg)->spe_id;
-> >  }
+On Tue, May 14, 2013 at 08:37:53AM +0530, Tushar Behera wrote:
+> On 05/14/2013 05:36 AM, Kevin Hilman wrote:
+> > Tushar Behera <tushar.behera@linaro.org> writes:
+> > 
+> >> It updates following drivers for EXYNOS based DT platform.
+> >>
+> >> * S5M8767 driver
+> >> * MAX8997 driver
+> >> * MMC SDHCI driver
+> >>
+> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> > 
+> > I tested this using v3.10-rc1 on Arndale, but still don't get any
+> > support for the wired network.  Do you know if this is a Kconfig issue,
+> > or a missing driver?
+> > 
+> > I suspect it may be related to the various "unable to find transceiver
+> > of type USB2 PHY" messages I'm seeing?
+> > 
 > 
-> FYI, this symbol is not used in mainline.
+> Yes, right. The missing USB-PHY components are one of the issues (they
+> were there in linux-next when I last tested).
 > 
-> IIRC, it's used for profiling only. Any chance the profile code will
-> ever make it
-> in mainline?
+> Also, on Arndale board, we need to reset the USB hub during EHCI
+> initialization (a couple of those patches are required, which I am not
+> sure if we would be able to upstream).
+> 
+> I am collecting a minimal set of patches that would enable USB and wired
+> network on Arndale with 3.10-rc1 kernel. Once done, I will let you know.
 
-As I announced (below), I dropped the profiling patches since
-ps3-queue-v3.8.
+Hi Tushar,
 
-The profiling code does not use ps3_get_spe_id(), so I think we should
-remove it.  I'll submit a patch.
-
--Geoff
-
--------- Forwarded Message --------
-From: Geoff Levand <geoff@infradead.org>
-To: cbe-oss-dev@lists.ozlabs.org
-Subject: Dropping PS3 oprofile support in v3.8
-Date: Wed, 13 Feb 2013 17:30:39 -0800
-
-Hi All,
-
-I'll be dropping the PS3 oprofile patches from my ps3-linux git tree
-from linux-3.8.  These are the patches: 
-
- 7f02610 ps3-debugging: Add oprofile test script
- 49213b6 powerpc/ps3: PS3 oprofile support
- aee2985 powerpc/ps3: Add ps3 pmu platform routines
- 531c3f4 powerpc/ps3: Rearrange order of lpm routines
- 9d8a7d3 powerpc/cell: Add pmu platform abstraction
- 6865b99 powerpc/cell: Rearrange order of pmu routines
-
-These patches will still be available in the ps3-queue-v3.7 and earlier
-branches for anyone who wants them.
-
--Geoff
+Got an update on what these patches are yet?
 
 
-
+-Olof
 
