@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab3E1IZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:25:20 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:61933 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab3E1IZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:25:18 -0400
-Date: Tue, 28 May 2013 10:25:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: luto@amacapital.net, linux-kernel@vger.kernel.org, x86@kernel.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 0/5] x86: oops on uaccess faults outside of user addresses
-Message-ID: <20130528082514.GA29730@gmail.com>
-References: <cover.1369177867.git.luto@amacapital.net>
- <20130522.142847.791230763817666795.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933522Ab3E1IZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:25:36 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:46176 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390Ab3E1IZb convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
+	Tue, 28 May 2013 04:25:31 -0400
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 May 2013 04:25:31 EDT
+Message-Id: <51A484C1020000A100011125@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 28 May 2013 10:19:45 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: bad time after boot (read from absent hardware?): "Time:
+ 165:165:165  Date: 165/165/65"
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130522.142847.791230763817666795.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-* David Miller <davem@davemloft.net> wrote:
+Some time ago I discovered strange output in boot messages, just as if the kernel trusts junk from hardware that is not present, like the RTC in a paravirtualized Xen guest (the guest has no /dev/rtc*). The message says:
+<6>[    0.123524] Time: 165:165:165  Date: 165/165/65
 
-> Please don't mix networking and non-networking changes into a patch
-> series.
+Obviously, if there were some validity check, this wouldn't pass, so I guess there is none!
 
-As explained in 0/5 the networking fix justifies the first 4 patches. The 
-networking fix is independent of the first 4 patches.
+In Xen's message buffer (hypervisor) I only see this error (that seems unrelated):
+(XEN) mm.c:833:d6 Non-privileged (6) attempt to map I/O space 000000f0
 
-> Submit the networking patch to netdev@vger.kernel.org
+According to my source code the print originates from read_magic_time() in /drivers/base/power/trace.c.
 
-He Cc:-ed the patch to netdev@vger.kernel.org. If you agree with it then 
-the fix should probably be picked up ASAP.
+I'm running kernel 3.0.74-0.6.8-xen (SLES11 SP2) on x86_64.
 
-Thanks,
+Regards,
+Ulrich
 
-	Ingo
+
