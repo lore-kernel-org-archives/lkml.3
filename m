@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495Ab3E1Ot1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:49:27 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46501 "EHLO
+	id S934481Ab3E1OtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:49:25 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46503 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934359Ab3E1OtV (ORCPT
+	with ESMTP id S934408Ab3E1OtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:49:21 -0400
-Subject: [PATCH v4 3/4] mutex: Add ww tests to lib/locking-selftest.c. v4
+	Tue, 28 May 2013 10:49:22 -0400
+Subject: [PATCH v4 4/4] mutex: w/w mutex slowpath debugging
 To: linux-kernel@vger.kernel.org
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: linux-arch@vger.kernel.org, peterz@infradead.org, x86@kernel.org,
         dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         robclark@gmail.com, rostedt@goodmis.org, daniel@ffwll.ch,
         tglx@linutronix.de, mingo@elte.hu, linux-media@vger.kernel.org
-Date: Tue, 28 May 2013 16:48:45 +0200
-Message-ID: <20130528144845.4538.93485.stgit@patser>
+Date: Tue, 28 May 2013 16:48:51 +0200
+Message-ID: <20130528144851.4538.75070.stgit@patser>
 In-Reply-To: <20130528144420.4538.70725.stgit@patser>
 References: <20130528144420.4538.70725.stgit@patser>
 User-Agent: StGit/0.15
@@ -26,506 +26,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This stresses the lockdep code in some ways specifically useful to
-ww_mutexes. It adds checks for most of the common locking errors.
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Changes since v1:
- - Add tests to verify reservation_id is untouched.
- - Use L() and U() macros where possible.
+Injects EDEADLK conditions at pseudo-random interval, with exponential
+backoff up to UINT_MAX (to ensure that every lock operation still
+completes in a reasonable time).
 
-Changes since v2:
- - Use the ww_mutex api directly.
- - Use macros for most of the code.
-Changes since v3:
- - Rework tests for the api changes.
+This way we can test the wound slowpath even for ww mutex users where
+contention is never expected, and the ww deadlock avoidance algorithm
+is only needed for correctness against malicious userspace. An example
+would be protecting kernel modesetting properties, which thanks to
+single-threaded X isn't really expected to contend, ever.
 
+I've looked into using the CONFIG_FAULT_INJECTION infrastructure, but
+decided against it for two reasons:
+
+- EDEADLK handling is mandatory for ww mutex users and should never
+  affect the outcome of a syscall. This is in contrast to -ENOMEM
+  injection. So fine configurability isn't required.
+
+- The fault injection framework only allows to set a simple
+  probability for failure. Now the probability that a ww mutex acquire
+  stage with N locks will never complete (due to too many injected
+  EDEADLK backoffs) is zero. But the expected number of ww_mutex_lock
+  operations for the completely uncontended case would be O(exp(N)).
+  The per-acuiqire ctx exponential backoff solution choosen here only
+  results in O(log N) overhead due to injection and so O(log N * N)
+  lock operations. This way we can fail with high probability (and so
+  have good test coverage even for fancy backoff and lock acquisition
+  paths) without running into patalogical cases.
+
+Note that EDEADLK will only ever be injected when we managed to
+acquire the lock. This prevents any behaviour changes for users which
+rely on the EALREADY semantics.
+
+v2: Drop the cargo-culted __sched (I should read docs next time
+around) and annotate the non-debug case with inline to prevent gcc
+from doing something horrible.
+
+v3: Rebase on top of Maarten's latest patches.
+
+v4: Actually make this stuff compile, I've misplace the hunk in the
+wrong #ifdef block.
+
+v5: Simplify ww_mutex_deadlock_injection definition, and fix
+lib/locking-selftest.c warnings. Fix lib/Kconfig.debug definition
+to work correctly. (mlankhorst)
+
+v6:
+Do not inject -EDEADLK when ctx->acquired == 0, because
+the _slow paths are merged now. (mlankhorst)
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- lib/locking-selftest.c |  405 ++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 386 insertions(+), 19 deletions(-)
+ include/linux/mutex.h  |    8 ++++++++
+ kernel/mutex.c         |   44 +++++++++++++++++++++++++++++++++++++++++---
+ lib/Kconfig.debug      |   13 +++++++++++++
+ lib/locking-selftest.c |    5 +++++
+ 4 files changed, 67 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index f3ad181..2ff9178 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -95,6 +95,10 @@ struct ww_acquire_ctx {
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map dep_map;
+ #endif
++#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
++	unsigned deadlock_inject_interval;
++	unsigned deadlock_inject_countdown;
++#endif
+ };
+ 
+ struct ww_mutex {
+@@ -280,6 +284,10 @@ static inline void ww_acquire_init(struct ww_acquire_ctx *ctx,
+ 			 &ww_class->acquire_key, 0);
+ 	mutex_acquire(&ctx->dep_map, 0, 0, _RET_IP_);
+ #endif
++#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
++	ctx->deadlock_inject_interval = 1;
++	ctx->deadlock_inject_countdown = ctx->stamp & 0xf;
++#endif
+ }
+ 
+ /**
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 75fc7c4..e40004b 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -508,22 +508,60 @@ mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
+ 
++static inline int
++ww_mutex_deadlock_injection(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
++	unsigned tmp;
++
++	if (ctx->deadlock_inject_countdown-- == 0) {
++		tmp = ctx->deadlock_inject_interval;
++		if (tmp > UINT_MAX/4)
++			tmp = UINT_MAX;
++		else
++			tmp = tmp*2 + tmp + tmp/2;
++
++		ctx->deadlock_inject_interval = tmp;
++		ctx->deadlock_inject_countdown = tmp;
++		ctx->contending_lock = lock;
++
++		ww_mutex_unlock(lock);
++
++		return -EDEADLK;
++	}
++#endif
++
++	return 0;
++}
+ 
+ int __sched
+ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ {
++	int ret;
++
+ 	might_sleep();
+-	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
++	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
+ 				   0, &ctx->dep_map, _RET_IP_, ctx);
++	if (!ret && ctx->acquired > 0)
++		return ww_mutex_deadlock_injection(lock, ctx);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__ww_mutex_lock);
+ 
+ int __sched
+ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ {
++	int ret;
++
+ 	might_sleep();
+-	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
+-				   0, &ctx->dep_map, _RET_IP_, ctx);
++	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
++				  0, &ctx->dep_map, _RET_IP_, ctx);
++
++	if (!ret && ctx->acquired > 0)
++		return ww_mutex_deadlock_injection(lock, ctx);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 28be08c..06538ee 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -547,6 +547,19 @@ config DEBUG_MUTEXES
+ 	 This feature allows mutex semantics violations to be detected and
+ 	 reported.
+ 
++config DEBUG_WW_MUTEX_SLOWPATH
++	bool "Wait/wound mutex debugging: Slowpath testing"
++	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
++	select DEBUG_LOCK_ALLOC
++	select DEBUG_SPINLOCK
++	select DEBUG_MUTEXES
++	help
++	 This feature enables slowpath testing for w/w mutex users by
++	 injecting additional -EDEADLK wound/backoff cases. Together with
++	 the full mutex checks enabled with (CONFIG_PROVE_LOCKING) this
++	 will test all possible w/w mutex interface abuse with the
++	 exception of simply not acquiring all the required locks.
++
+ config DEBUG_LOCK_ALLOC
+ 	bool "Lock debugging: detect incorrect freeing of live locks"
+ 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
 diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index c3eb261..b18f1d3 100644
+index b18f1d3..7f0bacc 100644
 --- a/lib/locking-selftest.c
 +++ b/lib/locking-selftest.c
-@@ -26,6 +26,8 @@
-  */
- static unsigned int debug_locks_verbose;
- 
-+static DEFINE_WW_CLASS(ww_lockdep);
-+
- static int __init setup_debug_locks_verbose(char *str)
- {
- 	get_option(&str, &debug_locks_verbose);
-@@ -42,6 +44,10 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
- #define LOCKTYPE_RWLOCK	0x2
- #define LOCKTYPE_MUTEX	0x4
- #define LOCKTYPE_RWSEM	0x8
-+#define LOCKTYPE_WW	0x10
-+
-+static struct ww_acquire_ctx t, t2;
-+static struct ww_mutex o, o2;
- 
- /*
-  * Normal standalone locks, for the circular and irq-context
-@@ -193,6 +199,16 @@ static void init_shared_classes(void)
+@@ -199,7 +199,12 @@ static void init_shared_classes(void)
  #define RSU(x)			up_read(&rwsem_##x)
  #define RWSI(x)			init_rwsem(&rwsem_##x)
  
-+#define WWAI(x)			ww_acquire_init(x, &ww_lockdep)
-+#define WWAD(x)			ww_acquire_done(x)
-+#define WWAF(x)			ww_acquire_fini(x)
-+
-+#define WWL(x, c)		ww_mutex_lock(x, c)
-+#define WWT(x)			ww_mutex_trylock(x)
-+#define WWL1(x)			ww_mutex_lock(x, NULL)
-+#define WWU(x)			ww_mutex_unlock(x)
-+
-+
- #define LOCK_UNLOCK_2(x,y)	LOCK(x); LOCK(y); UNLOCK(y); UNLOCK(x)
- 
- /*
-@@ -894,11 +910,13 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- # define I_RWLOCK(x)	lockdep_reset_lock(&rwlock_##x.dep_map)
- # define I_MUTEX(x)	lockdep_reset_lock(&mutex_##x.dep_map)
- # define I_RWSEM(x)	lockdep_reset_lock(&rwsem_##x.dep_map)
-+# define I_WW(x)	lockdep_reset_lock(&x.dep_map)
- #else
- # define I_SPINLOCK(x)
- # define I_RWLOCK(x)
- # define I_MUTEX(x)
- # define I_RWSEM(x)
-+# define I_WW(x)
- #endif
- 
- #define I1(x)					\
-@@ -920,11 +938,20 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- static void reset_locks(void)
- {
- 	local_irq_disable();
-+	lockdep_free_key_range(&ww_lockdep.acquire_key, 1);
-+	lockdep_free_key_range(&ww_lockdep.mutex_key, 1);
-+
- 	I1(A); I1(B); I1(C); I1(D);
- 	I1(X1); I1(X2); I1(Y1); I1(Y2); I1(Z1); I1(Z2);
-+	I_WW(t); I_WW(t2); I_WW(o.base); I_WW(o2.base);
- 	lockdep_reset();
- 	I2(A); I2(B); I2(C); I2(D);
- 	init_shared_classes();
-+
-+	ww_mutex_init(&o, &ww_lockdep); ww_mutex_init(&o2, &ww_lockdep);
-+	memset(&t, 0, sizeof(t)); memset(&t2, 0, sizeof(t2));
-+	memset(&ww_lockdep.acquire_key, 0, sizeof(ww_lockdep.acquire_key));
-+	memset(&ww_lockdep.mutex_key, 0, sizeof(ww_lockdep.mutex_key));
- 	local_irq_enable();
- }
- 
-@@ -938,7 +965,6 @@ static int unexpected_testcase_failures;
- static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- {
- 	unsigned long saved_preempt_count = preempt_count();
--	int expected_failure = 0;
- 
- 	WARN_ON(irqs_disabled());
- 
-@@ -946,26 +972,16 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- 	/*
- 	 * Filter out expected failures:
- 	 */
-+	if (debug_locks != expected) {
- #ifndef CONFIG_PROVE_LOCKING
--	if ((lockclass_mask & LOCKTYPE_SPIN) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWLOCK) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_MUTEX) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWSEM) && debug_locks != expected)
--		expected_failure = 1;
-+		expected_testcase_failures++;
-+		printk("failed|");
++#ifndef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
+ #define WWAI(x)			ww_acquire_init(x, &ww_lockdep)
 +#else
-+		unexpected_testcase_failures++;
-+		printk("FAILED|");
++#define WWAI(x)			do { ww_acquire_init(x, &ww_lockdep); (x)->deadlock_inject_countdown = ~0U; } while (0)
 +
-+		dump_stack();
- #endif
--	if (debug_locks != expected) {
--		if (expected_failure) {
--			expected_testcase_failures++;
--			printk("failed|");
--		} else {
--			unexpected_testcase_failures++;
--
--			printk("FAILED|");
--			dump_stack();
--		}
- 	} else {
- 		testcase_successes++;
- 		printk("  ok  |");
-@@ -1108,6 +1124,355 @@ static inline void print_testname(const char *testname)
- 	DO_TESTCASE_6IRW(desc, name, 312);			\
- 	DO_TESTCASE_6IRW(desc, name, 321);
- 
-+static void ww_test_fail_acquire(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+	t.stamp++;
-+
-+	ret = WWL(&o, &t);
-+
-+	if (WARN_ON(!o.ctx) ||
-+	    WARN_ON(ret))
-+		return;
-+
-+	/* No lockdep test, pure API */
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret != -EALREADY);
-+
-+	ret = WWT(&o);
-+	WARN_ON(ret);
-+
-+	t2 = t;
-+	t2.stamp++;
-+	ret = WWL(&o, &t2);
-+	WARN_ON(ret != -EDEADLK);
-+	WWU(&o);
-+
-+	if (WWT(&o))
-+		WWU(&o);
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	else
-+		DEBUG_LOCKS_WARN_ON(1);
 +#endif
-+}
-+
-+static void ww_test_normal(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+
-+	/*
-+	 * test if ww_id is kept identical if not
-+	 * called with any of the ww_* locking calls
-+	 */
-+
-+	/* mutex_lock (and indirectly, mutex_lock_nested) */
-+	o.ctx = (void *)~0UL;
-+	mutex_lock(&o.base);
-+	mutex_unlock(&o.base);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+
-+	/* mutex_lock_interruptible (and *_nested) */
-+	o.ctx = (void *)~0UL;
-+	ret = mutex_lock_interruptible(&o.base);
-+	if (!ret)
-+		mutex_unlock(&o.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+
-+	/* mutex_lock_killable (and *_nested) */
-+	o.ctx = (void *)~0UL;
-+	ret = mutex_lock_killable(&o.base);
-+	if (!ret)
-+		mutex_unlock(&o.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+
-+	/* trylock, succeeding */
-+	o.ctx = (void *)~0UL;
-+	ret = mutex_trylock(&o.base);
-+	WARN_ON(!ret);
-+	if (ret)
-+		mutex_unlock(&o.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+
-+	/* trylock, failing */
-+	o.ctx = (void *)~0UL;
-+	mutex_lock(&o.base);
-+	ret = mutex_trylock(&o.base);
-+	WARN_ON(ret);
-+	mutex_unlock(&o.base);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+
-+	/* nest_lock */
-+	o.ctx = (void *)~0UL;
-+	mutex_lock_nest_lock(&o.base, &t);
-+	mutex_unlock(&o.base);
-+	WARN_ON(o.ctx != (void *)~0UL);
-+}
-+
-+static void ww_test_two_contexts(void)
-+{
-+	WWAI(&t);
-+	WWAI(&t2);
-+}
-+
-+static void ww_test_context_unlock_twice(void)
-+{
-+	WWAI(&t);
-+	WWAD(&t);
-+	WWAF(&t);
-+	WWAF(&t);
-+}
-+
-+static void ww_test_object_unlock_twice(void)
-+{
-+	WWL1(&o);
-+	WWU(&o);
-+	WWU(&o);
-+}
-+
-+static void ww_test_spin_nest_unlocked(void)
-+{
-+	raw_spin_lock_nest_lock(&lock_A, &o.base);
-+	U(A);
-+}
-+
-+static void ww_test_unneeded_slow(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+
-+	ww_mutex_lock_slow(&o, &t);
-+}
-+
-+static void ww_test_context_block(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret);
-+	WWL1(&o2);
-+}
-+
-+static void ww_test_context_try(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret);
-+
-+	ret = WWT(&o2);
-+	WARN_ON(!ret);
-+	WWU(&o2);
-+	WWU(&o);
-+}
-+
-+static void ww_test_context_context(void)
-+{
-+	int ret;
-+
-+	WWAI(&t);
-+
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret);
-+
-+	ret = WWL(&o2, &t);
-+	WARN_ON(ret);
-+
-+	WWU(&o2);
-+	WWU(&o);
-+}
-+
-+static void ww_test_try_block(void)
-+{
-+	bool ret;
-+
-+	ret = WWT(&o);
-+	WARN_ON(!ret);
-+
-+	WWL1(&o2);
-+	WWU(&o2);
-+	WWU(&o);
-+}
-+
-+static void ww_test_try_try(void)
-+{
-+	bool ret;
-+
-+	ret = WWT(&o);
-+	WARN_ON(!ret);
-+	ret = WWT(&o2);
-+	WARN_ON(!ret);
-+	WWU(&o2);
-+	WWU(&o);
-+}
-+
-+static void ww_test_try_context(void)
-+{
-+	int ret;
-+
-+	ret = WWT(&o);
-+	WARN_ON(!ret);
-+
-+	WWAI(&t);
-+
-+	ret = WWL(&o2, &t);
-+	WARN_ON(ret);
-+}
-+
-+static void ww_test_block_block(void)
-+{
-+	WWL1(&o);
-+	WWL1(&o2);
-+}
-+
-+static void ww_test_block_try(void)
-+{
-+	bool ret;
-+
-+	WWL1(&o);
-+	ret = WWT(&o2);
-+	WARN_ON(!ret);
-+}
-+
-+static void ww_test_block_context(void)
-+{
-+	int ret;
-+
-+	WWL1(&o);
-+	WWAI(&t);
-+
-+	ret = WWL(&o2, &t);
-+	WARN_ON(ret);
-+}
-+
-+static void ww_test_spin_block(void)
-+{
-+	L(A);
-+	U(A);
-+
-+	WWL1(&o);
-+	L(A);
-+	U(A);
-+	WWU(&o);
-+
-+	L(A);
-+	WWL1(&o);
-+	WWU(&o);
-+	U(A);
-+}
-+
-+static void ww_test_spin_try(void)
-+{
-+	bool ret;
-+
-+	L(A);
-+	U(A);
-+
-+	ret = WWT(&o);
-+	WARN_ON(!ret);
-+	L(A);
-+	U(A);
-+	WWU(&o);
-+
-+	L(A);
-+	ret = WWT(&o);
-+	WARN_ON(!ret);
-+	WWU(&o);
-+	U(A);
-+}
-+
-+static void ww_test_spin_context(void)
-+{
-+	int ret;
-+
-+	L(A);
-+	U(A);
-+
-+	WWAI(&t);
-+
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret);
-+	L(A);
-+	U(A);
-+	WWU(&o);
-+
-+	L(A);
-+	ret = WWL(&o, &t);
-+	WARN_ON(ret);
-+	WWU(&o);
-+	U(A);
-+}
-+
-+static void ww_tests(void)
-+{
-+	printk("  --------------------------------------------------------------------------\n");
-+	printk("  | Wound/wait tests |\n");
-+	printk("  ---------------------\n");
-+
-+	print_testname("ww api failures");
-+	dotest(ww_test_fail_acquire, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_normal, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_unneeded_slow, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("using two ww contexts");
-+	dotest(ww_test_two_contexts, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("finish ww context twice");
-+	dotest(ww_test_context_unlock_twice, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("unlock twice");
-+	dotest(ww_test_object_unlock_twice, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("spinlock nest unlocked");
-+	dotest(ww_test_spin_nest_unlocked, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	printk("  -----------------------------------------------------\n");
-+	printk("                                 |block | try  |context|\n");
-+	printk("  -----------------------------------------------------\n");
-+
-+	print_testname("context");
-+	dotest(ww_test_context_block, FAILURE, LOCKTYPE_WW);
-+	dotest(ww_test_context_try, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_context_context, SUCCESS, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("try");
-+	dotest(ww_test_try_block, FAILURE, LOCKTYPE_WW);
-+	dotest(ww_test_try_try, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_try_context, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("block");
-+	dotest(ww_test_block_block, FAILURE, LOCKTYPE_WW);
-+	dotest(ww_test_block_try, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_block_context, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+
-+	print_testname("spinlock");
-+	dotest(ww_test_spin_block, FAILURE, LOCKTYPE_WW);
-+	dotest(ww_test_spin_try, SUCCESS, LOCKTYPE_WW);
-+	dotest(ww_test_spin_context, FAILURE, LOCKTYPE_WW);
-+	printk("\n");
-+}
+ #define WWAD(x)			ww_acquire_done(x)
+ #define WWAF(x)			ww_acquire_fini(x)
  
- void locking_selftest(void)
- {
-@@ -1188,6 +1553,8 @@ void locking_selftest(void)
- 	DO_TESTCASE_6x2("irq read-recursion", irq_read_recursion);
- //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
- 
-+	ww_tests();
-+
- 	if (unexpected_testcase_failures) {
- 		printk("-----------------------------------------------------------------\n");
- 		debug_locks = 0;
 
