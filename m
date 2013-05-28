@@ -1,116 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3E1UZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:25:04 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29561 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587Ab3E1UZC (ORCPT
+	id S1756014Ab3E1U1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:27:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24533 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab3E1U1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:25:02 -0400
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command whitelist (CVE-2012-4542))
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-	<519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>
-	<519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>
-	<519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org>
-	<519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org>
-	<519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net>
-	<51A035FA.6070409@vlnb.net>
-Date: Tue, 28 May 2013 16:25:12 -0400
-In-Reply-To: <51A035FA.6070409@vlnb.net> (Vladislav Bolkhovitin's message of
-	"Fri, 24 May 2013 20:54:34 -0700")
-Message-ID: <yq17gii3l93.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 28 May 2013 16:27:22 -0400
+X-Authority-Analysis: v=2.0 cv=MNbiabll c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=s9b0WtSLZS4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=_vU5-hpMSx0A:10 a=vTr9H3xdAAAA:8 a=JzKHNwO8EP9p_0bsH28A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1369772840.15552.22.camel@gandalf.local.home>
+Subject: Re: rcu_read_lock() used illegally while idle!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 28 May 2013 16:27:20 -0400
+In-Reply-To: <20130528201329.GA24342@redhat.com>
+References: <20130521173100.GA2076@redhat.com>
+	 <20130522093624.GZ3578@linux.vnet.ibm.com>
+	 <1369226958.6828.175.camel@gandalf.local.home>
+	 <20130523164004.GJ16419@redhat.com>
+	 <1369403180.6828.223.camel@gandalf.local.home>
+	 <20130524142338.GB3106@redhat.com>
+	 <1369423420.6828.226.camel@gandalf.local.home>
+	 <20130525135959.GA1784@redhat.com>
+	 <1369506004.15552.5.camel@gandalf.local.home>
+	 <20130528201329.GA24342@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Vladislav" == Vladislav Bolkhovitin <vst@vlnb.net> writes:
+On Tue, 2013-05-28 at 16:13 -0400, Dave Jones wrote:
+> On Sat, May 25, 2013 at 02:20:04PM -0400, Steven Rostedt wrote:
+>  > On Sat, 2013-05-25 at 09:59 -0400, Dave Jones wrote:
+>  > > On Fri, May 24, 2013 at 03:23:40PM -0400, Steven Rostedt wrote:
+>  > >  > On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
+>  > >  > 
+>  > >  > > .config: http://paste.fedoraproject.org/14281/94052971/raw/
+>  > >  > > 
+>  > >  > > trace shows the problem process was 'cc1', so I was likely building a kernel
+>  > >  > > at the time.  There was also a trinity run going on in the background.
+>  > >  > > 
+>  > >  > > cmdline: nothing special..
+>  > >  > > 
+>  > >  > > BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
+>  > >  > > 
+>  > >  > 
+>  > >  > OK, I'm able to reproduce this. Looks like the same issue happens from
+>  > >  > other ways from userspace into the kernel (the next way was tracing
+>  > >  > system calls).
+>  > >  > 
+>  > >  > Forget the other patch. Here's a new patch that is more specific to
+>  > >  > tracing and context tracking.
+>  > >  > 
+>  > >  > Can you try this one out, please.
+>  > > 
+>  > > Took a lot longer to hit this..
+>  > 
+>  > This is a same but different bug ;-)
+>  > 
+>  > Looks like we fixed all the function tracing infrastructure problems,
+>  > but this is a function tracer user problem. Namely perf.
+> 
+> another variant of the same ? or different different ?
 
-Vladislav> Linux block layer is purely artificial creature slowly
-Vladislav> reinventing wheel creating more problems, than solving.
+No this is something entirely different. The previous reports were
+mostly caused by rcu dereference being used when rcu was shut off (going
+into user land or idle).
 
-On the contrary. I do think we solve a whole bunch of problems.
+This looks like a more serious possible deadlock. I'll look into this a
+bit.
+
+Thanks,
+
+-- Steve
+
+> 
+> [12572.705832] ======================================================
+> [12572.750317] [ INFO: possible circular locking dependency detected ]
+> [12572.796978] 3.10.0-rc3+ #39 Not tainted
+> [12572.833381] -------------------------------------------------------
+> [12572.862233] trinity-child17/31341 is trying to acquire lock:
+> [12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12572.878859] 
+> but task is already holding lock:
+> [12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> [12572.903381] 
+> which lock already depends on the new lock.
+> 
+> [12572.927541] 
+> the existing dependency chain (in reverse order) is:
+> [12572.943736] 
+> -> #4 (&ctx->lock){-.-...}:
+> [12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
+> [12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
+> [12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
+> [12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
+> [12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
+> [12573.018321] 
+> -> #3 (&rq->lock){-.-.-.}:
+> [12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
+> [12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
+> [12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
+> [12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
+> [12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
+> [12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
+> [12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
+> [12573.109528] 
+> -> #2 (&p->pi_lock){-.-.-.}:
+> [12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> [12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
+> [12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
+> [12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
+> [12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
+> [12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
+> [12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> [12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> [12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> [12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> [12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+> [12573.221379] 
+> -> #1 (&rsp->gp_wq){..-.-.}:
+> [12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> [12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
+> [12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> [12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> [12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> [12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> [12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+> [12573.295067] 
+> -> #0 (rcu_node_0){..-.-.}:
+> [12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> [12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> [12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> [12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> [12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> [12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> [12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+> [12573.382068] 
+> other info that might help us debug this:
+> 
+> [12573.403229] Chain exists of:
+>   rcu_node_0 --> &rq->lock --> &ctx->lock
+> 
+> [12573.424471]  Possible unsafe locking scenario:
+> 
+> [12573.438499]        CPU0                    CPU1
+> [12573.445599]        ----                    ----
+> [12573.452691]   lock(&ctx->lock);
+> [12573.459799]                                lock(&rq->lock);
+> [12573.467010]                                lock(&ctx->lock);
+> [12573.474192]   lock(rcu_node_0);
+> [12573.481262] 
+>  *** DEADLOCK ***
+> 
+> [12573.501931] 1 lock held by trinity-child17/31341:
+> [12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> [12573.516475] 
+> stack backtrace:
+> [12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
+> [12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
+> [12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
+> [12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
+> [12573.567856] Call Trace:
+> [12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
+> [12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
+> [12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> [12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
+> [12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> [12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> [12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> [12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> [12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> [12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
+> [12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
+> [12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
+> [12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> [12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> [12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
+> [12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> [12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> [12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
+> [12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> [12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
 
 
-Vladislav> It enforces approach, where often "impossible" means
-Vladislav> "impossible in this interface".
-
-I agree we have limitations. I do not agree that all limitations are
-bad. Sometimes it's OK to say no.
-
-
-Vladislav> For instance, how about copy offload?  How about atomic
-Vladislav> writes?
-
-I'm actively working on copy offload. Nobody appears to be interested in
-atomic writes. Otherwise I'd work on those as well.
-
-
-Vladislav> Why was it needed to create special blk integrity interface
-Vladislav> with the only end user - SCSI?
-
-Simple. Because we did not want to interleave data and PI 512+8+512+8
-neither in memory, nor at DMA time. Furthermore, the ATA EPP proposal
-was still on the table so I also needed to support ATA.
-
-And finally, NVM Express uses the blk_integrity interface as well.
-
-
-Vladislav> The block layer keeps repeating SCSI. So, maybe, after all,
-Vladislav> it's better to acknowledge that direct usage of SCSI without
-Vladislav> any intermediate layers and translations is more productive?
-Vladislav> And for those minors not using SCSI internally, translate
-Vladislav> from SCSI to their internal commands? Creating and filling
-Vladislav> CDB fields for most cases isn't anyhow harder, than creating
-Vladislav> and feeling bio fields.
-
-This is quite possibly the worst idea I have heard all week.
-
-As it stands it's a headache for the disk ULD driver to figure out which
-of the bazillion READ/WRITE variants to send to a SCSI/ATA device. What
-makes you think that an application or filesystem would be better
-equipped to make that call?
-
-See also: WRITE SAME w/ zeroes vs. WRITE SAME w/ UNMAP vs. UNMAP 
-
-See also: EXTENDED COPY vs. the PROXY command set
-
-See also: USB-ATA bridge chips
-
-You make it sound like all the block layer does is filling out
-CDBs. Which it doesn't in fact have anything to do with at all.
-
-When you are talking about CDBs we're down in the SBC/SSC territory.
-Which is such a tiny bit of what's going on. We have transports, we have
-SAM, we have HBA controller DMA constraints, system DMA constraints,
-buffer bouncing, etc. There's a ton of stuff that needs to happen before
-the CDB and the data physically reach the storage.
-
-You seem to be advocating that everything up to the point where the
-device receives the command is in the way. Well, by all means. Why limit
-ourselves to the confines of SCSI? Why not get rid of POSIX
-read()/write(), page cache, filesystems and let applications speak
-ST-506 directly?
-
-I know we're doing different things. My job is to make a general purpose
-operating system with interfaces that make sense to normal applications.
-That does not preclude special cases where it may make sense to poke at
-the device directly. For testing purposes, for instance. But I consider
-it a failure when we start having applications that know about hardware
-intricacies, cylinders/heads/sectors, etc. That road leads straight to
-the 1980s...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
