@@ -1,137 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab3E2Hhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:37:55 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:17095 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935097Ab3E2Hhy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:37:54 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 May 2013 15:37:49 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5cPvzjYaBEBPWJTwuyQi2e6ELslQAAFfwQ
-Message-ID: <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
- <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
-In-Reply-To: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S964964Ab3E2HiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:38:00 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:61219 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935097Ab3E2Hh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 03:37:58 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Nikolay Balandin <nbalandin@dev.rtsoft.ru>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/2] drivers/misc: at24: convert to use devm_kzalloc
+Date: Tue, 28 May 2013 13:00:20 -0700
+Message-Id: <1369771220-5492-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Richard,
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-Thanks for your reply ,
-I will make a check for this .
+Use devm_kzalloc to make cleanup paths simpler
 
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+---
+ drivers/misc/eeprom/at24.c |   44 +++++++++++++++-----------------------------
+ 1 file changed, 15 insertions(+), 29 deletions(-)
 
------Original Message-----
-From: richard -rw- weinberger [mailto:richard.weinberger@gmail.com] 
-Sent: Wednesday, May 29, 2013 3:35 PM
-To: Wang, Yalin
-Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: A bug about system call on ARM
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index 2baeec5..5d4fd69 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -492,10 +492,9 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	if (client->dev.platform_data) {
+ 		chip = *(struct at24_platform_data *)client->dev.platform_data;
+ 	} else {
+-		if (!id->driver_data) {
+-			err = -ENODEV;
+-			goto err_out;
+-		}
++		if (!id->driver_data)
++			return -ENODEV;
++
+ 		magic = id->driver_data;
+ 		chip.byte_len = BIT(magic & AT24_BITMASK(AT24_SIZE_BYTELEN));
+ 		magic >>= AT24_SIZE_BYTELEN;
+@@ -519,8 +518,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			"byte_len looks suspicious (no power of 2)!\n");
+ 	if (!chip.page_size) {
+ 		dev_err(&client->dev, "page_size must not be 0!\n");
+-		err = -EINVAL;
+-		goto err_out;
++		return -EINVAL;
+ 	}
+ 	if (!is_power_of_2(chip.page_size))
+ 		dev_warn(&client->dev,
+@@ -528,10 +526,9 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	/* Use I2C operations unless we're stuck with SMBus extensions. */
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+-		if (chip.flags & AT24_FLAG_ADDR16) {
+-			err = -EPFNOSUPPORT;
+-			goto err_out;
+-		}
++		if (chip.flags & AT24_FLAG_ADDR16)
++			return -EPFNOSUPPORT;
++
+ 		if (i2c_check_functionality(client->adapter,
+ 				I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
+ 			use_smbus = I2C_SMBUS_I2C_BLOCK_DATA;
+@@ -542,8 +539,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 				I2C_FUNC_SMBUS_READ_BYTE_DATA)) {
+ 			use_smbus = I2C_SMBUS_BYTE_DATA;
+ 		} else {
+-			err = -EPFNOSUPPORT;
+-			goto err_out;
++			return -EPFNOSUPPORT;
+ 		}
+ 	}
+ 
+@@ -553,12 +549,10 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		num_addresses =	DIV_ROUND_UP(chip.byte_len,
+ 			(chip.flags & AT24_FLAG_ADDR16) ? 65536 : 256);
+ 
+-	at24 = kzalloc(sizeof(struct at24_data) +
++	at24 = devm_kzalloc(&client->dev, sizeof(struct at24_data) +
+ 		num_addresses * sizeof(struct i2c_client *), GFP_KERNEL);
+-	if (!at24) {
+-		err = -ENOMEM;
+-		goto err_out;
+-	}
++	if (!at24)
++		return -ENOMEM;
+ 
+ 	mutex_init(&at24->lock);
+ 	at24->use_smbus = use_smbus;
+@@ -596,11 +590,10 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			at24->write_max = write_max;
+ 
+ 			/* buffer (data + address at the beginning) */
+-			at24->writebuf = kmalloc(write_max + 2, GFP_KERNEL);
+-			if (!at24->writebuf) {
+-				err = -ENOMEM;
+-				goto err_struct;
+-			}
++			at24->writebuf = devm_kzalloc(&client->dev,
++				write_max + 2, GFP_KERNEL);
++			if (!at24->writebuf)
++				return -ENOMEM;
+ 		} else {
+ 			dev_warn(&client->dev,
+ 				"cannot write due to controller restrictions.");
+@@ -648,11 +641,6 @@ err_clients:
+ 		if (at24->client[i])
+ 			i2c_unregister_device(at24->client[i]);
+ 
+-	kfree(at24->writebuf);
+-err_struct:
+-	kfree(at24);
+-err_out:
+-	dev_dbg(&client->dev, "probe error %d\n", err);
+ 	return err;
+ }
+ 
+@@ -667,8 +655,6 @@ static int at24_remove(struct i2c_client *client)
+ 	for (i = 1; i < at24->num_addresses; i++)
+ 		i2c_unregister_device(at24->client[i]);
+ 
+-	kfree(at24->writebuf);
+-	kfree(at24);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-Hi!
-
-On Wed, May 29, 2013 at 8:52 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
-> Hi  all,
->
-> I am a new comer to this mailing list , I am happy to join this 
-> community .
->
-> I have a bug reported from our android phones which is caused by  the system call .
-> It seems like kernel bugs from my view .
-
-Is this a unmodified Linux kernel from kernel.org? In other works, no (half broken) board support package from your hardware vendor?
-Did you try a more recent kernel? (At least 3.4.47).
-Maybe your problem is already known and fixed...
-
-> Crash in  file  arch\arm\kernel\ entry-common.S
->
-> /***************************************************************/
->
-> ENTRY(vector_swi)
->         sub     sp, sp, #S_FRAME_SIZE
->         stmia   sp, {r0 - r12}                  @ Calling r0 - r12
->  ARM(   add     r8, sp, #S_PC           )
->  ARM(   stmdb   r8, {sp, lr}^           )       @ Calling sp, lr
->  THUMB( mov     r8, sp                  )
->  THUMB( store_user_sp_lr r8, r10, S_SP  )       @ calling sp, lr
->         mrs     r8, spsr                        @ called from non-FIQ mode, so ok.
->         str     lr, [sp, #S_PC]                 @ Save calling PC
->         str     r8, [sp, #S_PSR]                @ Save CPSR
->         str     r0, [sp, #S_OLD_R0]             @ Save OLD_R0
->         zero_fp
->
->         /*
->          * Get the system call number.
->          */
->
-> #if defined(CONFIG_OABI_COMPAT)
->
->         /*
->          * If we have CONFIG_OABI_COMPAT then we need to look at the swi
->          * value to determine if it is an EABI or an old ABI call.
->          */
-> #ifdef CONFIG_ARM_THUMB
->         tst     r8, #PSR_T_BIT
->         movne   r10, #0                         @ no thumb OABI emulation
->         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
-> #else
->         ldr     r10, [lr, #-4]                  @ get SWI instruction
->   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
->   A710( teq     ip, #0x0f000000                                         )
->   A710( bne     .Larm710bug                                             )
-> #endif
-> #ifdef CONFIG_CPU_ENDIAN_BE8
->         rev     r10, r10                        @ little endian instruction
-> #endif
->
-> /*********************************************************************
-> ******************************/
->
-> Then reason why it will crash when get SWI instruction is maybe This 
-> page is clear to aged by kernel, But this MMU fault happpened in 
-> kernel, So the kernel do_page_fault function will not clear this page 
-> to young, So that  will crash .
->
-> It should poll this page to make it present or the fault should be 
-> handled by fixup section , Anyway, this place should not crash by kernel .
->
-> The kernel version I used  is  3.4.0
-> I have add the kernel log and the call stack recovered  by trace32 
-> tools Pls have a look at it .
->
->
-> Thanks .
->
->
->
-> Sony Mobile Communications
-> Tel: +86 10 5966 9819
-> Phone: 18610323092
-> Address: No.16 Guangshun South Street, Chaoyang, Beijing, P.R.C.
->
-> sonymobile.com
->
->
->
-
-
-
---
-Thanks,
-//richard
