@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab3E1L5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:57:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62576 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933225Ab3E1L5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:57:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
-   d="scan'208";a="247613826"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <519E3D01.7080101@sr71.net>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-13-git-send-email-kirill.shutemov@linux.intel.com>
- <519BD206.3040603@sr71.net>
- <20130523143656.B8B73E0090@blue.fi.intel.com>
- <519E3D01.7080101@sr71.net>
-Subject: Re: [PATCHv4 12/39] thp, mm: rewrite add_to_page_cache_locked() to
- support huge pages
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130528115946.0F1D8E0090@blue.fi.intel.com>
-Date: Tue, 28 May 2013 14:59:46 +0300 (EEST)
+	id S933569Ab3E1MGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 08:06:24 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:49984 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933061Ab3E1MGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 08:06:23 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
+Subject: [PATCH] dma: mmp_pdma: fix a memory alloc error
+Date: Tue, 28 May 2013 20:05:13 +0800
+Message-ID: <1369742713-13528-1-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> You could create a hpagecache_nr_pages() helper or something I guess.
+From: Xiang Wang <wangx@marvell.com>
 
-Makes sense.
-> 
-> >>> +	}
-> >>> +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
-> >>> +	if (PageTransHuge(page))
-> >>> +		__inc_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
-> >>> +	mapping->nrpages += nr;
-> >>> +	spin_unlock_irq(&mapping->tree_lock);
-> >>> +	radix_tree_preload_end();
-> >>> +	trace_mm_filemap_add_to_page_cache(page);
-> >>> +	return 0;
-> >>> +err:
-> >>> +	if (i != 0)
-> >>> +		error = -ENOSPC; /* no space for a huge page */
-> >>> +	page_cache_release(page + i);
-> >>> +	page[i].mapping = NULL;
-> >>
-> >> I guess it's a slight behaviour change (I think it's harmless) but if
-> >> you delay doing the page_cache_get() and page[i].mapping= until after
-> >> the radix tree insertion, you can avoid these two lines.
-> > 
-> > Hm. I don't think it's safe. The spinlock protects radix-tree against
-> > modification, but find_get_page() can see it just after
-> > radix_tree_insert().
-> 
-> Except that the mapping->tree_lock is still held.  I don't think
-> find_get_page() can find it in the radix tree without taking the lock.
+pdev->phy is of type "struct mmp_pdma_phy *". But when
+allocating memory for it, "struct mmp_pdma_chan" is used
+by mistake.
 
-It can. Lookup is rcu-protected. ->tree_lock is only for add/delete/replace.
+Signed-off-by: Xiang Wang <wangx@marvell.com>
+---
+ drivers/dma/mmp_pdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> > The page is locked and IIUC never uptodate at this point, so nobody will
-> > be able to do much with it, but leave it without valid ->mapping is a bad
-> > idea.
-> 
-> ->mapping changes are protected by lock_page().  You can't keep
-> ->mapping stable without holding it.  If you unlock_page(), you have to
-> recheck ->mapping after you reacquire the lock.
-> 
-> In other words, I think the code is fine.
-
-You are right.
-
-> 
-> >> I'm also trying to figure out how and when you'd actually have to unroll
-> >> a partial-huge-page worth of radix_tree_insert().  In the small-page
-> >> case, you can collide with another guy inserting in to the page cache.
-> >> But, can that happen in the _middle_ of a THP?
-> > 
-> > E.g. if you enable THP after some uptime, the mapping can contain small pages
-> > already.
-> > Or if a process map the file with bad alignement (MAP_FIXED) and touch the
-> > area, it will get small pages.
-> 
-> Could you put a comment in explaining this case a bit?  It's a bit subtle.
-
-okay.
-
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c26699f..76a8dcf 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -801,7 +801,7 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 	}
+ 
+ 	pdev->phy = devm_kzalloc(pdev->dev,
+-		dma_channels * sizeof(struct mmp_pdma_chan), GFP_KERNEL);
++		dma_channels * sizeof(struct mmp_pdma_phy), GFP_KERNEL);
+ 	if (pdev->phy == NULL)
+ 		return -ENOMEM;
+ 
 -- 
- Kirill A. Shutemov
+1.7.5.4
+
