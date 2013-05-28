@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934334Ab3E1O0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:26:31 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:39399 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934253Ab3E1O0a (ORCPT
+	id S934318Ab3E1O1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:27:39 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41445 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934253Ab3E1O1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:26:30 -0400
+	Tue, 28 May 2013 10:27:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369232581-18923-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1369232581-18923-6-git-send-email-lee.jones@linaro.org>
 References: <1369232581-18923-1-git-send-email-lee.jones@linaro.org>
-	<1369232581-18923-3-git-send-email-lee.jones@linaro.org>
-Date: Tue, 28 May 2013 16:26:29 +0200
-Message-ID: <CACRpkdZESAfnaekrppYm7OFoH6m6V2H7=FbyxmfPtYw5o2p15g@mail.gmail.com>
-Subject: Re: [PATCH 2/7] ARM: ux500: Standardise Nomadik STN8815 based Pinctrl
- compat string in the DTS
+	<1369232581-18923-6-git-send-email-lee.jones@linaro.org>
+Date: Tue, 28 May 2013 16:27:37 +0200
+Message-ID: <CACRpkdbuuDkxfw0GytUJ6i5mnX7v5is+-DxvQqUfQze9mtV3ww@mail.gmail.com>
+Subject: Re: [PATCH 5/7] pinctrl/nomadik: Standardise Pinctrl compat string
+ for Nomadik based platforms
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
