@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934124Ab3E1V0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:26:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59834 "EHLO
+	id S933957Ab3E1V0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:26:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59818 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934015Ab3E1V0J (ORCPT
+	with ESMTP id S933709Ab3E1V0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:26:09 -0400
+	Tue, 28 May 2013 17:26:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>,
-        Josef Bacik <jbacik@fusionio.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 53/78] btrfs: don't stop searching after encountering the wrong item
-Date: Tue, 28 May 2013 14:20:02 -0700
-Message-Id: <1369776027-17859-54-git-send-email-kamal@canonical.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 54/78] watchdog: Fix race condition in registration code
+Date: Tue, 28 May 2013 14:20:03 -0700
+Message-Id: <1369776027-17859-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,51 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabriel de Perthuis <g2p.code@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
+commit 60403f7a4d9368d187f79cba5e4672d01df37574 upstream.
 
-The search ioctl skips items that are too large for a result buffer, but
-inline items of a certain size occuring before any search result is
-found would trigger an overflow and stop the search entirely.
+A race condition exists when registering the first watchdog device.
+Sequence of events:
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
+- watchdog_register_device calls watchdog_dev_register
+- watchdog_dev_register creates the watchdog misc device by calling
+  misc_register.
+  At that time, the matching character device (/dev/watchdog0) does not yet
+  exist, and old_wdd is not set either.
+- Userspace gets an event and opens /dev/watchdog
+- watchdog_open is called and sets wdd = old_wdd, which is still NULL,
+  and tries to dereference it. This causes the kernel to panic.
 
-Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Seen with systemd trying to open /dev/watchdog immediately after
+it was created.
+
+Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/ioctl.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/watchdog/watchdog_dev.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 338f259..47d5dcd 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1767,7 +1767,11 @@ static noinline int copy_to_sk(struct btrfs_root *root,
- 		item_off = btrfs_item_ptr_offset(leaf, i);
- 		item_len = btrfs_item_size_nr(leaf, i);
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index ef8edec..05a5310 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -524,6 +524,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 	int err, devno;
  
--		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
-+		btrfs_item_key_to_cpu(leaf, key, i);
-+		if (!key_in_sk(key, sk))
-+			continue;
-+
-+		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
- 			item_len = 0;
- 
- 		if (sizeof(sh) + item_len + *sk_offset >
-@@ -1776,10 +1780,6 @@ static noinline int copy_to_sk(struct btrfs_root *root,
- 			goto overflow;
+ 	if (watchdog->id == 0) {
++		old_wdd = watchdog;
+ 		watchdog_miscdev.parent = watchdog->parent;
+ 		err = misc_register(&watchdog_miscdev);
+ 		if (err != 0) {
+@@ -532,9 +533,9 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 			if (err == -EBUSY)
+ 				pr_err("%s: a legacy watchdog module is probably present.\n",
+ 					watchdog->info->identity);
++			old_wdd = NULL;
+ 			return err;
  		}
+-		old_wdd = watchdog;
+ 	}
  
--		btrfs_item_key_to_cpu(leaf, key, i);
--		if (!key_in_sk(key, sk))
--			continue;
--
- 		sh.objectid = key->objectid;
- 		sh.offset = key->offset;
- 		sh.type = key->type;
+ 	/* Fill in the data structures */
 -- 
 1.8.1.2
 
