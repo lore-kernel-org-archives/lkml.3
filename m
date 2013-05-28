@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab3E1Lnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:43:55 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56225 "EHLO
+	id S933602Ab3E1LoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:44:09 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56239 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878Ab3E1Lny (ORCPT
+	with ESMTP id S933336Ab3E1LoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:43:54 -0400
+	Tue, 28 May 2013 07:44:04 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>,
         Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 0/3] net: phy: prevent linking breakage
-Date: Tue, 28 May 2013 13:43:20 +0200
-Message-Id: <1369741403-25315-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 2/3] arm: mxs: don't check for CONFIG_PHYLIB as builtin
+Date: Tue, 28 May 2013 13:43:22 +0200
+Message-Id: <1369741403-25315-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369741403-25315-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1369741403-25315-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a linking issue when using phy_register_fixup{,_for_uid,_for_id} and
-CONFIG_PHYLIB is not a builtin:
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-mxs/mach-mxs.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
-:(.text+0x1174): undefined reference to `mdiobus_write'
-:(.text+0x1188): undefined reference to `mdiobus_write'
-:(.text+0x119c): undefined reference to `mdiobus_write'
-:(.text+0x11b0): undefined reference to `mdiobus_write'
-arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
-:(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
-
-This has been solved for arch/arm/mach-mxs/ and arch/arm/mach-imx/ by testing
-IS_BUILTIN(CONFIG_PHYLIB) before calling the functions.
-
-The first patch is an attempt at solving that issue globally.
-
-The following patches remove the unnecessary IS_BUILTIN(CONFIG_PHYLIB) checks.
-
-Quickly greping into the code shows that the issue may arise in:
-
-arch/powerpc/platforms/85xx/mpc85xx_mds.c
-arch/arm/mach-davinci/board-dm644x-evm.c
-arch/arm/mach-orion5x/dns323-setup.c
-arch/arm/mach-at91/board-dt-sama5.c
-
-Changes in v2:
- - indentation fixes
- - use static inline function instead of defines and return -ENOTSUPP
-
-Alexandre Belloni (3):
-  net: phy: prevent linking breakage
-  arm: mxs: don't check for CONFIG_PHYLIB as builtin
-  arm: imx: don't check for CONFIG_PHYLIB as builtin
-
- arch/arm/mach-imx/mach-imx6q.c | 23 ++++++++++-------------
- arch/arm/mach-mxs/mach-mxs.c   |  5 ++---
- drivers/net/phy/phy_device.c   |  6 ++++++
- include/linux/phy.h            | 26 ++++++++++++++++++++++++++
- 4 files changed, 44 insertions(+), 16 deletions(-)
-
+diff --git a/arch/arm/mach-mxs/mach-mxs.c b/arch/arm/mach-mxs/mach-mxs.c
+index 5b62b64..2dad553 100644
+--- a/arch/arm/mach-mxs/mach-mxs.c
++++ b/arch/arm/mach-mxs/mach-mxs.c
+@@ -273,9 +273,8 @@ static void __init apx4devkit_init(void)
+ {
+ 	enable_clk_enet_out();
+ 
+-	if (IS_BUILTIN(CONFIG_PHYLIB))
+-		phy_register_fixup_for_uid(PHY_ID_KSZ8051, MICREL_PHY_ID_MASK,
+-					   apx4devkit_phy_fixup);
++	phy_register_fixup_for_uid(PHY_ID_KSZ8051, MICREL_PHY_ID_MASK,
++				   apx4devkit_phy_fixup);
+ }
+ 
+ #define ENET0_MDC__GPIO_4_0	MXS_GPIO_NR(4, 0)
 -- 
 1.8.1.2
 
