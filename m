@@ -1,205 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3E1U1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:27:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24533 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab3E1U1W (ORCPT
+	id S1756110Ab3E1UaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:30:00 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30768 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab3E1U37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:27:22 -0400
-X-Authority-Analysis: v=2.0 cv=MNbiabll c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=s9b0WtSLZS4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=_vU5-hpMSx0A:10 a=vTr9H3xdAAAA:8 a=JzKHNwO8EP9p_0bsH28A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369772840.15552.22.camel@gandalf.local.home>
-Subject: Re: rcu_read_lock() used illegally while idle!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Tue, 28 May 2013 16:27:20 -0400
-In-Reply-To: <20130528201329.GA24342@redhat.com>
-References: <20130521173100.GA2076@redhat.com>
-	 <20130522093624.GZ3578@linux.vnet.ibm.com>
-	 <1369226958.6828.175.camel@gandalf.local.home>
-	 <20130523164004.GJ16419@redhat.com>
-	 <1369403180.6828.223.camel@gandalf.local.home>
-	 <20130524142338.GB3106@redhat.com>
-	 <1369423420.6828.226.camel@gandalf.local.home>
-	 <20130525135959.GA1784@redhat.com>
-	 <1369506004.15552.5.camel@gandalf.local.home>
-	 <20130528201329.GA24342@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 May 2013 16:29:59 -0400
+Date: Tue, 28 May 2013 16:25:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
+ RTC on system time step changes
+Message-ID: <20130528202527.GB23266@phenom.dumpdata.com>
+References: <5192082D.4020400@citrix.com>
+ <5192711B.1070607@linaro.org>
+ <5193606502000078000D64E2@nat28.tlf.novell.com>
+ <5193CFA2.8010008@linaro.org>
+ <51A4F6C6.8080808@citrix.com>
+ <20130528183137.GA23213@phenom.dumpdata.com>
+ <51A500DA.9000708@linaro.org>
+ <20130528194849.GA25032@phenom.dumpdata.com>
+ <51A50D86.2080200@linaro.org>
+ <51A50F75.7040703@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A50F75.7040703@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 16:13 -0400, Dave Jones wrote:
-> On Sat, May 25, 2013 at 02:20:04PM -0400, Steven Rostedt wrote:
->  > On Sat, 2013-05-25 at 09:59 -0400, Dave Jones wrote:
->  > > On Fri, May 24, 2013 at 03:23:40PM -0400, Steven Rostedt wrote:
->  > >  > On Fri, 2013-05-24 at 10:23 -0400, Dave Jones wrote:
->  > >  > 
->  > >  > > .config: http://paste.fedoraproject.org/14281/94052971/raw/
->  > >  > > 
->  > >  > > trace shows the problem process was 'cc1', so I was likely building a kernel
->  > >  > > at the time.  There was also a trinity run going on in the background.
->  > >  > > 
->  > >  > > cmdline: nothing special..
->  > >  > > 
->  > >  > > BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
->  > >  > > 
->  > >  > 
->  > >  > OK, I'm able to reproduce this. Looks like the same issue happens from
->  > >  > other ways from userspace into the kernel (the next way was tracing
->  > >  > system calls).
->  > >  > 
->  > >  > Forget the other patch. Here's a new patch that is more specific to
->  > >  > tracing and context tracking.
->  > >  > 
->  > >  > Can you try this one out, please.
->  > > 
->  > > Took a lot longer to hit this..
->  > 
->  > This is a same but different bug ;-)
->  > 
->  > Looks like we fixed all the function tracing infrastructure problems,
->  > but this is a function tracer user problem. Namely perf.
+On Tue, May 28, 2013 at 01:11:33PM -0700, John Stultz wrote:
+> On 05/28/2013 01:03 PM, John Stultz wrote:
+> >On 05/28/2013 12:48 PM, Konrad Rzeszutek Wilk wrote:
+> >>On Tue, May 28, 2013 at 12:09:14PM -0700, John Stultz wrote:
+> >>>On 05/28/2013 11:31 AM, Konrad Rzeszutek Wilk wrote:
+> >>>>On Tue, May 28, 2013 at 07:26:14PM +0100, David Vrabel wrote:
+> >>>>>On 15/05/13 19:10, John Stultz wrote:
+> >>>>>>Ok, so really, as soon as the Dom0 time is set by NTP,
+> >>>>>>all guests will
+> >>>>>>see the right time? That makes more sense, and means the window for
+> >>>>>>these sorts of issues is reasonably quite small.
+> >>>>>It's a small window but it's occurring in our automated test system.
+> >>>>>
+> >>>>>>David: So I'm less inclined to merge this individual
+> >>>>>>change, but if you
+> >>>>>>still feel strongly about it, let me know and we can
+> >>>>>>circle around on it
+> >>>>>>after you've addressed the specific issues I pointed out earlier.
+> >>>>>This patch was the actual bug fix but I've reworked it to use the
+> >>>>>pvclock_gtod notifier chain as this seemed to be what KVM hosts were
+> >>>>>using to maintain a clock for guests.  Please review the
+> >>>>>new series, thanks.
+> >>>>Looks good.
+> >>>>
+> >>>>John if you are OK I am thinking to push this to Linus
+> >>>>shortly as it is
+> >>>>fixing a bug.
+> >>>I'm really not sure I'd call this a bug.  That seems like an
+> >>>over-reaction to a misconfigured system.
+> >>>
+> >>>Or if there is a bug, I'm not sure its been clearly explained.
+> >>The #1 patch - b/c you try to set the RTC time and it actually
+> >>never takes. Meaning
+> >>on the next time the machine is booted the time is again off.
+> >
+> >Ok. Yea, that one I'm fine with and have queued for 3.11.
+> >
+> >If you want to push it as a bug fix for 3.10, I'll leave it to you
+> >to push to Linus.
 > 
-> another variant of the same ? or different different ?
-
-No this is something entirely different. The previous reports were
-mostly caused by rcu dereference being used when rcu was shut off (going
-into user land or idle).
-
-This looks like a more serious possible deadlock. I'll look into this a
-bit.
-
-Thanks,
-
--- Steve
-
+> Probably obvious, but just in case its not clear:
 > 
-> [12572.705832] ======================================================
-> [12572.750317] [ INFO: possible circular locking dependency detected ]
-> [12572.796978] 3.10.0-rc3+ #39 Not tainted
-> [12572.833381] -------------------------------------------------------
-> [12572.862233] trinity-child17/31341 is trying to acquire lock:
-> [12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> [12572.878859] 
-> but task is already holding lock:
-> [12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-> [12572.903381] 
-> which lock already depends on the new lock.
-> 
-> [12572.927541] 
-> the existing dependency chain (in reverse order) is:
-> [12572.943736] 
-> -> #4 (&ctx->lock){-.-...}:
-> [12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> [12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
-> [12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
-> [12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
-> [12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
-> [12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
-> [12573.018321] 
-> -> #3 (&rq->lock){-.-.-.}:
-> [12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> [12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
-> [12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
-> [12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
-> [12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
-> [12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
-> [12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
-> [12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
-> [12573.109528] 
-> -> #2 (&p->pi_lock){-.-.-.}:
-> [12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-> [12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
-> [12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
-> [12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
-> [12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
-> [12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
-> [12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-> [12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-> [12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-> [12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
-> [12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
-> [12573.221379] 
-> -> #1 (&rsp->gp_wq){..-.-.}:
-> [12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-> [12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
-> [12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-> [12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-> [12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-> [12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
-> [12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
-> [12573.295067] 
-> -> #0 (rcu_node_0){..-.-.}:
-> [12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-> [12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> [12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> [12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-> [12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-> [12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-> [12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-> [12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-> [12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
-> [12573.382068] 
-> other info that might help us debug this:
-> 
-> [12573.403229] Chain exists of:
->   rcu_node_0 --> &rq->lock --> &ctx->lock
-> 
-> [12573.424471]  Possible unsafe locking scenario:
-> 
-> [12573.438499]        CPU0                    CPU1
-> [12573.445599]        ----                    ----
-> [12573.452691]   lock(&ctx->lock);
-> [12573.459799]                                lock(&rq->lock);
-> [12573.467010]                                lock(&ctx->lock);
-> [12573.474192]   lock(rcu_node_0);
-> [12573.481262] 
->  *** DEADLOCK ***
-> 
-> [12573.501931] 1 lock held by trinity-child17/31341:
-> [12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-> [12573.516475] 
-> stack backtrace:
-> [12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
-> [12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
-> [12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
-> [12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
-> [12573.567856] Call Trace:
-> [12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
-> [12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
-> [12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-> [12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
-> [12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> [12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-> [12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> [12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-> [12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> [12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
-> [12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
-> [12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
-> [12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-> [12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-> [12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
-> [12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-> [12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-> [12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
-> [12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-> [12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-> [12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+> Though if that one patch goes to linus for 3.10, it needs to be
+> reworked to not depend on the mach_set_rtc_mmss() interface change
+> it currently depends on. The interface change is not bugfix
+> material.
 
+You are referring to commit 3195ef59cb42cda3aeeb24a7fd2ba1b900c4a3cc
+Author: Prarit Bhargava <prarit@redhat.com>
+Date:   Thu Feb 14 12:02:54 2013 -0500
 
+    x86: Do full rtc synchronization with ntp
+
+which is not CC-ed to stable@vger.kernel.org, so the #1 patch would
+not be able to be back-ported to any kernel right (so v3.9, v3.8..)?
+
+But it could go to v3.10 - as that change is there. But you are saying
+it can't go to v3.10 b/c the interface change is not a bugfix
+material.  Is that b/c said git commit might cause regressions and
+you wouldn't want to do two reverts?
+
+That makes sense -  which point I  you are right that it makes
+sense to stick said patch (#1) in your 3.11 queue and skip the v3.10
+train for it.
