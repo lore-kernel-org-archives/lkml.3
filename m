@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934430Ab3E1Ox0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:53:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50053 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab3E1OxY (ORCPT
+	id S934452Ab3E1O7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:59:23 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:53809 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934269Ab3E1O7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:53:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Daniel Tang <dt.tangr@gmail.com>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>
-Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
-Date: Tue, 28 May 2013 16:52:55 +0200
-Message-ID: <3950519.8yj1SQodNQ@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1369750864.2939.1.camel@hornet>
-References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <CACRpkdaQfaPQdJ1SDN--JDqcrXs8p6=FaDN+4KtKZF6nLtOvvw@mail.gmail.com> <1369750864.2939.1.camel@hornet>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:iQDcw5Nk9ohOHkKG3bWzGoVXE5nyuBt/QYhqlL68knx
- qKTMFuhwgVxO4WksSkfLi05wlcij6vU5GD4pv+/CtvE77mZhIf
- zzN1EhTWYSHJDOx/G69ZtGqh1PFszDTuiCx+UchwKSPJyGDNyE
- H2BBWgsHxSkf8GI4FT/NUKkN6pdEYiotrLBdwef49Tj9LZCArY
- oWXeatHGTJKBzaoFYUH3ljfxEyiAjW6DzQT3VEnOveJD4KcKuo
- GwRpZPae6UZBewmUgsu5vksoUgh04U37umCPwjzBh80MF8bnGD
- x/8fRWOl8mkXc6rMQTiLIr4A+Uu6C5Zy0OamybZlBWzkutLe65
- 2rULg+dDJM2IWwZlRRCE=
+	Tue, 28 May 2013 10:59:21 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: sage@inktank.com
+Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] ceph: improve error handling in ceph_mdsmap_decode
+Date: Tue, 28 May 2013 16:59:00 +0200
+Message-Id: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 May 2013 15:21:04 Pawel Moll wrote:
-> On Tue, 2013-05-28 at 15:16 +0100, Linus Walleij wrote:
-> > On Tue, May 28, 2013 at 12:54 PM, Pawel Moll <pawel.moll@arm.com> wrote:
-> > > On Mon, 2013-05-27 at 11:32 +0100, Arnd Bergmann wrote:
-> > >> b) add a new KMS driver for this hardware that can be used as an
-> > >> alternative to the existing one and that works with DT.
-> > >
-> > > There are people working on this, just trying to jump through some legal
-> > > hoops to post a RFC. Once this is done we'll be in an interesting
-> > > position of two amba_bus drivers "competing" for the same amba_bus
-> > > device, which I'm not sure how to deal with right now...
-> > 
-> > Make them mutually exclusive in Kconfig?
-> 
-> Certainly an option.
-> 
-> I wouldn't mind having both compiled as modules and loading one or the
-> other, but it wouldn't fly with "=y"...
+This patch makes the following improvements to the error handling
+in the ceph_mdsmap_decode function:
 
-It's a bit ugly but I think you can express that in Kconfig like this:
+- Add a NULL check for return value from kcalloc
+- Make use of the variable err
 
-config FB_ARMCLCD
-        tristate "ARM PrimeCell PL110 support"
-        depends on FB && ARM && ARM_AMBA
-	depends on KMS_ARMCLCD != 'y'
-	depends on 'm' if KMS_ARMCLCD
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ fs/ceph/mdsmap.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-	Arnd
+diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+index 9278dec..d4d3897 100644
+--- a/fs/ceph/mdsmap.c
++++ b/fs/ceph/mdsmap.c
+@@ -138,6 +138,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+ 				m->m_info[mds].export_targets =
+ 					kcalloc(num_export_targets, sizeof(u32),
+ 						GFP_NOFS);
++				if (m->m_info[mds].export_targets == NULL)
++					goto badmem;
+ 				for (j = 0; j < num_export_targets; j++)
+ 					m->m_info[mds].export_targets[j] =
+ 					       ceph_decode_32(&pexport_targets);
+@@ -170,7 +172,7 @@ bad:
+ 		       DUMP_PREFIX_OFFSET, 16, 1,
+ 		       start, end - start, true);
+ 	ceph_mdsmap_destroy(m);
+-	return ERR_PTR(-EINVAL);
++	return ERR_PTR(err);
+ }
+ 
+ void ceph_mdsmap_destroy(struct ceph_mdsmap *m)
+-- 
+1.7.10.4
+
