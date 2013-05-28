@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab3E1ESG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:18:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52613 "EHLO
+	id S1759139Ab3E1ESE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:18:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52560 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758921Ab3E1Dy1 (ORCPT
+	by vger.kernel.org with ESMTP id S1758853Ab3E1Dy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:27 -0400
+	Mon, 27 May 2013 23:54:28 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,13 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Michael Hennerich" <michael.hennerich@analog.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Wang YanQing" <udknight@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.774163749@decadent.org.uk>
+Message-ID: <lsq.1369712993.507907947@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [04/94] mfd: adp5520: Restore mode bits on resume
+Subject: [53/94] TTY: Fix tty miss restart after we turn off flow-control
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,51 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Wang YanQing <udknight@gmail.com>
 
-commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
+commit dab73b4eb9ef924a2b90dab84e539076d82b256f upstream.
 
-The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
-cleared. So we need to make sure to restore it during resume if it was set
-before suspend.
+I meet emacs hang in start if I do the operation below:
+  1: echo 3 > /proc/sys/vm/drop_caches
+  2: emacs BigFile
+  3: Press CTRL-S follow 2 immediately
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Then emacs hang on, CTRL-Q can't resume, the terminal
+hang on, you can do nothing with this terminal except
+close it.
+
+The reason is before emacs takeover control the tty,
+we use CTRL-S to XOFF it. Then when emacs takeover the
+control, it may don't use the flow-control, so emacs hang.
+This patch fix it.
+
+This patch will fix a kind of strange tty relation hang problem,
+I believe I meet it with vim in ssh, and also see below bug report:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mfd/adp5520.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/tty/n_tty.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/mfd/adp5520.c
-+++ b/drivers/mfd/adp5520.c
-@@ -36,6 +36,7 @@ struct adp5520_chip {
- 	struct blocking_notifier_head notifier_list;
- 	int irq;
- 	unsigned long id;
-+	uint8_t mode;
- };
- 
- static int __adp5520_read(struct i2c_client *client,
-@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
- 
--	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
-+	/* All other bits are W1C */
-+	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
- 	return 0;
- }
- 
-@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
- 
--	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
- 	return 0;
- }
- #endif
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1530,6 +1530,14 @@ static void n_tty_set_termios(struct tty
+ 			tty->real_raw = 0;
+ 	}
+ 	n_tty_set_room(tty);
++	/*
++	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
++	 * been stopped by STOP_CHAR(tty) before it.
++	 */
++	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
++		start_tty(tty);
++	}
++
+ 	/* The termios change make the tty ready for I/O */
+ 	wake_up_interruptible(&tty->write_wait);
+ 	wake_up_interruptible(&tty->read_wait);
 
