@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411Ab3E1Oea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:34:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31885 "EHLO mx1.redhat.com"
+	id S934423Ab3E1Oej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:34:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934279Ab3E1Oe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:34:29 -0400
+	id S934279Ab3E1Oeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 10:34:36 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 3/4] MN10300: ASB2305's PCI code needs the definition of
- XIRQ1
+Subject: [PATCH 4/4] MN10300: Need pci_iomap() and __pci_ioport_map()
+ defining
 To: torvalds@linux-foundation.org
 From: David Howells <dhowells@redhat.com>
 Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
         Ken Cox <jkc@redhat.com>
-Date: Tue, 28 May 2013 15:34:25 +0100
-Message-ID: <20130528143425.9790.81062.stgit@warthog.procyon.org.uk>
+Date: Tue, 28 May 2013 15:34:32 +0100
+Message-ID: <20130528143432.9790.29175.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
 References: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -28,32 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code for PCI in the ASB2305 needs the definition of XIRQ1 from proc/irq.h
-otherwise the following error appears:
+Include the generic definitions of pci_iomap() and __pci_ioport_map()
+otherwise we can get errors like:
 
-arch/mn10300/unit-asb2305/pci.c: In function 'unit_pci_init':
-arch/mn10300/unit-asb2305/pci.c:481: error: 'XIRQ1' undeclared (first use in this function)
-arch/mn10300/unit-asb2305/pci.c:481: error: (Each undeclared identifier is reported only once
-arch/mn10300/unit-asb2305/pci.c:481: error: for each function it appears in.)
+lib/pci_iomap.c: In function 'pci_iomap':
+lib/pci_iomap.c:37: error: implicit declaration of function '__pci_ioport_map'
+lib/pci_iomap.c:37: warning: return makes pointer from integer without a cast
+
+and:
+
+drivers/pci/quirks.c: In function 'disable_igfx_irq':
+drivers/pci/quirks.c:2893: error: implicit declaration of function 'pci_iomap'
+drivers/pci/quirks.c:2893: warning: initialization makes pointer from integer without a cast
+drivers/pci/quirks.c: In function 'reset_ivb_igd':
+drivers/pci/quirks.c:3133: warning: assignment makes pointer from integer without a cast
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Ken Cox <jkc@redhat.com>
 ---
 
- arch/mn10300/unit-asb2305/pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/mn10300/include/asm/pci.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
 
-diff --git a/arch/mn10300/unit-asb2305/pci.c b/arch/mn10300/unit-asb2305/pci.c
-index 6dce9fc..8ffb80f 100644
---- a/arch/mn10300/unit-asb2305/pci.c
-+++ b/arch/mn10300/unit-asb2305/pci.c
-@@ -18,6 +18,7 @@
- #include <linux/ioport.h>
- #include <linux/delay.h>
- #include <asm/io.h>
-+#include <asm/irq.h>
- #include "pci-asb2305.h"
+diff --git a/arch/mn10300/include/asm/pci.h b/arch/mn10300/include/asm/pci.h
+index 8137c25..6f31cc0 100644
+--- a/arch/mn10300/include/asm/pci.h
++++ b/arch/mn10300/include/asm/pci.h
+@@ -103,4 +103,6 @@ static inline int pci_get_legacy_ide_irq(struct pci_dev *dev, int channel)
+ 	return channel ? 15 : 14;
+ }
  
- unsigned int pci_probe = 1;
++#include <asm-generic/pci_iomap.h>
++
+ #endif /* _ASM_PCI_H */
 
