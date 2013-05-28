@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933654Ab3E1It5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:49:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16024 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933619Ab3E1It4 convert rfc822-to-8bit (ORCPT
+	id S933666Ab3E1IuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:50:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62101 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933623Ab3E1IuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:49:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,756,1363158000"; 
-   d="scan'208";a="344388294"
-Message-ID: <1369730992.29283.224.camel@smile>
-Subject: Re: [PATCH] 9p: trace: use %*ph to dump buffer
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Date: Tue, 28 May 2013 11:49:52 +0300
-In-Reply-To: <1366635713-11435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1366635713-11435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
+	Tue, 28 May 2013 04:50:13 -0400
+Message-ID: <1369730970.5857.132.camel@marge.simpson.net>
+Subject: Re: [PATCH v2] sched: wake-affine throttle
+From: Mike Galbraith <bitbucket@online.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Tue, 28 May 2013 10:49:30 +0200
+In-Reply-To: <51A45B23.4050403@linux.vnet.ibm.com>
+References: <5164DCE7.8080906@linux.vnet.ibm.com>
+	 <519AE7F2.706@linux.vnet.ibm.com>
+	 <20130522084947.GQ26912@twins.programming.kicks-ass.net>
+	 <519C8F24.5060207@linux.vnet.ibm.com>
+	 <1369234551.5916.40.camel@marge.simpson.net>
+	 <51A43A63.4090703@linux.vnet.ibm.com>
+	 <1369722552.5857.72.camel@marge.simpson.net>
+	 <51A45B23.4050403@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-3 
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-Provags-ID: V02:K0:/Oye76xcYKHSZgbYSC6/jxoig412+T+7p1Y20EEOD6b
+ c/38riB/27jXsmsc1YKEJL6Pr5OBYlw97Hpha+qL689QXw3lKS
+ VFSHAiy1fHAheYMqNKseMpx7GsnA9YdQBoOoZLuZ8GKQov+Wm2
+ Wj9xR3Ic9gOIlMQ1/nOTLqchKcSii2mIMuxIsGZ0S6KwdOy9Mt
+ aFhoSPcHm7n03X5P81UKftLG9dDmZXWPbo/7r35N5Pb/chHsVt
+ tLoHi0k9qiapb9RYNKoGNNfsYZyMXO1/g9HZ2vlCatgCTGay9O
+ OgMU9pWjj97swCEaeIJVX7i2H34KDWi/tzJx7+jZBIpJLI80Cl
+ Et4x4gjj5rQY7LfMpXkLsyxNRVqJI1GSUp4xu4xHGkotraMATC
+ jfYFscdclMxBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 16:01 +0300, Andy Shevchenko wrote: 
-> Additionally change cast from long to unsigned long to follow specificator.
+On Tue, 2013-05-28 at 15:22 +0800, Michael Wang wrote: 
+> On 05/28/2013 02:29 PM, Mike Galbraith wrote:
+> > On Tue, 2013-05-28 at 13:02 +0800, Michael Wang wrote: 
+> >> On 05/22/2013 10:55 PM, Mike Galbraith wrote:
+> >>> On Wed, 2013-05-22 at 17:25 +0800, Michael Wang wrote:
+> >>>
+> >>>> I've not test the hackbench with wakeup-buddy before, will do it this
+> >>>> time, I suppose the 15% illegal income will suffered, anyway, it's
+> >>>> illegal :)
+> >>>
+> >>> On a 4 socket 40 core (+SMT) box, hackbench wasn't too happy.
+> >>
+> >> I've done more test and now I got the reason of regression...
+> >>
+> >> The writer and reader in hackbench is N:N, prev writer will write all
+> >> the fd then switch to next writer and repeat the same work, so it's
+> >> impossible to setup the buddy relationship by just record the last one,
+> >> and we have to record all the waker/wakee in history, but that means
+> >> unacceptable memory overhead...
+> > 
+> > Yeah, that's why I was thinking we'd need a dinky/fast as hell FIFO of
+> > tokens or such to bind waker/wakee more or less reliably.  Making such a
+> > scheme cheap enough could be hard.
+> > 
+> >> So this buddy idea seems to be bad...
+> >>
+> >> I think a better way may should be allowing pull in most time, but
+> >> filter the very bad cases carefully.
+> > 
+> > Any way that is cheap, and fairly accurately recognizes when we're being
+> > stupid will help.  First and foremost, it has to be dirt cheap :)
+> > 
+> >> For workload like pgbench, we actually just need to avoid pull if that
+> >> will damage the 'mother' thread, which is busy and be relied by many
+> >> 'child'.
+> > 
+> > Yeah, 'mom' is the key player.  If we can cheaply recognize mom, that
+> > should get us a generic improvement.  Not as good as being able to
+> > recognize the size of her+brood as size changes, but better anyway.
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  include/trace/events/9p.h | 28 +++-------------------------
->  1 file changed, 3 insertions(+), 25 deletions(-)
-> 
-> diff --git a/include/trace/events/9p.h b/include/trace/events/9p.h
-> index beeaed8..a066636 100644
-> --- a/include/trace/events/9p.h
-> +++ b/include/trace/events/9p.h
-> @@ -143,31 +143,9 @@ TRACE_EVENT(9p_protocol_dump,
->  		    __entry->tag    =  pdu->tag;
->  		    memcpy(__entry->line, pdu->sdata, P9_PROTO_DUMP_SZ);
->  		    ),
-> -	    TP_printk("clnt %lu %s(tag = %d)\n%.3x: "
-> -		      "%02x %02x %02x %02x %02x %02x %02x %02x "
-> -		      "%02x %02x %02x %02x %02x %02x %02x %02x\n"
-> -		      "%.3x: "
-> -		      "%02x %02x %02x %02x %02x %02x %02x %02x "
-> -		      "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-> -		      (long)__entry->clnt, show_9p_op(__entry->type),
-> -		      __entry->tag, 0,
-> -		      __entry->line[0],  __entry->line[1],
-> -		      __entry->line[2],  __entry->line[3],
-> -		      __entry->line[4],  __entry->line[5],
-> -		      __entry->line[6],  __entry->line[7],
-> -		      __entry->line[8],  __entry->line[9],
-> -		      __entry->line[10], __entry->line[11],
-> -		      __entry->line[12], __entry->line[13],
-> -		      __entry->line[14], __entry->line[15],
-> -		      16,
-> -		      __entry->line[16], __entry->line[17],
-> -		      __entry->line[18], __entry->line[19],
-> -		      __entry->line[20], __entry->line[21],
-> -		      __entry->line[22], __entry->line[23],
-> -		      __entry->line[24], __entry->line[25],
-> -		      __entry->line[26], __entry->line[27],
-> -		      __entry->line[28], __entry->line[29],
-> -		      __entry->line[30], __entry->line[31])
-> +	    TP_printk("clnt %lu %s(tag = %d)\n%.3x: %16ph\n%.3x: %16ph\n",
-> +		      (unsigned long)__entry->clnt, show_9p_op(__entry->type),
-> +		      __entry->tag, 0, __entry->line, 16, __entry->line + 16)
->   );
->  
->  #endif /* _TRACE_9P_H */
+> That's right, I'm trying to rely on the frequency of a task switching
+> it's wakee in the new idea, it's really cheap and somewhat reliable, I
+> appreciate if you could pay an eye on the new patch and let me know you
+> opinion :)
 
-Any comment on this one, anyone?
+I'll feed it to my 40 core box, hopefully soon.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+-Mike
+
