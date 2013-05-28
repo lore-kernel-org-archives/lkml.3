@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab3E1Vgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:36:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59674 "EHLO
+	id S932695Ab3E1VhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:37:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59663 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473Ab3E1VYt (ORCPT
+	with ESMTP id S1758486Ab3E1VYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:49 -0400
+	Tue, 28 May 2013 17:24:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 39/78] drm/mgag200: Fix writes into MGA1064_PIX_CLK_CTL register
-Date: Tue, 28 May 2013 14:19:48 -0700
-Message-Id: <1369776027-17859-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 42/78] arm64: debug: clear mdscr_el1 instead of taking the OS lock
+Date: Tue, 28 May 2013 14:19:51 -0700
+Message-Id: <1369776027-17859-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,208 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit fb70a6690875315a3a1454e52fa339441ee7612b upstream.
+commit 9c413e25d95fd3c0abe23eadad66191b22baa549 upstream.
 
-The original line,
-  WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
-wrote tmp into MGA1064_PIX_CLK_CTL_CLK_DIS, where
-MGA1064_PIX_CLK_CTL_CLK_DIS is an offset into
-MGA1064_PIX_CLK_CTL. Change the line to write properly into
-MGA1064_PIX_CLK_CTL. There were other chunks of code nearby that use
-the same pattern (but work correctly), so this patch updates them all
-to use this new (slightly more efficient) write pattern. The WREG_DAC
-macro was causing the DAC_INDEX register to be set to the same value
-twice. WREG8(DAC_DATA, foo) takes advantage of the fact that DAC_INDEX
-is already at the value we want.
+During boot, we take the debug OS lock before interrupts are enabled.
+This is required to prevent clearing of PSTATE.D on the interrupt entry
+path, which could result in spurious debug exceptions before we've got
+round to resetting things like the hardware breakpoints registers to a
+sane state.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Acked-by: Julia Lemire <jlemire@matrox.com>
-Tested-by: Julia Lemire <jlemire@matrox.com>
-Acked-by: Mathieu Larouche <mathieu.larouche@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+A problem with this approach is that taking the OS lock prevents an
+external JTAG debugger from debugging the system, which is especially
+irritating during boot, where JTAG debugging can be most useful.
+
+This patch clears mdscr_el1 rather than taking the lock, clearing the
+MDE and KDE bits and preventing self-hosted hardware debug exceptions
+from occurring.
+
+Tested-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c | 42 +++++++++++++++++-----------------
- 1 file changed, 21 insertions(+), 21 deletions(-)
+ arch/arm64/kernel/debug-monitors.c | 2 --
+ arch/arm64/mm/proc.S               | 3 +--
+ 2 files changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 2e7c949..91d7859 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -189,12 +189,12 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
--		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp |= MGA1064_REMHEADCTL_CLKDIS;
--		WREG_DAC(MGA1064_REMHEADCTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		/* select PLL Set C */
- 		tmp = RREG8(MGAREG_MEM_MISC_READ);
-@@ -204,7 +204,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN | 0x80;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		udelay(500);
- 
-@@ -212,7 +212,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_VREF_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~0x04;
--		WREG_DAC(MGA1064_VREF_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		udelay(50);
- 
-@@ -236,13 +236,13 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
- 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~MGA1064_REMHEADCTL_CLKSL_MSK;
- 		tmp |= MGA1064_REMHEADCTL_CLKSL_PLL;
--		WREG_DAC(MGA1064_REMHEADCTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		/* reset dotclock rate bit */
- 		WREG8(MGAREG_SEQ_INDEX, 1);
-@@ -253,7 +253,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		vcount = RREG8(MGAREG_VCOUNT);
- 
-@@ -318,7 +318,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
- 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
--	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	tmp = RREG8(MGAREG_MEM_MISC_READ);
- 	tmp |= 0x3 << 2;
-@@ -326,12 +326,12 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
- 
- 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
- 	tmp = RREG8(DAC_DATA);
--	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp & ~0x40);
-+	WREG8(DAC_DATA, tmp & ~0x40);
- 
- 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
--	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	WREG_DAC(MGA1064_EV_PIX_PLLC_M, m);
- 	WREG_DAC(MGA1064_EV_PIX_PLLC_N, n);
-@@ -342,7 +342,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
- 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
--	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	udelay(500);
- 
-@@ -350,11 +350,11 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
- 	tmp = RREG8(DAC_DATA);
- 	tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
- 	tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
--	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
- 	tmp = RREG8(DAC_DATA);
--	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp | 0x40);
-+	WREG8(DAC_DATA, tmp | 0x40);
- 
- 	tmp = RREG8(MGAREG_MEM_MISC_READ);
- 	tmp |= (0x3 << 2);
-@@ -363,7 +363,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
- 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
--	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	return 0;
+diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
+index 0c3ba9f..f4726dc 100644
+--- a/arch/arm64/kernel/debug-monitors.c
++++ b/arch/arm64/kernel/debug-monitors.c
+@@ -136,8 +136,6 @@ void disable_debug_monitors(enum debug_el el)
+  */
+ static void clear_os_lock(void *unused)
+ {
+-	asm volatile("msr mdscr_el1, %0" : : "r" (0));
+-	isb();
+ 	asm volatile("msr oslar_el1, %0" : : "r" (0));
+ 	isb();
  }
-@@ -416,7 +416,7 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
--		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
-+		WREG8(DAC_DATA, tmp);
+diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
+index f1d8b9b..a82ae88 100644
+--- a/arch/arm64/mm/proc.S
++++ b/arch/arm64/mm/proc.S
+@@ -119,8 +119,7 @@ ENTRY(__cpu_setup)
  
- 		tmp = RREG8(MGAREG_MEM_MISC_READ);
- 		tmp |= 0x3 << 2;
-@@ -425,7 +425,7 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		udelay(500);
- 
-@@ -439,13 +439,13 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
- 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 		tmp = RREG8(DAC_DATA);
- 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
- 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
--		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+		WREG8(DAC_DATA, tmp);
- 
- 		vcount = RREG8(MGAREG_VCOUNT);
- 
-@@ -515,12 +515,12 @@ static int mga_g200er_set_plls(struct mga_device *mdev, long clock)
- 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
--	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
- 	tmp = RREG8(DAC_DATA);
- 	tmp |= MGA1064_REMHEADCTL_CLKDIS;
--	WREG_DAC(MGA1064_REMHEADCTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	tmp = RREG8(MGAREG_MEM_MISC_READ);
- 	tmp |= (0x3<<2) | 0xc0;
-@@ -530,7 +530,7 @@ static int mga_g200er_set_plls(struct mga_device *mdev, long clock)
- 	tmp = RREG8(DAC_DATA);
- 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
- 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
--	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
-+	WREG8(DAC_DATA, tmp);
- 
- 	udelay(500);
- 
+ 	mov	x0, #3 << 20
+ 	msr	cpacr_el1, x0			// Enable FP/ASIMD
+-	mov	x0, #1
+-	msr	oslar_el1, x0			// Set the debug OS lock
++	msr	mdscr_el1, xzr			// Reset mdscr_el1
+ 	tlbi	vmalle1is			// invalidate I + D TLBs
+ 	/*
+ 	 * Memory region attributes for LPAE:
 -- 
 1.8.1.2
 
