@@ -1,124 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216Ab3E1Nkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:40:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50684 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab3E1Nky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:40:54 -0400
-Date: Tue, 28 May 2013 06:39:58 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        penberg@kernel.org, rdunlap@infradead.org, mmarek@suse.cz,
-        bp@alien8.de, tglx@linutronix.de, bp@suse.de, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        penberg@kernel.org, rdunlap@infradead.org, mmarek@suse.cz,
-        bp@alien8.de, tglx@linutronix.de, rientjes@google.com, bp@suse.de
-In-Reply-To: <20130522144638.GB15085@pd.tnic>
-References: <20130522144638.GB15085@pd.tnic>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, platform, kvm, kconfig:
-  Turn existing .config's into KVM-capable configs
-Git-Commit-ID: 46ff53874bd935ab9955dee56d60212857e89bf3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S934255Ab3E1NlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:41:10 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:48642 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934222Ab3E1NlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 09:41:08 -0400
+Date: Tue, 28 May 2013 08:41:06 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>
+Subject: Re: [PATCH] x86/UV: GRU distributed mode mappings
+Message-ID: <20130528134106.GA5619@sgi.com>
+References: <20130523155013.GA16496@sgi.com>
+ <20130528075912.GA29336@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130528075912.GA29336@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46ff53874bd935ab9955dee56d60212857e89bf3
-Gitweb:     http://git.kernel.org/tip/46ff53874bd935ab9955dee56d60212857e89bf3
-Author:     Borislav Petkov <bp@alien8.de>
-AuthorDate: Wed, 22 May 2013 16:46:39 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 12:11:32 +0200
+On Tue, May 28, 2013 at 09:59:12AM +0200, Ingo Molnar wrote:
+> 
+> * Dimitri Sivanich <sivanich@sgi.com> wrote:
+> 
+> > Setup mappings for GRU distributed mode and include them as untracked
+> > pat ranges.
+> 
+> Would be nice to have the customary changelog content:
+> 
+>   " Current code does (A), this has a problem when (B).
+>     We can improve this doing (C), because (D)."
+> 
+> Or so - your changelog is pretty light on the 'why' aspect.
+>
+How about the following?
 
-x86, platform, kvm, kconfig: Turn existing .config's into KVM-capable configs
 
-Add an config file snippet which enables additional options
-useful for running the kernel in a kvm guest. When you execute
-'make kvmconfig' it merges those options with an already
-existing user config before you build the kernel.
+UV GRU hardware will support an optional distributed mode that will allow 
+per-node address mapping of local GRU space, as opposed to mapping all GRU
+hardware to the same contiguous high space.
 
-Based on an patch from the external lkvm tree.
+If GRU distributed mode is selected, setup per-node page table mappings and
+include them as untracked pat ranges.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: penberg@kernel.org
-Cc: levinsasha928@gmail.com
-Cc: mtosatti@redhat.com
-Cc: fengguang.wu@intel.com
-Link: http://lkml.kernel.org/r/20130522144638.GB15085@pd.tnic
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- arch/x86/Makefile                 |  6 ++++++
- arch/x86/configs/kvm_guest.config | 28 ++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+ arch/x86/kernel/apic/x2apic_uv_x.c |   63 +++++++++++++++++++++++++++++----
+ 1 file changed, 57 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 5c47726..91ee171 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -220,6 +220,11 @@ archclean:
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 	$(Q)$(MAKE) $(clean)=arch/x86/tools
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -51,6 +51,8 @@ DEFINE_PER_CPU(int, x2apic_extra_bits);
  
-+kvmconfig:
-+	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
-+	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
-+	$(Q)yes "" | $(MAKE) oldconfig
+ static enum uv_system_type uv_system_type;
+ static u64 gru_start_paddr, gru_end_paddr;
++static u64 gru_dist_base, gru_first_node_paddr = -1LL, gru_last_node_paddr;
++static u64 gru_dist_lmask, gru_dist_umask;
+ static union uvh_apicid uvh_apicid;
+ int uv_min_hub_revision_id;
+ EXPORT_SYMBOL_GPL(uv_min_hub_revision_id);
+@@ -72,7 +74,19 @@ static unsigned long __init uv_early_rea
+ 
+ static inline bool is_GRU_range(u64 start, u64 end)
+ {
+-	return start >= gru_start_paddr && end <= gru_end_paddr;
++	if (gru_dist_base) {
++		u64 su = start & gru_dist_umask; /* upper (incl pnode) bits */
++		u64 sl = start & gru_dist_lmask; /* base offset bits */
++		u64 eu = end & gru_dist_umask;
++		u64 el = end & gru_dist_lmask;
 +
- define archhelp
-   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
-   echo  '  install      - Install kernel using'
-@@ -233,4 +238,5 @@ define archhelp
-   echo  '                  bzdisk/fdimage*/isoimage also accept:'
-   echo  '                  FDARGS="..."  arguments for the booted kernel'
-   echo  '                  FDINITRD=file initrd for the booted kernel'
-+  echo  '  kvmconfig	- Enable additional options for guest kernel support'
- endef
-diff --git a/arch/x86/configs/kvm_guest.config b/arch/x86/configs/kvm_guest.config
-new file mode 100644
-index 0000000..f9affcc
---- /dev/null
-+++ b/arch/x86/configs/kvm_guest.config
-@@ -0,0 +1,28 @@
-+CONFIG_NET=y
-+CONFIG_NET_CORE=y
-+CONFIG_NETDEVICES=y
-+CONFIG_BLOCK=y
-+CONFIG_BLK_DEV=y
-+CONFIG_NETWORK_FILESYSTEMS=y
-+CONFIG_INET=y
-+CONFIG_TTY=y
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_BINFMT_ELF=y
-+CONFIG_PCI=y
-+CONFIG_PCI_MSI=y
-+CONFIG_DEBUG_KERNEL=y
-+CONFIG_VIRTUALIZATION=y
-+CONFIG_HYPERVISOR_GUEST=y
-+CONFIG_PARAVIRT=y
-+CONFIG_KVM_GUEST=y
-+CONFIG_VIRTIO=y
-+CONFIG_VIRTIO_PCI=y
-+CONFIG_VIRTIO_BLK=y
-+CONFIG_VIRTIO_CONSOLE=y
-+CONFIG_VIRTIO_NET=y
-+CONFIG_9P_FS=y
-+CONFIG_NET_9P=y
-+CONFIG_NET_9P_VIRTIO=y
++		/* Must reside completely within a single GRU range */
++		return (sl == gru_dist_base && el == gru_dist_base &&
++			su >= gru_first_node_paddr &&
++			su <= gru_last_node_paddr &&
++			eu == su);
++	} else
++		return start >= gru_start_paddr && end <= gru_end_paddr;
+ }
+ 
+ static bool uv_is_untracked_pat_range(u64 start, u64 end)
+@@ -470,19 +484,56 @@ static __init void map_high(char *id, un
+ 		init_extra_mapping_wb(paddr, bytes);
+ }
+ 
++static __init void map_gru_distributed(unsigned long c)
++{
++	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
++	u64 paddr;
++	unsigned long bytes;
++	int nid;
++
++	gru.v = c;
++	/* only base bits 42:28 relevant in dist mode */
++	gru_dist_base = gru.v & 0x000007fff0000000UL;
++	if (!gru_dist_base) {
++		pr_info("UV: Map GRU_DIST base address NULL\n");
++		return;
++	}
++	bytes = 1UL << UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
++	gru_dist_lmask = ((1UL << uv_hub_info->m_val) - 1) & ~(bytes - 1);
++	gru_dist_umask = ~((1UL << uv_hub_info->m_val) - 1);
++	gru_dist_base &= gru_dist_lmask; /* Clear bits above M */
++	for_each_online_node(nid) {
++		paddr = ((u64)uv_node_to_pnode(nid) << uv_hub_info->m_val) |
++				gru_dist_base;
++		init_extra_mapping_wb(paddr, bytes);
++		gru_first_node_paddr = min(paddr, gru_first_node_paddr);
++		gru_last_node_paddr = max(paddr, gru_last_node_paddr);
++	}
++	/* Save upper (63:M) bits of address only for is_GRU_range */
++	gru_first_node_paddr &= gru_dist_umask;
++	gru_last_node_paddr &= gru_dist_umask;
++	pr_info("UV: Map GRU_DIST base 0x%016llx  0x%016llx - 0x%016llx\n",
++		gru_dist_base, gru_first_node_paddr, gru_last_node_paddr);
++}
++
+ static __init void map_gru_high(int max_pnode)
+ {
+ 	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
+ 	int shift = UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
+ 
+ 	gru.v = uv_read_local_mmr(UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR);
+-	if (gru.s.enable) {
+-		map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
+-		gru_start_paddr = ((u64)gru.s.base << shift);
+-		gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
+-	} else {
++	if (!gru.s.enable) {
+ 		pr_info("UV: GRU disabled\n");
++		return;
++	}
++
++	if (is_uv3_hub() && gru.s3.mode) {
++		map_gru_distributed(gru.v);
++		return;
+ 	}
++	map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
++	gru_start_paddr = ((u64)gru.s.base << shift);
++	gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
+ }
+ 
+ static __init void map_mmr_high(int max_pnode)
