@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab3E1UJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:09:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51073 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab3E1UJV (ORCPT
+	id S1755756Ab3E1UKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:10:42 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42767 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab3E1UKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:09:21 -0400
-Date: Tue, 28 May 2013 13:09:20 -0700 (PDT)
-Message-Id: <20130528.130920.1604291112518863799.davem@davemloft.net>
-To: alexandre.belloni@free-electrons.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        shawn.guo@linaro.org, kernel@pengutronix.de
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1369741403-25315-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 28 May 2013 16:10:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369767800-31895-1-git-send-email-n.a.balandin@gmail.com>
+References: <1369767800-31895-1-git-send-email-n.a.balandin@gmail.com>
+Date: Tue, 28 May 2013 23:10:39 +0300
+Message-ID: <CAHp75VdYxMovRMVQmspn14d+W2fZfSf-6CxODqqRBq1xvbU3yg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers/misc: at2x: use devm_kzalloc() to make
+ cleanup paths simpler
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Nikolay Balandin <n.a.balandin@gmail.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Date: Tue, 28 May 2013 13:43:21 +0200
+Thanks for updated version.
+Please, find few comments below.
 
-> phy_register_fixup{,_for_uid,_for_id} are called from arch/, quite
-> often, there is no protection to check whether CONFIG_PHYLIB=y which is
-> the only case where this would work. Having phylib as a module or not
-> compiled at all will result in that kind of linking failure:
-> 
-> arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
-> :(.text+0x1174): undefined reference to `mdiobus_write'
-> :(.text+0x1188): undefined reference to `mdiobus_write'
-> :(.text+0x119c): undefined reference to `mdiobus_write'
-> :(.text+0x11b0): undefined reference to `mdiobus_write'
-> arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
-> :(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Tue, May 28, 2013 at 10:03 PM, Nikolay Balandin
+<n.a.balandin@gmail.com> wrote:
+> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-This is the wrong way to go about this.
+Next time you may use --subject-prefix to specify the version of the
+patch. This one in particular is "PATCH v2".
 
-If the arch code absolutely requires CONFIG_PHYLIB=y then express that
-dependency in the arch Kconfig.  The arch code in question should not
-be compiled at all if CONFIG_PHYLIB has an incompatible setting.
+I'm pretty sure Greg or any maintainer will ask you to split your
+patch to two: one per driver.
+
+> Use devm_kzalloc() instead of kzalloc. Get rid of the "goto" statements
+> and useless dev_dbg() calls when driver probe fails.
+
+I think in the subject line is better to write something like
+"at24: convert to use devm_kzalloc".
+For at25 accordingly.
+
+> --- a/drivers/misc/eeprom/at24.c
+> +++ b/drivers/misc/eeprom/at24.c
+
+struct i2c_device_id *id)
+>                 } else if (i2c_check_functionality(client->adapter,
+>                                 I2C_FUNC_SMBUS_READ_BYTE_DATA)) {
+>                         use_smbus = I2C_SMBUS_BYTE_DATA;
+> -               } else {
+> -                       err = -EPFNOSUPPORT;
+> -                       goto err_out;
+> -               }
+> +               } else
+> +                       return -EPFNOSUPPORT;
+
+It's good to keep the style here untouched, because it follows CodingStyle.
+thus
+} else {
+ return ...
+}
+
+> @@ -596,11 +589,11 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>                         at24->write_max = write_max;
+>
+>                         /* buffer (data + address at the beginning) */
+> -                       at24->writebuf = kmalloc(write_max + 2, GFP_KERNEL);
+> -                       if (!at24->writebuf) {
+> -                               err = -ENOMEM;
+> -                               goto err_struct;
+> -                       }
+> +                       at24->writebuf = devm_kzalloc(&client->dev,
+> +                               write_max + 2, GFP_KERNEL);
+> +
+
+Redundant empty line
+
+> +                       if (!at24->writebuf)
+> +                               return -ENOMEM;
+>                 } else {
+>                         dev_warn(&client->dev,
+>                                 "cannot write due to controller restrictions.");
+> @@ -647,12 +640,6 @@ err_clients:
+>         for (i = 1; i < num_addresses; i++)
+>                 if (at24->client[i])
+>                         i2c_unregister_device(at24->client[i]);
+> -
+
+No need to remove this empty line.
+
+> @@ -666,9 +653,6 @@ static int at24_remove(struct i2c_client *client)
+>
+>         for (i = 1; i < at24->num_addresses; i++)
+>                 i2c_unregister_device(at24->client[i]);
+> -
+
+Ditto.
+
+--
+With Best Regards,
+Andy Shevchenko
