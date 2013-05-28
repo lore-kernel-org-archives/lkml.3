@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab3E1DyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52461 "EHLO
+	id S933095Ab3E1DzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52643 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758768Ab3E1DyE (ORCPT
+	by vger.kernel.org with ESMTP id S1758906Ab3E1DyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:04 -0400
+	Mon, 27 May 2013 23:54:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Steve French" <smfrench@gmail.com>,
-        "Jeff Layton" <jlayton@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Chen Gang" <gang.chen@asianux.com>,
+        "Corey Minyard" <cminyard@mvista.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.704802533@decadent.org.uk>
+Message-ID: <lsq.1369712993.526671490@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [21/94] cifs: only set ops for inodes in I_NEW state
+Subject: [41/94] drivers/char/ipmi: memcpy, need additional 2 bytes to
+ avoid memory overflow
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +34,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit c2b93e0699723700f886ce17bb65ffd771195a6d upstream.
+commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
 
-It's generally not safe to reset the inode ops once they've been set. In
-the case where the inode was originally thought to be a directory and
-then later found to be a DFS referral, this can lead to an oops when we
-try to trigger an inode op on it after changing the ops to the blank
-referral operations.
+When calling memcpy, read_data and write_data need additional 2 bytes.
 
-Reported-and-Tested-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+  write_data:
+    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+
+  read_data:
+    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -173,7 +173,8 @@ cifs_fattr_to_inode(struct inode *inode,
- 
- 	if (fattr->cf_flags & CIFS_FATTR_DFS_REFERRAL)
- 		inode->i_flags |= S_AUTOMOUNT;
--	cifs_set_ops(inode);
-+	if (inode->i_state & I_NEW)
-+		cifs_set_ops(inode);
- }
- 
- void
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -95,9 +95,9 @@ struct si_sm_data {
+ 	enum bt_states	state;
+ 	unsigned char	seq;		/* BT sequence number */
+ 	struct si_sm_io	*io;
+-	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		write_count;
+-	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		read_count;
+ 	int		truncated;
+ 	long		timeout;	/* microseconds countdown */
 
