@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab3E1Isj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:48:39 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:41275 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933612Ab3E1Ish (ORCPT
+	id S933645Ab3E1ItX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:49:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20442 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933619Ab3E1ItW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:48:37 -0400
-Date: Tue, 28 May 2013 10:48:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 3/5] perf gtk/hists: Display callchain overhead also
-Message-ID: <20130528084833.GA30172@gmail.com>
-References: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
- <1369211258-3163-4-git-send-email-namhyung@kernel.org>
- <20130522095215.GA2386@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522095215.GA2386@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 May 2013 04:49:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,756,1363158000"; 
+   d="scan'208";a="341207824"
+Message-ID: <1369730942.29283.223.camel@smile>
+Subject: Re: [PATCH] pch_phub: re-use native MAC address parser
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 28 May 2013 11:49:02 +0300
+In-Reply-To: <1366723890-23838-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1366723890-23838-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> Em Wed, May 22, 2013 at 05:27:36PM +0900, Namhyung Kim escreveu:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > Add a new column for showing callchain overhead.  I feel like it's
-> > more natural than having those overhead next to a first child in a
-> > same column.
+On Tue, 2013-04-23 at 16:31 +0300, Andy Shevchenko wrote: 
+> We have mac_pton() helper to parse MAC addresses.
 > 
-> Callchains in GTK, great! Some observations tho:
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/misc/pch_phub.c | 8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
 > 
-> All those leaves with 0.00% looks ugly/not needed, right?
-> 
-> I took a screenshot and put at:
-> 
-> http://vger.kernel.org/~acme/perf-gtk-callchains.png
+> diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+> index 931e635..8b4d4fb 100644
+> --- a/drivers/misc/pch_phub.c
+> +++ b/drivers/misc/pch_phub.c
+> @@ -633,17 +633,13 @@ static ssize_t show_pch_mac(struct device *dev, struct device_attribute *attr,
+>  static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
+>  			     const char *buf, size_t count)
+>  {
+> -	u8 mac[6];
+> +	u8 mac[ETH_ALEN];
+>  	ssize_t rom_size;
+>  	struct pch_phub_reg *chip = dev_get_drvdata(dev);
+>  
+> -	if (count != 18)
+> +	if (!mac_pton(buf, mac))
+>  		return -EINVAL;
+>  
+> -	sscanf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+> -		(u32 *)&mac[0], (u32 *)&mac[1], (u32 *)&mac[2], (u32 *)&mac[3],
+> -		(u32 *)&mac[4], (u32 *)&mac[5]);
+> -
+>  	chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
+>  	if (!chip->pch_phub_extrom_base_address)
+>  		return -ENOMEM;
 
-Looks really nice!
+Arnd, do you have any comment on this one?
 
-I'm wondering, would it be hard to add alternating lightgrey+white 
-background colors to make the entries striped and for the horizontal 
-structure to thus stand out better?
-
-The 'qgit' tool does that for example, to alternate git commit log 
-entries.
-
-(Extra points for striping only where the line actually begins.)
-
-Thanks,
-
-	Ingo
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
