@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab3E1Ksv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:48:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756363Ab3E1Ksu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:48:50 -0400
-Date: Tue, 28 May 2013 06:48:40 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, akpm@linux-foundation.org,
-        "Trond Myklebust" <Trond.Myklebust@netapp.com>
-Subject: Re: [54/94] sunrpc: clarify comments on rpc_make_runnable
-Message-ID: <20130528064840.43a9bb43@corrin.poochiereds.net>
-In-Reply-To: <87ehcrqtdn.fsf@canonical.com>
-References: <lsq.1369712992.755341692@decadent.org.uk>
-	<lsq.1369712993.690390643@decadent.org.uk>
-	<20130528061435.0e1b1cc4@corrin.poochiereds.net>
-	<87ehcrqtdn.fsf@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758425Ab3E1Ksz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:48:55 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:33335 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756363Ab3E1Ksx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 06:48:53 -0400
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, rob.herring@calxeda.com,
+        catalin.marinas@arm.com, nico@linaro.org,
+        Po-Yu Chuang <ratbert.chuang@gmail.com>
+Subject: [PATCH] ARM: map_init_section flushes incorrect pmd
+Date: Tue, 28 May 2013 18:48:20 +0800
+Message-Id: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013 11:41:08 +0100
-Luis Henriques <luis.henriques@canonical.com> wrote:
+This bug was introduced in commit e651eab0.
+Some v4/v5 platforms failed to boot due to this.
 
-> Jeff Layton <jlayton@redhat.com> writes:
-> 
-> > On Tue, 28 May 2013 04:49:53 +0100
-> > Ben Hutchings <ben@decadent.org.uk> wrote:
-> >
-> >> 3.2.46-rc1 review patch.  If anyone has any objections, please let me know.
-> >> 
-> >> ------------------
-> >> 
-> >> From: Jeff Layton <jlayton@redhat.com>
-> >> 
-> >> commit 506026c3ec270e18402f0c9d33fee37482c23861 upstream.
-> >> 
-> >> rpc_make_runnable is not generally called with the queue lock held, unless
-> >> it's waking up a task that has been sitting on a waitqueue. This is safe
-> >> when the task has not entered the FSM yet, but the comments don't really
-> >> spell this out.
-> >> 
-> >> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> >> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> >> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> >> ---
-> >>  net/sunrpc/sched.c |    5 +++--
-> >>  1 file changed, 3 insertions(+), 2 deletions(-)
-> >> 
-> >> --- a/net/sunrpc/sched.c
-> >> +++ b/net/sunrpc/sched.c
-> >> @@ -296,8 +296,9 @@ EXPORT_SYMBOL_GPL(__rpc_wait_for_complet
-> >>  /*
-> >>   * Make an RPC task runnable.
-> >>   *
-> >> - * Note: If the task is ASYNC, this must be called with
-> >> - * the spinlock held to protect the wait queue operation.
-> >> + * Note: If the task is ASYNC, and is being made runnable after sitting on an
-> >> + * rpc_wait_queue, this must be called with the queue spinlock held to protect
-> >> + * the wait queue operation.
-> >>   */
-> >>  static void rpc_make_runnable(struct rpc_task *task)
-> >>  {
-> >> 
-> >
-> > Just a comment patch, so this is harmless and I have no objection but
-> > why pull it into stable? I had always thought stable-kernel-rules.txt
-> > discouraged taking patches that don't fix real bugs...
-> 
-> I believe the reason Ben took this patch is actually to provide the
-> correct context for the next one:
-> 
-> a3c3cac5d31879cd9ae2de7874dc6544ca704aec, "SUNRPC: Prevent an rpc_task wakeup race"
-> 
-> So that this is a clean cherry-pick.
-> 
-> (At least this was the reason I picked it for the 3.5 kernel.)
-> 
-> Cheers,
+Signed-off-by: Po-Yu Chuang <ratbert.chuang@gmail.com>
+---
+ arch/arm/mm/mmu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Ok, that's understandable -- sorry for the noise...
-
-Thanks,
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index e0d8565..19a43f8 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -620,6 +620,8 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
+ 			unsigned long end, phys_addr_t phys,
+ 			const struct mem_type *type)
+ {
++	pmd_t *p = pmd;
++
+ #ifndef CONFIG_ARM_LPAE
+ 	/*
+ 	 * In classic MMU format, puds and pmds are folded in to
+@@ -638,7 +640,7 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
+ 		phys += SECTION_SIZE;
+ 	} while (pmd++, addr += SECTION_SIZE, addr != end);
+ 
+-	flush_pmd_entry(pmd);
++	flush_pmd_entry(p);
+ }
+ 
+ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.9.5
+
