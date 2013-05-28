@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab3E1VhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:37:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59663 "EHLO
+	id S1758581Ab3E1VYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:24:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59649 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab3E1VYm (ORCPT
+	with ESMTP id S1757961Ab3E1VYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:42 -0400
+	Tue, 28 May 2013 17:24:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 42/78] arm64: debug: clear mdscr_el1 instead of taking the OS lock
-Date: Tue, 28 May 2013 14:19:51 -0700
-Message-Id: <1369776027-17859-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 36/78] dm table: fix write same support
+Date: Tue, 28 May 2013 14:19:45 -0700
+Message-Id: <1369776027-17859-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,60 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 9c413e25d95fd3c0abe23eadad66191b22baa549 upstream.
+commit dc019b21fb92d620a3b52ccecc135ac968a7c7ec upstream.
 
-During boot, we take the debug OS lock before interrupts are enabled.
-This is required to prevent clearing of PSTATE.D on the interrupt entry
-path, which could result in spurious debug exceptions before we've got
-round to resetting things like the hardware breakpoints registers to a
-sane state.
+If device_not_write_same_capable() returns true then the iterate_devices
+loop in dm_table_supports_write_same() should return false.
 
-A problem with this approach is that taking the OS lock prevents an
-external JTAG debugger from debugging the system, which is especially
-irritating during boot, where JTAG debugging can be most useful.
-
-This patch clears mdscr_el1 rather than taking the lock, clearing the
-MDE and KDE bits and preventing self-hosted hardware debug exceptions
-from occurring.
-
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Bharata B Rao <bharata.rao@gmail.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/kernel/debug-monitors.c | 2 --
- arch/arm64/mm/proc.S               | 3 +--
- 2 files changed, 1 insertion(+), 4 deletions(-)
+ drivers/md/dm-table.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
-index 0c3ba9f..f4726dc 100644
---- a/arch/arm64/kernel/debug-monitors.c
-+++ b/arch/arm64/kernel/debug-monitors.c
-@@ -136,8 +136,6 @@ void disable_debug_monitors(enum debug_el el)
-  */
- static void clear_os_lock(void *unused)
- {
--	asm volatile("msr mdscr_el1, %0" : : "r" (0));
--	isb();
- 	asm volatile("msr oslar_el1, %0" : : "r" (0));
- 	isb();
- }
-diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
-index f1d8b9b..a82ae88 100644
---- a/arch/arm64/mm/proc.S
-+++ b/arch/arm64/mm/proc.S
-@@ -119,8 +119,7 @@ ENTRY(__cpu_setup)
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index daf25d0..62545f6 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -1443,7 +1443,7 @@ static bool dm_table_supports_write_same(struct dm_table *t)
+ 			return false;
  
- 	mov	x0, #3 << 20
- 	msr	cpacr_el1, x0			// Enable FP/ASIMD
--	mov	x0, #1
--	msr	oslar_el1, x0			// Set the debug OS lock
-+	msr	mdscr_el1, xzr			// Reset mdscr_el1
- 	tlbi	vmalle1is			// invalidate I + D TLBs
- 	/*
- 	 * Memory region attributes for LPAE:
+ 		if (!ti->type->iterate_devices ||
+-		    !ti->type->iterate_devices(ti, device_not_write_same_capable, NULL))
++		    ti->type->iterate_devices(ti, device_not_write_same_capable, NULL))
+ 			return false;
+ 	}
+ 
 -- 
 1.8.1.2
 
