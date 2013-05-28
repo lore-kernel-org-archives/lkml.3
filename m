@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab3E1Dyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52545 "EHLO
+	id S932650Ab3E1Dyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52575 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758821Ab3E1DyM (ORCPT
+	by vger.kernel.org with ESMTP id S1758845Ab3E1DyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:12 -0400
+	Mon, 27 May 2013 23:54:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Andrea Arcangeli" <aarcange@redhat.com>
+CC: akpm@linux-foundation.org, "Kees Cook" <keescook@chromium.org>,
+        "Dave Airlie" <airlied@redhat.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.970656004@decadent.org.uk>
+Message-ID: <lsq.1369712993.201391471@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [64/94] mm/THP: use pmd_populate() to update the pmd with
- pgtable_t pointer
+Subject: [28/94] drm/radeon: check incoming cliprects pointer
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,43 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
+commit fefaedcfb82d2e57c2320acf60604ab03b750cc0 upstream.
 
-We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
-set_pmd_at is used to set pmd with huge pte entries and architectures
-like ppc64, clear few flags from the pte when saving a new entry.
-Without this change we observe bad pte errors like below on ppc64 with
-THP enabled.
+The "boxes" parameter points into userspace memory. It should be verified
+like any other operation against user memory.
 
-  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/huge_memory.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r300_cmdbuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1937,7 +1937,12 @@ static void collapse_huge_page(struct mm
- 		pte_unmap(pte);
- 		spin_lock(&mm->page_table_lock);
- 		BUG_ON(!pmd_none(*pmd));
--		set_pmd_at(mm, address, pmd, _pmd);
-+		/*
-+		 * We can only use set_pmd_at when establishing
-+		 * hugepmds and never for establishing regular pmds that
-+		 * points to regular pagetables. Use pmd_populate for that
-+		 */
-+		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
- 		spin_unlock(&mm->page_table_lock);
- 		anon_vma_unlock(vma->anon_vma);
- 		goto out;
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -74,7 +74,7 @@ static int r300_emit_cliprects(drm_radeo
+ 		OUT_RING(CP_PACKET0(R300_RE_CLIPRECT_TL_0, nr * 2 - 1));
+ 
+ 		for (i = 0; i < nr; ++i) {
+-			if (DRM_COPY_FROM_USER_UNCHECKED
++			if (DRM_COPY_FROM_USER
+ 			    (&box, &cmdbuf->boxes[n + i], sizeof(box))) {
+ 				DRM_ERROR("copy cliprect faulted\n");
+ 				return -EFAULT;
 
