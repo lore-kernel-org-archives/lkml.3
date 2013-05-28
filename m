@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016Ab3E1GIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 02:08:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47504 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932969Ab3E1GIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 02:08:53 -0400
-Message-ID: <1369721333.22004.24.camel@joe-AO722>
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, atomlin@redhat.com, netdev@vger.kernel.org,
-        davem@davemloft.net, edumazet@google.com, pshelar@nicira.com,
-        mst@redhat.com, alexander.h.duyck@intel.com, aquini@redhat.com,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org
-Date: Mon, 27 May 2013 23:08:53 -0700
-In-Reply-To: <1369721054.3301.531.camel@edumazet-glaptop>
-References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>
-	 <51A39A3F.8080903@redhat.com> <1369693520.3301.477.camel@edumazet-glaptop>
-	 <1369715506.2034.30.camel@joe-AO722>
-	 <1369721054.3301.531.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933049Ab3E1GRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 02:17:41 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:50763 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932977Ab3E1GRi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 02:17:38 -0400
+Date: Tue, 28 May 2013 01:17:05 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Raise the maximum number of usb-serial devices to 256
+To: Tobias Winter <tobias@linuxdingsda.de>
+Cc: linux-usb@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <51A327A4.7020908@linuxdingsda.de> (from tobias@linuxdingsda.de
+	on Mon May 27 04:30:12 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1369721825.2776.36@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-27 at 23:04 -0700, Eric Dumazet wrote:
-> If dump_stack are scary, they are scary for every k[mz]alloc() users,
-> not only __alloc_skb_alloc()
+On 05/27/2013 04:30:12 AM, Tobias Winter wrote:
+> Raise the maximum number of usb-serial devices to 256, which is the
+> actual limit supported by the codebase.
+> 
+> Signed-off-by: Jakob-Tobias Winter <tobias@linuxdingsda.de>
+> Tested-by: Jakob-Tobias Winter <tobias@linuxdingsda.de>
+> 
+> ---
+>  include/linux/usb/serial.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
+> index 302ddf5..c0ce5ed 100644
+> --- a/include/linux/usb/serial.h
+> +++ b/include/linux/usb/serial.h
+> @@ -20,7 +20,7 @@
+>  #include <linux/kfifo.h>
+> 
+>  #define SERIAL_TTY_MAJOR       188     /* Nice legal number now */
+> -#define SERIAL_TTY_MINORS      254     /* loads of devices :) */
+> +#define SERIAL_TTY_MINORS      256     /* loads of devices :) */
+>  #define SERIAL_TTY_NO_MINOR    255     /* No minor was assigned */
 
-True, but perhaps they are relatively rarer though
-for non net use cases.
+So SERIAL_TTY_NO_MINOR is now a valid minor?
 
-
+Rob
