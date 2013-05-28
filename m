@@ -1,116 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3E1FCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 01:02:43 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53635 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab3E1FCl (ORCPT
+	id S932620Ab3E1FFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 01:05:39 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34704 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab3E1FFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 01:02:41 -0400
-Message-ID: <51A43A63.4090703@linux.vnet.ibm.com>
-Date: Tue, 28 May 2013 13:02:27 +0800
+	Tue, 28 May 2013 01:05:38 -0400
+Message-ID: <51A43B16.9080801@linux.vnet.ibm.com>
+Date: Tue, 28 May 2013 13:05:26 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH v2] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <519AE7F2.706@linux.vnet.ibm.com> <20130522084947.GQ26912@twins.programming.kicks-ass.net> <519C8F24.5060207@linux.vnet.ibm.com> <1369234551.5916.40.camel@marge.simpson.net>
-In-Reply-To: <1369234551.5916.40.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+Subject: [RFC PATCH] sched: smart wake-affine
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052804-6102-0000-0000-000003982A14
+x-cbid: 13052804-5490-0000-0000-0000038A0FBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 10:55 PM, Mike Galbraith wrote:
-> On Wed, 2013-05-22 at 17:25 +0800, Michael Wang wrote:
-> 
->> I've not test the hackbench with wakeup-buddy before, will do it this
->> time, I suppose the 15% illegal income will suffered, anyway, it's
->> illegal :)
-> 
-> On a 4 socket 40 core (+SMT) box, hackbench wasn't too happy.
+wake-affine stuff is always trying to pull wakee close to waker, by theory,
+this will bring benefit if waker's cpu cached hot data for wakee, or the
+extreme ping-pong case.
 
-I've done more test and now I got the reason of regression...
+And testing show it could benefit hackbench 15% at most.
 
-The writer and reader in hackbench is N:N, prev writer will write all
-the fd then switch to next writer and repeat the same work, so it's
-impossible to setup the buddy relationship by just record the last one,
-and we have to record all the waker/wakee in history, but that means
-unacceptable memory overhead...
+However, the whole stuff is somewhat blindly and time-consuming, some
+workload therefore suffer.
 
-So this buddy idea seems to be bad...
+And testing show it could damage pgbench 50% at most.
 
-I think a better way may should be allowing pull in most time, but
-filter the very bad cases carefully.
+Thus, wake-affine stuff should be smarter, and realise when to stop
+it's thankless effort.
 
-For workload like pgbench, we actually just need to avoid pull if that
-will damage the 'mother' thread, which is busy and be relied by many
-'child'.
+This patch introduced per task 'nr_wakee_switch', which will be increased
+each time the task switch it's wakee.
 
-I will send out a new implementation, let's see whether it could solve
-the problems ;-)
+So a high 'nr_wakee_switch' means the task has more than one wakee, and
+less the wakee number, higher the wakeup frequency.
 
-Regards,
-Michael Wang
+Now when making the decision on whether to pull or not, pay attention on
+the wakee with a high 'nr_wakee_switch', pull such task may benefit wakee,
+but that imply waker will face cruel competition later, it could be very
+crule or very fast depends on the story behind 'nr_wakee_switch', whatever,
+waker therefore suffer.
 
-> 
-> defaultx = wakeup buddy
-> 
-> tbench 30 localhost
->                          1       5       10       20       40       80      160      320
-> 3.10.0-default      188.13  953.03  1860.03  3180.93  5378.34 10826.06 11342.90 11651.30
-> 3.10.0-defaultx     187.26  934.55  1859.30  3160.29  5016.35 12477.15 12567.05 12068.47
-> 
-> hackbench -l 400 -g 400
-> 3.10.0-default     Time: 3.919    4.250     4.116
-> 3.10.0-defaultx    Time: 9.074   10.985     9.849
-> 
-> aim7 compute
-> AIM Multiuser Benchmark - Suite VII     "1.1"   3.10.0-default     AIM Multiuser Benchmark - Suite VII     "1.1"   3.10.0-defaultx
-> 
-> Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task      Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
-> 1       428.0           100     14.2    4.1     7.1328             1       428.9           100     14.1    4.1     7.1479
-> 1       417.9           100     14.5    4.1     6.9655             1       430.4           100     14.1    4.0     7.1733
-> 1       427.7           100     14.2    4.2     7.1277             1       424.7           100     14.3    4.2     7.0778
-> 5       2350.7          99      12.9    13.8    7.8355             5       2156.6          99      14.1    19.8    7.1886
-> 5       2422.1          99      12.5    12.1    8.0735             5       2155.0          99      14.1    19.7    7.1835
-> 5       2189.3          98      13.8    18.3    7.2977             5       2108.6          99      14.4    21.4    7.0285
-> 10      4515.6          93      13.4    27.6    7.5261             10      4529.1          96      13.4    29.5    7.5486
-> 10      4708.6          96      12.9    24.3    7.8477             10      4597.9          96      13.2    26.9    7.6631
-> 10      4636.6          96      13.1    25.7    7.7276             10      5197.3          98      11.7    14.8    8.6621
-> 20      8053.2          95      15.1    78.1    6.7110             20      9431.9          98      12.8    49.1    7.8599
-> 20      8250.5          92      14.7    67.5    6.8754             20      7973.7          97      15.2    93.4    6.6447
-> 20      8178.1          97      14.8    78.5    6.8151             20      8145.2          95      14.9    78.4    6.7876
-> 40      17413.8         94      13.9    88.6    7.2557             40      16312.2         92      14.9    115.6   6.7968
-> 40      16775.1         93      14.5    111.6   6.9896             40      17070.4         94      14.2    110.6   7.1127
-> 40      16031.7         93      15.1    147.1   6.6799             40      17578.0         94      13.8    96.9    7.3241
-> 80      33666.7         95      14.4    138.4   7.0139             80      33854.7         96      14.3    177.9   7.0531
-> 80      33949.6         97      14.3    128.0   7.0728             80      34164.9         96      14.2    146.4   7.1177
-> 80      35752.2         96      13.6    159.1   7.4484             80      33807.5         96      14.3    127.6   7.0432
-> 160     74814.8         98      13.0    149.8   7.7932             160     75162.8         98      12.9    148.6   7.8295
-> 160     74015.3         97      13.1    149.5   7.7099             160     74642.0         98      13.0    168.2   7.7752
-> 160     73621.9         98      13.2    146.3   7.6689             160     75572.9         98      12.8    163.6   7.8722
-> 320     139210.3        96      13.9    280.1   7.2505             320     139010.8        97      14.0    282.4   7.2401
-> 320     135135.9        96      14.3    277.8   7.0383             320     139611.2        96      13.9    282.2   7.2714
-> 320     139110.5        96      13.9    280.4   7.2453             320     138514.3        97      14.0    281.0   7.2143
-> 640     223538.9        98      17.4    577.2   5.8213             640     224704.5        95      17.3    567.3   5.8517
-> 640     224055.5        97      17.3    575.7   5.8348             640     222385.3        95      17.4    580.1   5.7913
-> 640     225488.4        96      17.2    566.3   5.8721             640     225882.4        93      17.2    563.0   5.8824
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Furthermore, if waker also has a high 'nr_wakee_switch', that imply multiple
+tasks rely on it, waker's higher latency will damage all those tasks, pull
+wakee in such cases seems to be a bad deal.
+
+Thus, when 'waker->nr_wakee_switch / wakee->nr_wakee_switch' become higher
+and higher, the deal seems to be worse and worse.
+
+This patch therefore help wake-affine stuff to stop it's work when:
+
+	wakee->nr_wakee_switch > factor &&
+	waker->nr_wakee_switch > (factor * wakee->nr_wakee_switch)
+
+The factor here is the online cpu number, so more cpu will lead to more pull
+since the trial become more severe.
+
+After applied the patch, pgbench show 42% improvement at most.
+
+Test:
+	Test with 12 cpu X86 server and tip 3.10.0-rc1.
+
+				base	smart
+
+	| db_size | clients |  tps  | |  tps  |
+	+---------+---------+-------+ +-------+
+	| 21 MB   |       1 | 10749 | | 10337 |
+	| 21 MB   |       2 | 21382 | | 21391 |
+	| 21 MB   |       4 | 41570 | | 41808 |
+	| 21 MB   |       8 | 52828 | | 58792 |
+	| 21 MB   |      12 | 48447 | | 54553 |
+	| 21 MB   |      16 | 46246 | | 56726 |	+22.66%
+	| 21 MB   |      24 | 43850 | | 56853 |	+29.65%
+	| 21 MB   |      32 | 43455 | | 55846 |	+28.51%
+	| 7483 MB |       1 |  9290 | |  8848 |
+	| 7483 MB |       2 | 19347 | | 19351 |
+	| 7483 MB |       4 | 37135 | | 37511 |
+	| 7483 MB |       8 | 47310 | | 50210 |
+	| 7483 MB |      12 | 42721 | | 49396 |
+	| 7483 MB |      16 | 41016 | | 51826 |	+26.36%
+	| 7483 MB |      24 | 37540 | | 52579 |	+40.06%
+	| 7483 MB |      32 | 36756 | | 51332 |	+39.66%
+	| 15 GB   |       1 |  8758 | |  8670 |
+	| 15 GB   |       2 | 19204 | | 19249 |
+	| 15 GB   |       4 | 36997 | | 37199 |
+	| 15 GB   |       8 | 46578 | | 50681 |
+	| 15 GB   |      12 | 42141 | | 48671 |
+	| 15 GB   |      16 | 40518 | | 51280 |	+26.56%
+	| 15 GB   |      24 | 36788 | | 52329 |	+42.24%
+	| 15 GB   |      32 | 36056 | | 50350 | +39.64%
+
+
+
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    3 +++
+ kernel/sched/fair.c   |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..1c996c7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1041,6 +1041,9 @@ struct task_struct {
+ #ifdef CONFIG_SMP
+ 	struct llist_node wake_entry;
+ 	int on_cpu;
++	struct task_struct *last_wakee;
++	unsigned long nr_wakee_switch;
++	unsigned long last_switch_decay;
+ #endif
+ 	int on_rq;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f62b16d..eaaceb7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3127,6 +3127,45 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ #endif
+ 
++static void record_wakee(struct task_struct *p)
++{
++	/*
++	 * Rough decay, don't worry about the boundary, really active
++	 * task won't care the loose.
++	 */
++	if (jiffies > current->last_switch_decay + HZ) {
++		current->nr_wakee_switch = 0;
++		current->last_switch_decay = jiffies;
++	}
++
++	if (current->last_wakee != p) {
++		current->last_wakee = p;
++		current->nr_wakee_switch++;
++	}
++}
++
++static int nasty_pull(struct task_struct *p)
++{
++	int factor = cpumask_weight(cpu_online_mask);
++
++	/*
++	 * Yeah, it's the switching-frequency, could means many wakee or
++	 * rapidly switch, use factor here will just help to automatically
++	 * adjust the loose-degree, so more cpu will lead to more pull.
++	 */
++	if (p->nr_wakee_switch > factor) {
++		/*
++		 * wakee is somewhat hot, it needs certain amount of cpu
++		 * resource, so if waker is far more hot, prefer to leave
++		 * it alone.
++		 */
++		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
++			return 1;
++	}
++
++	return 0;
++}
++
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+ 	s64 this_load, load;
+@@ -3136,6 +3175,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	unsigned long weight;
+ 	int balanced;
+ 
++	if (nasty_pull(p))
++		return 0;
++
+ 	idx	  = sd->wake_idx;
+ 	this_cpu  = smp_processor_id();
+ 	prev_cpu  = task_cpu(p);
+@@ -3428,6 +3470,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		/* while loop will break here if sd == NULL */
+ 	}
+ unlock:
++	if (sd_flag & SD_BALANCE_WAKE)
++		record_wakee(p);
++
+ 	rcu_read_unlock();
+ 
+ 	return new_cpu;
+-- 
+1.7.4.1
 
