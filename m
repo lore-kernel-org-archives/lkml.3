@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069Ab3E1VZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:25:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59735 "EHLO
+	id S933249Ab3E1VZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:25:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59755 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758477Ab3E1VZS (ORCPT
+	with ESMTP id S933163Ab3E1VZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:18 -0400
+	Tue, 28 May 2013 17:25:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 66/78] net: vlan,ethtool: netdev_features_t is more than 32 bit
-Date: Tue, 28 May 2013 14:20:15 -0700
-Message-Id: <1369776027-17859-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 55/78] pch_dma: Use GFP_ATOMIC because called from interrupt context
+Date: Tue, 28 May 2013 14:20:04 -0700
+Message-Id: <1369776027-17859-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,44 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-[ Upstream commit b29d3145183da4e07d4b570fa8acdd3ac4a5c572 ]
+commit 5c1ef59168c485318e40ba485c1eba57d81d0faa upstream.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+pdc_desc_get() is called from pd_prep_slave_sg, and the function is
+called from interrupt context(e.g. Uart driver "pch_uart.c").
+In fact, I saw kernel error message.
+So, GFP_ATOMIC must be used not GFP_NOIO.
+
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/8021q/vlan_dev.c | 2 +-
- net/core/ethtool.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/pch_dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 4a6d31a..9cbcfcd 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -617,7 +617,7 @@ static netdev_features_t vlan_dev_fix_features(struct net_device *dev,
- 	netdev_features_t features)
- {
- 	struct net_device *real_dev = vlan_dev_priv(dev)->real_dev;
--	u32 old_features = features;
-+	netdev_features_t old_features = features;
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 3f26172..34c36ec 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
+ 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
  
- 	features &= real_dev->vlan_features;
- 	features |= NETIF_F_RXCSUM;
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index a870543..2a53731 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1418,7 +1418,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
- 	void __user *useraddr = ifr->ifr_data;
- 	u32 ethcmd;
- 	int rc;
--	u32 old_features;
-+	netdev_features_t old_features;
- 
- 	if (!dev || !netif_device_present(dev))
- 		return -ENODEV;
+ 	if (!ret) {
+-		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
++		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
+ 		if (ret) {
+ 			spin_lock(&pd_chan->lock);
+ 			pd_chan->descs_allocated++;
 -- 
 1.8.1.2
 
