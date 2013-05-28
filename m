@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab3E1Dy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52556 "EHLO
+	id S932864Ab3E1Dy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52569 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758858Ab3E1DyL (ORCPT
+	by vger.kernel.org with ESMTP id S1758840Ab3E1DyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:11 -0400
+	Mon, 27 May 2013 23:54:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Gomella, Andrew (NIH/NHLBI)=?UTF-8?Q?=20?=[F]" 
-	<andrew.gomella@nih.gov>
+CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
+        "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.752324303@decadent.org.uk>
+Message-ID: <lsq.1369712993.735547519@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [48/94] USB: ftdi_sio: Add support for Newport CONEX motor drivers
+Subject: [30/94] hwmon: fix error return code in abituguru_probe()
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,56 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
+commit ecacb0b17c08fae89f65468727f0e4b8e91da4e1 upstream.
 
-Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-The devices are the Newport Conex-AGP and Conex-CC motor controllers.
-(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
-(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
-
-usb-devices command yields:
-
-P:  Vendor=104d ProdID=3002 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-CC
-
-as well as
-
-P:  Vendor=104d ProdID=3006 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-AGP
-
-Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/hwmon/abituguru.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -772,6 +772,8 @@
-  */
- #define NEWPORT_VID			0x104D
- #define NEWPORT_AGILIS_PID		0x3000
-+#define NEWPORT_CONEX_CC_PID		0x3002
-+#define NEWPORT_CONEX_AGP_PID		0x3006
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1280,14 +1280,18 @@ static int __devinit abituguru_probe(str
+ 	pr_info("found Abit uGuru\n");
  
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
 
