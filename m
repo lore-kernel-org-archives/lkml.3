@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab3E1Vhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:37:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59653 "EHLO
+	id S932373Ab3E1VYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:24:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59630 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758501Ab3E1VYb (ORCPT
+	with ESMTP id S1758274Ab3E1VYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:31 -0400
+	Tue, 28 May 2013 17:24:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 35/78] dm bufio: avoid a possible __vmalloc deadlock
-Date: Tue, 28 May 2013 14:19:44 -0700
-Message-Id: <1369776027-17859-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 38/78] ACPI / EC: Restart transaction even when the IBF flag set
+Date: Tue, 28 May 2013 14:19:47 -0700
+Message-Id: <1369776027-17859-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,80 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
+commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+The EC driver works abnormally with IBF flag always set.
+IBF means "The host has written a byte of data to the command
+or data port, but the embedded controller has not yet read it".
+If IBF is set in the EC status and not cleared, this will cause
+all subsequent EC requests to fail with a timeout error.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+Change the EC driver so that it doesn't refuse to restart a
+transaction if IBF is set in the status.  Also increase the
+number of transaction restarts to 5, as it turns out that 2
+is not sufficient in some cases.
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
+This bug happens on several different machines (Asus V1S,
+Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
+Sony Vaio SR19VN and others).
 
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-bufio.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/acpi/ec.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index 64eff90..5d2c26e 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -319,6 +319,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 354007d..a563e11 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -223,7 +223,7 @@ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
+ static int ec_poll(struct acpi_ec *ec)
  {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -332,7 +335,26 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 	}
- 
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		noio_flag = memalloc_noio_save();
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		memalloc_noio_restore(noio_flag);
-+
-+	return ptr;
- }
- 
- /*
+ 	unsigned long flags;
+-	int repeat = 2; /* number of command restarts */
++	int repeat = 5; /* number of command restarts */
+ 	while (repeat--) {
+ 		unsigned long delay = jiffies +
+ 			msecs_to_jiffies(ec_delay);
+@@ -241,8 +241,6 @@ static int ec_poll(struct acpi_ec *ec)
+ 			}
+ 			advance_transaction(ec, acpi_ec_read_status(ec));
+ 		} while (time_before(jiffies, delay));
+-		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+-			break;
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->lock, flags);
+ 		start_transaction(ec);
 -- 
 1.8.1.2
 
