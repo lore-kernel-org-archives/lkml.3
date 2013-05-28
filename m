@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934808Ab3E1QSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:18:54 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:38386 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934674Ab3E1QSx (ORCPT
+	id S934816Ab3E1QT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:19:29 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:47837 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934660Ab3E1QT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:18:53 -0400
+	Tue, 28 May 2013 12:19:27 -0400
+Date: Tue, 28 May 2013 16:19:25 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-rdma@vger.kernel.org,
+        Or Gerlitz <or.gerlitz@gmail.com>
+Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
+In-Reply-To: <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
+Message-ID: <0000013eebefddd4-ace0f251-cfba-41cf-b48e-266cb13bcebd-000000@email.amazonses.com>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
+ <20130523104154.GA23650@twins.programming.kicks-ass.net> <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com> <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
+ <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com> <20130524140114.GK23650@twins.programming.kicks-ass.net> <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
+ <CAHGf_=r4sqQKELPh48z=KPyuyAM3uz5Az9RpssUwnK4QRoamHQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
-References: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
-Date: Tue, 28 May 2013 19:18:51 +0300
-Message-ID: <CAHp75VfQwv1gCNX2iactEEMJxLgdcbnivebB5f-hSKYHcN8fOw@mail.gmail.com>
-Subject: Re: [PATCH -next] dmaengine: ste_dma40: fix error return code in d40_probe()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: srinidhi.kasagar@stericsson.com, Linus Walleij <linus.walleij@linaro.org>,
-        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        yongjun_wei@trendmicro.com.cn,
-        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.28-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have you check the ux500-dma40 branch?
+On Sat, 25 May 2013, KOSAKI Motohiro wrote:
 
-https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-stericsson.git/log/?h=ux500-dma40
+> If pinned and mlocked are totally difference intentionally, why IB uses
+> RLIMIT_MEMLOCK. Why don't IB uses IB specific limit and why only IB raise up
+> number of pinned pages and other gup users don't.
+> I can't guess IB folk's intent.
 
-On Tue, May 28, 2013 at 12:06 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> In many of the error handling case, the return value 'ret' not set
-> and 0 will be return from d40_probe() even if error, but we should
-> return a negative error code instead in those error handling case.
-> This patch fixed them, and also removed useless variable 'err'.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/dma/ste_dma40.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 71bf4ec..cbf9c62 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -3474,7 +3474,6 @@ failure:
->
->  static int __init d40_probe(struct platform_device *pdev)
->  {
-> -       int err;
->         int ret = -ENOENT;
->         struct d40_base *base;
->         struct resource *res = NULL;
-> @@ -3576,6 +3575,7 @@ static int __init d40_probe(struct platform_device *pdev)
->                 if (IS_ERR(base->lcpa_regulator)) {
->                         d40_err(&pdev->dev, "Failed to get lcpa_regulator\n");
->                         base->lcpa_regulator = NULL;
-> +                       ret = PTR_ERR(base->lcpa_regulator);
->                         goto failure;
->                 }
->
-> @@ -3590,13 +3590,13 @@ static int __init d40_probe(struct platform_device *pdev)
->         }
->
->         base->initialized = true;
-> -       err = d40_dmaengine_init(base, num_reserved_chans);
-> -       if (err)
-> +       ret = d40_dmaengine_init(base, num_reserved_chans);
-> +       if (ret)
->                 goto failure;
->
->         base->dev->dma_parms = &base->dma_parms;
-> -       err = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
-> -       if (err) {
-> +       ret = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
-> +       if (ret) {
->                 d40_err(&pdev->dev, "Failed to set dma max seg size\n");
->                 goto failure;
->         }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+True another limit would be better. The reason that IB raises the
+pinned pages is because IB permanently pins those pages. Other users of
+gup do that temporarily.
 
+If there are other users that pin pages permanently should also account
+for it.
 
-
--- 
-With Best Regards,
-Andy Shevchenko
