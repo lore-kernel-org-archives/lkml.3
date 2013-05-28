@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab3E1O2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:28:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48033 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934269Ab3E1O2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:28:18 -0400
-Date: Tue, 28 May 2013 16:28:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/3] x86/microcode: vendor abstract out
- save_microcode_in_initrd()
-Message-ID: <20130528142814.GB29233@pd.tnic>
-References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
- <1369323618-5820-2-git-send-email-jacob.shin@amd.com>
+	id S934347Ab3E1OaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:30:12 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:61104 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934279Ab3E1OaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 10:30:10 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+Cc: linux-omap@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: fix IVA2 module base address
+References: <1369741577-21984-1-git-send-email-aida.mynzhasova@skitlab.ru>
+Date: Tue, 28 May 2013 07:30:05 -0700
+In-Reply-To: <1369741577-21984-1-git-send-email-aida.mynzhasova@skitlab.ru>
+	(Aida Mynzhasova's message of "Tue, 28 May 2013 15:46:17 +0400")
+Message-ID: <87bo7vdvo2.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1369323618-5820-2-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 10:40:16AM -0500, Jacob Shin wrote:
-> Currently save_microcode_in_initrd() is declared in vendor neutural
-> microcode.h file, but defined in vendor specific
-> microcode_intel_early.c file. Vendor abstract it out to
-> microcode_core_early.c with a wrapper function.
-> 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Aida Mynzhasova <aida.mynzhasova@skitlab.ru> writes:
+
+> This patch corrects the base address of IVA2 module on omap3430.
+>
+> Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+
+I know it looks a bit weird to have a negative offset like this, but
+it's actually correct.  These offsets are used relative to
+prm_base (on 34xx, it's OMAP3430_PRM_BASE defined in omap34xx.h).
+So I suggest you double check the values there, and cross reference to
+the "PRCM Register Manual" section of the TRM (last section of the PRCM
+chapter.)
+
+Thanks,
+
+Kevin
+
 > ---
->  arch/x86/include/asm/microcode_intel.h  |    5 +++++
->  arch/x86/kernel/microcode_core_early.c  |   10 ++++++++++
->  arch/x86/kernel/microcode_intel_early.c |    2 +-
->  3 files changed, 16 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
-> index 5356f92..538e407 100644
-> --- a/arch/x86/include/asm/microcode_intel.h
-> +++ b/arch/x86/include/asm/microcode_intel.h
-> @@ -67,10 +67,15 @@ update_match_revision(struct microcode_header_intel *mc_header, int rev);
->  extern void __init load_ucode_intel_bsp(void);
->  extern void __cpuinit load_ucode_intel_ap(void);
->  extern void show_ucode_info_early(void);
-> +extern int __init save_microcode_in_initrd_intel(void);
->  #else
->  static inline __init void load_ucode_intel_bsp(void) {}
->  static inline __cpuinit void load_ucode_intel_ap(void) {}
->  static inline void show_ucode_info_early(void) {}
-> +static inline int __init save_microcode_in_initrd_intel(void)
-> +{
-> +	return -EINVAL;
-> +}
-
-We leave those on one line as in the diff I sent you earlier.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+>  arch/arm/mach-omap2/prcm-common.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-omap2/prcm-common.h b/arch/arm/mach-omap2/prcm-common.h
+> index c7d355f..d5ec044 100644
+> --- a/arch/arm/mach-omap2/prcm-common.h
+> +++ b/arch/arm/mach-omap2/prcm-common.h
+> @@ -37,7 +37,7 @@
+>  #define OMAP2430_MDM_MOD				0xc00
+>  
+>  /* IVA2 module is < base on 3430 */
+> -#define OMAP3430_IVA2_MOD				-0x800
+> +#define OMAP3430_IVA2_MOD				0x800
+>  #define OMAP3430ES2_SGX_MOD				GFX_MOD
+>  #define OMAP3430_CCR_MOD				PLL_MOD
+>  #define OMAP3430_DSS_MOD				0x600
