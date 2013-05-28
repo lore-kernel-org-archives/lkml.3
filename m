@@ -1,85 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934261Ab3E1OU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:20:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52385 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933972Ab3E1OU4 (ORCPT
+	id S934292Ab3E1OVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:21:08 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56812 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933972Ab3E1OVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:20:56 -0400
-Date: Tue, 28 May 2013 10:20:40 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Chao Xie <cxie4@marvell.com>
-Cc: yi zhang <yizhang.mrvl@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "jett.zhou@marvell.com" <jett.zhou@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yi Zhang <yizhang@marvell.com>
-Message-ID: <20130528142040.GI3660@sirena.org.uk>
-References: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
- <20130522161422.GP1627@sirena.org.uk>
- <CAK=oMXepj7tmZJ3=b9ja+E1N9eAPmsPhBefAzoswVyGWBXwNOA@mail.gmail.com>
- <20130525195601.GJ7660@sirena.org.uk>
- <CAK=oMXeCUgc5E1ZaXcbrbUB6XGD135a7zRD-CC5apEytx2j=fw@mail.gmail.com>
- <20130528100415.GE3660@sirena.org.uk>
- <AAD1C6EB06EE3649B35B7E026785068D2581253EA9@SC-VEXCH2.marvell.com>
+	Tue, 28 May 2013 10:21:04 -0400
+Message-ID: <51A4BD38.2040302@gmail.com>
+Date: Tue, 28 May 2013 22:20:40 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X+nYw8KZ/oNxZ8JS"
-Content-Disposition: inline
-In-Reply-To: <AAD1C6EB06EE3649B35B7E026785068D2581253EA9@SC-VEXCH2.marvell.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.140.31
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: 88pm800: add regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH v8, part3 12/14] mm: correctly update zone->mamaged_pages
+References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com> <1369575522-26405-13-git-send-email-jiang.liu@huawei.com> <51A36633.2030905@cogentembedded.com>
+In-Reply-To: <51A36633.2030905@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sergei,
+	Thanks for review!
 
---X+nYw8KZ/oNxZ8JS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 05/27/2013 09:57 PM, Sergei Shtylyov wrote:
+> On 26-05-2013 17:38, Jiang Liu wrote:
+> 
+>    Typo in the subject: s/mamaged_pages/managed_pages/.
+Will fix it in next version.
 
-On Tue, May 28, 2013 at 05:10:00AM -0700, Chao Xie wrote:
+> 
+>> Enhance adjust_managed_page_count() to adjust totalhigh_pages for
+>> highmem pages. And change code which directly adjusts totalram_pages
+>> to use adjust_managed_page_count() because it adjusts totalram_pages,
+>> totalhigh_pages and zone->managed_pages altogether in a safe way.
+> 
+>> Remove inc_totalhigh_pages() and dec_totalhigh_pages() from xen/balloon
+>> driver bacause adjust_managed_page_count() has already adjusted
+>> totalhigh_pages.
+> 
+>> This patch also fixes two bugs:
+>> 1) enhances virtio_balloon driver to adjust totalhigh_pages when
+>>     reserve/unreserve pages.
+>> 2) enhance memory_hotplug.c to adjust totalhigh_pages when hot-removing
+>>     memory.
+> 
+>> We still need to deal with modifications of totalram_pages in file
+>> arch/powerpc/platforms/pseries/cmm.c, but need help from PPC experts.
+> 
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+>> Cc: Wen Congyang <wency@cn.fujitsu.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Tang Chen <tangchen@cn.fujitsu.com>
+>> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: virtualization@lists.linux-foundation.org
+>> Cc: xen-devel@lists.xensource.com
+>> Cc: linux-mm@kvack.org
+>> ---
+>>   drivers/virtio/virtio_balloon.c |  8 +++++---
+>>   drivers/xen/balloon.c           | 23 +++++------------------
+>>   mm/hugetlb.c                    |  2 +-
+>>   mm/memory_hotplug.c             | 16 +++-------------
+>>   mm/page_alloc.c                 | 10 +++++-----
+>>   5 files changed, 19 insertions(+), 40 deletions(-)
+> 
+>> diff --git a/drivers/virtio/virtio_balloon.c
+>> b/drivers/virtio/virtio_balloon.c
+>> index bd3ae32..6649968 100644
+>> --- a/drivers/virtio/virtio_balloon.c
+>> +++ b/drivers/virtio/virtio_balloon.c
+> [...]
+>> @@ -160,11 +160,13 @@ static void fill_balloon(struct virtio_balloon
+>> *vb, size_t num)
+>>   static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+>>   {
+>>       unsigned int i;
+>> +    struct page *page;
+> 
+>    Why not declare it right in the *for* loop? You could use intializer
+> then...
+Good suggestion, will change it in next version.
 
-Please fix your mail client to word wrap within paragraphs.
+> 
+>>
+>>       /* Find pfns pointing at start of each page, get pages and free
+>> them. */
+>>       for (i = 0; i < num; i += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+>> -        balloon_page_free(balloon_pfn_to_page(pfns[i]));
+>> -        totalram_pages++;
+>> +        page = balloon_pfn_to_page(pfns[i]);
+>> +        balloon_page_free(page);
+>> +        adjust_managed_page_count(page, 1);
+>>       }
+>>   }
+>>
+> [...]
+> 
+> WBR, Sergei
+> 
 
-> Thanks for your review.
-> Because structure regulator_desc only accepts the voltage table as constant.
-> struct regulator_desc {
-> 	...
-> 	const unsigned int *volt_table;
-> 	...
-> };
-> If we want to make use of the volt_table, and the help functions regulator_map_voltage_iterate and regulator_list_voltage_table, we have to initialize the tables as what we do now.
-
-If you are calculating this stuff you shouldn't be providing a voltage
-table at all.  The whole point is that these things shouldn't be using
-voltage tables.
-
---X+nYw8KZ/oNxZ8JS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRpL01AAoJELSic+t+oim9NOAP/iSPY7vFXmEMSagKgD6OdWtW
-/SLGY+zh9AD4Z+ajf7NvGBX6G5HlWBm36QG/Fccc0gR3sNMBv5ljdPQWvKQ5/aUb
-GOSPnuIasAbKQW+mfl3fRO1IHaBUQDw/4B5qNgUTrqn+odowpxNq8qVaGyMVu7WR
-yPUaB94abzPqirerRJC8LiJ06VGT08GRk5XvNKPhX9POS9b5hz4AaaDi2WbDqLFv
-kRulH/1y1UD/psnkgs7tOPbWzW1ycGoihHHDAJdMuwqBK3/ml63/nrWPjQwsDltO
-hoS7ZHLYnCDeLotILc0esuA8/RmHeEImX8WUukWybxaJ9f2hUhfnwn5JD1IvkCmi
-DLiodoJR0PYJT/ZlgPZ8Eg+1rM7fbT/daX42tjSSWBCXNZj2v76JO0duKEgwkmgc
-UoBOTHtnE+4Nw5JlwHDkBBAHnGVqAqgypYCuj/cG669ydlKOtFcFFgsF+KOUbSbJ
-Vne2P6sObh1vYArlQ27BTC+/orOF8b6y/n4ARX/lnptEP4Ev0Kf0TBnBrsnfxRbB
-usdbbVSbEUno2HlbisfEREwFeVHplBrZIR+mxZpa8SQ2araHkdjGG05oOuVoEXqF
-5EWkakCfoPVB22i4y7fTBqQ/OIxXMcfpXL7SRuwRHZrAysidy86Nwc/qcgrdpGy8
-9aiS4/6VK7Ppclq3i3zZ
-=jEOW
------END PGP SIGNATURE-----
-
---X+nYw8KZ/oNxZ8JS--
