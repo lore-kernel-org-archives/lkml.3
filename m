@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3E1VVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:21:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59553 "EHLO
+	id S1757399Ab3E1VVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:21:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59556 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab3E1VVY (ORCPT
+	with ESMTP id S1757188Ab3E1VVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 May 2013 17:21:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Damien Lespiau <damien.lespiau@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 01/78] drm/i915: Revert hdmi HDP pin checks
-Date: Tue, 28 May 2013 14:19:10 -0700
-Message-Id: <1369776027-17859-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 04/78] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
+Date: Tue, 28 May 2013 14:19:13 -0700
+Message-Id: <1369776027-17859-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -30,88 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit 202adf4b9f5957b26a1cb97267d78e0edb319c5e upstream.
+commit e5072664f8237cf53b0bd68a51aa1a7bc69061c5 upstream.
 
-This reverts
+Since 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
+on blk_register_queue() instead of blk_init_allocated_queue()"),
+the following warning appears when multipath is used with CONFIG_PREEMPT=y.
 
-commit 8ec22b214d76773c9d89f4040505ce10f677ed9a
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri May 11 18:01:34 2012 +0100
+This patch moves blk_queue_bypass_start() before radix_tree_preload()
+to avoid the sleeping call while preemption is disabled.
 
-    drm/i915/hdmi: Query the live connector status bit for G4x
+  BUG: scheduling while atomic: multipath/2460/0x00000002
+  1 lock held by multipath/2460:
+   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+  Modules linked in: ...
+  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+  Call Trace:
+   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+   [<ffffffff814291e6>] schedule+0x64/0x66
+   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+   [<ffffffff8106fb18>] ? complete+0x21/0x53
+   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
 
-and
-
-commit b0ea7d37a8f63eeec5ae80b4a6403cfba01da02f
-Author: Damien Lespiau <damien.lespiau@intel.com>
-Date:   Thu Dec 13 16:09:00 2012 +0000
-
-    drm/i915/hdmi: Read the HPD status before trying to read the EDID
-
-They reliably cause HDMI to not be detected on some systems (like my
-ivb or the bug reporters gm45). To fix up the very slow unplug issues
-we might want to fire up a 2nd detect cycle a few hundred ms after
-each hotplug. But for now at least make displays work again.
-
-I somewhat suspect that this is confined to HDMI connectors, since all
-the machines I have with DP+ outputs work correctly.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52361
-Cc: Damien Lespiau <damien.lespiau@intel.com>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: revert 8ec22b21 for 3.8 backport ]
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[ Jun'ichi: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_hdmi.c | 24 ------------------------
- 1 file changed, 24 deletions(-)
+ block/blk-cgroup.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index 2ee9821..8246706 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -769,27 +769,6 @@ bool intel_hdmi_mode_fixup(struct drm_encoder *encoder,
- 	return true;
- }
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index b8858fb..53628e4 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
+ 	if (!blkg)
+ 		return -ENOMEM;
  
--static bool g4x_hdmi_connected(struct intel_hdmi *intel_hdmi)
--{
--	struct drm_device *dev = intel_hdmi_to_dev(intel_hdmi);
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	uint32_t bit;
+-	preloaded = !radix_tree_preload(GFP_KERNEL);
 -
--	switch (intel_hdmi->sdvox_reg) {
--	case SDVOB:
--		bit = HDMIB_HOTPLUG_LIVE_STATUS;
--		break;
--	case SDVOC:
--		bit = HDMIC_HOTPLUG_LIVE_STATUS;
--		break;
--	default:
--		bit = 0;
--		break;
--	}
--
--	return I915_READ(PORT_HOTPLUG_STAT) & bit;
--}
--
- static enum drm_connector_status
- intel_hdmi_detect(struct drm_connector *connector, bool force)
- {
-@@ -801,9 +780,6 @@ intel_hdmi_detect(struct drm_connector *connector, bool force)
- 	struct edid *edid;
- 	enum drm_connector_status status = connector_status_disconnected;
+ 	blk_queue_bypass_start(q);
  
--	if (IS_G4X(connector->dev) && !g4x_hdmi_connected(intel_hdmi))
--		return status;
--
- 	intel_hdmi->has_hdmi_sink = false;
- 	intel_hdmi->has_audio = false;
- 	edid = drm_get_edid(connector,
++	preloaded = !radix_tree_preload(GFP_KERNEL);
++
+ 	/* make sure the root blkg exists and count the existing blkgs */
+ 	spin_lock_irq(q->queue_lock);
+ 
 -- 
 1.8.1.2
 
