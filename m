@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab3E1ESA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:18:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52467 "EHLO
+	id S1758998Ab3E1ER6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:17:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52499 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758762Ab3E1Dy2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758811Ab3E1Dy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:28 -0400
+	Mon, 27 May 2013 23:54:29 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alasdair G Kergon" <agk@redhat.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>
+CC: akpm@linux-foundation.org, "Josef Bacik" <jbacik@fusionio.com>,
+        "Gabriel de Perthuis" <g2p.code+btrfs@gmail.com>,
+        "Gabriel de Perthuis" <g2p.code@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.915886107@decadent.org.uk>
+Message-ID: <lsq.1369712993.712451516@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [25/94] dm bufio: avoid a possible __vmalloc deadlock
+Subject: [49/94] btrfs: don't stop searching after encountering the wrong item
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,79 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Gabriel de Perthuis <g2p.code@gmail.com>
 
-commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
+commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+The search ioctl skips items that are too large for a result buffer, but
+inline items of a certain size occuring before any search result is
+found would trigger an overflow and stop the search entirely.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
-
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[bwh: Backported to 3.2 as recommended]
+Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-bufio.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ fs/btrfs/ioctl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -322,6 +322,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
- {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -335,7 +338,28 @@ static void *alloc_buffer_data(struct dm
- 	}
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1571,7 +1571,11 @@ static noinline int copy_to_sk(struct bt
+ 		item_off = btrfs_item_ptr_offset(leaf, i);
+ 		item_len = btrfs_item_size_nr(leaf, i);
  
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
+-		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
++		btrfs_item_key_to_cpu(leaf, key, i);
++		if (!key_in_sk(key, sk))
++			continue;
 +
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY) {
-+		noio_flag = current->flags & PF_MEMALLOC;
-+		current->flags |= PF_MEMALLOC;
-+	}
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-+
-+	return ptr;
- }
++		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
+ 			item_len = 0;
  
- /*
+ 		if (sizeof(sh) + item_len + *sk_offset >
+@@ -1580,10 +1584,6 @@ static noinline int copy_to_sk(struct bt
+ 			goto overflow;
+ 		}
+ 
+-		btrfs_item_key_to_cpu(leaf, key, i);
+-		if (!key_in_sk(key, sk))
+-			continue;
+-
+ 		sh.objectid = key->objectid;
+ 		sh.offset = key->offset;
+ 		sh.type = key->type;
 
