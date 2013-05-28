@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab3E1Ref (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:34:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46865 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934735Ab3E1Ree (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:34:34 -0400
-Date: Tue, 28 May 2013 20:33:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Felipe Balbi'" <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        "'Greg KH'" <gregkh@linuxfoundation.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Praveen Paneri'" <p.paneri@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] usb: phy: samsung: Add support for EXYNOS4210
-Message-ID: <20130528173345.GC15794@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <000301ce5b82$4fa829e0$eef87da0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kVXhAStRUZ/+rrGn"
-Content-Disposition: inline
-In-Reply-To: <000301ce5b82$4fa829e0$eef87da0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964842Ab3E1Re7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:34:59 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54215 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964796Ab3E1Re6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 13:34:58 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Tue, 28 May 2013 12:34:56 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
+        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
+Subject: [PATCH] powerpc/pci: Improve device hotplug initialization
+Date: Tue, 28 May 2013 10:35:14 -0700
+Message-Id: <1369762514-27352-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kVXhAStRUZ/+rrGn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 37f02195b (powerpc/pci: fix PCI-e devices rescan issue on powerpc
+platform) fixes a problem with interrupt and DMA initialization on hot
+plugged devices. With this commit, interrupt and DMA initialization for
+hot plugged devices is handled in the pci device enable function.
 
-On Tue, May 28, 2013 at 06:04:07PM +0900, Jingoo Han wrote:
-> @@ -165,6 +174,18 @@ static void samsung_usb2phy_enable(struct samsung_us=
-bphy *sphy)
->  	u32 phyclk;
->  	u32 rstcon;
-> =20
-> +	switch (sphy->drv_data->cpu_type) {
-> +	case TYPE_EXYNOS4210:
-> +		atomic_inc(&sphy->phy_usage);
+This approach has a couple of drawbacks. First, it creates two code paths
+for device initialization, one for hot plugged devices and another for devices
+known during the initial PCI scan. Second, the initialization code for hot
+plugged devices is only called when the device is enabled, ie typically
+in the probe function. Also, the platform specific setup code is called each
+time pci_enable_device() is called, not only once during device discovery,
+meaning it is actually called multiple times, once for devices discovered
+during the initial scan and again each time a driver is re-loaded.
 
-please switch over to the generic reference counting which I have
-pending in my testing branch. It'll be available for v3.11 merge window.
+The visible result is that interrupt pins are only assigned to hot plugged
+devices when the device driver is loaded. Effectively this changes the PCI
+probe API, since pci_dev->irq and the device's dma configuration will now
+only be valid after pci_enable() was called at least once. A more subtle
+change is that platform specific PCI device setup is moved from device
+discovery into the driver's probe function, more specifically into the
+pci_enable_device() call.
 
---=20
-balbi
+To fix the inconsistencies, replace pcibios_setup_device() with
+pcibios_add_device(). Drop explicit calls to pcibios_setup_device();
+this makes pcibios_setup_bus_devices() a noop function which could
+eventually be dropped. With this change, device initialization is called
+exactly once and consistently for both static and hot plugged devices.
 
---kVXhAStRUZ/+rrGn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Since pcibios_add_device() is called from pci_device_add(), which initializes
+the numa node, drop the now redundant additional numa node initialization.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Cc: Yuanquan Chen <Yuanquan.Chen@freescale.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/powerpc/kernel/pci-common.c |   25 ++++---------------------
+ 1 file changed, 4 insertions(+), 21 deletions(-)
 
-iQIcBAEBAgAGBQJRpOp5AAoJEIaOsuA1yqRE8VcP/Aha+/Nm90RGNGMB5v9nJiwI
-LtpFIOUBlIfVJIEk6BkHY6NWypJu359ATLRytEvxW4vFf3cuNikm7cGOnAfmF5Bp
-K7CQ8HTik04mB3R7IW7V4vIL7xAqUDYuXH4P/9QL0mbsSxAYUSATjXMZP4m8/a8Z
-K/XHpqyshbOzmqdnNuB4flJ1CEZFsLMgisE4z20f7L/E1WANLjJrCEwQ+JTrdJu5
-KqIJTbChO+bGKyDdB63NWjn0Atrta2iXN+xbTbNm02Q+T4kyiXJXI8FRqhiDa8rI
-9zN6Zbeax24Rtz9e9CzCfTDPBBFK5uIPg/bSCJor0lEMTbKT4MHWq9uqLmpGKYsD
-qzdKE0eVzyhmEVwdlMGw16C2cZ0qsEhZbFV0oCNPUYreUUt0UtwyaXwzqVdFzZYc
-fXA+Xz/94LYedrscWuhWYwbfb/ZPTTW15Ti2+WCLLfdVBMDEOuwAYzBSKGbR15/A
-wyZm2xdSJEntuBZvk0YapxKWjCSpNH6n1fSNtSTqY2N4ou2exfQanTT5kyYzBBz/
-fLgYcSPZHUYMn1scYFwDM5O2mxJ6YsJKxrExJlHzACPaqBEPnEbjiBH3Zb+BJl+N
-++i6Ogntjr3dgMm7w4LHbQZLYwCJBLBkRvKR0s4sRLQ/ZuDQcC6vjRpd92QZsgbM
-v4IfBw/8TAImYdhzDdSd
-=JTfI
------END PGP SIGNATURE-----
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 6053f03..41dd980 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1004,13 +1004,8 @@ void pcibios_setup_bus_self(struct pci_bus *bus)
+ 		ppc_md.pci_dma_bus_setup(bus);
+ }
+ 
+-void pcibios_setup_device(struct pci_dev *dev)
++int pcibios_add_device(struct pci_dev *dev)
+ {
+-	/* Fixup NUMA node as it may not be setup yet by the generic
+-	 * code and is needed by the DMA init
+-	 */
+-	set_dev_node(&dev->dev, pcibus_to_node(dev->bus));
+-
+ 	/* Hook up default DMA ops */
+ 	set_dma_ops(&dev->dev, pci_dma_ops);
+ 	set_dma_offset(&dev->dev, PCI_DRAM_OFFSET);
+@@ -1023,24 +1018,16 @@ void pcibios_setup_device(struct pci_dev *dev)
+ 	pci_read_irq_line(dev);
+ 	if (ppc_md.pci_irq_fixup)
+ 		ppc_md.pci_irq_fixup(dev);
++
++	return 0;
+ }
+ 
+ void pcibios_setup_bus_devices(struct pci_bus *bus)
+ {
+-	struct pci_dev *dev;
+-
+ 	pr_debug("PCI: Fixup bus devices %d (%s)\n",
+ 		 bus->number, bus->self ? pci_name(bus->self) : "PHB");
+ 
+-	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		/* Cardbus can call us to add new devices to a bus, so ignore
+-		 * those who are already fully discovered
+-		 */
+-		if (dev->is_added)
+-			continue;
+-
+-		pcibios_setup_device(dev);
+-	}
++	/* nothing to do */
+ }
+ 
+ void pcibios_set_master(struct pci_dev *dev)
+@@ -1479,10 +1466,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 		if (ppc_md.pcibios_enable_device_hook(dev))
+ 			return -EINVAL;
+ 
+-	/* avoid pcie irq fix up impact on cardbus */
+-	if (dev->hdr_type != PCI_HEADER_TYPE_CARDBUS)
+-		pcibios_setup_device(dev);
+-
+ 	return pci_enable_resources(dev, mask);
+ }
+ 
+-- 
+1.7.9.7
 
---kVXhAStRUZ/+rrGn--
