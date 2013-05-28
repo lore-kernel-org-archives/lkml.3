@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab3E1ER6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:17:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52499 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758811Ab3E1Dy3 (ORCPT
+	id S1752480Ab3E1EWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:22:32 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53921 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab3E1EWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:29 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Tue, 28 May 2013 00:22:30 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Josef Bacik" <jbacik@fusionio.com>,
-        "Gabriel de Perthuis" <g2p.code+btrfs@gmail.com>,
-        "Gabriel de Perthuis" <g2p.code@gmail.com>
-Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.712451516@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [49/94] btrfs: don't stop searching after encountering the wrong item
-In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
+References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com>
+	<1369583597-3801-2-git-send-email-jiang.liu@huawei.com>
+Date: Mon, 27 May 2013 21:22:29 -0700
+X-Google-Sender-Auth: iJxHaLDkTi_cT4Tygkj-6QzovF0
+Message-ID: <CAE9FiQUBQRrkiub_EGZ1TZ-iccLts7hDff3kOz70uq=McjpoGg@mail.gmail.com>
+Subject: Re: [PATCH v3, part2 01/20] PCI: introduce hotplug-safe PCI bus iterators
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.46-rc1 review patch.  If anyone has any objections, please let me know.
+On Sun, May 26, 2013 at 8:52 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Introduce hotplug-safe PCI bus iterators as below, which hold a
+> reference on the returned PCI bus object.
+> bool pci_bus_exists(int domain, int busnr);
+> struct pci_bus *pci_get_bus(int domain, int busnr);
+> struct pci_bus *pci_get_next_bus(struct pci_bus *from);
+> struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
+> #define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
+> #define for_each_pci_root_bus(b)  \
+>                 for (b = NULL; (b = pci_get_next_root_bus(b)); )
+>
+> The long-term goal is to remove hotplug-unsafe pci_find_bus(),
+> pci_find_next_bus() and the global pci_root_buses list.
+>
+> These new interfaces may be a littler slower than existing interfaces,
+> but it should be acceptable because they are not used on hot paths.
 
-------------------
+looks like go over all buses to find out several root buses is not good.
 
-From: Gabriel de Perthuis <g2p.code@gmail.com>
 
-commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-The search ioctl skips items that are too large for a result buffer, but
-inline items of a certain size occuring before any search result is
-found would trigger an overflow and stop the search entirely.
+I take that back.
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/pci/pci.h    |   1 +
+>  drivers/pci/probe.c  |   2 +-
+>  drivers/pci/search.c | 159 +++++++++++++++++++++++++++++++++++++++++----------
+>  include/linux/pci.h  |  23 +++++++-
+>  4 files changed, 153 insertions(+), 32 deletions(-)
+>
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 68678ed..8fe15f6 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -126,6 +126,7 @@ static inline void pci_remove_legacy_files(struct pci_bus *bus) { return; }
+>
+>  /* Lock for read/write access to pci device and bus lists */
+>  extern struct rw_semaphore pci_bus_sem;
+> +extern struct class pcibus_class;
+>
+>  extern raw_spinlock_t pci_lock;
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 2830070..1004a05 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -93,7 +93,7 @@ static void release_pcibus_dev(struct device *dev)
+>         kfree(pci_bus);
+>  }
+>
+> -static struct class pcibus_class = {
+> +struct class pcibus_class = {
+>         .name           = "pci_bus",
+>         .dev_release    = &release_pcibus_dev,
+>         .dev_attrs      = pcibus_dev_attrs,
+...
+> +static int pci_match_next_root_bus(struct device *dev, const void *data)
+> +{
+> +       return pci_is_root_bus(to_pci_bus(dev));
+>  }
+...
+> +
+> +/**
+> + * pci_find_next_root_bus - begin or continue searching for a PCI root bus
+> + * @from: Previous PCI bus found, or %NULL for new search.
+> + *
+> + * Iterates through the list of known PCI root busses. If a PCI bus is found,
+> + * the reference count to the root bus is incremented and a pointer to it is
+> + * returned. Otherwise, %NULL is returned. A new search is initiated by
+> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
+> + * searches continue from next root bus on the global list. The reference
+> + * count for @from is always decremented if it is not %NULL.
+> + */
+> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
+> +{
+> +       struct device *dev = from ? &from->dev : NULL;
+> +
+> +       WARN_ON(in_interrupt());
+> +       dev = class_find_device(&pcibus_class, dev, NULL,
+> +                               &pci_match_next_root_bus);
+> +       pci_bus_put(from);
+> +       if (dev)
+> +               return to_pci_bus(dev);
+> +
+> +       return NULL;
+>  }
+> +EXPORT_SYMBOL(pci_get_next_root_bus);
 
-Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- fs/btrfs/ioctl.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+this patchset is most doing same thing like my for_each_host_bridge patchset.
+that patchset add bus_type for host_bridge and loop with each_...bus
+to find host_bridge
+and to its bus.
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1571,7 +1571,11 @@ static noinline int copy_to_sk(struct bt
- 		item_off = btrfs_item_ptr_offset(leaf, i);
- 		item_len = btrfs_item_size_nr(leaf, i);
- 
--		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
-+		btrfs_item_key_to_cpu(leaf, key, i);
-+		if (!key_in_sk(key, sk))
-+			continue;
-+
-+		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
- 			item_len = 0;
- 
- 		if (sizeof(sh) + item_len + *sk_offset >
-@@ -1580,10 +1584,6 @@ static noinline int copy_to_sk(struct bt
- 			goto overflow;
- 		}
- 
--		btrfs_item_key_to_cpu(leaf, key, i);
--		if (!key_in_sk(key, sk))
--			continue;
--
- 		sh.objectid = key->objectid;
- 		sh.offset = key->offset;
- 		sh.type = key->type;
+looks like for each host bridge should be right direction.
 
+also late we could add per host bridge lock instead of whole pci bus sem etc.
+
+Thanks
+
+Yinghai
