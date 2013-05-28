@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab3E1LgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:36:22 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48629 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932878Ab3E1LgU (ORCPT
+	id S933182Ab3E1Ll3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:41:29 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:41437 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933051Ab3E1Ll1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:36:20 -0400
-Date: Tue, 28 May 2013 12:36:17 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] x86/PCI: setup data may be in highmem
-Message-ID: <20130528113617.GR14575@console-pimps.org>
-References: <1369215782-32697-1-git-send-email-matt@console-pimps.org>
- <CAErSpo4id0RFARD6zCxeMo-uasPBnL7KpUFPqhW4zLgCxrF5fw@mail.gmail.com>
+	Tue, 28 May 2013 07:41:27 -0400
+Message-ID: <51A497DA.50803@redhat.com>
+Date: Tue, 28 May 2013 13:41:14 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4id0RFARD6zCxeMo-uasPBnL7KpUFPqhW4zLgCxrF5fw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Daney <ddaney.cavm@gmail.com>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v6 0/6] mips/kvm: Fix ABI for compatibility with 64-bit
+ guests.
+References: <1369327750-28580-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1369327750-28580-1-git-send-email-ddaney.cavm@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 May, at 08:38:10AM, Bjorn Helgaas wrote:
-> pcibios_add_device() is mostly called at boot-time, when
-> early_ioremap() probably works well.  But it's also called when we
-> hot-add devices later, and it looks like early_ioremap() will then
-> generate warnings because "system_state != SYSTEM_BOOTING".
+Il 23/05/2013 18:49, David Daney ha scritto:
+> From: David Daney <david.daney@cavium.com>
+> 
+> The initial patch set implementing MIPS KVM does not handle 64-bit
+> guests or use of the FPU.  This patch set corrects these ABI issues,
+> and does some very minor clean up.
+> 
+> Changes from v5: Adjust for kvm.h moving to uapi/asm.  Code formatting
+>                  to achieve line lengths <= 80.
+> 
+> Changes from v4: No code change, just keep more of the code in
+>                  kvm_mips.c rather than kvm_trap_emul.c
+> 
+> Changes from v3: Use KVM_SET_ONE_REG instead of KVM_SET_MSRS.  Added
+>                  ENOIOCTLCMD patch.
+> 
+> Changes from v2: Split into five parts, no code change.
+> 
+> David Daney (6):
+>   mips/kvm: Fix ABI for use of FPU.
+>   mips/kvm: Fix ABI for use of 64-bit registers.
+>   mips/kvm: Fix name of gpr field in struct kvm_regs.
+>   mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in
+>     kvm_arch_vcpu_ioctl_{s,g}et_regs
+>   mips/kvm: Fix ABI by moving manipulation of CP0 registers to
+>     KVM_{G,S}ET_ONE_REG
+>   mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
+> 
+>  arch/mips/include/asm/kvm_host.h |   4 -
+>  arch/mips/include/uapi/asm/kvm.h | 137 +++++++++++++++----
+>  arch/mips/kvm/kvm_mips.c         | 280 ++++++++++++++++++++++++++++++++++++---
+>  arch/mips/kvm/kvm_trap_emul.c    |  50 -------
+>  4 files changed, 369 insertions(+), 102 deletions(-)
+> 
 
-Oops. Good point. Is there any reason we can't use ioremap()?
+Applied, thanks.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Paolo
