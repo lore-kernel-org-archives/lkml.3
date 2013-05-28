@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934874Ab3E1QsR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:48:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47264 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934859Ab3E1QsN (ORCPT
+	id S934863Ab3E1Qya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:54:30 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26618 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934805Ab3E1Qy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:48:13 -0400
-Date: Tue, 28 May 2013 17:48:01 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] x86/PCI: setup data may be in highmem
-Message-ID: <20130528164801.GA2345@srcf.ucam.org>
-References: <1369215782-32697-1-git-send-email-matt@console-pimps.org>
- <CAErSpo4id0RFARD6zCxeMo-uasPBnL7KpUFPqhW4zLgCxrF5fw@mail.gmail.com>
- <20130528113617.GR14575@console-pimps.org>
- <CAErSpo5DG61wvQEw_9z8vm6Lp=E0urq6LG5SOuWSawkNeDkF+A@mail.gmail.com>
+	Tue, 28 May 2013 12:54:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19i8TWTPu3Ag7XMdAKCpfMn1y1eY9AjUNM=
+Date: Tue, 28 May 2013 12:54:01 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
+Message-ID: <20130528165401.GX31290@titan.lakedaemon.net>
+References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130528154047.GT31290@titan.lakedaemon.net>
+ <20130528175343.77c6353d@skate>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo5DG61wvQEw_9z8vm6Lp=E0urq6LG5SOuWSawkNeDkF+A@mail.gmail.com>
+In-Reply-To: <20130528175343.77c6353d@skate>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 10:31:51AM -0600, Bjorn Helgaas wrote:
-> On Tue, May 28, 2013 at 5:36 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> > On Fri, 24 May, at 08:38:10AM, Bjorn Helgaas wrote:
-> >> pcibios_add_device() is mostly called at boot-time, when
-> >> early_ioremap() probably works well.  But it's also called when we
-> >> hot-add devices later, and it looks like early_ioremap() will then
-> >> generate warnings because "system_state != SYSTEM_BOOTING".
-> >
-> > Oops. Good point. Is there any reason we can't use ioremap()?
+On Tue, May 28, 2013 at 05:53:43PM +0200, Thomas Petazzoni wrote:
+> On Tue, 28 May 2013 11:40:47 -0400, Jason Cooper wrote:
+> > I'm posting the revised version as replies to patches 1, 5 and 6. Please
+> > let me know if I messed it up.  I'd like to send the PR for these
+> > shortly.
 > 
-> I assume Matthew had some reason for avoiding that in the first place,
-> so I hope he'll chime in.
+> I had a quick look, and it looks good to me. Let me know to which
+> branch you've pushed this, and the merge order to follow to "rebuild"
+> something that works, and I'll try to find some time to test it for
+> real on hardware.
 
-I have no recollection of why I did it that way. If this is all 
-happening late enough for ioremap() to work then that sounds fine.
+$ git checkout v3.10-rc3
+$ git merge mvebu/of_pci
+$ git merge mvebu/pcie
+$ git merge mvebu/seb_clk
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+test away!
+
+thx,
+
+Jason.
