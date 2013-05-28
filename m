@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964817Ab3E1Rc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:32:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49804 "EHLO mx1.redhat.com"
+	id S964831Ab3E1RdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:33:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46801 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964784Ab3E1Rc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:32:26 -0400
-Date: Tue, 28 May 2013 19:28:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: WARN_ONCE in arch/x86/kernel/hw_breakpoint.c
-Message-ID: <20130528172829.GA2810@redhat.com>
-References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130528170048.GA26906@redhat.com>
+	id S934735Ab3E1RdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 13:33:01 -0400
+Date: Tue, 28 May 2013 20:32:15 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3/3] usb: dwc3: omap Modify dwc3_omap_readl/writel with
+ offsets
+Message-ID: <20130528173215.GB15794@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1369641777-4509-1-git-send-email-george.cherian@ti.com>
+ <1369641777-4509-4-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
 Content-Disposition: inline
-In-Reply-To: <20130528170048.GA26906@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1369641777-4509-4-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, Jiri explained me how can I use perf to install the hwbp ;)
+--s2ZSL+KKDSLx8OML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And indeed,
+Hi,
 
-	# perl -e 'sleep 1 while 1' &
-	[1] 507
-	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10,mem:0x10 -p `pidof perl`
-	
-triggers the same warn/problem.
+On Mon, May 27, 2013 at 01:32:57PM +0530, George Cherian wrote:
+> This patch modifies dwc3_omap_readl/writel calls to accomodate
+> both OMAP5 and AM437x reg maps (It uses the cached register offsets).
+> Also renames OMAP5 IRQ1 as IRQMISC, IRQ1 bits as IRQMISC bits.
+>=20
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 
-Interestingly,
+can you change this patch a bit so that it adds wrappers around
+dwc3_omap_*() ? The idea is the have the code look like:
 
-	perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10,mem:0x10 true
+static u32 dwc3_omap_read_utmi_status(struct dwc3_omap *omap)
+{
+	return dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS +
+			omap->utmi_otg_offset);
+}
 
-correctly fails with ENOSPC, this is because perf installs NR_CPUS counters
-for each cpu and the accounting works.
+(likewise for write and for all other offsets, of course)
 
-IIRC, I already tried to complain that perf could be smarter in this case
-and install a single counter with event->cpu = -1, but this is offtopic.
+that way, reading/writing to registers which need the offset will be
+less error-prone and th driver will look a little nicer.
 
-Oleg.
+--=20
+balbi
 
-On 05/28, Oleg Nesterov wrote:
->
-> Well. I am not familiar with this code, and when I tried to read it
-> I feel I will be never able to understand it ;)
->
-> On 05/20, Vince Weaver wrote:
-> >
-> > on 3.10-rc1 with the trinity fuzzer patched to exercise the
-> > perf_event_open() syscall I am triggering this WARN_ONCE:
-> >
-> > [   75.864822] ------------[ cut here ]------------
-> > [   75.864830] WARNING: at arch/x86/kernel/hw_breakpoint.c:121 arch_install_hw_breakpoint+0x5b/0xcb()
-> ...
-> > [   75.864916]  [<ffffffff81006fff>] ? arch_install_hw_breakpoint+0x5b/0xcb
-> > [   75.864919]  [<ffffffff810ab5a1>] ? event_sched_in+0x68/0x11c
->
-> I am wondering if we should check attr->pinned before WARN_ONCE...
->
-> But it seems that hw_breakpoint.c is buggy anyway.
->
-> Suppose that attr.task != NULL and event->cpu = -1.
->
-> __reserve_bp_slot() tries to calculate slots.pinned and calls
-> fetch_bp_busy_slots().
->
-> In this case fetch_bp_busy_slots() does
->
-> 	for_each_online_cpu(cpu)
-> 		...
-> 		nr += task_bp_pinned(cpu, bp, type);
->
-> And task_bp_pinned() (in particular) checks cpu == event->cpu,
-> this will be never true.
->
-> IOW, it seems that __reserve_bp_slot(task, cpu => -1) always
-> succeeds because task_bp_pinned() returns 0 and thus we can
-> create more than HWP_NUM breakpoints. Much more ;)
->
-> As for _create, I guess we probably need something like
->
-> --- x/kernel/events/hw_breakpoint.c
-> +++ x/kernel/events/hw_breakpoint.c
-> @@ -156,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots
->  		if (!tsk)
->  			nr += max_task_bp_pinned(cpu, type);
->  		else
-> -			nr += task_bp_pinned(cpu, bp, type);
-> +			nr += task_bp_pinned(-1, bp, type);
->
->  		if (nr > slots->pinned)
->  			slots->pinned = nr;
->
-> But I simply can't understand toggle_bp_task_slot()->task_bp_pinned().
->
-> Oleg.
+--s2ZSL+KKDSLx8OML
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRpOoeAAoJEIaOsuA1yqREQBQP+QE5A4V3wSjxx/OUvWjbHuhJ
+lenRJjh5sOP75CaV/OdUT+nR2Lh/I2BbXxpInrOYqlHIufN6opotNXHs7i6zUc5O
+3fs71Pn8gxaMUu48UoAPTVsk2uD5LsrS+ll2nY5mLzkmeZPMZUhdWwNKflLVLOtN
+RJSjhBEtDSeDTWTzeXWzr4IreV9XluUH36Umgsh//q/l2c/PfA5lfRQLm7E0xHc0
+5Cy9VwugIxW1hcqBRqC/gqRpUuq0RUY/1J6JKsk160xVR3Nia2imoSJyqi7wNwUX
+ciqj8YSYbESuyjmsv+GCsjtzlildmyzf4SfH5lzjLGymI8pRPLPwsExMCJal5MLB
+YZuyXWOs3f+MYrVbcL04axIubx0yBfQJc9OwH+dADpcjE0JrJmeFEwiFISC393Cm
+b1raMNXkgXlh6s9xd5m/A+h+wrTdMkXfv3zepCQJIWMUGNiceVdNyXff/wWF1WN+
+RiZ7Yf0pEEFB0i6G/sBaj1fgIyMEbLV3Cu2i/MrYwMTwRkeZBDAG0fzIGXhgB+CE
+TsINcz+B409/0lNK3HhBUUdevhD7O6VrPnBzkgM6zj92waEnhwZ0HeV9spUWVs3E
+pgTyMUuoMOO7IcMkI4scoO/+Pk+srh/jtuZHaKziAx2SxKe35JGbvUqvyLctscNg
+Aqs0tEaISoVGN7cyaHrA
+=K91l
+-----END PGP SIGNATURE-----
+
+--s2ZSL+KKDSLx8OML--
