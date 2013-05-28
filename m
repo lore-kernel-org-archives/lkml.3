@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab3E1LxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:53:03 -0400
-Received: from mail.skitlab.ru ([217.65.220.135]:50197 "EHLO mail.skitlab.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933225Ab3E1LxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:53:00 -0400
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 May 2013 07:52:59 EDT
-From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
-To: linux-omap@vger.kernel.org
-Cc: tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
-Subject: [PATCH] ARM: OMAP: fix IVA2 module base address
-Date: Tue, 28 May 2013 15:46:17 +0400
-Message-Id: <1369741577-21984-1-git-send-email-aida.mynzhasova@skitlab.ru>
-X-Mailer: git-send-email 1.7.10.4
+	id S933540Ab3E1Lx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:53:58 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52521 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933225Ab3E1Lx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 07:53:57 -0400
+Date: Tue, 28 May 2013 07:53:52 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org
+Subject: Re: [PATCH] fs: ext4: Printing debug is now configurable
+Message-ID: <20130528115352.GD11839@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Paul Taysom <taysom@chromium.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	olofj@chromium.org
+References: <1367358660-940-1-git-send-email-taysom@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367358660-940-1-git-send-email-taysom@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects the base address of IVA2 module on omap3430.
+On Tue, Apr 30, 2013 at 02:51:00PM -0700, Paul Taysom wrote:
+> Printing the "truncating inode" and "deleting unreferenced inode"
+> messages is now controlled by the "debug" option to mount.
+> These messages were filling the /var/log/messages file and
+> are normal for ext4 file system recovery.
+> 
+> Tested by opening several files, unlinking them, then
+> crashing the system, rebooting the system and examining
+> /var/log/messages.
+> 
+> Addresses the problem described in http://crbug.com/220976
+> 
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
 
-Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
----
- arch/arm/mach-omap2/prcm-common.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Added to the ext4 patch queue with a slightly modified description.
+(Sorry for the delay, you sent the patch just as the merge window had
+starting, and I wasn't accepting new until the tree had settled down.)
 
-diff --git a/arch/arm/mach-omap2/prcm-common.h b/arch/arm/mach-omap2/prcm-common.h
-index c7d355f..d5ec044 100644
---- a/arch/arm/mach-omap2/prcm-common.h
-+++ b/arch/arm/mach-omap2/prcm-common.h
-@@ -37,7 +37,7 @@
- #define OMAP2430_MDM_MOD				0xc00
- 
- /* IVA2 module is < base on 3430 */
--#define OMAP3430_IVA2_MOD				-0x800
-+#define OMAP3430_IVA2_MOD				0x800
- #define OMAP3430ES2_SGX_MOD				GFX_MOD
- #define OMAP3430_CCR_MOD				PLL_MOD
- #define OMAP3430_DSS_MOD				0x600
--- 
-1.7.10.4
-
+	      	       		     - Ted
