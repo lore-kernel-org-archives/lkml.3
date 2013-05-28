@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab3E1Vlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:41:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757895Ab3E1Vln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:41:43 -0400
-Date: Tue, 28 May 2013 17:41:37 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
-Message-ID: <20130528214137.GC24342@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130528161230.GA7577@redhat.com>
- <20130528211012.GX29466@dastard>
- <20130528211544.GB24342@redhat.com>
- <20130528213248.GC29338@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528213248.GC29338@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757556Ab3E1VWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:22:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59545 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757057Ab3E1VVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 17:21:22 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 13/78] ath9k: fix key allocation error handling for powersave keys
+Date: Tue, 28 May 2013 14:19:22 -0700
+Message-Id: <1369776027-17859-14-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 07:32:48AM +1000, Dave Chinner wrote:
- > On Tue, May 28, 2013 at 05:15:44PM -0400, Dave Jones wrote:
- > > On Wed, May 29, 2013 at 07:10:12AM +1000, Dave Chinner wrote:
- > >  > On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
- > >  > > box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
- > >  > > xfs chose to spew and then hang instead of replaying the journal and mounting :(
- > >  > > 
- > >  > > [   14.694731] SGI XFS with ACLs, security attributes, realtime, large block/inode numbers, debug enabled
- > >  > > [   14.722328] XFS (sda2): Mounting Filesystem
- > >  > > [   14.757801] XFS (sda2): Starting recovery (logdev: internal)
- > >  > > [   14.782049] XFS: Assertion failed: fs_is_ok, file: fs/xfs/xfs_dir2_data.c, line: 169
- > >  > 
- > >  > A directory block has an entry that is not in the hash index.
- > >  > Either there's an underlying corruption on disk, or there's an
- > >  > inconsistency in what has been logged and so an entire change has
- > >  > not been replayed. Hence the post recovery verification has thrown a
- > >  > corruption error....
- > >  > 
- > >  > If you haven't already repaired the filesystem, can you send me a
- > >  > metadump of the filesystem in question?
- > > 
- > > Sorry, too late. If I can repro, I'll do so next time.
- > > FYI, I ran xfs_repair and it just hung. Wouldn't even answer ctrl-c.
- > > Rebooted, and then it mounted and recovered just fine!
- > 
- > Strange. I can't think of any reason outside a kernel problem for
- > xfs_repair going into an uninterruptible sleep. Did it happen after
- > the repair completed (i.e. after phase 7)? If so, then closing the
- > block device might have tripped the same problem that fsck.ext2
- > hit....
+3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
 
-didn't even get that far. It opened the block dev, and then just sat there.
-I left it for a few minutes before deciding it was hung.
-And of course, this is an SSD, so there was no way I could tell if there
-was any IO going on by sound/feel/lights.
+------------------
 
-	Dave
+From: Felix Fietkau <nbd@openwrt.org>
+
+commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 upstream.
+
+If no keycache slots are available, ath_key_config can return -ENOSPC.
+If the key index is not checked for errors, it can lead to logspam that
+looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
+This can cause follow-up errors if the invalid keycache index gets
+used for tx.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/wireless/ath/ath9k/main.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index dd91f8f..a929adc 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1236,6 +1236,7 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
+ 	struct ieee80211_key_conf ps_key = { };
++	int key;
+ 
+ 	ath_node_attach(sc, sta, vif);
+ 
+@@ -1243,7 +1244,9 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
+ 	    vif->type != NL80211_IFTYPE_AP_VLAN)
+ 		return 0;
+ 
+-	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
++	key = ath_key_config(common, vif, sta, &ps_key);
++	if (key > 0)
++		an->ps_key = key;
+ 
+ 	return 0;
+ }
+@@ -1260,6 +1263,7 @@ static void ath9k_del_ps_key(struct ath_softc *sc,
+ 	    return;
+ 
+ 	ath_key_delete(common, &ps_key);
++	an->ps_key = 0;
+ }
+ 
+ static int ath9k_sta_remove(struct ieee80211_hw *hw,
+-- 
+1.8.1.2
 
