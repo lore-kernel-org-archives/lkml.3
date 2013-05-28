@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3E1VVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:21:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59468 "EHLO
+	id S1757014Ab3E1VVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:21:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59549 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756838Ab3E1VVV (ORCPT
+	with ESMTP id S1757098Ab3E1VVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:21:21 -0400
+	Tue, 28 May 2013 17:21:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Metcalf <cmetcalf@tilera.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 11/78] tile: support new Tilera hypervisor
-Date: Tue, 28 May 2013 14:19:20 -0700
-Message-Id: <1369776027-17859-12-git-send-email-kamal@canonical.com>
+Cc: Anton Blanchard <anton@samba.org>, Eric Paris <eparis@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 05/78] audit: Syscall rules are not applied to existing processes on non-x86
+Date: Tue, 28 May 2013 14:19:14 -0700
+Message-Id: <1369776027-17859-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -26,169 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit c539914dcd9a68c63305e055b14115a6a19578a8 upstream.
+commit cdee3904b4ce7c03d1013ed6dd704b43ae7fc2e9 upstream.
 
-The Tilera hypervisor shipped in releases up through MDE 4.1 launches
-the client operating system (i.e. Linux) at privilege level 1 (PL1).
-Starting with MDE 4.2, as part of the work to enable KVM, the
-Tilera hypervisor launches Linux at PL2 instead.
+Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
+burden on archs) changed audit_syscall_entry to check for a dummy
+context before calling __audit_syscall_entry. Unfortunately the dummy
+context state is maintained in __audit_syscall_entry so once set it
+never gets cleared, even if the audit rules change.
 
-This commit makes the KERNEL_PL option default to 2 for tilegx, while
-still saying at 1 for tilepro, which doesn't have an updated hypervisor.
-It also explains how and when you might want to choose another value.
-In addition, we change a small buglet in the on-chip Ethernet driver,
-where we were failing to use the KERNEL_PL constant in an API call.
+As a result, if there are no auditing rules when a process starts
+then it will never be subject to any rules added later. x86 doesn't
+see this because it has an assembly fast path that calls directly into
+__audit_syscall_entry.
 
-To make the transition cleaner, this change also provides the updated
-hv_init() API for the new hypervisor that supports announcing Linux's
-compiled-in PL, so the hypervisor can generate a suitable error in the
-case of a mismatched hypervisor and Linux binary.
+I noticed this issue when working on audit performance optimisations.
+I wrote a set of simple test cases available at:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
+
+02_new_rule.py fails without the patch and passes with it. The
+test case clears all rules, starts a process, adds a rule then
+verifies the process produces a syscall audit record.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/tile/Kconfig                  | 14 ++++++++++----
- arch/tile/include/hv/hypervisor.h  | 27 ++++++++++++++++++++++++---
- arch/tile/kernel/head_32.S         |  2 +-
- arch/tile/kernel/head_64.S         | 12 +++++++++---
- drivers/net/ethernet/tile/tilegx.c |  2 +-
- 5 files changed, 45 insertions(+), 12 deletions(-)
+ include/linux/audit.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 1bb7ad4..dd6fe9d 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -366,11 +366,17 @@ config HARDWALL
- config KERNEL_PL
- 	int "Processor protection level for kernel"
- 	range 1 2
--	default "1"
-+	default 2 if TILEGX
-+	default 1 if !TILEGX
- 	---help---
--	  This setting determines the processor protection level the
--	  kernel will be built to run at.  Generally you should use
--	  the default value here.
-+	  Since MDE 4.2, the Tilera hypervisor runs the kernel
-+	  at PL2 by default.  If running under an older hypervisor,
-+	  or as a KVM guest, you must run at PL1.  (The current
-+	  hypervisor may also be recompiled with "make HV_PL=2" to
-+	  allow it to run a kernel at PL1, but clients running at PL1
-+	  are not expected to be supported indefinitely.)
-+
-+	  If you're not sure, don't change the default.
- 
- source "arch/tile/gxio/Kconfig"
- 
-diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
-index ccd847e..837dca5 100644
---- a/arch/tile/include/hv/hypervisor.h
-+++ b/arch/tile/include/hv/hypervisor.h
-@@ -107,7 +107,22 @@
- #define HV_DISPATCH_ENTRY_SIZE 32
- 
- /** Version of the hypervisor interface defined by this file */
--#define _HV_VERSION 11
-+#define _HV_VERSION 13
-+
-+/** Last version of the hypervisor interface with old hv_init() ABI.
-+ *
-+ * The change from version 12 to version 13 corresponds to launching
-+ * the client by default at PL2 instead of PL1 (corresponding to the
-+ * hv itself running at PL3 instead of PL2).  To make this explicit,
-+ * the hv_init() API was also extended so the client can report its
-+ * desired PL, resulting in a more helpful failure diagnostic.  If you
-+ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
-+ * argument, the hypervisor will assume client_pl = 1.
-+ *
-+ * Note that this is a deprecated solution and we do not expect to
-+ * support clients of the Tilera hypervisor running at PL1 indefinitely.
-+ */
-+#define _HV_VERSION_OLD_HV_INIT 12
- 
- /* Index into hypervisor interface dispatch code blocks.
-  *
-@@ -377,7 +392,11 @@ typedef int HV_Errno;
- #ifndef __ASSEMBLER__
- 
- /** Pass HV_VERSION to hv_init to request this version of the interface. */
--typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-+typedef enum {
-+  HV_VERSION = _HV_VERSION,
-+  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
-+
-+} HV_VersionNumber;
- 
- /** Initializes the hypervisor.
-  *
-@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-  * that this program expects, typically HV_VERSION.
-  * @param chip_num Architecture number of the chip the client was built for.
-  * @param chip_rev_num Revision number of the chip the client was built for.
-+ * @param client_pl Privilege level the client is built for
-+ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
-  */
- void hv_init(HV_VersionNumber interface_version_number,
--             int chip_num, int chip_rev_num);
-+             int chip_num, int chip_rev_num, int client_pl);
- 
- 
- /** Queries we can make for hv_sysconf().
-diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
-index f71bfee..ac11530 100644
---- a/arch/tile/kernel/head_32.S
-+++ b/arch/tile/kernel/head_32.S
-@@ -38,7 +38,7 @@ ENTRY(_start)
- 	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
-+	  moveli r0, _HV_VERSION_OLD_HV_INIT
- 	  jal hv_init
- 	}
- 	/* Get a reasonable default ASID in r0 */
-diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
-index f9a2734..6093964 100644
---- a/arch/tile/kernel/head_64.S
-+++ b/arch/tile/kernel/head_64.S
-@@ -34,13 +34,19 @@
- ENTRY(_start)
- 	/* Notify the hypervisor of what version of the API we want */
- 	{
-+#if KERNEL_PL == 1 && _HV_VERSION == 13
-+	  /* Support older hypervisors by asking for API version 12. */
-+	  movei r0, _HV_VERSION_OLD_HV_INIT
-+#else
-+	  movei r0, _HV_VERSION
-+#endif
- 	  movei r1, TILE_CHIP
--	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
--	  jal hv_init
-+	  movei r2, TILE_CHIP_REV
-+	  movei r3, KERNEL_PL
- 	}
-+	jal hv_init
- 	/* Get a reasonable default ASID in r0 */
- 	{
- 	  move r0, zero
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 66e025a..f3c2d03 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
- 		if (info->has_iqueue) {
- 			gxio_mpipe_request_notif_ring_interrupt(
- 				&context, cpu_x(cpu), cpu_y(cpu),
--				1, ingress_irq, info->iqueue.ring);
-+				KERNEL_PL, ingress_irq, info->iqueue.ring);
- 		}
- 	}
- 
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 5a6d718..37464c5 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -120,7 +120,7 @@ static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
+ 				       unsigned long a1, unsigned long a2,
+ 				       unsigned long a3)
+ {
+-	if (unlikely(!audit_dummy_context()))
++	if (unlikely(current->audit_context))
+ 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
+ }
+ static inline void audit_syscall_exit(void *pt_regs)
 -- 
 1.8.1.2
 
