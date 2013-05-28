@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab3E1MSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 08:18:55 -0400
-Received: from 8bytes.org ([85.214.48.195]:58993 "EHLO mail.8bytes.org"
+	id S933854Ab3E1MVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 08:21:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53249 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933730Ab3E1MSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 08:18:54 -0400
-Date: Tue, 28 May 2013 14:18:50 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 2/2 V3] perf/x86/amd: AMD IOMMU PC PERF uncore PMU
- implementation
-Message-ID: <20130528121850.GC2575@8bytes.org>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
+	id S933770Ab3E1MVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 08:21:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster governor - tests results
+Date: Tue, 28 May 2013 14:30:23 +0200
+Message-ID: <2272781.tC3OqoQmKI@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=6Tk3NmcJw_fqnePu_skHKNB0rFBOUzEsCDyeLqxg4xA@mail.gmail.com>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com> <20130528084035.13afa583@amdc308.digital.local> <CAKohpo=6Tk3NmcJw_fqnePu_skHKNB0rFBOUzEsCDyeLqxg4xA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue May 28 14:18:51 2013
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51a4a0ab20861693417632
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 02:43:32PM -0500, Suthikulpanit, Suravee wrote:
-> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-> index b0684e4..fcbd3b8 100644
-> --- a/arch/x86/kernel/cpu/Makefile
-> +++ b/arch/x86/kernel/cpu/Makefile
-> @@ -30,7 +30,7 @@ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
->  obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
->  
->  ifdef CONFIG_PERF_EVENTS
-> -obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o
-> +obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o perf_event_amd_iommu.o
+On Tuesday, May 28, 2013 03:14:26 PM Viresh Kumar wrote:
+> On 28 May 2013 12:10, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote: <manually added by viresh>
+> >> On Monday, May 27, 2013 06:54:49 PM Viresh Kumar wrote:
+> >> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> I was talking about /sys/devices/system/cpu/cpufreq/boost that
+> >> appears to have been added by commit 615b730 (acpi-cpufreq: Add
+> >> support for disabling dynamic overclocking).
+> >>
+> >> That's in acpi-cpufreq, but since that setting seems to be generally
+> >> useful, it may be a good idea to move it to the core somehow.
+> 
+> Problem is in breaking existing cpufreq userspace for this driver.
+> Is this allowed?
+> 
+> > I think that Viresh wanted to add "boost" option to
+> > /sys/devices/system/cpu/cpuX/cpufreq/ to be able to control boost
+> > at separate cores (policies).
+> >
+> > The localization, which you have proposed:
+> > /sys/devices/system/cpu/cpufreq/boost
+> >
+> > implies, that boost is a global feature (enabled for all cores and for
+> > all available policies).
+> >
+> > Which approach shall be used then?
+> 
+> We can use: get_governor_parent_kobj() to get the best location
+> for boost. But I had some other issues in mind:
+> - boost is governor dependent.. i.e. It is only required for ondemand
+> governor (And LAB if it makes it to mainline :) ).. Other governors
+> doesn't need it. So, it would be better to add it in governor's directory.
 
-This should also depend on CONFIG_AMD_IOMMU. If no IOMMU driver is
-compiled in it doesn't make sense to have that PMU.
+I'm not sure about that.  On x86 boost will be used with all governors if
+enabled (as currently defined in acpi-cpufreq).
 
-> +static int perf_iommu_event_init(struct perf_event *event)
-> +{
-> +	struct hw_perf_event *hwc = &event->hw;
-> +	struct perf_amd_iommu *perf_iommu;
-> +	u64 config, config1;
-> +
-> +	/* test the event attr type check for PMU enumeration */
-> +	if (event->attr.type != event->pmu->type)
-> +		return -ENOENT;
-> +
-> +	/*
-> +	 * IOMMU counters are shared across all cores.
-> +	 * Therefore, it does not support per-process mode.
-> +	 * Also, it does not support event sampling mode.
-> +	 */
-> +	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
-> +		return -EINVAL;
-> +
-> +	/* IOMMU counters do not have usr/os/guest/host bits */
-> +	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-> +	    event->attr.exclude_host || event->attr.exclude_guest)
-> +		return -EINVAL;
-> +
-> +	if (event->cpu < 0)
-> +		return -EINVAL;
-> +
-> +	perf_iommu = &__perf_iommu;
-> +
-> +	if (event->pmu != &perf_iommu->pmu)
-> +		return -ENOENT;
-> +
-> +	if (perf_iommu) {
-> +		config = event->attr.config;
-> +		config1 = event->attr.config1;
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* integrate with iommu base devid (0000), assume one iommu */
-> +	perf_iommu->max_banks =
-> +		amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID);
-> +	perf_iommu->max_counters =
-> +		amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID);
-> +
-> +	/* update the hw_perf_event struct with the iommu config data */
-> +	hwc->config = config;
-> +	hwc->extra_reg.config = config1;
-> +
-> +	return 0;
-> +}
+Also it looks like this depends on the driver too, because if the driver
+doesn't have "turbo" frequencies, the governor won't be able use "turbo"
+anyway.
 
-That implementation is very basic. Any reason for not using the event
-reporting mechanism of the IOMMU? You could implement a nice perf
-iommutop or something to see which devices do the most transactions or
-something like that.
+> - This will break existing users of acpi-cpufreq driver.
+> 
+> @Rafael: Please suggest what to do here.
+
+So first, it would make sense to use a per-driver "boost" attribute indicating
+whether or not the given driver should present any "turbo" frequencies to the
+governor.  That'd work along the lines of the acpi-cpufreq "boost", but I don't
+think that the global_boost attribute should be created by the driver (it'd be
+better if the driver provided methods to the core for handling that).
+
+Second, I'm not sure if an additional knob for the governor is necessary.  It
+may just use the turbo frequencies if available (and if the governor cannot use
+them, it simply won't use them).
+
+Thanks,
+Rafael
 
 
-	Joerg
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
