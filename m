@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab3E1EQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:16:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52606 "EHLO
+	id S1759013Ab3E1Dyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52520 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758875Ab3E1Dyh (ORCPT
+	by vger.kernel.org with ESMTP id S1758809Ab3E1DyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:37 -0400
+	Mon, 27 May 2013 23:54:08 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michael Buesch" <m@bues.ch>,
-        "Thommy Jakobsson" <thommyj@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "David Binderman" <dcb314@hotmail.com>,
+        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.932204825@decadent.org.uk>
+Message-ID: <lsq.1369712993.680742671@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [17/94] B43: Handle DMA RX descriptor underrun
+Subject: [32/94] avr32: fix relocation check for signed 18-bit offset
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,148 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thommy Jakobsson <thommyj@gmail.com>
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 upstream.
+commit e68c636d88db3fda74e664ecb1a213ae0d50a7d8 upstream.
 
-Add handling of rx descriptor underflow. This fixes a fault that could
-happen on slow machines, where data is received faster than the CPU can
-handle. In such a case the device will use up all rx descriptors and
-refuse to send any more data before confirming that it is ok. This
-patch enables necessary interrupt to discover such a situation and will
-handle them by dropping everything in the ring buffer.
+Caught by static code analysis by David.
 
-Reviewed-by: Michael Buesch <m@bues.ch>
-Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/b43/dma.c  |   19 +++++++++++++++++
- drivers/net/wireless/b43/dma.h  |    4 +++-
- drivers/net/wireless/b43/main.c |   43 ++++++++++++++++-----------------------
- 3 files changed, 40 insertions(+), 26 deletions(-)
+ arch/avr32/kernel/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1719,6 +1719,25 @@ drop_recycle_buffer:
- 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
- }
- 
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
-+{
-+	int current_slot, previous_slot;
-+
-+	B43_WARN_ON(ring->tx);
-+
-+	/* Device has filled all buffers, drop all packets and let TCP
-+	 * decrease speed.
-+	 * Decrement RX index by one will let the device to see all slots
-+	 * as free again
-+	 */
-+	/*
-+	*TODO: How to increase rx_drop in mac80211?
-+	*/
-+	current_slot = ring->ops->get_current_rxslot(ring);
-+	previous_slot = prev_slot(ring, current_slot);
-+	ring->ops->set_current_rxslot(ring, previous_slot);
-+}
-+
- void b43_dma_rx(struct b43_dmaring *ring)
- {
- 	const struct b43_dma_ops *ops = ring->ops;
---- a/drivers/net/wireless/b43/dma.h
-+++ b/drivers/net/wireless/b43/dma.h
-@@ -9,7 +9,7 @@
- /* DMA-Interrupt reasons. */
- #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
- 					 | (1 << 14) | (1 << 15))
--#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
-+#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
- #define B43_DMAIRQ_RX_DONE		(1 << 16)
- 
- /*** 32-bit DMA Engine. ***/
-@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
- void b43_dma_handle_txstatus(struct b43_wldev *dev,
- 			     const struct b43_txstatus *status);
- 
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
-+
- void b43_dma_rx(struct b43_dmaring *ring);
- 
- void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -1901,30 +1901,18 @@ static void b43_do_interrupt_thread(stru
- 		}
- 	}
- 
--	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
--					  B43_DMAIRQ_NONFATALMASK))) {
--		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
--			b43err(dev->wl, "Fatal DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--			b43err(dev->wl, "This device does not support DMA "
-+	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
-+		b43err(dev->wl,
-+			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
-+			dma_reason[0], dma_reason[1],
-+			dma_reason[2], dma_reason[3],
-+			dma_reason[4], dma_reason[5]);
-+		b43err(dev->wl, "This device does not support DMA "
- 			       "on your system. It will now be switched to PIO.\n");
--			/* Fall back to PIO transfers if we get fatal DMA errors! */
--			dev->use_pio = 1;
--			b43_controller_restart(dev, "DMA error");
--			return;
--		}
--		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
--			b43err(dev->wl, "DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--		}
-+		/* Fall back to PIO transfers if we get fatal DMA errors! */
-+		dev->use_pio = true;
-+		b43_controller_restart(dev, "DMA error");
-+		return;
- 	}
- 
- 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
-@@ -1943,6 +1931,11 @@ static void b43_do_interrupt_thread(stru
- 		handle_irq_noise(dev);
- 
- 	/* Check the DMA reason registers for received data. */
-+	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
-+		if (B43_DEBUG)
-+			b43warn(dev->wl, "RX descriptor underrun\n");
-+		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
-+	}
- 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
- 		if (b43_using_pio_transfers(dev))
- 			b43_pio_rx(dev->pio.rx_queue);
-@@ -2000,7 +1993,7 @@ static irqreturn_t b43_do_interrupt(stru
- 		return IRQ_NONE;
- 
- 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
--	    & 0x0001DC00;
-+	    & 0x0001FC00;
- 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
- 	    & 0x0000DC00;
- 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
-@@ -3103,7 +3096,7 @@ static int b43_chip_init(struct b43_wlde
- 		b43_write32(dev, 0x018C, 0x02000000);
- 	}
- 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
--	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
-+	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
- 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
+--- a/arch/avr32/kernel/module.c
++++ b/arch/avr32/kernel/module.c
+@@ -264,7 +264,7 @@ int apply_relocate_add(Elf32_Shdr *sechd
+ 			break;
+ 		case R_AVR32_GOT18SW:
+ 			if ((relocation & 0xfffe0003) != 0
+-			    && (relocation & 0xfffc0003) != 0xffff0000)
++			    && (relocation & 0xfffc0000) != 0xfffc0000)
+ 				return reloc_overflow(module, "R_AVR32_GOT18SW",
+ 						     relocation);
+ 			relocation >>= 2;
 
