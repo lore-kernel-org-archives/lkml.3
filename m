@@ -1,107 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964952Ab3E1SDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:03:24 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:50437 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964903Ab3E1SDW (ORCPT
+	id S964978Ab3E1SDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:03:40 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64544 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964903Ab3E1SDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:03:22 -0400
-Message-ID: <1369764200.3301.551.camel@edumazet-glaptop>
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rafael Aquini <aquini@redhat.com>, Roland Dreier <roland@kernel.org>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
-        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
-        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 28 May 2013 11:03:20 -0700
-In-Reply-To: <20130528174304.GD11614@optiplex.redhat.com>
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
-	 <20130527224149.GA4384@electric-eye.fr.zoreil.com>
-	 <51A4D4AD.2010507@candelatech.com>
-	 <20130528161518.GC11614@optiplex.redhat.com>
-	 <1369758577.3301.543.camel@edumazet-glaptop>
-	 <20130528174304.GD11614@optiplex.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 28 May 2013 14:03:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+R86+/0rzRMwkXqWNiNe+m/ZeeHPQ8PLY=
+Date: Tue, 28 May 2013 14:02:27 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for
+ Kirkwood SoCs
+Message-ID: <20130528180227.GY31290@titan.lakedaemon.net>
+References: <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130522201607.GA18823@obsidianresearch.com>
+ <20130523160111.GP31290@titan.lakedaemon.net>
+ <20130523171112.GB31281@obsidianresearch.com>
+ <20130523172339.GQ31290@titan.lakedaemon.net>
+ <20130523175357.GB2821@obsidianresearch.com>
+ <20130523184028.GU31290@titan.lakedaemon.net>
+ <20130523190140.GA4010@obsidianresearch.com>
+ <20130524164636.GV31290@titan.lakedaemon.net>
+ <20130524173306.GA30022@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524173306.GA30022@obsidianresearch.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 14:43 -0300, Rafael Aquini wrote:
+Jason,
 
-> Perhaps the explanation is because we're looking into old stuff bad effects,
-> then. But just to list a few for your appreciation:
-> --------------------------------------------------------
-> Apr 23 11:25:31 217-IDC kernel: httpd: page allocation failure. order:1,
-> mode:0x20 Apr 23 11:25:31 217-IDC kernel: Pid: 19747, comm: httpd Not tainted
-> 2.6.32-358.2.1.el6.x86_64 #1 Apr 23 11:25:31 217-IDC kernel: Call Trace: Apr 23
-> 11:25:31 217-IDC kernel: <IRQ> [<ffffffff8112c207>] ?
-> __alloc_pages_nodemask+0x757/0x8d0 Apr 23 11:25:31 217-IDC kernel:
-> [<ffffffffa0337361>] ? bond_start_xmit+0x2f1/0x5d0 [bonding]
-> ....
-> --------------------------------------------------------
-> Apr  4 18:51:32 exton kernel: swapper: page allocation failure. order:1,
-> mode:0x20
-> Apr  4 18:51:32 exton kernel: Pid: 0, comm: swapper Not tainted
-> 2.6.32-279.19.1.el6.x86_64 #1
-> Apr  4 18:51:32 exton kernel: Call Trace:
-> Apr  4 18:51:32 exton kernel: <IRQ>  [<ffffffff811231ff>] ?
-> __alloc_pages_nodemask+0x77f/0x940
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115d1a2>] ? kmem_getpages+0x62/0x170
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115ddba>] ? fallback_alloc+0x1ba/0x270
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115d80f>] ? cache_grow+0x2cf/0x320
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115db39>] ?
-> ____cache_alloc_node+0x99/0x160
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115ed00>] ?
-> kmem_cache_alloc_node_trace+0x90/0x200
-> Apr  4 18:51:32 exton kernel: [<ffffffff8115ef1d>] ? __kmalloc_node+0x4d/0x60
-> Apr  4 18:51:32 exton kernel: [<ffffffff8141ea1d>] ? __alloc_skb+0x6d/0x190
-> Apr  4 18:51:32 exton kernel: [<ffffffff8141eb5d>] ? dev_alloc_skb+0x1d/0x40
-> Apr  4 18:51:32 exton kernel: [<ffffffffa04f5f50>] ?
-> ipoib_cm_alloc_rx_skb+0x30/0x430 [ib_ipoib]
-> Apr  4 18:51:32 exton kernel: [<ffffffffa04f71ef>] ?
-> ipoib_cm_handle_rx_wc+0x29f/0x770 [ib_ipoib]
-> Apr  4 18:51:32 exton kernel: [<ffffffffa03c6a46>] ? mlx4_ib_poll_cq+0x2c6/0x7f0
-> [mlx4_ib]
-> ....
-> ----
+Sorry, I meant to get back to this earlier and it slipped off of my
+plate. :(
 
+On Fri, May 24, 2013 at 11:33:06AM -0600, Jason Gunthorpe wrote:
+> On Fri, May 24, 2013 at 12:46:36PM -0400, Jason Cooper wrote:
+> 
+> > > Why are you not keen on this? It seems like normal device driver
+> > > practice, that is what the data field of of_device_id is typically
+> > > used for..
+> > 
+> > I'm not keen on it because we don't have a document saying "All kirkwood
+> > SoCs need PSC1 set to X after reset."  We know it, but have we tested
+> > the 6282?
+> 
+> I disagree. The manul is very clear how PSC1 must be set for proper
+> operation. Clk125BypassEn bit is used only for loopback testing, it
+> should never set for driver operation. Similarly PortReset must be
+> cleared for driver operation.
+> 
+> It is always safe for the driver to clear these bits, if it knows they
+> are available.  In fact, I would argue the driver should always clear
+> these bits so that the bootloader isn't relied on to do it. It doesn't
+> matter if the SOC errantly sets the bit or not, it can *always* be
+> safely cleared.
 
-This one seems a real bug/problem in
-drivers/infiniband/ulp/ipoib/ipoib_cm.c
+Great!
 
-It uses :
+> Further, I compared my 88F6282/88F6283 manual against the public
+> 88F6180/88F619x/88F6281 spec and confirmed that the PSC1 layout is the
+> same.
 
-IPOIB_CM_HEAD_SIZE    = IPOIB_CM_BUF_SIZE % PAGE_SIZE, 
-IPOIB_CM_RX_SG        = ALIGN(IPOIB_CM_BUF_SIZE, PAGE_SIZE) /
-PAGE_SIZE, 
+Even better.
 
-but then, ipoib_cm_alloc_rx_skb() does :
+> So all of these SOC's can share a driver compatible string.
 
-skb = dev_alloc_skb(IPOIB_CM_HEAD_SIZE + 12);
+Ok, "marvell,kirkwood-eth" works for me then.  I think Sebastian already
+has patches for that.
 
-so really asking more than one page for the first frag (skb->head),
-while the intent of the code was to use order-0 allocations.
+> AFAICT the only reason the driver doesn't touch PSC1 today is because
+> the PSC1 was introduced in a later IP revision and its presence isn't
+> auto-detectable.
 
- for (i = 0; i < frags; i++) {
-    struct page *page = alloc_page(GFP_ATOMIC);
-....
+Makes sense.
 
-Ideally, IPOIB_CM_HEAD_SIZE  should be redefined to use
+> The last bit of the puzzle to get bootloader independence on kirkwood
+> is to encode the phy interface type (GMII/RGMII/BASE-X) in the DT so
+> the entire PSC1 can be set by the driver..
 
-SKB_MAX_HEAD(NET_SKB_PAD + 12)
+Hmm, let's work on that separately, and later.  I've snowballed this
+attempt enough ;-)
 
-so that skb->head would use exactly oder-0 page, not order-1 one.
+Thanks for digging into this for us,
 
-
-Do you know understand why we should not hide allocation errors ?
-
-
-
+Jason.
