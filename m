@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3E1VKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:10:17 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:41043 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755734Ab3E1VKQ (ORCPT
+	id S1756425Ab3E1VLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:11:39 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40589 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab3E1VLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:10:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4OAAocpVF5La3j/2dsb2JhbABZgwi9MYUcBAGBBRd0giMBAQU6HDMIAxgJJQ8FJQMhARKIDLt+Fo1qgSSDVAOXOpFBgyEq
-Date: Wed, 29 May 2013 07:10:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
-Message-ID: <20130528211012.GX29466@dastard>
-References: <20130528161230.GA7577@redhat.com>
+	Tue, 28 May 2013 17:11:38 -0400
+Date: Tue, 28 May 2013 16:10:15 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 3/8] rsxx: Fixes incorrect stats calculation.
+Message-ID: <20130528211015.GC5065@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130528161230.GA7577@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052821-7606-0000-0000-00000BE2977B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
-> box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
-> xfs chose to spew and then hang instead of replaying the journal and mounting :(
-> 
-> 	Dave
-> 
-> [   14.694731] SGI XFS with ACLs, security attributes, realtime, large block/inode numbers, debug enabled
-> [   14.722328] XFS (sda2): Mounting Filesystem
-> [   14.757801] XFS (sda2): Starting recovery (logdev: internal)
-> [   14.782049] XFS: Assertion failed: fs_is_ok, file: fs/xfs/xfs_dir2_data.c, line: 169
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-A directory block has an entry that is not in the hash index.
-Either there's an underlying corruption on disk, or there's an
-inconsistency in what has been logged and so an entire change has
-not been replayed. Hence the post recovery verification has thrown a
-corruption error....
+Fixing incorrect stats calculation during read retries.
 
-If you haven't already repaired the filesystem, can you send me a
-metadump of the filesystem in question?
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
 
-> [   40.642521] BUG: soft lockup - CPU#0 stuck for 22s! [fsck.ext2:294]
 
-I'm not sure what this has to do with the XFS problem - it's
-apparently stuck in invalidate_bh_lrus() walking a CPU mask....
 
-Cheers,
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-04-29 11:25:00.596187375 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-04-29 13:58:27.979188201 -0500
+@@ -253,6 +253,7 @@ static void rsxx_requeue_dma(struct rsxx
+ 	 * first.
+ 	 */
+ 	spin_lock(&ctrl->queue_lock);
++	ctrl->stats.sw_q_depth++;
+ 	list_add(&dma->list, &ctrl->queue);
+ 	spin_unlock(&ctrl->queue_lock);
+ }
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
