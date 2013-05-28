@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759021Ab3E1HWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 03:22:43 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54845 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab3E1HWl (ORCPT
+	id S1759038Ab3E1H00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 03:26:26 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:40597 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758840Ab3E1H0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 03:22:41 -0400
-Message-ID: <51A45B23.4050403@linux.vnet.ibm.com>
-Date: Tue, 28 May 2013 15:22:11 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH v2] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <519AE7F2.706@linux.vnet.ibm.com> <20130522084947.GQ26912@twins.programming.kicks-ass.net> <519C8F24.5060207@linux.vnet.ibm.com> <1369234551.5916.40.camel@marge.simpson.net> <51A43A63.4090703@linux.vnet.ibm.com> <1369722552.5857.72.camel@marge.simpson.net>
-In-Reply-To: <1369722552.5857.72.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+	Tue, 28 May 2013 03:26:25 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Tue, 28 May 2013 15:25:52 +0800
+Message-Id: <1369725952-14606-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052807-9574-0000-0000-0000080BA288
+x-cbid: 13052807-6102-0000-0000-000003986130
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 02:29 PM, Mike Galbraith wrote:
-> On Tue, 2013-05-28 at 13:02 +0800, Michael Wang wrote: 
->> On 05/22/2013 10:55 PM, Mike Galbraith wrote:
->>> On Wed, 2013-05-22 at 17:25 +0800, Michael Wang wrote:
->>>
->>>> I've not test the hackbench with wakeup-buddy before, will do it this
->>>> time, I suppose the 15% illegal income will suffered, anyway, it's
->>>> illegal :)
->>>
->>> On a 4 socket 40 core (+SMT) box, hackbench wasn't too happy.
->>
->> I've done more test and now I got the reason of regression...
->>
->> The writer and reader in hackbench is N:N, prev writer will write all
->> the fd then switch to next writer and repeat the same work, so it's
->> impossible to setup the buddy relationship by just record the last one,
->> and we have to record all the waker/wakee in history, but that means
->> unacceptable memory overhead...
-> 
-> Yeah, that's why I was thinking we'd need a dinky/fast as hell FIFO of
-> tokens or such to bind waker/wakee more or less reliably.  Making such a
-> scheme cheap enough could be hard.
-> 
->> So this buddy idea seems to be bad...
->>
->> I think a better way may should be allowing pull in most time, but
->> filter the very bad cases carefully.
-> 
-> Any way that is cheap, and fairly accurately recognizes when we're being
-> stupid will help.  First and foremost, it has to be dirt cheap :)
-> 
->> For workload like pgbench, we actually just need to avoid pull if that
->> will damage the 'mother' thread, which is busy and be relied by many
->> 'child'.
-> 
-> Yeah, 'mom' is the key player.  If we can cheaply recognize mom, that
-> should get us a generic improvement.  Not as good as being able to
-> recognize the size of her+brood as size changes, but better anyway.
+Changelog:
+ v1 -> v2:
+	* show number of HighTotal before hotremove 
+	* remove CONFIG_HIGHMEM
+	* cc stable kernels
+	* add Michal reviewed-by
+ v2 -> v3:
+    * correct way to request changes for stable
 
-That's right, I'm trying to rely on the frequency of a task switching
-it's wakee in the new idea, it's really cheap and somewhat reliable, I
-appreciate if you could pay an eye on the new patch and let me know you
-opinion :)
+Logic memory-remove code fails to correctly account the Total High Memory 
+when a memory block which contains High Memory is offlined as shown in the
+example below. The following patch fixes it.
 
-Regards,
-Michael Wang
+Before logic memory remove:
 
-> 
-> -Mike
-> 
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+Cc: <stable@vger.kernel.org> # 2.6.24 
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 98cbdf6..23b921f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
+-- 
+1.8.1.2
 
