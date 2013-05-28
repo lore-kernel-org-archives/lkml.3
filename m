@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab3E1DzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52574 "EHLO
+	id S933003Ab3E1DzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52621 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758850Ab3E1DyJ (ORCPT
+	by vger.kernel.org with ESMTP id S1758880Ab3E1DyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:09 -0400
+	Mon, 27 May 2013 23:54:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Matt Fleming" <matt.fleming@intel.com>,
-        "Sergey Vlasov" <vsu@altlinux.ru>
+CC: akpm@linux-foundation.org,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.651567490@decadent.org.uk>
+Message-ID: <lsq.1369712993.812672359@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [77/94] efi: Export efi_query_variable_store() for efivars.ko
+Subject: [07/94] ASoC: wm8994: missing break in wm8994_aif3_hw_params()
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,25 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Vlasov <vsu@altlinux.ru>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3668011d4ad556224f7c012c1e870a6eaa0e59da upstream.
+commit 4495e46fe18f198366961bb2b324a694ef8a9b44 upstream.
 
-Fixes build with CONFIG_EFI_VARS=m which was broken after the commit
-"x86, efivars: firmware bug workarounds should be in platform code".
+The missing break here means that we always return early and the
+function is a no-op.
 
-Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/platform/efi/efi.c |    1 +
+ sound/soc/codecs/wm8994.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -840,3 +840,4 @@ efi_status_t efi_query_variable_store(u3
- 
- 	return EFI_SUCCESS;
- }
-+EXPORT_SYMBOL_GPL(efi_query_variable_store);
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2636,6 +2636,7 @@ static int wm8994_aif3_hw_params(struct
+ 		default:
+ 			return 0;
+ 		}
++		break;
+ 	default:
+ 		return 0;
+ 	}
 
