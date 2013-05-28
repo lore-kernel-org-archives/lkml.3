@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab3E1N1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:27:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50482 "EHLO
+	id S934133Ab3E1N3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:29:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50504 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933952Ab3E1N1t (ORCPT
+	with ESMTP id S933952Ab3E1N3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:27:49 -0400
-Date: Tue, 28 May 2013 06:27:08 -0700
-From: "tip-bot for Michael S. Tsirkin" <tipbot@zytor.com>
-Message-ID: <tip-662bbcb2747c2422cf98d3d97619509379eee466@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, mst@redhat.com,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mst@redhat.com, torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <1369577426-26721-11-git-send-email-mst@redhat.com>
-References: <1369577426-26721-11-git-send-email-mst@redhat.com>
+	Tue, 28 May 2013 09:29:02 -0400
+Date: Tue, 28 May 2013 06:28:23 -0700
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-7b959fc582741227a1c4cba710d6aff8fb183128@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, fche@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, davem@davemloft.net, anil.s.keshavamurthy@intel.com,
+        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        timo.lindfors@iki.fi
+Reply-To: mingo@kernel.org, hpa@zytor.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        davem@davemloft.net, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, timo.lindfors@iki.fi,
+        tglx@linutronix.de
+In-Reply-To: <20130522093409.9084.63554.stgit@mhiramat-M0-7522>
+References: <20130522093409.9084.63554.stgit@mhiramat-M0-7522>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/mm] mm, sched:
-  Allow uaccess in atomic with pagefault_disable()
-Git-Commit-ID: 662bbcb2747c2422cf98d3d97619509379eee466
+Subject: [tip:perf/urgent] kprobes: Fix to free gone and unused optprobes
+Git-Commit-ID: 7b959fc582741227a1c4cba710d6aff8fb183128
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,108 +36,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  662bbcb2747c2422cf98d3d97619509379eee466
-Gitweb:     http://git.kernel.org/tip/662bbcb2747c2422cf98d3d97619509379eee466
-Author:     Michael S. Tsirkin <mst@redhat.com>
-AuthorDate: Sun, 26 May 2013 17:32:23 +0300
+Commit-ID:  7b959fc582741227a1c4cba710d6aff8fb183128
+Gitweb:     http://git.kernel.org/tip/7b959fc582741227a1c4cba710d6aff8fb183128
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Wed, 22 May 2013 18:34:09 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:41:11 +0200
+CommitDate: Tue, 28 May 2013 10:37:59 +0200
 
-mm, sched: Allow uaccess in atomic with pagefault_disable()
+kprobes: Fix to free gone and unused optprobes
 
-This changes might_fault() so that it does not
-trigger a false positive diagnostic for e.g. the following
-sequence:
+Fix to free gone and unused optprobes. This bug will
+cause a kernel panic if the user reuses the killed and
+unused probe.
 
-	spin_lock_irqsave()
-	pagefault_disable()
-	copy_to_user()
-	pagefault_enable()
-	spin_unlock_irqrestore()
+Reported at:
 
-In particular vhost wants to do this, to call
-socket ops from under a lock.
+  http://sourceware.org/ml/systemtap/2013-q2/msg00142.html
 
-There are 3 cases to consider:
+In the normal path, an optprobe on an init function is
+unregistered when a module goes live.
 
- - CONFIG_PROVE_LOCKING - might_fault is non-inline
-   so it's easy to move the in_atomic test to fix
-   up the false positive warning.
+unregister_kprobe(kp)
+ -> __unregister_kprobe_top
+   ->__disable_kprobe
+     ->disarm_kprobe(ap == op)
+       ->__disarm_kprobe
+        ->unoptimize_kprobe : the op is queued
+                              on unoptimizing_list
+and do nothing in __unregister_kprobe_bottom
 
- - CONFIG_DEBUG_ATOMIC_SLEEP - might_fault
-   is currently inline, but we are calling a
-   non-inline __might_sleep anyway,
-   so let's use the non-line version of might_fault
-   that does the right thing.
+After a while (usually wait 5 jiffies), kprobe_optimizer
+runs to unoptimize and free optprobe.
 
- - !CONFIG_DEBUG_ATOMIC_SLEEP && !CONFIG_PROVE_LOCKING
-   __might_sleep is a nop so might_fault is a nop.
+kprobe_optimizer
+ ->do_unoptimize_kprobes
+   ->arch_unoptimize_kprobes : moved to free_list
+ ->do_free_cleaned_kprobes
+   ->hlist_del: the op is removed
+   ->free_aggr_kprobe
+     ->arch_remove_optimized_kprobe
+     ->arch_remove_kprobe
+     ->kfree: the op is freed
 
-Make this explicit.
+Here, if kprobes_module_callback is called and the delayed
+unoptimizing probe is picked BEFORE kprobe_optimizer runs,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1369577426-26721-11-git-send-email-mst@redhat.com
+kprobes_module_callback
+ ->kill_kprobe
+   ->kill_optimized_kprobe : dequeued from unoptimizing_list <=!!!
+     ->arch_remove_optimized_kprobe
+   ->arch_remove_kprobe
+   (but op is not freed, and on the kprobe hash table)
+
+This doesn't happen if the probe unregistration is done AFTER
+kprobes_module_callback is called (because at that time the op
+is gone), and kprobe-tracer does it.
+
+To fix this bug, this patch changes kprobes_module_callback to
+enqueue the op to freeing_list at kill_optimized_kprobe only
+if the op is unused. The unused probes on freeing_list will
+be freed in do_free_cleaned_kprobes.
+
+Note that this calls arch_remove_*kprobe twice on the
+same probe. Thus those functions have to check the double free.
+Fortunately, most of arch codes already checked that except
+for mips. This will be fixed in the next patch.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: systemtap@sourceware.org
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: David S. Miller <davem@davemloft.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20130522093409.9084.63554.stgit@mhiramat-M0-7522
+[ Minor edits. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/kernel.h |  7 ++-----
- mm/memory.c            | 11 +++++++----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ kernel/kprobes.c | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 24719ea..4c7e2e5 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -193,13 +193,10 @@ extern int _cond_resched(void);
- 		(__x < 0) ? -__x : __x;		\
- 	})
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3fed7f0..bddf3b2 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -467,6 +467,7 @@ static struct kprobe *__kprobes get_optimized_kprobe(unsigned long addr)
+ /* Optimization staging list, protected by kprobe_mutex */
+ static LIST_HEAD(optimizing_list);
+ static LIST_HEAD(unoptimizing_list);
++static LIST_HEAD(freeing_list);
  
--#ifdef CONFIG_PROVE_LOCKING
-+#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
- void might_fault(void);
- #else
--static inline void might_fault(void)
--{
--	__might_sleep(__FILE__, __LINE__, 0);
--}
-+static inline void might_fault(void) { }
- #endif
- 
- extern struct atomic_notifier_head panic_notifier_list;
-diff --git a/mm/memory.c b/mm/memory.c
-index c1f190f..d7d54a1 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4210,7 +4210,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
- 	up_read(&mm->mmap_sem);
- }
- 
--#ifdef CONFIG_PROVE_LOCKING
-+#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
- void might_fault(void)
+ static void kprobe_optimizer(struct work_struct *work);
+ static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
+@@ -504,7 +505,7 @@ static __kprobes void do_optimize_kprobes(void)
+  * Unoptimize (replace a jump with a breakpoint and remove the breakpoint
+  * if need) kprobes listed on unoptimizing_list.
+  */
+-static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
++static __kprobes void do_unoptimize_kprobes(void)
  {
- 	/*
-@@ -4222,14 +4222,17 @@ void might_fault(void)
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return;
+ 	struct optimized_kprobe *op, *tmp;
  
--	__might_sleep(__FILE__, __LINE__, 0);
--
- 	/*
- 	 * it would be nicer only to annotate paths which are not under
- 	 * pagefault_disable, however that requires a larger audit and
- 	 * providing helpers like get_user_atomic.
- 	 */
--	if (!in_atomic() && current->mm)
-+	if (in_atomic())
-+		return;
-+
-+	__might_sleep(__FILE__, __LINE__, 0);
-+
-+	if (current->mm)
- 		might_lock_read(&current->mm->mmap_sem);
+@@ -515,9 +516,9 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
+ 	/* Ditto to do_optimize_kprobes */
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	arch_unoptimize_kprobes(&unoptimizing_list, free_list);
++	arch_unoptimize_kprobes(&unoptimizing_list, &freeing_list);
+ 	/* Loop free_list for disarming */
+-	list_for_each_entry_safe(op, tmp, free_list, list) {
++	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
+ 		/* Disarm probes if marked disabled */
+ 		if (kprobe_disabled(&op->kp))
+ 			arch_disarm_kprobe(&op->kp);
+@@ -536,11 +537,11 @@ static __kprobes void do_unoptimize_kprobes(struct list_head *free_list)
  }
- EXPORT_SYMBOL(might_fault);
+ 
+ /* Reclaim all kprobes on the free_list */
+-static __kprobes void do_free_cleaned_kprobes(struct list_head *free_list)
++static __kprobes void do_free_cleaned_kprobes(void)
+ {
+ 	struct optimized_kprobe *op, *tmp;
+ 
+-	list_for_each_entry_safe(op, tmp, free_list, list) {
++	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
+ 		BUG_ON(!kprobe_unused(&op->kp));
+ 		list_del_init(&op->list);
+ 		free_aggr_kprobe(&op->kp);
+@@ -556,8 +557,6 @@ static __kprobes void kick_kprobe_optimizer(void)
+ /* Kprobe jump optimizer */
+ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ {
+-	LIST_HEAD(free_list);
+-
+ 	mutex_lock(&kprobe_mutex);
+ 	/* Lock modules while optimizing kprobes */
+ 	mutex_lock(&module_mutex);
+@@ -566,7 +565,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	 * Step 1: Unoptimize kprobes and collect cleaned (unused and disarmed)
+ 	 * kprobes before waiting for quiesence period.
+ 	 */
+-	do_unoptimize_kprobes(&free_list);
++	do_unoptimize_kprobes();
+ 
+ 	/*
+ 	 * Step 2: Wait for quiesence period to ensure all running interrupts
+@@ -581,7 +580,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	do_optimize_kprobes();
+ 
+ 	/* Step 4: Free cleaned kprobes after quiesence period */
+-	do_free_cleaned_kprobes(&free_list);
++	do_free_cleaned_kprobes();
+ 
+ 	mutex_unlock(&module_mutex);
+ 	mutex_unlock(&kprobe_mutex);
+@@ -723,8 +722,19 @@ static void __kprobes kill_optimized_kprobe(struct kprobe *p)
+ 	if (!list_empty(&op->list))
+ 		/* Dequeue from the (un)optimization queue */
+ 		list_del_init(&op->list);
+-
+ 	op->kp.flags &= ~KPROBE_FLAG_OPTIMIZED;
++
++	if (kprobe_unused(p)) {
++		/* Enqueue if it is unused */
++		list_add(&op->list, &freeing_list);
++		/*
++		 * Remove unused probes from the hash list. After waiting
++		 * for synchronization, this probe is reclaimed.
++		 * (reclaiming is done by do_free_cleaned_kprobes().)
++		 */
++		hlist_del_rcu(&op->kp.hlist);
++	}
++
+ 	/* Don't touch the code, because it is already freed. */
+ 	arch_remove_optimized_kprobe(op);
+ }
