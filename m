@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933786Ab3E1Veh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:34:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59724 "EHLO
+	id S933314Ab3E1VfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:35:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59714 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab3E1VZM (ORCPT
+	with ESMTP id S932758Ab3E1VZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:12 -0400
+	Tue, 28 May 2013 17:25:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 75/78] ipv6,gre: do not leak info to user-space
-Date: Tue, 28 May 2013 14:20:24 -0700
-Message-Id: <1369776027-17859-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 70/78] 3c59x: fix freeing nonexistent resource on driver unload
+Date: Tue, 28 May 2013 14:20:19 -0700
+Message-Id: <1369776027-17859-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,41 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-[ Upstream commit 5dbd5068430b8bd1c19387d46d6c1a88b261257f ]
+[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
 
-There is a hole in struct ip6_tnl_parm2, so we have to
-zero the struct on stack before copying it to user-space.
+When unloading the driver that drives an EISA board, a message similar to the
+following one is displayed:
 
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
+Trying to free nonexistent resource <0000000000013000-000000000001301f>
+
+Then an user is unable to reload the driver because the resource it requested in
+the previous load hasn't been freed. This happens most probably due to a typo in
+vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
+of 'edev->base_addr'...
+
+Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+Tested-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_gre.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/3com/3c59x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
-index 131dd09..a4c5ae7 100644
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -1137,6 +1137,7 @@ static int ip6gre_tunnel_ioctl(struct net_device *dev,
- 		}
- 		if (t == NULL)
- 			t = netdev_priv(dev);
-+		memset(&p, 0, sizeof(p));
- 		ip6gre_tnl_parm_to_user(&p, &t->parms);
- 		if (copy_to_user(ifr->ifr_ifru.ifru_data, &p, sizeof(p)))
- 			err = -EFAULT;
-@@ -1184,6 +1185,7 @@ static int ip6gre_tunnel_ioctl(struct net_device *dev,
- 		if (t) {
- 			err = 0;
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index ed0feb3..44de6ce 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -951,7 +951,7 @@ static int vortex_eisa_remove(struct device *device)
  
-+			memset(&p, 0, sizeof(p));
- 			ip6gre_tnl_parm_to_user(&p, &t->parms);
- 			if (copy_to_user(ifr->ifr_ifru.ifru_data, &p, sizeof(p)))
- 				err = -EFAULT;
+ 	unregister_netdev(dev);
+ 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
+-	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
++	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ 
+ 	free_netdev(dev);
+ 	return 0;
 -- 
 1.8.1.2
 
