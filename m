@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab3E1VYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:24:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59659 "EHLO
+	id S1758686Ab3E1VYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:24:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59645 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab3E1VYk (ORCPT
+	with ESMTP id S1758461Ab3E1VY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:40 -0400
+	Tue, 28 May 2013 17:24:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Alasdair G Kergon <agk@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 37/78] tick: Cleanup NOHZ per cpu data on cpu down
-Date: Tue, 28 May 2013 14:19:46 -0700
-Message-Id: <1369776027-17859-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 33/78] dm snapshot: fix error return code in snapshot_ctr
+Date: Tue, 28 May 2013 14:19:42 -0700
+Message-Id: <1369776027-17859-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 4b0c0f294f60abcdd20994a8341a95c8ac5eeb96 upstream.
+commit 09e8b813897a0f85bb401435d009228644c81214 upstream.
 
-Prarit reported a crash on CPU offline/online. The reason is that on
-CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
-up. If at cpu online an interrupt happens before the per cpu tick
-device is registered the irq_enter() check potentially sees stale data
-and dereferences a NULL pointer.
+Return -ENOMEM instead of success if unable to allocate pending
+exception mempool in snapshot_ctr.
 
-Cleanup the data after the cpu is dead.
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Mike Galbraith <bitbucket@online.de>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/time/tick-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-snap.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index e78feff..8853dab 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -903,7 +903,7 @@ void tick_cancel_sched_timer(int cpu)
- 		hrtimer_cancel(&ts->sched_timer);
- # endif
- 
--	ts->nohz_mode = NOHZ_MODE_INACTIVE;
-+	memset(ts, 0, sizeof(*ts));
- }
- #endif
+diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
+index df74f9f..900eb23 100644
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -1119,6 +1119,7 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	s->pending_pool = mempool_create_slab_pool(MIN_IOS, pending_cache);
+ 	if (!s->pending_pool) {
+ 		ti->error = "Could not allocate mempool for pending exceptions";
++		r = -ENOMEM;
+ 		goto bad_pending_pool;
+ 	}
  
 -- 
 1.8.1.2
