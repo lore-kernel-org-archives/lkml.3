@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab3E1XsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:48:13 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53687 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759335Ab3E1XsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:48:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: System slow down from udev
-Date: Wed, 29 May 2013 01:57:03 +0200
-Message-ID: <1826731.cQudjZKeXZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQUUQ8Nbw7y5yZYy=LnS6xMD64pO3UBiz+44LvsCPxD56A@mail.gmail.com>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com> <4790010.08sMRz00G6@vostro.rjw.lan> <CAE9FiQUUQ8Nbw7y5yZYy=LnS6xMD64pO3UBiz+44LvsCPxD56A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932441Ab3E1Xyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:54:35 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61253 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab3E1Xyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:54:33 -0400
+X-AuditID: cbfee68e-b7f276d000002279-fd-51a543b73409
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Herbert Xu'" <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>,
+        "'Deepak Saxena'" <dsaxena@plexity.net>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <002801ce57a0$1f004ba0$5d00e2e0$@samsung.com>
+ <20130528091615.GB24414@gondor.apana.org.au>
+In-reply-to: <20130528091615.GB24414@gondor.apana.org.au>
+Subject: Re: [PATCH] hwrng: use platform_{get,set}_drvdata()
+Date: Wed, 29 May 2013 08:54:30 +0900
+Message-id: <001401ce5bfe$b23c9a60$16b5cf20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJu93ei87CZ15IdEX315rmkuWQPxQLN3/LGl8OetpA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY93tzksDDT7sEbRon/yNyaL7lYzF
+	5YWXWC0u75rDZrFgWx+jA6vHtgOqHo9bWpk9+rasYvToe7mB0ePzJrkA1igum5TUnMyy1CJ9
+	uwSujLVLXjIVPGKrmHluPnsD4yrWLkYODgkBE4k3f8u7GDmBTDGJC/fWs3UxcnEICSxjlNhx
+	tIkFImEisfjiciaIxHRGie7X25khnF+MErv2zGMFqWITUJP48uUwO4gtIqAn0be+kRGkiFmg
+	l1Hi0oz7YEVCAhkSW9f1sYGs5hSwlJj+sRokLCxgI9G2YDtYL4uAqsTUjqlgm3mBSs6fP80O
+	YQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3zBCXKkjsOPuaEeIGK4ktS14yQ9SISOx78Q7sHgmB
+	W+wSO352M0MsE5D4NvkQCyQoZCU2HYCaIylxcMUNlgmMErOQrJ6FZPUsJKtnIVmxgJFlFaNo
+	akFyQXFSepGRXnFibnFpXrpecn7uJkZInPbtYLx5wPoQYzLQ+onMUqLJ+cA4zyuJNzQ2M7Iw
+	NTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY4SjEPuTdbzt0gwt
+	QpcX3DaR6ez/67irZs/SUtdr5jslpYXqF9YJn229sp7RcoeboO2l4wmH3gfrt2Ue7Y4LePlj
+	m3T9/pL5p91tVkeHv4i8mzxlWeaDjJY04ynhLDuFU3L/eJn65f/cXb790KvVF0+Jr81R+nvv
+	wSOzB+YXlG9vPnjcpe7tFCWW4oxEQy3mouJEAHCbz33pAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd3tzksDDXqX8Fq0T/7GZNH9Ssbi
+	8sJLrBaXd81hs1iwrY/RgdVj2wFVj8ctrcwefVtWMXr0vdzA6PF5k1wAa1QDo01GamJKapFC
+	al5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0G4lhbLEnFKgUEBicbGS
+	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8baJS+ZCh6xVcw8N5+9gXEVaxcjJ4eEgInE4ovL
+	mSBsMYkL99azdTFycQgJTGeU6H69nRnC+cUosWvPPLAONgE1iS9fDrOD2CICehJ96xsZQYqY
+	BXoZJS7NuA9WJCSQIbF1XR/QKA4OTgFLiekfq0HCwgI2Em0LtoP1sgioSkztmMoCYvMClZw/
+	f5odwhaU+DH5HlicWUBLYv3O40wQtrzE5jVvmSEuVZDYcfY1I8QNVhJblrxkhqgRkdj34h3j
+	BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwGnkntYFzZ
+	YHGIUYCDUYmHl+HXkkAh1sSy4srcQ4wSHMxKIrypgksDhXhTEiurUovy44tKc1KLDzEmA306
+	kVlKNDkfmKLySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoGR
+	zej2g/NiD5NnWS7/yzh7+sVshbajh0X6LXkN4xtlOwyPdNVEr8s/YfPu0rI3haHBawRbtjd1
+	ztmvxvF/6e3841+TFy4+M6/f1v/ytmmq1x/8jNK/GJnna9O1pk5DpJN70bJstU+37CSW7+d5
+	cEYye/UZc1XPPzPPmyqzRd/gPJU3Q/rgQjF9JZbijERDLeai4kQAJUKe8kcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 28, 2013 04:46:30 PM Yinghai Lu wrote:
-> On Tue, May 28, 2013 at 4:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Tuesday, May 28, 2013 04:39:37 PM Yinghai Lu wrote:
-> >> Raphael:
-> >>
-> >> Found one commit in your linus-pm cause user space very slow...
-> >> at least from udev start...
+On Tuesday, May 28, 2013 6:16 PM, Herbert Xu wrote:
+> On Thu, May 23, 2013 at 07:27:26PM +0900, Jingoo Han wrote:
+> > Use the wrapper functions for getting and setting the driver data using
+> > platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+> > so we can directly pass a struct platform_device.
 > >
-> > I obviously can't reproduce it, so it would be great if you could give me
-> > more details.
+> > Also, unnecessary dev_set_drvdata() is removed, because the driver core
+> > clears the driver data to NULL after device_release or on probe failure.
 > >
-> > Is there anything unusual about your test system?
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > 
-> they are normal nehalem ex, westmere ex and ivybridge ex 8 sockets system.
+> Sorry but this patch doesn't apply against the current cryptodev
+> tree.  If you are basing your patch on another tree, please submit
+> the patch there.
 
-Do all of them have the same problem?
+Hi Herbert Xu,
 
-What distro is running there?
+I will make the patch based on your "cryptodev" tree,
+and will send it, soon. :)
 
-Rafael
+Best regards,
+Jingoo Han
+
+> 
+> Thanks,
+> --
 
 
-> >> bisect to
-> >>
-> >> ac212b6980d8d5eda705864fc5a8ecddc6d6eacc is the first bad commit
-> >> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
-> >> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> Date:   Fri May 3 00:26:22 2013 +0200
-> >>
-> >>     ACPI / processor: Use common hotplug infrastructure
-> >>
-> >>     Split the ACPI processor driver into two parts, one that is
-> >>     non-modular, resides in the ACPI core and handles the enumeration
-> >>     and hotplug of processors and one that implements the rest of the
-> >>     existing processor driver functionality.
-> >>
-> >>     The non-modular part uses an ACPI scan handler object to enumerate
-> >>     processors on the basis of information provided by the ACPI namespace
-> >>     and to hook up with the common ACPI hotplug infrastructure.  It also
-> >>     populates the ACPI handle of each processor device having a
-> >>     corresponding object in the ACPI namespace, which allows the driver
-> >>     proper to bind to those devices, and makes the driver bind to them
-> >>     if it is readily available (i.e. loaded) when the scan handler's
-> >>     .attach() routine is running.
-> >>
-> >>     There are a few reasons to make this change.
-> >>
-> >>     First, switching the ACPI processor driver to using the common ACPI
-> >>     hotplug infrastructure reduces code duplication and size considerably,
-> >>     even though a new file is created along with a header comment etc.
-> >>
-> >>     Second, since the common hotplug code attempts to offline devices
-> >>     before starting the (non-reversible) removal procedure, it will abort
-> >>     (and possibly roll back) hot-remove operations involving processors
-> >>     if cpu_down() returns an error code for one of them instead of
-> >>     continuing them blindly (if /sys/firmware/acpi/hotplug/force_remove
-> >>     is unset).  That is a more desirable behavior than what the current
-> >>     code does.
-> >>
-> >>     Finally, the separation of the scan/hotplug part from the driver
-> >>     proper makes it possible to simplify the driver's .remove() routine,
-> >>     because it doesn't need to worry about the possible cleanup related
-> >>     to processor removal any more (the scan/hotplug part is responsible
-> >>     for that now) and can handle device removal and driver removal
-> >>     symmetricaly (i.e. as appropriate).
-> >>
-> >>     Some user-visible changes in sysfs are made (for example, the
-> >>     'sysdev' link from the ACPI device node to the processor device's
-> >>     directory is gone and a 'physical_node' link is present instead
-> >>     and a corresponding 'firmware_node' is present in the processor
-> >>     device's directory, the processor driver is now visible under
-> >>     /sys/bus/cpu/drivers/ and bound to the processor device), but
-> >>     that shouldn't affect the functionality that users care about
-> >>     (frequency scaling, C-states and thermal management).
-> >>
-> >>     Tested on my venerable Toshiba Portege R500.
-> >>
-> >>     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >>     Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>     Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> >>
-> >> :040000 040000 24925fd62fd97295be145d62f8d849004eeca284
-> >> 30c7f7f9ff26f17eaabf1770eb7d0b69c2767ba8 M    drivers
-> >> :040000 040000 8374b2dcd64a21abc1f65d3c7779ffa71adb01ba
-> >> 9375e83719e970b6f4b9a61fe6080bd638dfc51c M    include
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
