@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab3E1VQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:16:29 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43630 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333Ab3E1VQ2 (ORCPT
+	id S1756752Ab3E1VTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:19:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63904 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab3E1VTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:16:28 -0400
-Date: Tue, 28 May 2013 16:15:23 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] rsxx: Fixes CPU usage issues on RHEL 6 Kernels.
-Message-ID: <20130528211523.GH5065@oc6784271780.ibm.com>
+	Tue, 28 May 2013 17:19:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [RFC] Add co-maintainer for fbdev
+Date: Tue, 28 May 2013 23:19:30 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <20130524153835.GF15839@game.jcrosoft.org> <201305242056.42482.arnd@arndb.de> <51A29DB9.7030505@gmx.de>
+In-Reply-To: <51A29DB9.7030505@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052821-5406-0000-0000-000008F04584
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305282319.30311.arnd@arndb.de>
+X-Provags-ID: V02:K0:Yr+maXQPKWWj3956cjY5/wIO4ONvL4NYkPoDYQU+AGF
+ o+6nQfDBH25RHtift3EuunRoo3DPBYA4eFfQVIArTG2CWaybd8
+ mIEqkhmEvmhyvZ8TXa/BQQMLPPQb2DgR0USnYYJXDWyeL/eWm1
+ 8q6N7Bt0EtxrUetFG89nIBtBFd9O5KTVE1b1T1WfZN1EdXx0Ko
+ mstGLWg8s8hpqdhB0Q/C+fZPQD9LF12p2Mup/BYAc8YCZZ4SKr
+ 5L3gXIBfPaFp7Mb3w8aXNWS682xRcBAf9hUTq1hQ7anhCVz5nN
+ BZs7VgtXt4lkAx2tfbIc8GoJypEBmUovEzC2pIv+l2X2lATC27
+ LpjGBFZkRE3wrF0lu8Gg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Monday 27 May 2013, Florian Tobias Schandinat wrote:
+> >> On Fri, May 24, 2013 at 8:38 AM, Jean-Christophe PLAGNIOL-VILLARD
+> >> <plagnioj@jcrosoft.com> wrote:
+> >>> Hi Florian,
+> >>>
+> >>>         As you seems very busy I'd like to propose the help you to handle the
+> >>>         fbdev subsystem to easier the rich of the fbdev patch to Linus
+> >>>
+> >>>         As I'm working on fbdev on at91 and others and already Co-Maintain the
+> >>>         at91 mach on ARM
+> >>>
+> >>>         And if you are not willing to continue I could take over
+> 
+> Yeah, it would be great if you could help, at the moment I get barely
+> any sleep, let alone that I could keep up with the majority of mail I
+> get. I'll let you decide whether you want to be sole maintainer or not.
 
-The RHEL 6.x version of the driver is using the legacy
-worqueue create function, 'create_singlethread_workqueue'.
-This would cause heavy usage of one CPU if data was being
-thrashed pretty hard. So, in order to fix it, workqueues
-are now being created with 'create_workqueue' and
-synchronization with mutexes.
+For any bigger subsystems, it's good practice to have two maintainers,
+even if one of them does all the work. I think it makes sense to have
+Jean-Christophe as the primary maintainer and owner of the git tree,
+but it may also be good to have you or Tomi listed as a second maintainer
+for times when Jean-Christophe isn't available.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+I don't know how many patches you'd expect per release, maybe just one
+person is enough after all.
 
-
-
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-05-01 18:58:43.428185108 -0500
-+++ linux-block/drivers/block/rsxx/dma.c	2013-05-01 19:03:48.504367557 -0500
-@@ -383,15 +383,13 @@ static void dma_engine_stalled(unsigned 
- 	}
- }
- 
--static void rsxx_issue_dmas(struct work_struct *work)
-+static void rsxx_issue_dmas(struct rsxx_dma_ctrl *ctrl)
- {
--	struct rsxx_dma_ctrl *ctrl;
- 	struct rsxx_dma *dma;
- 	int tag;
- 	int cmds_pending = 0;
- 	struct hw_cmd *hw_cmd_buf;
- 
--	ctrl = container_of(work, struct rsxx_dma_ctrl, issue_dma_work);
- 	hw_cmd_buf = ctrl->cmd.buf;
- 
- 	if (unlikely(ctrl->card->halt) ||
-@@ -471,9 +469,8 @@ static void rsxx_issue_dmas(struct work_
- 	}
- }
- 
--static void rsxx_dma_done(struct work_struct *work)
-+static void rsxx_dma_done(struct rsxx_dma_ctrl *ctrl)
- {
--	struct rsxx_dma_ctrl *ctrl;
- 	struct rsxx_dma *dma;
- 	unsigned long flags;
- 	u16 count;
-@@ -481,7 +478,6 @@ static void rsxx_dma_done(struct work_st
- 	u8 tag;
- 	struct hw_status *hw_st_buf;
- 
--	ctrl = container_of(work, struct rsxx_dma_ctrl, dma_done_work);
- 	hw_st_buf = ctrl->status.buf;
- 
- 	if (unlikely(ctrl->card->halt) ||
-@@ -557,6 +553,28 @@ static void rsxx_dma_done(struct work_st
- 	spin_unlock_bh(&ctrl->queue_lock);
- }
- 
-+static void rsxx_schedule_issue(struct work_struct *work)
-+{
-+	struct rsxx_dma_ctrl *ctrl;
-+
-+	ctrl = container_of(work, struct rsxx_dma_ctrl, issue_dma_work);
-+
-+	mutex_lock(&ctrl->work_lock);
-+	rsxx_issue_dmas(ctrl);
-+	mutex_unlock(&ctrl->work_lock);
-+}
-+
-+static void rsxx_schedule_done(struct work_struct *work)
-+{
-+	struct rsxx_dma_ctrl *ctrl;
-+
-+	ctrl = container_of(work, struct rsxx_dma_ctrl, dma_done_work);
-+
-+	mutex_lock(&ctrl->work_lock);
-+	rsxx_dma_done(ctrl);
-+	mutex_unlock(&ctrl->work_lock);
-+}
-+
- static int rsxx_queue_discard(struct rsxx_cardinfo *card,
- 				  struct list_head *q,
- 				  unsigned int laddr,
-@@ -801,6 +819,7 @@ static int rsxx_dma_ctrl_init(struct pci
- 	spin_lock_init(&ctrl->trackers->lock);
- 
- 	spin_lock_init(&ctrl->queue_lock);
-+	mutex_init(&ctrl->work_lock);
- 	INIT_LIST_HEAD(&ctrl->queue);
- 
- 	setup_timer(&ctrl->activity_timer, dma_engine_stalled,
-@@ -814,8 +833,8 @@ static int rsxx_dma_ctrl_init(struct pci
- 	if (!ctrl->done_wq)
- 		return -ENOMEM;
- 
--	INIT_WORK(&ctrl->issue_dma_work, rsxx_issue_dmas);
--	INIT_WORK(&ctrl->dma_done_work, rsxx_dma_done);
-+	INIT_WORK(&ctrl->issue_dma_work, rsxx_schedule_issue);
-+	INIT_WORK(&ctrl->dma_done_work, rsxx_schedule_done);
- 
- 	st = rsxx_hw_buffers_init(dev, ctrl);
- 	if (st)
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-01 18:58:43.434186795 -0500
-+++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-01 19:04:14.938188138 -0500
-@@ -115,6 +115,7 @@ struct rsxx_dma_ctrl {
- 	struct timer_list		activity_timer;
- 	struct dma_tracker_list		*trackers;
- 	struct rsxx_dma_stats		stats;
-+	struct mutex			work_lock;
- };
- 
- struct rsxx_cardinfo {
-
+	Arnd
