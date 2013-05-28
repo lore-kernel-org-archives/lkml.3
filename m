@@ -1,119 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964967Ab3E1SJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:09:47 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:38029 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964871Ab3E1SJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:09:46 -0400
-Date: Tue, 28 May 2013 13:09:42 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] 9p: trace: use %*ph to dump buffer
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        Eric Van Hensbergen <ericvh@gmail.com>
-In-Reply-To: <1369730992.29283.224.camel@smile> (from
-	andriy.shevchenko@linux.intel.com on Tue May 28 03:49:52 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1369764582.2776.40@driftwood>
+	id S964976Ab3E1SLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:11:52 -0400
+Received: from mout.gmx.net ([212.227.15.19]:62037 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964871Ab3E1SLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:11:51 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+zYysoSGqz21xcDSNleaO8pb8sb5ROwoL+KAxQeN
+	Fnol4VjGbLYzXo
+Message-ID: <51A4F363.2040003@gmx.de>
+Date: Tue, 28 May 2013 20:11:47 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130516 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-ugmQAijy1P1H5cceKiXm"
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.9.0 + CONFIG_X86_INTEL_PSTATE=y  -> ThinkPad T420 with i5 lost
+ ACPI functionality
+References: <5183EC09.9080208@gmx.de> <3715884.H8PIhhjRXL@vostro.rjw.lan> <51911826.907@gmail.com> <519120CC.10403@gmx.de> <51912990.8020206@intel.com> <51913B45.80901@gmx.de> <51913E0A.6060402@gmail.com>
+In-Reply-To: <51913E0A.6060402@gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-ugmQAijy1P1H5cceKiXm
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/13/2013 09:24 PM, Dirk Brandewie wrote:
+> On 05/13/2013 12:13 PM, Toralf Förster wrote:
+>> On 05/13/2013 07:57 PM, Dirk Brandewie wrote:
+>>>      cd /sys/fs/cgroup/cpu
+>>>      mkdir bonic
+>>>      echo 400 > boinc/cpu.shares
+>>>      boinc &
+>>>      echo $! > boinc/tasks
+>>
+>> In many places of my scripts for automated testing I use currently the
+>> "nice -n" prefix at my ThinkPad to keep a long battery life, quiet fan,
+>> cool CPU. The CPU just runs with minimal frequency but will give
+>> med/max. power on demand.
+>>
+>> If the P-State governor will be the replacement the old behaviour -
+>>
+>> the kernel menu config says "will become the perferred ... (sic!)
+>> ...scaling driver for Sandy bridge processors" -
+>>
+>> is there a nifty user space tool which replaces "nice" and do all cgroup
+>> stuff for the user ?
+>>
+> 
+> cgexec from the libcgroup-tools package (fedora name) look like it will
+> place
+> a process in a group for you.
+> 
+> https://wiki.archlinux.org/index.php/Cgroups
+> 
+> Has some useful examples.
+> 
+> --Dirk
+> 
 
-On 05/28/2013 03:49:52 AM, Andy Shevchenko wrote:
-> On Mon, 2013-04-22 at 16:01 +0300, Andy Shevchenko wrote:
-> > Additionally change cast from long to unsigned long to follow =20
-> specificator.
-> >
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  include/trace/events/9p.h | 28 +++-------------------------
-> >  1 file changed, 3 insertions(+), 25 deletions(-)
-> >
-> > diff --git a/include/trace/events/9p.h b/include/trace/events/9p.h
-> > index beeaed8..a066636 100644
-> > --- a/include/trace/events/9p.h
-> > +++ b/include/trace/events/9p.h
-> > @@ -143,31 +143,9 @@ TRACE_EVENT(9p_protocol_dump,
-> >  		    __entry->tag    =3D  pdu->tag;
-> >  		    memcpy(__entry->line, pdu->sdata, P9_PROTO_DUMP_SZ);
-> >  		    ),
-> > -	    TP_printk("clnt %lu %s(tag =3D %d)\n%.3x: "
-> > -		      "%02x %02x %02x %02x %02x %02x %02x %02x "
-> > -		      "%02x %02x %02x %02x %02x %02x %02x %02x\n"
-> > -		      "%.3x: "
-> > -		      "%02x %02x %02x %02x %02x %02x %02x %02x "
-> > -		      "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-> > -		      (long)__entry->clnt, show_9p_op(__entry->type),
-> > -		      __entry->tag, 0,
-> > -		      __entry->line[0],  __entry->line[1],
-> > -		      __entry->line[2],  __entry->line[3],
-> > -		      __entry->line[4],  __entry->line[5],
-> > -		      __entry->line[6],  __entry->line[7],
-> > -		      __entry->line[8],  __entry->line[9],
-> > -		      __entry->line[10], __entry->line[11],
-> > -		      __entry->line[12], __entry->line[13],
-> > -		      __entry->line[14], __entry->line[15],
-> > -		      16,
-> > -		      __entry->line[16], __entry->line[17],
-> > -		      __entry->line[18], __entry->line[19],
-> > -		      __entry->line[20], __entry->line[21],
-> > -		      __entry->line[22], __entry->line[23],
-> > -		      __entry->line[24], __entry->line[25],
-> > -		      __entry->line[26], __entry->line[27],
-> > -		      __entry->line[28], __entry->line[29],
-> > -		      __entry->line[30], __entry->line[31])
-> > +	    TP_printk("clnt %lu %s(tag =3D %d)\n%.3x: %16ph\n%.3x: =20
-> %16ph\n",
-> > +		      (unsigned long)__entry->clnt, =20
-> show_9p_op(__entry->type),
-> > +		      __entry->tag, 0, __entry->line, 16, __entry->line =20
-> + 16)
-> >   );
-> >
-> >  #endif /* _TRACE_9P_H */
->=20
-> Any comment on this one, anyone?
+I'm not really convinced about using P-State in favour of ondemand -
+with the cpu ondemand governor my freshly booted system with just KDE
+started stays here around 39°C - with pstate I do have 53°C.
 
-While we're at it, here's a patch adding the rest of the 9p files to =20
-the maintainers entry, in hopes that Erich and the list get pinged on =20
-this stuff in future.
+Even more if I run BOINC the temperature is around 92° even with these
+settings :
 
-Rob=
+ tail -v /sys/fs/cgroup/cpu/groupname/boinc/*
+==> /sys/fs/cgroup/cpu/groupname/boinc/cgroup.clone_children <==
+0
 
---=-ugmQAijy1P1H5cceKiXm
-Content-Type: text/x-patch; charset=us-ascii; name=9p.patch
-Content-Disposition: attachment; filename=9p.patch
+==> /sys/fs/cgroup/cpu/groupname/boinc/cgroup.event_control <==
+tail: error reading
+‘/sys/fs/cgroup/cpu/groupname/boinc/cgroup.event_control’: Invalid argument
 
-Add rest of the 9p files to the maintainers entry.
+==> /sys/fs/cgroup/cpu/groupname/boinc/cgroup.procs <==
+3411
+3415
+3416
+3417
+3419
+3421
+3422
+3423
+3434
+3435
 
- MAINTAINERS |    5 +++++
- 1 file changed, 5 insertions(+)
+==> /sys/fs/cgroup/cpu/groupname/boinc/cpu.cfs_period_us <==
+100000
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fd3a495..386fafa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -180,6 +180,11 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git
- S:	Maintained
- F:	Documentation/filesystems/9p.txt
- F:	fs/9p/
-+F:	net/9p/
-+F:	include/net/9p/
-+F:	include/uapi/linux/virtio_9p.h
-+F:	include/trace/events/9p.h
-+
- 
- A8293 MEDIA DRIVER
- M:	Antti Palosaari <crope@iki.fi>
+==> /sys/fs/cgroup/cpu/groupname/boinc/cpu.cfs_quota_us <==
+-1
 
---=-ugmQAijy1P1H5cceKiXm--
+==> /sys/fs/cgroup/cpu/groupname/boinc/cpu.shares <==
+2
+
+==> /sys/fs/cgroup/cpu/groupname/boinc/cpu.stat <==
+nr_periods 0
+nr_throttled 0
+throttled_time 0
+
+==> /sys/fs/cgroup/cpu/groupname/boinc/notify_on_release <==
+0
+
+==> /sys/fs/cgroup/cpu/groupname/boinc/tasks <==
+3417
+3418
+3419
+3420
+3421
+3422
+3423
+3424
+3434
+3435
+
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
