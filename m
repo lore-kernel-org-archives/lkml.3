@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964788Ab3E1RRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 13:17:38 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:51617
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934735Ab3E1RRh (ORCPT
+	id S964800Ab3E1R0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 13:26:16 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:43885 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934735Ab3E1R0O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 13:17:37 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z551bizbb2dI98dI9371I1102I1432Id799hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MNIQP4-01-60C-02
-X-M-MSG: 
-Message-ID: <51A4E6A8.7080004@amd.com>
-Date: Tue, 28 May 2013 12:17:28 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 28 May 2013 13:26:14 -0400
+Date: Tue, 28 May 2013 12:26:06 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2 2/7] Documentation/devices.txt: Mark /dev/oldmem
+ obsolete
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Simon Horman <horms@verge.net.au>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>
+References: <1369721851.2776.37@driftwood> <51A44DD5.5050301@cn.fujitsu.com>
+In-Reply-To: <51A44DD5.5050301@cn.fujitsu.com> (from
+	zhangyanfei@cn.fujitsu.com on Tue May 28 01:25:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1369761966.2776.39@driftwood>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH 2/2 V3] perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com> <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com> <20130528121850.GC2575@8bytes.org>
-In-Reply-To: <20130528121850.GC2575@8bytes.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=UTF-8; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/28/2013 7:18 AM, Joerg Roedel wrote:
-> On Fri, May 17, 2013 at 02:43:32PM -0500, Suthikulpanit, Suravee wrote:
->> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
->> index b0684e4..fcbd3b8 100644
->> --- a/arch/x86/kernel/cpu/Makefile
->> +++ b/arch/x86/kernel/cpu/Makefile
->> @@ -30,7 +30,7 @@ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
->>   obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
->>   
->>   ifdef CONFIG_PERF_EVENTS
->> -obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o
->> +obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o perf_event_amd_iommu.o
-> This should also depend on CONFIG_AMD_IOMMU. If no IOMMU driver is
-> compiled in it doesn't make sense to have that PMU.
-I will take care of this.
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* integrate with iommu base devid (0000), assume one iommu */
-> +	perf_iommu->max_banks =
-> +		amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID);
-> +	perf_iommu->max_counters =
-> +		amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID);
-> +
-> +	/* update the hw_perf_event struct with the iommu config data */
-> +	hwc->config = config;
-> +	hwc->extra_reg.config = config1;
-> +
-> +	return 0;
-> +}
-> That implementation is very basic. Any reason for not using the event
-> reporting mechanism of the IOMMU? You could implement a nice perf
-> iommutop or something to see which devices do the most transactions or
-> something like that.
->
->
-> 	Joerg
-This patch is adding perf system-wide counting mode support which is 
-used by "perf stat" tool.  We are not implementing the sampling mode 
-since MSI interrupt of the IOMMU cannot be used for current perf 
-sampling tools (e.g. perf record or top) since the IOMMU counters are 
-not core-specific.   The current "perf record" and "perf top" needs to 
-attribute each sample to a particular core/pid which would allow the 
-tools to figure out the instruction pointer and map the sample to a 
-paticular module.
+On 05/28/2013 01:25:25 AM, Zhang Yanfei wrote:
+> On 05/28/2013 02:17 PM, Rob Landley wrote:
+> > On 05/26/2013 08:54:19 PM, Zhang Yanfei wrote:
+> >> 于 2013年05月27日 09:46, HATAYAMA Daisuke 写道:
+> >> > (2013/05/26 15:36), Zhang Yanfei wrote:
+> >> >> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> >> >>
+> >> >> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> >> >> Cc: Dave Jones <davej@redhat.com>
+> >> >> ---
+> >> >>   Documentation/devices.txt |    3 +--
+> >> >>   1 files changed, 1 insertions(+), 2 deletions(-)
+> >> >>
+> >> >> diff --git a/Documentation/devices.txt  
+> b/Documentation/devices.txt
+> >> >> index 08f01e7..c8e4002 100644
+> >> >> --- a/Documentation/devices.txt
+> >> >> +++ b/Documentation/devices.txt
+> >> >> @@ -100,8 +100,7 @@ Your cooperation is appreciated.
+> >> >>            10 = /dev/aio        Asynchronous I/O notification  
+> interface
+> >> >>            11 = /dev/kmsg        Writes to this come out as  
+> printk's, reads
+> >> >>                       export the buffered printk records.
+> >> >> -         12 = /dev/oldmem    Used by crashdump kernels to  
+> access
+> >> >> -                    the memory of the kernel that crashed.
+> >> >> +         12 = /dev/oldmem    OBSOLETE
+> >> >>
+> >> >>     1 block    RAM disk
+> >> >>             0 = /dev/ram0        First RAM disk
+> >> >>
+> >> >
+> >> > This is the new patch. Looking at other parts of devices.txt,  
+> obsolete is
+> >> > sometimes used together with unused. I guess obsolete means this  
+> is old interface so
+> >> > don't use it as much as possible and unused means this is not  
+> used at all now.
+> >> > You remove old memory interface completely in this patch set, so  
+> is it better to add
+> >> > unused, too?
+> >> >
+> >>
+> >> Does obsolete also mean "not used anymore"? I don't know. I think  
+> we can wait for some native
+> >> English speakers to comment on this.
+> >
+> > Obsolete implies that it shouldn't be used anymore. There are  
+> exceptions to everything, of course...
+> >
+> > (Unused means nothing is using it. If there's still code using it,  
+> it's not unused. So yeah unused would imply removed.)
+> >
+> 
+> So, could I just use UNSED to replace OBSOLETE here? Or use  
+> "OBSOLETE/UNUSED"?
 
-If I understand correctly, when you mentioned "perf iommutop", you want 
-a new perf user-space tool which will show real-time IOMMU events per 
-IOMMU HW and/or device?
+Obsolete is fine.
 
-Suravee
+Obsolete means it was used at some point, and thus reusing it might  
+confuse or conflcit with legacy software. Unused could just mean that  
+we left a gap for some reason, it doesn't imply it ever was used.
 
+Explicitly documenting "unused" is kind of silly: all the ones we  
+_don't_ document are presumably unused. Obsolete carries with it a very  
+mild warning about legacy software, which is presumably why we still  
+bother to mention it at all instead of just removing the entry.
+
+(Then again the point was that nothing ever used this interface in the  
+first place. Personally I'd just have removed the entry...)
+
+Rob
