@@ -1,67 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934533Ab3E1PC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:02:59 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:42218 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439Ab3E1PCz (ORCPT
+	id S934511Ab3E1PGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:06:23 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:58212 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934354Ab3E1PGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:02:55 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Eric Dumazet <edumazet@google.com>, Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH] net/core/sock.c: add missing VSOCK string in af_family_*_key_strings
-Date: Tue, 28 May 2013 17:02:44 +0200
-Message-Id: <1369753364-10043-1-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Tue, 28 May 2013 11:06:22 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [RFC] regmap: Add regmap_field APIs
+Date: Tue, 28 May 2013 15:58:00 +0100
+Message-Id: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The three arrays of strings: af_family_kay_strings,
-af_family_slock_key_strings and af_family_clock_key_strings have not
-VSOCK's string
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+It is common to access regmap registers at bit level, using
+regmap_update_bits or regmap_read functions, however the end user has to
+take care of a mask or shifting. This becomes overhead when such use
+cases are high. Having a common function to do this is much convient and less
+error prone.
+
+The idea of regmap_field is simple, regmap_field gives a logical structure to
+bits of the regmap register, and the driver can use this logical entity without
+the knowledge of the bit postions and masks all over the code. This way code
+looks much neat and it need not handle the masks, shifts every time it access
+the those entities.
+
+With this new regmap_field_read/write apis the end user can setup a
+regmap field using regmap_field_init and use the return regmap_field to
+read write the register field without worrying about the masks or
+shifts.
+Also this apis will be usefull for drivers which are based on regmaps,
+like some clocks or pinctrls which can work on the regmap_fields
+directly without having to worry about bit positions.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
- net/core/sock.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Hi Mark,
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 6ba327d..88868a9 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -210,7 +210,7 @@ static const char *const af_family_key_strings[AF_MAX+1] = {
-   "sk_lock-AF_TIPC"  , "sk_lock-AF_BLUETOOTH", "sk_lock-IUCV"        ,
-   "sk_lock-AF_RXRPC" , "sk_lock-AF_ISDN"     , "sk_lock-AF_PHONET"   ,
-   "sk_lock-AF_IEEE802154", "sk_lock-AF_CAIF" , "sk_lock-AF_ALG"      ,
--  "sk_lock-AF_NFC"   , "sk_lock-AF_MAX"
-+  "sk_lock-AF_NFC"   , "sk_lock-AF_VSOCK"    , "sk_lock-AF_MAX"
- };
- static const char *const af_family_slock_key_strings[AF_MAX+1] = {
-   "slock-AF_UNSPEC", "slock-AF_UNIX"     , "slock-AF_INET"     ,
-@@ -226,7 +226,7 @@ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
-   "slock-AF_TIPC"  , "slock-AF_BLUETOOTH", "slock-AF_IUCV"     ,
-   "slock-AF_RXRPC" , "slock-AF_ISDN"     , "slock-AF_PHONET"   ,
-   "slock-AF_IEEE802154", "slock-AF_CAIF" , "slock-AF_ALG"      ,
--  "slock-AF_NFC"   , "slock-AF_MAX"
-+  "slock-AF_NFC"   , "slock-AF_VSOCK"    ,"slock-AF_MAX"
- };
- static const char *const af_family_clock_key_strings[AF_MAX+1] = {
-   "clock-AF_UNSPEC", "clock-AF_UNIX"     , "clock-AF_INET"     ,
-@@ -242,7 +242,7 @@ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
-   "clock-AF_TIPC"  , "clock-AF_BLUETOOTH", "clock-AF_IUCV"     ,
-   "clock-AF_RXRPC" , "clock-AF_ISDN"     , "clock-AF_PHONET"   ,
-   "clock-AF_IEEE802154", "clock-AF_CAIF" , "clock-AF_ALG"      ,
--  "clock-AF_NFC"   , "clock-AF_MAX"
-+  "clock-AF_NFC"   , "clock-AF_VSOCK"    , "clock-AF_MAX"
- };
+I have been looking at using regmap mmio directly for ST "System Configuration
+registers". One thing which we discussed 2 weeks back in syscon patch was, if
+this new functionality would benifit others. Having thought about it, I think
+that if regmap had a concept like regmap_field we would have used it straight way
+without a new driver.
+
+I generated this patch mainly to get your opinion on these new APIs, Is this the
+right place for these APIs, or do you suggest that these APIs should go in SOC
+Specific driver?
+
+Comments?
+
+Thanks,
+srini
+
+
+
+ drivers/base/regmap/regmap.c |   47 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |   28 +++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index a941dcf..4512df7 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1249,6 +1249,27 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
  
++/**
++ * regmap_field_write(): Write a value to a single register field
++ *
++ * @field: Register field to write to
++ * @val: Value to be written
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++
++int regmap_field_write(struct regmap_field *field, unsigned int val)
++{
++	int field_bits;
++	unsigned int reg_mask;
++	field_bits = field->msb - field->lsb + 1;
++	reg_mask = ((BIT(field_bits) - 1) << field->lsb);
++	return regmap_update_bits(field->regmap, field->reg,
++				reg_mask, val << field->lsb);
++}
++EXPORT_SYMBOL_GPL(regmap_field_write);
++
  /*
+  * regmap_bulk_write(): Write multiple registers to the device
+  *
+@@ -1532,6 +1553,32 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ EXPORT_SYMBOL_GPL(regmap_raw_read);
+ 
+ /**
++ * regmap_field_read(): Read a value to a single register field
++ *
++ * @field: Register field to read from
++ * @val: Pointer to store read value
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++
++int regmap_field_read(struct regmap_field *field, unsigned int *val)
++{
++	int field_bits;
++	int ret;
++	ret = regmap_read(field->regmap, field->reg, val);
++	if (ret != 0)
++		return ret;
++
++	field_bits = field->msb - field->lsb + 1;
++	*val >>= field->lsb;
++	*val &= (BIT(field_bits) - 1);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_field_read);
++
++/**
+  * regmap_bulk_read(): Read multiple registers from the device
+  *
+  * @map: Register map to write to
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 02d84e2..f8dba11 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -411,6 +411,34 @@ bool regmap_reg_in_ranges(unsigned int reg,
+ 			  const struct regmap_range *ranges,
+ 			  unsigned int nranges);
+ 
++struct regmap_field {
++	struct regmap *regmap;
++	unsigned int reg;
++	unsigned int lsb;
++	unsigned int msb;
++};
++
++#define REGMAP_FIELD_INIT(regmap, reg, lsb, msb) { 	\
++				.regmap = regmap, 	\
++				.reg = reg, 		\
++				.lsb = lsb, 		\
++				.msb = msb, 		\
++			}
++
++/* dynamic version of regmap_field intialization */
++static inline void regmap_field_init(struct regmap_field *field,
++	struct regmap *regmap,	unsigned int reg,
++	unsigned int lsb, unsigned int msb)
++{
++	field->regmap = regmap;
++	field->reg = reg;
++	field->lsb = lsb;
++	field->msb = msb;
++}
++
++int regmap_field_read(struct regmap_field *field, unsigned int *val);
++int regmap_field_write(struct regmap_field *field, unsigned int val);
++
+ /**
+  * Description of an IRQ for the generic regmap irq_chip.
+  *
 -- 
-1.8.1.4
+1.7.6.5
 
