@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934104Ab3E1VbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:31:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59782 "EHLO
+	id S1758645Ab3E1Vbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:31:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59770 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933357Ab3E1VZj (ORCPT
+	with ESMTP id S932873Ab3E1VZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:39 -0400
+	Tue, 28 May 2013 17:25:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 64/78] net_sched: act_ipt forward compat with xtables
-Date: Tue, 28 May 2013 14:20:13 -0700
-Message-Id: <1369776027-17859-65-git-send-email-kamal@canonical.com>
+Cc: Inderpal Singh <inderpal.singh@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 56/78] ARM: EXYNOS5: Fix kernel dump in AFTR idle mode
+Date: Tue, 28 May 2013 14:20:05 -0700
+Message-Id: <1369776027-17859-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,80 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jamal Hadi Salim <jhs@mojatatu.com>
+From: Inderpal Singh <inderpal.singh@linaro.org>
 
-[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
+commit 088584618836b159947bc4ab5011a5cf1f081a62 upstream.
 
-Deal with changes in newer xtables while maintaining backward
-compatibility. Thanks to Jan Engelhardt for suggestions.
+The kernel crashes while resuming from AFTR idle mode. It happens
+because L2 cache was not going into retention state.
 
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch configures the USE_RETENTION bit of ARM_L2_OPTION register
+so that it does not depend on MANUAL_L2RSTDISABLE_CONTROL of
+ARM_COMMON_OPTION register for L2RSTDISABLE signal.
+
+Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+Tested-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sched/act_ipt.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ arch/arm/mach-exynos/include/mach/regs-pmu.h | 1 +
+ arch/arm/mach-exynos/pmu.c                   | 5 ++---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/sched/act_ipt.c b/net/sched/act_ipt.c
-index 58fb3c7..c1a8138 100644
---- a/net/sched/act_ipt.c
-+++ b/net/sched/act_ipt.c
-@@ -8,7 +8,7 @@
-  *		as published by the Free Software Foundation; either version
-  *		2 of the License, or (at your option) any later version.
-  *
-- * Copyright:	Jamal Hadi Salim (2002-4)
-+ * Copyright:	Jamal Hadi Salim (2002-13)
-  */
+diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+index 3f30aa1..57344b7 100644
+--- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
++++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+@@ -344,6 +344,7 @@
+ #define EXYNOS5_FSYS_ARM_OPTION					S5P_PMUREG(0x2208)
+ #define EXYNOS5_ISP_ARM_OPTION					S5P_PMUREG(0x2288)
+ #define EXYNOS5_ARM_COMMON_OPTION				S5P_PMUREG(0x2408)
++#define EXYNOS5_ARM_L2_OPTION					S5P_PMUREG(0x2608)
+ #define EXYNOS5_TOP_PWR_OPTION					S5P_PMUREG(0x2C48)
+ #define EXYNOS5_TOP_PWR_SYSMEM_OPTION				S5P_PMUREG(0x2CC8)
+ #define EXYNOS5_JPEG_MEM_OPTION					S5P_PMUREG(0x2F48)
+diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+index 3a48c85..76691b3 100644
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -227,6 +227,7 @@ static struct exynos_pmu_conf exynos5250_pmu_config[] = {
+ 	{ EXYNOS5_DIS_IRQ_ISP_ARM_CENTRAL_SYS_PWR_REG,	{ 0x0, 0x0, 0x0} },
+ 	{ EXYNOS5_ARM_COMMON_SYS_PWR_REG,		{ 0x0, 0x0, 0x2} },
+ 	{ EXYNOS5_ARM_L2_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
++	{ EXYNOS5_ARM_L2_OPTION,			{ 0x10, 0x10, 0x0 } },
+ 	{ EXYNOS5_CMU_ACLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_SCLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_RESET_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
+@@ -352,11 +353,9 @@ static void exynos5_init_pmu(void)
  
- #include <linux/types.h>
-@@ -305,17 +305,44 @@ static struct tc_action_ops act_ipt_ops = {
- 	.walk		=	tcf_generic_walker
- };
+ 	/*
+ 	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
+-	 * MANUAL_L2RSTDISABLE_CONTROL_BITFIELD Enable
+ 	 */
+ 	tmp = __raw_readl(EXYNOS5_ARM_COMMON_OPTION);
+-	tmp |= (EXYNOS5_MANUAL_L2RSTDISABLE_CONTROL |
+-		EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN);
++	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
+ 	__raw_writel(tmp, EXYNOS5_ARM_COMMON_OPTION);
  
--MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
-+static struct tc_action_ops act_xt_ops = {
-+	.kind		=	"xt",
-+	.hinfo		=	&ipt_hash_info,
-+	.type		=	TCA_ACT_IPT,
-+	.capab		=	TCA_CAP_NONE,
-+	.owner		=	THIS_MODULE,
-+	.act		=	tcf_ipt,
-+	.dump		=	tcf_ipt_dump,
-+	.cleanup	=	tcf_ipt_cleanup,
-+	.lookup		=	tcf_hash_search,
-+	.init		=	tcf_ipt_init,
-+	.walk		=	tcf_generic_walker
-+};
-+
-+MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
- MODULE_DESCRIPTION("Iptables target actions");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("act_xt");
- 
- static int __init ipt_init_module(void)
- {
--	return tcf_register_action(&act_ipt_ops);
-+	int ret1, ret2;
-+	ret1 = tcf_register_action(&act_xt_ops);
-+	if (ret1 < 0)
-+		printk("Failed to load xt action\n");
-+	ret2 = tcf_register_action(&act_ipt_ops);
-+	if (ret2 < 0)
-+		printk("Failed to load ipt action\n");
-+
-+	if (ret1 < 0 && ret2 < 0)
-+		return ret1;
-+	else
-+		return 0;
- }
- 
- static void __exit ipt_cleanup_module(void)
- {
-+	tcf_unregister_action(&act_xt_ops);
- 	tcf_unregister_action(&act_ipt_ops);
- }
- 
+ 	/*
 -- 
 1.8.1.2
 
