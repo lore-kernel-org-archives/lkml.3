@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934376Ab3E1OeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:34:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55878 "EHLO mx1.redhat.com"
+	id S934393Ab3E1OeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:34:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34046 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934353Ab3E1OeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934279Ab3E1OeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 May 2013 10:34:21 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/4] MN10300: Enable IRQs more in system call exit work path
-To: torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        Ken Cox <jkc@redhat.com>
-Date: Tue, 28 May 2013 15:34:18 +0100
-Message-ID: <20130528143418.9790.65974.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
-References: <20130528143409.9790.41260.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+Message-ID: <51A4C060.50202@ti.com>
+Date: Tue, 28 May 2013 17:34:08 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?QWRyaWVuIFZlcmfDqQ==?= <adrienverge@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Fainelli <florian@openwrt.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yannick Brosseau <yannick.brosseau@gmail.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
+References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com> <CANsc=4WDM0q=RwaN2ZrcNqgJ=fDsgGHcBDcufnDek4EVWcnGfw@mail.gmail.com> <201305272023.12281.arnd@arndb.de> <51A4676D.9010404@ti.com> <CANsc=4W0j62vQYXdcKkdd199Jp+jsx_Xgs0n+5fM+WR00pD9Og@mail.gmail.com>
+In-Reply-To: <CANsc=4W0j62vQYXdcKkdd199Jp+jsx_Xgs0n+5fM+WR00pD9Og@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable IRQs when calling schedule() for TIF_NEED_RESCHED and
-do_notify_resume().  If interrupts are enabled during do_notify_resume(), a
-warning can be seen (see lower down).
+Adrien,
 
-Whilst we're at it, resume_userspace can be made local to entry.S as it is not
-called outside of there and it can be merged with the part of work_resched that
-occurs after schedule() is called.
+On 05/28/2013 04:30 PM, Adrien Vergé wrote:
+> Dear Arnd and Roger, thank you for your answers.
+> 
+> 2013/5/28 Roger Quadros <rogerq@ti.com>
+>> Selecting NOP_USB_XCEIV is wrong as it in turn depends on USB_PHY.
+>>
+>> I'm not for depends as it would hide USB_EHCI_HCD_OMAP in menuconfig.
+>> I'm for explicitly selecting both, as it makes the user's life much
+>> easier.
+>> But I'm afraid maintainers might object to that.
+>>
+>> The other option is to enable the required drivers in omap2plus_defconfig.
+>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97899
+> 
+> This seems a good idea to me, since many OMAP users boot with NFS and
+> need USB directly working (Ethernet over USB).
+> 
+>> Maybe you could just resend that patch after addressing Kevin's comments?
+> 
+> It's sad that USB_EHCI_HCD is too instable to be added in omap2plus_defconfig.
 
+This is not true as of today. A lot has changed since 2012 and most of the issues that Kevin
+had pointed out then have been fixed. The only piece that is missing is allowing the system
+to hit lower power states (e.g. RETention) when USB host is suspended. This feature
+will eventually be supported when we have IO daisy chaining working with device tree.
 
-------------[ cut here ]------------
-WARNING: at kernel/softirq.c:160 local_bh_enable+0x42/0xa0()
-Modules linked in:
-Stack:
-  00000000 93d63d88 90009916 901f618c 901f65a8 000000a0 900109b2 93d63db0
-  93d62000 93d24d40 00000000 90009940 93d63eb3 93d63dbc 900109b2 00000009
-  00000000 93d63dc0 900109b2 93d62000 93d63de0 93d63de0 9016cd1a 901124c8
+> Still, USB_PHY and NOP_USB_XCEIV are needed since v3.10 for USB
+> support (and harmless): should I send a patch adding those two in
+> omap2plus_defconfig?
 
-Call Trace:
- [<90002b8f>] ? show_trace+0x13/0xb4
- [<90002cd0>] show_stack+0x7c/0x84
- [<901124c8>] ? skb_free_head+0x4c/0x54
- [<90002fc9>] dump_stack+0x11/0x18
- [<90009916>] warn_slowpath_common+0x4a/0x5c
- [<900109b2>] ? local_bh_enable+0x42/0xa0
- [<90009940>] warn_slowpath_null+0x18/0x20
- [<900109b2>] ? local_bh_enable+0x42/0xa0
- [<900109b2>] local_bh_enable+0x42/0xa0
- [<9016cd1a>] unix_release_sock+0x86/0x23c
- [<901124c8>] ? skb_free_head+0x4c/0x54
- [<9010e8b5>] ? sk_free+0x31/0x38
- [<9016cef0>] unix_release+0x20/0x28
- [<9010c647>] sock_release+0x17/0x88
- [<9010c874>] sock_close+0x20/0x28
- [<900678e9>] __fput+0xc9/0x1fc
- [<90067a27>] ____fput+0xb/0x10
- [<9001f5a8>] task_work_run+0x64/0x78
- [<9010bda7>] ? sys_connect+0x5b/0x80
- [<90002399>] do_notify_resume+0x53d/0x544
- [<90067dc6>] ? fput+0xce/0xd4
- [<90065117>] ? filp_close+0x5f/0x68
- [<9007bba0>] ? __close_fd+0x7c/0xb0
- [<900026c6>] work_notifysig+0xa/0xc
+Yes please. Thanks :). I'm working on the approach Arnd suggested as well.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Ken Cox <jkc@redhat.com>
----
-
- arch/mn10300/kernel/entry.S |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
-
-
-diff --git a/arch/mn10300/kernel/entry.S b/arch/mn10300/kernel/entry.S
-index 92c3eea..8754f44 100644
---- a/arch/mn10300/kernel/entry.S
-+++ b/arch/mn10300/kernel/entry.S
-@@ -113,10 +113,10 @@ syscall_exit_work:
- 	and	EPSW_nSL,d0
- 	beq	resume_kernel		# returning to supervisor mode
- 
--	btst	_TIF_SYSCALL_TRACE,d2
--	beq	work_pending
- 	LOCAL_IRQ_ENABLE		# could let syscall_trace_exit() call
- 					# schedule() instead
-+	btst	_TIF_SYSCALL_TRACE,d2
-+	beq	work_pending
- 	mov	fp,d0
- 	call	syscall_trace_exit[],0	# do_syscall_trace(regs)
- 	jmp	resume_userspace
-@@ -129,6 +129,7 @@ work_pending:
- work_resched:
- 	call	schedule[],0
- 
-+resume_userspace:
- 	# make sure we don't miss an interrupt setting need_resched or
- 	# sigpending between sampling and the rti
- 	LOCAL_IRQ_DISABLE
-@@ -137,6 +138,8 @@ work_resched:
- 	mov	(TI_flags,a2),d2
- 	btst	_TIF_WORK_MASK,d2
- 	beq	restore_all
-+
-+	LOCAL_IRQ_ENABLE
- 	btst	_TIF_NEED_RESCHED,d2
- 	bne	work_resched
- 
-@@ -175,17 +178,6 @@ ret_from_intr:
- 	and	EPSW_nSL,d0
- 	beq	resume_kernel		# returning to supervisor mode
- 
--ENTRY(resume_userspace)
--	# make sure we don't miss an interrupt setting need_resched or
--	# sigpending between sampling and the rti
--	LOCAL_IRQ_DISABLE
--
--	# is there any work to be done on int/exception return?
--	mov	(TI_flags,a2),d2
--	btst	_TIF_WORK_MASK,d2
--	bne	work_pending
--	jmp	restore_all
--
- #ifdef CONFIG_PREEMPT
- ENTRY(resume_kernel)
- 	LOCAL_IRQ_DISABLE
-
+cheers,
+-roger
