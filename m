@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab3E1Dyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52575 "EHLO
+	id S932579Ab3E1Dys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52475 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758845Ab3E1DyK (ORCPT
+	by vger.kernel.org with ESMTP id S1758766Ab3E1DyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:10 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kees Cook" <keescook@chromium.org>,
-        "Dave Airlie" <airlied@redhat.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.201391471@decadent.org.uk>
+Message-ID: <lsq.1369712993.860682369@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [28/94] drm/radeon: check incoming cliprects pointer
+Subject: [56/94] perf: net_dropmonitor: Fix trace parameter order
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,29 +30,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit fefaedcfb82d2e57c2320acf60604ab03b750cc0 upstream.
+commit 140c3c6a2bcd2c31e2f7f5a8d59689724776c8e5 upstream.
 
-The "boxes" parameter points into userspace memory. It should be verified
-like any other operation against user memory.
+This works much better if we don't treat protocol numbers as addresses.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/gpu/drm/radeon/r300_cmdbuf.c |    2 +-
+ tools/perf/scripts/python/net_dropmonitor.py |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
-+++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
-@@ -74,7 +74,7 @@ static int r300_emit_cliprects(drm_radeo
- 		OUT_RING(CP_PACKET0(R300_RE_CLIPRECT_TL_0, nr * 2 - 1));
+--- a/tools/perf/scripts/python/net_dropmonitor.py
++++ b/tools/perf/scripts/python/net_dropmonitor.py
+@@ -64,7 +64,7 @@ def trace_end():
  
- 		for (i = 0; i < nr; ++i) {
--			if (DRM_COPY_FROM_USER_UNCHECKED
-+			if (DRM_COPY_FROM_USER
- 			    (&box, &cmdbuf->boxes[n + i], sizeof(box))) {
- 				DRM_ERROR("copy cliprect faulted\n");
- 				return -EFAULT;
+ # called from perf, when it finds a correspoinding event
+ def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
+-			skbaddr, protocol, location):
++		   skbaddr, location, protocol):
+ 	slocation = str(location)
+ 	try:
+ 		drop_log[slocation] = drop_log[slocation] + 1
 
