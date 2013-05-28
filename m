@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab3E1Hux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 03:50:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47467 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3E1Huw (ORCPT
+	id S933301Ab3E1HvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 03:51:08 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:35975 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933282Ab3E1HvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 03:50:52 -0400
-Date: Tue, 28 May 2013 00:50:14 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-2938d2757fc99c26aa678ce4eba910c4a77c3a55@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bp@alien8.de, lenb@kernel.org, fweisbec@gmail.com, mroos@linux.ee,
-        tglx@linutronix.de, rjw@sisk.pl
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bp@alien8.de, lenb@kernel.org, fweisbec@gmail.com, mroos@linux.ee,
-        tglx@linutronix.de, rjw@sisk.pl
-In-Reply-To: <alpine.LFD.2.02.1305271841130.4220@ionos>
-References: <alpine.LFD.2.02.1305271841130.4220@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] tick:
-  Cure broadcast false positive pending bit warning
-Git-Commit-ID: 2938d2757fc99c26aa678ce4eba910c4a77c3a55
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 28 May 2013 03:51:05 -0400
+Message-ID: <51A461E1.2000301@monstr.eu>
+Date: Tue, 28 May 2013 09:50:57 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 3.10-rc4
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2FSQBIDEXQJWXJVRKACND"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2938d2757fc99c26aa678ce4eba910c4a77c3a55
-Gitweb:     http://git.kernel.org/tip/2938d2757fc99c26aa678ce4eba910c4a77c3a55
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 28 May 2013 09:33:01 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 28 May 2013 09:33:01 +0200
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2FSQBIDEXQJWXJVRKACND
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-tick: Cure broadcast false positive pending bit warning
+Hi Linus,
 
-commit 26517f3e (tick: Avoid programming the local cpu timer if
-broadcast pending) added a warning if the cpu enters broadcast mode
-again while the pending bit is still set. Meelis reported that the
-warning triggers. There are two corner cases which have been not
-considered:
+please pull the following fixes to your tree.
+One patch fix futex support and my patches fix warnings
+which were reported by Geert's regression testing.
 
-1) cpuidle calls clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER)
-   twice. That can result in the following scenario
+Thanks,
+Michal
 
-   CPU0                    CPU1
-                           cpuidle_idle_call()
-                             clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER)
-                               set cpu in tick_broadcast_oneshot_mask
 
-   broadcast interrupt
-     event expired for cpu1
-     set pending bit
+The following changes since commit 674825d05001e218afe5a04438683e1e597e14=
+fb:
 
-                             acpi_idle_enter_simple()
-                               clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER)
-                                 WARN_ON(pending bit)
+  Merge tag 'fixes-for-3.10-rc2-tag' of git://git.kernel.org/pub/scm/linu=
+x/kernel/git/sstabellini/xen (2013-05-13 19:03:49 -0700)
 
-  Move the WARN_ON into the section where we enter broadcast mode so
-  it wont provide false positives on the second call.
+are available in the git repository at:
 
-2) safe_halt() enables interrupts, so a broadcast interrupt can be
-   delivered befor the broadcast mode is disabled. That sets the
-   pending bit for the CPU which receives the broadcast
-   interrupt. Though the interrupt is delivered right away from the
-   broadcast handler and leaves the pending bit stale.
 
-   Clear the pending bit for the current cpu in the broadcast handler.
+  git://git.monstr.eu/linux-2.6-microblaze.git next
 
-Reported-and-tested-by: Meelis Roos <mroos@linux.ee>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305271841130.4220@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+for you to fetch changes up to f6a12a7d0b1a70e969ae4f6d7c5201cdaf6edde0:
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 24938d5..0c73942 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -511,6 +511,12 @@ again:
- 		}
- 	}
- 
-+	/*
-+	 * Remove the current cpu from the pending mask. The event is
-+	 * delivered immediately in tick_do_broadcast() !
-+	 */
-+	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
-+
- 	/* Take care of enforced broadcast requests */
- 	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
- 	cpumask_clear(tick_broadcast_force_mask);
-@@ -575,8 +581,8 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
--		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
-+			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
- 			/*
- 			 * We only reprogram the broadcast timer if we
+  microblaze: Reversed logic in futex cmpxchg (2013-05-27 12:29:35 +0200)=
+
+
+----------------------------------------------------------------
+Meyer, Kirk (1):
+      microblaze: Reversed logic in futex cmpxchg
+
+Michal Simek (2):
+      microblaze: Initialize temp variable to remove compilation warning
+      microblaze: Use proper casting for inb/inw/inl in io.h
+
+ arch/microblaze/include/asm/futex.h | 2 +-
+ arch/microblaze/include/asm/io.h    | 6 +++---
+ arch/microblaze/kernel/cpu/cache.c  | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2FSQBIDEXQJWXJVRKACND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGkYeYACgkQykllyylKDCEgkgCfaQ86/4fI5K6buMvf2vSVflFx
+u+IAoJUlpefVSQaE9e40StAGCj0isFs7
+=/JtR
+-----END PGP SIGNATURE-----
+
+------enig2FSQBIDEXQJWXJVRKACND--
