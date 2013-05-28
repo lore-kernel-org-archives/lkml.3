@@ -1,36 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934670Ab3E1PyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:54:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29915 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934567Ab3E1Px6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:53:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
-   d="scan'208";a="309012397"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Cris <linux-cris-kernel@axis.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] arch/cris: old patch to use hex2bin
-Date: Tue, 28 May 2013 18:53:51 +0300
-Message-Id: <1369756432-5552-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
-References: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
+	id S934690Ab3E1Pyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:54:50 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:44822 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934550Ab3E1Pyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 11:54:49 -0400
+Date: Tue, 28 May 2013 08:54:48 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Emil Goode <emilgoode@gmail.com>
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ceph: improve error handling in ceph_mdsmap_decode
+In-Reply-To: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
+Message-ID: <alpine.DEB.2.00.1305280854370.12414@cobra.newdream.net>
+References: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert, would you like to add following patch to your tree as well?
+Applied to ceph tree; thanks!
 
-Andy Shevchenko (1):
-  cris: kgdb: use native hex2bin
+On Tue, 28 May 2013, Emil Goode wrote:
 
- arch/cris/arch-v10/kernel/kgdb.c | 50 ++++++----------------------------------
- 1 file changed, 7 insertions(+), 43 deletions(-)
-
--- 
-1.8.2.rc0.22.gb3600c3
-
+> This patch makes the following improvements to the error handling
+> in the ceph_mdsmap_decode function:
+> 
+> - Add a NULL check for return value from kcalloc
+> - Make use of the variable err
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  fs/ceph/mdsmap.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+> index 9278dec..d4d3897 100644
+> --- a/fs/ceph/mdsmap.c
+> +++ b/fs/ceph/mdsmap.c
+> @@ -138,6 +138,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+>  				m->m_info[mds].export_targets =
+>  					kcalloc(num_export_targets, sizeof(u32),
+>  						GFP_NOFS);
+> +				if (m->m_info[mds].export_targets == NULL)
+> +					goto badmem;
+>  				for (j = 0; j < num_export_targets; j++)
+>  					m->m_info[mds].export_targets[j] =
+>  					       ceph_decode_32(&pexport_targets);
+> @@ -170,7 +172,7 @@ bad:
+>  		       DUMP_PREFIX_OFFSET, 16, 1,
+>  		       start, end - start, true);
+>  	ceph_mdsmap_destroy(m);
+> -	return ERR_PTR(-EINVAL);
+> +	return ERR_PTR(err);
+>  }
+>  
+>  void ceph_mdsmap_destroy(struct ceph_mdsmap *m)
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
