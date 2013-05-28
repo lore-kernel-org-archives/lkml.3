@@ -1,166 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab3E1M76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 08:59:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50018 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933919Ab3E1M75 (ORCPT
+	id S933984Ab3E1NAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:00:32 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:57023 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933906Ab3E1NAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 08:59:57 -0400
-Date: Tue, 28 May 2013 05:59:14 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-62b8563979273424d6ebe9201e34d1acc133ad4f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1364991694-5876-3-git-send-email-eranian@google.com>
-References: <1364991694-5876-3-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Add sysfs entry to adjust multiplexing interval per PMU
-Git-Commit-ID: 62b8563979273424d6ebe9201e34d1acc133ad4f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 28 May 2013 09:00:31 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Subject: [PATCH 1/1] drivers/misc: at2x: use devm_kzalloc() to make cleanup paths simpler
+Date: Tue, 28 May 2013 17:00:13 +0400
+Message-Id: <1369746013-29162-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62b8563979273424d6ebe9201e34d1acc133ad4f
-Gitweb:     http://git.kernel.org/tip/62b8563979273424d6ebe9201e34d1acc133ad4f
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Wed, 3 Apr 2013 14:21:34 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:13:51 +0200
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-perf: Add sysfs entry to adjust multiplexing interval per PMU
-
-This patch adds /sys/device/xxx/perf_event_mux_interval_ms to ajust
-the multiplexing interval per PMU. The unit is milliseconds. Value has
-to be >= 1.
-
-In the 4th version, we renamed the sysfs file to be more consistent
-with the other /proc/sys/kernel entries for perf_events.
-
-In the 5th version, we handle the reprogramming of the hrtimer using
-hrtimer_forward_now(). That way, we sync up to new timer value quickly
-(suggested by Jiri Olsa).
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/r/1364991694-5876-3-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 ---
- include/linux/perf_event.h |  1 +
- kernel/events/core.c       | 63 +++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 60 insertions(+), 4 deletions(-)
+ drivers/misc/eeprom/at24.c |   15 +++++----------
+ drivers/misc/eeprom/at25.c |    5 ++---
+ 2 files changed, 7 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 72138d7..6fddac1 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -194,6 +194,7 @@ struct pmu {
- 	int * __percpu			pmu_disable_count;
- 	struct perf_cpu_context * __percpu pmu_cpu_context;
- 	int				task_ctx_nr;
-+	int				hrtimer_interval_ms;
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index 2baeec5..e110662 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -553,7 +553,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		num_addresses =	DIV_ROUND_UP(chip.byte_len,
+ 			(chip.flags & AT24_FLAG_ADDR16) ? 65536 : 256);
  
- 	/*
- 	 * Fully disable/enable this PMU, can be used to protect from the PMI
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 97bfac7..53d1b30 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -723,13 +723,21 @@ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
- {
- 	struct hrtimer *hr = &cpuctx->hrtimer;
- 	struct pmu *pmu = cpuctx->ctx.pmu;
-+	int timer;
+-	at24 = kzalloc(sizeof(struct at24_data) +
++	at24 = devm_kzalloc(&client->dev, sizeof(struct at24_data) +
+ 		num_addresses * sizeof(struct i2c_client *), GFP_KERNEL);
+ 	if (!at24) {
+ 		err = -ENOMEM;
+@@ -596,10 +596,12 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			at24->write_max = write_max;
  
- 	/* no multiplexing needed for SW PMU */
- 	if (pmu->task_ctx_nr == perf_sw_context)
- 		return;
- 
--	cpuctx->hrtimer_interval =
--		ns_to_ktime(NSEC_PER_MSEC * PERF_CPU_HRTIMER);
-+	/*
-+	 * check default is sane, if not set then force to
-+	 * default interval (1/tick)
-+	 */
-+	timer = pmu->hrtimer_interval_ms;
-+	if (timer < 1)
-+		timer = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
+ 			/* buffer (data + address at the beginning) */
+-			at24->writebuf = kmalloc(write_max + 2, GFP_KERNEL);
++			at24->writebuf = devm_kzalloc(&client->dev,
++				write_max + 2, GFP_KERNEL);
 +
-+	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
+ 			if (!at24->writebuf) {
+ 				err = -ENOMEM;
+-				goto err_struct;
++				goto err_out;
+ 			}
+ 		} else {
+ 			dev_warn(&client->dev,
+@@ -647,10 +649,6 @@ err_clients:
+ 	for (i = 1; i < num_addresses; i++)
+ 		if (at24->client[i])
+ 			i2c_unregister_device(at24->client[i]);
+-
+-	kfree(at24->writebuf);
+-err_struct:
+-	kfree(at24);
+ err_out:
+ 	dev_dbg(&client->dev, "probe error %d\n", err);
+ 	return err;
+@@ -666,9 +664,6 @@ static int at24_remove(struct i2c_client *client)
  
- 	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
- 	hr->function = perf_cpu_hrtimer_handler;
-@@ -6001,9 +6009,56 @@ type_show(struct device *dev, struct device_attribute *attr, char *page)
- 	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->type);
+ 	for (i = 1; i < at24->num_addresses; i++)
+ 		i2c_unregister_device(at24->client[i]);
+-
+-	kfree(at24->writebuf);
+-	kfree(at24);
+ 	return 0;
  }
  
-+static ssize_t
-+perf_event_mux_interval_ms_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *page)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+
-+	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->hrtimer_interval_ms);
-+}
-+
-+static ssize_t
-+perf_event_mux_interval_ms_store(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t count)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+	int timer, cpu, ret;
-+
-+	ret = kstrtoint(buf, 0, &timer);
-+	if (ret)
-+		return ret;
-+
-+	if (timer < 1)
-+		return -EINVAL;
-+
-+	/* same value, noting to do */
-+	if (timer == pmu->hrtimer_interval_ms)
-+		return count;
-+
-+	pmu->hrtimer_interval_ms = timer;
-+
-+	/* update all cpuctx for this PMU */
-+	for_each_possible_cpu(cpu) {
-+		struct perf_cpu_context *cpuctx;
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+		cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
-+
-+		if (hrtimer_active(&cpuctx->hrtimer))
-+			hrtimer_forward_now(&cpuctx->hrtimer, cpuctx->hrtimer_interval);
-+	}
-+
-+	return count;
-+}
-+
-+#define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
-+
- static struct device_attribute pmu_dev_attrs[] = {
--       __ATTR_RO(type),
--       __ATTR_NULL,
-+	__ATTR_RO(type),
-+	__ATTR_RW(perf_event_mux_interval_ms),
-+	__ATTR_NULL,
- };
+diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+index ad8fd8e..f9d35c9 100644
+--- a/drivers/misc/eeprom/at25.c
++++ b/drivers/misc/eeprom/at25.c
+@@ -404,7 +404,8 @@ static int at25_probe(struct spi_device *spi)
+ 		goto fail;
+ 	}
  
- static int pmu_bus_running;
+-	if (!(at25 = kzalloc(sizeof *at25, GFP_KERNEL))) {
++	at25 = devm_kzalloc(&spi->dev, sizeof(struct at25_data), GFP_KERNEL);
++	if (!at25) {
+ 		err = -ENOMEM;
+ 		goto fail;
+ 	}
+@@ -455,7 +456,6 @@ static int at25_probe(struct spi_device *spi)
+ 	return 0;
+ fail:
+ 	dev_dbg(&spi->dev, "probe err %d\n", err);
+-	kfree(at25);
+ 	return err;
+ }
+ 
+@@ -465,7 +465,6 @@ static int at25_remove(struct spi_device *spi)
+ 
+ 	at25 = spi_get_drvdata(spi);
+ 	sysfs_remove_bin_file(&spi->dev.kobj, &at25->bin);
+-	kfree(at25);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
