@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab3E1DzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52577 "EHLO
+	id S933111Ab3E1DzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52501 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758861Ab3E1DyN (ORCPT
+	by vger.kernel.org with ESMTP id S1758814Ab3E1DyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:13 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wolfram Sang" <wsa@the-dreams.de>,
-        "Mika Westerberg" <mika.westerberg@linux.intel.com>
+CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "Shlomo Pongratz" <shlomop@mellanox.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.548780720@decadent.org.uk>
+Message-ID: <lsq.1369712993.390710444@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [47/94] i2c: designware: always clear interrupts before enabling them
+Subject: [15/94] iscsi-target: Fix processing of OOO commands
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,36 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Shlomo Pongratz <shlomop@mellanox.com>
 
-commit 2a2d95e9d6d29e726cc294b65391917ed2e32bf4 upstream.
+commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
 
-If the I2C bus is put to a low power state by an ACPI method it might pull
-the SDA line low (as its power is removed). Once the bus is put to full
-power state again, the SDA line is pulled back to high. This transition
-looks like a STOP condition from the controller point-of-view which sets
-STOP detected bit in its status register causing the driver to fail
-subsequent transfers.
+Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
 
-Fix this by always clearing all interrupts before we start a transfer.
+Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+The routine iterates until it finds an entry whose serial number is greater than the serial number of
+the new one, thus the new entry should be inserted before that entry and not after.
+
+Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/i2c-designware-core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -349,7 +349,8 @@ static void i2c_dw_xfer_init(struct dw_i
- 	/* Enable the adapter */
- 	dw_writel(dev, 1, DW_IC_ENABLE);
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -824,7 +824,7 @@ static int iscsit_attach_ooo_cmdsn(
+ 		/*
+ 		 * CmdSN is greater than the tail of the list.
+ 		 */
+-		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
++		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
+ 			list_add_tail(&ooo_cmdsn->ooo_list,
+ 					&sess->sess_ooo_cmdsn_list);
+ 		else {
+@@ -834,11 +834,12 @@ static int iscsit_attach_ooo_cmdsn(
+ 			 */
+ 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
+ 						ooo_list) {
+-				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
++				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
+ 					continue;
  
--	/* Enable interrupts */
-+	/* Clear and enable interrupts */
-+	i2c_dw_clear_int(dev);
- 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
- }
- 
++				/* Insert before this entry */
+ 				list_add(&ooo_cmdsn->ooo_list,
+-					&ooo_tmp->ooo_list);
++					ooo_tmp->ooo_list.prev);
+ 				break;
+ 			}
+ 		}
 
