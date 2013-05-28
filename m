@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab3E1VZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:25:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59755 "EHLO
+	id S933435Ab3E1VZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:25:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59777 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3E1VZ0 (ORCPT
+	with ESMTP id S933163Ab3E1VZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:26 -0400
+	Tue, 28 May 2013 17:25:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 55/78] pch_dma: Use GFP_ATOMIC because called from interrupt context
-Date: Tue, 28 May 2013 14:20:04 -0700
-Message-Id: <1369776027-17859-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 57/78] drivers/rtc/rtc-pcf2123.c: fix error return code in pcf2123_probe()
+Date: Tue, 28 May 2013 14:20:06 -0700
+Message-Id: <1369776027-17859-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -27,35 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 5c1ef59168c485318e40ba485c1eba57d81d0faa upstream.
+commit 35623715818dfa720cccf99cd280dcbb4b78da23 upstream.
 
-pdc_desc_get() is called from pd_prep_slave_sg, and the function is
-called from interrupt context(e.g. Uart driver "pch_uart.c").
-In fact, I saw kernel error message.
-So, GFP_ATOMIC must be used not GFP_NOIO.
+Fix to return -ENODEV in the chip not found error handling
+case instead of 0, as done elsewhere in this function.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/pch_dma.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-pcf2123.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 3f26172..34c36ec 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
- 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
+diff --git a/drivers/rtc/rtc-pcf2123.c b/drivers/rtc/rtc-pcf2123.c
+index 02b742a..6dd6b38 100644
+--- a/drivers/rtc/rtc-pcf2123.c
++++ b/drivers/rtc/rtc-pcf2123.c
+@@ -265,6 +265,7 @@ static int pcf2123_probe(struct spi_device *spi)
  
- 	if (!ret) {
--		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
-+		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
- 		if (ret) {
- 			spin_lock(&pd_chan->lock);
- 			pd_chan->descs_allocated++;
+ 	if (!(rxbuf[0] & 0x20)) {
+ 		dev_err(&spi->dev, "chip not found\n");
++		ret = -ENODEV;
+ 		goto kfree_exit;
+ 	}
+ 
 -- 
 1.8.1.2
 
