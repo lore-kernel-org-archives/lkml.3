@@ -1,51 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab3E1Jvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 05:51:47 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:50614 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290Ab3E1Jvq (ORCPT
+	id S1753525Ab3E1JxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 05:53:23 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:42205 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751192Ab3E1JxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 05:51:46 -0400
+	Tue, 28 May 2013 05:53:21 -0400
+Date: Tue, 28 May 2013 17:53:16 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: ux50: Cocci spatch "resource_size.spatch"
+Message-ID: <20130528095316.GH24414@gondor.apana.org.au>
+References: <1369251520.3865.321.camel@localhost.localdomain>
 MIME-Version: 1.0
-Date: Tue, 28 May 2013 17:51:44 +0800
-Message-ID: <CAPgLHd_3SYA3UiZ0yAvNgAMv2jRiQXmEKibqTwJpsNF47EsX9g@mail.gmail.com>
-Subject: [PATCH -next] drm/i915: fix error return code in init_pipe_control()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: daniel.vetter@ffwll.ch, airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369251520.3865.321.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, May 22, 2013 at 09:38:40PM +0200, Thomas Meyer wrote:
+> 
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-Fix to return -ENOMEM in the kmap() error handling case
-instead of 0, as done elsewhere in this function.
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/gpu/drm/i915/intel_ringbuffer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 5698fae..9b97cf6 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -464,9 +464,11 @@ init_pipe_control(struct intel_ring_buffer *ring)
- 		goto err_unref;
- 
- 	pc->gtt_offset = obj->gtt_offset;
--	pc->cpu_page =  kmap(sg_page(obj->pages->sgl));
--	if (pc->cpu_page == NULL)
-+	pc->cpu_page = kmap(sg_page(obj->pages->sgl));
-+	if (pc->cpu_page == NULL) {
-+		ret = -ENOMEM;
- 		goto err_unpin;
-+	}
- 
- 	DRM_DEBUG_DRIVER("%s pipe control offset: 0x%08x\n",
- 			 ring->name, pc->gtt_offset);
-
+Patch applied.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
