@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934798Ab3E1QPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:15:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934674Ab3E1QPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:15:41 -0400
-Date: Tue, 28 May 2013 13:15:19 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>, atomlin@redhat.com,
-        netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        pshelar@nicira.com, mst@redhat.com, alexander.h.duyck@intel.com,
-        riel@redhat.com, sergei.shtylyov@cogentembedded.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-Message-ID: <20130528161518.GC11614@optiplex.redhat.com>
-References: <1369601101-23057-1-git-send-email-atomlin@redhat.com>
- <20130527224149.GA4384@electric-eye.fr.zoreil.com>
- <51A4D4AD.2010507@candelatech.com>
+	id S934808Ab3E1QSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:18:54 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:38386 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934674Ab3E1QSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 12:18:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A4D4AD.2010507@candelatech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
+References: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
+Date: Tue, 28 May 2013 19:18:51 +0300
+Message-ID: <CAHp75VfQwv1gCNX2iactEEMJxLgdcbnivebB5f-hSKYHcN8fOw@mail.gmail.com>
+Subject: Re: [PATCH -next] dmaengine: ste_dma40: fix error return code in d40_probe()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: srinidhi.kasagar@stericsson.com, Linus Walleij <linus.walleij@linaro.org>,
+        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        yongjun_wei@trendmicro.com.cn,
+        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 09:00:45AM -0700, Ben Greear wrote:
-> On 05/27/2013 03:41 PM, Francois Romieu wrote:
-> >atomlin@redhat.com <atomlin@redhat.com> :
-> >[...]
-> >>Failed GFP_ATOMIC allocations by the network stack result in dropped
-> >>packets, which will be received on a subsequent retransmit, and an
-> >>unnecessary, noisy warning with a kernel backtrace.
-> >>
-> >>These warnings are harmless, but they still cause users to panic and
-> >>file bug reports over dropped packets. It would be better to hide the
-> >>failed allocation warnings and backtraces, and let retransmits handle
-> >>dropped packets quietly.
-> >
-> >Linux VM may be perfect but device drivers do stupid things.
-> >
-> >Please don't paper over it just because some shit ends in your backyard.
-> 
-> We should rate-limit these messages at least.  When a system is low on memory
-> the logs can quickly fill up with useless OOM messages, further slowing
-> the system...
+Have you check the ux500-dma40 branch?
+
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-stericsson.git/log/?h=ux500-dma40
+
+On Tue, May 28, 2013 at 12:06 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
+> In many of the error handling case, the return value 'ret' not set
+> and 0 will be return from d40_probe() even if error, but we should
+> return a negative error code instead in those error handling case.
+> This patch fixed them, and also removed useless variable 'err'.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/dma/ste_dma40.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index 71bf4ec..cbf9c62 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -3474,7 +3474,6 @@ failure:
+>
+>  static int __init d40_probe(struct platform_device *pdev)
+>  {
+> -       int err;
+>         int ret = -ENOENT;
+>         struct d40_base *base;
+>         struct resource *res = NULL;
+> @@ -3576,6 +3575,7 @@ static int __init d40_probe(struct platform_device *pdev)
+>                 if (IS_ERR(base->lcpa_regulator)) {
+>                         d40_err(&pdev->dev, "Failed to get lcpa_regulator\n");
+>                         base->lcpa_regulator = NULL;
+> +                       ret = PTR_ERR(base->lcpa_regulator);
+>                         goto failure;
+>                 }
+>
+> @@ -3590,13 +3590,13 @@ static int __init d40_probe(struct platform_device *pdev)
+>         }
+>
+>         base->initialized = true;
+> -       err = d40_dmaengine_init(base, num_reserved_chans);
+> -       if (err)
+> +       ret = d40_dmaengine_init(base, num_reserved_chans);
+> +       if (ret)
+>                 goto failure;
+>
+>         base->dev->dma_parms = &base->dma_parms;
+> -       err = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
+> -       if (err) {
+> +       ret = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
+> +       if (ret) {
+>                 d40_err(&pdev->dev, "Failed to set dma max seg size\n");
+>                 goto failure;
+>         }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-The real problem seems to be that more and more the network stack (drivers, perhaps)
-is relying on chunks of contiguous page-blocks without a fallback mechanism to
-order-0 page allocations. When memory gets fragmented, these alloc failures
-start to pop up more often and they scare ordinary sysadmins out of their paints.
 
-The big point of this change was to attempt to relief some of these warnings 
-which we believed as being useless, since the net stack would recover from it
-by re-transmissions.
-We might have misjudged the scenario, though. Perhaps a better approach would be
-making the warning less verbose for all page-alloc failures. We could, perhaps,
-only print a stack-dump out, if some debug flag is passed along, either as
-reference, or by some CONFIG_DEBUG_ preprocessor directive.
 
-Rafael
- 
-> Ben
-> 
-> >
-> 
-> 
-> -- 
-> Ben Greear <greearb@candelatech.com>
-> Candela Technologies Inc  http://www.candelatech.com
-> 
+-- 
+With Best Regards,
+Andy Shevchenko
