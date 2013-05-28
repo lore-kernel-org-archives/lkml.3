@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933787Ab3E1J3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 05:29:55 -0400
-Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:34805 "EHLO
-	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933724Ab3E1J3x (ORCPT
+	id S933799Ab3E1Jag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 05:30:36 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:46806 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933724Ab3E1Jae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 05:29:53 -0400
-From: Vijaya Mohan Guvva Guvva <vmohan@Brocade.com>
-To: Jakob Normark <jakobnormark@gmail.com>,
-        Anil Gurumurthy <agurumur@Brocade.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 28 May 2013 03:29:04 -0600
-Subject: RE: [PATCH 1/1] bfa: Fix for possible null pointer dereference
-Thread-Topic: [PATCH 1/1] bfa: Fix for possible null pointer dereference
-Thread-Index: Ac5aSnjOG9dw5RC8STeG/QbPQno5YQBOzpLg
-Message-ID: <51BD2AE8016AE441B63F5661159C99020F1DF18A37@BRM-EXCH-3.corp.brocade.com>
-References: <1369597877-3160-1-git-send-email-jakobnormark@gmail.com>
-In-Reply-To: <1369597877-3160-1-git-send-email-jakobnormark@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 28 May 2013 05:30:34 -0400
+Date: Tue, 28 May 2013 11:30:19 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.10, take 2
+Message-ID: <alpine.DEB.2.00.1305281127350.32281@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-05-28_05:2013-05-27,2013-05-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1211240000 definitions=main-1305280021
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Jakob Normark
-> Sent: Monday, May 27, 2013 1:21 AM
-> To: Anil Gurumurthy; Vijaya Mohan Guvva Guvva; James E.J. Bottomley
-> Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; Jakob Normark
-> Subject: [PATCH 1/1] bfa: Fix for possible null pointer dereference
-> 
-> Fix for cppcheck error in bfa_fcs_lport.c
-> 
-> Kernel version: v3.10-rc2
-> 
-> Signed-off-by: Jakob Normark <jakobnormark@gmail.com>
-> ---
->  drivers/scsi/bfa/bfa_fcs_lport.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/bfa/bfa_fcs_lport.c b/drivers/scsi/bfa/bfa_fcs_lport.c
-> index 1224d04..a37c45a 100644
-> --- a/drivers/scsi/bfa/bfa_fcs_lport.c
-> +++ b/drivers/scsi/bfa/bfa_fcs_lport.c
-> @@ -5615,13 +5615,14 @@
-> bfa_fcs_lport_get_rport_max_speed(bfa_fcs_lport_t *port)
->  	bfa_port_speed_t max_speed = 0;
->  	struct bfa_port_attr_s port_attr;
->  	bfa_port_speed_t port_speed, rport_speed;
-> -	bfa_boolean_t trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
-> +	bfa_boolean_t trl_enabled;
-> 
-> 
->  	if (port == NULL)
->  		return 0;
-> 
->  	fcs = port->fcs;
-> +	trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
-> 
->  	/* Get Physical port's current speed */
->  	bfa_fcport_get_attr(port->fcs->bfa, &port_attr);
-> --
-> 1.7.9.5
-> 
-> --
+	Hi Linus,
 
-Changes looks good. Thanks for the patch.
-Acked-by: Vijay Mohan Guvva <vmohan@brocade.com>
+The following changes since commit c7788792a5e7b0d5d7f96d0766b4cb6112d47d75:
+  Linus Torvalds (1):
+        Linux 3.10-rc2
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+Geert Uytterhoeven (1):
+      m68k: Update defconfigs for v3.9
+
+Mikael Pettersson (1):
+      m68k: implement futex.h to support userspace robust futexes and PI mutexes
+
+Summarized:
+  - futex support that I had missed before,
+  - A long-overdue update of the m68k defconfigs.
+
+Thanks for pulling!
+
+ arch/m68k/configs/amiga_defconfig    |  230 ++++++++++++++++++++++--------
+ arch/m68k/configs/apollo_defconfig   |  215 ++++++++++++++++++++-------
+ arch/m68k/configs/atari_defconfig    |  227 ++++++++++++++++++++++--------
+ arch/m68k/configs/bvme6000_defconfig |  217 ++++++++++++++++++++--------
+ arch/m68k/configs/hp300_defconfig    |  214 ++++++++++++++++++++-------
+ arch/m68k/configs/mac_defconfig      |  234 ++++++++++++++++++++++--------
+ arch/m68k/configs/multi_defconfig    |  264 ++++++++++++++++++++++++----------
+ arch/m68k/configs/mvme147_defconfig  |  215 ++++++++++++++++++++-------
+ arch/m68k/configs/mvme16x_defconfig  |  216 ++++++++++++++++++++--------
+ arch/m68k/configs/q40_defconfig      |  229 ++++++++++++++++++++++--------
+ arch/m68k/configs/sun3_defconfig     |  209 ++++++++++++++++++++-------
+ arch/m68k/configs/sun3x_defconfig    |  210 ++++++++++++++++++++-------
+ arch/m68k/include/asm/Kbuild         |    1 -
+ arch/m68k/include/asm/futex.h        |   94 ++++++++++++
+ 14 files changed, 2076 insertions(+), 699 deletions(-)
+ create mode 100644 arch/m68k/include/asm/futex.h
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
