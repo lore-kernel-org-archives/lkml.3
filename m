@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002Ab3E1NBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:01:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50064 "EHLO
+	id S934005Ab3E1NCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:02:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50085 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933977Ab3E1NA5 (ORCPT
+	with ESMTP id S933919Ab3E1NCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:00:57 -0400
-Date: Tue, 28 May 2013 06:00:30 -0700
-From: tip-bot for Dan Carpenter <tipbot@zytor.com>
-Message-ID: <tip-13acac307528c9cd7dd9fa9c577419401527b464@git.kernel.org>
+	Tue, 28 May 2013 09:02:33 -0400
+Date: Tue, 28 May 2013 06:01:46 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-2b923c8f5de6722393e614b096d5040b6d4eaf98@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, tglx@linutronix.de, dan.carpenter@oracle.com
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        tglx@linutronix.de, dan.carpenter@oracle.com
-In-Reply-To: <20130518183452.GA14587@elgon.mountain>
-References: <20130518183452.GA14587@elgon.mountain>
+        linux-kernel@vger.kernel.org, peterz@infradead.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de
+In-Reply-To: <20130521105337.GA2879@quad>
+References: <20130521105337.GA2879@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel:
-  Prevent some shift wrapping bugs in the Intel uncore driver
-Git-Commit-ID: 13acac307528c9cd7dd9fa9c577419401527b464
+Subject: [tip:perf/core] perf/x86:
+  Check branch sampling priv level in generic code
+Git-Commit-ID: 2b923c8f5de6722393e614b096d5040b6d4eaf98
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,71 +34,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13acac307528c9cd7dd9fa9c577419401527b464
-Gitweb:     http://git.kernel.org/tip/13acac307528c9cd7dd9fa9c577419401527b464
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Sat, 18 May 2013 21:34:52 +0300
+Commit-ID:  2b923c8f5de6722393e614b096d5040b6d4eaf98
+Gitweb:     http://git.kernel.org/tip/2b923c8f5de6722393e614b096d5040b6d4eaf98
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 21 May 2013 12:53:37 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 May 2013 09:13:52 +0200
+CommitDate: Tue, 28 May 2013 09:13:54 +0200
 
-perf/x86/intel: Prevent some shift wrapping bugs in the Intel uncore driver
+perf/x86: Check branch sampling priv level in generic code
 
-We're trying to use 64 bit masks but the shifts wrap so we can't use the
-high 32 bits. I've fixed this by changing several types to unsigned
-long long.
+This patch moves commit 7cc23cd to the generic code:
 
-This is a static checker fix.  The one change which is clearly needed is
-"mask = 0xff << (idx * 8);" where the author obviously intended to use
-all 64 bits.  The other changes are mostly to silence my static checker.
+ perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+The check is now implemented in generic code instead of x86 specific
+code. That way we do not have to repeat the test in each arch
+supporting branch sampling.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/20130518183452.GA14587@elgon.mountain
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/r/20130521105337.GA2879@quad
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 4 ++--
- arch/x86/kernel/cpu/perf_event_intel_uncore.h | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++----------
+ kernel/events/core.c                       |  9 ++++-----
+ 2 files changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 52441a2..c0e356d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -644,7 +644,7 @@ snbep_pcu_get_constraint(struct intel_uncore_box *box, struct perf_event *event)
- 	    (!uncore_box_is_fake(box) && reg1->alloc))
- 		return NULL;
- again:
--	mask = 0xff << (idx * 8);
-+	mask = 0xffULL << (idx * 8);
- 	raw_spin_lock_irqsave(&er->lock, flags);
- 	if (!__BITS_VALUE(atomic_read(&er->ref), idx, 8) ||
- 	    !((config1 ^ er->config) & mask)) {
-@@ -1923,7 +1923,7 @@ static u64 nhmex_mbox_alter_er(struct perf_event *event, int new_idx, bool modif
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d978353..de341d4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
  {
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
--	int idx, orig_idx = __BITS_VALUE(reg1->idx, 0, 8);
-+	u64 idx, orig_idx = __BITS_VALUE(reg1->idx, 0, 8);
- 	u64 config = reg1->config;
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -318,11 +318,8 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	if (br_type & PERF_SAMPLE_BRANCH_USER)
+ 		mask |= X86_BR_USER;
  
- 	/* get the non-shared control bits and shift them */
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index f952891..47b3d00 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -337,10 +337,10 @@
- 		 NHMEX_M_PMON_CTL_SET_FLAG_SEL_MASK)
+-	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
+-		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+-			return -EACCES;
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
+ 		mask |= X86_BR_KERNEL;
+-	}
  
- #define NHMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 11) - 1) | (1 << 23))
--#define NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (11 + 3 * (n)))
-+#define NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7ULL << (11 + 3 * (n)))
+ 	/* we ignore BRANCH_HV here */
  
- #define WSMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 12) - 1) | (1 << 24))
--#define WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (12 + 3 * (n)))
-+#define WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7ULL << (12 + 3 * (n)))
+@@ -342,8 +339,6 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
+-
+-	return 0;
+ }
  
  /*
-  * use the 9~13 bits to select event If the 7th bit is not set,
+@@ -391,9 +386,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	ret = intel_pmu_setup_sw_lbr_filter(event);
+-	if (ret)
+-		return ret;
++	intel_pmu_setup_sw_lbr_filter(event);
+ 
+ 	/*
+ 	 * setup HW LBR filter, if any
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 53d1b30..a0780b3 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6481,11 +6481,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 		if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
+ 			return -EINVAL;
+ 
+-		/* kernel level capture: check permissions */
+-		if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
+-		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+-			return -EACCES;
+-
+ 		/* propagate priv level, when not set for branch */
+ 		if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
+ 
+@@ -6503,6 +6498,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			 */
+ 			attr->branch_sample_type = mask;
+ 		}
++		/* kernel level capture: check permissions */
++		if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
++		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
+ 	}
+ 
+ 	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
