@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab3E1Ovv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:51:51 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37281 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934381Ab3E1Ovt (ORCPT
+	id S934430Ab3E1Ox0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:53:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50053 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab3E1OxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:51:49 -0400
-Message-ID: <51A4C47A.7090405@linux.vnet.ibm.com>
-Date: Tue, 28 May 2013 22:51:38 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 28 May 2013 10:53:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Daniel Tang <dt.tangr@gmail.com>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>
+Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
+Date: Tue, 28 May 2013 16:52:55 +0200
+Message-ID: <3950519.8yj1SQodNQ@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1369750864.2939.1.camel@hornet>
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <CACRpkdaQfaPQdJ1SDN--JDqcrXs8p6=FaDN+4KtKZF6nLtOvvw@mail.gmail.com> <1369750864.2939.1.camel@hornet>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130528001302.GA1359@amt.cnet>
-In-Reply-To: <20130528001302.GA1359@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052814-5564-0000-0000-0000081BE726
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:iQDcw5Nk9ohOHkKG3bWzGoVXE5nyuBt/QYhqlL68knx
+ qKTMFuhwgVxO4WksSkfLi05wlcij6vU5GD4pv+/CtvE77mZhIf
+ zzN1EhTWYSHJDOx/G69ZtGqh1PFszDTuiCx+UchwKSPJyGDNyE
+ H2BBWgsHxSkf8GI4FT/NUKkN6pdEYiotrLBdwef49Tj9LZCArY
+ oWXeatHGTJKBzaoFYUH3ljfxEyiAjW6DzQT3VEnOveJD4KcKuo
+ GwRpZPae6UZBewmUgsu5vksoUgh04U37umCPwjzBh80MF8bnGD
+ x/8fRWOl8mkXc6rMQTiLIr4A+Uu6C5Zy0OamybZlBWzkutLe65
+ 2rULg+dDJM2IWwZlRRCE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 08:13 AM, Marcelo Tosatti wrote:
-> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
->> It is only used to zap the obsolete page. Since the obsolete page
->> will not be used, we need not spend time to find its unsync children
->> out. Also, we delete the page from shadow page cache so that the page
->> is completely isolated after call this function.
->>
->> The later patch will use it to collapse tlb flushes
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
->>  1 files changed, 41 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 9b57faa..e676356 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
->>  {
->>  	ASSERT(is_empty_shadow_page(sp->spt));
->> -	hlist_del(&sp->hash_link);
->> +	hlist_del_init(&sp->hash_link);
->>  	list_del(&sp->link);
->>  	free_page((unsigned long)sp->spt);
->>  	if (!sp->role.direct)
->> @@ -2069,14 +2069,19 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
->>  	return zapped;
->>  }
->>  
->> -static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->> -				    struct list_head *invalid_list)
->> +static int
->> +__kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->> +			   bool zap_unsync_children,
->> +			   struct list_head *invalid_list)
->>  {
->> -	int ret;
->> +	int ret = 0;
->>  
->>  	trace_kvm_mmu_prepare_zap_page(sp);
->>  	++kvm->stat.mmu_shadow_zapped;
->> -	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
->> +
->> +	if (likely(zap_unsync_children))
->> +		ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
->> +
+On Tuesday 28 May 2013 15:21:04 Pawel Moll wrote:
+> On Tue, 2013-05-28 at 15:16 +0100, Linus Walleij wrote:
+> > On Tue, May 28, 2013 at 12:54 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > > On Mon, 2013-05-27 at 11:32 +0100, Arnd Bergmann wrote:
+> > >> b) add a new KMS driver for this hardware that can be used as an
+> > >> alternative to the existing one and that works with DT.
+> > >
+> > > There are people working on this, just trying to jump through some legal
+> > > hoops to post a RFC. Once this is done we'll be in an interesting
+> > > position of two amba_bus drivers "competing" for the same amba_bus
+> > > device, which I'm not sure how to deal with right now...
+> > 
+> > Make them mutually exclusive in Kconfig?
 > 
-> Why is this an important case to be optimized?
+> Certainly an option.
 > 
-> 1) shadow is the uncommon, obsolete case.
-> 2) mmu_zap_unsync_children has
-> 
->         if (parent->role.level == PT_PAGE_TABLE_LEVEL)
->                 return 0;
-> 
-> So the large majority of pages are already optimized.
+> I wouldn't mind having both compiled as modules and loading one or the
+> other, but it wouldn't fly with "=y"...
 
-Hmm, if we zap the high level page (e.g level = 4), it should walk its
-children and its children's children. It is high overload.
-(IMHO, trivial optimization is still necessary, especially, the change
-is really slight.)
+It's a bit ugly but I think you can express that in Kconfig like this:
 
-And, there is another point me mentioned in the changelog:
-"Also, we delete the page from shadow page cache so that the page
-is completely isolated after call this function."
-Skipping zapping unsync-children can ensure that only one page is
-zapped so that we can use "hlist_del_init(&sp->hash_link)" to completely
-remove the page from mmu-cache.
+config FB_ARMCLCD
+        tristate "ARM PrimeCell PL110 support"
+        depends on FB && ARM && ARM_AMBA
+	depends on KMS_ARMCLCD != 'y'
+	depends on 'm' if KMS_ARMCLCD
 
-Now, Gleb and i got a agreement that skipping obsolete page when
-walking hash list is a better way.
-
-BTW, zapping unsync-children is unnecessary, is it?
-
-
+	Arnd
