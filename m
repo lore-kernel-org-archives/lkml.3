@@ -1,94 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3E1KHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:07:49 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54100 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3E1KHr (ORCPT
+	id S1755984Ab3E1KJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:09:48 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:40280 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3E1KJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:07:47 -0400
-Date: Tue, 28 May 2013 12:07:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130528100742.GA11088@gmail.com>
-References: <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130515092055.GB7027@gmail.com>
- <20130515154457.GJ4442@linux.vnet.ibm.com>
+	Tue, 28 May 2013 06:09:46 -0400
+Date: Tue, 28 May 2013 11:09:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Subject: Re: [PATCH 2/3] ARM: u8540: Add Pinctrl Device Tree settings for
+ uart0, uart2
+Message-ID: <20130528100941.GK22683@gmail.com>
+References: <1369661455-17839-1-git-send-email-gabriel.fernandez.st@gmail.com>
+ <1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130515154457.GJ4442@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 27 May 2013, Gabriel Fernandez wrote:
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Wed, May 15, 2013 at 11:20:55AM +0200, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > rcu: Fix comparison sense in rcu_needs_cpu()
-> > > 
-> > > Commit c0f4dfd4f (rcu: Make RCU_FAST_NO_HZ take advantage of numbered
-> > > callbacks) introduced a bug that can result in excessively long grace
-> > > periods.  This bug reverse the senes of the "if" statement checking
-> > > for lazy callbacks, so that RCU takes a lazy approach when there are
-> > > in fact non-lazy callbacks.  This can result in excessive boot, suspend,
-> > > and resume times.
-> > > 
-> > > This commit therefore fixes the sense of this "if" statement.
-> > > 
-> > > Reported-by: Borislav Petkov <bp@alien8.de>
-> > > Reported-by: Bj?rn Mork <bjorn@mork.no>
-> > > Reported-by: Joerg Roedel <joro@8bytes.org>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > > index 170814d..6d939a6 100644
-> > > --- a/kernel/rcutree_plugin.h
-> > > +++ b/kernel/rcutree_plugin.h
-> > > @@ -1667,7 +1667,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
-> > >  	rdtp->last_accelerate = jiffies;
-> > >  
-> > >  	/* Request timer delay depending on laziness, and round. */
-> > > -	if (rdtp->all_lazy) {
-> > > +	if (!rdtp->all_lazy) {
-> > >  		*dj = round_up(rcu_idle_gp_delay + jiffies,
-> > >  			       rcu_idle_gp_delay) - jiffies;
-> > 
-> > Neat - could this explain sporadic long (but not infinite) boot times with 
-> > NOHZ_FULL?
-> > 
-> > We changed HZ to be at least 1 Hz pretty recently, which might have worked 
-> > around this bug.
+> From: Gabriel Fernandez <gabriel.fernandez@st.com>
 > 
-> Quite possibly...
+> This patch adds pinctrl device tree settings for uart0 and uart2
+> for ccu8540 board.
 > 
-> Of course, I don't see the boot slowdowns in my testing.  :-/
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+> ---
+>  arch/arm/boot/dts/ccu8540-pinctrl.dtsi     | 77 ++++++++++++++++++++++++
+>  arch/arm/boot/dts/ccu8540.dts              |  7 +++
+>  arch/arm/boot/dts/dbx5x0.dtsi              |  2 +-
+>  arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi | 95 ++++++++++++++++++++++++++++++
 
-They were pretty sporadic and only popped up (and down) during randconfig 
-testing. Simple unrelated changes to the .config made them go away - 
-heisenbugs.
+This is starting to get a bit confusing. How intrusive would it be to
+place the ccu8540-pinctrl information inside ccu8540.dts instead of
+breaking it out into different files and convoluting the issue?
 
-Thanks,
+Also, please correct me if I'm wrong, but isn't what we call the
+Nomadik Pinctrl/GPIO really the same as DBX500 Pinctrl/GPIO? I wonder
+if this would be a better naming convention?
 
-	Ingo
+Linus, what do you think?
+
+>  include/dt-bindings/pinctrl/nomadik.h      | 36 +++++++++++
+>  5 files changed, 216 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+>  create mode 100644 arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+>  create mode 100644 include/dt-bindings/pinctrl/nomadik.h
+> 
+> diff --git a/arch/arm/boot/dts/ccu8540-pinctrl.dtsi b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+> new file mode 100644
+> index 0000000..26e718b
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+> @@ -0,0 +1,77 @@
+> +/*
+> + * Copyright 2012 ST-Ericsson
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +#include "ste-nomadik-pinctrl.dtsi"
+> +
+> +&pinctrl_dbx500 {
+
+What does the '&' do?
+
+> +	uart0 {
+> +		uart0_default_mux: uart0_mux {
+> +			default_mux {
+> +				ste,function = "u0";
+> +				ste,pins = "u0_a_1";
+> +			};
+> +		};
+> +
+> +		uart0_default_mode: uart0_default {
+> +			default_cfg1 {
+> +				ste,pins = "GPIO0", "GPIO2";
+> +				ste,config = <&in_pu>;
+> +			};
+> +
+> +			default_cfg2 {
+> +				ste,pins = "GPIO1", "GPIO3";
+> +				ste,config = <&out_hi>;
+> +			};
+> +		};
+> +
+> +		uart0_sleep_mode: uart0_sleep {
+> +			sleep_cfg1 {
+> +				ste,pins = "GPIO0", "GPIO2";
+> +				ste,config = <&slpm_in_pu>;
+> +			};
+> +
+> +			sleep_cfg2 {
+> +				ste,pins = "GPIO1", "GPIO3";
+> +				ste,config = <&slpm_out_hi>;
+> +			};
+> +		};
+> +	};
+> +
+> +	uart2 {
+> +		uart2_default_mode: uart2_default {
+> +			default_mux {
+> +				ste,function = "u2";
+> +				ste,pins = "u2txrx_a_1";
+> +			};
+> +
+> +			default_cfg1 {
+> +				ste,pins = "GPIO120";
+> +				ste,config = <&in_pu>;
+> +			};
+> +
+> +			default_cfg2 {
+> +				ste,pins = "GPIO121";
+> +				ste,config = <&out_hi>;
+> +			};
+> +		};
+> +
+> +		uart2_sleep_mode: uart2_sleep {
+> +			sleep_cfg1 {
+> +				ste,pins = "GPIO120";
+> +				ste,config = <&slpm_in_pu>;
+> +			};
+> +
+> +			sleep_cfg2 {
+> +				ste,pins = "GPIO121";
+> +				ste,config = <&slpm_out_hi>;
+> +			};
+> +		};
+> +	};
+> +};
+> diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
+> index 5de9e1e..4f93795 100644
+> --- a/arch/arm/boot/dts/ccu8540.dts
+> +++ b/arch/arm/boot/dts/ccu8540.dts
+> @@ -11,6 +11,7 @@
+>  
+>  /dts-v1/;
+>  #include "dbx5x0.dtsi"
+> +#include "ccu8540-pinctrl.dtsi"
+>  
+>  / {
+>  	model = "ST-Ericsson U8540 platform with Device Tree";
+> @@ -27,6 +28,9 @@
+>  		};
+>  
+>  		uart@80120000 {
+> +			pinctrl-names = "default", "sleep";
+> +			pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
+> +			pinctrl-1 = <&uart0_sleep_mode>;
+>  			status = "okay";
+>  		};
+>  
+> @@ -35,6 +39,9 @@
+>  		};
+>  
+>  		uart@80007000 {
+> +			pinctrl-names = "default", "sleep";
+> +			pinctrl-0 = <&uart2_default_mode>;
+> +			pinctrl-1 = <&uart2_sleep_mode>;
+>  			status = "okay";
+>  		};
+>  	};
+> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+> index f85ff85..7507148 100644
+> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> @@ -170,7 +170,7 @@
+>  			gpio-bank = <8>;
+>  		};
+>  
+> -		pinctrl {
+> +		pinctrl_dbx500: pinctrl {
+>  			compatible = "stericsson,nmk-pinctrl";
+>  			prcm = <&prcmu>;
+>  		};
+> diff --git a/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+> new file mode 100644
+> index 0000000..efddee9
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+> @@ -0,0 +1,95 @@
+> +/*
+> + * Copyright 2012 ST-Ericsson
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +#include <dt-bindings/pinctrl/nomadik.h>
+> +
+> +/ {
+> +	in_nopull: in_nopull {
+> +		ste,input = <INPUT_NOPULL>;
+> +	};
+> +
+> +	in_pu: input_pull_up {
+> +		ste,input = <INPUT_PULLUP>;
+> +	};
+> +
+> +	in_pd: input_pull_down {
+> +		ste,input = <INPUT_PULLDOWN>;
+> +	};
+> +
+> +	out_hi: output_high {
+> +		ste,output = <OUTPUT_HIGH>;
+> +	};
+> +
+> +	out_lo: output_low {
+> +		ste,output = <OUTPUT_LOW>;
+> +	};
+> +
+> +	gpio_out_lo: gpio_output_low {
+> +		ste,gpio = <GPIOMODE_ENABLED>;
+> +		ste,output = <OUTPUT_LOW>;
+> +	};
+> +
+> +	slpm_in_pu: slpm_in_pu {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-input = <SLPM_INPUT_PULLUP>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +	};
+> +
+> +	slpm_in_wkup_pdis: slpm_in_wkup_pdis {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-input = <SLPM_DIR_INPUT>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +
+> +	slpm_out_lo: slpm_out_lo {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-output = <SLPM_OUTPUT_LOW>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +	};
+> +
+> +	slpm_out_hi: slpm_out_hi {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +	};
+> +
+> +	slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +
+> +	slpm_out_wkup_pdis: slpm_out_wkup_pdis {
+> +		ste,sleep = <SLPM_ENABLED>;
+> +		ste,sleep-output = <SLPM_DIR_OUTPUT>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +
+> +	in_wkup_pdis: in_wkup_pdis {
+> +		ste,sleep-input = <SLPM_DIR_INPUT>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +
+> +	out_hi_wkup_pdis: out_hi_wkup_pdis {
+> +		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +
+> +	out_wkup_pdis: out_wkup_pdis {
+> +		ste,sleep-output = <SLPM_DIR_OUTPUT>;
+> +		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
+> +		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
+> +	};
+> +};
+
+Nodes look pretty good, except shouldn't 'ste' really be 'stericsson'?
+
+Yes, it's not as succinct, but it is the standard.
+
+> diff --git a/include/dt-bindings/pinctrl/nomadik.h b/include/dt-bindings/pinctrl/nomadik.h
+> new file mode 100644
+> index 0000000..638fb32
+> --- /dev/null
+> +++ b/include/dt-bindings/pinctrl/nomadik.h
+> @@ -0,0 +1,36 @@
+> +/*
+> + * nomadik.h
+> + *
+> + * Copyright (C) ST-Ericsson SA 2013
+> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com> for ST-Ericsson.
+> + * License terms:  GNU General Public License (GPL), version 2
+> + */
+> +
+> +#define INPUT_NOPULL		0
+> +#define INPUT_PULLUP		1
+> +#define INPUT_PULLDOWN		2
+> +
+> +#define OUTPUT_LOW		0
+> +#define OUTPUT_HIGH		1
+> +#define DIR_OUTPUT		2
+> +
+> +#define SLPM_DISABLED		0
+> +#define SLPM_ENABLED		1
+> +
+> +#define SLPM_INPUT_NOPULL	0
+> +#define SLPM_INPUT_PULLUP	1
+> +#define SLPM_INPUT_PULLDOWN	2
+> +#define SLPM_DIR_INPUT		3
+> +
+> +#define SLPM_OUTPUT_LOW		0
+> +#define SLPM_OUTPUT_HIGH	1
+> +#define SLPM_DIR_OUTPUT		2
+> +
+> +#define SLPM_WAKEUP_DISABLE	0
+> +#define SLPM_WAKEUP_ENABLE	1
+> +
+> +#define GPIOMODE_DISABLED	0
+> +#define GPIOMODE_ENABLED	1
+> +
+> +#define SLPM_PDIS_DISABLED	0
+> +#define SLPM_PDIS_ENABLED	1
+
+Some stray tabbing above.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
