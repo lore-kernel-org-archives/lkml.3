@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684Ab3E1Ivn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:51:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53326 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933640Ab3E1Ivl (ORCPT
+	id S933679Ab3E1Iyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:54:41 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:37530 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933624Ab3E1Iyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:51:41 -0400
-Date: Tue, 28 May 2013 10:51:36 +0200
+	Tue, 28 May 2013 04:54:40 -0400
+Date: Tue, 28 May 2013 10:54:35 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: David Miller <davem@davemloft.net>
-Cc: peterz@infradead.org, horms@verge.net.au, eric.dumazet@gmail.com,
-        ja@ssi.bg, mingo@redhat.com, paulmck@linux.vnet.ibm.com,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pablo@netfilter.org, dipankar@in.ibm.com
-Subject: Re: [PATCH ipvs-next v3 0/2] sched: Add cond_resched_rcu_lock()
- helper
-Message-ID: <20130528085136.GB30172@gmail.com>
-References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
- <20130522075438.GO26912@twins.programming.kicks-ass.net>
- <20130522.013108.58504645261021804.davem@davemloft.net>
+Cc: luto@amacapital.net, linux-kernel@vger.kernel.org, x86@kernel.org,
+        trinity@vger.kernel.org
+Subject: Re: [PATCH 0/5] x86: oops on uaccess faults outside of user addresses
+Message-ID: <20130528085435.GC30172@gmail.com>
+References: <cover.1369177867.git.luto@amacapital.net>
+ <20130522.142847.791230763817666795.davem@davemloft.net>
+ <20130528082514.GA29730@gmail.com>
+ <20130528.015105.1513437101791265718.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130522.013108.58504645261021804.davem@davemloft.net>
+In-Reply-To: <20130528.015105.1513437101791265718.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,35 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * David Miller <davem@davemloft.net> wrote:
 
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 22 May 2013 09:54:38 +0200
+> From: Ingo Molnar <mingo@kernel.org>
+> Date: Tue, 28 May 2013 10:25:14 +0200
 > 
-> > On Wed, May 22, 2013 at 02:50:30PM +0900, Simon Horman wrote:
-> >> Add a helper that for use in loops which read data protected by RCU and
-> >> may have a large number of iterations.  Such an example is dumping the list
-> >> of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
-> >> 
-> >> This series also updates IPVS to use the helper.
-> >> 
-> >> Simon Horman (2):
-> >>   sched: add cond_resched_rcu() helper
-> >>   ipvs: use cond_resched_rcu() helper when walking connections
-> >> 
-> >>  include/linux/sched.h           |  9 +++++++++
-> >>  net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
-> >>  2 files changed, 17 insertions(+), 15 deletions(-)
 > > 
-> > Acked-by: Peter Zijlstra <peterz@infradead.org>
+> > * David Miller <davem@davemloft.net> wrote:
 > > 
-> > How do you want to go about merging this? Do you want to route it
-> > through the net tree or through -tip?
+> >> Please don't mix networking and non-networking changes into a patch
+> >> series.
+> > 
+> > As explained in 0/5 the networking fix justifies the first 4 patches. The 
+> > networking fix is independent of the first 4 patches.
+> > 
+> >> Submit the networking patch to netdev@vger.kernel.org
+> > 
+> > He Cc:-ed the patch to netdev@vger.kernel.org. If you agree with it then 
+> > the fix should probably be picked up ASAP.
 > 
-> I think we can have Pablo merge it into his netfilter tree.
+> He submitted it as part of a series which implies that it belongs together
+> with the others.
 
-Yeah, that's what we agreed upon earlier during the review of these 
-patches.
+And then described it in the 0/5 patch that it's not. It's also visible 
+from the title, the changelog and the diff of the 5/5 patch that it's a 
+separate fix.
+
+So please consider it submitted.
 
 Thanks,
 
 	Ingo
-
