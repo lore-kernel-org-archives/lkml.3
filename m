@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933453Ab3E1D4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52650 "EHLO
+	id S933439Ab3E1D4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52669 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758925Ab3E1DyZ (ORCPT
+	by vger.kernel.org with ESMTP id S1758933Ab3E1DyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:25 -0400
+	Mon, 27 May 2013 23:54:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Simon Horman" <horms@verge.net.au>,
-        "Julian Anastasov" <ja@ssi.bg>,
-        "Hans Schillstrom" <hans@schillstrom.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Dave Hansen" <dave.hansen@intel.com>, "Mel Gorman" <mel@csn.ul.ie>,
+        "Johannes Weiner" <hannes@cmpxchg.org>, "Cliff Wickman" <cpw@sgi.com>,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "David Sterba" <dsterba@suse.cz>,
+        "Andrea Arcangeli" <aarcange@redhat.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.611503171@decadent.org.uk>
+Message-ID: <lsq.1369712993.489066868@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [73/94] ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
+Subject: [69/94] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,79 +38,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Schillstrom <hans@schillstrom.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit f7a1dd6e3ad59f0cfd51da29dfdbfd54122c5916 upstream.
+commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
 
-The reason for this patch is crash in kmemdup
-caused by returning from get_callid with uniialized
-matchoff and matchlen.
+A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
+application has a VM_PFNMAP range.  It happened in-house when a
+benchmarker was trying to decipher the memory layout of his program.
 
-Removing Zero check of matchlen since it's done by ct_sip_get_header()
+/proc/<pid>/smaps and similar walks through a user page table should not
+be looking at VM_PFNMAP areas.
 
-BUG: unable to handle kernel paging request at ffff880457b5763f
-IP: [<ffffffff810df7fc>] kmemdup+0x2e/0x35
-PGD 27f6067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: xt_state xt_helper nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_mangle xt_connmark xt_conntrack ip6_tables nf_conntrack_ftp ip_vs_ftp nf_nat xt_tcpudp iptable_mangle xt_mark ip_tables x_tables ip_vs_rr ip_vs_lblcr ip_vs_pe_sip ip_vs nf_conntrack_sip nf_conntrack bonding igb i2c_algo_bit i2c_core
-CPU 5
-Pid: 0, comm: swapper/5 Not tainted 3.9.0-rc5+ #5                  /S1200KP
-RIP: 0010:[<ffffffff810df7fc>]  [<ffffffff810df7fc>] kmemdup+0x2e/0x35
-RSP: 0018:ffff8803fea03648  EFLAGS: 00010282
-RAX: ffff8803d61063e0 RBX: 0000000000000003 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: ffff880457b5763f RDI: ffff8803d61063e0
-RBP: ffff8803fea03658 R08: 0000000000000008 R09: 0000000000000011
-R10: 0000000000000011 R11: 00ffffffff81a8a3 R12: ffff880457b5763f
-R13: ffff8803d67f786a R14: ffff8803fea03730 R15: ffffffffa0098e90
-FS:  0000000000000000(0000) GS:ffff8803fea00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffff880457b5763f CR3: 0000000001a0c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/5 (pid: 0, threadinfo ffff8803ee18c000, task ffff8803ee18a480)
-Stack:
- ffff8803d822a080 000000000000001c ffff8803fea036c8 ffffffffa000937a
- ffffffff81f0d8a0 000000038135fdd5 ffff880300000014 ffff880300110000
- ffffffff150118ac ffff8803d7e8a000 ffff88031e0118ac 0000000000000000
-Call Trace:
- <IRQ>
+Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+assume that all the mapped PFN's are backed with page structures.  And
+this is not usually true for VM_PFNMAP areas.  This can result in panics
+on kernel page faults when attempting to address those page structures.
 
- [<ffffffffa000937a>] ip_vs_sip_fill_param+0x13a/0x187 [ip_vs_pe_sip]
- [<ffffffffa007b209>] ip_vs_sched_persist+0x2c6/0x9c3 [ip_vs]
- [<ffffffff8107dc53>] ? __lock_acquire+0x677/0x1697
- [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
- [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
- [<ffffffff810649bc>] ? sched_clock_cpu+0x43/0xcf
- [<ffffffffa007bb1e>] ip_vs_schedule+0x181/0x4ba [ip_vs]
-...
+There are a half dozen callers of walk_page_range() that walk through a
+task's entire page table (as N.  Horiguchi pointed out).  So rather than
+change all of them, this patch changes just walk_page_range() to ignore
+VM_PFNMAP areas.
 
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+want to test any vma in the range.
+
+VM_PFNMAP areas are used by:
+- graphics memory manager   gpu/drm/drm_gem.c
+- global reference unit     sgi-gru/grufile.c
+- sgi special memory        char/mspec.c
+- and probably several out-of-tree modules
+
+[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: David Sterba <dsterba@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/netfilter/ipvs/ip_vs_pe_sip.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ mm/pagewalk.c |   70 +++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 36 insertions(+), 34 deletions(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_pe_sip.c b/net/netfilter/ipvs/ip_vs_pe_sip.c
-index 12475ef..e5920fb 100644
---- a/net/netfilter/ipvs/ip_vs_pe_sip.c
-+++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
-@@ -37,14 +37,10 @@ static int get_callid(const char *dptr, unsigned int dataoff,
- 		if (ret > 0)
- 			break;
- 		if (!ret)
--			return 0;
-+			return -EINVAL;
- 		dataoff += *matchoff;
- 	}
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_
+ 	return 0;
+ }
  
--	/* Empty callid is useless */
--	if (!*matchlen)
--		return -EINVAL;
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	struct vm_area_struct *vma;
 -
- 	/* Too large is useless */
- 	if (*matchlen > IP_VS_PEDATA_MAXLEN)
+-	/* We don't need vma lookup at all. */
+-	if (!walk->hugetlb_entry)
+-		return NULL;
+-
+-	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+-		return vma;
+-
+-	return NULL;
+-}
+-
+ #else /* CONFIG_HUGETLB_PAGE */
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	return NULL;
+-}
+-
+ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 			      unsigned long addr, unsigned long end,
+ 			      struct mm_walk *walk)
+@@ -199,30 +178,53 @@ int walk_page_range(unsigned long addr,
+ 	if (!walk->mm)
  		return -EINVAL;
+ 
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++
+ 	pgd = pgd_offset(walk->mm, addr);
+ 	do {
+-		struct vm_area_struct *vma;
++		struct vm_area_struct *vma = NULL;
+ 
+ 		next = pgd_addr_end(addr, end);
+ 
+ 		/*
+-		 * handle hugetlb vma individually because pagetable walk for
+-		 * the hugetlb page is dependent on the architecture and
+-		 * we can't handled it in the same manner as non-huge pages.
++		 * This function was not intended to be vma based.
++		 * But there are vma special cases to be handled:
++		 * - hugetlb vma's
++		 * - VM_PFNMAP vma's
+ 		 */
+-		vma = hugetlb_vma(addr, walk);
++		vma = find_vma(walk->mm, addr);
+ 		if (vma) {
+-			if (vma->vm_end < next)
++			/*
++			 * There are no page structures backing a VM_PFNMAP
++			 * range, so do not allow split_huge_page_pmd().
++			 */
++			if ((vma->vm_start <= addr) &&
++			    (vma->vm_flags & VM_PFNMAP)) {
+ 				next = vma->vm_end;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 			/*
+-			 * Hugepage is very tightly coupled with vma, so
+-			 * walk through hugetlb entries within a given vma.
++			 * Handle hugetlb vma individually because pagetable
++			 * walk for the hugetlb page is dependent on the
++			 * architecture and we can't handled it in the same
++			 * manner as non-huge pages.
+ 			 */
+-			err = walk_hugetlb_range(vma, addr, next, walk);
+-			if (err)
+-				break;
+-			pgd = pgd_offset(walk->mm, next);
+-			continue;
++			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
++			    is_vm_hugetlb_page(vma)) {
++				if (vma->vm_end < next)
++					next = vma->vm_end;
++				/*
++				 * Hugepage is very tightly coupled with vma,
++				 * so walk through hugetlb entries within a
++				 * given vma.
++				 */
++				err = walk_hugetlb_range(vma, addr, next, walk);
++				if (err)
++					break;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 		}
+ 
+ 		if (pgd_none_or_clear_bad(pgd)) {
 
