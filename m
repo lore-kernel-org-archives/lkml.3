@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab3E1VXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:23:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59569 "EHLO
+	id S1757980Ab3E1VXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:23:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab3E1VXa (ORCPT
+	with ESMTP id S932106Ab3E1VXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:23:30 -0400
+	Tue, 28 May 2013 17:23:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 27/78] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
-Date: Tue, 28 May 2013 14:19:36 -0700
-Message-Id: <1369776027-17859-28-git-send-email-kamal@canonical.com>
+Cc: Thommy Jakobsson <thommyj@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 23/78] B43: Handle DMA RX descriptor underrun
+Date: Tue, 28 May 2013 14:19:32 -0700
+Message-Id: <1369776027-17859-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,58 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Thommy Jakobsson <thommyj@gmail.com>
 
-commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
+commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 upstream.
 
-Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
-broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
-not fully understood, but it seems to be related to the probe order. SPI
-communication to the panel driver (spi1.2) fails unless the touchscreen
-(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
-was converted to a platform driver, it resulted in that the devices are
-probed immediately after the board registers them in the order they are
-listed in the board file.
+Add handling of rx descriptor underflow. This fixes a fault that could
+happen on slow machines, where data is received faster than the CPU can
+handle. In such a case the device will use up all rx descriptors and
+refuse to send any more data before confirming that it is ok. This
+patch enables necessary interrupt to discover such a situation and will
+handle them by dropping everything in the ring buffer.
 
-Fix the issue by moving the touchscreen before the panel in the SPI
-device list.
-
-The patch fixes the following failure:
-
-[    1.260955] acx565akm spi1.2: invalid display ID
-[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
-[    1.273071] omapdss CORE error: driver probe failed: -19
-
-Tested-by: Sebastian Reichel <sre@debian.org>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Pali Rohár <pali.rohar@gmail.com>
-Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Michael Buesch <m@bues.ch>
+Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/dma.c  | 19 ++++++++++++++++++
+ drivers/net/wireless/b43/dma.h  |  4 +++-
+ drivers/net/wireless/b43/main.c | 43 +++++++++++++++++------------------------
+ 3 files changed, 40 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index cf07e28..b0197a9 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -73,11 +73,11 @@
- #define LIS302_IRQ1_GPIO 181
- #define LIS302_IRQ2_GPIO 180  /* Not yet in use */
+diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
+index 1221469..ee3d640 100644
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1733,6 +1733,25 @@ drop_recycle_buffer:
+ 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
+ }
  
--/* list all spi devices here */
-+/* List all SPI devices here. Note that the list/probe order seems to matter! */
- enum {
- 	RX51_SPI_WL1251,
--	RX51_SPI_MIPID,		/* LCD panel */
- 	RX51_SPI_TSC2005,	/* Touch Controller */
-+	RX51_SPI_MIPID,		/* LCD panel */
- };
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
++{
++	int current_slot, previous_slot;
++
++	B43_WARN_ON(ring->tx);
++
++	/* Device has filled all buffers, drop all packets and let TCP
++	 * decrease speed.
++	 * Decrement RX index by one will let the device to see all slots
++	 * as free again
++	 */
++	/*
++	*TODO: How to increase rx_drop in mac80211?
++	*/
++	current_slot = ring->ops->get_current_rxslot(ring);
++	previous_slot = prev_slot(ring, current_slot);
++	ring->ops->set_current_rxslot(ring, previous_slot);
++}
++
+ void b43_dma_rx(struct b43_dmaring *ring)
+ {
+ 	const struct b43_dma_ops *ops = ring->ops;
+diff --git a/drivers/net/wireless/b43/dma.h b/drivers/net/wireless/b43/dma.h
+index 9fdd198..df8c8cd 100644
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -9,7 +9,7 @@
+ /* DMA-Interrupt reasons. */
+ #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
+ 					 | (1 << 14) | (1 << 15))
+-#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
++#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
+ #define B43_DMAIRQ_RX_DONE		(1 << 16)
  
- static struct wl12xx_platform_data wl1251_pdata;
+ /*** 32-bit DMA Engine. ***/
+@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
+ void b43_dma_handle_txstatus(struct b43_wldev *dev,
+ 			     const struct b43_txstatus *status);
+ 
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
++
+ void b43_dma_rx(struct b43_dmaring *ring);
+ 
+ void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 0568273..64b637a 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -1895,30 +1895,18 @@ static void b43_do_interrupt_thread(struct b43_wldev *dev)
+ 		}
+ 	}
+ 
+-	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
+-					  B43_DMAIRQ_NONFATALMASK))) {
+-		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
+-			b43err(dev->wl, "Fatal DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-			b43err(dev->wl, "This device does not support DMA "
++	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
++		b43err(dev->wl,
++			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
++			dma_reason[0], dma_reason[1],
++			dma_reason[2], dma_reason[3],
++			dma_reason[4], dma_reason[5]);
++		b43err(dev->wl, "This device does not support DMA "
+ 			       "on your system. It will now be switched to PIO.\n");
+-			/* Fall back to PIO transfers if we get fatal DMA errors! */
+-			dev->use_pio = true;
+-			b43_controller_restart(dev, "DMA error");
+-			return;
+-		}
+-		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
+-			b43err(dev->wl, "DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-		}
++		/* Fall back to PIO transfers if we get fatal DMA errors! */
++		dev->use_pio = true;
++		b43_controller_restart(dev, "DMA error");
++		return;
+ 	}
+ 
+ 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
+@@ -1937,6 +1925,11 @@ static void b43_do_interrupt_thread(struct b43_wldev *dev)
+ 		handle_irq_noise(dev);
+ 
+ 	/* Check the DMA reason registers for received data. */
++	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
++		if (B43_DEBUG)
++			b43warn(dev->wl, "RX descriptor underrun\n");
++		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
++	}
+ 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
+ 		if (b43_using_pio_transfers(dev))
+ 			b43_pio_rx(dev->pio.rx_queue);
+@@ -1994,7 +1987,7 @@ static irqreturn_t b43_do_interrupt(struct b43_wldev *dev)
+ 		return IRQ_NONE;
+ 
+ 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
+-	    & 0x0001DC00;
++	    & 0x0001FC00;
+ 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
+ 	    & 0x0000DC00;
+ 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
+@@ -3126,7 +3119,7 @@ static int b43_chip_init(struct b43_wldev *dev)
+ 		b43_write32(dev, 0x018C, 0x02000000);
+ 	}
+ 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
+-	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
++	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
+ 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
 -- 
 1.8.1.2
 
