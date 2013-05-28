@@ -1,203 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933718Ab3E1I4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:56:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57014 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933660Ab3E1I4K (ORCPT
+	id S933728Ab3E1I4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:56:42 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55451 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933640Ab3E1I4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:56:10 -0400
-Date: Tue, 28 May 2013 10:55:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130528085548.GA12193@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523125218.GB23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu>
- <20130523152611.GE23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
+	Tue, 28 May 2013 04:56:39 -0400
+Message-ID: <51A47126.7070501@linux.vnet.ibm.com>
+Date: Tue, 28 May 2013 16:56:06 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Mike Galbraith <bitbucket@online.de>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH v2] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <519AE7F2.706@linux.vnet.ibm.com> <20130522084947.GQ26912@twins.programming.kicks-ass.net> <519C8F24.5060207@linux.vnet.ibm.com> <1369234551.5916.40.camel@marge.simpson.net> <51A43A63.4090703@linux.vnet.ibm.com> <1369722552.5857.72.camel@marge.simpson.net> <51A45B23.4050403@linux.vnet.ibm.com> <1369730970.5857.132.camel@marge.simpson.net>
+In-Reply-To: <1369730970.5857.132.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052808-5140-0000-0000-000003465FD6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/28/2013 04:49 PM, Mike Galbraith wrote:
+> On Tue, 2013-05-28 at 15:22 +0800, Michael Wang wrote: 
+>> On 05/28/2013 02:29 PM, Mike Galbraith wrote:
+>>> On Tue, 2013-05-28 at 13:02 +0800, Michael Wang wrote: 
+>>>> On 05/22/2013 10:55 PM, Mike Galbraith wrote:
+>>>>> On Wed, 2013-05-22 at 17:25 +0800, Michael Wang wrote:
+>>>>>
+>>>>>> I've not test the hackbench with wakeup-buddy before, will do it this
+>>>>>> time, I suppose the 15% illegal income will suffered, anyway, it's
+>>>>>> illegal :)
+>>>>>
+>>>>> On a 4 socket 40 core (+SMT) box, hackbench wasn't too happy.
+>>>>
+>>>> I've done more test and now I got the reason of regression...
+>>>>
+>>>> The writer and reader in hackbench is N:N, prev writer will write all
+>>>> the fd then switch to next writer and repeat the same work, so it's
+>>>> impossible to setup the buddy relationship by just record the last one,
+>>>> and we have to record all the waker/wakee in history, but that means
+>>>> unacceptable memory overhead...
+>>>
+>>> Yeah, that's why I was thinking we'd need a dinky/fast as hell FIFO of
+>>> tokens or such to bind waker/wakee more or less reliably.  Making such a
+>>> scheme cheap enough could be hard.
+>>>
+>>>> So this buddy idea seems to be bad...
+>>>>
+>>>> I think a better way may should be allowing pull in most time, but
+>>>> filter the very bad cases carefully.
+>>>
+>>> Any way that is cheap, and fairly accurately recognizes when we're being
+>>> stupid will help.  First and foremost, it has to be dirt cheap :)
+>>>
+>>>> For workload like pgbench, we actually just need to avoid pull if that
+>>>> will damage the 'mother' thread, which is busy and be relied by many
+>>>> 'child'.
+>>>
+>>> Yeah, 'mom' is the key player.  If we can cheaply recognize mom, that
+>>> should get us a generic improvement.  Not as good as being able to
+>>> recognize the size of her+brood as size changes, but better anyway.
+>>
+>> That's right, I'm trying to rely on the frequency of a task switching
+>> it's wakee in the new idea, it's really cheap and somewhat reliable, I
+>> appreciate if you could pay an eye on the new patch and let me know you
+>> opinion :)
+> 
+> I'll feed it to my 40 core box, hopefully soon.
 
-Take 2.. :-)
+Thanks for that, wish it taste delicious ;-)
 
-Leaving the locked vs pinned debacle for another time. The below patch
-survives many non-priv execution of the problem prog.
+Regards,
+Michael Wang
 
----
-Subject: perf: Fix perf mmap issues
-
-Vince reported a problem found by his perf specific trinity fuzzer. 
-
-Al noticed 2 problems with perf's mmap(): 
- - it has issues against fork() since we use vma->vm_mm for accounting.
- - it has an rb refcount leak on double mmap().
-
-We fix the issues against fork() by using VM_DONTCOPY; I don't think there's
-code out there that uses this; we didn't hear about weird accounting
-problems/crashes. If we do need this to work, the previously proposed VM_PINNED
-could make this work.
-
-Aside from the rb reference leak spotted by Al, Vince's example prog was indeed
-doing a double mmap() through the use of perf_event_set_output(). 
-
-This exposes another problem, since we now have 2 events with one buffer, the
-accounting gets screwy because we account per event. Fix this by making the
-buffer responsible for its own accounting.
-
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/perf_event.h |    3 +--
- kernel/events/core.c       |   37 ++++++++++++++++++++-----------------
- kernel/events/internal.h   |    3 +++
- 3 files changed, 24 insertions(+), 19 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f463a46..c5b6dbf 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -389,8 +389,7 @@ struct perf_event {
- 	/* mmap bits */
- 	struct mutex			mmap_mutex;
- 	atomic_t			mmap_count;
--	int				mmap_locked;
--	struct user_struct		*mmap_user;
-+
- 	struct ring_buffer		*rb;
- 	struct list_head		rb_entry;
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9dc297f..ae752cd 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2917,7 +2917,7 @@ static void free_event_rcu(struct rcu_head *head)
- 	kfree(event);
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb);
-+static bool ring_buffer_put(struct ring_buffer *rb);
- 
- static void free_event(struct perf_event *event)
- {
-@@ -3582,13 +3582,13 @@ static struct ring_buffer *ring_buffer_get(struct perf_event *event)
- 	return rb;
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb)
-+static bool ring_buffer_put(struct ring_buffer *rb)
- {
- 	struct perf_event *event, *n;
- 	unsigned long flags;
- 
- 	if (!atomic_dec_and_test(&rb->refcount))
--		return;
-+		return false;
- 
- 	spin_lock_irqsave(&rb->event_lock, flags);
- 	list_for_each_entry_safe(event, n, &rb->event_list, rb_entry) {
-@@ -3598,6 +3598,7 @@ static void ring_buffer_put(struct ring_buffer *rb)
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
- 
- 	call_rcu(&rb->rcu_head, rb_free_rcu);
-+	return true;
- }
- 
- static void perf_mmap_open(struct vm_area_struct *vma)
-@@ -3612,18 +3613,20 @@ static void perf_mmap_close(struct vm_area_struct *vma)
- 	struct perf_event *event = vma->vm_file->private_data;
- 
- 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
--		unsigned long size = perf_data_size(event->rb);
--		struct user_struct *user = event->mmap_user;
- 		struct ring_buffer *rb = event->rb;
-+		struct user_struct *mmap_user = rb->mmap_user;
-+		int mmap_locked = rb->mmap_locked;
-+		unsigned long size = perf_data_size(rb);
- 
--		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
--		vma->vm_mm->pinned_vm -= event->mmap_locked;
- 		rcu_assign_pointer(event->rb, NULL);
- 		ring_buffer_detach(event, rb);
- 		mutex_unlock(&event->mmap_mutex);
- 
--		ring_buffer_put(rb);
--		free_uid(user);
-+		if (ring_buffer_put(rb)) {
-+			atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
-+			vma->vm_mm->pinned_vm -= mmap_locked;
-+			free_uid(mmap_user);
-+		}
- 	}
- }
- 
-@@ -3676,9 +3679,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	mutex_lock(&event->mmap_mutex);
- 	if (event->rb) {
--		if (event->rb->nr_pages == nr_pages)
--			atomic_inc(&event->rb->refcount);
--		else
-+		if (event->rb->nr_pages != nr_pages)
- 			ret = -EINVAL;
- 		goto unlock;
- 	}
-@@ -3720,12 +3721,14 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 		ret = -ENOMEM;
- 		goto unlock;
- 	}
--	rcu_assign_pointer(event->rb, rb);
-+
-+	rb->mmap_locked = extra;
-+	rb->mmap_user = get_current_user();
- 
- 	atomic_long_add(user_extra, &user->locked_vm);
--	event->mmap_locked = extra;
--	event->mmap_user = get_current_user();
--	vma->vm_mm->pinned_vm += event->mmap_locked;
-+	vma->vm_mm->pinned_vm += extra;
-+
-+	rcu_assign_pointer(event->rb, rb);
- 
- 	perf_event_update_userpage(event);
- 
-@@ -3734,7 +3737,7 @@ unlock:
- 		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
--	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
- 	vma->vm_ops = &perf_mmap_vmops;
- 
- 	return ret;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index eb675c4..5bc6c8e 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -31,6 +31,9 @@ struct ring_buffer {
- 	spinlock_t			event_lock;
- 	struct list_head		event_list;
- 
-+	int				mmap_locked;
-+	struct user_struct		*mmap_user;
-+
- 	struct perf_event_mmap_page	*user_page;
- 	void				*data_pages[0];
- };
+> 
+> -Mike
+> 
 
