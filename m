@@ -1,229 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670Ab3E1Cdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 22:33:55 -0400
-Received: from m59-178.qiye.163.com ([123.58.178.59]:59529 "EHLO
-	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758612Ab3E1Cdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 22:33:54 -0400
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 May 2013 22:33:53 EDT
-From: Li Wang <liwang@ubuntukylin.com>
-To: linux-ext4@vger.kernel.org
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Zheng Liu <gnehzuil.liu@gmail.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, Li Wang <liwang@ubuntukylin.com>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: [PATCH v4] ext4: Avoid unnecessarily writing back dirty pages before  hole punching
-Date: Tue, 28 May 2013 10:23:25 +0800
-Message-Id: <1369707805-11976-1-git-send-email-liwang@ubuntukylin.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130527144727.GA3877@quack.suse.cz>
-References: <20130527144727.GA3877@quack.suse.cz>
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUhVQ0lCQkJCQklITEtNS05PTFdZCQ4XHghZQVkoKz0kKzooKCQyNSQz
-	Pjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz46Pz4pQUtVS0A4NC41
-	LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1VLQD8iNTo2MjgkMisk
-	NTQkMjUkMz46Pz4pQUtVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80
-	PzoiJDg1LyRLJEpLS0FLVUtAMiskSiQzNC4pJDg1LyRLJEpLS0FLVUtAMiskSiQ2MjUuLz4kODUv
-	JEskSktBS1VLQDIrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktB
-	S1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQpPygkMzcxJEpLS0lLSkFLVUlDWQY+
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSE1CTEtMQ0lPSUNDVTMWGhIX
-	VRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHgY+
+	id S1758695Ab3E1Clm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 22:41:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28334 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758630Ab3E1Cll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 22:41:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,755,1363158000"; 
+   d="scan'208";a="344246626"
+Message-ID: <1369708896.1913.5.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 0/2] staging -> thermal: move ti-soc-thermal to
+ drivers/thermal
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Date: Tue, 28 May 2013 10:41:36 +0800
+In-Reply-To: <1368632761-10528-1-git-send-email-eduardo.valentin@ti.com>
+References: <1368632761-10528-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For hole punching, currently ext4 will synchronously write back the
-dirty pages fit into the hole, since the data on the disk responding
-to those pages are to be deleted, it is benefical to directly release
-those pages, no matter they are dirty or not, except the ordered case.
+On Wed, 2013-05-15 at 11:45 -0400, Eduardo Valentin wrote:
+> Hello Greg and Rui,
+> 
+> I am proposing to move the ti-soc-thermal driver from drivers/stating/
+> to drivers/thermal. It has been some time that we have been fixing and
+> improving the code under staging tree.
+> 
+> I believe it is time to move on. The driver now has a better code
+> organization (split between code and data), DT support, better coding
+> style, it supports TI OMAP chips 4430, 4460, 4470 and 5430, and it is
+> ready for easy addition of other SoC chips containing the bandgap IP.
+> Besides, this driver required some major changes in the thermal framework,
+> before it could provide basic functionality using the device capability.
+> These changes have been already merged in previous merge windows,
+> so there is no pending dependencies.
+> 
+> The remaining items in the TODO list are actually not a blocker for this
+> move, IMO. The PM support is not fully completed on all supported OMAP chips.
+> The locking so far has not caused any issues, and I believe that most of
+> the interesting data is protected by the thermal framework.
+> 
+> I am sending this patch for your appreciation and also to get wider review.
+> 
 
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
-Hi Jan,
-  Did you mean this?
-  It seems you donot like the jbd2_journal_begin_ordered_discard:),
-However, what do you think of calling jbd2_journal_begin_ordered_punch_hole()
-from jbd2_journal_begin_ordered_truncate()? In my option, 
-the two guys stand at the same level. Nevertheless, 
-it is up to your choice.
----
- fs/ext4/inode.c       |   27 ++++++++++++++++-----------
- fs/jbd2/journal.c     |    2 +-
- fs/jbd2/transaction.c |   29 ++++++-----------------------
- include/linux/jbd2.h  |   33 +++++++++++++++++++++++++++++++--
- 4 files changed, 54 insertions(+), 37 deletions(-)
+patch applied to thermal -next tree and targeted for 3.11.
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index d6382b8..844d1b8 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3569,6 +3569,16 @@ int ext4_can_truncate(struct inode *inode)
- 	return 0;
- }
- 
-+static inline int ext4_begin_ordered_punch_hole(struct inode *inode,
-+					       loff_t start, loff_t length)
-+{
-+	if (!EXT4_I(inode)->jinode)
-+		return 0;
-+	return jbd2_journal_begin_ordered_punch_hole(EXT4_JOURNAL(inode),
-+						    EXT4_I(inode)->jinode,
-+						    start, start+length-1);
-+}
-+
- /*
-  * ext4_punch_hole: punches a hole in a file by releaseing the blocks
-  * associated with the given offset and length
-@@ -3602,17 +3612,6 @@ int ext4_punch_hole(struct file *file, loff_t offset, loff_t length)
- 
- 	trace_ext4_punch_hole(inode, offset, length);
- 
--	/*
--	 * Write out all dirty pages to avoid race conditions
--	 * Then release them.
--	 */
--	if (mapping->nrpages && mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
--		ret = filemap_write_and_wait_range(mapping, offset,
--						   offset + length - 1);
--		if (ret)
--			return ret;
--	}
--
- 	mutex_lock(&inode->i_mutex);
- 	/* It's not possible punch hole on append only file */
- 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode)) {
-@@ -3644,6 +3643,12 @@ int ext4_punch_hole(struct file *file, loff_t offset, loff_t length)
- 	first_page_offset = first_page << PAGE_CACHE_SHIFT;
- 	last_page_offset = last_page << PAGE_CACHE_SHIFT;
- 
-+	if (ext4_should_order_data(inode)) {
-+		ret = ext4_begin_ordered_punch_hole(inode, offset, length);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	/* Now release the pages */
- 	if (last_page_offset > first_page_offset) {
- 		truncate_pagecache_range(inode, first_page_offset,
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 9545757..7af4e4f 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -97,7 +97,7 @@ EXPORT_SYMBOL(jbd2_journal_force_commit);
- EXPORT_SYMBOL(jbd2_journal_file_inode);
- EXPORT_SYMBOL(jbd2_journal_init_jbd_inode);
- EXPORT_SYMBOL(jbd2_journal_release_jbd_inode);
--EXPORT_SYMBOL(jbd2_journal_begin_ordered_truncate);
-+EXPORT_SYMBOL(jbd2_journal_begin_ordered_punch_hole);
- EXPORT_SYMBOL(jbd2_inode_cache);
- 
- static void __journal_abort_soft (journal_t *journal, int errno);
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 10f524c..262b1c3 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -2305,29 +2305,10 @@ done:
- 	return 0;
- }
- 
--/*
-- * File truncate and transaction commit interact with each other in a
-- * non-trivial way.  If a transaction writing data block A is
-- * committing, we cannot discard the data by truncate until we have
-- * written them.  Otherwise if we crashed after the transaction with
-- * write has committed but before the transaction with truncate has
-- * committed, we could see stale data in block A.  This function is a
-- * helper to solve this problem.  It starts writeout of the truncated
-- * part in case it is in the committing transaction.
-- *
-- * Filesystem code must call this function when inode is journaled in
-- * ordered mode before truncation happens and after the inode has been
-- * placed on orphan list with the new inode size. The second condition
-- * avoids the race that someone writes new data and we start
-- * committing the transaction after this function has been called but
-- * before a transaction for truncate is started (and furthermore it
-- * allows us to optimize the case where the addition to orphan list
-- * happens in the same transaction as write --- we don't have to write
-- * any data in such case).
-- */
--int jbd2_journal_begin_ordered_truncate(journal_t *journal,
-+
-+int jbd2_journal_begin_ordered_punch_hole(journal_t *journal,
- 					struct jbd2_inode *jinode,
--					loff_t new_size)
-+					loff_t start, loff_t end)
- {
- 	transaction_t *inode_trans, *commit_trans;
- 	int ret = 0;
-@@ -2346,10 +2327,12 @@ int jbd2_journal_begin_ordered_truncate(journal_t *journal,
- 	spin_unlock(&journal->j_list_lock);
- 	if (inode_trans == commit_trans) {
- 		ret = filemap_fdatawrite_range(jinode->i_vfs_inode->i_mapping,
--			new_size, LLONG_MAX);
-+			start, end);
- 		if (ret)
- 			jbd2_journal_abort(journal, ret);
- 	}
- out:
- 	return ret;
- }
-+
-+
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 6e051f4..8eb7865 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -1126,12 +1126,41 @@ extern int	   jbd2_journal_clear_err  (journal_t *);
- extern int	   jbd2_journal_bmap(journal_t *, unsigned long, unsigned long long *);
- extern int	   jbd2_journal_force_commit(journal_t *);
- extern int	   jbd2_journal_file_inode(handle_t *handle, struct jbd2_inode *inode);
--extern int	   jbd2_journal_begin_ordered_truncate(journal_t *journal,
--				struct jbd2_inode *inode, loff_t new_size);
-+extern int	   jbd2_journal_begin_ordered_punch_hole(journal_t *,
-+					struct jbd2_inode *,
-+					loff_t, loff_t);
- extern void	   jbd2_journal_init_jbd_inode(struct jbd2_inode *jinode, struct inode *inode);
- extern void	   jbd2_journal_release_jbd_inode(journal_t *journal, struct jbd2_inode *jinode);
- 
- /*
-+ * File truncate and transaction commit interact with each other in a
-+ * non-trivial way.  If a transaction writing data block A is
-+ * committing, we cannot discard the data by truncate until we have
-+ * written them.  Otherwise if we crashed after the transaction with
-+ * write has committed but before the transaction with truncate has
-+ * committed, we could see stale data in block A.  This function is a
-+ * helper to solve this problem.  It starts writeout of the truncated
-+ * part in case it is in the committing transaction.
-+ *
-+ * Filesystem code must call this function when inode is journaled in
-+ * ordered mode before truncation happens and after the inode has been
-+ * placed on orphan list with the new inode size. The second condition
-+ * avoids the race that someone writes new data and we start
-+ * committing the transaction after this function has been called but
-+ * before a transaction for truncate is started (and furthermore it
-+ * allows us to optimize the case where the addition to orphan list
-+ * happens in the same transaction as write --- we don't have to write
-+ * any data in such case).
-+ */
-+static inline int jbd2_journal_begin_ordered_truncate(journal_t *journal,
-+					struct jbd2_inode *jinode,
-+					loff_t new_size)
-+{
-+	return jbd2_journal_begin_ordered_punch_hole(journal, jinode,
-+						  new_size, LLONG_MAX);
-+}
-+
-+/*
-  * journal_head management
-  */
- struct journal_head *jbd2_journal_add_journal_head(struct buffer_head *bh);
--- 
-1.7.9.5
+thanks,
+rui
+> All best,
+> 
+> Eduardo Valentin (2):
+>   thermal: introduce TI SoC thermal driver
+>   MAINTAINERS: update TI SoC thermal driver entry
+> 
+>  .../devicetree/bindings/thermal}/ti_soc_thermal.txt                   | 0
+>  MAINTAINERS                                                           | 4 ++--
+>  drivers/staging/Kconfig                                               | 2 --
+>  drivers/staging/Makefile                                              | 1 -
+>  drivers/thermal/Kconfig                                               | 3 +++
+>  drivers/thermal/Makefile                                              | 2 +-
+>  drivers/{staging => thermal}/ti-soc-thermal/Kconfig                   | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/Makefile                  | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/TODO                      | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/omap4-thermal-data.c      | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/omap4xxx-bandgap.h        | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/omap5-thermal-data.c      | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/omap5xxx-bandgap.h        | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/ti-bandgap.c              | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/ti-bandgap.h              | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/ti-thermal-common.c       | 0
+>  drivers/{staging => thermal}/ti-soc-thermal/ti-thermal.h              | 0
+>  17 files changed, 6 insertions(+), 6 deletions(-)
+>  rename {drivers/staging/ti-soc-thermal => Documentation/devicetree/bindings/thermal}/ti_soc_thermal.txt (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/Kconfig (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/Makefile (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/TODO (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/omap4-thermal-data.c (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/omap4xxx-bandgap.h (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/omap5-thermal-data.c (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/omap5xxx-bandgap.h (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/ti-bandgap.c (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/ti-bandgap.h (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/ti-thermal-common.c (100%)
+>  rename drivers/{staging => thermal}/ti-soc-thermal/ti-thermal.h (100%)
+> 
 
 
