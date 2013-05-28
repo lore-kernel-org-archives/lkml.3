@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933581Ab3E1IfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:35:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43073 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933518Ab3E1IfJ (ORCPT
+	id S933579Ab3E1Iif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:38:35 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:40259 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933444Ab3E1Iid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:35:09 -0400
-Date: Tue, 28 May 2013 10:35:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Russ Anderson <rja@sgi.com>, Matthew Garrett <matthew.garrett@nebula.com>,
-        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Message-ID: <20130528083505.GA30042@gmail.com>
-References: <20130522162747.GA20816@sgi.com>
- <20130523115801.GJ14575@console-pimps.org>
- <20130523203234.GD20913@sgi.com>
- <20130524074331.GL14575@console-pimps.org>
+	Tue, 28 May 2013 04:38:33 -0400
+Date: Tue, 28 May 2013 10:38:27 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@linux.ie>
+Subject: Re: NVIDIA Tegra DRM tree
+Message-ID: <20130528083827.GA10934@mithrandir>
+References: <20130527161402.GA9676@mithrandir>
+ <20130528094737.0bd6d41092c6e3aa7db9fd89@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
 Content-Disposition: inline
-In-Reply-To: <20130524074331.GL14575@console-pimps.org>
+In-Reply-To: <20130528094737.0bd6d41092c6e3aa7db9fd89@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> What appears to be happening is that your the EFI runtime services code 
-> is calling into the EFI boot services code, which is definitely a bug in 
-> your firmware because we're at runtime, but we've seen other machines 
-> that do similar things so we usually handle it just fine. However, what 
-> makes your case different, and the reason you see the above splat, is 
-> that it's using the physical address of the EFI boot services region, 
-> not the virtual one we setup with SetVirtualAddressMap(). Which is a 
-> second firmware bug. Again, we have seen other machines that access 
-> physical addresses after SetVirtualAddressMap(), but until now we 
-> haven't had any non-optional code that triggered them.
-> 
-> The only reason I can see that the offending commit would introduce this 
-> problem is because it calls QueryVariableInfo() at boot time. I notice 
-> that your machine is an SGI UV one, is there any chance you could get a 
-> firmware fix for this? If possible, it would be also good to confirm 
-> that it's this chunk of code in setup_efi_vars(),
-> 
-> 	status = efi_call_phys4(sys_table->runtime->query_variable_info,
-> 				EFI_VARIABLE_NON_VOLATILE |
-> 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
-> 				&remaining_size, &var_size);
-> 
-> that later makes GetNextVariable() jump to the physical address of the 
-> EFI Boot Services region. Because if not, we need to do some more 
-> digging.
-> 
-> Borislav, how are your 1:1 mapping patches coming along? In theory, once 
-> those are merged we can gracefully workaround these kinds of issues.
+On Tue, May 28, 2013 at 09:47:37AM +1000, Stephen Rothwell wrote:
+> Hi Thierry,
+>=20
+> On Mon, 27 May 2013 18:14:03 +0200 Thierry Reding <thierry.reding@gmail.c=
+om> wrote:
+> >
+> > In response to some fallout during the last merge window I've setup a
+> > tree for the Tegra DRM driver to be included in linux-next in the hope
+> > that it will help avoid more fallout in the future.
+> >=20
+> > The repository can be found here:
+> >=20
+> >   git://anongit.freedesktop.org/tegra/linux.git
+> >=20
+> > With the branch for linux-next being: drm/for-next
+>=20
+> I assume that this will be merged via Dave Airlie's drm tree.
 
-Handling these gracefully without crashing boxes or expecting firmware to 
-be sane (which is wishful thinking) would be _SO_ preferred ...
+Yes, that's correct. I should have Cc'ed him (I see you did that,
+thanks).
 
-I suspect 1:1 mapped is what Windows does - and we simply need to provide 
-a Windows-EFI compatible environment (which is reality), not just an 
-EFI-spec environment (which is a fiction).
+> I have added this from today.
 
-Thanks,
+Great! Thanks a lot.
 
-	Ingo
+Thierry
+
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRpG0DAAoJEN0jrNd/PrOhiIUQAIyDFTGiLIgrSgWy6RCvuCWn
+HKuINZqrHkurCbWChZ9XdIs4M54RBqJN+aWkCKrqG6t/LT/waLZibevtd4QDMDOX
+kbhM5yG/2U1lXW9IT8/vEd/Z+nzSyz7mv/kugEViA98Kag9SRkHBopa6hSwteiL9
+QMBTes//7LE5JNNRQY20NUeTpV47cHAgEQf5D3V0k3sk86Kj6NDkLN3R7TuE/9UL
+Zb6H5XN4KqOMc6ucWf8yFBaDTLfKfOvn8/NjKU5iZ/0VEsMxLpnig9V5WhgV4KiJ
+040rbgLTLiDCnm8wgaDVVoxzqzl7NlKqx5GwGeAznDoYxN1mNrMxaBEFNk2wcbgS
+T5lapzDPInzaDHcvopZVkme8o6a1/e0nB5fq90J/SdFpyRh789LjlnrNVqCgaQlP
+mLxWMKLhnOW/FLT16JqbtQJ6x4pgOIfIzG/KhepoVWW0b19GsyzXzDB+145gkmOX
+rrVUXCzAzg7qUy6l15K04/9PRYTtmME609yCsZqHRcIfKkBMg++mnnY09JBU8aOI
+NyOJsqjzGORHHbMy5MMn/iDGhXQgG7qYbLvJiy68dKiEUw4e/zrkRPHnJILsMIMV
+sEXIK0r2TAg+uqg7Nup1lNKesIbEOPjDg/JarEdhifKCUrspBUiKZ1pv+eZYznLK
+Hm/tvm4uvolUfWp3Qmm9
+=t2ox
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
