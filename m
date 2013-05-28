@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab3E1VXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:23:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59574 "EHLO
+	id S1758077Ab3E1VXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:23:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59601 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757838Ab3E1VXc (ORCPT
+	with ESMTP id S1756273Ab3E1VXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:23:32 -0400
+	Tue, 28 May 2013 17:23:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shlomo Pongratz <shlomop@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Li Zefan <lizfan@huawei.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 18/78] iscsi-target: Fix processing of OOO commands
-Date: Tue, 28 May 2013 14:19:27 -0700
-Message-Id: <1369776027-17859-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 31/78] shm: fix null pointer deref when userspace specifies invalid hugepage size
+Date: Tue, 28 May 2013 14:19:40 -0700
+Message-Id: <1369776027-17859-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,52 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shlomo Pongratz <shlomop@mellanox.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
+commit 091d0d55b286c9340201b4ed4470be87fc568228 upstream.
 
-Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
+Dave reported an oops triggered by trinity:
 
-Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: newseg+0x10d/0x390
+  PGD cf8c1067 PUD cf8c2067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
+  ...
+  Call Trace:
+    ipcget+0x182/0x380
+    SyS_shmget+0x5a/0x60
+    tracesys+0xdd/0xe2
 
-The routine iterates until it finds an entry whose serial number is greater than the serial number of
-the new one, thus the new entry should be inserted before that entry and not after.
+This bug was introduced by commit af73e4d9506d ("hugetlbfs: fix mmap
+failure in unaligned size request").
 
-Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Li Zefan <lizfan@huawei.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_erl1.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ ipc/shm.c | 8 +++++++-
+ mm/mmap.c | 8 ++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_erl1.c b/drivers/target/iscsi/iscsi_target_erl1.c
-index 0b52a23..805f3d2 100644
---- a/drivers/target/iscsi/iscsi_target_erl1.c
-+++ b/drivers/target/iscsi/iscsi_target_erl1.c
-@@ -819,7 +819,7 @@ static int iscsit_attach_ooo_cmdsn(
- 		/*
- 		 * CmdSN is greater than the tail of the list.
- 		 */
--		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
-+		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
- 			list_add_tail(&ooo_cmdsn->ooo_list,
- 					&sess->sess_ooo_cmdsn_list);
- 		else {
-@@ -829,11 +829,12 @@ static int iscsit_attach_ooo_cmdsn(
- 			 */
- 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
- 						ooo_list) {
--				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
-+				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
- 					continue;
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 9ec2316..69881fb 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -493,7 +493,13 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 	if (shmflg & SHM_HUGETLB) {
+ 		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+ 						& SHM_HUGE_MASK);
+-		size_t hugesize = ALIGN(size, huge_page_size(hs));
++		size_t hugesize;
++
++		if (!hs) {
++			error = -EINVAL;
++			goto no_file;
++		}
++		hugesize = ALIGN(size, huge_page_size(hs));
  
-+				/* Insert before this entry */
- 				list_add(&ooo_cmdsn->ooo_list,
--					&ooo_tmp->ooo_list);
-+					ooo_tmp->ooo_list.prev);
- 				break;
- 			}
- 		}
+ 		/* hugetlb_file_setup applies strict accounting */
+ 		if (shmflg & SHM_NORESERVE)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index e6beac4..de254aa 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1300,9 +1300,13 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 			len = ALIGN(len, huge_page_size(hstate_file(file)));
+ 	} else if (flags & MAP_HUGETLB) {
+ 		struct user_struct *user = NULL;
++		struct hstate *hs = hstate_sizelog((flags >> MAP_HUGE_SHIFT) &
++						   SHM_HUGE_MASK);
+ 
+-		len = ALIGN(len, huge_page_size(hstate_sizelog(
+-			(flags >> MAP_HUGE_SHIFT) & MAP_HUGE_MASK)));
++		if (!hs)
++			return -EINVAL;
++
++		len = ALIGN(len, huge_page_size(hs));
+ 		/*
+ 		 * VM_NORESERVE is used because the reservations will be
+ 		 * taken when vm_ops->mmap() is called
 -- 
 1.8.1.2
 
