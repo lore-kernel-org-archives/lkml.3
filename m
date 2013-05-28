@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab3E1Fwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 01:52:37 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:44160 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932844Ab3E1Fwg (ORCPT
+	id S932992Ab3E1GET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 02:04:19 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:35187 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932969Ab3E1GER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 01:52:36 -0400
-Date: Tue, 28 May 2013 13:52:29 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.10
-Message-ID: <20130528055229.GA23937@gondor.apana.org.au>
-References: <20100903060055.GA28915@gondor.apana.org.au>
- <20100903110722.GA31826@gondor.apana.org.au>
- <20101215115035.GA25248@gondor.apana.org.au>
- <20110216053911.GA10999@gondor.apana.org.au>
- <20110328071322.GA6569@gondor.apana.org.au>
- <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130328082841.GA7425@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 28 May 2013 02:04:17 -0400
+Message-ID: <1369721054.3301.531.camel@edumazet-glaptop>
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Rik van Riel <riel@redhat.com>, atomlin@redhat.com, netdev@vger.kernel.org,
+        davem@davemloft.net, edumazet@google.com, pshelar@nicira.com,
+        mst@redhat.com, alexander.h.duyck@intel.com, aquini@redhat.com,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org
+Date: Mon, 27 May 2013 23:04:14 -0700
+In-Reply-To: <1369715506.2034.30.camel@joe-AO722>
+References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>
+	 <51A39A3F.8080903@redhat.com> <1369693520.3301.477.camel@edumazet-glaptop>
+	 <1369715506.2034.30.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Mon, 2013-05-27 at 21:31 -0700, Joe Perches wrote:
 
-This push fixes a crash in the new sha256_ssse3 driver as well as
-a DMA setup/teardown bug in caam.
+> I think the __alloc_skb alloc failure message is ok,
+> but maybe there shouldn't be something "scary" like
+> a dump_stack.
+> 
+> Maybe this site should use a trivial debug error
+> message like below instead.
+> ---
 
-Please pull from
+Oh well.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+If dump_stack are scary, they are scary for every k[mz]alloc() users,
+not only __alloc_skb_alloc()
 
-or
+I just said : Please do not add GFP_NOWARN to thousand of call sites,
+and you suggest adding more code in network fast path. (???)
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+This is not a trivial code, we are speaking of a very sensitive one.
+
+Let mm guys explain in what cases a full stack trace is nice to have,
+and in what cases its useless. An heuristic should be defined in mm tree
+for that, and not spread everywhere.
+
+There must be a reason GFP_NOWARN is seldom used in the kernel, even if
+most callers are able to recover properly from a failed memory
+allocation.
 
 
-Horia Geanta (1):
-      crypto: caam - fix inconsistent assoc dma mapping direction
-
-Jussi Kivilinna (1):
-      crypto: sha256_ssse3 - fix stack corruption with SSSE3 and AVX implementations
-
- arch/x86/crypto/sha256-avx-asm.S   |    2 +-
- arch/x86/crypto/sha256-ssse3-asm.S |    2 +-
- drivers/crypto/caam/caamalg.c      |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
