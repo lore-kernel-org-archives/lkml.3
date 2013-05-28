@@ -1,151 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab3E1XMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:12:18 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53653 "EHLO hydra.sisk.pl"
+	id S1759243Ab3E1XN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:13:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60989 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758461Ab3E1XMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:12:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v1 1/2] ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
-Date: Wed, 29 May 2013 01:21:08 +0200
-Message-ID: <3502693.GdBGlhPugI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo6-xtrNgPYxu_4QRtZs76P9B6b4JXQPENhX6hyNPpKx+g@mail.gmail.com>
-References: <1368536439-19421-1-git-send-email-jiang.liu@huawei.com> <CAErSpo6-xtrNgPYxu_4QRtZs76P9B6b4JXQPENhX6hyNPpKx+g@mail.gmail.com>
+	id S1758127Ab3E1XNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:13:25 -0400
+Date: Wed, 29 May 2013 01:13:20 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Petr Ostadal <postadal@suse.cz>, Oliver Neukum <oliver@neukum.org>,
+        Vojtech Pavlik <vojtech@suse.cz>, Egbert Eich <eich@suse.com>,
+        Libor Pechacek <lpechacek@suse.cz>
+Subject: Re: [PATCH 1/2] HID: elo-hid, add driver for ELO 4000/4500
+In-Reply-To: <1367919659-1548-1-git-send-email-jslaby@suse.cz>
+Message-ID: <alpine.LNX.2.00.1305290112360.12103@pobox.suse.cz>
+References: <1367919659-1548-1-git-send-email-jslaby@suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 28, 2013 04:37:03 PM Bjorn Helgaas wrote:
-> On Tue, May 14, 2013 at 7:00 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> > Now the global list acpi_pci_roots pci_root.c is useless, remove it.
-> >
-> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> > Cc: Len Brown <lenb@kernel.org>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: linux-acpi@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  drivers/acpi/pci_root.c | 25 +++----------------------
-> >  include/acpi/acpi_bus.h |  1 -
-> >  2 files changed, 3 insertions(+), 23 deletions(-)
+On Tue, 7 May 2013, Jiri Slaby wrote:
+
+> This is a driver for ELO 4000/4500 devices which report themselves as
+> HID devices, but do not really send HID events on touch. So we
+> introduce a new HID 'quirk' driver with a raw_event handler where we
+> take care of those events.
 > 
-> This and the "use acpi_handle_print()" patch look fine to me.
+> What we need additionally is an input_configured hook, because the
+> device does not mention anything about PRESSURE and TOUCH in its
+> report descriptor, but it actually generate those. So we set the bits
+> in the corresponding input_dev in that hook.
 > 
-> Rafael, I can take them, or if you want to take them yourself, you can add
+> Thanks to Petr Ostadal who was willing to test the driver. The rest of
+> Cc's listed below had something to do with that driver over the years
+> in our enterprise tree. Please speak up if you see any problems ;).
 > 
->   Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> This is the first part. The quirks for broken firmware are added in
+> 2/2.
 
-OK, I'll take them.
+Applied for 3.11. Thanks Jiri for pushing this.
 
-Thanks,
-Rafael
-
-
-> > diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> > index b80e06e..91ddfd6 100644
-> > --- a/drivers/acpi/pci_root.c
-> > +++ b/drivers/acpi/pci_root.c
-> > @@ -65,10 +65,6 @@ static struct acpi_scan_handler pci_root_handler = {
-> >         .detach = acpi_pci_root_remove,
-> >  };
-> >
-> > -/* Lock to protect both acpi_pci_roots lists */
-> > -static DEFINE_MUTEX(acpi_pci_root_lock);
-> > -static LIST_HEAD(acpi_pci_roots);
-> > -
-> >  static DEFINE_MUTEX(osc_lock);
-> >
-> >  /**
-> > @@ -423,7 +419,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> >                 }
-> >         }
-> >
-> > -       INIT_LIST_HEAD(&root->node);
-> >         root->device = device;
-> >         root->segment = segment & 0xFFFF;
-> >         strcpy(acpi_device_name(device), ACPI_PCI_ROOT_DEVICE_NAME);
-> > @@ -501,10 +496,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> >          * TBD: Need PCI interface for enumeration/configuration of roots.
-> >          */
-> >
-> > -       mutex_lock(&acpi_pci_root_lock);
-> > -       list_add_tail(&root->node, &acpi_pci_roots);
-> > -       mutex_unlock(&acpi_pci_root_lock);
-> > -
-> >         /*
-> >          * Scan the Root Bridge
-> >          * --------------------
-> > @@ -518,7 +509,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> >                             "Bus %04x:%02x not present in PCI namespace\n",
-> >                             root->segment, (unsigned int)root->secondary.start);
-> >                 result = -ENODEV;
-> > -               goto out_del_root;
-> > +               goto end;
-> >         }
-> >
-> >         /* ASPM setting */
-> > @@ -538,20 +529,13 @@ static int acpi_pci_root_add(struct acpi_device *device,
-> >         if (system_state != SYSTEM_BOOTING) {
-> >                 pcibios_resource_survey_bus(root->bus);
-> >                 pci_assign_unassigned_bus_resources(root->bus);
-> > -       }
-> > -
-> > -       /* need to after hot-added ioapic is registered */
-> > -       if (system_state != SYSTEM_BOOTING)
-> > +               /* need to after hot-added ioapic is registered */
-> >                 pci_enable_bridges(root->bus);
-> > +       }
-> >
-> >         pci_bus_add_devices(root->bus);
-> >         return 1;
-> >
-> > -out_del_root:
-> > -       mutex_lock(&acpi_pci_root_lock);
-> > -       list_del(&root->node);
-> > -       mutex_unlock(&acpi_pci_root_lock);
-> > -
-> >  end:
-> >         kfree(root);
-> >         return result;
-> > @@ -568,9 +552,6 @@ static void acpi_pci_root_remove(struct acpi_device *device)
-> >
-> >         pci_remove_root_bus(root->bus);
-> >
-> > -       mutex_lock(&acpi_pci_root_lock);
-> > -       list_del(&root->node);
-> > -       mutex_unlock(&acpi_pci_root_lock);
-> >         kfree(root);
-> >  }
-> >
-> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> > index 22ba56e..4eb9a88 100644
-> > --- a/include/acpi/acpi_bus.h
-> > +++ b/include/acpi/acpi_bus.h
-> > @@ -447,7 +447,6 @@ int register_acpi_bus_type(struct acpi_bus_type *);
-> >  int unregister_acpi_bus_type(struct acpi_bus_type *);
-> >
-> >  struct acpi_pci_root {
-> > -       struct list_head node;
-> >         struct acpi_device * device;
-> >         struct pci_bus *bus;
-> >         u16 segment;
-> > --
-> > 1.8.1.2
-> >
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jiri Kosina
+SUSE Labs
