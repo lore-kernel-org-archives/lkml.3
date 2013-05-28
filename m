@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab3E1VV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:21:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59463 "EHLO
+	id S1757153Ab3E1VVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:21:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59468 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756788Ab3E1VVU (ORCPT
+	with ESMTP id S1756838Ab3E1VVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:21:20 -0400
+	Tue, 28 May 2013 17:21:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joerg Roedel <joro@8bytes.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 07/78] iommu/amd: Workaround for ERBT1312
-Date: Tue, 28 May 2013 14:19:16 -0700
-Message-Id: <1369776027-17859-8-git-send-email-kamal@canonical.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 11/78] tile: support new Tilera hypervisor
+Date: Tue, 28 May 2013 14:19:20 -0700
+Message-Id: <1369776027-17859-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -26,95 +26,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit d3263bc29706e42f74d8800807c2dedf320d77f1 upstream.
+commit c539914dcd9a68c63305e055b14115a6a19578a8 upstream.
 
-Work around an IOMMU  hardware bug where clearing the
-EVT_INT or PPR_INT bit in the status register may race with
-the hardware trying to set it again. When not handled the
-bit might not be cleared and we lose all future event or ppr
-interrupts.
+The Tilera hypervisor shipped in releases up through MDE 4.1 launches
+the client operating system (i.e. Linux) at privilege level 1 (PL1).
+Starting with MDE 4.2, as part of the work to enable KVM, the
+Tilera hypervisor launches Linux at PL2 instead.
 
-Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-[ kamal: backport to 3.8 ]
+This commit makes the KERNEL_PL option default to 2 for tilegx, while
+still saying at 1 for tilepro, which doesn't have an updated hypervisor.
+It also explains how and when you might want to choose another value.
+In addition, we change a small buglet in the on-chip Ethernet driver,
+where we were failing to use the KERNEL_PL constant in an API call.
+
+To make the transition cleaner, this change also provides the updated
+hv_init() API for the new hypervisor that supports announcing Linux's
+compiled-in PL, so the hypervisor can generate a suitable error in the
+case of a mismatched hypervisor and Linux binary.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iommu/amd_iommu.c       | 31 ++++++++++++++++++++++++++-----
- drivers/iommu/amd_iommu_types.h |  1 +
- 2 files changed, 27 insertions(+), 5 deletions(-)
+ arch/tile/Kconfig                  | 14 ++++++++++----
+ arch/tile/include/hv/hypervisor.h  | 27 ++++++++++++++++++++++++---
+ arch/tile/kernel/head_32.S         |  2 +-
+ arch/tile/kernel/head_64.S         | 12 +++++++++---
+ drivers/net/ethernet/tile/tilegx.c |  2 +-
+ 5 files changed, 45 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 4c867f4..6202782 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -700,11 +700,23 @@ retry:
- 
- static void iommu_poll_events(struct amd_iommu *iommu)
- {
--	u32 head, tail;
-+	u32 head, tail, status;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable event interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the EVT_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_EVT_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_EVT_INT_MASK);
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 1bb7ad4..dd6fe9d 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -366,11 +366,17 @@ config HARDWALL
+ config KERNEL_PL
+ 	int "Processor protection level for kernel"
+ 	range 1 2
+-	default "1"
++	default 2 if TILEGX
++	default 1 if !TILEGX
+ 	---help---
+-	  This setting determines the processor protection level the
+-	  kernel will be built to run at.  Generally you should use
+-	  the default value here.
++	  Since MDE 4.2, the Tilera hypervisor runs the kernel
++	  at PL2 by default.  If running under an older hypervisor,
++	  or as a KVM guest, you must run at PL1.  (The current
++	  hypervisor may also be recompiled with "make HV_PL=2" to
++	  allow it to run a kernel at PL1, but clients running at PL1
++	  are not expected to be supported indefinitely.)
 +
- 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
++	  If you're not sure, don't change the default.
  
-@@ -741,16 +753,25 @@ static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
- static void iommu_poll_ppr_log(struct amd_iommu *iommu)
- {
- 	unsigned long flags;
--	u32 head, tail;
-+	u32 head, tail, status;
+ source "arch/tile/gxio/Kconfig"
  
- 	if (iommu->ppr_log == NULL)
- 		return;
+diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
+index ccd847e..837dca5 100644
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -107,7 +107,22 @@
+ #define HV_DISPATCH_ENTRY_SIZE 32
  
--	/* enable ppr interrupts again */
--	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
--
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable ppr interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the PPR_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_PPR_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_PPR_INT_MASK);
+ /** Version of the hypervisor interface defined by this file */
+-#define _HV_VERSION 11
++#define _HV_VERSION 13
 +
- 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
++/** Last version of the hypervisor interface with old hv_init() ABI.
++ *
++ * The change from version 12 to version 13 corresponds to launching
++ * the client by default at PL2 instead of PL1 (corresponding to the
++ * hv itself running at PL3 instead of PL2).  To make this explicit,
++ * the hv_init() API was also extended so the client can report its
++ * desired PL, resulting in a more helpful failure diagnostic.  If you
++ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
++ * argument, the hypervisor will assume client_pl = 1.
++ *
++ * Note that this is a deprecated solution and we do not expect to
++ * support clients of the Tilera hypervisor running at PL1 indefinitely.
++ */
++#define _HV_VERSION_OLD_HV_INIT 12
  
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index e38ab43..083f98c 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -99,6 +99,7 @@
- #define PASID_MASK		0x000fffff
+ /* Index into hypervisor interface dispatch code blocks.
+  *
+@@ -377,7 +392,11 @@ typedef int HV_Errno;
+ #ifndef __ASSEMBLER__
  
- /* MMIO status bits */
-+#define MMIO_STATUS_EVT_INT_MASK	(1 << 1)
- #define MMIO_STATUS_COM_WAIT_INT_MASK	(1 << 2)
- #define MMIO_STATUS_PPR_INT_MASK	(1 << 6)
+ /** Pass HV_VERSION to hv_init to request this version of the interface. */
+-typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
++typedef enum {
++  HV_VERSION = _HV_VERSION,
++  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
++
++} HV_VersionNumber;
+ 
+ /** Initializes the hypervisor.
+  *
+@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
+  * that this program expects, typically HV_VERSION.
+  * @param chip_num Architecture number of the chip the client was built for.
+  * @param chip_rev_num Revision number of the chip the client was built for.
++ * @param client_pl Privilege level the client is built for
++ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
+  */
+ void hv_init(HV_VersionNumber interface_version_number,
+-             int chip_num, int chip_rev_num);
++             int chip_num, int chip_rev_num, int client_pl);
+ 
+ 
+ /** Queries we can make for hv_sysconf().
+diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
+index f71bfee..ac11530 100644
+--- a/arch/tile/kernel/head_32.S
++++ b/arch/tile/kernel/head_32.S
+@@ -38,7 +38,7 @@ ENTRY(_start)
+ 	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
++	  moveli r0, _HV_VERSION_OLD_HV_INIT
+ 	  jal hv_init
+ 	}
+ 	/* Get a reasonable default ASID in r0 */
+diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
+index f9a2734..6093964 100644
+--- a/arch/tile/kernel/head_64.S
++++ b/arch/tile/kernel/head_64.S
+@@ -34,13 +34,19 @@
+ ENTRY(_start)
+ 	/* Notify the hypervisor of what version of the API we want */
+ 	{
++#if KERNEL_PL == 1 && _HV_VERSION == 13
++	  /* Support older hypervisors by asking for API version 12. */
++	  movei r0, _HV_VERSION_OLD_HV_INIT
++#else
++	  movei r0, _HV_VERSION
++#endif
+ 	  movei r1, TILE_CHIP
+-	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
+-	  jal hv_init
++	  movei r2, TILE_CHIP_REV
++	  movei r3, KERNEL_PL
+ 	}
++	jal hv_init
+ 	/* Get a reasonable default ASID in r0 */
+ 	{
+ 	  move r0, zero
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 66e025a..f3c2d03 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+ 		if (info->has_iqueue) {
+ 			gxio_mpipe_request_notif_ring_interrupt(
+ 				&context, cpu_x(cpu), cpu_y(cpu),
+-				1, ingress_irq, info->iqueue.ring);
++				KERNEL_PL, ingress_irq, info->iqueue.ring);
+ 		}
+ 	}
  
 -- 
 1.8.1.2
