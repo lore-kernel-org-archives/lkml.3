@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab3E1I0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:26:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49925 "EHLO mga02.intel.com"
+	id S933532Ab3E1I3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:29:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31601 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933451Ab3E1I0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:26:14 -0400
+	id S933449Ab3E1I3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 04:29:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,756,1363158000"; 
-   d="scan'208";a="344248445"
-Message-ID: <51A46A21.9060305@linux.intel.com>
-Date: Tue, 28 May 2013 11:26:09 +0300
+   d="scan'208";a="344249822"
+Message-ID: <51A46ADD.5070101@linux.intel.com>
+Date: Tue, 28 May 2013 11:29:17 +0300
 From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>, Dave Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
         Don Skidmore <donald.c.skidmore@intel.com>,
         e1000-devel@lists.sourceforge.net,
         Willem de Bruijn <willemb@google.com>,
@@ -24,83 +24,28 @@ CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Eilon Greenstien <eilong@broadcom.com>,
         Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
         Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v5 net-next 3/5] tcp: add TCP support for low latency
- receive poll.
-References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>  <20130527074421.29882.73968.stgit@ladj378.jer.intel.com> <1369701413.3301.506.camel@edumazet-glaptop>
-In-Reply-To: <1369701413.3301.506.camel@edumazet-glaptop>
+Subject: Re: [PATCH v5 net-next 0/5] net: low latency Ethernet device polling
+References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com> <1369701340.3301.504.camel@edumazet-glaptop>
+In-Reply-To: <1369701340.3301.504.camel@edumazet-glaptop>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/05/2013 03:36, Eric Dumazet wrote:
-> On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
->> adds busy-poll support for TCP.
+On 28/05/2013 03:35, Eric Dumazet wrote:
+> On Mon, 2013-05-27 at 10:43 +0300, Eliezer Tamir wrote:
+>> Hello Dave,
 >>
+>> There are many small changes from the last time.
+>> The two big changes are:
+>> * Skb and sk now store a napi_id instead of a pointer.
+>> * Very naive poll/select support. There is a dramatic improvement in both
+>>    latencey and jitter, but clearly more work needs to be done here.
 >
-> Really, this is a small changelog for such an addition :(
+> Sorry I couldn't figure out how poll() was supported.
 
-OK
-
-
-> How poll()/epoll() is supported ?
-
-poll()/select() are done by the code added to fs/select.c in 2/5.
-epoll() is not yet supported.
-
->> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
->> index 9579e1a..4d82939 100644
->> --- a/net/ipv4/tcp_input.c
->> +++ b/net/ipv4/tcp_input.c
->> @@ -74,6 +74,7 @@
->>   #include <linux/ipsec.h>
->>   #include <asm/unaligned.h>
->>   #include <net/netdma.h>
->> +#include <net/ll_poll.h>
->>
->
-> Not sure why this include is needed in this file ?
->
-> You added nothing else but this line.
-
-This is a mistake, a remnant from an earlier version when sk_mark_ll() 
-was where we copy data to the socket.
-I will remove it.
-
->>   #include <net/netdma.h>
->>   #include <net/secure_seq.h>
->>   #include <net/tcp_memcontrol.h>
->> +#include <net/ll_poll.h>
->>
->>   #include <linux/inet.h>
->>   #include <linux/ipv6.h>
->> @@ -2011,6 +2012,7 @@ process:
->>   	if (sk_filter(sk, skb))
->>   		goto discard_and_relse;
->>
->> +	sk_mark_ll(sk, skb);
->>   	skb->dev = NULL;
->>
->>   	bh_lock_sock_nested(sk);
->
-> How IPv6 is handled ?
-
-IPv6 is currently not supported (it was not supported in any version of
-this patch set, the POC code in fact was hard-codded for UDPv4/TCPv4).
-
-If there is interest, I will add it, I think it will not be complicated.
-However, I would prefer to wait with that for a second stage.
-
-My main concern is that adding IPv6 will significantly increase my
-  testing effort, which is already 90% of what I'm spending time on.
-
-IMHO epoll() and a more robust support for select()/poll() should have
-a higher priority, but I'm open to suggestions.
-
-I would like to get what we have so far applied so more people can try
-it, then work on all of the other things that we need.
-
-Dave, I would like to hear your opinion on this, please.
+It's the fs/select changes in the second patch.
+Should I will split it into a separate one? (it's just 7 lines)
 
 -Eliezer
