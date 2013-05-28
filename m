@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3E1Te4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 15:34:56 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:58579 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab3E1Tey (ORCPT
+	id S1754845Ab3E1Tg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 15:36:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38463 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab3E1Tg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 15:34:54 -0400
+	Tue, 28 May 2013 15:36:27 -0400
+Message-ID: <51A50708.3000203@oracle.com>
+Date: Tue, 28 May 2013 15:35:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130527 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130526085201.GA3183@udknight>
-References: <20130526085201.GA3183@udknight>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 28 May 2013 12:34:23 -0700
-Message-ID: <CAL26m8+baBm-kcWH96C1oj3rVHoa0Vc=gHshqWAD-BtBd4FJKQ@mail.gmail.com>
-Subject: Re: [PATCH] tracing: Fix file mode of free_buffer
-To: Wang YanQing <udknight@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 7/9] liblockdep: Support using LD_PRELOAD
+References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com> <1368674141-10796-8-git-send-email-sasha.levin@oracle.com> <20130522092453.GH18810@twins.programming.kicks-ass.net>
+In-Reply-To: <20130522092453.GH18810@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 1:52 AM, Wang YanQing <udknight@gmail.com> wrote:
-> Commit 4f271a2a60c748599b30bb4dafff30d770439b96
-> (tracing: Add a proc file to stop tracing and free buffer)
-> implement a method to free up ring buffer in kernel memory
-> in the release code path of free_buffer's fd.
->
-> Then we don't need read/write support for free_buffer,
-> indeed we just have a dummy write fop, and don't implement read fop.
->
-> So the 0200 is more reasonable file mode for free_buffer than
-> the current file mode 0644.
->
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+On 05/22/2013 05:24 AM, Peter Zijlstra wrote:
+> Do we still need this with the glibc __pthread_* static initialization?
 
-Acked-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Sadly we do.
 
-Vaibhav Nagarnaik
+We need to deal with the two things that cause allocation in our code (because
+they loop back into our code via malloc()->malloc_init()->pthread_mutex_init() ).
+
+The first one was the glibc trick to avoid the malloc() caused by dlsym(). The
+second one is the malloc() we do when we allocate new lock. Static allocation
+deals with that one.
 
 
-> ---
->  kernel/trace/trace.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index ae6fa2d..02d9875 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -5927,7 +5927,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
->         trace_create_file("buffer_total_size_kb", 0444, d_tracer,
->                           tr, &tracing_total_entries_fops);
->
-> -       trace_create_file("free_buffer", 0644, d_tracer,
-> +       trace_create_file("free_buffer", 0200, d_tracer,
->                           tr, &tracing_free_buffer_fops);
->
->         trace_create_file("trace_marker", 0220, d_tracer,
-> --
-> 1.7.12.4.dirty
+Thanks,
+Sasha
+
