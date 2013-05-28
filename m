@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab3E1DzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52538 "EHLO
+	id S932928Ab3E1Dy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758843Ab3E1DyL (ORCPT
+	by vger.kernel.org with ESMTP id S1758867Ab3E1DyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:11 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Richard Weinberger" <richard@nod.at>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Hema Prathaban" <hemaklnce@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.441311212@decadent.org.uk>
+Message-ID: <lsq.1369712993.68913852@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [94/94] um: Serve io_remap_pfn_range()
+Subject: [29/94] staging: vt6656: use free_netdev instead of kfree
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,28 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Hema Prathaban <hemaklnce@gmail.com>
 
-commit 4d94d6d030adfdea4837694d293ec6918d133ab2 upstream.
+commit 0a438d5b381e2bdfd5e02d653bf46fcc878356e3 upstream.
 
-At some places io_remap_pfn_range() is needed.
-UML has to serve it like all other archs do.
+use free_netdev() instead of kfree(pDevice->apdev)
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/um/include/asm/pgtable.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/vt6656/hostap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/um/include/asm/pgtable.h
-+++ b/arch/um/include/asm/pgtable.h
-@@ -69,6 +69,8 @@ extern unsigned long end_iomem;
- #define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_RW | _PAGE_DIRTY | _PAGE_ACCESSED)
- #define PAGE_KERNEL_EXEC	__pgprot(__PAGE_KERNEL_EXEC)
- 
-+#define io_remap_pfn_range	remap_pfn_range
-+
- /*
-  * The i386 can't do page protection for execute, and considers that the same
-  * are read.
+--- a/drivers/staging/vt6656/hostap.c
++++ b/drivers/staging/vt6656/hostap.c
+@@ -153,7 +153,7 @@ static int hostap_disable_hostapd(PSDevi
+             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "%s: Netdevice %s unregistered\n",
+ 		       pDevice->dev->name, pDevice->apdev->name);
+ 	}
+-	kfree(pDevice->apdev);
++	free_netdev(pDevice->apdev);
+ 	pDevice->apdev = NULL;
+     pDevice->bEnable8021x = FALSE;
+     pDevice->bEnableHostWEP = FALSE;
 
