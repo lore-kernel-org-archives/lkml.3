@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab3E1VZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:25:17 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:54256 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758477Ab3E1VZO (ORCPT
+	id S1758483Ab3E1VZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:25:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59719 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab3E1VZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:14 -0400
-Message-ID: <51A520B5.8040803@gmail.com>
-Date: Tue, 28 May 2013 22:25:09 +0100
-From: Jon Hunter <jgchunter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>
-Subject: Re: [PATCH v2 11/14] Documentation: dt: binding: omap: am43x timer
-References: <cover.1369658705.git.afzal@ti.com> <223d90dc9eeab13d8496690d336cdf0f7d27cd22.1369658705.git.afzal@ti.com>
-In-Reply-To: <223d90dc9eeab13d8496690d336cdf0f7d27cd22.1369658705.git.afzal@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 28 May 2013 17:25:10 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 78/78] drm/i915: don't intel_crt_init on any ULT machines
+Date: Tue, 28 May 2013 14:20:27 -0700
+Message-Id: <1369776027-17859-79-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
 
-On 27/05/13 15:37, Afzal Mohammed wrote:
-> AM43x timer bindings.
-> 
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
->  Documentation/devicetree/bindings/arm/omap/timer.txt | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
-> index d02e27c..70cb398 100644
-> --- a/Documentation/devicetree/bindings/arm/omap/timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
-> @@ -14,6 +14,8 @@ Required properties:
->  			ti,omap5430-timer (applicable to OMAP543x devices)
->  			ti,am335x-timer	(applicable to AM335x devices)
->  			ti,am335x-timer-1ms (applicable to AM335x devices)
-> +			"ti,am4372-timer-1ms", "ti,am335x-timer-1ms" for AM43x 1ms timer
-> +			"ti,am4372-timer", "ti,am335x-timer" for AM43x timers other than 1ms one
->  
->  - reg:			Contains timer register address range (base address and
->  			length).
+------------------
 
-If you are adding more compatibility strings, then this implies that the
-AM43x timers are not 100% compatible with any other device listed (such
-as am335x or any omap device). That's fine but you should state that in
-the changelog. If the AM43x timer registers are 100% compatible with
-existing devices you should not add these.
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-Jon
+commit c40c0f5bd5b0f09e4386d2cf26c96c89c45ee539 upstream.
+
+We may have DDI_BUF_CTL(PORT_A) configured with 2 lanes and still not
+have CRT, so just check for !IS_ULT. This problem happened on a real
+machine and resulted in a very ugly dmesg.
+
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index e05d0ba..b17d8a8 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8452,7 +8452,7 @@ static void intel_setup_outputs(struct drm_device *dev)
+ 		I915_WRITE(PFIT_CONTROL, 0);
+ 	}
+ 
+-	if (!(HAS_DDI(dev) && (I915_READ(DDI_BUF_CTL(PORT_A)) & DDI_A_4_LANES)))
++	if (!IS_ULT(dev))
+ 		intel_crt_init(dev);
+ 
+ 	if (HAS_DDI(dev)) {
+-- 
+1.8.1.2
 
