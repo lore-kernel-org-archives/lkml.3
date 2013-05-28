@@ -1,133 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab3E1UYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:24:21 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62020 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587Ab3E1UYU (ORCPT
+	id S1756025Ab3E1UZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:25:04 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29561 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab3E1UZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:24:20 -0400
-Message-ID: <51A51271.2070506@linaro.org>
-Date: Tue, 28 May 2013 13:24:17 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 28 May 2013 16:25:02 -0400
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command whitelist (CVE-2012-4542))
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+	<519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>
+	<519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>
+	<519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org>
+	<519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org>
+	<519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net>
+	<51A035FA.6070409@vlnb.net>
+Date: Tue, 28 May 2013 16:25:12 -0400
+In-Reply-To: <51A035FA.6070409@vlnb.net> (Vladislav Bolkhovitin's message of
+	"Fri, 24 May 2013 20:54:34 -0700")
+Message-ID: <yq17gii3l93.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [RFC PATCH 2/2] clocksource: dw_apb: allow build for architectures
- other than arm
-References: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
-In-Reply-To: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2013 05:12 AM, Baruch Siach wrote:
-> ARM is the only architecture providing sched_clock.h and setup_sched_clock().
-> Implement sched_clock() for use by other architectures.
->
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jamie Iles <jamie@jamieiles.com>
-> Cc: Dinh Nguyen <dinguyen@altera.com>
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> ---
->   arch/arm/Kconfig                      |    1 +
->   drivers/clocksource/Kconfig           |    3 +++
->   drivers/clocksource/dw_apb_timer_of.c |   18 ++++++++++++++++++
->   3 files changed, 22 insertions(+)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 1cacda4..7489604 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -47,6 +47,7 @@ config ARM
->   	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
->   	select HAVE_PERF_EVENTS
->   	select HAVE_REGS_AND_STACK_ACCESS_API
-> +	select HAVE_SETUP_SCHED_CLOCK
->   	select HAVE_SYSCALL_TRACEPOINTS
->   	select HAVE_UID16
->   	select KTIME_SCALAR
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index e507ab7..0fd6d13 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -1,3 +1,6 @@
-> +config HAVE_SETUP_SCHED_CLOCK
-> +	bool
-> +
->   config CLKSRC_OF
->   	bool
->   
-> diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-> index 5a61ebc..9fdb4d3 100644
-> --- a/drivers/clocksource/dw_apb_timer_of.c
-> +++ b/drivers/clocksource/dw_apb_timer_of.c
-> @@ -21,7 +21,11 @@
->   #include <linux/of_address.h>
->   #include <linux/of_irq.h>
->   
-> +#ifdef CONFIG_HAVE_SETUP_SCHED_CLOCK
->   #include <asm/sched_clock.h>
-> +#else
-> +#include <linux/sched.h>
-> +#endif
->   
->   static void timer_get_base_and_rate(struct device_node *np,
->   				    void __iomem **base, u32 *rate)
-> @@ -73,6 +77,9 @@ static void add_clocksource(struct device_node *source_timer)
->   }
->   
->   static void __iomem *sched_io_base;
-> +#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
-> +static u64 sched_clock_mult __read_mostly;
-> +#endif
->   
->   static u32 read_sched_clock(void)
->   {
-> @@ -97,7 +104,11 @@ static void init_sched_clock(void)
->   	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
->   	of_node_put(sched_timer);
->   
-> +#ifdef CONFIG_HAVE_SETUP_SCHED_CLOCK
->   	setup_sched_clock(read_sched_clock, 32, rate);
-> +#else
-> +	sched_clock_mult = NSEC_PER_SEC / rate;
-> +#endif
->   }
+>>>>> "Vladislav" == Vladislav Bolkhovitin <vst@vlnb.net> writes:
 
-Can you rework this to not use #ifdefs within the function? They make it 
-annoying to read the code.
+Vladislav> Linux block layer is purely artificial creature slowly
+Vladislav> reinventing wheel creating more problems, than solving.
 
-Instead maybe have a local setup_sched_clock() function that sets the 
-mult value for the !CONFIG_HAVE_SETUP_SCHED_CLOCK case?
+On the contrary. I do think we solve a whole bunch of problems.
 
->   
->   static const struct of_device_id osctimer_ids[] __initconst = {
-> @@ -124,3 +135,10 @@ void __init dw_apb_timer_init(void)
->   
->   	init_sched_clock();
->   }
-> +
-> +#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
-> +unsigned long long notrace sched_clock()
-> +{
-> +	return read_sched_clock() * sched_clock_mult;
-> +}
-> +#endif
 
-Also, can you try to condense the number of #ifndef 
-CONFIG_HAVE_SETUP_SCHED_CLOCK checks to one, and consolidate the needed 
-functions all in that one conditional?
+Vladislav> It enforces approach, where often "impossible" means
+Vladislav> "impossible in this interface".
 
-thanks
--john
+I agree we have limitations. I do not agree that all limitations are
+bad. Sometimes it's OK to say no.
 
+
+Vladislav> For instance, how about copy offload?  How about atomic
+Vladislav> writes?
+
+I'm actively working on copy offload. Nobody appears to be interested in
+atomic writes. Otherwise I'd work on those as well.
+
+
+Vladislav> Why was it needed to create special blk integrity interface
+Vladislav> with the only end user - SCSI?
+
+Simple. Because we did not want to interleave data and PI 512+8+512+8
+neither in memory, nor at DMA time. Furthermore, the ATA EPP proposal
+was still on the table so I also needed to support ATA.
+
+And finally, NVM Express uses the blk_integrity interface as well.
+
+
+Vladislav> The block layer keeps repeating SCSI. So, maybe, after all,
+Vladislav> it's better to acknowledge that direct usage of SCSI without
+Vladislav> any intermediate layers and translations is more productive?
+Vladislav> And for those minors not using SCSI internally, translate
+Vladislav> from SCSI to their internal commands? Creating and filling
+Vladislav> CDB fields for most cases isn't anyhow harder, than creating
+Vladislav> and feeling bio fields.
+
+This is quite possibly the worst idea I have heard all week.
+
+As it stands it's a headache for the disk ULD driver to figure out which
+of the bazillion READ/WRITE variants to send to a SCSI/ATA device. What
+makes you think that an application or filesystem would be better
+equipped to make that call?
+
+See also: WRITE SAME w/ zeroes vs. WRITE SAME w/ UNMAP vs. UNMAP 
+
+See also: EXTENDED COPY vs. the PROXY command set
+
+See also: USB-ATA bridge chips
+
+You make it sound like all the block layer does is filling out
+CDBs. Which it doesn't in fact have anything to do with at all.
+
+When you are talking about CDBs we're down in the SBC/SSC territory.
+Which is such a tiny bit of what's going on. We have transports, we have
+SAM, we have HBA controller DMA constraints, system DMA constraints,
+buffer bouncing, etc. There's a ton of stuff that needs to happen before
+the CDB and the data physically reach the storage.
+
+You seem to be advocating that everything up to the point where the
+device receives the command is in the way. Well, by all means. Why limit
+ourselves to the confines of SCSI? Why not get rid of POSIX
+read()/write(), page cache, filesystems and let applications speak
+ST-506 directly?
+
+I know we're doing different things. My job is to make a general purpose
+operating system with interfaces that make sense to normal applications.
+That does not preclude special cases where it may make sense to poke at
+the device directly. For testing purposes, for instance. But I consider
+it a failure when we start having applications that know about hardware
+intricacies, cylinders/heads/sectors, etc. That road leads straight to
+the 1980s...
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
