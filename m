@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab3E1G3s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 02:29:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52715 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933008Ab3E1G3q (ORCPT
+	id S933117Ab3E1GgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 02:36:17 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:53390 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933056Ab3E1GgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 02:29:46 -0400
-Message-ID: <1369722552.5857.72.camel@marge.simpson.net>
-Subject: Re: [PATCH v2] sched: wake-affine throttle
-From: Mike Galbraith <bitbucket@online.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Tue, 28 May 2013 08:29:12 +0200
-In-Reply-To: <51A43A63.4090703@linux.vnet.ibm.com>
-References: <5164DCE7.8080906@linux.vnet.ibm.com>
-	 <519AE7F2.706@linux.vnet.ibm.com>
-	 <20130522084947.GQ26912@twins.programming.kicks-ass.net>
-	 <519C8F24.5060207@linux.vnet.ibm.com>
-	 <1369234551.5916.40.camel@marge.simpson.net>
-	 <51A43A63.4090703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:NwYwyT89GujaDq7iNmjpDNvfjbNB35fuOyJTTnWfPve
- NOgPk+WFsulW2eK6Q/w2tCT3K4LklwzG6o3ojGsdxESHNxlKWP
- DzVaYboZW0NAvUxdCim0Bv7BBw6TCjJh0YpzP/7iOHt3ZJzCk9
- dqM2MpYgLPxHFAvsyq34ds0qD4fAaRahm0t915WW5FtdR5RL0+
- b8ibNW/2GYgKUOZorCDYxG2p/3kJ5aiuO9/9PCVjd91Nitk9Zs
- bTm7Stzhqpa4NGHCGfllL5lCxhSnCh0RH76JjeSuhWsffRpUGl
- YrdXIFXg2J6qyq+J+lMIOAVZV5uaE2++FXwMRi+eRhV20S6Dun
- D2Z6U0XkNtMEWb8GpR1oVmlEmDbgyinkglaxsWh+d0kETY+GKv
- Z9gqkd+jFG/aw==
+	Tue, 28 May 2013 02:36:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369412476-14245-6-git-send-email-james.hogan@imgtec.com>
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
+	<1369412476-14245-6-git-send-email-james.hogan@imgtec.com>
+Date: Tue, 28 May 2013 08:36:16 +0200
+Message-ID: <CACRpkdZJLKoxsYS9c+_W4Yu2x8dr9qX=-xkqKSDcbeUucJo8Rw@mail.gmail.com>
+Subject: Re: [PATCH v2 5/9] pinconf-generic: add BIAS_BUS_HOLD pinconf
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 13:02 +0800, Michael Wang wrote: 
-> On 05/22/2013 10:55 PM, Mike Galbraith wrote:
-> > On Wed, 2013-05-22 at 17:25 +0800, Michael Wang wrote:
-> > 
-> >> I've not test the hackbench with wakeup-buddy before, will do it this
-> >> time, I suppose the 15% illegal income will suffered, anyway, it's
-> >> illegal :)
-> > 
-> > On a 4 socket 40 core (+SMT) box, hackbench wasn't too happy.
-> 
-> I've done more test and now I got the reason of regression...
-> 
-> The writer and reader in hackbench is N:N, prev writer will write all
-> the fd then switch to next writer and repeat the same work, so it's
-> impossible to setup the buddy relationship by just record the last one,
-> and we have to record all the waker/wakee in history, but that means
-> unacceptable memory overhead...
+On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
 
-Yeah, that's why I was thinking we'd need a dinky/fast as hell FIFO of
-tokens or such to bind waker/wakee more or less reliably.  Making such a
-scheme cheap enough could be hard.
+> Add a new PIN_CONFIG_BIAS_BUS_HOLD pin configuration for a bus holder
+> pin mode (also known as bus keeper, or repeater). This is a weak latch
+> which drives the last value on a tristate bus. Another device on the bus
+> can drive the bus high or low before going tristate to change the value
+> driven by the pin.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> Changes in v2:
+>  - add BIAS_BUS_HOLD generic pinconf (patch 5)
 
-> So this buddy idea seems to be bad...
-> 
-> I think a better way may should be allowing pull in most time, but
-> filter the very bad cases carefully.
+This is fine:
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-Any way that is cheap, and fairly accurately recognizes when we're being
-stupid will help.  First and foremost, it has to be dirt cheap :)
-
-> For workload like pgbench, we actually just need to avoid pull if that
-> will damage the 'mother' thread, which is busy and be relied by many
-> 'child'.
-
-Yeah, 'mom' is the key player.  If we can cheaply recognize mom, that
-should get us a generic improvement.  Not as good as being able to
-recognize the size of her+brood as size changes, but better anyway.
-
--Mike
-
+Yours,
+Linus Walleij
