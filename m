@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3E1DzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52531 "EHLO
+	id S932981Ab3E1DzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52631 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758837Ab3E1DyM (ORCPT
+	by vger.kernel.org with ESMTP id S1758914Ab3E1DyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:12 -0400
+	Mon, 27 May 2013 23:54:09 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alan Cox" <alan@linux.intel.com>,
-        "Mauro Carvalho Chehab" <mchehab@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Lucas De Marchi" <lucas.demarchi@intel.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.514872606@decadent.org.uk>
+Message-ID: <lsq.1369712993.323636849@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [92/94] [media] mantis: fix silly crash case
+Subject: [40/94] usermodehelper: check subprocess_info->path != NULL
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,35 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit e1d45ae10aea8e8a403e5d96bf5902ee670007ff upstream.
+commit 264b83c07a84223f0efd0d1db9ccc66d6f88288f upstream.
 
-If we set mantis->fe to NULL on an error its not a good idea to then try
-passing NULL to the unregister paths and oopsing really.
+argv_split(empty_or_all_spaces) happily succeeds, it simply returns
+argc == 0 and argv[0] == NULL. Change call_usermodehelper_exec() to
+check sub_info->path != NULL to avoid the crash.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=16473
+This is the minimal fix, todo:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+ - perhaps we should change argv_split() to return NULL or change the
+   callers.
+
+ - kill or justify ->path[0] check
+
+ - narrow the scope of helper_lock()
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/dvb/mantis/mantis_dvb.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/kmod.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/media/dvb/mantis/mantis_dvb.c
-+++ b/drivers/media/dvb/mantis/mantis_dvb.c
-@@ -248,8 +248,10 @@ int __devinit mantis_dvb_init(struct man
- err5:
- 	tasklet_kill(&mantis->tasklet);
- 	dvb_net_release(&mantis->dvbnet);
--	dvb_unregister_frontend(mantis->fe);
--	dvb_frontend_detach(mantis->fe);
-+	if (mantis->fe) {
-+		dvb_unregister_frontend(mantis->fe);
-+		dvb_frontend_detach(mantis->fe);
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -467,6 +467,11 @@ int call_usermodehelper_exec(struct subp
+ 	int retval = 0;
+ 
+ 	helper_lock();
++	if (!sub_info->path) {
++		retval = -EINVAL;
++		goto out;
 +	}
- err4:
- 	mantis->demux.dmx.remove_frontend(&mantis->demux.dmx, &mantis->fe_mem);
++
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
  
 
