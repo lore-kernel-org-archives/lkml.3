@@ -1,77 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab3E1Cn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 22:43:27 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:56516 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758630Ab3E1Cn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 22:43:26 -0400
-Date: Mon, 27 May 2013 21:43:23 -0500
-From: Russ Anderson <rja@sgi.com>
-To: joeyli <jlee@suse.com>
-Cc: Dave Jones <davej@redhat.com>, Robin Holt <holt@sgi.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
-	info to runtime code
-Message-ID: <20130528024323.GA32664@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130522162747.GA20816@sgi.com> <20130523115801.GJ14575@console-pimps.org> <20130523203234.GD20913@sgi.com> <20130524074331.GL14575@console-pimps.org> <20130524161111.GE3672@sgi.com> <20130524170214.GA30179@sgi.com> <20130524210534.GA15466@redhat.com> <1369628832.19026.22.camel@linux-s257.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1369628832.19026.22.camel@linux-s257.site>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1758726Ab3E1Cvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 22:51:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31768 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758611Ab3E1Cvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 May 2013 22:51:37 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-e4-51a41bb64009
+Message-id: <51A41BB6.3090602@samsung.com>
+Date: Tue, 28 May 2013 11:51:34 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: myungjoo.ham@samsung.com, balbi@ti.com, ldewangan@nvidia.com,
+        gg@slimlogic.co.uk, lgirdwood@gmail.com, broonie@kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
+        george.cherian@ti.com, sameo@linux.intel.com
+Subject: Re: [PATCH v6] extcon: Palmas Extcon Driver
+References: <1369405896-30246-1-git-send-email-kishon@ti.com>
+ <1369661614-15846-1-git-send-email-kishon@ti.com>
+In-reply-to: <1369661614-15846-1-git-send-email-kishon@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsWyRsSkRHe79JJAg3XfmC0O3q+3mPrwCZvF
+	gdkPWS1OHVzOatG/xcXiwJ8djBbNi9ezWVx42sNmsXTfahaLb1c6mCwWti1hsbi8aw6bxewl
+	/SwWi5a1MlvcblzBZnF4xQEmi3Uvp7NYnO5mdRDyWPD5CrvHzll32T02repk83i1eiarx51r
+	e9g85p0M9Ng/dw27x/kZCxk9epvfsXn0bVnF6DF1yl9Gj+M3tjN5fN4kF8AbxWWTkpqTWZZa
+	pG+XwJVxYNoC9oIzYhWbvnxnbmD8INjFyMkhIWAi8XhVOyOELSZx4d56ti5GLg4hgaWMEueb
+	5jLDFHWdmMsIkZjOKLGx9QmU84JR4mrXORaQKl4BLYnZ/1qZQGwWAVWJl+92gtlsQPH9L26w
+	gdiiAmESK6dfgaoXlPgx+R6YLQJUc3rnD7BtzAKrmSWaNoeB2MJAm1/vmccOYgsJFErM33cJ
+	aA4HB6eAncTibWYQ5ToS+1unsUHY8hKb17xlBrlNQuAKh8T3HSvYIe4RkPg2+RALSK+EgKzE
+	pgNQj0lKHFxxg2UCo9gsJBfNQjJ2FpKxCxiZVzGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIE
+	JovT/55N3MF4/4D1IcZkoJUTmaVEk/OBySavJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0
+	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwi7847ekcqPJGuO70ybcfJpv3LzrRskjPp+z5hNYti
+	m/H+txnbtth72M/d90lFctG0WbYlU2yP6axaYXjleGi2bFN4nRpX274vrgyMtbZtlQLvyj9P
+	WZG8kOmDfGHErOqZ+6OzMx161ljevhgc9zSyTE3G7mWiy++yMtUtJz89/qO51fMqc5ASS3FG
+	oqEWc1FxIgDg1ytCLAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGKsWRmVeSWpSXmKPExsVy+t9jQd1t0ksCDf6sMLc4eL/eYurDJ2wW
+	B2Y/ZLU4dXA5q0X/FheLA392MFo0L17PZnHhaQ+bxdJ9q1ksvl3pYLJY2LaExeLyrjlsFrOX
+	9LNYLFrWymxxu3EFm8XhFQeYLNa9nM5icbqb1UHIY8HnK+weO2fdZffYtKqTzePV6pmsHneu
+	7WHzmHcy0GP/3DXsHudnLGT06G1+x+bRt2UVo8fUKX8ZPY7f2M7k8XmTXABvVAOjTUZqYkpq
+	kUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Qi0oKZYk5pUChgMTi
+	YiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjAPTFrAXnBGr2PTlO3MD4wfBLkZODgkBE4mu
+	E3MZIWwxiQv31rN1MXJxCAlMZ5TY2PqEEcJ5wShxtescC0gVr4CWxOx/rUwgNouAqsTLdzvB
+	bDag+P4XN9hAbFGBMImV069A1QtK/Jh8D8wWAao5vfMHM4jNLLCaWaJpcxiILQx0xes989hB
+	bCGBQon5+y4BzeHg4BSwk1i8zQyiXEdif+s0NghbXmLzmrfMExgFZiHZMAtJ2SwkZQsYmVcx
+	iqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeiZ1I7GFc2WBxiFOBgVOLhnZC9OFCINbGsuDL3
+	EKMEB7OSCO/2FUAh3pTEyqrUovz4otKc1OJDjMnAAJjILCWanA9Mk3kl8YbGJmZGlkbmhhZG
+	xuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwDiv/mVj+96FeR2zWne1ucobH+yOmj03
+	8uPn5SHdexm5Px7+8PR0mFmYHHez9Pmfh/vCOC2naB6f0zrruvfr3p/NLo9PfeS+W6aQ7BV0
+	eNbpHb32rB3hQWcrHqzTvZ91N3j5jgcRH3xC1ixr+XkwlGFmu+Xq1+Fued4qxn8W+DExq7uk
+	SbIfeqTEUpyRaKjFXFScCACa/FPUiQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 12:27:12PM +0800, joeyli wrote:
-> Hi Dave, 
-> 
-> 於 五，2013-05-24 於 17:05 -0400，Dave Jones 提到：
-> > On Fri, May 24, 2013 at 12:02:15PM -0500, Russ Anderson wrote:
-> >  > On Fri, May 24, 2013 at 11:11:11AM -0500, Robin Holt wrote:
-> >  > > Russ,
-> >  > > 
-> >  > > Can we open a bug for the BIOS folks and see if we can get this addressed?
-> >  > 
-> >  > I already talked with them.  It is not in an area that we
-> >  > normally change, so if there is a bug may be in the Intel
-> >  > reference code.  More investigation is needed to track down
-> >  > the actual problem, and that could take help from Intel.
-> >  > 
-> >  > Regardless of that, it is a kernel patch that triggers the
-> >  > problem.  This isn't the first time a kernel change does
-> >  > the "right thing" but trips across questionable bios/EFI/bootloader
-> >  > implementation.  That still makes it a kernel bug.
-> >  > 
-> >  > I'm still digging to better understand the root problem.
-> >  
-> > When we rebased the Fedora 18 kernel to 3.9 we had a bunch of reports
-> > from people who can no longer boot with what looks like similar symptoms.
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=964335
-> > 
-> > 	Dave
-> > 
-> 
-> The oops on the above bug is similar to my problem on Acer machine,
-> could you please ask the reporter try the eccaf52f patch in urgent
-> branch on Matt's efi git tree:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=urgent&id=eccaf52fee8305d5207ff110950a82c100e459bc
+On 05/27/2013 10:33 PM, Kishon Vijay Abraham I wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+>
+> This is the driver for the USB comparator built into the palmas chip. It
+> handles the various USB OTG events that can be generated by cable
+> insertion/removal.
+>
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
+> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> [kishon@ti.com: adapted palmas usb driver to use the extcon framework]
+> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> ---
+> Changes from v5:
+> * removed regulator calls from palmas-usb as some platforms wont need it.
+> These are now done in dwc3-omap.c as it is needed for OMAP.
+> * removed all references to phy_companion as none of it is validated (SRP)
+> and all of them were currently unreachable code.
+>
+> Changes from v4:
+> * removed no_control_vbus property (to be used if the platform wants to use
+> its own vbus control.
+> * removed unnecessary headers
+> * moved the palmas_usb_state to palmas.h
+> * misc cleanups
+> *A checkpatch warning "WARNING: static const char * array should
+>  probably be static const char * const"is ignored since it introduces a
+>  compilation warning.
+>
+> Changes from v3:
+> * adapted the driver to extcon framework (so moved to drivers/extcon)
+> * removed palmas_usb_(write/read) and replaced all calls with
+>   palmas_(read/write).
+> * ignored a checkpatch warning in the line 
+> 	static const char *palmas_extcon_cable[] = {
+>   as it seemed to be incorrect?
+> * removed all references to OMAP in this driver.
+> * couldn't test this driver with mainline as omap5 panda is not booting
+>   with mainline.
+> * A comment to change to platform_get_irq from regmap is not done as I felt
+>   the data should come from regmap in this case.
+>
+> Changes from v2:
+> * Moved the driver to drivers/usb/phy/
+> * Added a bit more explanation in Kconfig
+>
+>  .../devicetree/bindings/extcon/extcon-twl.txt      |  15 ++
+>  drivers/extcon/Kconfig                             |   7 +
+>  drivers/extcon/Makefile                            |   1 +
+>  drivers/extcon/extcon-palmas.c                     | 246 +++++++++++++++++++++
+>  include/linux/mfd/palmas.h                         |  26 ++-
+>  5 files changed, 283 insertions(+), 12 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-twl.txt
+>  create mode 100644 drivers/extcon/extcon-palmas.c
+Applied only this patch.
 
-I tried that patch, but it does not fix the problem.
+you can check on following git repository:
+http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/log/?h=extcon-next
 
-Thanks for the suggestion.
+Thanks,
+Chanwoo Choi
 
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
