@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933744Ab3E1JQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 05:16:21 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:57730 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933615Ab3E1JQU (ORCPT
+	id S933761Ab3E1JR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 05:17:27 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60656 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933615Ab3E1JR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 05:16:20 -0400
-Date: Tue, 28 May 2013 17:16:15 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        "'Deepak Saxena'" <dsaxena@plexity.net>
-Subject: Re: [PATCH] hwrng: use platform_{get,set}_drvdata()
-Message-ID: <20130528091615.GB24414@gondor.apana.org.au>
-References: <002801ce57a0$1f004ba0$5d00e2e0$@samsung.com>
+	Tue, 28 May 2013 05:17:26 -0400
+Message-ID: <51A4761C.80903@ti.com>
+Date: Tue, 28 May 2013 12:17:16 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002801ce57a0$1f004ba0$5d00e2e0$@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: =?ISO-8859-1?Q?Adrien_Verg=E9?= <adrienverge@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Fainelli <florian@openwrt.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yannick Brosseau <yannick.brosseau@gmail.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH] ARM: OMAP4: USB_EHCI_HCD needs USB_PHY and NOP_USB_XCEIV
+References: <CANsc=4W7ZVuCoimeALsv6xEQAURYc=QYsCvXd_kZD-A52aTL5w@mail.gmail.com> <201305272023.12281.arnd@arndb.de> <51A4676D.9010404@ti.com> <2720824.63SknuJcmD@wuerfel>
+In-Reply-To: <2720824.63SknuJcmD@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 07:27:26PM +0900, Jingoo Han wrote:
-> Use the wrapper functions for getting and setting the driver data using
-> platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
-> so we can directly pass a struct platform_device.
+On 05/28/2013 11:40 AM, Arnd Bergmann wrote:
+> On Tuesday 28 May 2013 11:14:37 Roger Quadros wrote:
+>>>>         depends on USB_ARCH_HAS_EHCI
+>>>> +       select USB_PHY if ARCH_OMAP4
+>>>> +       select NOP_USB_XCEIV if ARCH_OMAP4
+>>>>         ---help---
+>>>>           The Enhanced Host Controller Interface (EHCI) is standard for USB 2.0
+>>>>           "high speed" (480 Mbit/sec, 60 Mbyte/sec) host controller hardware.
+>>>
+>>> 'select'ing USB_PHY sounds wrong too, I think you mean 'depends on'.
+>>>
+>>> Also note that Roger Quadros has just removed the 'select NOP_USB_XCEIV'
+>>> there, I think you should coordinate with him.
+>>
+>> Selecting NOP_USB_XCEIV is wrong as it in turn depends on USB_PHY.
+>>
+>> I'm not for depends as it would hide USB_EHCI_HCD_OMAP in menuconfig.
+>> I'm for explicitly selecting both, as it makes the user's life much easier.
+>> But I'm afraid maintainers might object to that.
 > 
-> Also, unnecessary dev_set_drvdata() is removed, because the driver core
-> clears the driver data to NULL after device_release or on probe failure.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> My preferred option would be to turn the 'menuconfig PHY' into 'menu',
+> which is what we did to solve a similar problem in drivers/mfd: It lets
+> us 'select' specific PHY drivers without turning on the entire
+> menu. Using 'select PHY' has the nasty side-effect of creating an
+> incorrect dependency between the OMAP EHCI driver and all the
+> non-OMAP phy drivers that become visible once the usb-phy directory
+> gets enabled.
+>
 
-Sorry but this patch doesn't apply against the current cryptodev
-tree.  If you are basing your patch on another tree, please submit
-the patch there.
+Good idea, thanks. I will give this a try.
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+cheers,
+-roger
