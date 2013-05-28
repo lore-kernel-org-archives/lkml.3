@@ -1,168 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759382Ab3E1Xre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:47:34 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:54941 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759267Ab3E1Xrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:47:32 -0400
-Date: Tue, 28 May 2013 16:47:28 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+	id S1759398Ab3E1XsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:48:07 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:32975 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759335Ab3E1XsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:48:05 -0400
+X-Greylist: delayed 1445 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 May 2013 19:48:04 EDT
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 04/21] Generic percpu refcounting
-Message-ID: <20130528234728.GB2291@google.com>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
- <1368494338-7069-5-git-send-email-koverstreet@google.com>
- <20130514145932.GA6607@mtj.dyndns.org>
- <20130515085856.GB16164@moria.home.lan>
- <20130515173720.GA26222@htj.dyndns.org>
+        Toshi Kani <toshi.kani@hp.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-mm@kvack.org
+Subject: [PATCH] Memory hotplug: Move alternative function definitions to header
+Date: Wed, 29 May 2013 01:32:39 +0200
+Message-ID: <3399422.RK6bMrAa5x@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515173720.GA26222@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 10:37:20AM -0700, Tejun Heo wrote:
-> Ooh, I was referring to percpu_ref_dead() not percpu_ref_kill().
-> percpu_ref_dead() reminds me of some of the work state query functions
-> in workqueue which ended up being misused in ways that were subtly
-> racy, so I'm curious why it's necessary and how it's supposed to be
-> used.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-With the other changes we talked about I ended up killing
-percpu_ref_dead()
+Move the definitions of offline_pages() and remove_memory()
+for CONFIG_MEMORY_HOTREMOVE to memory_hotplug.h, where they belong,
+and make them static inline.
 
-> >  * Initially, a percpu refcount is just a set of percpu counters. Initially, we
-> >  * don't try to detect the ref hitting 0 - which means that get/put can just
-> >  * increment or decrement the local counter. Note that the counter on a
-> >  * particular cpu can (and will) wrap - this is fine, when we go to shutdown the
-> >  * percpu counters will all sum to the correct value (because moduler arithmatic
-> >  * is commutative).
-> 
-> Can you please expand it on a bit and, more importantly, describe in
-> what limits, it's safe?  This should be safe as long as the actual sum
-> of refcnts given out doesn't overflow the original type, right? 
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-Precisely.
+On top of the linux-next branch of the linux-pm.git tree.
 
-> It'd be great if that is explained clearly in more intuitive way.  The
-> only actual explanation above is "modular arithmatic is commutative"
-> which is a very compact way to put it and I really think it deserves
-> an easier explanation.
+Please let me know if there are any objections.
 
-I'm not sure I know of any good way of explaining it intuitively, but
-here's this at least...
+Thanks,
+Rafael
 
- * (More precisely: because moduler arithmatic is commutative the sum of all the
- * pcpu_count vars will be equal to what it would have been if all the gets and
- * puts were done to a single integer, even if some of the percpu integers
- * overflow or underflow).
+---
+ include/linux/memory_hotplug.h |    9 +++++++++
+ mm/memory_hotplug.c            |    8 +-------
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-> > > Are we sure this is enough?  1<<31 is a fairly large number but it's
-> > > just easy enough to breach from time to time and it's gonna be hellish
-> > > to reproduce / debug when it actually overflows.  Maybe we want
-> > > atomic64_t w/ 1LLU << 63 bias?  Or is there something else which
-> > > guarantees that the bias can't over/underflow?
-> > 
-> > Well, it has the effect of halving the usable range of the refcount,
-> > which I think is probably ok - the thing is, the range of an atomic_t
-> > doesn't really correspond to anything useful on 64 bit machines so if
-> > you're concerned about overflow you probably need to be using an
-> > atomic_long_t. That is, if 32 bits is big enough 31 bits probably is
-> > too.
-> 
-> I'm not worrying about the total refcnt overflowing 31 bits, that's
-> fine.  What I'm worried about is the percpu refs having systmetic
-> drift (got on certain cpus and put on others), and the total counter
-> being overflowed while percpu draining is in progress.  To me, the
-> problem is that the bias which tags that draining in progress can be
-> overflown by percpu refs.  The summing can be the same but the tagging
-> should be put where summing can't overflow it.  It'd be great if you
-> can explain in the comment in what range it's safe and why, because
-> that'd make the limits clear to both you and other people reading the
-> code and would help a lot in deciding whether it's safe enough.
+Index: linux-pm/include/linux/memory_hotplug.h
+===================================================================
+--- linux-pm.orig/include/linux/memory_hotplug.h
++++ linux-pm/include/linux/memory_hotplug.h
+@@ -234,6 +234,8 @@ static inline void unlock_memory_hotplug
+ 
+ extern int is_mem_section_removable(unsigned long pfn, unsigned long nr_pages);
+ extern void try_offline_node(int nid);
++extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
++extern void remove_memory(int nid, u64 start, u64 size);
+ 
+ #else
+ static inline int is_mem_section_removable(unsigned long pfn,
+@@ -243,6 +245,13 @@ static inline int is_mem_section_removab
+ }
+ 
+ static inline void try_offline_node(int nid) {}
++
++static inline int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
++{
++	return -EINVAL;
++}
++
++static inline void remove_memory(int nid, u64 start, u64 size) {}
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+ extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+Index: linux-pm/mm/memory_hotplug.c
+===================================================================
+--- linux-pm.orig/mm/memory_hotplug.c
++++ linux-pm/mm/memory_hotplug.c
+@@ -1825,11 +1825,5 @@ void __ref remove_memory(int nid, u64 st
+ 
+ 	unlock_memory_hotplug();
+ }
+-#else
+-int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+-{
+-	return -EINVAL;
+-}
+-void remove_memory(int nid, u64 start, u64 size) {}
+-#endif /* CONFIG_MEMORY_HOTREMOVE */
+ EXPORT_SYMBOL_GPL(remove_memory);
++#endif /* CONFIG_MEMORY_HOTREMOVE */
 
-(This is why I initially didn't (don't) like the bias method, it makes
-things harder to reason about).
-
-The fact that the counter is percpu is irrelevant w.r.t. the bias; we
-sum all the percpu counters up before adding them to the atomic counter
-and subtracting the bias, so when we go to add the percpu counters it's
-no different from if the percpu counter was a single integer all along.
-
-So there's only two counters we're adding together; there's the percpu
-counter (just think of it as a single integer) that we started out
-using, but then at some point in time we start applying the gets and
-puts to the atomic counter.
-
-Note that there's no systemic drift here; at time t all the gets and
-puts were happening to one counter, and then at time t+1 they switch to
-a different counter.
-
-We know the sum of the counters will be positive (again, because modular
-arithmatic is still commutative; when we sum the counters it's as if
-there was a single counter all along) but that doesn't mean either of
-the individual counters can't be negative.
-
-(Actually, unless I'm mistaken in this version the percpu counter can
-never go negative - it definitely could with dynamic percpu allocation,
-as you need a atomic_t -> percpu transition when the atomic_t was > 0
-for the percpu counter to go negative; but in this version we start out
-using the percpu counters and the atomic_t 0 (ignoring for the moment
-the bias and the initial ref).
-
-So, the sum must be positive but the atomic_t could be negative. How
-negative?
-
-We can't do a get() to the percpu counters after we've seen that the ref
-is no longer in percpu mode - so after we've done one put to the
-atomic_t we can do more puts to atomic_t (or gets to the atomic_t) but
-we can't do a get to the percpu counter.
-
-And we can't do more puts than there have been gets - because the sum
-can't be negative. So the most puts() we can do at any given time is the
-real count, or sum of the percpu ref and atomic_t.
-
-Therefore, the amount the atomic_t can go negative is bounded by the
-maximum value of the refcount.
-
-So if we say arbitrarily that the maximum legal value of the refcount is
-- say - 1U << 31, then the atomic_t will always be greater than
--((int) (1U << 31)).
-
-So as long as the total number of outstanding refs never exceeds the
-bias we're fine.
-
-QED.
-
-> I probably should have made it clearer.  Sorry about that.  tryget()
-> is fine.  I was curious about count() as it's always a bit dangerous a
-> query interface which is racy and can return something unexpected like
-> false zero or underflowed refcnt.
-
-Yeah, it is, it was intended just for the module code where it's only
-used for the value lsmod shows.
-
-> Let's just have percpu_ref_kill(ref, release) which puts the base ref
-> and invokes release whenever it's done.
-
-Release has to be stored in struct percpu_ref() so it can be invoked
-after a call_rcu() (percpu_ref_kill -> call_rcu() ->
-percpu_ref_kill_rcu() -> percpu_ref_put()) so I'm passing it to
-percpu_ref_init(), but yeah.
