@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab3E1X1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:27:10 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:55328 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759248Ab3E1X1J (ORCPT
+	id S1759299Ab3E1X27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:28:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31954 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227Ab3E1X26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:27:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130525102544.GP2663@yliu-dev.sh.intel.com>
-References: <1369456201-24910-1-git-send-email-yuanhan.liu@linux.intel.com>
-	<CAE9FiQVZyizrB4=FV56hjeb_-vX_YWJ=Ur54ptTEeFpaekv16Q@mail.gmail.com>
-	<20130525102544.GP2663@yliu-dev.sh.intel.com>
-Date: Tue, 28 May 2013 16:27:07 -0700
-X-Google-Sender-Auth: efshqPgALoGhbf9lrX1CHJQQlxU
-Message-ID: <CAE9FiQXr4S0P5P5JdegRyozSX4OCJ6+6MMybmAaMPCzfqe6yWg@mail.gmail.com>
-Subject: Re: [PATCH] x86, mm: fix boot hang regression
+	Tue, 28 May 2013 19:28:58 -0400
 From: Yinghai Lu <yinghai@kernel.org>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, lkp@linux.intel.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86: Fix adjust_range_size_mask calling position
+Date: Tue, 28 May 2013 16:28:26 -0700
+Message-Id: <1369783706-27327-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <CAE9FiQXr4S0P5P5JdegRyozSX4OCJ6+6MMybmAaMPCzfqe6yWg@mail.gmail.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 3:25 AM, Yuanhan Liu
-<yuanhan.liu@linux.intel.com> wrote:
+Commit 8d57470d cause a kernel panic while setting mem=2G.
+     [mem 0x00000000-0x000fffff] page 4k
+     [mem 0x7fe00000-0x7fffffff] page 1G
+     [mem 0x7c000000-0x7fdfffff] page 1G
+     [mem 0x00100000-0x001fffff] page 4k
+     [mem 0x00200000-0x7bffffff] page 2M
 
-> Firstly, your patch works and feel free to add:
->         Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+but for last entry we should have
+     [mem 0x00200000-0x3fffffff] page 2M
+     [mem 0x40000000-0x7bffffff] page 1G
 
-ok, will resend it in complete form.
+Actually there is bug about calling sequence for
+adjust_range_page_size_mask(). Merge first will make
+adjust to 1g for second partial 1g range fail.
 
->
-> While, your patch fixes this issue on source side. I thought that
-> before, too.  But I think it's better to fix it on root side.
-> That's why I sent a patch to try to fix it at mapping stage; Meanwhile,
-> I was trying to sent another patch to fix this issue on source
-> side later. And you did that.
->
-> On the other hand, since we support splitting PUD(and PMD), I guess we
-> should make it do the right work just in case will meet such case later.
+Fix that by calling adjust_range_size_mask before merging mem_range
+with same page size.
 
-No, we should not split them.
+We need this one for v3.9 stable.
 
-Thanks
+Bisected-by: "Xie, ChanglongX" <changlongx.xie@intel.com>
+Bisected-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Reported-and-tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Yinghai
+---
+ arch/x86/mm/init.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -277,6 +277,9 @@ static int __meminit split_mem_range(str
+ 	end_pfn = limit_pfn;
+ 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 
++	if (!after_bootmem)
++		adjust_range_page_size_mask(mr, nr_range);
++
+ 	/* try to merge same page size and continuous */
+ 	for (i = 0; nr_range > 1 && i < nr_range - 1; i++) {
+ 		unsigned long old_start;
+@@ -291,9 +294,6 @@ static int __meminit split_mem_range(str
+ 		nr_range--;
+ 	}
+ 
+-	if (!after_bootmem)
+-		adjust_range_page_size_mask(mr, nr_range);
+-
+ 	for (i = 0; i < nr_range; i++)
+ 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
+ 				mr[i].start, mr[i].end - 1,
