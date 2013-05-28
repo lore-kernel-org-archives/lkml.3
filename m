@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3E1SvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:51:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab3E1Su7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:50:59 -0400
-Date: Tue, 28 May 2013 20:47:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: WARN_ONCE in arch/x86/kernel/hw_breakpoint.c
-Message-ID: <20130528184702.GA6455@redhat.com>
-References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130528170048.GA26906@redhat.com> <20130528172829.GA2810@redhat.com>
+	id S1753397Ab3E1SwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:52:10 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:47706 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab3E1SwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:52:08 -0400
+X-Auth-Info: 1OAO2F76lfPbhdDpfI2iqLBHDol6PPRSFpI9/gqzAQI=
+From: Marek Vasut <marex@denx.de>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: MXS USB otg device support
+Date: Tue, 28 May 2013 20:20:48 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Hector Palacios <hector.palacios@digi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <51A48677.5010900@digi.com> <51A4D987.40700@freescale.com>
+In-Reply-To: <51A4D987.40700@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528172829.GA2810@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305282020.49134.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28, Oleg Nesterov wrote:
->
-> IIRC, I already tried to complain that perf could be smarter in this case
-> and install a single counter with event->cpu = -1, but this is offtopic.
+Dear Fabio Estevam,
 
-Just in case, please see my old email
+> Hi Hector,
+> 
+> On 05/28/2013 07:27 AM, Hector Palacios wrote:
+> > Hello,
+> > 
+> > Am I right in assuming that the MXS USB on-the-go port does not
+> > currently support the device (gadget) functionality?
+> > Anybody out there working on that?
+> 
+> I am not aware of the latest status about chipidea usb otg support for
+> i.mx.
 
-	http://marc.info/?l=linux-kernel&m=136017983113299
+I gave up on tracking that mayhem.
 
-I didn't check if perf was changed since then. And I forgot everything
-(not too much ;) I learned after I briefly looked into tools/perf/.
+> Please post this question in the linux-usb list and add Peter Chen, the
+> folks from Pengutronix and Alexander Shishkin in Cc.
 
-But, again, this is off-topic.
+Good idea. Also please keep us in loop.
 
-Oleg.
-
+Best regards,
+Marek Vasut
