@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab3E1TQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 15:16:15 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:35840 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab3E1TQO (ORCPT
+	id S1754431Ab3E1TQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 15:16:46 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:43253 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab3E1TQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 15:16:14 -0400
-Date: Tue, 28 May 2013 20:16:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Leon Romanovsky <leon@leon.nu>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
-Message-ID: <20130528191608.GB3012@gmail.com>
-References: <1368609586-20905-1-git-send-email-leon@leon.nu>
- <20130523083751.GC22683@gmail.com>
- <CALq1K=Las2mwV9x6ajEUDYg6nLbcK2KVLK8TH2B1f=9fQ7JfTg@mail.gmail.com>
- <20130528090213.GB22683@gmail.com>
- <CAHp75VdzX=8hjRX5PtO1q-uAa5AwNjoNN5P24ruR8ifvA-8umA@mail.gmail.com>
- <CALq1K=LGuA4Jqa0qmenLNJZCbLf4XhZoA-wd-pkcR+bMbenBGw@mail.gmail.com>
+	Tue, 28 May 2013 15:16:44 -0400
+Message-ID: <51A50299.9090909@linaro.org>
+Date: Tue, 28 May 2013 12:16:41 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALq1K=LGuA4Jqa0qmenLNJZCbLf4XhZoA-wd-pkcR+bMbenBGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ktime: minor: ktime_to_timespec_cond: add __must_check
+ prefix
+References: <1368712069-522-1-git-send-email-dborkman@redhat.com>
+In-Reply-To: <1368712069-522-1-git-send-email-dborkman@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Leon Romanovsky wrote:
+On 05/16/2013 06:47 AM, Daniel Borkmann wrote:
+> The function is currently mainly used in the networking code and
+> if others start using it, they must check the result, otherwise
+> it cannot be determined if the timespec conversion suceeded.
+> Currently no user lacks this check, but make future users aware of
+> a possible misusage.
+>
+> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 
-> On Tue, May 28, 2013 at 7:24 PM, Andy Shevchenko
-> <andy.shevchenko@gmail.com> wrote:
-> > On Tue, May 28, 2013 at 12:02 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >> On Mon, 27 May 2013, Leon Romanovsky wrote:
-> >
-> >>> > > +     init_data = devm_kzalloc(&tps65912->dev,
-> >
-> > There is an obvious typo: no need of & here if I got it correctly.
-> >
-> >> drivers/mfd/tps65912-core.c: In function ‘tps65912_device_init’:
-> >> drivers/mfd/tps65912-core.c:131:18: warning: passing argument 1 of ‘devm_kzalloc’ from incompatible pointer type [enabled by default]
-> >> In file included from include/linux/platform_device.h:14:0,
-> >>                  from include/linux/mfd/core.h:17,
-> >>                  from drivers/mfd/tps65912-core.c:21:
-> >> include/linux/device.h:574:14: note: expected ‘struct device *’ but argument is of type ‘struct device **’
-> You are absolutely right, I sent the wrong patch with typo :(
-> 
-> Lee,
-> Do I need to resend it ? Or you can fix it by yourself ?
+I've got this queued for 3.11. Sorry for being slow to pick this up!
 
-I've already fixed it up and tested.
+thanks!
+-john
 
-I just wanted to clarify exactly what happened, as it couldn't have
-been tested.
-
-No worries, patch applied.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
