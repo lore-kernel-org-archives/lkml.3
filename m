@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248Ab3E1VlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:41:22 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:40802 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab3E1VlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:41:19 -0400
+	id S1758352Ab3E1Vlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:41:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757895Ab3E1Vln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 17:41:43 -0400
+Date: Tue, 28 May 2013 17:41:37 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
+Message-ID: <20130528214137.GC24342@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130528161230.GA7577@redhat.com>
+ <20130528211012.GX29466@dastard>
+ <20130528211544.GB24342@redhat.com>
+ <20130528213248.GC29338@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20130528205842.GE32085@xanatos>
-References: <20130524210503.GC15788@xanatos>
-	<Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
-	<CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
-	<20130528205842.GE32085@xanatos>
-Date: Tue, 28 May 2013 14:41:18 -0700
-X-Google-Sender-Auth: n6H4Mr2-tUSITEUzKCmDda4roEc
-Message-ID: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky controllers.
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Shawn Nematbakhsh <shawnn@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528213248.GC29338@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The policy we want to achieve is to disable runtime PM iff there is a
-device connected that doesn't have persist_enabled or a reset_resume()
-handler and whose parent/root hub resets on resume, right? So couldn't
-we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
-generic USB_QUIRK_RESET_RESUME on the root hub instead? Then we could
-handle all of this in the USB core (during device initialization and
-when changing persist_enabled through sysfs) by just checking for
-udev->reset_resume on all parent hubs of the device in question (and
-use pm_runtime_get/put() on said device to prevent its parents from
-suspending as appropriate).
+On Wed, May 29, 2013 at 07:32:48AM +1000, Dave Chinner wrote:
+ > On Tue, May 28, 2013 at 05:15:44PM -0400, Dave Jones wrote:
+ > > On Wed, May 29, 2013 at 07:10:12AM +1000, Dave Chinner wrote:
+ > >  > On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
+ > >  > > box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
+ > >  > > xfs chose to spew and then hang instead of replaying the journal and mounting :(
+ > >  > > 
+ > >  > > [   14.694731] SGI XFS with ACLs, security attributes, realtime, large block/inode numbers, debug enabled
+ > >  > > [   14.722328] XFS (sda2): Mounting Filesystem
+ > >  > > [   14.757801] XFS (sda2): Starting recovery (logdev: internal)
+ > >  > > [   14.782049] XFS: Assertion failed: fs_is_ok, file: fs/xfs/xfs_dir2_data.c, line: 169
+ > >  > 
+ > >  > A directory block has an entry that is not in the hash index.
+ > >  > Either there's an underlying corruption on disk, or there's an
+ > >  > inconsistency in what has been logged and so an entire change has
+ > >  > not been replayed. Hence the post recovery verification has thrown a
+ > >  > corruption error....
+ > >  > 
+ > >  > If you haven't already repaired the filesystem, can you send me a
+ > >  > metadump of the filesystem in question?
+ > > 
+ > > Sorry, too late. If I can repro, I'll do so next time.
+ > > FYI, I ran xfs_repair and it just hung. Wouldn't even answer ctrl-c.
+ > > Rebooted, and then it mounted and recovered just fine!
+ > 
+ > Strange. I can't think of any reason outside a kernel problem for
+ > xfs_repair going into an uninterruptible sleep. Did it happen after
+ > the repair completed (i.e. after phase 7)? If so, then closing the
+ > block device might have tripped the same problem that fsck.ext2
+ > hit....
+
+didn't even get that far. It opened the block dev, and then just sat there.
+I left it for a few minutes before deciding it was hung.
+And of course, this is an SSD, so there was no way I could tell if there
+was any IO going on by sound/feel/lights.
+
+	Dave
+
