@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759347Ab3E1D4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:56:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52536 "EHLO
+	id S1759213Ab3E1D4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:56:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52474 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758827Ab3E1DyZ (ORCPT
+	by vger.kernel.org with ESMTP id S1758770Ab3E1DyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:25 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Stephen Hemminger" <stephen@networkplumber.org>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "Wang YanQing" <udknight@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.5201233@decadent.org.uk>
+Message-ID: <lsq.1369712993.358315384@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [70/94] xhci: Don't warn on empty ring for suspended devices.
+Subject: [14/94] ALSA: HDA: Fix Oops caused by dereference NULL pointer
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,57 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit a83d6755814e4614ba77e15d82796af0f695c6b8 upstream.
+commit 2195b063f6609e4c6268f291683902f25eaf9aa6 upstream.
 
-When a device attached to the roothub is suspended, the endpoint rings
-are stopped.  The host may generate a completion event with the
-completion code set to 'Stopped' or 'Stopped Invalid' when the ring is
-halted.  The current xHCI code prints a warning in that case, which can
-be really annoying if the USB device is coming into and out of suspend.
+The interrupt handler azx_interrupt will call azx_update_rirb,
+which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
+will dereference chip->bus pointer.
 
-Remove the unnecessary warning.
+The problem is we alloc chip->bus in azx_codec_create
+which will be called after we enable IRQ and enable unsolicited
+event in azx_probe.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Stephen Hemminger <stephen@networkplumber.org>
+This will cause Oops due dereference NULL pointer. I meet it, good luck:)
+
+[Rearranged the NULL check before the tracepoint and added another
+ NULL check of bus->workq -- tiwai]
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+ sound/pci/hda/hda_codec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 9652dae..1969c00 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2463,14 +2463,21 @@ static int handle_tx_event(struct xhci_hcd *xhci,
- 		 * TD list.
- 		 */
- 		if (list_empty(&ep_ring->td_list)) {
--			xhci_warn(xhci, "WARN Event TRB for slot %d ep %d "
--					"with no TDs queued?\n",
--				  TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
--				  ep_index);
--			xhci_dbg(xhci, "Event TRB with TRB type ID %u\n",
--				 (le32_to_cpu(event->flags) &
--				  TRB_TYPE_BITMASK)>>10);
--			xhci_print_trb_offsets(xhci, (union xhci_trb *) event);
-+			/*
-+			 * A stopped endpoint may generate an extra completion
-+			 * event if the device was suspended.  Don't print
-+			 * warnings.
-+			 */
-+			if (!(trb_comp_code == COMP_STOP ||
-+						trb_comp_code == COMP_STOP_INVAL)) {
-+				xhci_warn(xhci, "WARN Event TRB for slot %d ep %d with no TDs queued?\n",
-+						TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
-+						ep_index);
-+				xhci_dbg(xhci, "Event TRB with TRB type ID %u\n",
-+						(le32_to_cpu(event->flags) &
-+						 TRB_TYPE_BITMASK)>>10);
-+				xhci_print_trb_offsets(xhci, (union xhci_trb *) event);
-+			}
- 			if (ep->skip) {
- 				ep->skip = false;
- 				xhci_dbg(xhci, "td_list is empty while skip "
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -615,6 +615,9 @@ int snd_hda_queue_unsol_event(struct hda
+ 	struct hda_bus_unsolicited *unsol;
+ 	unsigned int wp;
+ 
++	if (!bus || !bus->workq)
++		return 0;
++
+ 	trace_hda_unsol_event(bus, res, res_ex);
+ 	unsol = bus->unsol;
+ 	if (!unsol)
 
