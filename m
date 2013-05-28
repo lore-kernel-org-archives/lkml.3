@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220Ab3E1Nje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 09:39:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8794 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752235Ab3E1Njd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 09:39:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
-   d="scan'208";a="344372462"
-Message-ID: <51A4B391.6060503@intel.com>
-Date: Tue, 28 May 2013 21:39:29 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934216Ab3E1Nkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 09:40:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50684 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab3E1Nky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 09:40:54 -0400
+Date: Tue, 28 May 2013 06:39:58 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-46ff53874bd935ab9955dee56d60212857e89bf3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        penberg@kernel.org, rdunlap@infradead.org, mmarek@suse.cz,
+        bp@alien8.de, tglx@linutronix.de, bp@suse.de, rientjes@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        penberg@kernel.org, rdunlap@infradead.org, mmarek@suse.cz,
+        bp@alien8.de, tglx@linutronix.de, rientjes@google.com, bp@suse.de
+In-Reply-To: <20130522144638.GB15085@pd.tnic>
+References: <20130522144638.GB15085@pd.tnic>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, platform, kvm, kconfig:
+  Turn existing .config's into KVM-capable configs
+Git-Commit-ID: 46ff53874bd935ab9955dee56d60212857e89bf3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: gregkh <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-References: <519ED65B.7040707@intel.com>
-In-Reply-To: <519ED65B.7040707@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 10:54 AM, Alex Shi wrote:
-> 
-> Ops, I just find a old patch left on my laptop. and it still works on latest
-> Linus tree. I don't remember there is a reasonable excuse to reject this patch.
-> 
-> So, anyone like to pick it up?
+Commit-ID:  46ff53874bd935ab9955dee56d60212857e89bf3
+Gitweb:     http://git.kernel.org/tip/46ff53874bd935ab9955dee56d60212857e89bf3
+Author:     Borislav Petkov <bp@alien8.de>
+AuthorDate: Wed, 22 May 2013 16:46:39 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 28 May 2013 12:11:32 +0200
 
-Ping ...
-> 
-> ------
-> From 6ae1b9e71f9b14be5774ae9c1b4cf57cd4e747ac Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Mon, 11 Jun 2012 15:10:18 +0800
-> Subject: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-> 
-> According to Felipe and Alan's comments the second parameter of irq
-> handler should be 'void *' not a specific structure pointer.
-> So change it.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/usb/host/xhci-ring.c |    2 +-
->  drivers/usb/host/xhci.c      |    4 ++--
->  drivers/usb/host/xhci.h      |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-> index 23b4aef..cc8a52f 100644
-> --- a/drivers/usb/host/xhci-ring.c
-> +++ b/drivers/usb/host/xhci-ring.c
-> @@ -2479,7 +2479,7 @@ hw_died:
->  	return IRQ_HANDLED;
->  }
->  
-> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
-> +irqreturn_t xhci_msi_irq(int irq, void *hcd)
->  {
->  	return xhci_irq(hcd);
->  }
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index afdc73e..f7d40c1 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -215,7 +215,7 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
->  		return ret;
->  	}
->  
-> -	ret = request_irq(pdev->irq, (irq_handler_t)xhci_msi_irq,
-> +	ret = request_irq(pdev->irq, xhci_msi_irq,
->  				0, "xhci_hcd", xhci_to_hcd(xhci));
->  	if (ret) {
->  		xhci_dbg(xhci, "disable MSI interrupt\n");
-> @@ -287,7 +287,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
->  
->  	for (i = 0; i < xhci->msix_count; i++) {
->  		ret = request_irq(xhci->msix_entries[i].vector,
-> -				(irq_handler_t)xhci_msi_irq,
-> +				xhci_msi_irq,
->  				0, "xhci_hcd", xhci_to_hcd(xhci));
->  		if (ret)
->  			goto disable_msix;
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index de3d6e3..737ef54 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1710,7 +1710,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
->  
->  int xhci_get_frame(struct usb_hcd *hcd);
->  irqreturn_t xhci_irq(struct usb_hcd *hcd);
-> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
-> +irqreturn_t xhci_msi_irq(int irq, void *hcd);
->  int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev);
->  void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev);
->  int xhci_alloc_tt_info(struct xhci_hcd *xhci,
-> 
+x86, platform, kvm, kconfig: Turn existing .config's into KVM-capable configs
 
+Add an config file snippet which enables additional options
+useful for running the kernel in a kvm guest. When you execute
+'make kvmconfig' it merges those options with an already
+existing user config before you build the kernel.
 
--- 
-Thanks
-    Alex
+Based on an patch from the external lkvm tree.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: penberg@kernel.org
+Cc: levinsasha928@gmail.com
+Cc: mtosatti@redhat.com
+Cc: fengguang.wu@intel.com
+Link: http://lkml.kernel.org/r/20130522144638.GB15085@pd.tnic
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/Makefile                 |  6 ++++++
+ arch/x86/configs/kvm_guest.config | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 5c47726..91ee171 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,6 +220,11 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
++kvmconfig:
++	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
++	$(Q)yes "" | $(MAKE) oldconfig
++
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+   echo  '  install      - Install kernel using'
+@@ -233,4 +238,5 @@ define archhelp
+   echo  '                  bzdisk/fdimage*/isoimage also accept:'
+   echo  '                  FDARGS="..."  arguments for the booted kernel'
+   echo  '                  FDINITRD=file initrd for the booted kernel'
++  echo  '  kvmconfig	- Enable additional options for guest kernel support'
+ endef
+diff --git a/arch/x86/configs/kvm_guest.config b/arch/x86/configs/kvm_guest.config
+new file mode 100644
+index 0000000..f9affcc
+--- /dev/null
++++ b/arch/x86/configs/kvm_guest.config
+@@ -0,0 +1,28 @@
++CONFIG_NET=y
++CONFIG_NET_CORE=y
++CONFIG_NETDEVICES=y
++CONFIG_BLOCK=y
++CONFIG_BLK_DEV=y
++CONFIG_NETWORK_FILESYSTEMS=y
++CONFIG_INET=y
++CONFIG_TTY=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_BINFMT_ELF=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_VIRTUALIZATION=y
++CONFIG_HYPERVISOR_GUEST=y
++CONFIG_PARAVIRT=y
++CONFIG_KVM_GUEST=y
++CONFIG_VIRTIO=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BLK=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_VIRTIO_NET=y
++CONFIG_9P_FS=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
