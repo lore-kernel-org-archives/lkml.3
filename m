@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab3E1MVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 08:21:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53249 "EHLO hydra.sisk.pl"
+	id S933872Ab3E1MZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 08:25:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2016 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933770Ab3E1MVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 08:21:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Vicent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
-Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster governor - tests results
-Date: Tue, 28 May 2013 14:30:23 +0200
-Message-ID: <2272781.tC3OqoQmKI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpo=6Tk3NmcJw_fqnePu_skHKNB0rFBOUzEsCDyeLqxg4xA@mail.gmail.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com> <20130528084035.13afa583@amdc308.digital.local> <CAKohpo=6Tk3NmcJw_fqnePu_skHKNB0rFBOUzEsCDyeLqxg4xA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S933770Ab3E1MZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 08:25:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="308916989"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <519BD595.5040405@sr71.net>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com>
+ <519BD595.5040405@sr71.net>
+Subject: Re: [PATCHv4 14/39] thp, mm: rewrite delete_from_page_cache() to
+ support huge pages
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130528122812.0D624E0090@blue.fi.intel.com>
+Date: Tue, 28 May 2013 15:28:12 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 28, 2013 03:14:26 PM Viresh Kumar wrote:
-> On 28 May 2013 12:10, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote: <manually added by viresh>
-> >> On Monday, May 27, 2013 06:54:49 PM Viresh Kumar wrote:
-> >> > On 27 May 2013 17:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> I was talking about /sys/devices/system/cpu/cpufreq/boost that
-> >> appears to have been added by commit 615b730 (acpi-cpufreq: Add
-> >> support for disabling dynamic overclocking).
-> >>
-> >> That's in acpi-cpufreq, but since that setting seems to be generally
-> >> useful, it may be a good idea to move it to the core somehow.
+Dave Hansen wrote:
+> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > As with add_to_page_cache_locked() we handle HPAGE_CACHE_NR pages a
+> > time.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  mm/filemap.c |   31 +++++++++++++++++++++++++------
+> >  1 file changed, 25 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index b0c7c8c..657ce82 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -115,6 +115,9 @@
+> >  void __delete_from_page_cache(struct page *page)
+> >  {
+> >  	struct address_space *mapping = page->mapping;
+> > +	bool thp = PageTransHuge(page) &&
+> > +		IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE);
+> > +	int nr;
 > 
-> Problem is in breaking existing cpufreq userspace for this driver.
-> Is this allowed?
+> Is that check for the config option really necessary?  How would we get
+> a page with PageTransHuge() set without it being enabled?
+
+I'll drop it and use hpagecache_nr_page() instead.
+
+> I like to rewrite your code. :)
+
+It's nice. Thanks.
+
+> Which reminds me...  Why do we handle their reference counts differently? :)
 > 
-> > I think that Viresh wanted to add "boost" option to
-> > /sys/devices/system/cpu/cpuX/cpufreq/ to be able to control boost
-> > at separate cores (policies).
-> >
-> > The localization, which you have proposed:
-> > /sys/devices/system/cpu/cpufreq/boost
-> >
-> > implies, that boost is a global feature (enabled for all cores and for
-> > all available policies).
-> >
-> > Which approach shall be used then?
+> It seems like we could easily put a for loop in delete_from_page_cache()
+> that will release their reference counts along with the head page.
+> Wouldn't that make the code less special-cased for tail pages?
+
+delete_from_page_cache() is not the only user of
+__delete_from_page_cache()...
+
+It seems I did it wrong in add_to_page_cache_locked(). We shouldn't take
+references on tail pages there, only one on head. On split it will be
+distributed properly.
+
+> >  	/* Leave page->index set: truncation lookup relies upon it */
+> > -	mapping->nrpages--;
+> > -	__dec_zone_page_state(page, NR_FILE_PAGES);
+> > +	mapping->nrpages -= nr;
+> > +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, -nr);
+> >  	if (PageSwapBacked(page))
+> > -		__dec_zone_page_state(page, NR_SHMEM);
+> > +		__mod_zone_page_state(page_zone(page), NR_SHMEM, -nr);
+> >  	BUG_ON(page_mapped(page));
 > 
-> We can use: get_governor_parent_kobj() to get the best location
-> for boost. But I had some other issues in mind:
-> - boost is governor dependent.. i.e. It is only required for ondemand
-> governor (And LAB if it makes it to mainline :) ).. Other governors
-> doesn't need it. So, it would be better to add it in governor's directory.
-
-I'm not sure about that.  On x86 boost will be used with all governors if
-enabled (as currently defined in acpi-cpufreq).
-
-Also it looks like this depends on the driver too, because if the driver
-doesn't have "turbo" frequencies, the governor won't be able use "turbo"
-anyway.
-
-> - This will break existing users of acpi-cpufreq driver.
+> Man, we suck:
 > 
-> @Rafael: Please suggest what to do here.
+> 	__dec_zone_page_state()
+> and
+> 	__mod_zone_page_state()
+> 
+> take a differently-typed first argument.  <sigh>
+> 
+> Would there be any good to making __dec_zone_page_state() check to see
+> if the page we passed in _is_ a compound page, and adjusting its
+> behaviour accordingly?
 
-So first, it would make sense to use a per-driver "boost" attribute indicating
-whether or not the given driver should present any "turbo" frequencies to the
-governor.  That'd work along the lines of the acpi-cpufreq "boost", but I don't
-think that the global_boost attribute should be created by the driver (it'd be
-better if the driver provided methods to the core for handling that).
-
-Second, I'm not sure if an additional knob for the governor is necessary.  It
-may just use the turbo frequencies if available (and if the governor cannot use
-them, it simply won't use them).
-
-Thanks,
-Rafael
-
+Yeah, it would be better but I think it outside the scope of the patchset.
+Probably, later.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+ Kirill A. Shutemov
