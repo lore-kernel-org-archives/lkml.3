@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933650Ab3E1MKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 08:10:41 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:59432 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933211Ab3E1MKk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 08:10:40 -0400
-From: Chao Xie <cxie4@marvell.com>
-To: Mark Brown <broonie@kernel.org>, yi zhang <yizhang.mrvl@gmail.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>,
-        "jett.zhou@marvell.com" <jett.zhou@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yi Zhang <yizhang@marvell.com>
-Date: Tue, 28 May 2013 05:10:00 -0700
-Subject: RE: [PATCH] regulator: 88pm800: add regulator driver
-Thread-Topic: [PATCH] regulator: 88pm800: add regulator driver
-Thread-Index: Ac5bisLKNXnTAavqTOa8TmGBTesoQwADaF1A
-Message-ID: <AAD1C6EB06EE3649B35B7E026785068D2581253EA9@SC-VEXCH2.marvell.com>
-References: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
- <20130522161422.GP1627@sirena.org.uk>
- <CAK=oMXepj7tmZJ3=b9ja+E1N9eAPmsPhBefAzoswVyGWBXwNOA@mail.gmail.com>
- <20130525195601.GJ7660@sirena.org.uk>
- <CAK=oMXeCUgc5E1ZaXcbrbUB6XGD135a7zRD-CC5apEytx2j=fw@mail.gmail.com>
- <20130528100415.GE3660@sirena.org.uk>
-In-Reply-To: <20130528100415.GE3660@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933811Ab3E1MPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 08:15:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37203 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933730Ab3E1MPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 08:15:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="320703809"
+Message-ID: <51A49FDC.2020608@linux.intel.com>
+Date: Tue, 28 May 2013 15:15:24 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>, Dave Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v5 net-next 3/5] tcp: add TCP support for low latency
+ receive poll.
+References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>  <20130527074421.29882.73968.stgit@ladj378.jer.intel.com> <1369701413.3301.506.camel@edumazet-glaptop> <51A46A21.9060305@linux.intel.com>
+In-Reply-To: <51A46A21.9060305@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org] 
-> Sent: Tuesday, May 28, 2013 6:04 PM
-> To: yi zhang
-> Cc: Liam Girdwood; Chao Xie; jett.zhou@marvell.com; linux-kernel@vger.kernel.org; Yi Zhang
-> Subject: Re: [PATCH] regulator: 88pm800: add regulator driver
-> 
-> On Tue, May 28, 2013 at 10:32:09AM +0800, yi zhang wrote:
->
->> HI, Brown:
+On 28/05/2013 11:26, Eliezer Tamir wrote:
+> On 28/05/2013 03:36, Eric Dumazet wrote:
+>> On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
+>>>   #include <net/netdma.h>
+>>>   #include <net/secure_seq.h>
+>>>   #include <net/tcp_memcontrol.h>
+>>> +#include <net/ll_poll.h>
+>>>
+>>>   #include <linux/inet.h>
+>>>   #include <linux/ipv6.h>
+>>> @@ -2011,6 +2012,7 @@ process:
+>>>       if (sk_filter(sk, skb))
+>>>           goto discard_and_relse;
+>>>
+>>> +    sk_mark_ll(sk, skb);
+>>>       skb->dev = NULL;
+>>>
+>>>       bh_lock_sock_nested(sk);
+>>
+>> How IPv6 is handled ?
 
->> In western culture it's either "Hi Mark" or "Hi Mr Brown" (though the latter is pretty formal so not used much for things like mailing lists).
->
->>           Sorry I'm a little confused:
->>           You mean I should use a function for example 
->> "create_buck_table()" to create the BUCK voltage table?
->>            such as:
->>            void create_buck_table()
->>            {
->>                    if (voltage < 1587500) {
->>                              /* initialize the BUCK_table */
->>                    } else
->>                              /* initialize the BUCK_table */
->>            }
->
-> No, I mean you shouldn't be using a table at all but have mapping and list functions which just do the calculation required to generate the tables directly.  This saves scanning through the table as direct calcuation is possible.
+It turns out that adding TCPv6/UDPv6 is very simple.
+I will add them, with a warning that I only did very limited testing.
 
-Hi, Mark
-Thanks for your review.
-Because structure regulator_desc only accepts the voltage table as constant.
-struct regulator_desc {
-	...
-	const unsigned int *volt_table;
-	...
-};
-If we want to make use of the volt_table, and the help functions regulator_map_voltage_iterate and regulator_list_voltage_table, we have to initialize the tables as what we do now.
-So what you mean that we can maintain the structure describes the voltage information in out private structure
-struct 88pm800_regulator_desc {
-  struct regulator_desc desc
-  ...
-  struct 88pm800_regulator_vol_table vol_table;
-};
-The struct 88pm800_regulator_vol_table can be used to define the details of the LDOes like start_vol/end_vol/step.
-Then we need define our own map_voltage and list_voltage functions, and based on the struct 88pm800_regulator_vol_table to calculate the correct voltage.
-Is above solution what you mean?
+-Eliezer
