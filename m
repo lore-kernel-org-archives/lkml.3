@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934242Ab3E1OHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:07:53 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53499 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934123Ab3E1OHw (ORCPT
+	id S934276Ab3E1ONi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:13:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52138 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933972Ab3E1ONg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:07:52 -0400
-Date: Tue, 28 May 2013 15:07:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: Po-Yu Chuang <ratbert.chuang@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: map_init_section flushes incorrect pmd
-Message-ID: <20130528140705.GE28971@mudshark.cambridge.arm.com>
-References: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com>
- <20130528130502.GA28971@mudshark.cambridge.arm.com>
- <51A4B938.7080708@ti.com>
+	Tue, 28 May 2013 10:13:36 -0400
+Date: Tue, 28 May 2013 10:13:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        <linux-pm@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / Runtime: honor device autosuspend in
+ pm_generic_runtime_idle()
+In-Reply-To: <1563745.Xy6YCbJQjl@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1305281009080.1030-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A4B938.7080708@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 03:03:36PM +0100, Sricharan R wrote:
-> On Tuesday 28 May 2013 06:35 PM, Will Deacon wrote:
-> > On Tue, May 28, 2013 at 11:48:20AM +0100, Po-Yu Chuang wrote:
-> >> This bug was introduced in commit e651eab0.
-> >> Some v4/v5 platforms failed to boot due to this.
-> >>
-> >> Signed-off-by: Po-Yu Chuang <ratbert.chuang@gmail.com>
-> >> ---
-> >>  arch/arm/mm/mmu.c |    4 +++-
-> >>  1 file changed, 3 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> >> index e0d8565..19a43f8 100644
-> >> --- a/arch/arm/mm/mmu.c
-> >> +++ b/arch/arm/mm/mmu.c
-> >> @@ -620,6 +620,8 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
-> >>  			unsigned long end, phys_addr_t phys,
-> >>  			const struct mem_type *type)
-> >>  {
-> >> +	pmd_t *p = pmd;
-> >> +
-> >>  #ifndef CONFIG_ARM_LPAE
-> >>  	/*
-> >>  	 * In classic MMU format, puds and pmds are folded in to
-> >> @@ -638,7 +640,7 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
-> >>  		phys += SECTION_SIZE;
-> >>  	} while (pmd++, addr += SECTION_SIZE, addr != end);
-> >>  
-> >> -	flush_pmd_entry(pmd);
-> >> +	flush_pmd_entry(p);
-> > Wait, shouldn't this flush be *inside* the loop anyway? Otherwise we just
-> > flush the cacheline containing the first pmd. The flushing code could also
-> > flush to PoU instead of PoC for UP ARMv7, but that's an unrelated optimisation.
->    I think in LPAE this loop iterates once and non LPAE twice.
->    So both the entries should be contained in same cache line right ?
+On Tue, 28 May 2013, Rafael J. Wysocki wrote:
 
-Dunno, are there any guarantees about alignment of the starting pmd? Even
-so, the function takes the range as parameters, so I don't think we
-should tailor it to the caller. It may explain why this hasn't come up
-sooner though.
+> On Monday, May 13, 2013 01:50:18 PM Rafael J. Wysocki wrote:
+> > On Monday, May 13, 2013 02:05:27 PM Mika Westerberg wrote:
+> > > If the device is using autosuspend we should honor that and call
+> > > pm_runtime_autosuspend() instead of pm_runtime_suspend(). Failing to do so
+> > > causes the device to be suspended immediately even though it expects to be
+> > > suspended only when the autosuspend delay is expired.
+> > > 
+> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > ---
+> > >  drivers/base/power/generic_ops.c |    5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
+> > > index bfd898b..19786ca 100644
+> > > --- a/drivers/base/power/generic_ops.c
+> > > +++ b/drivers/base/power/generic_ops.c
+> > > @@ -29,7 +29,10 @@ int pm_generic_runtime_idle(struct device *dev)
+> > >  			return ret;
+> > >  	}
+> > >  
+> > > -	pm_runtime_suspend(dev);
+> > > +	if (dev->power.use_autosuspend)
+> > > +		pm_runtime_autosuspend(dev);
+> > > +	else
+> > > +		pm_runtime_suspend(dev);
+> > >  	return 0;
+> > 
+> > First of all, this is racy (power.use_autosuspend shoud be accessed under
+> > power.lock).
+> > 
+> > Second, this is not the only place we'd need to make this change (the analogous
+> > function for PCI is one example, but there may be others).
+> > 
+> > Finally, I'm not sure how to address this problem in general.  It may be better
+> > to simply modify rpm_idle() and remove pm_generic_runtime_idle() etc. entirely.
+> > 
+> > I'll have a look at that, thanks for pointing out the problem.
+> 
+> I'm not sure if the core is the right place to address this, because it's
+> not entirely clear if all drivers using autosuspend will have the same policy
+> with respect to pm_runtime_idle() (i.e. to avoid suspending immediately if
+> the suspend delay timer is active).
+> 
+> In my opinion it'd be better to address that in the driver by adding a
+> .runtime_idle() callback executing pm_runtime_autosuspend(dev) and returning
+> -EBUSY.
 
-Will
+Remember that the return value from the runtime_idle callback is 
+ignored.  Are you suggesting that the PM core should start paying 
+attention to it?
+
+Alan Stern
+
