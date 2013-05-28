@@ -1,154 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab3E1XFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 19:05:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:57243 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758201Ab3E1XFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 19:05:50 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-c7-51a5384c78df
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Inki Dae'" <inki.dae@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable]  This patch fixes the issue that drm_vblank_get() is
-Date: Wed, 29 May 2013 08:05:48 +0900
-Message-id: <000401ce5bf7$e46950c0$ad3bf240$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAGq8R4ABU9kCoA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zY11fi6WBBs/ucVhMuj+BxWJJM7fF
-	2aY37BaXd81hs1iw8RGjA6tH35ZVjB6fN8kFMEVx2aSk5mSWpRbp2yVwZXQtkC+YL1nx+vcE
-	pgbGpaJdjJwcEgImEs0P5rBD2GISF+6tZ+ti5OIQEljGKHFv3z8WmKI/T1pZIRLTGSUm7JnB
-	BJIQEvjLKLF0ogeIzSagK3Fs/RZWEFtEwFvi1JRfzCA2s0COxL+2X0D1HED13BKrm4NAwpwC
-	PBLr/nSClQgLBEg8P7gdzGYRUJVoeHeKDcTmFbCT2DH3JCuELSjxY/I9FoiRWhLrdx5ngrDl
-	JTavecsMMl5CQF3i0V9dkDNFBBoYJRYfWwJVIyKx78U7RpCEhMAxdokbN36wQCwTkPg2+RAL
-	RLOsxKYDzBD/SkocXHGDZQKjxCwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSqV5yYW1ya
-	l66XnJ+7iREShxN3MN4/YH2IMRlo/URmKdHkfGAc55XEGxqbGVmYmpgaG5lbmpEmrCTOq95i
-	HSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB0Tl2zr9rsoyby0qEGEtz+JaU1c4xafdIC87S
-	2fWm6snyZ0cyXT22Mb24KnRJoiZ17eHjrW/Pltq+MClfGvuu9Y7sz/1+T/yzNkitn9j/4XF4
-	ty2P6ovvgRVvIyW0rkkc+zN94qwvF9dklojKfziwZk7KL7/GTL5JX7LvRK0RZhHOvLzseKG/
-	lxJLcUaioRZzUXEiALFiCs3ZAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jQV0fi6WBBl93mlpMuj+BxWJJM7fF
-	2aY37BaXd81hs1iw8RGjA6tH35ZVjB6fN8kFMEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWZ0LZAvmC9Z8fr3BKYGxqWiXYycHBICJhJ/nrSyQthiEhfurWfrYuTiEBKY
-	zigxYc8MJpCEkMBfRomlEz1AbDYBXYlj67eANYgIeEucmvKLGcRmFsiR+Nf2C6ieA6ieW2J1
-	cxBImFOAR2Ldn06wEmGBAInnB7eD2SwCqhIN706xgdi8AnYSO+aeZIWwBSV+TL7HAjFSS2L9
-	zuNMELa8xOY1b5lBxksIqEs8+qsLcqaIQAOjxOJjS6BqRCT2vXjHOIFRaBaSUbOQjJqFZNQs
-	JC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH+TPpHYyrGiwOMQpwMCrx8AZ8XRIo
-	xJpYVlyZe4hRgoNZSYQ3VXBpoBBvSmJlVWpRfnxRaU5q8SHGZKBPJzJLiSbnAxNQXkm8obGJ
-	mZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw1mqcl+n7/ftp+q2GjD52
-	1VDRx4dieisrvU6uuvgidnqxVQ3LpC2OTp2s/vEzdzYs0Jux4XKAE0vL7g1zqv4U3V+S88Tr
-	k/xBZf2jC9lDnQIPPOzoetfSyZNvu8P0s6/bV6dA3/XP7m2Y1qkqYXIypSnqVM8cYe0ZJl+u
-	npi9gnFNnfHWe2srlViKMxINtZiLihMBLQhCjTYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1759187Ab3E1XK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 19:10:26 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:55900 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758201Ab3E1XKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 19:10:25 -0400
+Date: Tue, 28 May 2013 19:10:24 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] aio: Use call_rcu() instead of synchronize_rcu() in kill_ioctx()
+Message-ID: <20130528231024.GA24189@kvack.org>
+References: <1369776378-27921-1-git-send-email-koverstreet@google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369776378-27921-1-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+On Tue, May 28, 2013 at 02:26:18PM -0700, Kent Overstreet wrote:
+> Just making ioctx shutdown asynchronous so as not to block io_destroy()
+> - and percpu refcounts for the ioctx are going to need a RCU barrier in
+> the same place anyways.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-------------------
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Tested-by: Benjamin LaHaise <bcrl@kvack.org>
 
-From: "Inki Dae <inki.dae@samsung.com>"
+I have reviewed and tested this, and it fixes the io_setup() returning 
+EAGAIN error from the first version of this patch.  Thanks Kent!
 
-commit 20cd2640a295cab46bcd08f4788984ca236fc148 upstream
+		-ben
 
-The issus occurs when next page flip request is tried
-if previous page flip event wasn't completed yet and then
-dpms became off.
+> Cc: Zach Brown <zab@redhat.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Asai Thambi S P <asamymuthupa@micron.com>
+> Cc: Selvan Mani <smani@micron.com>
+> Cc: Sam Bradshaw <sbradshaw@micron.com>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Benjamin LaHaise <bcrl@kvack.org>
+> ---
+>  fs/aio.c | 36 ++++++++++++++++--------------------
+>  1 file changed, 16 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 7fe5bde..2bbcacf 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -141,9 +141,6 @@ static void aio_free_ring(struct kioctx *ctx)
+>  	for (i = 0; i < ctx->nr_pages; i++)
+>  		put_page(ctx->ring_pages[i]);
+>  
+> -	if (ctx->mmap_size)
+> -		vm_munmap(ctx->mmap_base, ctx->mmap_size);
+> -
+>  	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages)
+>  		kfree(ctx->ring_pages);
+>  }
+> @@ -322,11 +319,6 @@ static void free_ioctx(struct kioctx *ctx)
+>  
+>  	aio_free_ring(ctx);
+>  
+> -	spin_lock(&aio_nr_lock);
+> -	BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
+> -	aio_nr -= ctx->max_reqs;
+> -	spin_unlock(&aio_nr_lock);
+> -
+>  	pr_debug("freeing %p\n", ctx);
+>  
+>  	/*
+> @@ -435,17 +427,24 @@ static void kill_ioctx(struct kioctx *ctx)
+>  {
+>  	if (!atomic_xchg(&ctx->dead, 1)) {
+>  		hlist_del_rcu(&ctx->list);
+> -		/* Between hlist_del_rcu() and dropping the initial ref */
+> -		synchronize_rcu();
+>  
+>  		/*
+> -		 * We can't punt to workqueue here because put_ioctx() ->
+> -		 * free_ioctx() will unmap the ringbuffer, and that has to be
+> -		 * done in the original process's context. kill_ioctx_rcu/work()
+> -		 * exist for exit_aio(), as in that path free_ioctx() won't do
+> -		 * the unmap.
+> +		 * It'd be more correct to do this in free_ioctx(), after all
+> +		 * the outstanding kiocbs have finished - but by then io_destroy
+> +		 * has already returned, so io_setup() could potentially return
+> +		 * -EAGAIN with no ioctxs actually in use (as far as userspace
+> +		 *  could tell).
+>  		 */
+> -		kill_ioctx_work(&ctx->rcu_work);
+> +		spin_lock(&aio_nr_lock);
+> +		BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
+> +		aio_nr -= ctx->max_reqs;
+> +		spin_unlock(&aio_nr_lock);
+> +
+> +		if (ctx->mmap_size)
+> +			vm_munmap(ctx->mmap_base, ctx->mmap_size);
+> +
+> +		/* Between hlist_del_rcu() and dropping the initial ref */
+> +		call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
+>  	}
+>  }
+>  
+> @@ -495,10 +494,7 @@ void exit_aio(struct mm_struct *mm)
+>  		 */
+>  		ctx->mmap_size = 0;
+>  
+> -		if (!atomic_xchg(&ctx->dead, 1)) {
+> -			hlist_del_rcu(&ctx->list);
+> -			call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
+> -		}
+> +		kill_ioctx(ctx);
+>  	}
+>  }
+>  
+> -- 
+> 1.8.2.1
 
-So this patch make sure that page flip event is completed
-before dpms goes to off.
-
-Cc: <stable@vger.kernel.org> # 3.9.x: b6330548: drm.h: Fix DRM compilation
-Signed-off-by: Inki Dae <inki.dae@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_crtc.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-index e8894bc..1847f1d 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-@@ -48,6 +48,8 @@ struct exynos_drm_crtc {
- 	unsigned int			pipe;
- 	unsigned int			dpms;
- 	enum exynos_crtc_mode		mode;
-+	wait_queue_head_t		pending_flip_queue;
-+	atomic_t			pending_flip;
- };
- 
- static void exynos_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
-@@ -61,6 +63,13 @@ static void exynos_drm_crtc_dpms(struct drm_crtc *crtc,
-int mode)
- 		return;
- 	}
- 
-+	if (mode > DRM_MODE_DPMS_ON) {
-+		/* wait for the completion of page flip. */
-+		wait_event(exynos_crtc->pending_flip_queue,
-+				atomic_read(&exynos_crtc->pending_flip) ==
-0);
-+		drm_vblank_off(crtc->dev, exynos_crtc->pipe);
-+	}
-+
- 	exynos_drm_fn_encoder(crtc, &mode, exynos_drm_encoder_crtc_dpms);
- 	exynos_crtc->dpms = mode;
- }
-@@ -225,6 +234,7 @@ static int exynos_drm_crtc_page_flip(struct drm_crtc
-*crtc,
- 		spin_lock_irq(&dev->event_lock);
- 		list_add_tail(&event->base.link,
- 				&dev_priv->pageflip_event_list);
-+		atomic_set(&exynos_crtc->pending_flip, 1);
- 		spin_unlock_irq(&dev->event_lock);
- 
- 		crtc->fb = fb;
-@@ -344,6 +354,8 @@ int exynos_drm_crtc_create(struct drm_device *dev,
-unsigned int nr)
- 
- 	exynos_crtc->pipe = nr;
- 	exynos_crtc->dpms = DRM_MODE_DPMS_OFF;
-+	init_waitqueue_head(&exynos_crtc->pending_flip_queue);
-+	atomic_set(&exynos_crtc->pending_flip, 0);
- 	exynos_crtc->plane = exynos_plane_init(dev, 1 << nr, true);
- 	if (!exynos_crtc->plane) {
- 		kfree(exynos_crtc);
-@@ -399,6 +411,8 @@ void exynos_drm_crtc_finish_pageflip(struct drm_device
-*dev, int crtc)
- 	struct exynos_drm_private *dev_priv = dev->dev_private;
- 	struct drm_pending_vblank_event *e, *t;
- 	struct timeval now;
-+	struct drm_crtc *drm_crtc = dev_priv->crtc[crtc];
-+	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(drm_crtc);
- 	unsigned long flags;
- 
- 	DRM_DEBUG_KMS("%s\n", __FILE__);
-@@ -419,6 +433,8 @@ void exynos_drm_crtc_finish_pageflip(struct drm_device
-*dev, int crtc)
- 		list_move_tail(&e->base.link,
-&e->base.file_priv->event_list);
- 		wake_up_interruptible(&e->base.file_priv->event_wait);
- 		drm_vblank_put(dev, crtc);
-+		atomic_set(&exynos_crtc->pending_flip, 0);
-+		wake_up(&exynos_crtc->pending_flip_queue);
- 	}
- 
- 	spin_unlock_irqrestore(&dev->event_lock, flags);
 -- 
-1.7.9.5
-
+"Thought is the essence of where you are now."
