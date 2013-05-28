@@ -1,132 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab3E1Cvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 22:51:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31768 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758611Ab3E1Cvh (ORCPT
+	id S1758751Ab3E1DLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:11:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52337 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758702Ab3E1DLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 22:51:37 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-e4-51a41bb64009
-Message-id: <51A41BB6.3090602@samsung.com>
-Date: Tue, 28 May 2013 11:51:34 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: myungjoo.ham@samsung.com, balbi@ti.com, ldewangan@nvidia.com,
-        gg@slimlogic.co.uk, lgirdwood@gmail.com, broonie@kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
-        george.cherian@ti.com, sameo@linux.intel.com
-Subject: Re: [PATCH v6] extcon: Palmas Extcon Driver
-References: <1369405896-30246-1-git-send-email-kishon@ti.com>
- <1369661614-15846-1-git-send-email-kishon@ti.com>
-In-reply-to: <1369661614-15846-1-git-send-email-kishon@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsWyRsSkRHe79JJAg3XfmC0O3q+3mPrwCZvF
-	gdkPWS1OHVzOatG/xcXiwJ8djBbNi9ezWVx42sNmsXTfahaLb1c6mCwWti1hsbi8aw6bxewl
-	/SwWi5a1MlvcblzBZnF4xQEmi3Uvp7NYnO5mdRDyWPD5CrvHzll32T02repk83i1eiarx51r
-	e9g85p0M9Ng/dw27x/kZCxk9epvfsXn0bVnF6DF1yl9Gj+M3tjN5fN4kF8AbxWWTkpqTWZZa
-	pG+XwJVxYNoC9oIzYhWbvnxnbmD8INjFyMkhIWAi8XhVOyOELSZx4d56ti5GLg4hgaWMEueb
-	5jLDFHWdmMsIkZjOKLGx9QmU84JR4mrXORaQKl4BLYnZ/1qZQGwWAVWJl+92gtlsQPH9L26w
-	gdiiAmESK6dfgaoXlPgx+R6YLQJUc3rnD7BtzAKrmSWaNoeB2MJAm1/vmccOYgsJFErM33cJ
-	aA4HB6eAncTibWYQ5ToS+1unsUHY8hKb17xlBrlNQuAKh8T3HSvYIe4RkPg2+RALSK+EgKzE
-	pgNQj0lKHFxxg2UCo9gsJBfNQjJ2FpKxCxiZVzGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIE
-	JovT/55N3MF4/4D1IcZkoJUTmaVEk/OBySavJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0
-	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwi7847ekcqPJGuO70ybcfJpv3LzrRskjPp+z5hNYti
-	m/H+txnbtth72M/d90lFctG0WbYlU2yP6axaYXjleGi2bFN4nRpX274vrgyMtbZtlQLvyj9P
-	WZG8kOmDfGHErOqZ+6OzMx161ljevhgc9zSyTE3G7mWiy++yMtUtJz89/qO51fMqc5ASS3FG
-	oqEWc1FxIgDg1ytCLAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGKsWRmVeSWpSXmKPExsVy+t9jQd1t0ksCDf6sMLc4eL/eYurDJ2wW
-	B2Y/ZLU4dXA5q0X/FheLA392MFo0L17PZnHhaQ+bxdJ9q1ksvl3pYLJY2LaExeLyrjlsFrOX
-	9LNYLFrWymxxu3EFm8XhFQeYLNa9nM5icbqb1UHIY8HnK+weO2fdZffYtKqTzePV6pmsHneu
-	7WHzmHcy0GP/3DXsHudnLGT06G1+x+bRt2UVo8fUKX8ZPY7f2M7k8XmTXABvVAOjTUZqYkpq
-	kUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Qi0oKZYk5pUChgMTi
-	YiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjAPTFrAXnBGr2PTlO3MD4wfBLkZODgkBE4mu
-	E3MZIWwxiQv31rN1MXJxCAlMZ5TY2PqEEcJ5wShxtescC0gVr4CWxOx/rUwgNouAqsTLdzvB
-	bDag+P4XN9hAbFGBMImV069A1QtK/Jh8D8wWAao5vfMHM4jNLLCaWaJpcxiILQx0xes989hB
-	bCGBQon5+y4BzeHg4BSwk1i8zQyiXEdif+s0NghbXmLzmrfMExgFZiHZMAtJ2SwkZQsYmVcx
-	iqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeiZ1I7GFc2WBxiFOBgVOLhnZC9OFCINbGsuDL3
-	EKMEB7OSCO/2FUAh3pTEyqrUovz4otKc1OJDjMnAAJjILCWanA9Mk3kl8YbGJmZGlkbmhhZG
-	xuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwDiv/mVj+96FeR2zWne1ucobH+yOmj03
-	8uPn5SHdexm5Px7+8PR0mFmYHHez9Pmfh/vCOC2naB6f0zrruvfr3p/NLo9PfeS+W6aQ7BV0
-	eNbpHb32rB3hQWcrHqzTvZ91N3j5jgcRH3xC1ixr+XkwlGFmu+Xq1+Fued4qxn8W+DExq7uk
-	SbIfeqTEUpyRaKjFXFScCACa/FPUiQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 27 May 2013 23:11:09 -0400
+Message-ID: <1369710646.3469.424.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Kernel v3.2 used in SlackWare 14.00 please, backport all needed
+ patches Re: [PATCH net, 1/2] hyperv: Fix a kernel warning from
+ netvsc_linkstatus_callback()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Victor Miasnikov <vvm@tut.by>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Patrick J. Volkerding" <volkerdi@slackware.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        Olaf Hering <ohering@suse.de>, davem@davemloft.net,
+        netdev@vger.kernel.org, olaf@aepfle.de, jasowang@redhat.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        stable@vger.kernel.org
+Date: Tue, 28 May 2013 04:10:46 +0100
+In-Reply-To: <00D0FAD3528A443BAEA3E39861B3CFAD@local.st.by>
+References: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
+	 <CACQ1gAi0JfJFAc822YT5xVfW8HkB8r_4rf0dXTNsi-1oChsPsQ@mail.gmail.com>
+	 <00D0FAD3528A443BAEA3E39861B3CFAD@local.st.by>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-uG1MESdLskG5lzxWCubH"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2013 10:33 PM, Kishon Vijay Abraham I wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
->
-> This is the driver for the USB comparator built into the palmas chip. It
-> handles the various USB OTG events that can be generated by cable
-> insertion/removal.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
-> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> [kishon@ti.com: adapted palmas usb driver to use the extcon framework]
-> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> ---
-> Changes from v5:
-> * removed regulator calls from palmas-usb as some platforms wont need it.
-> These are now done in dwc3-omap.c as it is needed for OMAP.
-> * removed all references to phy_companion as none of it is validated (SRP)
-> and all of them were currently unreachable code.
->
-> Changes from v4:
-> * removed no_control_vbus property (to be used if the platform wants to use
-> its own vbus control.
-> * removed unnecessary headers
-> * moved the palmas_usb_state to palmas.h
-> * misc cleanups
-> *A checkpatch warning "WARNING: static const char * array should
->  probably be static const char * const"is ignored since it introduces a
->  compilation warning.
->
-> Changes from v3:
-> * adapted the driver to extcon framework (so moved to drivers/extcon)
-> * removed palmas_usb_(write/read) and replaced all calls with
->   palmas_(read/write).
-> * ignored a checkpatch warning in the line 
-> 	static const char *palmas_extcon_cable[] = {
->   as it seemed to be incorrect?
-> * removed all references to OMAP in this driver.
-> * couldn't test this driver with mainline as omap5 panda is not booting
->   with mainline.
-> * A comment to change to platform_get_irq from regmap is not done as I felt
->   the data should come from regmap in this case.
->
-> Changes from v2:
-> * Moved the driver to drivers/usb/phy/
-> * Added a bit more explanation in Kconfig
->
->  .../devicetree/bindings/extcon/extcon-twl.txt      |  15 ++
->  drivers/extcon/Kconfig                             |   7 +
->  drivers/extcon/Makefile                            |   1 +
->  drivers/extcon/extcon-palmas.c                     | 246 +++++++++++++++++++++
->  include/linux/mfd/palmas.h                         |  26 ++-
->  5 files changed, 283 insertions(+), 12 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-twl.txt
->  create mode 100644 drivers/extcon/extcon-palmas.c
-Applied only this patch.
 
-you can check on following git repository:
-http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/log/?h=extcon-next
+--=-uG1MESdLskG5lzxWCubH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Chanwoo Choi
+On Thu, 2013-05-23 at 16:14 +0300, Victor Miasnikov wrote:
+> Hi!
+>=20
+> > (the 3.2 version is different,
+> > and it's instaging. (at not used by distros anyway))
+>=20
+>  No: used
+>=20
+> Linux Kernel v3.2 used in:
+> -- SlackWare 14.00
+>=20
+> This is actual stable version SlackWare
+>=20
+> Please, backport all(!) needed patches
+[...]
+> P.P.P.P.P.S.
+>=20
+> Sorry, if my msg not full "political correct"
+>=20
+> I preffered solve problem as possibily earler, what wait big problems
+>=20
+> Sorry, again . . .
 
+Please read Documentation/stable_kernel_rules.txt.  In short, you need
+to identify the commit hash for each of the changes you want, and
+provide the backported patch for any commits that can't simply be
+cherry-picked.  I'm not going to read through all of what you wrote to
+work out exactly what's needed.
+
+I think Slackware might do better to backport the Hyper-V drivers from
+Linux 3.4, as Debian and Ubuntu have done with 3.2-based kernels.  But
+that sort of large backport isn't allowed on kernel.org stable branches.
+
+Ben.
+
+--=20
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
+
+--=-uG1MESdLskG5lzxWCubH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUaQgNue/yOyVhhEJAQpZBA/8DBz4zYTLbuUsx0DJKvCufvUYZ2IamPLU
+VlIVrRkVIlDwxOc8rFFoT7WtApPiD+dUMZE01vdk0qzCKiNfh/sE7HwqLNmvI8IM
+BYqLVf7j5EaHnM/WiIZY9AmZYgopeiMftVYEpCfLhYoStTdfSE5vvOqAsdLW1l4T
+83vExFbV2aGIAeQpoTHb3f8bH9Dx50I1e6nwQyS+KOBRu4gYaH40p9xzwBYZ4MJ4
+HaczCOUMeO/iy7viLmDYtY7SMNHTXGYfL/iQBlf34SdR2g4ofF6Kx0CFZzrVDU6g
+KWes9d/kVsPAHJ1MmF3OgnhlmQThSCmulQmG+TLnI4TlgUYiNR5cBudat8YEV22A
+Cdjxuj12+E0U+yWLoZG/i/GI8U2a8gABi0WHAjGWk47Wy3Ax0qNsxmUeeXFkowOl
+cLKlJvzhvT1f/jhN2YRt4xgna+4jV1rftxltBbT4VM11fTjTdKp4ywRomiJ7X9BP
+Wijqx0X7hbrubUoc6lYUwW3oLlOUImbbGbUhh1etcmIyMPNQ/VXaBfYUdekC9Vhr
+OLyrIRkT2maPQLn39n16RjL2QDIPYPYLMhH7EZFgobqQe76gL+3IAJIG60dGlhJ8
+9iVt7Gtda5ioH4TvMGiowN8QU4lfjB8GoQSQoVvCg0eg4nwm2X9xgfAxgC8J8a97
+p9CMZ0KflZE=
+=FfJm
+-----END PGP SIGNATURE-----
+
+--=-uG1MESdLskG5lzxWCubH--
