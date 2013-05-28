@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934655Ab3E1Pxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:53:50 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:57463 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550Ab3E1Pxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:53:49 -0400
-Date: Tue, 28 May 2013 17:53:43 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
-Message-ID: <20130528175343.77c6353d@skate>
-In-Reply-To: <20130528154047.GT31290@titan.lakedaemon.net>
-References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130528154047.GT31290@titan.lakedaemon.net>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934685Ab3E1PyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:54:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60847 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934550Ab3E1Px6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 11:53:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,758,1363158000"; 
+   d="scan'208";a="341393222"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Cris <linux-cris-kernel@axis.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] cris: kgdb: use native hex2bin
+Date: Tue, 28 May 2013 18:53:52 +0300
+Message-Id: <1369756432-5552-2-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+In-Reply-To: <1369756432-5552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
+ <1369756432-5552-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jason Cooper,
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ arch/cris/arch-v10/kernel/kgdb.c | 50 ++++++----------------------------------
+ 1 file changed, 7 insertions(+), 43 deletions(-)
 
-On Tue, 28 May 2013 11:40:47 -0400, Jason Cooper wrote:
-
-> In order to avoid losing changes between this series and mvebu/pcie,
-> I've rebased this series on top of mvebu/pcie and incorporated the
-> correct conflict resolution into this series.  See below...
-
-Thanks!
-
-> I'm posting the revised version as replies to patches 1, 5 and 6. Please
-> let me know if I messed it up.  I'd like to send the PR for these
-> shortly.
-
-I had a quick look, and it looks good to me. Let me know to which
-branch you've pushed this, and the merge order to follow to "rebuild"
-something that works, and I'll try to find some time to test it for
-real on hardware.
-
-Thanks again!
-
-Thomas
+diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+index 37e6d2c..07bccd8 100644
+--- a/arch/cris/arch-v10/kernel/kgdb.c
++++ b/arch/cris/arch-v10/kernel/kgdb.c
+@@ -278,19 +278,11 @@ void putDebugChar (int val);
+ 
+ void enableDebugIRQ (void);
+ 
+-/* Returns the integer equivalent of a hexadecimal character. */
+-static int hex (char ch);
+-
+ /* Convert the memory, pointed to by mem into hexadecimal representation.
+    Put the result in buf, and return a pointer to the last character
+    in buf (null). */
+ static char *mem2hex (char *buf, unsigned char *mem, int count);
+ 
+-/* Convert the array, in hexadecimal representation, pointed to by buf into
+-   binary representation. Put the result in mem, and return a pointer to
+-   the character after the last byte written. */
+-static unsigned char *hex2mem (unsigned char *mem, char *buf, int count);
+-
+ /* Put the content of the array, in binary representation, pointed to by buf
+    into memory pointed to by mem, and return a pointer to
+    the character after the last byte written. */
+@@ -560,7 +552,7 @@ write_register (int regno, char *val)
+ 
+         if (regno >= R0 && regno <= PC) {
+ 		/* 32-bit register with simple offset. */
+-		hex2mem ((unsigned char *)current_reg + regno * sizeof(unsigned int),
++		hex2bin((unsigned char *)current_reg + regno * sizeof(unsigned int),
+ 			 val, sizeof(unsigned int));
+ 	}
+         else if (regno == P0 || regno == VR || regno == P4 || regno == P8) {
+@@ -570,12 +562,12 @@ write_register (int regno, char *val)
+         else if (regno == CCR) {
+ 		/* 16 bit register with complex offset. (P4 is read-only, P6 is not implemented, 
+                    and P7 (MOF) is 32 bits in ETRAX 100LX. */
+-		hex2mem ((unsigned char *)&(current_reg->ccr) + (regno-CCR) * sizeof(unsigned short),
++		hex2bin((unsigned char *)&(current_reg->ccr) + (regno-CCR) * sizeof(unsigned short),
+ 			 val, sizeof(unsigned short));
+ 	}
+ 	else if (regno >= MOF && regno <= USP) {
+ 		/* 32 bit register with complex offset.  (P8 has been taken care of.) */
+-		hex2mem ((unsigned char *)&(current_reg->ibr) + (regno-IBR) * sizeof(unsigned int),
++		hex2bin((unsigned char *)&(current_reg->ibr) + (regno-IBR) * sizeof(unsigned int),
+ 			 val, sizeof(unsigned int));
+ 	} 
+         else {
+@@ -595,7 +587,7 @@ write_stack_register (int thread_id, int regno, char *valptr)
+ 	stack_registers *d = (stack_registers *)stack_list[thread_id];
+ 	unsigned int val;
+ 	
+-	hex2mem ((unsigned char *)&val, valptr, sizeof(unsigned int));
++	hex2bin((unsigned char *)&val, valptr, sizeof(unsigned int));
+ 	if (regno >= R0 && regno < SP) {
+ 		d->r[regno] = val;
+ 	}
+@@ -659,18 +651,6 @@ read_register (char regno, unsigned int *valptr)
+ }
+ 
+ /********************************** Packet I/O ******************************/
+-/* Returns the integer equivalent of a hexadecimal character. */
+-static int
+-hex (char ch)
+-{
+-	if ((ch >= 'a') && (ch <= 'f'))
+-		return (ch - 'a' + 10);
+-	if ((ch >= '0') && (ch <= '9'))
+-		return (ch - '0');
+-	if ((ch >= 'A') && (ch <= 'F'))
+-		return (ch - 'A' + 10);
+-	return (-1);
+-}
+ 
+ /* Convert the memory, pointed to by mem into hexadecimal representation.
+    Put the result in buf, and return a pointer to the last character
+@@ -703,22 +683,6 @@ mem2hex(char *buf, unsigned char *mem, int count)
+ 	return (buf);
+ }
+ 
+-/* Convert the array, in hexadecimal representation, pointed to by buf into
+-   binary representation. Put the result in mem, and return a pointer to
+-   the character after the last byte written. */
+-static unsigned char*
+-hex2mem (unsigned char *mem, char *buf, int count)
+-{
+-	int i;
+-	unsigned char ch;
+-	for (i = 0; i < count; i++) {
+-		ch = hex (*buf++) << 4;
+-		ch = ch + hex (*buf++);
+-		*mem++ = ch;
+-	}
+-	return (mem);
+-}
+-
+ /* Put the content of the array, in binary representation, pointed to by buf
+    into memory pointed to by mem, and return a pointer to the character after
+    the last byte written.
+@@ -964,7 +928,7 @@ handle_exception (int sigval)
+ 				   Success: OK
+ 				   Failure: void. */
+ #ifdef PROCESS_SUPPORT
+-				hex2mem ((unsigned char *)&reg_g, &remcomInBuffer[1], sizeof(registers));
++				hex2bin((unsigned char *)&reg_g, &remcomInBuffer[1], sizeof(registers));
+ 				if (current_thread_g == executing_task) {
+ 					copy_registers (&reg, &reg_g, sizeof(registers));
+ 				}
+@@ -972,7 +936,7 @@ handle_exception (int sigval)
+ 					copy_registers_to_stack(current_thread_g, &reg_g);
+ 				}
+ #else
+-				hex2mem((char *)&reg, &remcomInBuffer[1], sizeof(registers));
++				hex2bin((char *)&reg, &remcomInBuffer[1], sizeof(registers));
+ #endif
+ 				gdb_cris_strcpy (remcomOutBuffer, "OK");
+ 				break;
+@@ -1053,7 +1017,7 @@ handle_exception (int sigval)
+ 					int length = gdb_cris_strtol(lenptr+1, &dataptr, 16);
+ 					if (*lenptr == ',' && *dataptr == ':') {
+ 						if (remcomInBuffer[0] == 'M') {
+-							hex2mem(addr, dataptr + 1, length);
++							hex2bin(addr, dataptr + 1, length);
+ 						}
+ 						else /* X */ {
+ 							bin2mem(addr, dataptr + 1, length);
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.8.2.rc0.22.gb3600c3
+
