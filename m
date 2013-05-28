@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab3E1Uhc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 16:37:32 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:15211 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab3E1Uhb (ORCPT
+	id S1756207Ab3E1UkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 16:40:15 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64814 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab3E1UkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 16:37:31 -0400
-Message-ID: <1369773466.4188.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/4] ipc/sem.c: Bug fixes, regression fixes, v3
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 28 May 2013 13:37:46 -0700
-In-Reply-To: <51A38257.2020804@colorfullife.com>
-References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
-	 <1369601453.2259.15.camel@buesod1.americas.hpqcorp.net>
-	 <51A38257.2020804@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Tue, 28 May 2013 16:40:13 -0400
+Message-ID: <51A5162A.5060609@linaro.org>
+Date: Tue, 28 May 2013 13:40:10 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Zoran Markovic <zoran.markovic@linaro.org>
+CC: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        Benoit Goby <benoit@android.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCHv2] power: Add option to log time spent in suspend
+References: <1369200734-5187-1-git-send-email-zoran.markovic@linaro.org>
+In-Reply-To: <1369200734-5187-1-git-send-email-zoran.markovic@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*sigh* it seems that the email this morning wasn't sent, resending...
+On 05/21/2013 10:32 PM, Zoran Markovic wrote:
+> From: Colin Cross <ccross@android.com>
+>
+> Below is a patch from android kernel that maintains a histogram of
+> suspend times. Please review and provide feedback.
+>
+> Statistices on the time spent in suspend are kept in
+> /sys/kernel/debug/sleep_time.
+>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Todd Poynor <toddpoynor@google.com>
+> Cc: San Mehat <san@google.com>
+> Cc: Benoit Goby <benoit@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> [zoran.markovic@linaro.org: Re-formatted suspend time table to better fit
+> expected values. Moved accounting of suspend time into timekeeping core.
+> Removed CONFIG_SUSPEND_TIME flag and made the feature conditional on
+> CONFIG_DEBUG_FS. Changed the file name to sleep_time to better fit terminology
+> in timekeeping core. Changed seq_printf to seq_puts. Tweaked commit message]
+> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 
-On Mon, 2013-05-27 at 17:57 +0200, Manfred Spraul wrote:
-> Hi Davidlohr,
-> 
-> On 05/26/2013 10:50 PM, Davidlohr Bueso wrote:
-> >
-> > In lack of getting my swingbench DSS environment back, I ran these
-> > changes against the semop-multi program on my laptop. For 256 threads,
-> > with Manfred's patchset the ops/sec suffers around -7.3%.
-> 
-> Could you also check the performance of only patch#1?
-> I fear that it might be slower than all 4 together.
+Queued for 3.11.
 
-Performance wise, patch 1 actually doesn't make any difference with what
-was already upstream.
-
-> 
-> With regards to semop-multi:
-> Is this the tool?
-> http://marc.info/?l=linux-kernel&m=136208613626892&q=p3
-
-Yep.
-
-Thanks,
-Davidlohr
+Thanks!
+-john
 
