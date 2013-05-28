@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934529Ab3E1V0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:26:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59870 "EHLO
+	id S934598Ab3E1V0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59884 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933713Ab3E1V0f (ORCPT
+	with ESMTP id S933713Ab3E1V0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:26:35 -0400
+	Tue, 28 May 2013 17:26:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Sukanto Ghosh <sghosh@apm.com>, Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 52/78] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
-Date: Tue, 28 May 2013 14:20:01 -0700
-Message-Id: <1369776027-17859-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 46/78] arm64: mm: Fix operands of clz in __flush_dcache_all
+Date: Tue, 28 May 2013 14:19:55 -0700
+Message-Id: <1369776027-17859-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,54 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Sukanto Ghosh <sghosh@apm.com>
 
-commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
+commit b4fed0796841b5293b9c9427a5391b7bb20ef2d9 upstream.
 
-When a 32 bit version of ipmitool is used on a 64 bit kernel, the
-ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
-incomplete data being retrieved in some cases, or other possible failures.
-Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
+The format of the lower 32-bits of the 64-bit operand to 'dc cisw' is
+unchanged from ARMv7 architecture and the upper bits are RES0. This
+implies that the 'way' field of the operand of 'dc cisw' occupies the
+bit-positions [31 .. (32-A)]. Due to the use of 64-bit extended operands
+to 'clz', the existing implementation of __flush_dcache_all is incorrectly
+placing the 'way' field in the bit-positions [63 .. (64-A)].
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sukanto Ghosh <sghosh@apm.com>
+Tested-by: Anup Patel <anup.patel@linaro.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/ipmi/ipmi_devintf.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/arm64/mm/cache.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-index 9eb360f..d5a5f02 100644
---- a/drivers/char/ipmi/ipmi_devintf.c
-+++ b/drivers/char/ipmi/ipmi_devintf.c
-@@ -837,13 +837,25 @@ static long compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
- 		return ipmi_ioctl(filep, cmd, arg);
- 	}
- }
-+
-+static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
-+				       unsigned long arg)
-+{
-+	int ret;
-+
-+	mutex_lock(&ipmi_mutex);
-+	ret = compat_ipmi_ioctl(filep, cmd, arg);
-+	mutex_unlock(&ipmi_mutex);
-+
-+	return ret;
-+}
- #endif
- 
- static const struct file_operations ipmi_fops = {
- 	.owner		= THIS_MODULE,
- 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
--	.compat_ioctl   = compat_ipmi_ioctl,
-+	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
- #endif
- 	.open		= ipmi_open,
- 	.release	= ipmi_release,
+diff --git a/arch/arm64/mm/cache.S b/arch/arm64/mm/cache.S
+index abe69b8..48a3860 100644
+--- a/arch/arm64/mm/cache.S
++++ b/arch/arm64/mm/cache.S
+@@ -52,7 +52,7 @@ loop1:
+ 	add	x2, x2, #4			// add 4 (line length offset)
+ 	mov	x4, #0x3ff
+ 	and	x4, x4, x1, lsr #3		// find maximum number on the way size
+-	clz	x5, x4				// find bit position of way size increment
++	clz	w5, w4				// find bit position of way size increment
+ 	mov	x7, #0x7fff
+ 	and	x7, x7, x1, lsr #13		// extract max number of the index size
+ loop2:
 -- 
 1.8.1.2
 
