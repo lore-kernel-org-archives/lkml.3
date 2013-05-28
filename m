@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933341Ab3E1IA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 04:00:26 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:4263
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933246Ab3E1IAY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 04:00:24 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: [PATCH] powerpc/sysfs: disable hotplug for the boot cpu
-Date: Tue, 28 May 2013 15:59:44 +0800
-Message-ID: <1369727984-21505-2-git-send-email-chenhui.zhao@freescale.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1369727984-21505-1-git-send-email-chenhui.zhao@freescale.com>
-References: <1369727984-21505-1-git-send-email-chenhui.zhao@freescale.com>
+	id S933334Ab3E1IDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 04:03:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10404 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933282Ab3E1IDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 04:03:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,756,1363158000"; 
+   d="scan'208";a="344235914"
+Message-ID: <51A464B9.5080106@linux.intel.com>
+Date: Tue, 28 May 2013 11:03:05 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Eric Dumazet <erdnetdev@gmail.com>
+CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v5 net-next 1/5] net: add napi_id and hash
+References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>  <20130527074401.29882.98135.stgit@ladj378.jer.intel.com> <1369700905.3301.499.camel@edumazet-glaptop>
+In-Reply-To: <1369700905.3301.499.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some features depend on the boot cpu, for instance, hibernate/suspend.
-So disable hotplug for the boot cpu.
+On 28/05/2013 03:28, Eric Dumazet wrote:
+> On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
+>> +extern void napi_hash_add(struct napi_struct *napi);
+>> +
+>> +/**
+>> + *	napi_hash_del - remove a NAPI from blobal table
+>
+> global
 
-Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
----
- arch/powerpc/kernel/sysfs.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thank you
+(my typing is almost as bad as my spelling, please don't tell my mom)
 
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index e68a845..294b1c4e 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -655,8 +655,10 @@ static int __init topology_init(void)
- 		 * CPU.  For instance, the boot cpu might never be valid
- 		 * for hotplugging.
- 		 */
--		if (ppc_md.cpu_die)
-+		if (ppc_md.cpu_die && cpu != boot_cpuid)
- 			c->hotpluggable = 1;
-+		else
-+			c->hotpluggable = 0;
- 
- 		if (cpu_online(cpu) || c->hotpluggable) {
- 			register_cpu(c, cpu);
--- 
-1.7.3
+>> @@ -166,6 +167,10 @@ static struct list_head offload_base __read_mostly;
+>>   DEFINE_RWLOCK(dev_base_lock);
+>>   EXPORT_SYMBOL(dev_base_lock);
+>>
+>> +atomic_t napi_gen_id;
+>
+> Not sure we need an atomic, we are protected by RTNL anyway.
 
+With an atomic we don't need the RTNL in any of the napi_id functions.
+One less thing to worry about when we try to remove the RTNL.
 
+-Eliezer
