@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab3E1Ksz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:48:55 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33335 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab3E1Ksx (ORCPT
+	id S932772Ab3E1Kuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:50:46 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37108 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755737Ab3E1Kup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:48:53 -0400
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, rob.herring@calxeda.com,
-        catalin.marinas@arm.com, nico@linaro.org,
-        Po-Yu Chuang <ratbert.chuang@gmail.com>
-Subject: [PATCH] ARM: map_init_section flushes incorrect pmd
-Date: Tue, 28 May 2013 18:48:20 +0800
-Message-Id: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 28 May 2013 06:50:45 -0400
+Date: Tue, 28 May 2013 11:50:41 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Russ Anderson <rja@sgi.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Message-ID: <20130528105041.GP14575@console-pimps.org>
+References: <20130522162747.GA20816@sgi.com>
+ <20130523115801.GJ14575@console-pimps.org>
+ <20130523203234.GD20913@sgi.com>
+ <20130524074331.GL14575@console-pimps.org>
+ <20130524200539.GA3322@sgi.com>
+ <1369426255.2217.9.camel@x230>
+ <20130524204937.GB3322@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524204937.GB3322@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This bug was introduced in commit e651eab0.
-Some v4/v5 platforms failed to boot due to this.
+On Fri, 24 May, at 03:49:38PM, Russ Anderson wrote:
+> Why does the kernel still try to create /sys/firmware/efivars/
+> entries in the original failure even though efi_call_phys4()
+> failed?  Or does it always try to create those entries
+> and GetNextVariable() blows up in the original failure
+> but not in my experiment?
 
-Signed-off-by: Po-Yu Chuang <ratbert.chuang@gmail.com>
----
- arch/arm/mm/mmu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+CONFIG_EFI_VARS will try to create /sys/firmware/efivars even without
+the additional info from the early EFI boot variable code. The early
+variable code is only a heuristic that is supposed to improve the
+anti-bricking algorithm in the EFI variable code.
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e0d8565..19a43f8 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -620,6 +620,8 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
- 			unsigned long end, phys_addr_t phys,
- 			const struct mem_type *type)
- {
-+	pmd_t *p = pmd;
-+
- #ifndef CONFIG_ARM_LPAE
- 	/*
- 	 * In classic MMU format, puds and pmds are folded in to
-@@ -638,7 +640,7 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
- 		phys += SECTION_SIZE;
- 	} while (pmd++, addr += SECTION_SIZE, addr != end);
- 
--	flush_pmd_entry(pmd);
-+	flush_pmd_entry(p);
- }
- 
- static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
 -- 
-1.7.9.5
-
+Matt Fleming, Intel Open Source Technology Center
