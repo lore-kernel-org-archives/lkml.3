@@ -1,143 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3E1Gnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 02:43:32 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:4712 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab3E1Gna (ORCPT
+	id S933164Ab3E1GtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 02:49:00 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:45531 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702Ab3E1Gs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 02:43:30 -0400
-Message-ID: <51A451CE.8070801@huawei.com>
-Date: Tue, 28 May 2013 14:42:22 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 28 May 2013 02:48:58 -0400
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: Libo Chen <libo.chen@huawei.com>, <wsa@the-dreams.de>,
-        <guz.fnst@cn.fujitsu.com>, <sonic.zhang@analog.com>,
-        <uclinux-dist-devel@blackfin.uclinux.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: Re: [PATCH RFC v3 1/3] i2c: i2c-bfin-twi: convert to devm_* API
-References: <1369310405-21112-1-git-send-email-libo.chen@huawei.com> <CAK9yfHx7ifnWjKCVc0Oju-28PdosF81OpVC5S5Vdj6hDSnfQfw@mail.gmail.com>
-In-Reply-To: <CAK9yfHx7ifnWjKCVc0Oju-28PdosF81OpVC5S5Vdj6hDSnfQfw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1369412476-14245-7-git-send-email-james.hogan@imgtec.com>
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
+	<1369412476-14245-7-git-send-email-james.hogan@imgtec.com>
+Date: Tue, 28 May 2013 08:48:57 +0200
+Message-ID: <CACRpkdYaHbX0ixU=ZEbeK6MYnBL3poPwCBkW6O88cBL+LxpdDw@mail.gmail.com>
+Subject: Re: [PATCH v2 6/9] pinctrl-tz1090: add TZ1090 pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks for your review. I will update later.
+Hi James, I want to route this patch by Laurent Pinchart, as he's also
+adding device tree support for a SoC using generic pinconf.
 
-Libo
+Creating new bindings for every pin controller defining the same thing
+and implementing the same OF parsers is not sane.
 
-On 2013/5/24 11:19, Sachin Kamat wrote:
-> On 23 May 2013 17:30, Libo Chen <libo.chen@huawei.com> wrote:
->> peripheral_request_list has got free if any one faild, so no need to free again in err case.
->> aovid this, convert them to devm_* API
->>
->> Signed-off-by: Libo Chen <libo.chen@huawei.com>
-> 
-> It is a good practice to include changelog while submitting revised
-> versions of the patch.
-> 
->> ---
->>  drivers/i2c/busses/i2c-bfin-twi.c |   38 +++++++++---------------------------
->>  1 files changed, 10 insertions(+), 28 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
->> index 05080c4..2b99c48 100644
->> --- a/drivers/i2c/busses/i2c-bfin-twi.c
->> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
->> @@ -621,35 +621,27 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->>         int rc;
->>         unsigned int clkhilow;
->>
->> -       iface = kzalloc(sizeof(struct bfin_twi_iface), GFP_KERNEL);
->> +       iface = devm_kzalloc(&pdev->dev, sizeof(struct bfin_twi_iface),
->> +                       GFP_KERNEL);
->>         if (!iface) {
->>                 dev_err(&pdev->dev, "Cannot allocate memory\n");
-> 
-> This error message is not really required.
-> 
->> -               rc = -ENOMEM;
->> -               goto out_error_nomem;
->> +               return -ENOMEM;
->>         }
->>
->>         spin_lock_init(&(iface->lock));
->>
->>         /* Find and map our resources */
->>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -       if (res == NULL) {
->> -               dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
->> -               rc = -ENOENT;
->> -               goto out_error_get_res;
->> -       }
->> -
->> -       iface->regs_base = ioremap(res->start, resource_size(res));
->> -       if (iface->regs_base == NULL) {
->> +       iface->regs_base = devm_ioremap_resource(&pdev->dev, res);
->> +       if (IS_ERR(iface->regs_base)) {
->>                 dev_err(&pdev->dev, "Cannot map IO\n");
-> 
-> devm_ioremap_resource prints out the error messages. So the above line
-> is redundant.
-> 
->> -               rc = -ENXIO;
->> -               goto out_error_ioremap;
->> +               return -ENXIO;
-> 
-> Why not return PTR_ERR(iface->regs_base)?
-> 
->>         }
->>
->>         iface->irq = platform_get_irq(pdev, 0);
->>         if (iface->irq < 0) {
->>                 dev_err(&pdev->dev, "No IRQ specified\n");
->> -               rc = -ENOENT;
->> -               goto out_error_no_irq;
->> +               return -ENOENT;
->>         }
->>
->>         p_adap = &iface->adap;
->> @@ -666,10 +658,10 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->>                                         "i2c-bfin-twi");
->>         if (rc) {
->>                 dev_err(&pdev->dev, "Can't setup pin mux!\n");
->> -               goto out_error_pin_mux;
->> +               return rc;
->>         }
->>
->> -       rc = request_irq(iface->irq, bfin_twi_interrupt_entry,
->> +       rc = devm_request_irq(&pdev->dev, iface->irq, bfin_twi_interrupt_entry,
->>                 0, pdev->name, iface);
->>         if (rc) {
->>                 dev_err(&pdev->dev, "Can't get IRQ %d !\n", iface->irq);
->> @@ -707,16 +699,9 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->>         return 0;
->>
->>  out_error_add_adapter:
->> -       free_irq(iface->irq, iface);
->>  out_error_req_irq:
->> -out_error_no_irq:
->>         peripheral_free_list((unsigned short *)pdev->dev.platform_data);
->> -out_error_pin_mux:
->> -       iounmap(iface->regs_base);
->> -out_error_ioremap:
->> -out_error_get_res:
->> -       kfree(iface);
->> -out_error_nomem:
->> +
-> 
-> Empty line not required.
-> 
-> You could probably combine all the empty labels into one meaningful label above.
-> 
->>         return rc;
-> 
-> 
+We need to:
 
+- Define generic pinconf bindings
+- Implement a common parser for these in drivers/pinctrl/pinconf-generic.c
 
+I'll merge your patches to <linux/pinctrl/pinctrl-generic.h> as a
+baseline.
+
+On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
+
+(...)
+
+> +Optional subnode-properties:
+> +- function: A string containing the name of the function to mux to the pin or
+> +  group. Valid values for function names are listed below, including which
+> +  pingroups can be muxed to them.
+> +- tristate: Flag, put pin into high impedance state.
+> +- pull-up: Flag, pull pin high.
+> +- pull-down: Flag, pull pin low.
+> +- bus-hold: Flag, weak latch last value on tristate bus.
+> +- schmitt: Integer, enable or disable Schmitt trigger mode for the pins.
+> +    0: no hysteresis
+> +    1: schmitt trigger
+> +- slew-rate: Integer, control slew rate of pins.
+> +    0: slow (half frequency)
+> +    1: fast
+> +- drive-strength: Integer, control drive strength of pins in mA.
+> +    2: 2mA
+> +    4: 4mA
+> +    8: 8mA
+> +    12: 12mA
+
+So if you want to use these names they shall be made generic.
+
+Else you have to prefix everything with "tz1090,<property>"
+
+> +/* Describes pinconf properties/flags available from device tree */
+> +static const struct cfg_param {
+> +       const char *property;
+> +       enum pin_config_param param;
+> +       bool flag;
+> +} cfg_params[] = {
+> +       {"tristate",            PIN_CONFIG_BIAS_HIGH_IMPEDANCE,         true},
+> +       {"pull-up",             PIN_CONFIG_BIAS_PULL_UP,                true},
+> +       {"pull-down",           PIN_CONFIG_BIAS_PULL_DOWN,              true},
+> +       {"bus-hold",            PIN_CONFIG_BIAS_BUS_HOLD,               true},
+> +       {"schmitt",             PIN_CONFIG_INPUT_SCHMITT_ENABLE,        true},
+> +       {"slew-rate",           PIN_CONFIG_SLEW_RATE,                   false},
+> +       {"drive-strength",      PIN_CONFIG_DRIVE_STRENGTH,              false},
+> +};
+> +
+> +int tz1090_pinctrl_dt_subnode_to_map(struct device *dev,
+> +                                    struct device_node *np,
+> +                                    struct pinctrl_map **map,
+> +                                    unsigned *reserved_maps,
+> +                                    unsigned *num_maps)
+> +{
+> +       int ret, i;
+> +       const char *function;
+> +       u32 val;
+> +       unsigned long config;
+> +       unsigned long *configs = NULL;
+> +       unsigned num_configs = 0;
+> +       unsigned reserve;
+> +       struct property *prop;
+> +       const char *group;
+> +
+> +       ret = of_property_read_string(np, "function", &function);
+> +       if (ret < 0) {
+> +               /* EINVAL=missing, which is fine since it's optional */
+> +               if (ret != -EINVAL)
+> +                       dev_err(dev, "could not parse property function\n");
+> +               function = NULL;
+> +       }
+> +
+> +       for (i = 0; i < ARRAY_SIZE(cfg_params); i++) {
+> +               ret = of_property_read_u32(np, cfg_params[i].property, &val);
+> +               /* flags don't have to have a value */
+> +               if (ret == -EOVERFLOW && cfg_params[i].flag) {
+> +                       val = 1;
+> +                       ret = 0;
+> +               }
+> +               if (!ret) {
+> +                       config = pinconf_to_config_packed(cfg_params[i].param,
+> +                                                         val);
+> +                       ret = add_config(dev, &configs, &num_configs, config);
+> +                       if (ret < 0)
+> +                               goto exit;
+> +               /* EINVAL=missing, which is fine since it's optional */
+> +               } else if (ret != -EINVAL) {
+> +                       dev_err(dev, "could not parse property %s (%d)\n",
+> +                               cfg_params[i].property, ret);
+> +               }
+> +       }
+> +
+> +       reserve = 0;
+> +       if (function != NULL)
+> +               reserve++;
+> +       if (num_configs)
+> +               reserve++;
+> +       ret = of_property_count_strings(np, "pins");
+> +       if (ret < 0) {
+> +               dev_err(dev, "could not parse property pins\n");
+> +               goto exit;
+> +       }
+> +       reserve *= ret;
+> +
+> +       ret = reserve_map(dev, map, reserved_maps, num_maps, reserve);
+> +       if (ret < 0)
+> +               goto exit;
+> +
+> +       of_property_for_each_string(np, "pins", prop, group) {
+> +               if (function) {
+> +                       ret = add_map_mux(map, reserved_maps, num_maps,
+> +                                         group, function);
+> +                       if (ret < 0)
+> +                               goto exit;
+> +               }
+> +
+> +               if (num_configs) {
+> +                       ret = add_map_configs(dev, map, reserved_maps,
+> +                                             num_maps, group, configs,
+> +                                             num_configs);
+> +                       if (ret < 0)
+> +                               goto exit;
+> +               }
+> +       }
+> +
+> +       ret = 0;
+> +
+> +exit:
+> +       kfree(configs);
+> +       return ret;
+> +}
+
+This is looking good. Can you split out the pin config mapping in
+some way and put that into pinconf-generic.c?
+
+Yours,
+Linus Walleij
