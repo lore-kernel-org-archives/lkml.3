@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab3E1SpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:45:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24413 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab3E1SpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752907Ab3E1SpP (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 28 May 2013 14:45:15 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ntv_MHBx4dgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=j6BnnTXjCdIA:10 a=4LFf1yYZOXqiC5F5GJQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369766714.15552.15.camel@gandalf.local.home>
-Subject: Re: [PATCH] 9p: trace: use %*ph to dump buffer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Tue, 28 May 2013 14:45:14 -0400
-In-Reply-To: <1369730992.29283.224.camel@smile>
-References: <1366635713-11435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1369730992.29283.224.camel@smile>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:35346 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab3E1SpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:45:12 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Cc: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
+References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
+	<1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
+Date: Tue, 28 May 2013 11:45:09 -0700
+In-Reply-To: <1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
+	(Andrii Tseglytskyi's message of "Mon, 27 May 2013 14:07:24 +0300")
+Message-ID: <87sj17aqq2.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 11:49 +0300, Andy Shevchenko wrote:
+Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
 
-> Any comment on this one, anyone?
-> 
+> From: Nishanth Menon <nm@ti.com>
+>
+> vpboundsintr_en is available inside the IP block as an re-sycned
+> version and one which is not. Due to this, there is an 1 sysclk
+> cycle window where interruptz could be asserted low for 1 cycle.
+                             ^^^
 
-Tracepoints are the responsibility of the maintainers that the code they
-reside in. But I like to be Cc'd just to make sure things are not done
-incorrectly.
+Is that the way the cool kidz are spelling interrupts these days?  ;)
 
-This change looks fine to me, but thanks for Cc'ing me, as the
-libtraceevent needs to be updated to handle this change, such that perf
-can parse it too.
+> IF, intr_en is cleared on the exact same cycle as the irqclr, an
+> additional pulse is generated which indicates for VP that
+> an additional adjustment of voltage is required.
+>
+> This results in VP doing two voltage adjustments for the SRERR
+> (based on configuration, upto 4 steps), instead of the needed
+> 1 step.
+> Due to the unexpected pulse from AVS which breaks the AVS-VP
+> communication protocol, VP also ends up in a stuck condition by
+> entering a state where VP module remains non-responsive
+> to any futher AVS adjustment events. This creates the symptom
+> called "TRANXDONE Timeout" scenario.
+>
+> By disabling errgen prior to disable of intr_en, this situation
+> can be avoided.
+>
+> Signed-off-by: Vincent Bour <v-bour@ti.com>
+> Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
 
--- Steve
+>From Documentation/SubbmittingPatches:
 
+   "If a person was not directly involved in the preparation or handling
+   of a patch but wishes to signify and record their approval of it then
+   they can arrange to have an Acked-by: line added to the patch's
+   changelog."
 
+Are all of the tags above co-authors or on the delivery path?  I suspect
+an Acked-by or Reviewed-by is more appropriate here.
+
+Otherwise, patch itself looks fine.
+
+Kevin
+
+> ---
+>  drivers/power/avs/smartreflex.c |   11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+> index 6b2238b..f34d34d 100644
+> --- a/drivers/power/avs/smartreflex.c
+> +++ b/drivers/power/avs/smartreflex.c
+> @@ -449,12 +449,17 @@ int sr_disable_errgen(struct voltagedomain *voltdm)
+>  		return -EINVAL;
+>  	}
+>  
+> -	/* Disable the interrupts of ERROR module */
+> -	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
+> -
+>  	/* Disable the Sensor and errorgen */
+>  	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SENENABLE | SRCONFIG_ERRGEN_EN, 0);
+>  
+> +	/*
+> +	 * Disable the interrupts of ERROR module
+> +	 * NOTE: modify is a read, modify,write - an implicit OCP barrier
+> +	 * which is required is present here - sequencing is critical
+> +	 * at this point (after errgen is disabled, vpboundint disable)
+> +	 */
+> +	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
+> +
+>  	return 0;
+>  }
