@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab3E1Ag5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 20:36:57 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:36171 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758271Ab3E1Agz (ORCPT
+	id S1758404Ab3E1BKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 21:10:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54386 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3E1BKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 20:36:55 -0400
-Message-ID: <1369701413.3301.506.camel@edumazet-glaptop>
-Subject: Re: [PATCH v5 net-next 3/5] tcp: add TCP support for low latency
- receive poll.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 27 May 2013 17:36:53 -0700
-In-Reply-To: <20130527074421.29882.73968.stgit@ladj378.jer.intel.com>
-References: <20130527074351.29882.51106.stgit@ladj378.jer.intel.com>
-	 <20130527074421.29882.73968.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 27 May 2013 21:10:23 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 27 May 2013 18:10:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Don Zickus <dzickus@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        dyoung@redhat.com
+Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130528011047.GA28597@roeck-us.net>
+References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
+ <87li8gaku0.fsf@xmission.com>
+ <20130418130009.GH79013@redhat.com>
+ <20130418134904.GC2767@roeck-us.net>
+ <20130418135257.GL79013@redhat.com>
+ <20130418145413.GA1980@roeck-us.net>
+ <20130424144226.GI79013@redhat.com>
+ <20130424152142.GA26864@roeck-us.net>
+ <20130527191618.GD14258@spo001.leaseweb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130527191618.GD14258@spo001.leaseweb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-27 at 10:44 +0300, Eliezer Tamir wrote:
-> adds busy-poll support for TCP.
+On Mon, May 27, 2013 at 09:16:18PM +0200, Wim Van Sebroeck wrote:
+>  Hi Guenter,
 > 
-
-Really, this is a small changelog for such an addition :(
-
-How poll()/epoll() is supported ?
-
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Tested-by: Willem de Bruijn <willemb@google.com>
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> ---
+> > > Hi Guenter,
+> > > 
+> > > Is there an easy way to determine which driver is loaded for each
+> > > /dev/watchdogN device (from a script perspective).
+> > > 
+> > > Basically, I wanted to determine the module that needs to be included in
+> > > the kdump initrd image.
+> > > 
+> > Sometimes. For example, the iTCO_wdt driver has an entry in /sys/devices, and
+> > /sys/class/watchdog/watchdogX/device points to it. That is not always the case,
+> > howewver. In my system, for example, the MEI watchdog is active, but there is
+> > nothing I can find that would give me an indication that /dev/watchdog0 actually
+> > points to the MEI watchdog driver.
+> > 
+> > Of course I might be missing something, and there might be some other means
+> > to identify the driver from userspace. Would be great, actually, as I am having
+> > the same problem.
 > 
->  net/ipv4/tcp.c       |    5 +++++
->  net/ipv4/tcp_input.c |    1 +
->  net/ipv4/tcp_ipv4.c  |    2 ++
->  3 files changed, 8 insertions(+), 0 deletions(-)
+> Only when you set the .parent field in the watchdog_device data you will get the
+> referal in the /sys/class/... tree. In iTCO_wdt.c you have the following code
+> that does that: iTCO_wdt_watchdog_dev.parent = dev->dev.parent;
 > 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index d87ce72..652c75a 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -279,6 +279,7 @@
->  
->  #include <asm/uaccess.h>
->  #include <asm/ioctls.h>
-> +#include <net/ll_poll.h>
->  
->  int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
->  
-> @@ -1551,6 +1552,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
->  	struct sk_buff *skb;
->  	u32 urg_hole = 0;
->  
-> +	if (sk_valid_ll(sk) && skb_queue_empty(&sk->sk_receive_queue)
-> +	    && (sk->sk_state == TCP_ESTABLISHED))
-> +		sk_poll_ll(sk, nonblock);
-> +
->  	lock_sock(sk);
->  
->  	err = -ENOTCONN;
-> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-> index 9579e1a..4d82939 100644
-> --- a/net/ipv4/tcp_input.c
-> +++ b/net/ipv4/tcp_input.c
-> @@ -74,6 +74,7 @@
->  #include <linux/ipsec.h>
->  #include <asm/unaligned.h>
->  #include <net/netdma.h>
-> +#include <net/ll_poll.h>
->  
+> From the watchdog-kernel-api documentation:
+> * parent: set this to the parent device (or NULL) before calling
+>   watchdog_register_device.
+> 
+Hi Wim,
 
+We live and learn ... thanks a lot for the hint!
 
-Not sure why this include is needed in this file ?
-
-You added nothing else but this line.
-
->  int sysctl_tcp_timestamps __read_mostly = 1;
->  int sysctl_tcp_window_scaling __read_mostly = 1;
-> diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-> index d20ede0..35fd8bc 100644
-> --- a/net/ipv4/tcp_ipv4.c
-> +++ b/net/ipv4/tcp_ipv4.c
-> @@ -75,6 +75,7 @@
->  #include <net/netdma.h>
->  #include <net/secure_seq.h>
->  #include <net/tcp_memcontrol.h>
-> +#include <net/ll_poll.h>
->  
->  #include <linux/inet.h>
->  #include <linux/ipv6.h>
-> @@ -2011,6 +2012,7 @@ process:
->  	if (sk_filter(sk, skb))
->  		goto discard_and_relse;
->  
-> +	sk_mark_ll(sk, skb);
->  	skb->dev = NULL;
->  
->  	bh_lock_sock_nested(sk);
-
-How IPv6 is handled ?
-
-
-
+Guenter
