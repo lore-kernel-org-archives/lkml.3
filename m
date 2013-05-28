@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569Ab3E1PSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:18:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23561 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934492Ab3E1PRv (ORCPT
+	id S934557Ab3E1PTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:19:20 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55366 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934476Ab3E1PTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:17:51 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RnCj8zb86lkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3m_eAQ9VMh8A:10 a=VwQbUJbxAAAA:8 a=wKr-vzE-v0XePlxv0e4A:9 a=QEXdDO2ut3YA:10 a=VKcRuV_XBfOElDsTgRsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130528151557.743203087@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 28 May 2013 11:15:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/2] [GIT PULL] tracing: A couple of fixes
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Tue, 28 May 2013 11:19:19 -0400
+Message-ID: <51A4CAED.7060608@linux.vnet.ibm.com>
+Date: Tue, 28 May 2013 23:19:09 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
+ pages
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130528003611.GA1958@amt.cnet>
+In-Reply-To: <20130528003611.GA1958@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052815-5490-0000-0000-0000038ADD76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 05/28/2013 08:36 AM, Marcelo Tosatti wrote:
+> On Thu, May 23, 2013 at 03:55:59AM +0800, Xiao Guangrong wrote:
+>> kvm_zap_obsolete_pages uses lock-break technique to zap pages,
+>> it will flush tlb every time when it does lock-break
+>>
+>> We can reload mmu on all vcpus after updating the generation
+>> number so that the obsolete pages are not used on any vcpus,
+>> after that we do not need to flush tlb when obsolete pages
+>> are zapped
+> 
+> After that point batching is also not relevant anymore?
+
+no... without batching, we do not know how much time we will
+spend to zap pages. It is not good for the case that
+zap_all_pages is called in the vcpu context.
+
+> 
+> 
+> Still concerned about a similar case mentioned earlier:
+> 
+> "
+> Note the account for pages freed step after pages are actually
+> freed: as discussed with Takuya, having pages freed and freed page
+> accounting out of sync across mmu_lock is potentially problematic:
+> kvm->arch.n_used_mmu_pages and friends do not reflect reality which can
+> cause problems for SLAB freeing and page allocation throttling.
+> "
+> 
+> This is a real problem, if you decrease n_used_mmu_pages at
+> kvm_mmu_prepare_zap_page, but only actually free pages later 
+> at kvm_mmu_commit_zap_page, there is the possibility of allowing
+> a huge number to be retained. There should be a maximum number of pages
+> at invalid_list.
+> 
+> (even higher possibility if you schedule without freeing pages reported
+> as released!).
+> 
+>> Note: kvm_mmu_commit_zap_page is still needed before free
+>> the pages since other vcpus may be doing locklessly shadow
+>> page walking
+
+Ah, yes, i agree with you.
+
+We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
+zapped-page, the page-shrink will free the page on that list first.
+
+Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
+let them merged first, and do add some comments and tlb optimization later?
 
 
-Linus,
-
-Two more fixes:
-
-The first one was reported by Mauro Carvalho Chehab, where if a poll()
-is done against a trace buffer for a CPU that has never been online,
-it will crash the kernel, as buffers are only created when a CPU comes
-on line, but the trace files are for all possible CPUs.
-
-This fix is to check if the buffer was allocated and if not return -EINVAL.
-
-That was the simple fix, the real fix is a bit more complex and not for
-a -rc release. We could have the files created when the CPUs come online.
-That would require some design changes.
-
-The second one was reported by Peter Zijlstra. If the kernel command line
-has ftrace=3Dnop, it will lock up the system on boot up. This is because
-the new design for 3.10 has the nop tracer bootstrap the tracing subsystem.
-When ftrace=3D<trace> is defined, when that tracer is registered, it
-starts the tracing, but uses the nop tracer to clear things out.
-What happened here was that ftrace=3Dnop caused the registering of nop
-to start it and use nop before it was initialized.
-
-The only thing nop needs to have done to initialize it is to have the
-tracer point its current_tracer structure member to the nop tracer.
-Doing that before registering the nop tracer makes everything work.
-
--- Steve
-
-Please pull the latest trace-fixes-v3.10-rc3 tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.10-rc3
-
-Tag SHA1: fc1bb352c272393813d3081ba40a2921a519acdb
-Head SHA1: 6721cb60022629ae76365551f05d9658b8d14c55
-
-
-Steven Rostedt (Red Hat) (2):
-      tracing: Fix crash when ftrace=3Dnop on the kernel command line
-      ring-buffer: Do not poll non allocated cpu buffers
-
-----
- kernel/trace/ring_buffer.c |    3 +++
- kernel/trace/trace.c       |    9 +++++++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRpMqYAAoJEOdOSU1xswtM2fsIALdHfrBft+A2swzFQfNSXlFg
-e+Xt91GHnj1eSCzEMWvo9YcVmR/RC43cJhbyDFRYrb3jJdsc6iX/JwYgZhjdS1Yp
-1gYrwf/wOvKKxqUxqGPiWXhvqTMHRszeIh0Fnw0Fs1ic1MNEyPDYzca2REVQeCEV
-1MQFwhdL1VH71y8YrhwRunY6yxvmANOh3TeLbL/+j07GRZZB++UymVxOuAdJTVc5
-CS2PcWjPjA6fi9Ye5BbUDWtm18oLVlD3eNFQden58xYuq7fg+b1DC11VEJKLY0rf
-QrbyXJEzdVMS20oVeXpKkT4Y1jJU/42j1TfMaHEQwKhSUtEYkUkoU6bHhHcCB3k=
-=5mKn
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
