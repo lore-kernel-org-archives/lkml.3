@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759401Ab3E1D5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:57:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52615 "EHLO
+	id S1759415Ab3E1D5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:57:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52711 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758913Ab3E1DyX (ORCPT
+	by vger.kernel.org with ESMTP id S1758953Ab3E1Dyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:23 -0400
+	Mon, 27 May 2013 23:54:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jens Axboe" <axboe@kernel.dk>,
-        "Lars Ellenberg" <lars.ellenberg@linbit.com>,
-        "Philipp Reisner" <philipp.reisner@linbit.com>
+CC: akpm@linux-foundation.org, "Jason Cooper" <jason@lakedaemon.net>,
+        "Marek Vasut" <marex@denx.de>, "Andrew Lunn" <andrew@lunn.ch>,
+        "Martin Michlmayr" <tbm@cyrius.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.76517477@decadent.org.uk>
+Message-ID: <lsq.1369712993.436541183@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [75/94] drbd: fix for deadlock when using automatic
- split-brain-recovery
+Subject: [31/94] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream.
+commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
 
-With an automatic after split-brain recovery policy of
-"after-sb-1pri call-pri-lost-after-sb",
-when trying to drbd_set_role() to R_SECONDARY,
-we run into a deadlock.
+Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
+(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
+to Marek Vasut for identifying this issue!
 
-This was first recognized and supposedly fixed by
-2009-06-10 "Fixed a deadlock when using automatic split brain recovery when both nodes are"
-replacing drbd_set_role() with drbd_change_state() in that code-path,
-but the first hunk of that patch forgets to remove the drbd_set_role().
-
-We apparently only ever tested the "two primaries" case.
-
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/drbd/drbd_receiver.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-kirkwood/ts219-setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2225,7 +2225,6 @@ static int drbd_asb_recover_1p(struct dr
- 		if (hg == -1 && mdev->state.role == R_PRIMARY) {
- 			enum drbd_state_rv rv2;
+--- a/arch/arm/mach-kirkwood/ts219-setup.c
++++ b/arch/arm/mach-kirkwood/ts219-setup.c
+@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
+ static int __init ts219_pci_init(void)
+ {
+ 	if (machine_is_ts219())
+-		kirkwood_pcie_init(KW_PCIE0);
++		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
  
--			drbd_set_role(mdev, R_SECONDARY, 0);
- 			 /* drbd_change_state() does not sleep while in SS_IN_TRANSIENT_STATE,
- 			  * we might be here in C_WF_REPORT_PARAMS which is transient.
- 			  * we do not need to wait for the after state change work either. */
+ 	return 0;
+ }
 
