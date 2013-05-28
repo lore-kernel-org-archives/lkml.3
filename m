@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab3E1Knp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:43:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48790 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755737Ab3E1Kno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:43:44 -0400
-Date: Tue, 28 May 2013 11:42:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "vgupta@synopsys.com" <vgupta@synopsys.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: arm64: kernel: sprintf(), 'str' needs
- additional 1 byte for failure processing
-Message-ID: <20130528104250.GE10474@mudshark.cambridge.arm.com>
-References: <51A1E3B3.4060901@asianux.com>
- <51A2BE2C.2000004@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A2BE2C.2000004@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758244Ab3E1Ksv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:48:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756363Ab3E1Ksu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 06:48:50 -0400
+Date: Tue, 28 May 2013 06:48:40 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        "Trond Myklebust" <Trond.Myklebust@netapp.com>
+Subject: Re: [54/94] sunrpc: clarify comments on rpc_make_runnable
+Message-ID: <20130528064840.43a9bb43@corrin.poochiereds.net>
+In-Reply-To: <87ehcrqtdn.fsf@canonical.com>
+References: <lsq.1369712992.755341692@decadent.org.uk>
+	<lsq.1369712993.690390643@decadent.org.uk>
+	<20130528061435.0e1b1cc4@corrin.poochiereds.net>
+	<87ehcrqtdn.fsf@canonical.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 28 May 2013 11:41:08 +0100
+Luis Henriques <luis.henriques@canonical.com> wrote:
 
-On Mon, May 27, 2013 at 03:00:12AM +0100, Chen Gang wrote:
+> Jeff Layton <jlayton@redhat.com> writes:
 > 
-> When failure occurs at the last looping cycle (when 'i == 0'), it will
-> print "bad PC value" instead of "(%08x) ", which needs additional 1
-> byte.
+> > On Tue, 28 May 2013 04:49:53 +0100
+> > Ben Hutchings <ben@decadent.org.uk> wrote:
+> >
+> >> 3.2.46-rc1 review patch.  If anyone has any objections, please let me know.
+> >> 
+> >> ------------------
+> >> 
+> >> From: Jeff Layton <jlayton@redhat.com>
+> >> 
+> >> commit 506026c3ec270e18402f0c9d33fee37482c23861 upstream.
+> >> 
+> >> rpc_make_runnable is not generally called with the queue lock held, unless
+> >> it's waking up a task that has been sitting on a waitqueue. This is safe
+> >> when the task has not entered the FSM yet, but the comments don't really
+> >> spell this out.
+> >> 
+> >> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> >> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> >> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> >> ---
+> >>  net/sunrpc/sched.c |    5 +++--
+> >>  1 file changed, 3 insertions(+), 2 deletions(-)
+> >> 
+> >> --- a/net/sunrpc/sched.c
+> >> +++ b/net/sunrpc/sched.c
+> >> @@ -296,8 +296,9 @@ EXPORT_SYMBOL_GPL(__rpc_wait_for_complet
+> >>  /*
+> >>   * Make an RPC task runnable.
+> >>   *
+> >> - * Note: If the task is ASYNC, this must be called with
+> >> - * the spinlock held to protect the wait queue operation.
+> >> + * Note: If the task is ASYNC, and is being made runnable after sitting on an
+> >> + * rpc_wait_queue, this must be called with the queue spinlock held to protect
+> >> + * the wait queue operation.
+> >>   */
+> >>  static void rpc_make_runnable(struct rpc_task *task)
+> >>  {
+> >> 
+> >
+> > Just a comment patch, so this is harmless and I have no objection but
+> > why pull it into stable? I had always thought stable-kernel-rules.txt
+> > discouraged taking patches that don't fix real bugs...
 > 
-> If not add 1 byte, the 'str' may be memory overflow.
+> I believe the reason Ben took this patch is actually to provide the
+> correct context for the next one:
 > 
+> a3c3cac5d31879cd9ae2de7874dc6544ca704aec, "SUNRPC: Prevent an rpc_task wakeup race"
 > 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arm64/kernel/traps.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> So that this is a clean cherry-pick.
 > 
-> diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-> index 61d7dd2..c2f68d2 100644
-> --- a/arch/arm64/kernel/traps.c
-> +++ b/arch/arm64/kernel/traps.c
-> @@ -100,7 +100,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
->  {
->  	unsigned long addr = instruction_pointer(regs);
->  	mm_segment_t fs;
-> -	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
-> +	char str[sizeof("00000000 ") * 5 + 2 + 1 + 1], *p = str;
->  	int i;
+> (At least this was the reason I picked it for the 3.5 kernel.)
+> 
+> Cheers,
 
-Whilst this code is difficult to follow, I don't think it's incorrect.
-The size of the str array is:
+Ok, that's understandable -- sorry for the noise...
 
-	sizeof("00000000 ") = 8 ('0's) + 1 (space) + 1 (NUL) = 10 bytes
-	*5 = 50 bytes
-	+2 (for the two brackets when i == 0) = 52 bytes
-	+1 (this is for the "bad PC value") = 53 bytes
-
-In the worst case (when the PC is bad) we print:
-
-	"%08x " x4 = (8 + 1 + 1) *4 = 40 bytes
-	"bad PC value" = 12 + 1 = 13 bytes
-
-so again, 53 bytes.
-
-... or have I missed a character somewhere?
-
-Will
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
