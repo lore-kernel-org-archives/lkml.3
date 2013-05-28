@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab3E1Vmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:42:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59538 "EHLO
+	id S1758738Ab3E1VnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:43:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59508 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757041Ab3E1VVW (ORCPT
+	with ESMTP id S1757023Ab3E1VVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:21:22 -0400
+	Tue, 28 May 2013 17:21:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+Cc: Wang YanQing <udknight@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 10/78] ASoC: wm8994: missing break in wm8994_aif3_hw_params()
-Date: Tue, 28 May 2013 14:19:19 -0700
-Message-Id: <1369776027-17859-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 17/78] ALSA: HDA: Fix Oops caused by dereference NULL pointer
+Date: Tue, 28 May 2013 14:19:26 -0700
+Message-Id: <1369776027-17859-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,32 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 4495e46fe18f198366961bb2b324a694ef8a9b44 upstream.
+commit 2195b063f6609e4c6268f291683902f25eaf9aa6 upstream.
 
-The missing break here means that we always return early and the
-function is a no-op.
+The interrupt handler azx_interrupt will call azx_update_rirb,
+which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
+will dereference chip->bus pointer.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The problem is we alloc chip->bus in azx_codec_create
+which will be called after we enable IRQ and enable unsolicited
+event in azx_probe.
+
+This will cause Oops due dereference NULL pointer. I meet it, good luck:)
+
+[Rearranged the NULL check before the tracepoint and added another
+ NULL check of bus->workq -- tiwai]
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8994.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_codec.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 3b269fa..237a7ba 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2841,6 +2841,7 @@ static int wm8994_aif3_hw_params(struct snd_pcm_substream *substream,
- 		default:
- 			return 0;
- 		}
-+		break;
- 	default:
- 		return 0;
- 	}
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index 622f726..f283157 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -617,6 +617,9 @@ int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
+ 	struct hda_bus_unsolicited *unsol;
+ 	unsigned int wp;
+ 
++	if (!bus || !bus->workq)
++		return 0;
++
+ 	trace_hda_unsol_event(bus, res, res_ex);
+ 	unsol = bus->unsol;
+ 	if (!unsol)
 -- 
 1.8.1.2
 
