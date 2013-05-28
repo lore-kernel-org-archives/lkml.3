@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933357Ab3E1Vch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:32:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59750 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab3E1VZZ (ORCPT
+	id S933222Ab3E1Vcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:32:55 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26835 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757394Ab3E1Vcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:25:25 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 58/78] tcp: force a dst refcount when prequeue packet
-Date: Tue, 28 May 2013 14:20:07 -0700
-Message-Id: <1369776027-17859-59-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
-References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 28 May 2013 17:32:52 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4OAPchpVF5La3j/2dsb2JhbABZgwi9MYUcBAGBBRd0giMBAQU6HDMIAxgJJQ8FJQMhARKIDLwDFo1qgSSCc2EDlzqRQYMhKg
+Date: Wed, 29 May 2013 07:32:48 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
+Message-ID: <20130528213248.GC29338@dastard>
+References: <20130528161230.GA7577@redhat.com>
+ <20130528211012.GX29466@dastard>
+ <20130528211544.GB24342@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528211544.GB24342@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.1 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, May 28, 2013 at 05:15:44PM -0400, Dave Jones wrote:
+> On Wed, May 29, 2013 at 07:10:12AM +1000, Dave Chinner wrote:
+>  > On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
+>  > > box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
+>  > > xfs chose to spew and then hang instead of replaying the journal and mounting :(
+>  > > 
+>  > > [   14.694731] SGI XFS with ACLs, security attributes, realtime, large block/inode numbers, debug enabled
+>  > > [   14.722328] XFS (sda2): Mounting Filesystem
+>  > > [   14.757801] XFS (sda2): Starting recovery (logdev: internal)
+>  > > [   14.782049] XFS: Assertion failed: fs_is_ok, file: fs/xfs/xfs_dir2_data.c, line: 169
+>  > 
+>  > A directory block has an entry that is not in the hash index.
+>  > Either there's an underlying corruption on disk, or there's an
+>  > inconsistency in what has been logged and so an entire change has
+>  > not been replayed. Hence the post recovery verification has thrown a
+>  > corruption error....
+>  > 
+>  > If you haven't already repaired the filesystem, can you send me a
+>  > metadump of the filesystem in question?
+> 
+> Sorry, too late. If I can repro, I'll do so next time.
+> FYI, I ran xfs_repair and it just hung. Wouldn't even answer ctrl-c.
+> Rebooted, and then it mounted and recovered just fine!
 
-------------------
+Strange. I can't think of any reason outside a kernel problem for
+xfs_repair going into an uninterruptible sleep. Did it happen after
+the repair completed (i.e. after phase 7)? If so, then closing the
+block device might have tripped the same problem that fsck.ext2
+hit....
 
-From: Eric Dumazet <edumazet@google.com>
+>  > > [   40.642521] BUG: soft lockup - CPU#0 stuck for 22s! [fsck.ext2:294]
+>  > 
+>  > I'm not sure what this has to do with the XFS problem - it's
+>  > apparently stuck in invalidate_bh_lrus() walking a CPU mask....
+> 
+> there for completion, it was sandwiched between the other xfs bits :)
 
-commit 093162553c33e9479283e107b4431378271c735d upstream.
+*nod*
 
-Before escaping RCU protected section and adding packet into
-prequeue, make sure the dst is refcounted.
+You never know what might be relevant to the problem :)
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- include/net/tcp.h | 1 +
- 1 file changed, 1 insertion(+)
+Cheers,
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index aed42c7..4da2167 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1045,6 +1045,7 @@ static inline bool tcp_prequeue(struct sock *sk, struct sk_buff *skb)
- 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
- 		return false;
- 
-+	skb_dst_force(skb);
- 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
- 	tp->ucopy.memory += skb->truesize;
- 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
+Dave.
 -- 
-1.8.1.2
-
+Dave Chinner
+david@fromorbit.com
