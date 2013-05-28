@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab3E1SpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:45:15 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:35346 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab3E1SpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:45:12 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-Cc: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
-References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
-	<1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
-Date: Tue, 28 May 2013 11:45:09 -0700
-In-Reply-To: <1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
-	(Andrii Tseglytskyi's message of "Mon, 27 May 2013 14:07:24 +0300")
-Message-ID: <87sj17aqq2.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753024Ab3E1Stj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:49:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56071 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab3E1Sti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:49:38 -0400
+Message-ID: <51A4FC08.3060906@ti.com>
+Date: Wed, 29 May 2013 00:18:40 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Will Deacon <will.deacon@arm.com>
+CC: Po-Yu Chuang <ratbert.chuang@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: map_init_section flushes incorrect pmd
+References: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com> <20130528130502.GA28971@mudshark.cambridge.arm.com> <51A4B938.7080708@ti.com> <20130528140705.GE28971@mudshark.cambridge.arm.com>
+In-Reply-To: <20130528140705.GE28971@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
-
-> From: Nishanth Menon <nm@ti.com>
+On Tuesday 28 May 2013 07:37 PM, Will Deacon wrote:
+> On Tue, May 28, 2013 at 03:03:36PM +0100, Sricharan R wrote:
+>> On Tuesday 28 May 2013 06:35 PM, Will Deacon wrote:
+>>> On Tue, May 28, 2013 at 11:48:20AM +0100, Po-Yu Chuang wrote:
+>>>> This bug was introduced in commit e651eab0.
+>>>> Some v4/v5 platforms failed to boot due to this.
+>>>>
+>>>> Signed-off-by: Po-Yu Chuang <ratbert.chuang@gmail.com>
+>>>> ---
+>>>>  arch/arm/mm/mmu.c |    4 +++-
+>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+>>>> index e0d8565..19a43f8 100644
+>>>> --- a/arch/arm/mm/mmu.c
+>>>> +++ b/arch/arm/mm/mmu.c
+>>>> @@ -620,6 +620,8 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
+>>>>  			unsigned long end, phys_addr_t phys,
+>>>>  			const struct mem_type *type)
+>>>>  {
+>>>> +	pmd_t *p = pmd;
+>>>> +
+>>>>  #ifndef CONFIG_ARM_LPAE
+>>>>  	/*
+>>>>  	 * In classic MMU format, puds and pmds are folded in to
+>>>> @@ -638,7 +640,7 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
+>>>>  		phys += SECTION_SIZE;
+>>>>  	} while (pmd++, addr += SECTION_SIZE, addr != end);
+>>>>  
+>>>> -	flush_pmd_entry(pmd);
+>>>> +	flush_pmd_entry(p);
+>>> Wait, shouldn't this flush be *inside* the loop anyway? Otherwise we just
+>>> flush the cacheline containing the first pmd. The flushing code could also
+>>> flush to PoU instead of PoC for UP ARMv7, but that's an unrelated optimisation.
+>>    I think in LPAE this loop iterates once and non LPAE twice.
+>>    So both the entries should be contained in same cache line right ?
+> Dunno, are there any guarantees about alignment of the starting pmd? Even
+> so, the function takes the range as parameters, so I don't think we
+> should tailor it to the caller. It may explain why this hasn't come up
+> sooner though.
 >
-> vpboundsintr_en is available inside the IP block as an re-sycned
-> version and one which is not. Due to this, there is an 1 sysclk
-> cycle window where interruptz could be asserted low for 1 cycle.
-                             ^^^
+> Will
+ 
+ This function is not exposed outside. And the ranges passed to this is going
+to not more than 2 entries in any case. If we put the flush inside the loop,
+then we will end up doing an extra flush for the same line. Regarding the
+alignment, I think if the pgd base is aligned, then rest should be fine.
+Will have to check this.
 
-Is that the way the cool kidz are spelling interrupts these days?  ;)
+Regards,
+ Sricharan
 
-> IF, intr_en is cleared on the exact same cycle as the irqclr, an
-> additional pulse is generated which indicates for VP that
-> an additional adjustment of voltage is required.
->
-> This results in VP doing two voltage adjustments for the SRERR
-> (based on configuration, upto 4 steps), instead of the needed
-> 1 step.
-> Due to the unexpected pulse from AVS which breaks the AVS-VP
-> communication protocol, VP also ends up in a stuck condition by
-> entering a state where VP module remains non-responsive
-> to any futher AVS adjustment events. This creates the symptom
-> called "TRANXDONE Timeout" scenario.
->
-> By disabling errgen prior to disable of intr_en, this situation
-> can be avoided.
->
-> Signed-off-by: Vincent Bour <v-bour@ti.com>
-> Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
 
->From Documentation/SubbmittingPatches:
-
-   "If a person was not directly involved in the preparation or handling
-   of a patch but wishes to signify and record their approval of it then
-   they can arrange to have an Acked-by: line added to the patch's
-   changelog."
-
-Are all of the tags above co-authors or on the delivery path?  I suspect
-an Acked-by or Reviewed-by is more appropriate here.
-
-Otherwise, patch itself looks fine.
-
-Kevin
-
-> ---
->  drivers/power/avs/smartreflex.c |   11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-> index 6b2238b..f34d34d 100644
-> --- a/drivers/power/avs/smartreflex.c
-> +++ b/drivers/power/avs/smartreflex.c
-> @@ -449,12 +449,17 @@ int sr_disable_errgen(struct voltagedomain *voltdm)
->  		return -EINVAL;
->  	}
->  
-> -	/* Disable the interrupts of ERROR module */
-> -	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
-> -
->  	/* Disable the Sensor and errorgen */
->  	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SENENABLE | SRCONFIG_ERRGEN_EN, 0);
->  
-> +	/*
-> +	 * Disable the interrupts of ERROR module
-> +	 * NOTE: modify is a read, modify,write - an implicit OCP barrier
-> +	 * which is required is present here - sequencing is critical
-> +	 * at this point (after errgen is disabled, vpboundint disable)
-> +	 */
-> +	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
-> +
->  	return 0;
->  }
