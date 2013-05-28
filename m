@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3E1ENO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:13:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58089 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab3E1ENL (ORCPT
+	id S932677Ab3E1Dyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52545 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758821Ab3E1DyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 00:13:11 -0400
-Message-ID: <51A42ED5.2060104@wwwdotorg.org>
-Date: Mon, 27 May 2013 22:13:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 27 May 2013 23:54:12 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Rob Clark <robclark@gmail.com>,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH v2] video: simplefb: add mode parsing function
-References: <1369626821-28494-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1369626821-28494-1-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Andrea Arcangeli" <aarcange@redhat.com>
+Date: Tue, 28 May 2013 04:49:53 +0100
+Message-ID: <lsq.1369712993.970656004@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [64/94] mm/THP: use pmd_populate() to update the pmd with
+ pgtable_t pointer
+In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2013 09:53 PM, Alexandre Courbot wrote:
-> The naming scheme of simplefb's mode is precise enough to allow building
-> the mode structure from it instead of using a static list of modes. This
-> patch introduces a function that does this. In case exotic modes that
-> cannot be represented from their name alone are needed, the static list
-> of modes is still available as a backup.
-> 
-> It also changes the order in which colors are declared from MSB first to
-> the more standard LSB first.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> Changes from v1:
-> - amended documentation following Stephen's suggestion
-> - allow parsing of bitfields larger than 9 bits
-> - made it clear that the parsing order of bits is changed with respect
->   to the original patch
-> 
-> Andrew, since this patch introduces a (small) change in the DT bindings,
-> could we try to merge it during the -rc cycle so we don't have to come
-> with a more complex solution in the future?
+3.2.46-rc1 review patch.  If anyone has any objections, please let me know.
 
-So, I think we shouldn't change the DT binding at all now. The original
-driver is now merged for 3.10, and I think it's far too late to take
-code that implements new features for 3.10. This means that we couldn't
-merge this patch until 3.11. However, by then, we shouldn't be changing
-the DT binding in incompatible ways. Olof has already published some
-U-Boot binaries that use the current binding, and on IRC indicated he'd
-prefer not to change the binding because of that.
+------------------
 
-As such, we should either:
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-a) Just add new entries into the format array that already exists in the
-driver. Given David's response, this might be simplest.
+commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
 
-b) Extend the DT binding in a 100% backwards-compatible way, which would
-mean defaulting the bit-order to match the existing 1 format, and adding
-a new Boolean property to indicate that the format string is specified
-in the other order.
+We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
+set_pmd_at is used to set pmd with huge pte entries and architectures
+like ppc64, clear few flags from the pte when saving a new entry.
+Without this change we observe bad pte errors like below on ppc64 with
+THP enabled.
+
+  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ mm/huge_memory.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1937,7 +1937,12 @@ static void collapse_huge_page(struct mm
+ 		pte_unmap(pte);
+ 		spin_lock(&mm->page_table_lock);
+ 		BUG_ON(!pmd_none(*pmd));
+-		set_pmd_at(mm, address, pmd, _pmd);
++		/*
++		 * We can only use set_pmd_at when establishing
++		 * hugepmds and never for establishing regular pmds that
++		 * points to regular pagetables. Use pmd_populate for that
++		 */
++		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
+ 		spin_unlock(&mm->page_table_lock);
+ 		anon_vma_unlock(vma->anon_vma);
+ 		goto out;
+
