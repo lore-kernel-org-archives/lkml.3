@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934813Ab3E1QdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:33:09 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:19201 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934675Ab3E1QdG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:33:06 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1155h)
-Date: Tue, 28 May 2013 11:32:53 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-To: David Gibson <david@gibson.dropbear.id.au>
-CC: Alexey Kardashevskiy <aik@ozlabs.ru>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <20130525024524.GA6112@boomeroo.fritz.box> (from
-	david@gibson.dropbear.id.au on Fri May 24 21:45:24 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1369758773.18630.1@snotra>
+	id S934840Ab3E1Qdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:33:41 -0400
+Received: from www.sr71.net ([198.145.64.142]:37468 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934675Ab3E1Qdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 12:33:39 -0400
+Message-ID: <51A4DC5F.7050406@sr71.net>
+Date: Tue, 28 May 2013 09:33:35 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 15/39] thp, mm: trigger bug in replace_page_cache_page()
+ on THP
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-16-git-send-email-kirill.shutemov@linux.intel.com> <519BD65C.1050709@sr71.net> <20130528125328.5385CE0090@blue.fi.intel.com>
+In-Reply-To: <20130528125328.5385CE0090@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 09:45:24 PM, David Gibson wrote:
-> On Wed, May 22, 2013 at 04:06:57PM -0500, Scott Wood wrote:
-> > On 05/20/2013 10:06:46 PM, Alexey Kardashevskiy wrote:
-> > >diff --git a/arch/powerpc/kvm/powerpc.c  
-> b/arch/powerpc/kvm/powerpc.c
-> > >index 8465c2a..da6bf61 100644
-> > >--- a/arch/powerpc/kvm/powerpc.c
-> > >@@ -396,6 +396,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > >+++ b/arch/powerpc/kvm/powerpc.c
-> > > 		break;
-> > > #endif
-> > > 	case KVM_CAP_SPAPR_MULTITCE:
-> > >+	case KVM_CAP_SPAPR_TCE_IOMMU:
-> > > 		r = 1;
-> > > 		break;
-> > > 	default:
-> >
-> > Don't advertise SPAPR capabilities if it's not book3s -- and
-> > probably there's some additional limitation that would be
-> > appropriate.
+On 05/28/2013 05:53 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+>>> +	VM_BUG_ON(PageTransHuge(old));
+>>> +	VM_BUG_ON(PageTransHuge(new));
+>>>  	VM_BUG_ON(!PageLocked(old));
+>>>  	VM_BUG_ON(!PageLocked(new));
+>>>  	VM_BUG_ON(new->mapping);
+>>
+>> The code calling replace_page_cache_page() has a bunch of fallback and
+>> error returning code.  It seems a little bit silly to bring the whole
+>> machine down when you could just WARN_ONCE() and return an error code
+>> like fuse already does:
 > 
-> So, in the case of MULTITCE, that's not quite right.  PR KVM can
-> emulate a PAPR system on a BookE machine, and there's no reason not to
-> allow TCE acceleration as well.
+> What about:
+> 
+> 	if (WARN_ONCE(PageTransHuge(old) || PageTransHuge(new),
+> 		     "%s: unexpected huge page\n", __func__))
+> 		return -EINVAL;
 
-That might (or might not; consider things like Altivec versus SPE  
-opcode conflict, whether unimplemented SPRs trap, behavior of  
-unprivileged SPRs/instructions, etc) be true in theory, but it's not  
-currently a supported configuration.  BookE KVM does not support  
-emulating a different CPU than the host.  In the unlikely case that  
-ever changes to the point of allowing PAPR guests on a BookE host, then  
-we can revisit how to properly determine whether the capability is  
-supported, but for now the capability will never be valid in the  
-CONFIG_BOOKE case (though I'd rather see it depend on an appropriate  
-book3s symbol than depend on !BOOKE).
+That looks sane to me.  But, please do make sure to differentiate in the
+error message between thp and hugetlbfs (if you have the room).
 
-Or we could just leave it as is, and let it indicate whether the host  
-kernel supports the feature in general, with the user needing to  
-understand when it's applicable...  I'm a bit confused by the  
-documentation, however -- the MULTITCE capability was documented in the  
-"capabilities that can be enabled" section, but I don't see where it  
-can be enabled.
-
--Scott
+BTW, I'm also not sure you need to print the function name.  The
+WARN_ON() register dump usually has the function name.
