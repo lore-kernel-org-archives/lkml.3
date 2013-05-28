@@ -1,21 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654Ab3E1V1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:27:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59885 "EHLO
+	id S934446Ab3E1V0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:26:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934543Ab3E1V0q (ORCPT
+	with ESMTP id S934032Ab3E1V0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:26:46 -0400
+	Tue, 28 May 2013 17:26:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Ming Lei <ming.lei@canonical.com>, Minchan Kim <minchan@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <greg@kroah.com>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Decotigny <david.decotigny@google.com>,
+        Tom Herbert <therbert@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 45/78] powerpc: Bring all threads online prior to migration/hibernation
-Date: Tue, 28 May 2013 14:19:54 -0700
-Message-Id: <1369776027-17859-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 34/78] mm: teach mm by current context info to not do I/O during memory allocation
+Date: Tue, 28 May 2013 14:19:43 -0700
+Message-Id: <1369776027-17859-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,259 +40,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 120496ac2d2d60aee68d3123a68169502a85f4b5 upstream.
+commit 21caf2fc1931b485483ddd254b634fa8f0099963 upstream.
 
-This patch brings online all threads which are present but not online
-prior to migration/hibernation.  After migration/hibernation those
-threads are taken back offline.
+This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
+'struct task_struct'), so that the flag can be set by one task to avoid
+doing I/O inside memory allocation in the task's context.
 
-During migration/hibernation all online CPUs must call H_JOIN, this is
-required by the hypervisor.  Without this patch, threads that are offline
-(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
-deadlocked (all threads either JOIN'd or CEDE'd).
+The patch trys to solve one deadlock problem caused by block device, and
+the problem may happen at least in the below situations:
 
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+- during block device runtime resume, if memory allocation with
+  GFP_KERNEL is called inside runtime resume callback of any one of its
+  ancestors(or the block device itself), the deadlock may be triggered
+  inside the memory allocation since it might not complete until the block
+  device becomes active and the involed page I/O finishes.  The situation
+  is pointed out first by Alan Stern.  It is not a good approach to
+  convert all GFP_KERNEL[1] in the path into GFP_NOIO because several
+  subsystems may be involved(for example, PCI, USB and SCSI may be
+  involved for usb mass stoarage device, network devices involved too in
+  the iSCSI case)
+
+- during block device runtime suspend, because runtime resume need to
+  wait for completion of concurrent runtime suspend.
+
+- during error handling of usb mass storage deivce, USB bus reset will
+  be put on the device, so there shouldn't have any memory allocation with
+  GFP_KERNEL during USB bus reset, otherwise the deadlock similar with
+  above may be triggered.  Unfortunately, any usb device may include one
+  mass storage interface in theory, so it requires all usb interface
+  drivers to handle the situation.  In fact, most usb drivers don't know
+  how to handle bus reset on the device and don't provide .pre_set() and
+  .post_reset() callback at all, so USB core has to unbind and bind driver
+  for these devices.  So it is still not practical to resort to GFP_NOIO
+  for solving the problem.
+
+Also the introduced solution can be used by block subsystem or block
+drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
+actual I/O transfer.
+
+It is not a good idea to convert all these GFP_KERNEL in the affected
+path into GFP_NOIO because these functions doing that may be implemented
+as library and will be called in many other contexts.
+
+In fact, memalloc_noio_flags() can convert some of current static
+GFP_NOIO allocation into GFP_KERNEL back in other non-affected contexts,
+at least almost all GFP_NOIO in USB subsystem can be converted into
+GFP_KERNEL after applying the approach and make allocation with GFP_NOIO
+only happen in runtime resume/bus reset/block I/O transfer contexts
+generally.
+
+[1], several GFP_KERNEL allocation examples in runtime resume path
+
+- pci subsystem
+acpi_os_allocate
+	<-acpi_ut_allocate
+		<-ACPI_ALLOCATE_ZEROED
+			<-acpi_evaluate_object
+				<-__acpi_bus_set_power
+					<-acpi_bus_set_power
+						<-acpi_pci_set_power_state
+							<-platform_pci_set_power_state
+								<-pci_platform_power_transition
+									<-__pci_complete_power_transition
+										<-pci_set_power_state
+											<-pci_restore_standard_config
+												<-pci_pm_runtime_resume
+- usb subsystem
+usb_get_status
+	<-finish_port_resume
+		<-usb_port_resume
+			<-generic_resume
+				<-usb_resume_device
+					<-usb_resume_both
+						<-usb_runtime_resume
+
+- some individual usb drivers
+usblp, uvc, gspca, most of dvb-usb-v2 media drivers, cpia2, az6007, ....
+
+That is just what I have found.  Unfortunately, this allocation can only
+be found by human being now, and there should be many not found since
+any function in the resume path(call tree) may allocate memory with
+GFP_KERNEL.
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Jiri Kosina <jiri.kosina@suse.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <greg@kroah.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Decotigny <david.decotigny@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/include/asm/rtas.h          |   2 +
- arch/powerpc/kernel/rtas.c               | 113 +++++++++++++++++++++++++++++++
- arch/powerpc/platforms/pseries/suspend.c |  22 ++++++
- 3 files changed, 137 insertions(+)
+ include/linux/sched.h | 22 ++++++++++++++++++++++
+ mm/page_alloc.c       |  9 ++++++++-
+ mm/vmscan.c           |  4 ++--
+ 3 files changed, 32 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
-index aef00c6..ee38f29 100644
---- a/arch/powerpc/include/asm/rtas.h
-+++ b/arch/powerpc/include/asm/rtas.h
-@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsigned short hex);
- extern void rtas_initialize(void);
- extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
- extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
-+extern int rtas_online_cpus_mask(cpumask_var_t cpus);
-+extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
- extern int rtas_ibm_suspend_me(struct rtas_args *);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f5ad26e..caa76ae 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -51,6 +51,7 @@ struct sched_param {
+ #include <linux/cred.h>
+ #include <linux/llist.h>
+ #include <linux/uidgid.h>
++#include <linux/gfp.h>
  
- struct rtc_time;
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index 1fd6e7b..52add6f 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/capability.h>
- #include <linux/delay.h>
-+#include <linux/cpu.h>
- #include <linux/smp.h>
- #include <linux/completion.h>
- #include <linux/cpumask.h>
-@@ -807,6 +808,95 @@ static void rtas_percpu_suspend_me(void *info)
- 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
- }
+ #include <asm/processor.h>
  
-+enum rtas_cpu_state {
-+	DOWN,
-+	UP,
-+};
-+
-+#ifndef CONFIG_SMP
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
+@@ -1816,6 +1817,7 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define PF_FROZEN	0x00010000	/* frozen for system suspend */
+ #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
+ #define PF_KSWAPD	0x00040000	/* I am kswapd */
++#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
+ #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
+ #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+ #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+@@ -1853,6 +1855,26 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
+ 
++/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
++static inline gfp_t memalloc_noio_flags(gfp_t flags)
 +{
-+	if (!cpumask_empty(cpus)) {
-+		cpumask_clear(cpus);
-+		return -EINVAL;
-+	} else
-+		return 0;
++	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
++		flags &= ~__GFP_IO;
++	return flags;
 +}
-+#else
-+/* On return cpumask will be altered to indicate CPUs changed.
-+ * CPUs with states changed will be set in the mask,
-+ * CPUs with status unchanged will be unset in the mask. */
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
++
++static inline unsigned int memalloc_noio_save(void)
 +{
-+	int cpu;
-+	int cpuret = 0;
-+	int ret = 0;
++	unsigned int flags = current->flags & PF_MEMALLOC_NOIO;
++	current->flags |= PF_MEMALLOC_NOIO;
++	return flags;
++}
 +
-+	if (cpumask_empty(cpus))
-+		return 0;
++static inline void memalloc_noio_restore(unsigned int flags)
++{
++	current->flags = (current->flags & ~PF_MEMALLOC_NOIO) | flags;
++}
 +
-+	for_each_cpu(cpu, cpus) {
-+		switch (state) {
-+		case DOWN:
-+			cpuret = cpu_down(cpu);
-+			break;
-+		case UP:
-+			cpuret = cpu_up(cpu);
-+			break;
-+		}
-+		if (cpuret) {
-+			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
-+					__func__,
-+					((state == UP) ? "up" : "down"),
-+					cpu, cpuret);
-+			if (!ret)
-+				ret = cpuret;
-+			if (state == UP) {
-+				/* clear bits for unchanged cpus, return */
-+				cpumask_shift_right(cpus, cpus, cpu);
-+				cpumask_shift_left(cpus, cpus, cpu);
-+				break;
-+			} else {
-+				/* clear bit for unchanged cpu, continue */
-+				cpumask_clear_cpu(cpu, cpus);
-+			}
-+		}
+ /*
+  * task->jobctl flags
+  */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6a83cd3..bb791f0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2614,10 +2614,17 @@ retry_cpuset:
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
+-	if (unlikely(!page))
++	if (unlikely(!page)) {
++		/*
++		 * Runtime PM, block IO and its error handling path
++		 * can deadlock because I/O on the device might not
++		 * complete.
++		 */
++		gfp_mask = memalloc_noio_flags(gfp_mask);
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
 +	}
-+
-+	return ret;
-+}
-+#endif
-+
-+int rtas_online_cpus_mask(cpumask_var_t cpus)
-+{
-+	int ret;
-+
-+	ret = rtas_cpu_state_change_mask(UP, cpus);
-+
-+	if (ret) {
-+		cpumask_var_t tmp_mask;
-+
-+		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
-+			return ret;
-+
-+		/* Use tmp_mask to preserve cpus mask from first failure */
-+		cpumask_copy(tmp_mask, cpus);
-+		rtas_offline_cpus_mask(tmp_mask);
-+		free_cpumask_var(tmp_mask);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(rtas_online_cpus_mask);
-+
-+int rtas_offline_cpus_mask(cpumask_var_t cpus)
-+{
-+	return rtas_cpu_state_change_mask(DOWN, cpus);
-+}
-+EXPORT_SYMBOL(rtas_offline_cpus_mask);
-+
- int rtas_ibm_suspend_me(struct rtas_args *args)
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 196709f..c6f50bc 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2300,7 +2300,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
  {
- 	long state;
-@@ -814,6 +904,8 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
- 	struct rtas_suspend_me_data data;
- 	DECLARE_COMPLETION_ONSTACK(done);
-+	cpumask_var_t offline_mask;
-+	int cpuret;
- 
- 	if (!rtas_service_present("ibm,suspend-me"))
- 		return -ENOSYS;
-@@ -837,11 +929,24 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 		return 0;
- 	}
- 
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	atomic_set(&data.working, 0);
- 	atomic_set(&data.done, 0);
- 	atomic_set(&data.error, 0);
- 	data.token = rtas_token("ibm,suspend-me");
- 	data.complete = &done;
-+
-+	/* All present CPUs must be online */
-+	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
-+	cpuret = rtas_online_cpus_mask(offline_mask);
-+	if (cpuret) {
-+		pr_err("%s: Could not bring present CPUs online.\n", __func__);
-+		atomic_set(&data.error, cpuret);
-+		goto out;
-+	}
-+
- 	stop_topology_update();
- 
- 	/* Call function on all CPUs.  One of us will make the
-@@ -857,6 +962,14 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 
- 	start_topology_update();
- 
-+	/* Take down CPUs not online prior to suspend */
-+	cpuret = rtas_offline_cpus_mask(offline_mask);
-+	if (cpuret)
-+		pr_warn("%s: Could not restore CPUs to offline state.\n",
-+				__func__);
-+
-+out:
-+	free_cpumask_var(offline_mask);
- 	return atomic_read(&data.error);
- }
- #else /* CONFIG_PPC_PSERIES */
-diff --git a/arch/powerpc/platforms/pseries/suspend.c b/arch/powerpc/platforms/pseries/suspend.c
-index 47226e0..5f997e7 100644
---- a/arch/powerpc/platforms/pseries/suspend.c
-+++ b/arch/powerpc/platforms/pseries/suspend.c
-@@ -16,6 +16,7 @@
-   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-   */
- 
-+#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/suspend.h>
- #include <linux/stat.h>
-@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct device *dev,
- 			       struct device_attribute *attr,
- 			       const char *buf, size_t count)
- {
-+	cpumask_var_t offline_mask;
- 	int rc;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	stream_id = simple_strtoul(buf, NULL, 16);
- 
- 	do {
-@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct device *dev,
- 	} while (rc == -EAGAIN);
- 
- 	if (!rc) {
-+		/* All present CPUs must be online */
-+		cpumask_andnot(offline_mask, cpu_present_mask,
-+				cpu_online_mask);
-+		rc = rtas_online_cpus_mask(offline_mask);
-+		if (rc) {
-+			pr_err("%s: Could not bring present CPUs online.\n",
-+					__func__);
-+			goto out;
-+		}
-+
- 		stop_topology_update();
- 		rc = pm_suspend(PM_SUSPEND_MEM);
- 		start_topology_update();
-+
-+		/* Take down CPUs not online prior to suspend */
-+		if (!rtas_offline_cpus_mask(offline_mask))
-+			pr_warn("%s: Could not restore CPUs to offline "
-+					"state.\n", __func__);
- 	}
- 
- 	stream_id = 0;
- 
- 	if (!rc)
- 		rc = count;
-+out:
-+	free_cpumask_var(offline_mask);
- 	return rc;
- }
- 
+ 	unsigned long nr_reclaimed;
+ 	struct scan_control sc = {
+-		.gfp_mask = gfp_mask,
++		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+ 		.may_writepage = !laptop_mode,
+ 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+ 		.may_unmap = 1,
+@@ -3282,7 +3282,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		.may_swap = 1,
+ 		.nr_to_reclaim = max_t(unsigned long, nr_pages,
+ 				       SWAP_CLUSTER_MAX),
+-		.gfp_mask = gfp_mask,
++		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+ 		.order = order,
+ 		.priority = ZONE_RECLAIM_PRIORITY,
+ 	};
 -- 
 1.8.1.2
 
