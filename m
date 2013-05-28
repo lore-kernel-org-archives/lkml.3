@@ -1,197 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab3E1LH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 07:07:57 -0400
-Received: from 8bytes.org ([85.214.48.195]:58911 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab3E1LH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 07:07:56 -0400
-Date: Tue, 28 May 2013 13:07:52 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
-        iommu@lists.linux-foundation.org,
-        Steven L Kinney <Steven.Kinney@amd.com>
-Subject: Re: [PATCH 1/2 V3] perf/x86/amd: Adding IOMMU PC resource management
-Message-ID: <20130528110752.GB2575@8bytes.org>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1368819813-6481-2-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1758827Ab3E1LKW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 07:10:22 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:65264 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab3E1LKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 07:10:20 -0400
+Message-ID: <51A49098.4000607@linaro.org>
+Date: Tue, 28 May 2013 13:10:16 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368819813-6481-2-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue May 28 13:07:54 2013
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51a4900a20868926915053
+To: Jingchang Lu <b35083@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        john.stultz@linaro.org, tglx@linutronix.de, shawn.guo@linaro.org,
+        s.hauer@pengutronix.de,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v5] clocksource: add Freescale Vybrid pit timer support
+References: <1369732899-17142-1-git-send-email-b35083@freescale.com>
+In-Reply-To: <1369732899-17142-1-git-send-email-b35083@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 02:43:31PM -0500, Suthikulpanit, Suravee wrote:
-> From: Steven L Kinney <Steven.Kinney@amd.com>
+On 05/28/2013 11:21 AM, Jingchang Lu wrote:
+> Add Freescale Vybrid Family period interrupt timer support.
 > 
-> Add functionality to check the availability of the AMD IOMMU Performance
-> Counters and export this functionality to other core drivers, such as in this
-> case, a perf AMD IOMMU PMU.  This feature is not bound to any specific AMD
-> family/model other than the presence of the IOMMU with PC enabled.
-> 
-> The AMD IOMMU PC support static counting only at this time.
-> 
-> Signed-off-by: Steven Kinney <steven.kinney@amd.com>
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
 > ---
-> V2 Changes:
-> 	- Modify the amd_iommu_pc_get_set_reg_val function 
-> 	to support 64 bit values. 
-> 	- Fix logic to properly clear amd_iommu_pc_present when
-> 	initialization failed.
+
+Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+> v5:
+>  Follow internal suggestions to name the SoC family as VF.
+>  Add comment for min and max clockevent delta.
+>  Add clockevent device irq initialization.
+>  Remove IRQF_DISABLED flag.
+> v4:
+>   Use family name names driver and symbol instead of SoC name.
+>   Remove redundant code.
+>   Use BUG_ON instead of WARN_ON.
+>   Add necessory comment information.
+> v3:
+>   Move the pit driver adding from arch to drivers/clocksource.
+> v2:
+>   Use CLOCKSOURCE_OF_DECLARE init pit timer.
+>   Add ONESHOT mode support.
 > 
->  drivers/iommu/amd_iommu_init.c  |  121 ++++++++++++++++++++++++++++++++++++++-
->  drivers/iommu/amd_iommu_proto.h |    7 +++
->  drivers/iommu/amd_iommu_types.h |   12 +++-
->  3 files changed, 134 insertions(+), 6 deletions(-)
+>  drivers/clocksource/Kconfig        |   5 +
+>  drivers/clocksource/Makefile       |   1 +
+>  drivers/clocksource/vf_pit_timer.c | 194 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 200 insertions(+)
+>  create mode 100644 drivers/clocksource/vf_pit_timer.c
 > 
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index bf51abb..395fa29 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -154,6 +154,7 @@ bool amd_iommu_iotlb_sup __read_mostly = true;
->  u32 amd_iommu_max_pasids __read_mostly = ~0;
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index f151c6c..0a04257 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -85,3 +85,8 @@ config CLKSRC_SAMSUNG_PWM
+>  	  Samsung S3C, S5P and Exynos SoCs, replacing an earlier driver
+>  	  for all devicetree enabled platforms. This driver will be
+>  	  needed only on systems that do not have the Exynos MCT available.
+> +
+> +config VF_PIT_TIMER
+> +	bool
+> +	help
+> +	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 8d979c7..36a9ac1 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -26,6 +26,7 @@ obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+>  obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
+>  obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+>  obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+> +obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
 >  
->  bool amd_iommu_v2_present __read_mostly;
-> +bool amd_iommu_pc_present __read_mostly;
->  
->  bool amd_iommu_force_isolation __read_mostly;
->  
-> @@ -371,21 +372,21 @@ static void iommu_disable(struct amd_iommu *iommu)
->   */
->  static u8 __iomem * __init iommu_map_mmio_space(u64 address)
->  {
-> -	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu")) {
-> +	if (!request_mem_region(address, MMIO_REG_END_OFFSET, "amd_iommu")) {
-
-This length needs to be different on IOMMUv1 systems where the MMI
-region is only 16kb large. Only use MMIO_REG_END_OFFSET on IOMMUv2
-systems.
-
-> +static void init_iommu_perf_ctr(struct amd_iommu *iommu)
+>  obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+>  obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+> diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
+> new file mode 100644
+> index 0000000..598399d
+> --- /dev/null
+> +++ b/drivers/clocksource/vf_pit_timer.c
+> @@ -0,0 +1,194 @@
+> +/*
+> + * Copyright 2012-2013 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/clk.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <asm/sched_clock.h>
+> +
+> +/*
+> + * Each pit takes 0x10 Bytes register space
+> + */
+> +#define PITMCR		0x00
+> +#define PIT0_OFFSET	0x100
+> +#define PITn_OFFSET(n)	(PIT0_OFFSET + 0x10 * (n))
+> +#define PITLDVAL	0x00
+> +#define PITCVAL		0x04
+> +#define PITTCTRL	0x08
+> +#define PITTFLG		0x0c
+> +
+> +#define PITMCR_MDIS	(0x1 << 1)
+> +
+> +#define PITTCTRL_TEN	(0x1 << 0)
+> +#define PITTCTRL_TIE	(0x1 << 1)
+> +#define PITCTRL_CHN	(0x1 << 2)
+> +
+> +#define PITTFLG_TIF	0x1
+> +
+> +static void __iomem *clksrc_base;
+> +static void __iomem *clkevt_base;
+> +static unsigned long cycle_per_jiffy;
+> +
+> +static inline void pit_timer_enable(void)
 > +{
-> +	u64 val = 0xabcd, val2 = 0;
-> +
-> +	if (!iommu_feature(iommu, FEATURE_PC))
-> +		return;
-> +
-> +	amd_iommu_pc_present = true;
-> +
-> +	/* Check if the performance counters can be written to */
-> +	if ((0 != amd_iommu_pc_get_set_reg_val(0, 0, 0, 0, &val, true)) ||
-> +	    (0 != amd_iommu_pc_get_set_reg_val(0, 0, 0, 0, &val2, false)) ||
-> +	    (val != val2)) {
-> +		pr_err("AMD-Vi: Unable to write to IOMMU perf counter.\n");
-> +		amd_iommu_pc_present = false;
-> +		return;
-> +	}
-> +
-> +	pr_info("AMD-Vi: IOMMU performance counters " "supported\n");
-
-Why are this two strings? This makes it hard to grep for the message.
-
-
-> +u8 amd_iommu_pc_get_max_banks(u16 devid)
-> +{
-> +	struct amd_iommu *iommu;
-> +
-> +	/* locate the iommu governing the devid */
-> +	iommu = amd_iommu_rlookup_table[devid];
-> +
-> +	if (iommu)
-> +		return iommu->max_banks;
-> +
-> +	return -ENODEV;
+> +	__raw_writel(PITTCTRL_TEN | PITTCTRL_TIE, clkevt_base + PITTCTRL);
 > +}
-> +EXPORT_SYMBOL(amd_iommu_pc_get_max_banks);
-
-You can't return -ENODEV in a function returning u8. Return int instead.
-
 > +
-> +bool amd_iommu_pc_supported(void)
+> +static inline void pit_timer_disable(void)
 > +{
-> +	return amd_iommu_pc_present;
+> +	__raw_writel(0, clkevt_base + PITTCTRL);
 > +}
-> +EXPORT_SYMBOL(amd_iommu_pc_supported);
 > +
-> +u8 amd_iommu_pc_get_max_counters(u16 devid)
+> +static inline void pit_irq_acknowledge(void)
 > +{
-> +	struct amd_iommu *iommu;
-> +
-> +	/* locate the iommu governing the devid */
-> +	iommu = amd_iommu_rlookup_table[devid];
-> +
-> +	if (iommu)
-> +		return iommu->max_counters;
-> +
-> +	return -ENODEV;
+> +	__raw_writel(PITTFLG_TIF, clkevt_base + PITTFLG);
 > +}
-> +EXPORT_SYMBOL(amd_iommu_pc_get_max_counters);
-
-Same here. Please don't return negative values as u8.
-
 > +
-> +int amd_iommu_pc_get_set_reg_val(u16 devid, u8 bank, u8 cntr, u8 fxn,
-> +				    u64 *value, bool is_write)
+> +static unsigned int pit_read_sched_clock(void)
 > +{
-> +	struct amd_iommu *iommu;
-> +	u32 offset;
-> +	u32 max_offset_lim;
+> +	return __raw_readl(clksrc_base + PITCVAL);
+> +}
 > +
-> +	/* Make sure the IOMMU PC resource is available */
-> +	if (!amd_iommu_pc_present) {
-> +		pr_info("AMD IOMMU - PC Not supported.\n");
-
-This message is redundant. You already print about about performance
-counter availability in the init code. Please remove it.
-
-> +		return -ENODEV;
-> +	}
+> +static int __init pit_clocksource_init(unsigned long rate)
+> +{
+> +	/* set the max load value and start the clock source counter */
+> +	__raw_writel(0, clksrc_base + PITTCTRL);
+> +	__raw_writel(~0UL, clksrc_base + PITLDVAL);
+> +	__raw_writel(PITTCTRL_TEN, clksrc_base + PITTCTRL);
 > +
-> +	/* locate the iommu associated with the device ID */
-> +	iommu = amd_iommu_rlookup_table[devid];
-> +	if (iommu == NULL)
-> +		return -ENODEV;
+> +	setup_sched_clock(pit_read_sched_clock, 32, rate);
+> +	return clocksource_mmio_init(clksrc_base + PITCVAL, "vf-pit", rate,
+> +			300, 32, clocksource_mmio_readl_down);
+> +}
 > +
-> +	/* check for valid iommu pc register indexing */
-> +	if (fxn < 0 || fxn > 0x28 || (fxn & 7))
-> +		return -ENODEV;
-
-Does this check for calling errors? If so, you might consider turning
-this into a WARN_ON.
-
-> +
-> +	offset = (u32)(((0x40|bank) << 12) | (cntr << 8) | fxn);
-> +
-> +	/* limit the offset to the hw defined mmio region aperture */
-> +	max_offset_lim = (u32)(((0x40|iommu->max_banks) << 12) |
-> +				(iommu->max_counters << 8) | 0x28);
-> +	if ((offset < MMIO_CNTR_REG_OFFSET) ||
-> +	    (offset > max_offset_lim))
-> +		return -EINVAL;
-> +
-> +	if (is_write) {
-> +		writel((u32)*value, iommu->mmio_base + offset);
-> +		writel((*value >> 32), iommu->mmio_base + offset + 4);
-> +	} else {
-> +		*value = readl(iommu->mmio_base + offset + 4);
-> +		*value <<= 32;
-> +		*value = readl(iommu->mmio_base + offset);
-> +	}
+> +static int pit_set_next_event(unsigned long delta,
+> +				struct clock_event_device *unused)
+> +{
+> +	/*
+> +	 * set a new value to PITLDVAL register will not restart the timer,
+> +	 * to abort the current cycle and start a timer period with the new
+> +	 * value, the timer must be disabled and enabled again.
+> +	 * and the PITLAVAL should be set to delta minus one according to pit
+> +	 * hardware requirement.
+> +	 */
+> +	pit_timer_disable();
+> +	__raw_writel(delta - 1, clkevt_base + PITLDVAL);
+> +	pit_timer_enable();
 > +
 > +	return 0;
 > +}
+> +
+> +static void pit_set_mode(enum clock_event_mode mode,
+> +				struct clock_event_device *evt)
+> +{
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +		pit_set_next_event(cycle_per_jiffy, evt);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +}
+> +
+> +static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
+> +{
+> +	struct clock_event_device *evt = dev_id;
+> +
+> +	pit_irq_acknowledge();
+> +
+> +	/*
+> +	 * pit hardware doesn't support oneshot, it will generate an interrupt
+> +	 * and reload the counter value from PITLDVAL when PITCVAL reach zero,
+> +	 * and start the counter again. So software need to disable the timer
+> +	 * to stop the counter loop in ONESHOT mode.
+> +	 */
+> +	if (likely(evt->mode == CLOCK_EVT_MODE_ONESHOT))
+> +		pit_timer_disable();
+> +
+> +	evt->event_handler(evt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static struct clock_event_device clockevent_pit = {
+> +	.name		= "VF pit timer",
+> +	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+> +	.set_mode	= pit_set_mode,
+> +	.set_next_event	= pit_set_next_event,
+> +	.rating		= 300,
+> +};
+> +
+> +static struct irqaction pit_timer_irq = {
+> +	.name		= "VF pit timer",
+> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+> +	.handler	= pit_timer_interrupt,
+> +	.dev_id		= &clockevent_pit,
+> +};
+> +
+> +static int __init pit_clockevent_init(unsigned long rate, int irq)
+> +{
+> +	__raw_writel(0, clkevt_base + PITTCTRL);
+> +	__raw_writel(PITTFLG_TIF, clkevt_base + PITTFLG);
+> +
+> +	BUG_ON(setup_irq(irq, &pit_timer_irq));
+> +
+> +	clockevent_pit.cpumask = cpumask_of(0);
+> +	clockevent_pit.irq = irq;
+> +	/*
+> +	 * The value for the LDVAL register trigger is calculated as:
+> +	 * LDVAL trigger = (period / clock period) - 1
+> +	 * The pit is a 32-bit down count timer, when the conter value
+> +	 * reaches 0, it will generate an interrupt, thus the minimal
+> +	 * LDVAL trigger value is 1. And then the min_delta is
+> +	 * minimal LDVAL trigger value + 1, and the max_delta is full 32-bit.
+> +	 */
+> +	clockevents_config_and_register(&clockevent_pit, rate, 2, 0xffffffff);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __init pit_timer_init(struct device_node *np)
+> +{
+> +	struct clk *pit_clk;
+> +	void __iomem *timer_base;
+> +	unsigned long clk_rate;
+> +	int irq;
+> +
+> +	timer_base = of_iomap(np, 0);
+> +	BUG_ON(!timer_base);
+> +
+> +	/*
+> +	 * PIT0 and PIT1 can be chained to build a 64-bit timer,
+> +	 * so choose PIT2 as clocksource, PIT3 as clockevent device,
+> +	 * and leave PIT0 and PIT1 unused for anyone else who needs them.
+> +	 */
+> +	clksrc_base = timer_base + PITn_OFFSET(2);
+> +	clkevt_base = timer_base + PITn_OFFSET(3);
+> +
+> +	irq = irq_of_parse_and_map(np, 0);
+> +	BUG_ON(irq <= 0);
+> +
+> +	pit_clk = of_clk_get(np, 0);
+> +	BUG_ON(IS_ERR(pit_clk));
+> +
+> +	BUG_ON(clk_prepare_enable(pit_clk));
+> +
+> +	clk_rate = clk_get_rate(pit_clk);
+> +	cycle_per_jiffy = clk_rate / (HZ);
+> +
+> +	/* enable the pit module */
+> +	__raw_writel(~PITMCR_MDIS, timer_base + PITMCR);
+> +
+> +	BUG_ON(pit_clocksource_init(clk_rate));
+> +
+> +	pit_clockevent_init(clk_rate, irq);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(vf610, "fsl,vf610-pit", pit_timer_init);
+> 
 
 
-	Joerg
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
