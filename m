@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab3E1S0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 14:26:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:32798 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3E1S0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 14:26:17 -0400
-X-IronPort-AV: E=Sophos;i="4.87,759,1363132800"; 
-   d="scan'208";a="27808011"
-Message-ID: <51A4F6C6.8080808@citrix.com>
-Date: Tue, 28 May 2013 19:26:14 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1751668Ab3E1S3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 14:29:12 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:36748 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab3E1S3K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 14:29:10 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Jan Beulich <JBeulich@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
- RTC on system time step changes
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com> <5193CFA2.8010008@linaro.org>
-In-Reply-To: <5193CFA2.8010008@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Date: Tue, 28 May 2013 14:29:09 -0400
+Message-ID: <CANsc=4W8cW3jQs8yN_j8DZyEo7GkMejNc4Vw65A4iW+GuasBaw@mail.gmail.com>
+Subject: [PATCH] ARM: omap2plus_defconfig: enable USB_PHY and NOP_USB_XCEIV
+From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        AnilKumar Ch <anilkumar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Roger Quadros <rogerq@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/05/13 19:10, John Stultz wrote:
-> 
-> Ok, so really, as soon as the Dom0 time is set by NTP, all guests will 
-> see the right time? That makes more sense, and means the window for 
-> these sorts of issues is reasonably quite small.
+On OMAP2+ platforms, USB support needs physical layer signalling and
+the NOP USB Transceiver driver since v3.10. This patch enables USB_PHY
+and NOP_USB_XCEIV in omap2plus_defconfig. These two are harmless to
+the kernel stability, and useful since they are required for USB and
+Ethernet (over USB) support.
 
-It's a small window but it's occurring in our automated test system.
+We do not enable USB_EHCI_HCD here because all features aren't fully
+supported yet.
 
-> David: So I'm less inclined to merge this individual change, but if you 
-> still feel strongly about it, let me know and we can circle around on it 
-> after you've addressed the specific issues I pointed out earlier.
+This patch applies to Linux 3.10-rc3.
 
-This patch was the actual bug fix but I've reworked it to use the
-pvclock_gtod notifier chain as this seemed to be what KVM hosts were
-using to maintain a clock for guests.  Please review the new series, thanks.
+Cc: Roger Quadros <rogerq@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
+---
+ arch/arm/configs/omap2plus_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-David
+diff --git a/arch/arm/configs/omap2plus_defconfig
+b/arch/arm/configs/omap2plus_defconfig
+index abbe319..2ac0ffb 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -210,6 +210,8 @@ CONFIG_USB_WDM=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_LIBUSUAL=y
+ CONFIG_USB_TEST=y
++CONFIG_USB_PHY=y
++CONFIG_NOP_USB_XCEIV=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_DEBUG=y
+ CONFIG_USB_GADGET_DEBUG_FILES=y
+-- 
+1.7.10.4
