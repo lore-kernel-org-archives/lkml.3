@@ -1,641 +1,685 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab3E1Wpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 18:45:55 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:18686
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757645Ab3E1Wpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 18:45:50 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(z551bizc8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MNJ5W6-02-4PQ-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <joro@8bytes.org>
-CC: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: [PATCH 2/2 V4] perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
-Date: Tue, 28 May 2013 17:45:12 -0500
-Message-ID: <1369781112-2198-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369781112-2198-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1369781112-2198-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1758350Ab3E1Wps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 18:45:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44466 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757645Ab3E1Wpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 18:45:38 -0400
+Date: Wed, 29 May 2013 00:45:29 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 3/3] x86/microcode: early microcode patch loading
+ support on AMD
+Message-ID: <20130528224529.GC29233@pd.tnic>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+ <1369323618-5820-4-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369323618-5820-4-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On Thu, May 23, 2013 at 10:40:18AM -0500, Jacob Shin wrote:
+> Add support for early microcode patch loading on AMD.
+> 
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/Kconfig                       |   16 +-
+>  arch/x86/include/asm/microcode.h       |    1 -
+>  arch/x86/include/asm/microcode_amd.h   |   17 ++
+>  arch/x86/include/asm/microcode_intel.h |    1 +
+>  arch/x86/kernel/microcode_amd.c        |  338 ++++++++++++++++++++++++++++----
+>  arch/x86/kernel/microcode_core_early.c |    7 +
+>  6 files changed, 333 insertions(+), 47 deletions(-)
+>  create mode 100644 arch/x86/include/asm/microcode_amd.h
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 3a5bced..fab72e7 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1090,8 +1090,18 @@ config MICROCODE_INTEL_LIB
+>  	depends on MICROCODE_INTEL
+>  
+>  config MICROCODE_INTEL_EARLY
+> -	bool "Early load microcode"
+> +	def_bool n
 
-Implement a perf PMU to handle IOMMU performance counters and events.
-The PMU only supports counting mode (e.g. perf stat). Since the counters
-are shared across all cores, the PMU is implemented as "system-wide" mode.
+Why? We want to load ucode early by default.
 
-To invoke the AMD IOMMU PMU, issue a perf tool command such as:
+>  	depends on MICROCODE_INTEL && BLK_DEV_INITRD
+> +
+> +config MICROCODE_AMD_EARLY
+> +	def_bool n
 
-./perf stat -a -e amd_iommu/<events>/ <command>
-or
-./perf stat -a -e amd_iommu/config=<config-data>,config1=<config1-data>/ <command>
+ditto.
 
-For example:
+> +	depends on MICROCODE_AMD && BLK_DEV_INITRD
+> +
+> +config MICROCODE_EARLY
+> +	bool "Early load microcode"
+> +	depends on (MICROCODE_INTEL || MICROCODE_AMD) && BLK_DEV_INITRD
+> +	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
+> +	select MICROCODE_AMD_EARLY if MICROCODE_AMD
 
-./perf stat -a -e amd_iommu/mem_trans_total/ <command>
+It looks to me the BLK_DEV_INITRD dependency should be moved here and the
+respective early loading code should be dependent on the cpu support...
 
-The resulting count will be how many IOMMU total peripheral memory
-operations were performed during the command execution window.
+Crap, this whole microcode Kconfig menu needs a bit of scrubbing.
 
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
----
-Changes from V3:
-	- Add CONFIG_AMD_IOMMU in the Makefile
-	- Add proper check for max_banks and max_counters
+Anyway, this whole Kconfig microcode section could use a simplification
+but this is not the subject of this patchset - I'll try to address it
+after this, as stated in another mail.
 
- arch/x86/kernel/cpu/Makefile               |    4 +
- arch/x86/kernel/cpu/perf_event_amd_iommu.c |  500 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
- 3 files changed, 544 insertions(+)
- create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
+[ … ]
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index b0684e4..47b56a7 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -31,11 +31,15 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
- ifdef CONFIG_PERF_EVENTS
- obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o
-+ifdef CONFIG_AMD_IOMMU
-+obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
-+endif
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
- endif
- 
-+
- obj-$(CONFIG_X86_MCE)			+= mcheck/
- obj-$(CONFIG_MTRR)			+= mtrr/
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-new file mode 100644
-index 0000000..a1199cd
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-@@ -0,0 +1,500 @@
-+/*
-+ * Copyright (C) 2013 Advanced Micro Devices, Inc.
-+ *
-+ * Author: Steven Kinney <Steven.Kinney@amd.com>
-+ * Author: Suravee Suthikulpanit <Suraveee.Suthikulpanit@amd.com>
-+ *
-+ * Perf: amd_iommu - AMD IOMMU Performance Counter PMU implementation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/perf_event.h>
-+#include <linux/module.h>
-+#include <linux/cpumask.h>
-+#include <linux/slab.h>
-+
-+#include "perf_event.h"
-+#include "perf_event_amd_iommu.h"
-+
-+#define _GET_BANK(ev)       ((u8)(ev->hw.extra_reg.reg >> 8))
-+#define _GET_CNTR(ev)       ((u8)(ev->hw.extra_reg.reg))
-+
-+/* iommu pmu config masks */
-+#define _GET_CSOURCE(ev)    ((ev->hw.config & 0xFFULL))
-+#define _GET_DEVID(ev)      ((ev->hw.config >> 8)  & 0xFFFFULL)
-+#define _GET_PASID(ev)      ((ev->hw.config >> 24) & 0xFFFFULL)
-+#define _GET_DOMID(ev)      ((ev->hw.config >> 40) & 0xFFFFULL)
-+#define _GET_DEVID_MASK(ev) ((ev->hw.extra_reg.config)  & 0xFFFFULL)
-+#define _GET_PASID_MASK(ev) ((ev->hw.extra_reg.config >> 16) & 0xFFFFULL)
-+#define _GET_DOMID_MASK(ev) ((ev->hw.extra_reg.config >> 32) & 0xFFFFULL)
-+
-+static struct perf_amd_iommu __perf_iommu;
-+
-+struct perf_amd_iommu {
-+	struct pmu pmu;
-+	u8 max_banks;
-+	u8 max_counters;
-+	u64 cntr_assign_mask;
-+	raw_spinlock_t lock;
-+	const struct attribute_group *attr_groups[4];
-+};
-+
-+#define format_group	attr_groups[0]
-+#define cpumask_group	attr_groups[1]
-+#define events_group	attr_groups[2]
-+#define null_group	attr_groups[3]
-+
-+/*---------------------------------------------
-+ * sysfs format attributes
-+ *---------------------------------------------*/
-+PMU_FORMAT_ATTR(csource,    "config:0-7");
-+PMU_FORMAT_ATTR(devid,      "config:8-23");
-+PMU_FORMAT_ATTR(pasid,      "config:24-39");
-+PMU_FORMAT_ATTR(domid,      "config:40-55");
-+PMU_FORMAT_ATTR(devid_mask, "config1:0-15");
-+PMU_FORMAT_ATTR(pasid_mask, "config1:16-31");
-+PMU_FORMAT_ATTR(domid_mask, "config1:32-47");
-+
-+static struct attribute *iommu_format_attrs[] = {
-+	&format_attr_csource.attr,
-+	&format_attr_devid.attr,
-+	&format_attr_pasid.attr,
-+	&format_attr_domid.attr,
-+	&format_attr_devid_mask.attr,
-+	&format_attr_pasid_mask.attr,
-+	&format_attr_domid_mask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group amd_iommu_format_group = {
-+	.name = "format",
-+	.attrs = iommu_format_attrs,
-+};
-+
-+/*---------------------------------------------
-+ * sysfs events attributes
-+ *---------------------------------------------*/
-+struct amd_iommu_event_desc {
-+	struct kobj_attribute attr;
-+	const char *event;
-+};
-+
-+static ssize_t _iommu_event_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	struct amd_iommu_event_desc *event =
-+		container_of(attr, struct amd_iommu_event_desc, attr);
-+	return sprintf(buf, "%s\n", event->event);
-+}
-+
-+#define AMD_IOMMU_EVENT_DESC(_name, _event)			\
-+{								\
-+	.attr  = __ATTR(_name, 0444, _iommu_event_show, NULL),	\
-+	.event = _event,					\
-+}
-+
-+static struct amd_iommu_event_desc amd_iommu_v2_event_descs[] = {
-+	AMD_IOMMU_EVENT_DESC(mem_pass_untrans,        "csource=0x01"),
-+	AMD_IOMMU_EVENT_DESC(mem_pass_pretrans,       "csource=0x02"),
-+	AMD_IOMMU_EVENT_DESC(mem_pass_excl,           "csource=0x03"),
-+	AMD_IOMMU_EVENT_DESC(mem_target_abort,        "csource=0x04"),
-+	AMD_IOMMU_EVENT_DESC(mem_trans_total,         "csource=0x05"),
-+	AMD_IOMMU_EVENT_DESC(mem_iommu_tlb_pte_hit,   "csource=0x06"),
-+	AMD_IOMMU_EVENT_DESC(mem_iommu_tlb_pte_mis,   "csource=0x07"),
-+	AMD_IOMMU_EVENT_DESC(mem_iommu_tlb_pde_hit,   "csource=0x08"),
-+	AMD_IOMMU_EVENT_DESC(mem_iommu_tlb_pde_mis,   "csource=0x09"),
-+	AMD_IOMMU_EVENT_DESC(mem_dte_hit,             "csource=0x0a"),
-+	AMD_IOMMU_EVENT_DESC(mem_dte_mis,             "csource=0x0b"),
-+	AMD_IOMMU_EVENT_DESC(page_tbl_read_tot,       "csource=0x0c"),
-+	AMD_IOMMU_EVENT_DESC(page_tbl_read_nst,       "csource=0x0d"),
-+	AMD_IOMMU_EVENT_DESC(page_tbl_read_gst,       "csource=0x0e"),
-+	AMD_IOMMU_EVENT_DESC(int_dte_hit,             "csource=0x0f"),
-+	AMD_IOMMU_EVENT_DESC(int_dte_mis,             "csource=0x10"),
-+	AMD_IOMMU_EVENT_DESC(cmd_processed,           "csource=0x11"),
-+	AMD_IOMMU_EVENT_DESC(cmd_processed_inv,       "csource=0x12"),
-+	AMD_IOMMU_EVENT_DESC(tlb_inv,                 "csource=0x13"),
-+	{ /* end: all zeroes */ },
-+};
-+
-+/*---------------------------------------------
-+ * sysfs cpumask attributes
-+ *---------------------------------------------*/
-+static cpumask_t iommu_cpumask;
-+
-+static ssize_t _iommu_cpumask_show(struct device *dev,
-+				   struct device_attribute *attr,
-+				   char *buf)
-+{
-+	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &iommu_cpumask);
-+	buf[n++] = '\n';
-+	buf[n] = '\0';
-+	return n;
-+}
-+static DEVICE_ATTR(cpumask, S_IRUGO, _iommu_cpumask_show, NULL);
-+
-+static struct attribute *iommu_cpumask_attrs[] = {
-+	&dev_attr_cpumask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group amd_iommu_cpumask_group = {
-+	.attrs = iommu_cpumask_attrs,
-+};
-+
-+/*---------------------------------------------*/
-+
-+static int get_next_avail_iommu_bnk_cntr(struct perf_amd_iommu *perf_iommu)
-+{
-+	unsigned long flags;
-+	int shift, bank, cntr, retval;
-+	int max_banks = perf_iommu->max_banks;
-+	int max_cntrs = perf_iommu->max_counters;
-+
-+	raw_spin_lock_irqsave(&perf_iommu->lock, flags);
-+
-+	for (bank = 0, shift = 0; bank < max_banks; bank++) {
-+		for (cntr = 0; cntr < max_cntrs; cntr++) {
-+			shift = bank + (bank*3) + cntr;
-+			if (perf_iommu->cntr_assign_mask & (1ULL<<shift)) {
-+				continue;
-+			} else {
-+				perf_iommu->cntr_assign_mask |= (1ULL<<shift);
-+				retval = ((u16)((u16)bank<<8) | (u8)(cntr));
-+				goto out;
-+			}
-+		}
-+	}
-+	retval = -ENOSPC;
-+out:
-+	raw_spin_unlock_irqrestore(&perf_iommu->lock, flags);
-+	return retval;
-+}
-+
-+static int clear_avail_iommu_bnk_cntr(struct perf_amd_iommu *perf_iommu,
-+					u8 bank, u8 cntr)
-+{
-+	unsigned long flags;
-+	int max_banks, max_cntrs;
-+	int shift = 0;
-+
-+	max_banks = perf_iommu->max_banks;
-+	max_cntrs = perf_iommu->max_counters;
-+
-+	if ((bank > max_banks) || (cntr > max_cntrs))
-+		return -EINVAL;
-+
-+	shift = bank + cntr + (bank*3);
-+
-+	raw_spin_lock_irqsave(&perf_iommu->lock, flags);
-+	perf_iommu->cntr_assign_mask &= ~(1ULL<<shift);
-+	raw_spin_unlock_irqrestore(&perf_iommu->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int perf_iommu_event_init(struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct perf_amd_iommu *perf_iommu;
-+	u64 config, config1;
-+
-+	/* test the event attr type check for PMU enumeration */
-+	if (event->attr.type != event->pmu->type)
-+		return -ENOENT;
-+
-+	/*
-+	 * IOMMU counters are shared across all cores.
-+	 * Therefore, it does not support per-process mode.
-+	 * Also, it does not support event sampling mode.
-+	 */
-+	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
-+		return -EINVAL;
-+
-+	/* IOMMU counters do not have usr/os/guest/host bits */
-+	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-+	    event->attr.exclude_host || event->attr.exclude_guest)
-+		return -EINVAL;
-+
-+	if (event->cpu < 0)
-+		return -EINVAL;
-+
-+	perf_iommu = &__perf_iommu;
-+
-+	if (event->pmu != &perf_iommu->pmu)
-+		return -ENOENT;
-+
-+	if (perf_iommu) {
-+		config = event->attr.config;
-+		config1 = event->attr.config1;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	/* integrate with iommu base devid (0000), assume one iommu */
-+	perf_iommu->max_banks =
-+		amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID);
-+	perf_iommu->max_counters =
-+		amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID);
-+	if ((perf_iommu->max_banks == 0) || (perf_iommu->max_counters == 0))
-+		return -EINVAL;
-+
-+	/* update the hw_perf_event struct with the iommu config data */
-+	hwc->config = config;
-+	hwc->extra_reg.config = config1;
-+
-+	return 0;
-+}
-+
-+static void perf_iommu_enable_event(struct perf_event *ev)
-+{
-+	u8 csource = _GET_CSOURCE(ev);
-+	u16 devid = _GET_DEVID(ev);
-+	u64 reg = 0ULL;
-+
-+	reg = csource;
-+	amd_iommu_pc_get_set_reg_val(devid,
-+			_GET_BANK(ev), _GET_CNTR(ev) ,
-+			 IOMMU_PC_COUNTER_SRC_REG, &reg, true);
-+
-+	reg = 0ULL | devid | (_GET_DEVID_MASK(ev) << 32);
-+	if (reg)
-+		reg |= (1UL << 31);
-+	amd_iommu_pc_get_set_reg_val(devid,
-+			_GET_BANK(ev), _GET_CNTR(ev) ,
-+			 IOMMU_PC_DEVID_MATCH_REG, &reg, true);
-+
-+	reg = 0ULL | _GET_PASID(ev) | (_GET_PASID_MASK(ev) << 32);
-+	if (reg)
-+		reg |= (1UL << 31);
-+	amd_iommu_pc_get_set_reg_val(devid,
-+			_GET_BANK(ev), _GET_CNTR(ev) ,
-+			 IOMMU_PC_PASID_MATCH_REG, &reg, true);
-+
-+	reg = 0ULL | _GET_DOMID(ev) | (_GET_DOMID_MASK(ev) << 32);
-+	if (reg)
-+		reg |= (1UL << 31);
-+	amd_iommu_pc_get_set_reg_val(devid,
-+			_GET_BANK(ev), _GET_CNTR(ev) ,
-+			 IOMMU_PC_DOMID_MATCH_REG, &reg, true);
-+}
-+
-+static void perf_iommu_disable_event(struct perf_event *event)
-+{
-+	u64 reg = 0ULL;
-+
-+	amd_iommu_pc_get_set_reg_val(_GET_DEVID(event),
-+			_GET_BANK(event), _GET_CNTR(event),
-+			IOMMU_PC_COUNTER_SRC_REG, &reg, true);
-+}
-+
-+static void perf_iommu_start(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	pr_debug("perf: amd_iommu:perf_iommu_start\n");
-+	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
-+		return;
-+
-+	WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
-+	hwc->state = 0;
-+
-+	if (flags & PERF_EF_RELOAD) {
-+		u64 prev_raw_count =  local64_read(&hwc->prev_count);
-+		amd_iommu_pc_get_set_reg_val(_GET_DEVID(event),
-+				_GET_BANK(event), _GET_CNTR(event),
-+				IOMMU_PC_COUNTER_REG, &prev_raw_count, true);
-+	}
-+
-+	perf_iommu_enable_event(event);
-+	perf_event_update_userpage(event);
-+
-+}
-+
-+static void perf_iommu_read(struct perf_event *event)
-+{
-+	u64 count = 0ULL;
-+	u64 prev_raw_count = 0ULL;
-+	u64 delta = 0ULL;
-+	struct hw_perf_event *hwc = &event->hw;
-+	pr_debug("perf: amd_iommu:perf_iommu_read\n");
-+
-+	amd_iommu_pc_get_set_reg_val(_GET_DEVID(event),
-+				_GET_BANK(event), _GET_CNTR(event),
-+				IOMMU_PC_COUNTER_REG, &count, false);
-+
-+	/* IOMMU pc counter register is only 48 bits */
-+	count &= 0xFFFFFFFFFFFFULL;
-+
-+	prev_raw_count =  local64_read(&hwc->prev_count);
-+	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+					count) != prev_raw_count)
-+		return;
-+
-+	delta = count - prev_raw_count;
-+	local64_add(delta, &event->count);
-+
-+}
-+
-+static void perf_iommu_stop(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 config;
-+
-+	pr_debug("perf: amd_iommu:perf_iommu_stop\n");
-+
-+	if (hwc->state & PERF_HES_UPTODATE)
-+		return;
-+
-+	perf_iommu_disable_event(event);
-+	WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+	hwc->state |= PERF_HES_STOPPED;
-+
-+	if (hwc->state & PERF_HES_UPTODATE)
-+		return;
-+
-+	config = hwc->config;
-+	perf_iommu_read(event);
-+	hwc->state |= PERF_HES_UPTODATE;
-+}
-+
-+static int perf_iommu_add(struct perf_event *event, int flags)
-+{
-+	int retval;
-+	struct perf_amd_iommu *perf_iommu =
-+			container_of(event->pmu, struct perf_amd_iommu, pmu);
-+
-+	pr_debug("perf: amd_iommu:perf_iommu_add\n");
-+	event->hw.state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+
-+	/* request an iommu bank/counter */
-+	retval = get_next_avail_iommu_bnk_cntr(perf_iommu);
-+	if (retval != -ENOSPC)
-+		event->hw.extra_reg.reg = (u16)retval;
-+	else
-+		return retval;
-+
-+	if (flags & PERF_EF_START)
-+		perf_iommu_start(event, PERF_EF_RELOAD);
-+
-+	return 0;
-+}
-+
-+static void perf_iommu_del(struct perf_event *event, int flags)
-+{
-+	struct perf_amd_iommu *perf_iommu =
-+			container_of(event->pmu, struct perf_amd_iommu, pmu);
-+
-+	pr_debug("perf: amd_iommu:perf_iommu_del\n");
-+	perf_iommu_stop(event, PERF_EF_UPDATE);
-+
-+	/* clear the assigned iommu bank/counter */
-+	clear_avail_iommu_bnk_cntr(perf_iommu,
-+				     _GET_BANK(event),
-+				     _GET_CNTR(event));
-+
-+	perf_event_update_userpage(event);
-+}
-+
-+static __init int _init_events_attrs(struct perf_amd_iommu *perf_iommu)
-+{
-+	struct attribute **attrs;
-+	struct attribute_group *attr_group;
-+	int i = 0, j;
-+
-+	while (amd_iommu_v2_event_descs[i].attr.attr.name)
-+		i++;
-+
-+	attr_group = kzalloc(sizeof(struct attribute *)
-+		* (i + 1) + sizeof(*attr_group), GFP_KERNEL);
-+	if (!attr_group)
-+		return -ENOMEM;
-+
-+	attrs = (struct attribute **)(attr_group + 1);
-+	for (j = 0; j < i; j++)
-+		attrs[j] = &amd_iommu_v2_event_descs[j].attr.attr;
-+
-+	attr_group->name = "events";
-+	attr_group->attrs = attrs;
-+	perf_iommu->events_group = attr_group;
-+
-+	return 0;
-+}
-+
-+static __init void amd_iommu_pc_exit(void)
-+{
-+	if (__perf_iommu.events_group != NULL) {
-+		kfree(__perf_iommu.events_group);
-+		__perf_iommu.events_group = NULL;
-+	}
-+}
-+
-+static __init int _init_perf_amd_iommu(
-+	struct perf_amd_iommu *perf_iommu, char *name)
-+{
-+	int ret;
-+
-+	raw_spin_lock_init(&perf_iommu->lock);
-+
-+	/* Init format attributes */
-+	perf_iommu->format_group = &amd_iommu_format_group;
-+
-+	/* Init cpumask attributes to only core 0 */
-+	cpumask_set_cpu(0, &iommu_cpumask);
-+	perf_iommu->cpumask_group = &amd_iommu_cpumask_group;
-+
-+	/* Init events attributes */
-+	if (_init_events_attrs(perf_iommu) != 0)
-+		pr_err("perf: amd_iommu: Only support raw events.\n");
-+
-+	/* Init null attributes */
-+	perf_iommu->null_group = NULL;
-+	perf_iommu->pmu.attr_groups = perf_iommu->attr_groups;
-+
-+	ret = perf_pmu_register(&perf_iommu->pmu, name, -1);
-+	if (ret) {
-+		pr_err("perf: amd_iommu: Failed to initialized.\n");
-+		amd_iommu_pc_exit();
-+	} else {
-+		pr_info("perf: amd_iommu: Detected. (%d banks, %d counters/bank)\n",
-+			amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID),
-+			amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID));
-+	}
-+
-+	return ret;
-+}
-+
-+static struct perf_amd_iommu __perf_iommu = {
-+	.pmu = {
-+		.event_init	= perf_iommu_event_init,
-+		.add		= perf_iommu_add,
-+		.del		= perf_iommu_del,
-+		.start		= perf_iommu_start,
-+		.stop		= perf_iommu_stop,
-+		.read		= perf_iommu_read,
-+	},
-+	.max_banks		= 0x00,
-+	.max_counters		= 0x00,
-+	.cntr_assign_mask	= 0ULL,
-+	.format_group		= NULL,
-+	.cpumask_group		= NULL,
-+	.events_group		= NULL,
-+	.null_group		= NULL,
-+};
-+
-+static __init int amd_iommu_pc_init(void)
-+{
-+	/* Make sure the IOMMU PC resource is available */
-+	if (!amd_iommu_pc_supported()) {
-+		pr_err("perf: amd_iommu PMU not installed. No support!\n");
-+		return -ENODEV;
-+	}
-+
-+	_init_perf_amd_iommu(&__perf_iommu, "amd_iommu");
-+
-+	return 0;
-+}
-+
-+device_initcall(amd_iommu_pc_init);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.h b/arch/x86/kernel/cpu/perf_event_amd_iommu.h
-new file mode 100644
-index 0000000..845d173
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.h
-@@ -0,0 +1,40 @@
-+/*
-+ * Copyright (C) 2013 Advanced Micro Devices, Inc.
-+ *
-+ * Author: Steven Kinney <Steven.Kinney@amd.com>
-+ * Author: Suravee Suthikulpanit <Suraveee.Suthikulpanit@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _PERF_EVENT_AMD_IOMMU_H_
-+#define _PERF_EVENT_AMD_IOMMU_H_
-+
-+/* iommu pc mmio region register indexes */
-+#define IOMMU_PC_COUNTER_REG			0x00
-+#define IOMMU_PC_COUNTER_SRC_REG		0x08
-+#define IOMMU_PC_PASID_MATCH_REG		0x10
-+#define IOMMU_PC_DOMID_MATCH_REG		0x18
-+#define IOMMU_PC_DEVID_MATCH_REG		0x20
-+#define IOMMU_PC_COUNTER_REPORT_REG		0x28
-+
-+/* maximun specified bank/counters */
-+#define PC_MAX_SPEC_BNKS			64
-+#define PC_MAX_SPEC_CNTRS			16
-+
-+/* iommu pc reg masks*/
-+#define IOMMU_BASE_DEVID			0x0000
-+
-+/* amd_iommu_init.c external support functions */
-+extern bool amd_iommu_pc_supported(void);
-+
-+extern u8 amd_iommu_pc_get_max_banks(u16 devid);
-+
-+extern u8 amd_iommu_pc_get_max_counters(u16 devid);
-+
-+extern int amd_iommu_pc_get_set_reg_val(u16 devid, u8 bank, u8 cntr,
-+			u8 fxn, u64 *value, bool is_write);
-+
-+#endif /*_PERF_EVENT_AMD_IOMMU_H_*/
+> diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+> index efdec7c..cda647e 100644
+> --- a/arch/x86/kernel/microcode_amd.c
+> +++ b/arch/x86/kernel/microcode_amd.c
+> @@ -27,10 +27,13 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/pci.h>
+> +#include <linux/earlycpio.h>
+
+Looks like this include is not needed.
+
+>  #include <asm/microcode.h>
+> +#include <asm/microcode_amd.h>
+>  #include <asm/processor.h>
+>  #include <asm/msr.h>
+> +#include <asm/setup.h>
+
+ditto.
+
+At least I can't seem to trigger any build failures when I comment them
+out.
+
+>  MODULE_DESCRIPTION("AMD Microcode Update Driver");
+>  MODULE_AUTHOR("Peter Oruba");
+> @@ -84,23 +87,28 @@ struct ucode_patch {
+>  
+>  static LIST_HEAD(pcache);
+>  
+> -static u16 find_equiv_id(unsigned int cpu)
+> +static u16 _find_equiv_id(struct equiv_cpu_entry *eq,
+> +			  struct ucode_cpu_info *uci)
+>  {
+> -	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+>  	int i = 0;
+>  
+> -	if (!equiv_cpu_table)
+> +	if (!eq)
+>  		return 0;
+>  
+> -	while (equiv_cpu_table[i].installed_cpu != 0) {
+> -		if (uci->cpu_sig.sig == equiv_cpu_table[i].installed_cpu)
+> -			return equiv_cpu_table[i].equiv_cpu;
+> +	while (eq[i].installed_cpu != 0) {
+> +		if (uci->cpu_sig.sig == eq[i].installed_cpu)
+> +			return eq[i].equiv_cpu;
+>  
+>  		i++;
+>  	}
+>  	return 0;
+>  }
+>  
+> +static u16 find_equiv_id(unsigned int cpu)
+> +{
+> +	return _find_equiv_id(equiv_cpu_table, ucode_cpu_info + cpu);
+> +}
+> +
+>  static u32 find_cpu_family_by_equiv_cpu(u16 equiv_cpu)
+>  {
+>  	int i = 0;
+> @@ -173,9 +181,17 @@ static struct ucode_patch *find_patch(unsigned int cpu)
+>  static int collect_cpu_info_amd(int cpu, struct cpu_signature *csig)
+>  {
+>  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+> +	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+> +	struct ucode_patch *p;
+>  
+>  	csig->sig = cpuid_eax(0x00000001);
+>  	csig->rev = c->microcode;
+> +
+> +	/* if a patch was early loaded, tell microcode_core.c about it */
+> +	p = find_patch(cpu);
+> +	if (p && (p->patch_id == csig->rev))
+> +		uci->mc = p->data;
+
+Why do we even need this? Hotplug should take care of reappying
+microcode on all cores.
+
+>  	pr_info("CPU%d: patch_level=0x%08x\n", cpu, csig->rev);
+>  
+>  	return 0;
+> @@ -215,24 +231,14 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
+>  	return patch_size;
+>  }
+>  
+> -static int apply_microcode_amd(int cpu)
+> +static int _apply_microcode_amd(int cpu, void *data, struct cpuinfo_x86 *c,
+> +				struct ucode_cpu_info *uci, bool silent)
+>  {
+> -	struct cpuinfo_x86 *c = &cpu_data(cpu);
+>  	struct microcode_amd *mc_amd;
+> -	struct ucode_cpu_info *uci;
+> -	struct ucode_patch *p;
+>  	u32 rev, dummy;
+>  
+> -	BUG_ON(raw_smp_processor_id() != cpu);
+> -
+> -	uci = ucode_cpu_info + cpu;
+> -
+> -	p = find_patch(cpu);
+> -	if (!p)
+> -		return 0;
+> -
+> -	mc_amd  = p->data;
+> -	uci->mc = p->data;
+> +	mc_amd  = data;
+> +	uci->mc = data;
+
+Right, come to think of it, we don't use this uci->mc thing anywhere
+except in mc_bp_resume. But even there, we call ->apply_microcode()
+which on AMD searches the patch in the patch cache so no need for this
+assignment at all.
+
+>  	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+>  
+> @@ -247,18 +253,37 @@ static int apply_microcode_amd(int cpu)
+>  	/* verify patch application was successful */
+>  	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+>  	if (rev != mc_amd->hdr.patch_id) {
+> -		pr_err("CPU%d: update failed for patch_level=0x%08x\n",
+> -		       cpu, mc_amd->hdr.patch_id);
+> +		if (!silent)
+> +			pr_err("CPU%d: update failed for patch_level=0x%08x\n",
+> +				cpu, mc_amd->hdr.patch_id);
+>  		return -1;
+>  	}
+>  
+> -	pr_info("CPU%d: new patch_level=0x%08x\n", cpu, rev);
+> +	if (!silent)
+> +		pr_info("CPU%d: new patch_level=0x%08x\n", cpu, rev);
+>  	uci->cpu_sig.rev = rev;
+>  	c->microcode = rev;
+>  
+>  	return 0;
+>  }
+>  
+> +static int apply_microcode_amd(int cpu)
+> +{
+> +	struct cpuinfo_x86 *c = &cpu_data(cpu);
+> +	struct ucode_cpu_info *uci;
+> +	struct ucode_patch *p;
+> +
+> +	BUG_ON(raw_smp_processor_id() != cpu);
+> +
+> +	uci = ucode_cpu_info + cpu;
+> +
+> +	p = find_patch(cpu);
+> +	if (!p)
+> +		return 0;
+> +
+> +	return _apply_microcode_amd(cpu, p->data, c, uci, false);
+> +}
+> +
+>  static int install_equiv_cpu_table(const u8 *buf)
+>  {
+>  	unsigned int *ibuf = (unsigned int *)buf;
+> @@ -398,6 +423,44 @@ static enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
+>  	return UCODE_OK;
+>  }
+>  
+> +#if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
+> +#define MPB_MAX_SIZE F15H_MPB_MAX_SIZE
+
+Is this an obscure way to say "I want the biggest patch size required,
+thus I'm taking the 4K size of F15h?
+
+Please make it explicit:
+
+#define MPB_MAX_SIZE PAGE_SIZE
+
+If some future family decided it needs bigger microcode, then we can
+adjust it.
+
+> +static u8 bsp_mpb[MPB_MAX_SIZE];
+> +#endif
+> +static enum ucode_state request_microcode_fw(int cpu, const struct firmware *fw)
+
+This function has the same name as one of the members in the
+microcode_ops. Misleading. Remember, this is code to be stared at by
+humans not be simply virtual addresses jumped to by a prefetcher.
+
+> +{
+> +	enum ucode_state ret = UCODE_ERROR;
+> +
+> +	if (*(u32 *)fw->data != UCODE_MAGIC) {
+> +		pr_err("invalid magic value (0x%08x)\n", *(u32 *)fw->data);
+> +		return ret;
+> +	}
+
+AFAICT, this function can be called early and we want to avoid printk
+there...
+
+> +
+> +	/* free old equiv table */
+> +	free_equiv_cpu_table();
+
+Huh, we use the equiv table in the initrd early, we can't free it.
+
+> +
+> +	ret = load_microcode_amd(cpu, fw->data, fw->size);
+> +	if (ret != UCODE_OK)
+> +		cleanup();
+> +
+> +#if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
+> +	/*
+> +	 * on X86_32 early load, while CPU hotplugging on, we cannot traverse
+> +	 * pcache since paging is not turneded on yet. so stash away BSP's MPB
+> +	 * when a new fw file is installed.
+> +	 */
+
+This comment needs a bit of scrubbing, spell- and readability check.
+
+And it says we cannot traverse the pcache and yet we traverse it with
+find_patch().
+
+???
+
+> +	if (cpu_data(cpu).cpu_index == boot_cpu_data.cpu_index) {
+> +		struct ucode_patch *p;
+> +
+> +		p = find_patch(cpu);
+> +		if (p)
+> +			memcpy(bsp_mpb, p->data, min_t(u32, ksize(p->data),
+> +						       MPB_MAX_SIZE));
+> +	}
+> +#endif
+> +	return ret;
+> +}
+> +
+>  /*
+>   * AMD microcode firmware naming convention, up to family 15h they are in
+>   * the legacy file:
+> @@ -419,7 +482,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+>  {
+>  	char fw_name[36] = "amd-ucode/microcode_amd.bin";
+>  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+> -	enum ucode_state ret = UCODE_NFOUND;
+> +	enum ucode_state ret;
+>  	const struct firmware *fw;
+>  
+>  	/* reload ucode container only on the boot cpu */
+> @@ -431,26 +494,11 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+>  
+>  	if (request_firmware(&fw, (const char *)fw_name, device)) {
+>  		pr_err("failed to load file %s\n", fw_name);
+> -		goto out;
+> +		return UCODE_NFOUND;
+>  	}
+>  
+> -	ret = UCODE_ERROR;
+> -	if (*(u32 *)fw->data != UCODE_MAGIC) {
+> -		pr_err("invalid magic value (0x%08x)\n", *(u32 *)fw->data);
+> -		goto fw_release;
+> -	}
+> -
+> -	/* free old equiv table */
+> -	free_equiv_cpu_table();
+> -
+> -	ret = load_microcode_amd(cpu, fw->data, fw->size);
+> -	if (ret != UCODE_OK)
+> -		cleanup();
+> -
+> - fw_release:
+> +	ret = request_microcode_fw(cpu, fw);
+>  	release_firmware(fw);
+> -
+> - out:
+>  	return ret;
+>  }
+>  
+> @@ -475,6 +523,214 @@ static struct microcode_ops microcode_amd_ops = {
+>  	.microcode_fini_cpu               = microcode_fini_cpu_amd,
+>  };
+>  
+> +#ifdef CONFIG_MICROCODE_AMD_EARLY
+> +/*
+> + * Early Loading Support
+> + */
+> +
+> +static void __cpuinit collect_cpu_info_amd_early(struct cpuinfo_x86 *c,
+> +						 struct ucode_cpu_info *uci)
+> +{
+> +	u32 rev, eax;
+> +
+> +	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, eax);
+> +	eax = cpuid_eax(0x00000001);
+> +
+> +	uci->cpu_sig.sig = eax;
+> +	uci->cpu_sig.rev = rev;
+> +	c->microcode = rev;
+> +	c->x86 = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
+> +}
+> +
+> +/*
+> + * microcode patch container file is prepended to the initrd in cpio format.
+> + * see Documentation/x86/early-microcode.txt
+> + */
+> +static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> +
+> +static struct cpio_data __init
+> +request_firmware_in_initrd(void)
+
+This function naming is wrong - we're not requesting but we're searching
+for the ucode blob in the initrd. So "find_ucode_in_initrd()" would be a
+more fitting name.
+
+> +{
+> +	long offset = 0;
+> +
+> +	return find_cpio_data(ucode_path,
+> +			(void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET),
+> +			boot_params.hdr.ramdisk_size, &offset);
+> +}
+> +
+> +static struct cpio_data __init request_firmware_in_initrd_early(void)
+
+ditto.
+
+> +{
+> +#ifdef CONFIG_X86_32
+
+Now this could well use a comment about why we're using physical
+addresses on 32-bit.
+
+> +	struct boot_params *boot_params_p;
+> +	long offset = 0;
+> +
+> +	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+> +	return find_cpio_data((char *)__pa_nodebug(ucode_path),
+> +			(void *)boot_params_p->hdr.ramdisk_image,
+> +			boot_params_p->hdr.ramdisk_size, &offset);
+> +#else
+> +	return request_firmware_in_initrd();
+> +#endif
+> +}
+> +
+> +static int __init
+> +find_equiv_cpu_table_early(const u8 *buf, struct equiv_cpu_entry **eq)
+> +{
+> +	unsigned int *ibuf = (unsigned int *)buf;
+> +	unsigned int type = ibuf[1];
+> +	unsigned int size = ibuf[2];
+> +
+> +	if (type != UCODE_EQUIV_CPU_TABLE_TYPE || !size)
+> +		return -EINVAL;
+> +
+> +	/*
+> +	 * during BSP load, vmalloc() is not available yet.
+> +	 * so just use equivalent cpu table in initrd memory in place,
+> +	 * no need to copy it. on X86_64, first AP to load will actually
+> +	 * "install" the equiv_cpu_table. on X86_32, before mm frees up initrd.
+> +	 */
+
+This comment needs scrubbing like block formatting, converting it into
+real sentences and actually trying to explain what do you mean with that
+last part "on X86_32..." - I can't read that. IOW, something like that:
+
+        /*
+         * vmalloc() is not available early, while the microcode is loaded on
+         * the BSP. So just use the equivalent cpu table in the initrd, without
+         * copying it. On x86_64, the first AP to load will actually "install"
+	 * the equiv_cpu_table while on X86_32...
+         */
+
+> +	*eq = (struct equiv_cpu_entry *)(buf + CONTAINER_HDR_SZ);
+> +
+> +	/* add header length */
+
+No need for it - CONTAINER_HDR_SZ should be descriptive enough a name.
+
+> +	return size + CONTAINER_HDR_SZ;
+> +}
+> +
+> +static enum ucode_state __init
+> +load_microcode_amd_early(int cpu, const u8 *data, size_t size)
+
+Btw, this function is called only from load_ucode_amd_bsp, so call it
+accordingly: __load_ucode_amd_bsp() or so.
+
+> +{
+> +	unsigned int leftover;
+> +	u8 *fw = (u8 *)data;
+> +	int offset;
+> +	u16 equiv_id;
+> +	struct equiv_cpu_entry *eq;
+> +	struct cpuinfo_x86 c;
+
+This looks wrong - so you're creating a variable on the stack just so
+that you can pass it to _apply_microcode_amd(). After the function
+finishes, all the assignments to it are gone.
+
+Looks like bad design to me.
+
+> +	struct ucode_cpu_info uci;
+> +
+> +	collect_cpu_info_amd_early(&c, &uci);
+> +
+> +	offset = find_equiv_cpu_table_early(data, &eq);
+> +	if (offset < 0)
+> +		return UCODE_ERROR;
+> +	fw += offset;
+> +	leftover = size - offset;
+> +
+> +	if (*(u32 *)fw != UCODE_UCODE_TYPE)
+> +		return UCODE_ERROR;
+> +
+> +	equiv_id = _find_equiv_id(eq, &uci);
+> +	if (!equiv_id)
+> +		return UCODE_NFOUND;
+> +
+> +	while (leftover) {
+> +		struct microcode_amd *mc;
+> +		int patch_size = *(u32 *)(fw + 4);
+> +
+> +		/*
+> +		 * during BSP load, vmalloc() is not available yet,
+> +		 * so simply find and apply the matching microcode patch in
+> +		 * initrd memory in place. on X86_64, first AP to load will
+> +		 * actually "cache" the patches in kernel memory.
+> +		 */
+> +		mc = (struct microcode_amd *)(fw + SECTION_HDR_SIZE);
+> +		if (equiv_id == mc->hdr.processor_rev_id)
+> +			if (_apply_microcode_amd(cpu, mc, &c, &uci, true) == 0)
+
+			if (!_apply...())
+
+> +				break;
+> +
+> +		offset    = patch_size + SECTION_HDR_SIZE;
+> +		fw	 += offset;
+> +		leftover -= offset;
+> +	}
+> +
+> +	return UCODE_OK;
+> +}
+> +
+> +static void collect_cpu_info_amd_early_bsp(void *arg)
+> +{
+> +	unsigned int cpu = smp_processor_id();
+> +	struct cpuinfo_x86 dummy;
+> +	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+> +	collect_cpu_info_amd_early(&dummy, uci);
+> +}
+> +
+> +int __init save_microcode_in_initrd_amd(void)
+
+Ok, I don't understand:
+
+We do all the collect_cpu_info and microcode loading both on the BSP and
+the APs. Why do we need to do that here too?
+
+This is called later from save_microcode_in_initrd() which is an
+initcall but by that time microcode has been applied already everywhere.
+So why do it here too? I'm guessing so that you can stash away the
+ucode.
+
+Also, this function is called on the AP path if we don't have an
+equiv_table. Sounds to me, the BSP could do this work for the remaining
+APs and they could simply apply the patches.
+
+> +{
+> +	struct cpio_data cd;
+> +	struct firmware fw;
+> +	struct ucode_cpu_info *uci = ucode_cpu_info + boot_cpu_data.cpu_index;
+> +
+> +	if (equiv_cpu_table)
+> +		return 0;
+> +
+> +	cd = request_firmware_in_initrd();
+> +	if (!cd.data)
+> +		return -EINVAL;
+> +
+> +	fw.data = cd.data;
+> +	fw.size = cd.size;
+> +
+> +	if (!uci->cpu_sig.sig)
+> +		smp_call_function_single(boot_cpu_data.cpu_index,
+> +					 collect_cpu_info_amd_early_bsp, NULL,
+> +					 1);
+> +
+> +	if (request_microcode_fw(boot_cpu_data.cpu_index, &fw) != UCODE_OK)
+> +		return -EINVAL;
+> +
+> +	return 0;
+> +}
+> +
+> +void __init load_ucode_amd_bsp(void)
+> +{
+> +	unsigned int cpu = smp_processor_id();
+> +	struct cpio_data fw = request_firmware_in_initrd_early();
+> +
+> +	if (!fw.data)
+> +		return;
+> +
+> +	load_microcode_amd_early(cpu, fw.data, fw.size);
+> +}
+> +
+> +#ifdef CONFIG_X86_32
+> +/*
+> + * on X86_32 AP load, since paging is turned off and vmalloc() is not available
+> + * yet, we cannot install the equivalent cpu table nor cache the microcode
+> + * patches in kernel memory, so just take the BSP code path. unless we are
+> + * CPU hotplugging on (i.e. resume from suspend), which then we will load from
+> + * bsp_mpb instead.
+> + */
+> +void __cpuinit load_ucode_amd_ap(void)
+> +{
+> +	unsigned int cpu = smp_processor_id();
+> +	struct microcode_amd *mc;
+> +	struct cpuinfo_x86 c;
+> +	struct ucode_cpu_info uci;
+> +
+> +	mc = (struct microcode_amd *)__pa_nodebug(bsp_mpb);
+> +	if (mc->hdr.patch_id && mc->hdr.processor_rev_id)
+> +		_apply_microcode_amd(cpu, mc, &c, &uci, true);
+> +	else
+> +		load_ucode_amd_bsp();
+
+What's going on here? The _ap() function does load...bsp()?
+
+This whole code looks really convoluted to me and I'm going to stop
+trying to understand what's going on. Please do a careful analysis of
+what calls what, when. Then, carve out shared functionality carefully
+into a function and call that function exactly what it does.
+
+AFAICT, from reading the code, there a couple of things you need to do
+(correct me if I'm missing anything):
+
+* load ucode on the BSP
+
+* load ucode on the APs
+
+* save the ucode image from initrd
+
+But you have functions like _apply_microcode_amd where just so that you
+can reuse functionality, you create the passing arguments on the stack
+just so that it works. And this is not optimal.
+
+A better design, IHMO, would be to carve out *only* the application
+functionality, i.e. the RD/WRMSR dance and call it __apply_microcode
+which you can call from the early code. The rest of the glue should go
+in another function which actually saves c->microcode, etc.
+
+This makes it very hard to follow the code and is not a proper design.
+
+And it should be very clear just by looking at the function, when and
+how is this function called.
+
+Please add more thought and care when designing this for the next
+version.
+
+You could also split this patch so that it is more clear what happens.
+
+Another thing to consider is, for example, which work is done only once
+and should thus be done only on the BSP so that the if-clauses on the AP
+path can be removed.
+
+Also, avoid repetitive work like save_microcode_in_initrd_amd() which is
+done from the initcall and on the APs. I don't think this is needed so
+it shouldn't happen.
+
+And so on, and so on.
+
+> +}
+> +#else /* !CONFIG_X86_32 */
+> +/*
+> + * on X86_64 AP load, we can vmalloc(). we can go through the normal (non-early)
+> + * code path, we just have to make sure we prepare cpu_data and ucode_cpu_info.
+> + */
+> +void __cpuinit load_ucode_amd_ap(void)
+> +{
+> +	unsigned int cpu = smp_processor_id();
+> +
+> +	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
+> +
+> +	if (cpu && !equiv_cpu_table)
+> +		if (save_microcode_in_initrd_amd())
+> +			return;
+> +
+> +	apply_microcode_amd(cpu);
+> +}
+> +#endif /* end CONFIG_X86_32 */
+> +#endif /* end CONFIG_MICROCODE_AMD_EARLY */
+
+No need for the "end" thing.
+
+> +
+>  struct microcode_ops * __init init_amd_microcode(void)
+>  {
+>  	struct cpuinfo_x86 *c = &cpu_data(0);
+
+[ … ]
+
+Thanks.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
