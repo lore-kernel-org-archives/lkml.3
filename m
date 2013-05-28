@@ -1,176 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934511Ab3E1PGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:06:23 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:58212 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934354Ab3E1PGW (ORCPT
+	id S934530Ab3E1PGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:06:31 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:48244 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934515Ab3E1PG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:06:22 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [RFC] regmap: Add regmap_field APIs
-Date: Tue, 28 May 2013 15:58:00 +0100
-Message-Id: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
+	Tue, 28 May 2013 11:06:27 -0400
+Message-ID: <51A4C7EE.8060506@gmail.com>
+Date: Tue, 28 May 2013 23:06:22 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3, part2 01/20] PCI: introduce hotplug-safe PCI bus iterators
+References: <1369583597-3801-1-git-send-email-jiang.liu@huawei.com> <1369583597-3801-2-git-send-email-jiang.liu@huawei.com> <CAE9FiQUBQRrkiub_EGZ1TZ-iccLts7hDff3kOz70uq=McjpoGg@mail.gmail.com>
+In-Reply-To: <CAE9FiQUBQRrkiub_EGZ1TZ-iccLts7hDff3kOz70uq=McjpoGg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-
-It is common to access regmap registers at bit level, using
-regmap_update_bits or regmap_read functions, however the end user has to
-take care of a mask or shifting. This becomes overhead when such use
-cases are high. Having a common function to do this is much convient and less
-error prone.
-
-The idea of regmap_field is simple, regmap_field gives a logical structure to
-bits of the regmap register, and the driver can use this logical entity without
-the knowledge of the bit postions and masks all over the code. This way code
-looks much neat and it need not handle the masks, shifts every time it access
-the those entities.
-
-With this new regmap_field_read/write apis the end user can setup a
-regmap field using regmap_field_init and use the return regmap_field to
-read write the register field without worrying about the masks or
-shifts.
-Also this apis will be usefull for drivers which are based on regmaps,
-like some clocks or pinctrls which can work on the regmap_fields
-directly without having to worry about bit positions.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
-Hi Mark,
-
-I have been looking at using regmap mmio directly for ST "System Configuration
-registers". One thing which we discussed 2 weeks back in syscon patch was, if
-this new functionality would benifit others. Having thought about it, I think
-that if regmap had a concept like regmap_field we would have used it straight way
-without a new driver.
-
-I generated this patch mainly to get your opinion on these new APIs, Is this the
-right place for these APIs, or do you suggest that these APIs should go in SOC
-Specific driver?
-
-Comments?
-
-Thanks,
-srini
-
-
-
- drivers/base/regmap/regmap.c |   47 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h       |   28 +++++++++++++++++++++++++
- 2 files changed, 75 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index a941dcf..4512df7 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1249,6 +1249,27 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- }
- EXPORT_SYMBOL_GPL(regmap_raw_write);
- 
-+/**
-+ * regmap_field_write(): Write a value to a single register field
-+ *
-+ * @field: Register field to write to
-+ * @val: Value to be written
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+
-+int regmap_field_write(struct regmap_field *field, unsigned int val)
-+{
-+	int field_bits;
-+	unsigned int reg_mask;
-+	field_bits = field->msb - field->lsb + 1;
-+	reg_mask = ((BIT(field_bits) - 1) << field->lsb);
-+	return regmap_update_bits(field->regmap, field->reg,
-+				reg_mask, val << field->lsb);
-+}
-+EXPORT_SYMBOL_GPL(regmap_field_write);
-+
- /*
-  * regmap_bulk_write(): Write multiple registers to the device
-  *
-@@ -1532,6 +1553,32 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
- EXPORT_SYMBOL_GPL(regmap_raw_read);
- 
- /**
-+ * regmap_field_read(): Read a value to a single register field
-+ *
-+ * @field: Register field to read from
-+ * @val: Pointer to store read value
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+
-+int regmap_field_read(struct regmap_field *field, unsigned int *val)
-+{
-+	int field_bits;
-+	int ret;
-+	ret = regmap_read(field->regmap, field->reg, val);
-+	if (ret != 0)
-+		return ret;
-+
-+	field_bits = field->msb - field->lsb + 1;
-+	*val >>= field->lsb;
-+	*val &= (BIT(field_bits) - 1);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_field_read);
-+
-+/**
-  * regmap_bulk_read(): Read multiple registers from the device
-  *
-  * @map: Register map to write to
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 02d84e2..f8dba11 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -411,6 +411,34 @@ bool regmap_reg_in_ranges(unsigned int reg,
- 			  const struct regmap_range *ranges,
- 			  unsigned int nranges);
- 
-+struct regmap_field {
-+	struct regmap *regmap;
-+	unsigned int reg;
-+	unsigned int lsb;
-+	unsigned int msb;
-+};
-+
-+#define REGMAP_FIELD_INIT(regmap, reg, lsb, msb) { 	\
-+				.regmap = regmap, 	\
-+				.reg = reg, 		\
-+				.lsb = lsb, 		\
-+				.msb = msb, 		\
-+			}
-+
-+/* dynamic version of regmap_field intialization */
-+static inline void regmap_field_init(struct regmap_field *field,
-+	struct regmap *regmap,	unsigned int reg,
-+	unsigned int lsb, unsigned int msb)
-+{
-+	field->regmap = regmap;
-+	field->reg = reg;
-+	field->lsb = lsb;
-+	field->msb = msb;
-+}
-+
-+int regmap_field_read(struct regmap_field *field, unsigned int *val);
-+int regmap_field_write(struct regmap_field *field, unsigned int val);
-+
- /**
-  * Description of an IRQ for the generic regmap irq_chip.
-  *
--- 
-1.7.6.5
+On Tue 28 May 2013 12:22:29 PM CST, Yinghai Lu wrote:
+> On Sun, May 26, 2013 at 8:52 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> Introduce hotplug-safe PCI bus iterators as below, which hold a
+>> reference on the returned PCI bus object.
+>> bool pci_bus_exists(int domain, int busnr);
+>> struct pci_bus *pci_get_bus(int domain, int busnr);
+>> struct pci_bus *pci_get_next_bus(struct pci_bus *from);
+>> struct pci_bus *pci_get_next_root_bus(struct pci_bus *from);
+>> #define for_each_pci_bus(b) for (b = NULL; (b = pci_get_next_bus(b)); )
+>> #define for_each_pci_root_bus(b)  \
+>>                 for (b = NULL; (b = pci_get_next_root_bus(b)); )
+>>
+>> The long-term goal is to remove hotplug-unsafe pci_find_bus(),
+>> pci_find_next_bus() and the global pci_root_buses list.
+>>
+>> These new interfaces may be a littler slower than existing interfaces,
+>> but it should be acceptable because they are not used on hot paths.
+>
+> looks like go over all buses to find out several root buses is not good.
+>
+>
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Acked-by: Yinghai Lu <yinghai@kernel.org>
+>
+> I take that back.
+>
+>> Cc: linux-pci@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>  drivers/pci/pci.h    |   1 +
+>>  drivers/pci/probe.c  |   2 +-
+>>  drivers/pci/search.c | 159 +++++++++++++++++++++++++++++++++++++++++----------
+>>  include/linux/pci.h  |  23 +++++++-
+>>  4 files changed, 153 insertions(+), 32 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+>> index 68678ed..8fe15f6 100644
+>> --- a/drivers/pci/pci.h
+>> +++ b/drivers/pci/pci.h
+>> @@ -126,6 +126,7 @@ static inline void pci_remove_legacy_files(struct pci_bus *bus) { return; }
+>>
+>>  /* Lock for read/write access to pci device and bus lists */
+>>  extern struct rw_semaphore pci_bus_sem;
+>> +extern struct class pcibus_class;
+>>
+>>  extern raw_spinlock_t pci_lock;
+>>
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index 2830070..1004a05 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -93,7 +93,7 @@ static void release_pcibus_dev(struct device *dev)
+>>         kfree(pci_bus);
+>>  }
+>>
+>> -static struct class pcibus_class = {
+>> +struct class pcibus_class = {
+>>         .name           = "pci_bus",
+>>         .dev_release    = &release_pcibus_dev,
+>>         .dev_attrs      = pcibus_dev_attrs,
+> ...
+>> +static int pci_match_next_root_bus(struct device *dev, const void *data)
+>> +{
+>> +       return pci_is_root_bus(to_pci_bus(dev));
+>>  }
+> ...
+>> +
+>> +/**
+>> + * pci_find_next_root_bus - begin or continue searching for a PCI root bus
+>> + * @from: Previous PCI bus found, or %NULL for new search.
+>> + *
+>> + * Iterates through the list of known PCI root busses. If a PCI bus is found,
+>> + * the reference count to the root bus is incremented and a pointer to it is
+>> + * returned. Otherwise, %NULL is returned. A new search is initiated by
+>> + * passing %NULL as the @from argument. Otherwise if @from is not %NULL,
+>> + * searches continue from next root bus on the global list. The reference
+>> + * count for @from is always decremented if it is not %NULL.
+>> + */
+>> +struct pci_bus *pci_get_next_root_bus(struct pci_bus *from)
+>> +{
+>> +       struct device *dev = from ? &from->dev : NULL;
+>> +
+>> +       WARN_ON(in_interrupt());
+>> +       dev = class_find_device(&pcibus_class, dev, NULL,
+>> +                               &pci_match_next_root_bus);
+>> +       pci_bus_put(from);
+>> +       if (dev)
+>> +               return to_pci_bus(dev);
+>> +
+>> +       return NULL;
+>>  }
+>> +EXPORT_SYMBOL(pci_get_next_root_bus);
+>
+> this patchset is most doing same thing like my for_each_host_bridge patchset.
+> that patchset add bus_type for host_bridge and loop with each_...bus
+> to find host_bridge
+> and to its bus.
+>
+> looks like for each host bridge should be right direction.
+>
+> also late we could add per host bridge lock instead of whole pci bus sem etc.
+>
+> Thanks
+>
+> Yinghai
+Hi Yinghai,
+          Thanks for review! Actually this patchset is inspired by your 
+for_each_host_bridge()
+patchset but trying to close some race windows.
+          Currently pci_root_bus holds a reference to pci_host_bridge, 
+so it's always safe to
+reference pci_root_bus->bridge. And pci_host_bridge doesn't hold 
+reference to pci_root_bus,
+so we can't safely reference pci_host_bridge->bus. And it's hard to 
+make pci_host_bridge
+to hold a reference to pci_root_bus because that will cause loop.
+           So we try to achieve the same goal with this patchset, but 
+with some level of inefficiency
+to search all PCI buses for root buses.
+          The third patchset of this series is to introduce a PCI bus 
+lock mechanism to solve
+many risk conditions in PCI host bridge/device hotplug we are facing 
+recently. We have
+done basic tests against the new lock mechanism and seems it has solved 
+all those
+risk conditions found by us and Gu Zheng. But we are still working on 
+improving the
+third patchset.
+          To all, seems we are trying to achieve the same goal with 
+different approaches.
+Regards!
+Gerry
 
