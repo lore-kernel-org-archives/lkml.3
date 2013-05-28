@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758517Ab3E1Kxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:53:48 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59466 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755737Ab3E1Kxq (ORCPT
+	id S1758534Ab3E1Kyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:54:46 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34521 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757779Ab3E1Kyp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:53:46 -0400
-Date: Tue, 28 May 2013 11:53:43 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Message-ID: <20130528105343.GQ14575@console-pimps.org>
-References: <20130522162747.GA20816@sgi.com>
- <20130523115801.GJ14575@console-pimps.org>
- <20130523203234.GD20913@sgi.com>
- <20130524074331.GL14575@console-pimps.org>
- <20130524200539.GA3322@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524200539.GA3322@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 May 2013 06:54:45 -0400
+Message-ID: <1369738481.3148.9.camel@hornet>
+Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
+From: Pawel Moll <pawel.moll@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Daniel Tang <dt.tangr@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 28 May 2013 11:54:41 +0100
+In-Reply-To: <201305271232.03644.arnd@arndb.de>
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
+	 <201305262323.29519.arnd@arndb.de>
+	 <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com>
+	 <201305271232.03644.arnd@arndb.de>
+X-Mailer: Evolution 3.6.4-0ubuntu1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 28 May 2013 10:54:42.0295 (UTC) FILETIME=[C1F7C870:01CE5B91]
+X-MC-Unique: 113052811544310301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 May, at 03:05:39PM, Russ Anderson wrote:
-> One of the BIOS guys will build a debug bios next week to help see
-> what is going on in the query_variable_info() call.
+On Mon, 2013-05-27 at 11:32 +0100, Arnd Bergmann wrote:
+> b) add a new KMS driver for this hardware that can be used as an
+> alternative to the existing one and that works with DT.
 
-That would be incredibly useful, thanks.
+There are people working on this, just trying to jump through some legal
+hoops to post a RFC. Once this is done we'll be in an interesting
+position of two amba_bus drivers "competing" for the same amba_bus
+device, which I'm not sure how to deal with right now...
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Paweł
+
+
