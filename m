@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3E1Dyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:54:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52497 "EHLO
+	id S932229Ab3E1Dyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:54:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52516 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758794Ab3E1DyJ (ORCPT
+	by vger.kernel.org with ESMTP id S1758805Ab3E1DyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:09 -0400
+	Mon, 27 May 2013 23:54:11 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Matthew Whitehead" <tedheadster@gmail.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.492145735@decadent.org.uk>
+Message-ID: <lsq.1369712993.621229693@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [57/94] perf: net_dropmonitor: Fix symbol-relative addresses
+Subject: [81/94] 3c509.c: call SET_NETDEV_DEV for all device types 
+ (ISA/ISAPnP/EISA)
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,34 +32,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Matthew Whitehead <tedheadster@gmail.com>
 
-commit 5a1e99dd2028e00998d42029be86835d8ef4a46e upstream.
+[ Upstream commit 3b54912f9cd167641b91d4a697bd742f70e534fe ]
 
-The comparison between traced and symbol addresses is backwards: if
-the traced address doesn't exactly match a symbol (which we don't
-expect it to), we'll show the next symbol and the offset to it,
-whereas we should show the previous symbol and the offset from it.
+The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
+It does this with the SET_NETDEV_DEV function. It should register with the device
+hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+- Currently they appear here:
+/sys/devices/virtual/net/eth0 (standard ISA)
+/sys/devices/virtual/net/eth1 (EISA)
+
+- Rather, they should instead be here:
+/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
+/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
+
+Tested on ISA and EISA boards.
+
+Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- tools/perf/scripts/python/net_dropmonitor.py |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/3com/3c509.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/tools/perf/scripts/python/net_dropmonitor.py
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -40,9 +40,9 @@ def get_kallsyms_table():
+diff --git a/drivers/net/ethernet/3com/3c509.c b/drivers/net/ethernet/3com/3c509.c
+index 92053e6..c15d6ce 100644
+--- a/drivers/net/ethernet/3com/3c509.c
++++ b/drivers/net/ethernet/3com/3c509.c
+@@ -309,6 +309,7 @@ static int __devinit el3_isa_match(struct device *pdev,
+ 	if (!dev)
+ 		return -ENOMEM;
  
- def get_sym(sloc):
- 	loc = int(sloc)
--	for i in kallsyms:
--		if (i['loc'] >= loc):
--			return (i['name'], i['loc']-loc)
-+	for i in kallsyms[::-1]:
-+		if loc >= i['loc']:
-+			return (i['name'], loc - i['loc'])
- 	return (None, 0)
++	SET_NETDEV_DEV(dev, pdev);
+ 	netdev_boot_setup_check(dev);
  
- def print_drop_table():
+ 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
+@@ -704,6 +705,7 @@ static int __init el3_eisa_probe (struct device *device)
+ 		return -ENOMEM;
+ 	}
+ 
++	SET_NETDEV_DEV(dev, device);
+ 	netdev_boot_setup_check(dev);
+ 
+ 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
 
