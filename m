@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab3E1Dzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52579 "EHLO
+	id S933195Ab3E1Dzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52600 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758851Ab3E1DyP (ORCPT
+	by vger.kernel.org with ESMTP id S1758865Ab3E1DyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:15 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Namhyung Kim" <namhyung.kim@lge.com>,
-        "Namhyung Kim" <namhyung@kernel.org>
+CC: akpm@linux-foundation.org, "Mike Galbraith" <bitbucket@online.de>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Prarit Bhargava" <prarit@redhat.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.879023017@decadent.org.uk>
+Message-ID: <lsq.1369712993.591253924@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [71/94] sched/debug: Limit sd->*_idx range on sysctl
+Subject: [26/94] tick: Cleanup NOHZ per cpu data on cpu down
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,97 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 201c373e8e4823700d3160d5c28e1ab18fd1193e upstream.
+commit 4b0c0f294f60abcdd20994a8341a95c8ac5eeb96 upstream.
 
-Various sd->*_idx's are used for refering the rq's load average table
-when selecting a cpu to run.  However they can be set to any number
-with sysctl knobs so that it can crash the kernel if something bad is
-given. Fix it by limiting them into the actual range.
+Prarit reported a crash on CPU offline/online. The reason is that on
+CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
+up. If at cpu online an interrupt happens before the per cpu tick
+device is registered the irq_enter() check potentially sees stale data
+and dereferences a NULL pointer.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1345104204-8317-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2:
- - Adjust filename
- - s/umode_t/mode_t/]
+Cleanup the data after the cpu is dead.
+
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched.c |   35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ kernel/time/tick-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6672,16 +6672,25 @@ static void sd_free_ctl_entry(struct ctl
- 	*tablep = NULL;
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -833,7 +833,7 @@ void tick_cancel_sched_timer(int cpu)
+ 		hrtimer_cancel(&ts->sched_timer);
+ # endif
+ 
+-	ts->nohz_mode = NOHZ_MODE_INACTIVE;
++	memset(ts, 0, sizeof(*ts));
  }
+ #endif
  
-+static int min_load_idx = 0;
-+static int max_load_idx = CPU_LOAD_IDX_MAX;
-+
- static void
- set_table_entry(struct ctl_table *entry,
- 		const char *procname, void *data, int maxlen,
--		mode_t mode, proc_handler *proc_handler)
-+		mode_t mode, proc_handler *proc_handler,
-+		bool load_idx)
- {
- 	entry->procname = procname;
- 	entry->data = data;
- 	entry->maxlen = maxlen;
- 	entry->mode = mode;
- 	entry->proc_handler = proc_handler;
-+
-+	if (load_idx) {
-+		entry->extra1 = &min_load_idx;
-+		entry->extra2 = &max_load_idx;
-+	}
- }
- 
- static struct ctl_table *
-@@ -6693,30 +6702,30 @@ sd_alloc_ctl_domain_table(struct sched_d
- 		return NULL;
- 
- 	set_table_entry(&table[0], "min_interval", &sd->min_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax);
-+		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[1], "max_interval", &sd->max_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax);
-+		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[9], "cache_nice_tries",
- 		&sd->cache_nice_tries,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[10], "flags", &sd->flags,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[11], "name", sd->name,
--		CORENAME_MAX_SIZE, 0444, proc_dostring);
-+		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
- 	/* &table[12] is terminator */
- 
- 	return table;
 
