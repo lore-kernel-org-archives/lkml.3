@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab3E1K2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 06:28:40 -0400
-Received: from canardo.mork.no ([148.122.252.1]:45399 "EHLO canardo.mork.no"
+	id S932628Ab3E1K3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 06:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63055 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755617Ab3E1K2i convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 06:28:38 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Bruce <bruce.ma@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Patch for thinkpad-acpi.c
-Organization: m
-References: <51A47773.4080701@canonical.com>
-Date: Tue, 28 May 2013 12:28:19 +0200
-In-Reply-To: <51A47773.4080701@canonical.com> (Bruce's message of "Tue, 28 May
-	2013 17:22:59 +0800")
-Message-ID: <87r4gr9z5o.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1755737Ab3E1K3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 06:29:43 -0400
+Date: Tue, 28 May 2013 12:29:41 +0200
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.23.1 (stable)
+Message-ID: <20130528102941.GA20866@x2.net.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruce <bruce.ma@canonical.com> writes:
 
-> +struct blacklist lenovo_blacklist[] = {
-> +  {
-> +    .model_s = "Lenovo LM490s",
-> +    .nummodel_s = "814YG01",
-> +  },
-
-
-The driver already has a list of LED support per model in the 
-
-  static const struct tpacpi_quirk led_useful_qtable[] __initconst = {}
-
-array.   Why do you duplicate this with lots of new model checking code
-instead of just using the code that's already there?
-
->  static void led_exit(void)
->  {
-> +        if (no_led == 1 ) {
-
-
-The driver already has provisions for signalling that LEDs are
-unsupported through the 'led_supported' variable.  Why do you add
-another variable, and duplicate testing in every access function?
-
-But I don't think this part is needed at all, as long as you set up the
-proper LED map in led_useful_qtable.
+The util-linux stable release v2.23.1 is available at
+       
+    ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.23
+                
+Feedback and bug reports, as always, are welcomed.
+                 
+   Karel
 
 
 
-Bjørn
+Util-linux 2.23.1 Release Notes
+===============================
+
+blkid:
+   - fix typo in ID_FS_AMBIVALEN=  [Karel Zak]
+build-sys:
+   - add --disable-setterm  [Karel Zak]
+   - always check for setns() and unshare() libs functions  [Karel Zak]
+   - use -Wno-clobbered for some BSD crap  [Karel Zak]
+chcpu:
+   - clean up error messages  [Karel Zak]
+lib/loopdev:
+   - fix loopcxt_check_size() to work with blkdevs  [Karel Zak]
+lib/tty:
+   - don't hardcode terminal fd in get_terminal_name()  [Karel Zak]
+   - fix get_terminal_name() usage, cleanup code  [Karel Zak]
+libblkid:
+   - add ReFS magic string  [Karel Zak]
+   - fix blkid_parse_tag_string() to ignore incomplete tags  [Karel Zak]
+libfdisk:
+   - do not use va_list in the Ask API  [Karel Zak]
+libmount:
+   - don't ignore root fs on umount -a  [Karel Zak]
+   - use MS_SILENT for /{proc,etc}/filesystems  [Karel Zak]
+losetup:
+   - use warn_size() for regular files only  [Karel Zak]
+lsblk:
+   - add SERIAL column  [Karel Zak]
+po:
+   - merge changes  [Karel Zak]
+   - update nl.po (from translationproject.org)  [Benno Schulenberg]
+   - update vi.po (from translationproject.org)  [Trần Ngọc Quân]
+   - update zh_CN.po (from translationproject.org)  [Wylmer Wang]
+sfdisk:
+   - don't call BLKRRPART for non-block devices  [Karel Zak]
+sulogin:
+   - clean up error messages  [Karel Zak]
+tests:
+   - new warning fix  [Gilles Espinasse]
+
+- standard SEE ALSO section of man pages  [Mike Frysinger]
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
