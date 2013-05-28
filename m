@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934468Ab3E1OvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 10:51:07 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:36837 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934374Ab3E1OvF (ORCPT
+	id S934436Ab3E1Ovv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 10:51:51 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37281 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934381Ab3E1Ovt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 10:51:05 -0400
-X-Authority-Analysis: v=2.0 cv=JqNzXbEC c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=bfzWQn4VrGAA:10 a=COy8bEXE5_QA:10 a=S1A5HrydsesA:10 a=N659UExz7-8A:10 a=fxJcL_dCAAAA:8 a=p-BZX3ACu3QA:10 a=QfKxxUxMAAAA:8 a=m5ll2mmbexfkeFbRm1QA:9 a=pILNOxqGKmIA:10 a=4t1vQi-YglNiGWNj:21 a=iG7ObV0x8g7S0wWv:21 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.78.168.186
-Message-ID: <51A4C456.6000708@ubuntu.com>
-Date: Tue, 28 May 2013 10:51:02 -0400
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 28 May 2013 10:51:49 -0400
+Message-ID: <51A4C47A.7090405@linux.vnet.ibm.com>
+Date: Tue, 28 May 2013 22:51:38 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: CAI Qian <caiqian@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
- xfstests case #78]
-References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com> <247719576.438259.1364882929749.JavaMail.root@redhat.com> <20130402070537.GP6369@dastard> <20130402071937.GC3670@kernel.dk> <20130402073035.GD3670@kernel.dk> <14055702.547701.1364891947331.JavaMail.root@redhat.com> <20130402090047.GF3670@kernel.dk> <985125161.581860.1364895066584.JavaMail.root@redhat.com> <20130402094834.GA4667@kernel.dk> <20130403114142.GP4667@kernel.dk> <515C4D9D.10103@ubuntu.com> <515DE2FE.1080201@ubuntu.com>
-In-Reply-To: <515DE2FE.1080201@ubuntu.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=windows-1252
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130528001302.GA1359@amt.cnet>
+In-Reply-To: <20130528001302.GA1359@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052814-5564-0000-0000-0000081BE726
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 05/28/2013 08:13 AM, Marcelo Tosatti wrote:
+> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+>> It is only used to zap the obsolete page. Since the obsolete page
+>> will not be used, we need not spend time to find its unsync children
+>> out. Also, we delete the page from shadow page cache so that the page
+>> is completely isolated after call this function.
+>>
+>> The later patch will use it to collapse tlb flushes
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+>>  1 files changed, 41 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 9b57faa..e676356 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>  {
+>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>> -	hlist_del(&sp->hash_link);
+>> +	hlist_del_init(&sp->hash_link);
+>>  	list_del(&sp->link);
+>>  	free_page((unsigned long)sp->spt);
+>>  	if (!sp->role.direct)
+>> @@ -2069,14 +2069,19 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+>>  	return zapped;
+>>  }
+>>  
+>> -static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>> -				    struct list_head *invalid_list)
+>> +static int
+>> +__kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>> +			   bool zap_unsync_children,
+>> +			   struct list_head *invalid_list)
+>>  {
+>> -	int ret;
+>> +	int ret = 0;
+>>  
+>>  	trace_kvm_mmu_prepare_zap_page(sp);
+>>  	++kvm->stat.mmu_shadow_zapped;
+>> -	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+>> +
+>> +	if (likely(zap_unsync_children))
+>> +		ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+>> +
+> 
+> Why is this an important case to be optimized?
+> 
+> 1) shadow is the uncommon, obsolete case.
+> 2) mmu_zap_unsync_children has
+> 
+>         if (parent->role.level == PT_PAGE_TABLE_LEVEL)
+>                 return 0;
+> 
+> So the large majority of pages are already optimized.
 
-Hi Jens, did this get lost in the shuffle, or just miss the window for
-3.10 and will go in 3.11?
+Hmm, if we zap the high level page (e.g level = 4), it should walk its
+children and its children's children. It is high overload.
+(IMHO, trivial optimization is still necessary, especially, the change
+is really slight.)
 
-On 4/4/2013 4:30 PM, Phillip Susi wrote:
->> I have not tested it yet, but I am pretty sure it won't work.
->> It looks like the patch changes the BLKRRPART path to go ahead
->> and remove existing partitions when GENHD_FL_NO_PARTSCAN is set.
->> loop doesn't issue the BLKRRPART ioctl when !LO_FLAGS_PARTSCAN so
->> this won't help. I think loop needs to set GENHD_FL_NO_PARTSCAN
->> and then issue the ioctl regardless of the LO_FLAGS_PARTSCAN flag
->> to get the partitions to be removed.  I will try to test
->> tonight.
-> 
-> After testing, my initial thoughts appeared to have been correct.
-> I had to modify the patch as follows.  To test, simply do:
-> 
-> truncate -s 10m img losetup /dev/loop0 img parted /dev/loop0 
-> mklabel msdos mkpart primary ext2 1m 2m quit ls /dev/loop0*
-> 
-> Note the /dev/loop0p1 node.  Run losetup -d /dev/loop0 and see if
-> it is still there.
-> 
-> 
+And, there is another point me mentioned in the changelog:
+"Also, we delete the page from shadow page cache so that the page
+is completely isolated after call this function."
+Skipping zapping unsync-children can ensure that only one page is
+zapped so that we can use "hlist_del_init(&sp->hash_link)" to completely
+remove the page from mmu-cache.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Now, Gleb and i got a agreement that skipping obsolete page when
+walking hash list is a better way.
 
-iQEcBAEBAgAGBQJRpMRWAAoJEJrBOlT6nu75yUYH/1PSNmTOBYgvEqQclWPBTd8n
-Fm95yILcIlJWdUr3gUvQmjBax1NzKnG3NZ2U4hucpCcJH4FkHSTTFl5uZ3wU1B/Q
-nvuQoSqYXVP+V9PVSTsUsxOI4Mvw5YP5sFwSdwRKpkCldXOuHrRZsuccFtkQducU
-AIij42jvI1un+/qc6NLW+/S+rcLGUj21boPmX3g80km1De9QMrYrbGAAEbFO3rrq
-fzsvGuVvOroGppLGpze4iMDn060Lxrw6//KDGtiUBIeD8kZCFGkBh1KupHqLLzXm
-gmfdlHIqAR5uWB29m9TOlRbHPzdeQutwt8zL2LOYlCft5OiBIOW8dT8EFkl2Buw=
-=7BGq
------END PGP SIGNATURE-----
+BTW, zapping unsync-children is unnecessary, is it?
+
+
