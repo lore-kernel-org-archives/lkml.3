@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab3E1Dz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 May 2013 23:55:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52532 "EHLO
+	id S933333Ab3E1Dzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 May 2013 23:55:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52493 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758873Ab3E1DyS (ORCPT
+	by vger.kernel.org with ESMTP id S1758790Ab3E1DyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 May 2013 23:54:18 -0400
+	Mon, 27 May 2013 23:54:16 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        "Matthew Whitehead" <tedheadster@gmail.com>
+CC: akpm@linux-foundation.org, "Bryan Schumaker" <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.934315728@decadent.org.uk>
+Message-ID: <lsq.1369712993.372500701@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [85/94] 3c59x: fix freeing nonexistent resource on driver  unload
+Subject: [09/94] nfsd4: don't allow owner override on 4.1 CLAIM_FH opens
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,40 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
+commit 9f415eb25574db4b73a9a712a4438e41dc284922 upstream.
 
-When unloading the driver that drives an EISA board, a message similar to the
-following one is displayed:
+The Linux client is using CLAIM_FH to implement regular opens, not just
+recovery cases, so it depends on the server to check permissions
+correctly.
 
-Trying to free nonexistent resource <0000000000013000-000000000001301f>
+Therefore the owner override, which may make sense in the delegation
+recovery case, isn't right in the CLAIM_FH case.
 
-Then an user is unable to reload the driver because the resource it requested in
-the previous load hasn't been freed. This happens most probably due to a typo in
-vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
-of 'edev->base_addr'...
+Symptoms: on a client with 49f9a0fafd844c32f2abada047c0b9a5ba0d6255
+"NFSv4.1: Enable open-by-filehandle", Bryan noticed this:
 
-Reported-by: Matthew Whitehead <tedheadster@gmail.com>
-Tested-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+	touch test.txt
+	chmod 000 test.txt
+	echo test > test.txt
+
+succeeding.
+
+Reported-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/3com/3c59x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4proc.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-index e0c5529..d1a6dbb 100644
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(struct device *device)
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -267,6 +267,7 @@ static __be32
+ do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
+ {
+ 	__be32 status;
++	int accmode = 0;
  
- 	unregister_netdev(dev);
- 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
--	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
-+	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ 	/* Only reclaims from previously confirmed clients are valid */
+ 	if ((status = nfs4_check_open_reclaim(&open->op_clientid)))
+@@ -284,9 +285,19 @@ do_open_fhandle(struct svc_rqst *rqstp,
  
- 	free_netdev(dev);
- 	return 0;
+ 	open->op_truncate = (open->op_iattr.ia_valid & ATTR_SIZE) &&
+ 		(open->op_iattr.ia_size == 0);
++	/*
++	 * In the delegation case, the client is telling us about an
++	 * open that it *already* performed locally, some time ago.  We
++	 * should let it succeed now if possible.
++	 *
++	 * In the case of a CLAIM_FH open, on the other hand, the client
++	 * may be counting on us to enforce permissions (the Linux 4.1
++	 * client uses this for normal opens, for example).
++	 */
++	if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEG_CUR_FH)
++		accmode = NFSD_MAY_OWNER_OVERRIDE;
+ 
+-	status = do_open_permission(rqstp, current_fh, open,
+-				    NFSD_MAY_OWNER_OVERRIDE);
++	status = do_open_permission(rqstp, current_fh, open, accmode);
+ 
+ 	return status;
+ }
 
