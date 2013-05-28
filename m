@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934604Ab3E1Peb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 11:34:31 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:56059 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550Ab3E1Pe2 (ORCPT
+	id S934609Ab3E1PlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 11:41:19 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:11193 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934448Ab3E1PlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 11:34:28 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 28 May 2013 08:34:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        dyoung@redhat.com
-Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130528153452.GA21891@roeck-us.net>
-References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
- <87li8gaku0.fsf@xmission.com>
- <20130418130009.GH79013@redhat.com>
- <20130418134904.GC2767@roeck-us.net>
- <20130418135257.GL79013@redhat.com>
- <20130418145413.GA1980@roeck-us.net>
- <20130424144226.GI79013@redhat.com>
- <20130424152142.GA26864@roeck-us.net>
- <20130527191618.GD14258@spo001.leaseweb.com>
+	Tue, 28 May 2013 11:41:18 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/uEENgoKXK5DenXxFR8gMM93PaBz/x5lw=
+Date: Tue, 28 May 2013 11:40:47 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
+Message-ID: <20130528154047.GT31290@titan.lakedaemon.net>
+References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130527191618.GD14258@spo001.leaseweb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 09:16:18PM +0200, Wim Van Sebroeck wrote:
->  Hi Guenter,
-> 
-> > > Hi Guenter,
-> > > 
-> > > Is there an easy way to determine which driver is loaded for each
-> > > /dev/watchdogN device (from a script perspective).
-> > > 
-> > > Basically, I wanted to determine the module that needs to be included in
-> > > the kdump initrd image.
-> > > 
-> > Sometimes. For example, the iTCO_wdt driver has an entry in /sys/devices, and
-> > /sys/class/watchdog/watchdogX/device points to it. That is not always the case,
-> > howewver. In my system, for example, the MEI watchdog is active, but there is
-> > nothing I can find that would give me an indication that /dev/watchdog0 actually
-> > points to the MEI watchdog driver.
-> > 
-> > Of course I might be missing something, and there might be some other means
-> > to identify the driver from userspace. Would be great, actually, as I am having
-> > the same problem.
-> 
-> Only when you set the .parent field in the watchdog_device data you will get the
-> referal in the /sys/class/... tree. In iTCO_wdt.c you have the following code
-> that does that: iTCO_wdt_watchdog_dev.parent = dev->dev.parent;
-> 
-> From the watchdog-kernel-api documentation:
-> * parent: set this to the parent device (or NULL) before calling
->   watchdog_register_device.
-> 
-Hi Wim,
+Thomas, Sebastian,
 
-unfortunately that only works if the driver is instantiated as platform driver,
-PCI driver, or similar, where a parent device exists. Some drivers are, however,
-instantiated directly from the init function (the BookE driver is an example).
-What is the recommended action in this case ? Convert it to a platform driver ?
+In order to avoid losing changes between this series and mvebu/pcie,
+I've rebased this series on top of mvebu/pcie and incorporated the
+correct conflict resolution into this series.  See below...
 
-Thanks,
-Guenter
+On Sat, May 11, 2013 at 03:08:00AM +0200, Sebastian Hesselbarth wrote:
+> Marvell EBU SoCs share some common clock functions that register core
+> clocks or clock gates from SoC specific data. These clock drivers are
+> organized by function and over time the drivers filled up with #ifdefs
+> to separate different SoC specific code.
+> 
+> This patch set first adds a new element to clock gate descriptors to
+> allow to pass clk flags per clock gate. (Patch 1)
+> 
+> Then it restructures MVEBU clock drivers into common clock setup and
+> SoC specific files and Kconfig options. The driver's init functions
+> are also registered to get called with of_clk_init. (Patches 2, 3-6)
+> 
+> It then switches Dove, Kirkwood, and Armada 370/XP to make use of
+> of_clk_init instead of mvebu_clocks_init. (Patches 7-9)
+> 
+> Finally, all obsolete files and Kconfig options are removed. (Patch 10)
+> 
+> It has been tested on CuBox (Dove) and Dockstar (Kirkwood) by me.
+> Armada 370 and XP are compile tested only and should get their Tested-by
+> from Thomas and Gregory, respectively.
+> 
+> @Mike: As this only touches MVEBU related code, I suggest to take it
+> all through the corresponding ARM branch.
+> 
+> Sebastian Hesselbarth (10):
+>   clk: mvebu: introduce per-clock-gate flags
+
+I updated armada_370_gating_descr[] and armada_xp_gating_descr[] to
+incorporate Thomas' pcie changes.
+
+>   clk: mvebu: add common clock functions for core clk and clk gating
+>   clk: mvebu: add Dove SoC-centric clock init
+>   clk: mvebu: add Kirkwood SoC-centric clock init
+
+>   clk: mvebu: add Armada 370 SoC-centric clock init
+>   clk: mvebu: add Armada XP SoC-centric clock init
+
+I then migrated the changes above to these two commits.
+
+>   ARM: dove: move DT boards to SoC-centric clock init
+>   ARM: kirkwood: move DT boards to SoC-centric clock init
+>   ARM: mvebu: move DT boards to SoC-centric clock init
+
+>   clk: mvebu: desintegrate obsolete file
+
+Obviously, the diffstat changed slightly here.
+
+I'm posting the revised version as replies to patches 1, 5 and 6. Please
+let me know if I messed it up.  I'd like to send the PR for these
+shortly.
+
+thx,
+
+Jason.
