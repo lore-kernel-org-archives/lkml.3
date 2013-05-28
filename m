@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3E1VVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:21:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59556 "EHLO
+	id S1757323Ab3E1VVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:21:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59558 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757188Ab3E1VVY (ORCPT
+	with ESMTP id S1756838Ab3E1VVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 May 2013 17:21:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 04/78] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
-Date: Tue, 28 May 2013 14:19:13 -0700
-Message-Id: <1369776027-17859-5-git-send-email-kamal@canonical.com>
+Subject: [PATCH 09/78] drm/mm: fix dump table BUG
+Date: Tue, 28 May 2013 14:19:18 -0700
+Message-Id: <1369776027-17859-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,83 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit e5072664f8237cf53b0bd68a51aa1a7bc69061c5 upstream.
+commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
 
-Since 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
-on blk_register_queue() instead of blk_init_allocated_queue()"),
-the following warning appears when multipath is used with CONFIG_PREEMPT=y.
+In
 
-This patch moves blk_queue_bypass_start() before radix_tree_preload()
-to avoid the sleeping call while preemption is disabled.
+commit 9e8944ab564f2e3dde90a518cd32048c58918608
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Nov 15 11:32:17 2012 +0000
 
-  BUG: scheduling while atomic: multipath/2460/0x00000002
-  1 lock held by multipath/2460:
-   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
-  Modules linked in: ...
-  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
-  Call Trace:
-   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
-   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
-   [<ffffffff814291e6>] schedule+0x64/0x66
-   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
-   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
-   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
-   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
-   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
-   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
-   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
-   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
-   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
-   [<ffffffff8106fb18>] ? complete+0x21/0x53
-   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
-   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
-   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
-   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
-   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
-   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
-   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
-   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
-   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
-   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
-   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
-   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
-   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
-   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
-   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
-   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
-   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
-   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
+    drm: Introduce an iterator over holes in the drm_mm range manager
 
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-[ Jun'ichi: backport to 3.8 ]
+helpers and iterators for hole handling have been introduced with some
+debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
+which unconditionally tried to compute the size of the very first
+hole.
+
+While at it unify the code a bit with the hole dumping in the loop.
+
+v2: Extract a hole dump helper.
+
+Reported-by: Christopher Harvey <charvey@matrox.com>
+Cc: Christopher Harvey <charvey@matrox.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Acked-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk-cgroup.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_mm.c | 34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b8858fb..53628e4 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
- 	if (!blkg)
- 		return -ENOMEM;
+diff --git a/drivers/gpu/drm/drm_mm.c b/drivers/gpu/drm/drm_mm.c
+index 2aa3314..193e24e 100644
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -725,33 +725,35 @@ void drm_mm_debug_table(struct drm_mm *mm, const char *prefix)
+ EXPORT_SYMBOL(drm_mm_debug_table);
  
--	preloaded = !radix_tree_preload(GFP_KERNEL);
--
- 	blk_queue_bypass_start(q);
+ #if defined(CONFIG_DEBUG_FS)
+-int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
+ {
+-	struct drm_mm_node *entry;
+-	unsigned long total_used = 0, total_free = 0, total = 0;
+ 	unsigned long hole_start, hole_end, hole_size;
  
-+	preloaded = !radix_tree_preload(GFP_KERNEL);
+-	hole_start = drm_mm_hole_node_start(&mm->head_node);
+-	hole_end = drm_mm_hole_node_end(&mm->head_node);
+-	hole_size = hole_end - hole_start;
+-	if (hole_size)
++	if (entry->hole_follows) {
++		hole_start = drm_mm_hole_node_start(entry);
++		hole_end = drm_mm_hole_node_end(entry);
++		hole_size = hole_end - hole_start;
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+ 				hole_start, hole_end, hole_size);
+-	total_free += hole_size;
++		return hole_size;
++	}
 +
- 	/* make sure the root blkg exists and count the existing blkgs */
- 	spin_lock_irq(q->queue_lock);
++	return 0;
++}
++
++int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++{
++	struct drm_mm_node *entry;
++	unsigned long total_used = 0, total_free = 0, total = 0;
++
++	total_free += drm_mm_dump_hole(m, &mm->head_node);
+ 
+ 	drm_mm_for_each_node(entry, mm) {
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
+ 				entry->start, entry->start + entry->size,
+ 				entry->size);
+ 		total_used += entry->size;
+-		if (entry->hole_follows) {
+-			hole_start = drm_mm_hole_node_start(entry);
+-			hole_end = drm_mm_hole_node_end(entry);
+-			hole_size = hole_end - hole_start;
+-			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+-					hole_start, hole_end, hole_size);
+-			total_free += hole_size;
+-		}
++		total_free += drm_mm_dump_hole(m, entry);
+ 	}
+ 	total = total_free + total_used;
  
 -- 
 1.8.1.2
