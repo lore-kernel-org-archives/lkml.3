@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759057Ab3E1ERM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 00:17:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52639 "EHLO
+	id S1759028Ab3E1ERK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 00:17:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52710 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758944Ab3E1Dyb (ORCPT
+	by vger.kernel.org with ESMTP id S1758956Ab3E1Dyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 May 2013 23:54:31 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tirupathi Reddy" <tirupath@codeaurora.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, "Jason Cooper" <jason@lakedaemon.net>,
+        "Gregory CLEMENT" <gregory.clement@free-electrons.com>,
+        "Andrew Lunn" <andrew@lunn.ch>
 Date: Tue, 28 May 2013 04:49:53 +0100
-Message-ID: <lsq.1369712993.799433735@decadent.org.uk>
+Message-ID: <lsq.1369712993.854395724@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [35/94] timer: Don't reinitialize the cpu base lock during
- CPU_UP_PREPARE
+Subject: [51/94] ARM: plat-orion: Fix num_resources and id for ge10 and ge11
 In-Reply-To: <lsq.1369712992.755341692@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,83 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tirupathi Reddy <tirupath@codeaurora.org>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 42a5cf46cd56f46267d2a9fcf2655f4078cd3042 upstream.
+commit 2b8b2797142c7951e635c6eec5d1705ee9bc45c5 upstream.
 
-An inactive timer's base can refer to a offline cpu's base.
+When platform data were moved from arch/arm/mach-mv78xx0/common.c to
+arch/arm/plat-orion/common.c with the commit "7e3819d ARM: orion:
+Consolidate ethernet platform data", there were few typo made on
+gigabit Ethernet interface ge10 and ge11. This commit writes back
+their initial value, which allows to use this interfaces again.
 
-In the current code, cpu_base's lock is blindly reinitialized each
-time a CPU is brought up. If a CPU is brought online during the period
-that another thread is trying to modify an inactive timer on that CPU
-with holding its timer base lock, then the lock will be reinitialized
-under its feet. This leads to following SPIN_BUG().
-
-<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
-<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
-<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
-<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
-<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
-<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
-<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
-<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
-<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
-<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
-<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
-<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
-<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
-<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
-<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
-
-As an example, this particular crash occurred when CPU #3 is executing
-mod_timer() on an inactive timer whose base is refered to offlined CPU
-#2.  The code locked the timer_base corresponding to CPU #2. Before it
-could proceed, CPU #2 came online and reinitialized the spinlock
-corresponding to its base. Thus now CPU #3 held a lock which was
-reinitialized. When CPU #3 finally ended up unlocking the old cpu_base
-corresponding to CPU #2, we hit the above SPIN_BUG().
-
-CPU #0		CPU #3				       CPU #2
-------		-------				       -------
-.....		 ......				      <Offline>
-		mod_timer()
-		 lock_timer_base
-		   spin_lock_irqsave(&base->lock)
-
-cpu_up(2)	 .....				        ......
-							init_timers_cpu()
-....		 .....				    	spin_lock_init(&base->lock)
-.....		   spin_unlock_irqrestore(&base->lock)  ......
-		   <spin_bug>
-
-Allocation of per_cpu timer vector bases is done only once under
-"tvec_base_done[]" check. In the current code, spinlock_initialization
-of base->lock isn't under this check. When a CPU is up each time the
-base lock is reinitialized. Move base spinlock initialization under
-the check.
-
-Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
-Link: http://lkml.kernel.org/r/1368520142-4136-1-git-send-email-tirupath@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/timer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/plat-orion/common.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1630,12 +1630,12 @@ static int __cpuinit init_timers_cpu(int
- 			boot_done = 1;
- 			base = &boot_tvec_bases;
- 		}
-+		spin_lock_init(&base->lock);
- 		tvec_base_done[cpu] = 1;
- 	} else {
- 		base = per_cpu(tvec_bases, cpu);
- 	}
+--- a/arch/arm/plat-orion/common.c
++++ b/arch/arm/plat-orion/common.c
+@@ -347,7 +347,7 @@ static struct resource orion_ge10_shared
  
--	spin_lock_init(&base->lock);
+ static struct platform_device orion_ge10_shared = {
+ 	.name		= MV643XX_ETH_SHARED_NAME,
+-	.id		= 1,
++	.id		= 2,
+ 	.dev		= {
+ 		.platform_data	= &orion_ge10_shared_data,
+ 	},
+@@ -362,8 +362,8 @@ static struct resource orion_ge10_resour
  
- 	for (j = 0; j < TVN_SIZE; j++) {
- 		INIT_LIST_HEAD(base->tv5.vec + j);
+ static struct platform_device orion_ge10 = {
+ 	.name		= MV643XX_ETH_NAME,
+-	.id		= 1,
+-	.num_resources	= 2,
++	.id		= 2,
++	.num_resources	= 1,
+ 	.resource	= orion_ge10_resources,
+ 	.dev		= {
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
+@@ -401,7 +401,7 @@ static struct resource orion_ge11_shared
+ 
+ static struct platform_device orion_ge11_shared = {
+ 	.name		= MV643XX_ETH_SHARED_NAME,
+-	.id		= 1,
++	.id		= 3,
+ 	.dev		= {
+ 		.platform_data	= &orion_ge11_shared_data,
+ 	},
+@@ -416,8 +416,8 @@ static struct resource orion_ge11_resour
+ 
+ static struct platform_device orion_ge11 = {
+ 	.name		= MV643XX_ETH_NAME,
+-	.id		= 1,
+-	.num_resources	= 2,
++	.id		= 3,
++	.num_resources	= 1,
+ 	.resource	= orion_ge11_resources,
+ 	.dev		= {
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
 
