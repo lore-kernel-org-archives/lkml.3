@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab3E1VYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 17:24:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59621 "EHLO
+	id S1757652Ab3E1Via (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 17:38:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59634 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab3E1VYM (ORCPT
+	with ESMTP id S1758306Ab3E1VYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 17:24:12 -0400
+	Tue, 28 May 2013 17:24:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Harvey <charvey@matrox.com>,
-        Mathieu Larouche <mathieu.larouche@matrox.com>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 40/78] drm/mgag200: Fix framebuffer base address programming
-Date: Tue, 28 May 2013 14:19:49 -0700
-Message-Id: <1369776027-17859-41-git-send-email-kamal@canonical.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 32/78] dm stripe: fix regression in stripe_width calculation
+Date: Tue, 28 May 2013 14:19:41 -0700
+Message-Id: <1369776027-17859-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369776027-17859-1-git-send-email-kamal@canonical.com>
 References: <1369776027-17859-1-git-send-email-kamal@canonical.com>
@@ -28,75 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e upstream.
+commit d793e684277124d55c5d2444007e224635821346 upstream.
 
-Higher bits of the base address of framebuffers weren't being
-programmed properly. This caused framebuffers that didn't happen to be
-allocated at a low enough address to not be displayed properly.
+Fix a regression in the calculation of the stripe_width in the
+dm stripe target which led to incorrect processing of device limits.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Mathieu Larouche <mathieu.larouche@matrox.com>
-Acked-by: Julia Lemire <jlemire@matrox.com>
-Tested-by: Julia Lemire <jlemire@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The stripe_width is the stripe device length divided by the number of
+stripes.  The group of commits in the range f14fa69 ("dm stripe: fix
+size test") to eb850de ("dm stripe: support for non power of 2
+chunksize") interfered with each other (a merging error) and led to the
+stripe_width being set incorrectly to the stripe device length divided by
+chunk_size * stripe_count.
+
+For example, a stripe device's table with: 0 33553920 striped 3 512 ...
+should result in a stripe_width of 11184640 (33553920 / 3), but due to
+the bug it was getting set to 21845 (33553920 / (512 * 3)).
+
+The impact of this bug is that device topologies that previously worked
+fine with the stripe target are no longer considered valid.  In
+particular, there is a higher risk of seeing this issue if one of the
+stripe devices has a 4K logical block size.  Resulting in an error
+message like this:
+"device-mapper: table: 253:4: len=21845 not aligned to h/w logical block size 4096 of dm-1"
+
+The fix is to swap the order of the divisions and to use a temporary
+variable for the second one, so that width retains the intended
+value.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c | 27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ drivers/md/dm-stripe.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 91d7859..7e2c361 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -657,12 +657,26 @@ static void mga_g200wb_commit(struct drm_crtc *crtc)
- 	WREG_DAC(MGA1064_GEN_IO_DATA, tmp);
- }
- 
--
-+/*
-+   This is how the framebuffer base address is stored in g200 cards:
-+   * Assume @offset is the gpu_addr variable of the framebuffer object
-+   * Then addr is the number of _pixels_ (not bytes) from the start of
-+     VRAM to the first pixel we want to display. (divided by 2 for 32bit
-+     framebuffers)
-+   * addr is stored in the CRTCEXT0, CRTCC and CRTCD registers
-+   addr<20> -> CRTCEXT0<6>
-+   addr<19-16> -> CRTCEXT0<3-0>
-+   addr<15-8> -> CRTCC<7-0>
-+   addr<7-0> -> CRTCD<7-0>
-+   CRTCEXT0 has to be programmed last to trigger an update and make the
-+   new addr variable take effect.
-+ */
- void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
+diff --git a/drivers/md/dm-stripe.c b/drivers/md/dm-stripe.c
+index aaecefa..852eab4 100644
+--- a/drivers/md/dm-stripe.c
++++ b/drivers/md/dm-stripe.c
+@@ -94,7 +94,7 @@ static int get_stripe(struct dm_target *ti, struct stripe_c *sc,
+ static int stripe_ctr(struct dm_target *ti, unsigned int argc, char **argv)
  {
- 	struct mga_device *mdev = crtc->dev->dev_private;
- 	u32 addr;
- 	int count;
-+	u8 crtcext0;
+ 	struct stripe_c *sc;
+-	sector_t width;
++	sector_t width, tmp_len;
+ 	uint32_t stripes;
+ 	uint32_t chunk_size;
+ 	int r;
+@@ -116,15 +116,16 @@ static int stripe_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	}
  
- 	while (RREG8(0x1fda) & 0x08);
- 	while (!(RREG8(0x1fda) & 0x08));
-@@ -670,10 +684,17 @@ void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
- 	count = RREG8(MGAREG_VCOUNT) + 2;
- 	while (RREG8(MGAREG_VCOUNT) < count);
+ 	width = ti->len;
+-	if (sector_div(width, chunk_size)) {
++	if (sector_div(width, stripes)) {
+ 		ti->error = "Target length not divisible by "
+-		    "chunk size";
++		    "number of stripes";
+ 		return -EINVAL;
+ 	}
  
--	addr = offset >> 2;
-+	WREG8(MGAREG_CRTCEXT_INDEX, 0);
-+	crtcext0 = RREG8(MGAREG_CRTCEXT_DATA);
-+	crtcext0 &= 0xB0;
-+	addr = offset / 8;
-+	/* Can't store addresses any higher than that...
-+	   but we also don't have more than 16MB of memory, so it should be fine. */
-+	WARN_ON(addr > 0x1fffff);
-+	crtcext0 |= (!!(addr & (1<<20)))<<6;
- 	WREG_CRT(0x0d, (u8)(addr & 0xff));
- 	WREG_CRT(0x0c, (u8)(addr >> 8) & 0xff);
--	WREG_CRT(0xaf, (u8)(addr >> 16) & 0xf);
-+	WREG_ECRT(0x0, ((u8)(addr >> 16) & 0xf) | crtcext0);
- }
- 
+-	if (sector_div(width, stripes)) {
++	tmp_len = width;
++	if (sector_div(tmp_len, chunk_size)) {
+ 		ti->error = "Target length not divisible by "
+-		    "number of stripes";
++		    "chunk size";
+ 		return -EINVAL;
+ 	}
  
 -- 
 1.8.1.2
