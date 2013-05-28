@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab3E1HD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 03:03:29 -0400
-Received: from websrv.saout.de ([78.46.99.52]:56443 "EHLO websrv.saout.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932832Ab3E1HD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 03:03:28 -0400
-Message-ID: <1369724604.7764.1.camel@localhost>
-Subject: [PATCH][RESEND] Fix checksum related BUG in l2tp_ppp receive path
-From: Jana Saout <jana@saout.de>
-To: jchapman@katalix.com
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Tue, 28 May 2013 09:03:24 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933191Ab3E1HGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 03:06:46 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42939 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932959Ab3E1HGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 03:06:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369397191-16643-1-git-send-email-patrice.chotard.st@gmail.com>
+References: <1369397191-16643-1-git-send-email-patrice.chotard.st@gmail.com>
+Date: Tue, 28 May 2013 09:06:45 +0200
+Message-ID: <CACRpkdYBcQJhVeSV8YUUG3gXTNnbRLt5mMiDX2gCpU02VyDehA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] pinctrl: abx500: Fix pull up/down feature
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Patrice Chotard <patrice.chotard.st@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, May 24, 2013 at 2:06 PM,  <patrice.chotard.st@gmail.com> wrote:
 
-I managed to (reproducably) trigger this bug:
+> From: Patrice Chotard <patrice.chotard@st.com>
+>
+> This series fixes the pull up/down feature of ABx500 family ASIC.
+>
+> Patrice Chotard (3):
+>   pinctrl: abx500: fix abx500_config_pull_updown
+>   pinctrl: abx500: allow to set pull up
+>   pinctrl: abx500: fix abx500_gpio_dbg_show_one() to show pull up/down
+>
+>  drivers/pinctrl/pinctrl-abx500.c |  110 ++++++++++++++++++++++++++++++++------
+>  1 file changed, 93 insertions(+), 17 deletions(-)
 
-> kernel BUG at net/core/dev.c:2192!
+All three patches applied, thanks!
 
-which is -> BUG_ON(offset >= skb_headlen(skb));
-
-(full BUG here: http://www1.aufwind-solutions.de/oopses/pppol2tp1.txt )
-
-Interestingly, the PPP over L2TP (with xl2tpd) is working fine when
-using my Linux client, but a simple ping from my Android phone causes
-the BUG on the first packet.  It happens on the L2TP -> PPP path, as the
-ping request never leaves the ppp devices to the local network.
-
-What *might* be different from other setups, is that the machine on
-which the L2TP packets are decapsulated is a Xen VM, so the packets
-arrive with CHECKSUM_PARTIAL set.
-
-I followed the code path and saw that in this direction, the checksum
-members of the SKB are never adjusted, and so my theory is that the
-packet travels through the ppp stack, back into the IP stack until it
-tries to leave the network stack to the network device, at which point
-the checksumming is supposed to happen and the checksum offset is
-invalid.
-
-I believe that since the L2TP checksum has already been checked and
-everything, the decapsulated packet is supposedly "fine" and I also saw
-the following line in l2tp_eth.c:
-
-        /* checksums verified by L2TP */
-        skb->ip_summed = CHECKSUM_NONE;
-
-which sounds to mike like the right thing to do, so I modified
-l2tp_ppp.c accordingly and voila - no more crashes.  In case it helps, I
-would like to share that patch for inclusion or, in case I'm wrong, to
-ask you to find the correct fix. :)
-
-
-
-Fix kernel BUG at net/core/dev.c:2192 (wrong checksum offset) in L2TP -> PPP
-receive path (skb checksum information is not reset during decapsulation).
-Reset checksum like it is also done in the l2tp_eth path.
-
-Signed-off-by: Jana Saout <jana@saout.de>
----
- net/l2tp/l2tp_ppp.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 637a341..53aabefb 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -250,6 +250,10 @@ static void pppol2tp_recv(struct l2tp_session *session, struct sk_buff *skb, int
- 		 *   to the inner packet either
- 		 */
- 		secpath_reset(skb);
-+
-+		/* checksums verified by L2TP */
-+		skb->ip_summed = CHECKSUM_NONE;
-+
- 		skb_dst_drop(skb);
- 		nf_reset(skb);
- 
-
-
+Yours,
+Linus Walleij
