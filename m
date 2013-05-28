@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934741Ab3E1QVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 12:21:46 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:54217
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934576Ab3E1QVp (ORCPT
+	id S934789Ab3E1QV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 12:21:57 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54260 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934758Ab3E1QVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 12:21:45 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(z551bizbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <51A4D987.40700@freescale.com>
-Date: Tue, 28 May 2013 13:21:27 -0300
-From: Fabio Estevam <fabio.estevam@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 28 May 2013 12:21:54 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 28 May 2013 09:22:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] watchdog: New watchdog driver for MEN A21
+ watchdogs
+Message-ID: <20130528162218.GA22351@roeck-us.net>
+References: <20130527090756.GA14258@spo001.leaseweb.com>
+ <1369678434-13515-1-git-send-email-johannes.thumshirn@men.de>
+ <20130527182554.GB14258@spo001.leaseweb.com>
+ <20130528081053.GC818@jtlinux>
 MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: Marek Vasut <marex@denx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: MXS USB otg device support
-References: <51A48677.5010900@digi.com>
-In-Reply-To: <51A48677.5010900@digi.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528081053.GC818@jtlinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hector,
+On Tue, May 28, 2013 at 10:10:53AM +0200, Johannes Thumshirn wrote:
+> On Mon, May 27, 2013 at 08:25:54PM +0200, Wim Van Sebroeck wrote:
+> [...]
+> > > +	watchdog_set_drvdata(&a21_wdt, drv);
+> >
+> > I am missing the initialisation of the watchdog's timeout value here...
+> 
+> This watchdog only knows two timeout values, 1s and 30s with the constraint
+> that you can't go back to 30s once your in a 1s timeout without a reset of the
+> CPLD. I could initially set it to 30s but that would be redundant.
+> 
+I wonder - why bother with supporting one-second timeouts ?
 
-On 05/28/2013 07:27 AM, Hector Palacios wrote:
-> Hello,
->
-> Am I right in assuming that the MXS USB on-the-go port does not
-> currently support the device (gadget) functionality?
-> Anybody out there working on that?
+Is this realistic, ie can you guarantee that the watchdog will be pinged fast
+enough to keep the system alive under all load conditions ? As far as I know
+you can not even configure the watchdog application for less than 1 second
+ping intervals.
 
-I am not aware of the latest status about chipidea usb otg support for i.mx.
-
-Please post this question in the linux-usb list and add Peter Chen, the 
-folks from Pengutronix and Alexander Shishkin in Cc.
-
-Regards,
-
-Fabio Estevam
-
-
+Thanks,
+Guenter
