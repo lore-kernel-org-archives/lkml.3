@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966960Ab3E2Uph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:45:37 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38487 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966734Ab3E2Upc (ORCPT
+	id S967024Ab3E2UqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:46:00 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:32942 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966734Ab3E2Upz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:45:32 -0400
-Date: Wed, 29 May 2013 15:45:03 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 2/4] zbud: add to mm/
-Message-ID: <20130529204503.GE428@cerebellum>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
- <20130529154500.GB428@cerebellum>
- <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+	Wed, 29 May 2013 16:45:55 -0400
+Date: Wed, 29 May 2013 22:48:50 +0200
+From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mchehab@redhat.com, hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        g.liakhovetski@gmx.de, ezequiel.garcia@free-electrons.com,
+        timo.teras@iki.fi
+Subject: Re: [RFC 0/3] saa7115: Implement i2c_board_info.platform_data
+Message-ID: <20130529204850.GD2367@dell.arpanet.local>
+References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052920-3620-0000-0000-000002C6EDE7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 11:34:34AM -0700, Andrew Morton wrote:
-> > > > +	if (size <= 0 || gfp & __GFP_HIGHMEM)
-> > > > +		return -EINVAL;
-> > > > +	if (size > PAGE_SIZE)
-> > > > +		return -E2BIG;
-> > > 
-> > > Means "Argument list too long" and isn't appropriate here.
-> > 
-> > Ok, I need a return value other than -EINVAL to convey to the user that the
-> > allocation is larger than what the allocator can hold. I don't see an existing
-> > errno that would be more suited for that.  Do you have a suggestion?
+On Wed, May 29, 2013 at 10:41:15PM +0200, Jon Arne Jørgensen wrote:
+> This patch set adds handling of the i2c_board_info struct to the saa7115 driver.
+> The main goal of this patch is to give the different devices with the gm7113c
+> chip an opportunity to configure the chip to their needs.
 > 
-> ENOMEM perhaps.  That's also somewhat misleading, but I guess there's
-> precedent for ENOMEM meaning "allocation too large" as well as "out
-> of memory".
+> I've only implemented the overrides I know are necessary to get the stk1160
+> and the smi2021 drivers to work.
+> 
+> The first patch in the series sets the saa7113 init table to the defaults
+> according to the datasheet. Maybe it's better to add a new initialization
+> table for the gm7113c chip to avoid breaking devices that depend on the
+> settings as they are now?
+> That would introduce some unneeded code duplication.
+>
 
-Ah, spoke to soon. ENOMEM is already being used to indicate that an allocation
-to grow the pool failed.
+Hi,
+I just realized that there are som grave errors in patch 3 in the
+series.
 
-Seth
+I'll fix them and repost this series.
 
+Best regards,
+Jon Arne Jørgensen
+ 
+> Jon Arne Jørgensen (3):
+>   saa7115: Set saa7113 init to values from datasheet
+>   saa7115: [gm7113c] Remove unneeded register change
+>   saa7115: Implement i2c_board_info.platform data
+> 
+>  drivers/media/i2c/saa7115.c |  91 ++++++++++++++++++++++++------------
+>  include/media/saa7115.h     | 109 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 170 insertions(+), 30 deletions(-)
+> 
+> -- 
+> 1.8.2.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
