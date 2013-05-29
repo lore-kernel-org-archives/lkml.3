@@ -1,56 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3E2SeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:34:17 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50524 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965290Ab3E2SeL (ORCPT
+	id S965720Ab3E2Sem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:34:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49535 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965290Ab3E2Seh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:34:11 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        dianders@chromium.org, patches@linaro.org
-Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-	<87sj1qzaov.fsf@linaro.org> <5191AA89.6010901@linaro.org>
-	<20130528231740.GA28879@quad.lixom.net> <51A57D39.8030506@linaro.org>
-Date: Wed, 29 May 2013 11:34:07 -0700
-In-Reply-To: <51A57D39.8030506@linaro.org> (Tushar Behera's message of "Wed,
-	29 May 2013 09:29:53 +0530")
-Message-ID: <87mwrd63fk.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 29 May 2013 14:34:37 -0400
+Date: Wed, 29 May 2013 11:34:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 2/4] zbud: add to mm/
+Message-Id: <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+In-Reply-To: <20130529154500.GB428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
+	<20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
+	<20130529154500.GB428@cerebellum>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar Behera <tushar.behera@linaro.org> writes:
+On Wed, 29 May 2013 10:45:00 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-[...]
+> > > +struct zbud_page {
+> > > +	union {
+> > > +		struct page page;
+> > > +		struct {
+> > > +			unsigned long donotuse;
+> > > +			u16 first_chunks;
+> > > +			u16 last_chunks;
+> > > +			struct list_head buddy;
+> > > +			struct list_head lru;
+> > > +		};
+> > > +	};
+> > > +};
+> > 
+> > Whoa.  So zbud scribbles on existing pageframes?
+> 
+> Yes.
+> 
+> > 
+> > Please tell us about this, in some detail.  How is it done and why is
+> > this necessary?
+> > 
+> > Presumably the pageframe must be restored at some stage, so this code
+> > has to be kept in sync with external unrelated changes to core MM?
+> 
+> Yes, this is done in free_zbud_page().
+> 
+> > 
+> > Why was it implemented in this fashion rather than going into the main
+> > `struct page' definition and adding the appropriate unionised fields?
+> 
+> Yes, modifying the struct page is the cleaner way.  I thought that adding more
+> convolution to struct page would create more friction on the path to getting
+> this merged.  Plus overlaying the struct page was the approach used by zsmalloc
+> and so I was thinking more along these lines.
 
-> The patches are at [1]. There are a total of 6 patches on top of
-> v3.10-rc3. 3 of them (a, b, d) are queued for 3.10-rc4 and another patch
-> (c) is just a defconfig hack to get Arndale booting. Remaining 2 patches
-> (e, f) are required to reset the hub during EHCI initialization.
->
-> a. ARM: exynos: defconfig update
-> b. ARM: EXYNOS: Update defconfig for Arndale and Origen board
-> c. [TEMP] ARM: EXYNOS: Set low-level UART port to 2
-> d. ARM: dts: Enabling samsung-usb2phy driver for exynos5250
-> e. usb: ehci-s5p: add the HSIC port initialization
-> f. ARM: dts: Add USB gpio entries for Arndale board
->
-> I am not sure whether such kind of board-specific patches (e, f) are
-> appreciated in the drivers. But that is all we need to get USB and
-> Ethernet to work on v3.10-rc3 kernel.
+I'd be interested in seeing what the modifications to struct page look
+like.  It really is the better way.
 
-I confirm that using v3.10-rc3 + these patches, the wired network is
-working on Arndale.
+> If you'd rather add the zbud fields directly into unions in struct page,
+> I'm ok with that if you are.
+> 
+> Of course, this doesn't avoid having to reset the fields for the page allocator
+> before we free them.  Even slub/slob reset the mapcount before calling
+> __free_page(), for example.
+> 
+> > 
+> > I worry about any code which independently looks at the pageframe
+> > tables and expects to find page struts there.  One example is probably
+> > memory_failure() but there are probably others.
 
-Thanks,
+^^ this, please.  It could be kinda fatal.
 
-Kevin
+> > > 
+> > > ...
+> > >
+> > > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> > > +			unsigned long *handle)
+> > > +{
+> > > +	int chunks, i, freechunks;
+> > > +	struct zbud_page *zbpage = NULL;
+> > > +	enum buddy bud;
+> > > +	struct page *page;
+> > > +
+> > > +	if (size <= 0 || gfp & __GFP_HIGHMEM)
+> > > +		return -EINVAL;
+> > > +	if (size > PAGE_SIZE)
+> > > +		return -E2BIG;
+> > 
+> > Means "Argument list too long" and isn't appropriate here.
+> 
+> Ok, I need a return value other than -EINVAL to convey to the user that the
+> allocation is larger than what the allocator can hold. I don't see an existing
+> errno that would be more suited for that.  Do you have a suggestion?
+
+ENOMEM perhaps.  That's also somewhat misleading, but I guess there's
+precedent for ENOMEM meaning "allocation too large" as well as "out
+of memory".
+
+> > > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+> > > +{
+> > > +	int i, ret, freechunks;
+> > > +	struct zbud_page *zbpage;
+> > > +	unsigned long first_handle = 0, last_handle = 0;
+> > > +
+> > > +	spin_lock(&pool->lock);
+> > > +	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
+> > > +			retries == 0) {
+> > > +		spin_unlock(&pool->lock);
+> > > +		return -EINVAL;
+> > > +	}
+> > > +	for (i = 0; i < retries; i++) {
+> > > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
+> > > +		list_del(&zbpage->lru);
+> > > +		list_del(&zbpage->buddy);
+> > > +		/* Protect zbpage against free */
+> > 
+> > Against free by who?  What other code paths can access this page at
+> > this time?
+> 
+> zbud has no way of serializing with the user (zswap) to prevent it calling
+> zbud_free() during zbud reclaim.  To prevent the zbud page from being freed
+> while reclaim is operating on it, we set the reclaim flag in the struct page.
+> zbud_free() checks this flag and, if set, only sets the chunk length of the
+> allocation to 0, but does not actually free the zbud page.  That is left to
+> this reclaim path.
+
+Sounds strange.  Page refcounting is a well-established protocol and
+works well in other places?
+
