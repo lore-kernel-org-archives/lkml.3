@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934547Ab3E2BPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 21:15:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34976 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863Ab3E2BO7 (ORCPT
+	id S934689Ab3E2BUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:20:04 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58521 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933868Ab3E2BUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 21:14:59 -0400
-Date: Wed, 29 May 2013 10:15:22 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Cc: "Matthew O'Connor" <matt@ecsorl.com>, davem@davemloft.net,
-        andy@greyhouse.net, fubar@us.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com,
-        liquidhorse@gmail.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-Message-ID: <20130529011522.GA5653@kroah.com>
-References: <20130522162336.GA5761@kroah.com>
- <519D0B79.6010307@smart-weblications.de>
- <20130522190640.GA20276@kroah.com>
- <519D1DEF.8090206@smart-weblications.de>
- <20130522200439.GA21367@kroah.com>
- <519D37F4.2030202@smart-weblications.de>
- <519D5206.8080701@gmail.com>
- <519DEE6E.7060700@smart-weblications.de>
- <519E0F97.1050102@ecsorl.com>
- <51A55381.9080807@smart-weblications.de>
+	Tue, 28 May 2013 21:20:01 -0400
+Date: Tue, 28 May 2013 18:19:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130529011952.GQ6172@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1369201765.3301.299.camel@edumazet-glaptop>
+ <519CB2D8.103@yandex-team.ru>
+ <1369225837.3301.324.camel@edumazet-glaptop>
+ <519CC2FB.2010006@yandex-team.ru>
+ <20130522174532.GC3431@linux.vnet.ibm.com>
+ <519D19DA.50400@yandex-team.ru>
+ <20130525113715.GA3795@linux.vnet.ibm.com>
+ <51A39E11.5020405@yandex-team.ru>
+ <1369699930.3301.494.camel@edumazet-glaptop>
+ <51A47496.6000100@yandex-team.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51A55381.9080807@smart-weblications.de>
+In-Reply-To: <51A47496.6000100@yandex-team.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052901-4834-0000-0000-0000077D29A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:01:53AM +0200, Smart Weblications GmbH - Florian Wiessner wrote:
-> Am 23.05.2013 14:46, schrieb Matthew O'Connor:
-> > On 05/23/2013 06:24 AM, Smart Weblications GmbH - Florian Wiessner wrote:
-> >> node02:/ocfs2/usr/src/linux-3.4.46# cat drivers/net/bonding/bond_alb.c.rej
-> > My most sincere apologies - one more time, from a different mail server
-> > that hopefully won't go around changing my attachments.  If this doesn't
-> > work I guess sendmail will be the next alternative.
-> > 
+On Tue, May 28, 2013 at 01:10:46PM +0400, Roman Gushchin wrote:
+> On 28.05.2013 04:12, Eric Dumazet wrote:
+> >On Mon, 2013-05-27 at 21:55 +0400, Roman Gushchin wrote:
+> >>Hi, Paul!
+> >>
+> >>>On 25.05.2013 15:37, Paul E. McKenney wrote:
+> >>>>Again, I believe that your retry logic needs to extend back into the
+> >>>>calling function for your some_func() example above.
+> >>
+> >>And what do you think about the following approach (diff below)?
+> >>
+> >>It seems to me, it's enough clear (especially with good accompanying comments)
+> >>and produces a good binary code (without significant overhead).
+> >>Also, we will remove a hidden reef in using rcu-protected (h)list traverses with restarts.
+> >>
+> >
+> >>diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+> >>index 2ae1371..4af5ee5 100644
+> >>--- a/include/linux/rculist_nulls.h
+> >>+++ b/include/linux/rculist_nulls.h
+> >>@@ -107,7 +107,8 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
+> >>    *
+> >>    */
+> >>   #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
+> >>-       for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
+> >>+       for (ACCESS_ONCE(*(head)),                                              \
+> >>+               pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));         \
+> >>                  (!is_a_nulls(pos)) &&                                           \
+> >>                  ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+> >>                  pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+> >
+> >It looks like this still relies on gcc being friendly here.
+> >
+> >I repeat again : @head here is a constant.
 > 
-> 3.4.47 got released without that included :-/?!
+> No.
+> Actually, there are two volatile objects: pointer to the first element (as a part of the head structure),
+> and the first element by itself. So, to be strict, head as a structure contains a volatile field.
+> Head->first should be treated as a volatile pointer to a volatile data. So, the whole head object is volatile.
 > 
-> https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.4.47
+> >
+> >Macro already uses ACCESS_ONCE(), we only have to instruct gcc that
+> >caching the value is forbidden if we restart the loop
+> >(aka "goto begin;" see Documentation/RCU/rculist_nulls.txt line 146)
+> 
+> My patch seems to be correct, because, ACCESS_ONCE(*(head)) will cause gcc to (re)read head data from the memory.
+> According to gcc documentation:
+> 	"A scalar volatile object is read when it is accessed in a void context:
+>      		volatile int *src = somevalue;
+>      		*src;
+> 	Such expressions are rvalues, and GCC implements this as a read of the volatile object being pointed to."
+> And this is exactly our case.
+> 
+> >Adding a barrier() is probably what we want.
+> 
+> I agree, inserting barrier() is also a correct and working fix.
 
-Yes, it missed that last release, I'll get a new one out when I get back
-from Japan next week.
+I have to ask this question of both of you...
 
-thanks,
+Are either of Eric's or Roman's fixes really guaranteed to work if gcc
+elects not to inline the function containing the RCU list traversal?
 
-greg k-h
+							Thanx, Paul
+
