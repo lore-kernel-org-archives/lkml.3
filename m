@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967131Ab3E2WtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:49:04 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:63484 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab3E2Wsz convert rfc822-to-8bit (ORCPT
+	id S967123Ab3E2WxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:53:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51027 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966799Ab3E2WxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:48:55 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>, cate@cateee.net
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1368798200-7063-1-git-send-email-emilio@elopez.com.ar>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>
-References: <5195D615.70608@cateee.net>
- <1368798200-7063-1-git-send-email-emilio@elopez.com.ar>
-Message-ID: <20130529224849.6058.25112@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: sunxi: "cpu_data" is defined in header files of some
- architectures
-Date: Wed, 29 May 2013 15:48:49 -0700
+	Wed, 29 May 2013 18:53:12 -0400
+Date: Wed, 29 May 2013 15:53:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Yanovich <ynvich@gmail.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Marc Zyngier <maz@misterjones.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH] rtc-ds1302: handle write protection
+Message-Id: <20130529155311.9e35e847968f3923bc83f4cd@linux-foundation.org>
+In-Reply-To: <1369092090-5384-1-git-send-email-ynvich@gmail.com>
+References: <1369092090-5384-1-git-send-email-ynvich@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Emilio López (2013-05-17 06:43:20)
-> From: "Giacomo A. Catenazzi" <cate@cateee.net>
-> 
-> In some architectures, the #define cpu_data is not a "macro-function",
-> so the compiler will substitute the identifier with probably something
-> wrong.
-> 
-> Signed-off-by: Giacomo A. Catenazzi <cate@cateee.net>
-> Signed-off-by: Emilio López <emilio@elopez.com.ar>
-> [emilio@elopez.com.ar: use cpu_mux_data instead of this_cpu_data]
+On Tue, 21 May 2013 03:21:30 +0400 Sergey Yanovich <ynvich@gmail.com> wrote:
 
-Taken into clk-next.
+> This chip has a control register and can prevent altering saved clock.
+> Without this patch we could have:
+> ----8<----
+> (arm)root@pac14:~# date
+> Tue May 21 03:08:27 MSK 2013
+> (arm)root@pac14:~# /etc/init.d/hwclock.sh show
+> Tue May 21 11:13:58 2013  -0.067322 seconds
+> (arm)root@pac14:~# /etc/init.d/hwclock.sh stop
+> [info] Saving the system clock.
+> [info] Hardware Clock updated to Tue May 21 03:09:01 MSK 2013.
+> (arm)root@pac14:~# /etc/init.d/hwclock.sh show
+> Tue May 21 11:14:15 2013  -0.624272 seconds
+> ----8<----
+>
+> ...
+>
+> --- a/drivers/rtc/rtc-ds1302.c
+> +++ b/drivers/rtc/rtc-ds1302.c
+> @@ -23,8 +23,12 @@
+>  #define	RTC_CMD_READ	0x81		/* Read command */
+>  #define	RTC_CMD_WRITE	0x80		/* Write command */
+>  
+> +#define	RTC_CMD_WRITE_ENABLE	0x00		/* Write enable */
+> +#define	RTC_CMD_WRITE_DISABLE	0x80		/* Write disable */
+> +
+>  #define RTC_ADDR_RAM0	0x20		/* Address of RAM0 */
+>  #define RTC_ADDR_TCR	0x08		/* Address of trickle charge register */
+> +#define	RTC_ADDR_CTRL	0x07		/* Address of control register */
+>  #define	RTC_ADDR_YEAR	0x06		/* Address of year register */
+>  #define	RTC_ADDR_DAY	0x05		/* Address of day of week register */
+>  #define	RTC_ADDR_MON	0x04		/* Address of month register */
+> @@ -313,6 +317,7 @@ static int __init ds1302_rtc_probe(struct platform_device *pdev)
+>  		return PTR_ERR(rtc);
+>  
+>  	platform_set_drvdata(pdev, rtc);
+> +	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_ENABLE);
+>  
+>  	return 0;
+>  }
+> @@ -321,6 +326,7 @@ static int ds1302_rtc_remove(struct platform_device *pdev)
+>  {
+>  	struct rtc_device *rtc = platform_get_drvdata(pdev);
+>  
+> +	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_DISABLE);
+>  	rtc_device_unregister(rtc);
+>  	platform_set_drvdata(pdev, NULL);
 
-Regards,
-Mike
+ds1302_rtc_remove() no longer exists in my tree - it got whittled away
+to nothing by
+http://ozlabs.org/~akpm/mmots/broken-out/rtc-rtc-ds1302-remove-unnecessary-platform_set_drvdata.patch
+and
+http://ozlabs.org/~akpm/mmots/broken-out/drivers-rtc-rtc-ds1302c-remove-empty-function.patch
 
-> ---
-> 
-> Hi Giacomo,
-> 
-> I have taken your patch and resent it to linux-arm-kernel and Mike 
-> Turquette this time, but please try to use git send-email on your next 
-> patch.
-> 
-> Here is a video from Greg that explains how to use it as well as other 
-> things (checkpatch.pl, get_maintainer.pl, etc)
-> 
-> http://www.youtube.com/watch?v=LLBrBBImJt4
-> 
-> Thanks! :)
-> 
-> Emilio
-> 
->  drivers/clk/sunxi/clk-sunxi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 930d36f..412912b 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -239,7 +239,7 @@ struct mux_data {
->         u8 shift;
->  };
->  
-> -static const __initconst struct mux_data cpu_data = {
-> +static const __initconst struct mux_data cpu_mux_data = {
->         .shift = 16,
->  };
->  
-> @@ -433,7 +433,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
->  
->  /* Matches for mux clocks */
->  static const __initconst struct of_device_id clk_mux_match[] = {
-> -       {.compatible = "allwinner,sun4i-cpu-clk", .data = &cpu_data,},
-> +       {.compatible = "allwinner,sun4i-cpu-clk", .data = &cpu_mux_data,},
->         {.compatible = "allwinner,sun4i-apb1-mux-clk", .data = &apb1_mux_data,},
->         {}
->  };
-> -- 
-> 1.8.2.3
+Perhaps it should be re-added for this?
