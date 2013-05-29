@@ -1,116 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965696Ab3E2LGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:06:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51267 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965542Ab3E2LGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:06:38 -0400
-Date: Wed, 29 May 2013 13:06:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        fenghua.yu@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/x86: construct all sibling maps if smt
-Message-ID: <20130529110620.GD12193@twins.programming.kicks-ass.net>
-References: <1369674540-10601-1-git-send-email-drjones@redhat.com>
- <20130529102600.GA10582@hawk.usersys.redhat.com>
+	id S965765Ab3E2LGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:06:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57336 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965542Ab3E2LGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:06:49 -0400
+Date: Wed, 29 May 2013 13:06:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 3/3] x86/microcode: early microcode patch loading
+ support on AMD
+Message-ID: <20130529110643.GB16556@pd.tnic>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+ <1369323618-5820-4-git-send-email-jacob.shin@amd.com>
+ <20130528224529.GC29233@pd.tnic>
+ <20130528234307.GA20622@jshin-Toonie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130529102600.GA10582@hawk.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130528234307.GA20622@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:26:01PM +0200, Andrew Jones wrote:
-> On Mon, May 27, 2013 at 07:09:00PM +0200, Andrew Jones wrote:
-> > Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()") broke
-> > the construction of sibling maps, which also broke the booted_cores
-> > accounting.
-> > 
-> > Before the rewrite, if smt was present, then each map was updated for
-> > each smt sibling. After the rewrite only cpu_sibling_mask gets updated,
-> > as the llc and core maps depend on 'has_mc = x86_max_cores > 1' instead.
-> > This leads to problems with topologies like the following
-> > 
-> > (qemu -smp sockets=2,cores=1,threads=2)
-> > 
-> > processor	: 0
-> > physical id	: 0
-> > siblings	: 1    <= should be 2
-> > core id		: 0
-> > cpu cores	: 1
-> > 
-> > processor	: 1
-> > physical id	: 0
-> > siblings	: 1    <= should be 2
-> > core id		: 0
-> > cpu cores	: 0    <= should be 1
-> > 
-> > processor	: 2
-> > physical id	: 1
-> > siblings	: 1    <= should be 2
-> > core id		: 0
-> > cpu cores	: 1
-> > 
-> > processor	: 3
-> > physical id	: 1
-> > siblings	: 1    <= should be 2
-> > core id		: 0
-> > cpu cores	: 0    <= should be 1
-> > 
-> > This patch restores the former construction by defining has_mc as
-> > (has_smt || x86_max_cores > 1). This should be fine as there were no
-> > (has_smt && !has_mc) conditions in the context.
-> > 
-> > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > ---
-> >  arch/x86/kernel/smpboot.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 9c73b51817e47..886a3234eaff3 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-> >  
-> >  void __cpuinit set_cpu_sibling_map(int cpu)
-> >  {
-> > -	bool has_mc = boot_cpu_data.x86_max_cores > 1;
-> >  	bool has_smt = smp_num_siblings > 1;
-> > +	bool has_mc = has_smt || boot_cpu_data.x86_max_cores > 1;
-> >  	struct cpuinfo_x86 *c = &cpu_data(cpu);
-> >  	struct cpuinfo_x86 *o;
-> >  	int i;
-> >  
-> >  	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
-> >  
-> > -	if (!has_smt && !has_mc) {
-> > +	if (!has_mc) {
-> >  		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
-> >  		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-> >  		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
-> > -- 
-> > 1.8.1.4
-> >
+On Tue, May 28, 2013 at 06:43:07PM -0500, Jacob Shin wrote:
+> > Anyway, this whole Kconfig microcode section could use a simplification
+> > but this is not the subject of this patchset - I'll try to address it
+> > after this, as stated in another mail.
 > 
-> Any acks? This patch fixes a regression. Also, in case anybody is
-> wondering, this is not the same regression as was already fixed with
+> Yes, I'll simplify the Kconfig as you suggested in your ealier email.
+
+You don't necessarily have to - as I explained in the other mail,
+distros end up enabling both anyway so we probably don't need the vendor
+split. Instead, simply having microcode loading and early microcode
+loading functionality seems like enough to me.
+
+But this is another conversation so you don't have to address it now.
+
+> > At least I can't seem to trigger any build failures when I comment them
+> > out.
 > 
-> ceb1cbac8eda6 sched/x86: Calculate booted cores after construction of sibling_mask
+> Hm.. I couldn't build without it at some point, I'll take them out but they
+> might be indrectly included anyways.
+
+Yes, let's leave them out. I'll run randconfig builds when your patches
+are ready and we'll see.
+
+...
+
+> > Why do we even need this? Hotplug should take care of reappying
+> > microcode on all cores.
 > 
-> (Hmm, I probably should have renamed has_mc to has_mp, as the redefinition
-> expands its scope. I'm not sure if that deserves a v2 though.)
+> It is needed because otherwise BSP does not reapply microcode on resume, see
+> microcode_core.c BSP resume code path.
 
-Right, took me a while to bend my brain around that code again -- I
-obviously don't have the best track record since this is the second bug
-in it since I rewrote the thing (with the intent of making it 'easier'
-to read ha!).
+Ah, we don't hotplug the BSP, sure - I was looking at the the
+mc_cpu_notifier...
 
-Yes, I think your patch is correct, and your suggestion of doing
-s/has_mc/has_mp/ seems a sensible one too.
+...
 
-Thanks!
+> > Right, come to think of it, we don't use this uci->mc thing anywhere
+> > except in mc_bp_resume. But even there, we call ->apply_microcode()
+> > which on AMD searches the patch in the patch cache so no need for this
+> > assignment at all.
+> 
+> Right, but at least we need a non-zero value, I can stick "1" in there I guess.
+> Whatever you prefer.
+
+That's for the BSP, right? Yeah, ok, then please just leave it like it
+is but add a nice comment why we're doing it.
+
+...
+
+
+> > This comment needs a bit of scrubbing, spell- and readability check.
+> > 
+> > And it says we cannot traverse the pcache and yet we traverse it with
+> > find_patch().
+> > 
+> > ???
+> 
+> What I meant was that we can traverse it now, but on 32 bits, later when we
+> go into suspend and resume, we since we load before paging is turned on, we
+> cannot traverse through equiv_cpu_table and pcache.
+
+Ok, I get it now.
+
+...
+
+> BSP cannot vmalloc() for both 32 and 64 bits, so we cannot "install"
+> equiv_cpu_table, also cannot create pcache yet.
+
+But we can use the one in the initrd, extract the information and save
+it locally like you do with the bsp_mpb. Then, when later another
+microcode blob gets loaded, we simply not use the initial one.
+
+I don't know whether that is a more favourable approach, though - I'm
+just conjecturing here.
+
+> On 32 bits, APs cannot vmalloc(), so we take the same code path as the BSPs
+> loading from initrd memory, and not installing equiv_cpu_table and not creating
+> pcache.
+
+... which sounds to me like this functionality needs to be extracted in
+a function callable by BSP and AP path.
+
+> Okay I'll just rewrite the the whole thing tomorrow,
+>
+> I'll separate out the early stuff by itself into microcode_amd_early.c
+>
+> And try and word the comments clearer.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
