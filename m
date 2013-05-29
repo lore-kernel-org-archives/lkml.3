@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967045Ab3E2UwD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:52:03 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:40530 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966896Ab3E2Uv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:51:56 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Felipe Balbi <balbi@ti.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] usb: gadget: r8a66597-udc: do not unlock unheld spinlock in r8a66597_sudmac_irq()
-Date: Thu, 30 May 2013 00:51:37 +0400
-Message-Id: <1369860697-17362-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S967021Ab3E2Ux4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:53:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50317 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966896Ab3E2Uxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:53:48 -0400
+Date: Wed, 29 May 2013 13:53:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org,
+        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
+Subject: Re: [RFC] Add co-maintainer for fbdev
+Message-Id: <20130529135346.43ebe4c4565d90cec195e38e@linux-foundation.org>
+In-Reply-To: <002301ce5c0c$5552b650$fff822f0$@samsung.com>
+References: <20130524153835.GF15839@game.jcrosoft.org>
+	<201305242056.42482.arnd@arndb.de>
+	<51A29DB9.7030505@gmx.de>
+	<201305282319.30311.arnd@arndb.de>
+	<002301ce5c0c$5552b650$fff822f0$@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-r8a66597_irq() processes sudmac part (r8a66597_sudmac_irq()) before locking r8a66597->lock.
-But transfer_complete(), that is called inside (r8a66597_sudmac_irq()->sudmac_finish()->transfer_complete()),
-expects r8a66597->lock is locked. As a result unheld spinlock can be unlocked.
+On Wed, 29 May 2013 10:32:08 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
 
-The patch just moves locking before calling r8a66597_sudmac_irq().
+> On Wednesday, May 29, 2013 6:20 AM, Arnd Bergmann wrote:
+> > On Monday 27 May 2013, Florian Tobias Schandinat wrote:
+> > > >> On Fri, May 24, 2013 at 8:38 AM, Jean-Christophe PLAGNIOL-VILLARD
+> > > >> <plagnioj@jcrosoft.com> wrote:
+> > > >>> Hi Florian,
+> > > >>>
+> > > >>>         As you seems very busy I'd like to propose the help you to handle the
+> > > >>>         fbdev subsystem to easier the rich of the fbdev patch to Linus
+> > > >>>
+> > > >>>         As I'm working on fbdev on at91 and others and already Co-Maintain the
+> > > >>>         at91 mach on ARM
+> > > >>>
+> > > >>>         And if you are not willing to continue I could take over
+> > >
+> > > Yeah, it would be great if you could help, at the moment I get barely
+> > > any sleep, let alone that I could keep up with the majority of mail I
+> > > get. I'll let you decide whether you want to be sole maintainer or not.
+> > 
+> > For any bigger subsystems, it's good practice to have two maintainers,
+> > even if one of them does all the work. I think it makes sense to have
+> > Jean-Christophe as the primary maintainer and owner of the git tree,
+> > but it may also be good to have you or Tomi listed as a second maintainer
+> > for times when Jean-Christophe isn't available.
+> 
+> Hi Arnd,
+> 
+> I agree with Arnd's opinion.
+> It looks good to have Florian or Tomi listed as a second maintainer.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/usb/gadget/r8a66597-udc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-index 7ff7d9c..2dd213c 100644
---- a/drivers/usb/gadget/r8a66597-udc.c
-+++ b/drivers/usb/gadget/r8a66597-udc.c
-@@ -1469,11 +1469,11 @@ static irqreturn_t r8a66597_irq(int irq, void *_r8a66597)
- 	u16 savepipe;
- 	u16 mask0;
- 
-+	spin_lock(&r8a66597->lock);
-+
- 	if (r8a66597_is_sudmac(r8a66597))
- 		r8a66597_sudmac_irq(r8a66597);
- 
--	spin_lock(&r8a66597->lock);
--
- 	intsts0 = r8a66597_read(r8a66597, INTSTS0);
- 	intenb0 = r8a66597_read(r8a66597, INTENB0);
- 
--- 
-1.7.9.5
-
+Someone send a patch!
