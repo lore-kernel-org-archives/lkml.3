@@ -1,95 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934928Ab3E2QEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:04:55 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:54587 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3E2QEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:04:45 -0400
-Message-ID: <51A6271A.5090809@monstr.eu>
-Date: Wed, 29 May 2013 18:04:42 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1753048Ab3E2QHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:07:08 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:21129 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759224Ab3E2QHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 12:07:00 -0400
+Message-ID: <51A627A0.3000603@imgtec.com>
+Date: Wed, 29 May 2013 17:06:56 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-kernel@vger.kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 09/11] net: emaclite: Do not use microblaze and ppc IO
- functions
-References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com> <146169cddc068c371889e699fde4fe5129f02201.1369841519.git.michal.simek@xilinx.com>
-In-Reply-To: <146169cddc068c371889e699fde4fe5129f02201.1369841519.git.michal.simek@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 7/9] gpio-tz1090: add TZ1090 gpio driver
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com> <1369412476-14245-8-git-send-email-james.hogan@imgtec.com> <CACRpkdb-JNbWxUiiJf=2Y8C0txcKBVoFjBCwkaMVq4my1nzHzQ@mail.gmail.com>
+In-Reply-To: <CACRpkdb-JNbWxUiiJf=2Y8C0txcKBVoFjBCwkaMVq4my1nzHzQ@mail.gmail.com>
 X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2XXQITBHFUCNUDXTXWRNW"
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_05_29_17_06_57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2XXQITBHFUCNUDXTXWRNW
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 29/05/13 16:32, Linus Walleij wrote:
+> On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> 
+>> Add a GPIO driver for the main GPIOs found in the TZ1090 (Comet) SoC.
+>> This doesn't include low-power GPIOs as they're controlled separately
+>> via the Powerdown Controller (PDC) registers.
+>>
+>> The driver is instantiated by device tree and supports interrupts for
+>> all GPIOs.
+> 
+> (...)
+> 
+> This is looking much better.
+> 
+> However I have some more improvement comments, due to new
+> knowledge. I am sorry about the moving target but it's not my fault...
 
-On 05/29/2013 05:33 PM, Michal Simek wrote:
-> Emaclite can be used on ARM zynq where in_be32/out_be32 IO
-> functions are not present. Use standard __raw_readl/__raw_writel
-> IO functions instead.
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
->  drivers/net/ethernet/xilinx/xilinx_emaclite.c | 100 +++++++++++++-----=
---------
->  1 file changed, 51 insertions(+), 49 deletions(-)
->=20
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/ne=
-t/ethernet/xilinx/xilinx_emaclite.c
-> index 93bb14e..0d8515b 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> @@ -159,34 +159,34 @@ static void xemaclite_enable_interrupts(struct ne=
-t_local *drvdata)
->  	u32 reg_data;
->=20
->  	/* Enable the Tx interrupts for the first Buffer */
-> -	reg_data =3D in_be32(drvdata->base_addr + XEL_TSR_OFFSET);
-> -	out_be32(drvdata->base_addr + XEL_TSR_OFFSET,
-> +	reg_data =3D __raw_readl(drvdata->base_addr + XEL_TSR_OFFSET);
-> +	__raw_writel(drvdata->base_addr + XEL_TSR_OFFSET,
->  		 reg_data | XEL_TSR_XMIT_IE_MASK);
+No worries :-)
 
-oou - this is completely wrong.
-Will do v2.
+> And it will look like:
+> interrupts = <13 IRQ_TYPE_LEVEL_HIGH>;
+> 
+> Which is way easier to understand and you no longer
+> need to insert comments to explain things.
 
-Sorry for that.
+Very nice. I like this. Thanks.
 
-Thanks,
-Michal
+>> +/* REG_GPIO_IRQ_PLRT */
+>> +#define GPIO_POLARITY_LOW      0
+>> +#define GPIO_POLARITY_HIGH     1
+>> +
+>> +/* REG_GPIO_IRQ_TYPE */
+>> +#define GPIO_LEVEL_TRIGGERED   0
+>> +#define GPIO_EDGE_TRIGGERED    1
+> 
+> Why does the comment start with REG_* but not the actual
+> definition?
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Legacy reasons (those constants were originally in that
+<asm/soc-tz1090/gpio.h> header). I'll clean up the naming.
 
+> 
+> (...)
+>> +/* caller must hold LOCK2 */
+>> +static inline void _tz1090_gpio_mod_bit(struct tz1090_gpio_bank *bank,
+>> +                                       unsigned int reg_offs,
+>> +                                       unsigned int offset,
+>> +                                       int val)
+>> +{
+>> +       u32 value;
+>> +
+>> +       value = tz1090_gpio_read(bank, reg_offs);
+>> +       value &= ~BIT(offset);
+>> +       value |= !!val << offset;
+> 
+> I can't parse that last line, it is equivalent to writing:
+> 
+> if (val)
+>     value |= BIT(offset);
+> 
+> Which I think is easier to understand.
 
+Apparently I was demonstrating how premature optimisation is the root of
+all evil (as disassembling it testifies) :-). I'll stop doing this.
 
-------enig2XXQITBHFUCNUDXTXWRNW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> 
+> 
+>> +/* set polarity to trigger on next edge, whether rising or falling */
+>> +static void tz1090_gpio_irq_next_edge(struct tz1090_gpio_bank *bank,
+>> +                                     unsigned int offset)
+>> +{
+>> +       unsigned int value_p, value_i;
+>> +       int lstat;
+>> +
+>> +       __global_lock2(lstat);
+>> +       /* irq_polarity[offset] = !input[offset] */
+> 
+> This comments probably need to be a bit more verbose, like explain
+> to readers what is happening here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Okay
 
-iEYEARECAAYFAlGmJxoACgkQykllyylKDCEj+gCcD8Yue+quF8Yh3o8tJKie1xZv
-7QIAnix9f6HiPT/a5wlpqac2++F8+fbs
-=gUyX
------END PGP SIGNATURE-----
+>> +postcore_initcall(tz1090_gpio_init);
+> 
+> Is it really necessary to have this so early?
 
-------enig2XXQITBHFUCNUDXTXWRNW--
+It was necessary when I wanted GPIO setup to precede platform code that
+hadn't been converted to DT yet but messed with GPIOs. For upstream I
+think I can change it to subsys_initcall to match the majority of other
+gpio drivers.
+
+(for the record, in drivers/gpio/*.c:
+      1 core_initcall
+      1 device_initcall
+      1 late_initcall
+      2 pure_initcall
+      3 arch_initcall
+     14 postcore_initcall
+     29 subsys_initcall)
+
+> Apart from these remarks it is looking very good.
+
+Thanks for reviewing.
+
+Cheers
+James
+
