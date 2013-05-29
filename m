@@ -1,104 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965880Ab3E2LYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:24:52 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:41562 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965798Ab3E2LYu (ORCPT
+	id S965543Ab3E2L10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:27:26 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:39812 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965468Ab3E2L1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:24:50 -0400
-Date: Wed, 29 May 2013 13:24:46 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arto Merilainen <amerilainen@nvidia.com>
-Cc: airlied@linux.ie, linux-tegra@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, tbergstrom@nvidia.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/7] Miscellaneous fixes to host1x
-Message-ID: <20130529112444.GA18195@mithrandir>
-References: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-In-Reply-To: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 May 2013 07:27:24 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
+Date: Wed, 29 May 2013 13:27:07 +0200
+Message-Id: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-12799-1369826828-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--=_mimegpg-monstr-desktop-12799-1369826828-0001
 
-On Wed, May 29, 2013 at 01:26:01PM +0300, Arto Merilainen wrote:
-> This patch series fixes two issues in the host1x driver: First, the
-> command buffer validation routine had vulnerabilities that were not
-> detected in earlier testing. Second, the return codes of some
-> functions were misleading or completely missing. This caused the
-> driver to give wrong return codes also to the userspace.
->=20
-> The series is based on top of 3.10rc3. I have tested the patch series
-> on cardhu by running host1x and gr2d test cases (available at [0]).
-> I would appreciate any help in testing/reviewing these patches.
->=20
-> Changes from v1:
->  * Rebased on top of 3.10rc3
->  * Split firewall fixes to smaller patches
->  * Reworked no-reloc case in firewall code. Fix in v1 was not
->    sufficient in all cases
->  * Dropped patch "Fix syncpoint wait return value" as it is not
->    critical and discussion on it has not yet settled.
->  * Fixed style and whitespace issues
->=20
-> [0] https://gitorious.org/linux-host1x/libdrm-host1x
->=20
-> Arto Merilainen (5):
->   gpu: host1x: Check reloc table before usage
->   gpu: host1x: Copy gathers before verification
->   gpu: host1x: Fix memory access in syncpt request
->   gpu: host1x: Fix client_managed type
->   gpu: host1x: Rework CPU syncpoint increment
->=20
-> Terje Bergstrom (2):
->   gpu: host1x: Check INCR opcode correctly
->   gpu: host1x: Don't reset firewall between gathers
->=20
->  drivers/gpu/host1x/dev.h          |   8 +--
->  drivers/gpu/host1x/drm/drm.c      |   3 +-
->  drivers/gpu/host1x/drm/gr2d.c     |   2 +-
->  drivers/gpu/host1x/hw/cdma_hw.c   |   2 +-
->  drivers/gpu/host1x/hw/syncpt_hw.c |  12 ++--
->  drivers/gpu/host1x/job.c          | 135 +++++++++++++++++---------------=
-------
->  drivers/gpu/host1x/syncpt.c       |  26 +++-----
->  drivers/gpu/host1x/syncpt.h       |  13 ++--
->  8 files changed, 85 insertions(+), 116 deletions(-)
+Supporting the second channel in the driver.
+Offset is 0x8 and both channnels share the same
+IRQ.
 
-Applied, thanks.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/gpio/gpio-xilinx.c | 93 ++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 81 insertions(+), 12 deletions(-)
 
-Thierry
+diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+index 9ae7aa8..385dcb0 100644
+--- a/drivers/gpio/gpio-xilinx.c
++++ b/drivers/gpio/gpio-xilinx.c
+@@ -1,7 +1,7 @@
+ /*
+- * Xilinx gpio driver
++ * Xilinx gpio driver for xps/axi_gpio IP.
+  *
+- * Copyright 2008 Xilinx, Inc.
++ * Copyright 2008 - 2013 Xilinx, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2
+@@ -26,10 +26,17 @@
+ #define XGPIO_DATA_OFFSET   (0x0)	/* Data register  */
+ #define XGPIO_TRI_OFFSET    (0x4)	/* I/O direction register  */
 
---7AUc2qLy4jB3hD7Z
++#define XGPIO_CHANNEL_OFFSET	0x8
++
++/* Read/Write access to the GPIO registers */
++#define xgpio_readreg(offset)		__raw_readl(offset)
++#define xgpio_writereg(offset, val)	__raw_writel(val, offset)
++
+ struct xgpio_instance {
+ 	struct of_mm_gpio_chip mmchip;
+ 	u32 gpio_state;		/* GPIO state shadow register */
+ 	u32 gpio_dir;		/* GPIO direction shadow register */
++	u32 offset;
+ 	spinlock_t gpio_lock;	/* Lock used for synchronization */
+ };
+
+@@ -44,8 +51,12 @@ struct xgpio_instance {
+ static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
+ {
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct xgpio_instance *chip =
++	    container_of(mm_gc, struct xgpio_instance, mmchip);
++
++	void __iomem *regs = mm_gc->regs + chip->offset;
+
+-	return (in_be32(mm_gc->regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
++	return (xgpio_readreg(regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
+ }
+
+ /**
+@@ -63,6 +74,7 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+ 	struct xgpio_instance *chip =
+ 	    container_of(mm_gc, struct xgpio_instance, mmchip);
++	void __iomem *regs = mm_gc->regs;
+
+ 	spin_lock_irqsave(&chip->gpio_lock, flags);
+
+@@ -71,7 +83,9 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+ 		chip->gpio_state |= 1 << gpio;
+ 	else
+ 		chip->gpio_state &= ~(1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
++
++	xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
++							 chip->gpio_state);
+
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+ }
+@@ -91,12 +105,13 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+ 	struct xgpio_instance *chip =
+ 	    container_of(mm_gc, struct xgpio_instance, mmchip);
++	void __iomem *regs = mm_gc->regs;
+
+ 	spin_lock_irqsave(&chip->gpio_lock, flags);
+
+ 	/* Set the GPIO bit in shadow register and set direction as input */
+ 	chip->gpio_dir |= (1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+
+@@ -119,6 +134,7 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+ 	struct xgpio_instance *chip =
+ 	    container_of(mm_gc, struct xgpio_instance, mmchip);
++	void __iomem *regs = mm_gc->regs;
+
+ 	spin_lock_irqsave(&chip->gpio_lock, flags);
+
+@@ -127,11 +143,12 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ 		chip->gpio_state |= 1 << gpio;
+ 	else
+ 		chip->gpio_state &= ~(1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
++	xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
++		       chip->gpio_state);
+
+ 	/* Clear the GPIO bit in shadow register and set direction as output */
+ 	chip->gpio_dir &= (~(1 << gpio));
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+
+@@ -147,8 +164,10 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
+ 	struct xgpio_instance *chip =
+ 	    container_of(mm_gc, struct xgpio_instance, mmchip);
+
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
++							chip->gpio_state);
++	xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET,
++							 chip->gpio_dir);
+ }
+
+ /**
+@@ -183,9 +202,6 @@ static int xgpio_of_probe(struct device_node *np)
+ 	/* Check device node and parent device node for device width */
+ 	chip->mmchip.gc.ngpio = 32; /* By default assume full GPIO controller */
+ 	tree_info = of_get_property(np, "xlnx,gpio-width", NULL);
+-	if (!tree_info)
+-		tree_info = of_get_property(np->parent,
+-					    "xlnx,gpio-width", NULL);
+ 	if (tree_info)
+ 		chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
+
+@@ -206,6 +222,59 @@ static int xgpio_of_probe(struct device_node *np)
+ 		       np->full_name, status);
+ 		return status;
+ 	}
++
++	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
++							chip->mmchip.gc.base);
++
++	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
++	if (tree_info && be32_to_cpup(tree_info)) {
++		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++		if (!chip)
++			return -ENOMEM;
++
++		/* Add dual channel offset */
++		chip->offset = XGPIO_CHANNEL_OFFSET;
++
++		/* Update GPIO state shadow register with default value */
++		tree_info = of_get_property(np, "xlnx,dout-default-2", NULL);
++		if (tree_info)
++			chip->gpio_state = be32_to_cpup(tree_info);
++
++		/* Update GPIO direction shadow register with default value */
++		/* By default, all pins are inputs */
++		chip->gpio_dir = 0xFFFFFFFF;
++		tree_info = of_get_property(np, "xlnx,tri-default-2", NULL);
++		if (tree_info)
++			chip->gpio_dir = be32_to_cpup(tree_info);
++
++		/* Check device node and parent device node for device width */
++		/* By default assume full GPIO controller */
++		chip->mmchip.gc.ngpio = 32;
++		tree_info = of_get_property(np, "xlnx,gpio2-width", NULL);
++		if (tree_info)
++			chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
++
++		spin_lock_init(&chip->gpio_lock);
++
++		chip->mmchip.gc.direction_input = xgpio_dir_in;
++		chip->mmchip.gc.direction_output = xgpio_dir_out;
++		chip->mmchip.gc.get = xgpio_get;
++		chip->mmchip.gc.set = xgpio_set;
++
++		chip->mmchip.save_regs = xgpio_save_regs;
++
++		/* Call the OF gpio helper to setup and register the GPIO dev */
++		status = of_mm_gpiochip_add(np, &chip->mmchip);
++		if (status) {
++			kfree(chip);
++			pr_err("%s: error in probe function with status %d\n",
++			np->full_name, status);
++			return status;
++		}
++		pr_info("XGpio: %s: dual channel registered, base is %d\n",
++					np->full_name, chip->mmchip.gc.base);
++	}
++
+ 	return 0;
+ }
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-12799-1369826828-0001
 Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRpeV8AAoJEN0jrNd/PrOhxAUP/3PVv4UAt3ZQ0rGwL1Tnh1uX
-9pUclkVHrj7dWx3v4gZAXPlhC3CrEstrU9hU081Xu9YCi1gN8zBCTy/h+rTYKRN3
-MSIAhDQhPd+UtDJRyikjYfar195/9h0Z22SGmLklqj9pDUJGVeZC/0fqahZvTq3l
-/J+1HFfjAmMq2LWHpBRcRLjpSqNIa53AFKQp9gk2muW6ztEtAabpyHT7spFTuNIj
-beKfzPFUvw4SOzv12ECwwEKT3+Mkz1PN5qo162woPcgwmHIVFV6iJv2VgSWdapHt
-Gz5H1Yv3F7+6AsYmCUTNnZWHgHWS/ssJiCmhQLAZlYg/Se7Ly1iqAz/f+6pwXFsh
-o3yGlFwRXfqVTuzSrGkSXTXIW3fM5+8J8q4Atogo4yYBCUhBMUbZZqXyTwabXbnr
-4iqjjMHdB5ViAtTEDk8yJF60wNT8dV47G0aKDxS5JD1XJrMI1j2d+G56NYYCwA7v
-0ML94yKVRcUJdFxsuGZgLIZNgTbB3fdwvLN9lCguDfPeWfXnwRaW4vB2hf6Q8Otw
-xstgt5ONuK3tShe+34mTs4VMg29Ue7vft50hWqLTeFUUAC3HzX7wLXFGDfongStW
-C7FXK54idO2MVKmFkACoh/u4P32sLYJc1b66xcqmRJj7W2w4A89QmIztvmw8D/Y7
-Yyb8zlReeSP/EbBt23Yi
-=A2fB
+iEYEABECAAYFAlGl5gwACgkQykllyylKDCGRvACeIqJtynVfJw+JwDRf2kFeZVff
+UEoAoI8dLfXnRv92+Co/4HYrB5SeO6tu
+=XIjI
 -----END PGP SIGNATURE-----
 
---7AUc2qLy4jB3hD7Z--
+--=_mimegpg-monstr-desktop-12799-1369826828-0001--
