@@ -1,324 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965289Ab3E2Izl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:55:41 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:56826 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965203Ab3E2Izh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:55:37 -0400
+	id S965271Ab3E2I5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:57:17 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:45065 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965086Ab3E2I5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 04:57:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
-References: <1369661455-17839-1-git-send-email-gabriel.fernandez.st@gmail.com>
-	<1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
-Date: Wed, 29 May 2013 10:55:35 +0200
-Message-ID: <CAGo1xzCgQ_u2nqtqR=GpTThxLXzFonE8M+3QenuJanrbBF3ekg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: u8540: Add Pinctrl Device Tree settings for
- uart0, uart2
-From: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Olivier Clergeaud <olivier.clergeaud@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20901.49731.549060.203528@pilspetsen.it.uu.se>
+Date: Wed, 29 May 2013 10:54:27 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: RE: A bug about system call on ARM
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+	<CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+	<35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+	<35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 May 2013 15:30, Gabriel Fernandez <gabriel.fernandez.st@gmail.com> wrote:
-> From: Gabriel Fernandez <gabriel.fernandez@st.com>
->
-> This patch adds pinctrl device tree settings for uart0 and uart2
-> for ccu8540 board.
->
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> ---
->  arch/arm/boot/dts/ccu8540-pinctrl.dtsi     | 77 ++++++++++++++++++++++++
->  arch/arm/boot/dts/ccu8540.dts              |  7 +++
->  arch/arm/boot/dts/dbx5x0.dtsi              |  2 +-
->  arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi | 95 ++++++++++++++++++++++++++++++
->  include/dt-bindings/pinctrl/nomadik.h      | 36 +++++++++++
->  5 files changed, 216 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/ccu8540-pinctrl.dtsi
->  create mode 100644 arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
->  create mode 100644 include/dt-bindings/pinctrl/nomadik.h
->
-> diff --git a/arch/arm/boot/dts/ccu8540-pinctrl.dtsi b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
-> new file mode 100644
-> index 0000000..26e718b
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
-> @@ -0,0 +1,77 @@
-> +/*
-> + * Copyright 2012 ST-Ericsson
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +#include "ste-nomadik-pinctrl.dtsi"
-> +
-> +&pinctrl_dbx500 {
-> +       uart0 {
-> +               uart0_default_mux: uart0_mux {
-> +                       default_mux {
-> +                               ste,function = "u0";
-> +                               ste,pins = "u0_a_1";
-> +                       };
-> +               };
-> +
-> +               uart0_default_mode: uart0_default {
-> +                       default_cfg1 {
-> +                               ste,pins = "GPIO0", "GPIO2";
-> +                               ste,config = <&in_pu>;
-> +                       };
-> +
-> +                       default_cfg2 {
-> +                               ste,pins = "GPIO1", "GPIO3";
-> +                               ste,config = <&out_hi>;
-> +                       };
-> +               };
-> +
-> +               uart0_sleep_mode: uart0_sleep {
-> +                       sleep_cfg1 {
-> +                               ste,pins = "GPIO0", "GPIO2";
-> +                               ste,config = <&slpm_in_pu>;
-> +                       };
-> +
-> +                       sleep_cfg2 {
-> +                               ste,pins = "GPIO1", "GPIO3";
-> +                               ste,config = <&slpm_out_hi>;
-> +                       };
-> +               };
-> +       };
-> +
-> +       uart2 {
-> +               uart2_default_mode: uart2_default {
-> +                       default_mux {
-> +                               ste,function = "u2";
-> +                               ste,pins = "u2txrx_a_1";
-> +                       };
-> +
-> +                       default_cfg1 {
-> +                               ste,pins = "GPIO120";
-> +                               ste,config = <&in_pu>;
-> +                       };
-> +
-> +                       default_cfg2 {
-> +                               ste,pins = "GPIO121";
-> +                               ste,config = <&out_hi>;
-> +                       };
-> +               };
-> +
-> +               uart2_sleep_mode: uart2_sleep {
-> +                       sleep_cfg1 {
-> +                               ste,pins = "GPIO120";
-> +                               ste,config = <&slpm_in_pu>;
-> +                       };
-> +
-> +                       sleep_cfg2 {
-> +                               ste,pins = "GPIO121";
-> +                               ste,config = <&slpm_out_hi>;
-> +                       };
-> +               };
-> +       };
-> +};
-> diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-> index 5de9e1e..4f93795 100644
-> --- a/arch/arm/boot/dts/ccu8540.dts
-> +++ b/arch/arm/boot/dts/ccu8540.dts
-> @@ -11,6 +11,7 @@
->
->  /dts-v1/;
->  #include "dbx5x0.dtsi"
-> +#include "ccu8540-pinctrl.dtsi"
->
->  / {
->         model = "ST-Ericsson U8540 platform with Device Tree";
-> @@ -27,6 +28,9 @@
->                 };
->
-i missed 	
-	   pinctrl {
-			compatible = "stericsson,db8540-pinctrl";
-		};
+Wang, Yalin writes:
+ > Hi  
+ > 
+ > I have download the latest linux kernel code  3.9.4
+ > And Compare with  3.4.0 kernel .
+ > 
+ > It seems there is no change for this part ,
+ > So it will still happen .
+ > Does anyone know who is responsible for  arm arch part kernel code ?
 
->                 uart@80120000 {
-> +                       pinctrl-names = "default", "sleep";
-> +                       pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
-> +                       pinctrl-1 = <&uart0_sleep_mode>;
->                         status = "okay";
->                 };
->
-> @@ -35,6 +39,9 @@
->                 };
->
->                 uart@80007000 {
-> +                       pinctrl-names = "default", "sleep";
-> +                       pinctrl-0 = <&uart2_default_mode>;
-> +                       pinctrl-1 = <&uart2_sleep_mode>;
->                         status = "okay";
->                 };
->         };
-> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> index f85ff85..7507148 100644
-> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> @@ -170,7 +170,7 @@
->                         gpio-bank = <8>;
->                 };
->
-> -               pinctrl {
-> +               pinctrl_dbx500: pinctrl {
->                         compatible = "stericsson,nmk-pinctrl";
->                         prcm = <&prcmu>;
->                 };
-> diff --git a/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
-> new file mode 100644
-> index 0000000..efddee9
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
-> @@ -0,0 +1,95 @@
-> +/*
-> + * Copyright 2012 ST-Ericsson
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +#include <dt-bindings/pinctrl/nomadik.h>
-> +
-> +/ {
-> +       in_nopull: in_nopull {
-> +               ste,input = <INPUT_NOPULL>;
-> +       };
-> +
-> +       in_pu: input_pull_up {
-> +               ste,input = <INPUT_PULLUP>;
-> +       };
-> +
-> +       in_pd: input_pull_down {
-> +               ste,input = <INPUT_PULLDOWN>;
-> +       };
-> +
-> +       out_hi: output_high {
-> +               ste,output = <OUTPUT_HIGH>;
-> +       };
-> +
-> +       out_lo: output_low {
-> +               ste,output = <OUTPUT_LOW>;
-> +       };
-> +
-> +       gpio_out_lo: gpio_output_low {
-> +               ste,gpio = <GPIOMODE_ENABLED>;
-> +               ste,output = <OUTPUT_LOW>;
-> +       };
-> +
-> +       slpm_in_pu: slpm_in_pu {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-input = <SLPM_INPUT_PULLUP>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +       };
-> +
-> +       slpm_in_wkup_pdis: slpm_in_wkup_pdis {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-input = <SLPM_DIR_INPUT>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +
-> +       slpm_out_lo: slpm_out_lo {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-output = <SLPM_OUTPUT_LOW>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +       };
-> +
-> +       slpm_out_hi: slpm_out_hi {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-output = <SLPM_OUTPUT_HIGH>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +       };
-> +
-> +       slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-output = <SLPM_OUTPUT_HIGH>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +
-> +       slpm_out_wkup_pdis: slpm_out_wkup_pdis {
-> +               ste,sleep = <SLPM_ENABLED>;
-> +               ste,sleep-output = <SLPM_DIR_OUTPUT>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +
-> +       in_wkup_pdis: in_wkup_pdis {
-> +               ste,sleep-input = <SLPM_DIR_INPUT>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +
-> +       out_hi_wkup_pdis: out_hi_wkup_pdis {
-> +               ste,sleep-output = <SLPM_OUTPUT_HIGH>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +
-> +       out_wkup_pdis: out_wkup_pdis {
-> +               ste,sleep-output = <SLPM_DIR_OUTPUT>;
-> +               ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
-> +               ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
-> +       };
-> +};
-> diff --git a/include/dt-bindings/pinctrl/nomadik.h b/include/dt-bindings/pinctrl/nomadik.h
-> new file mode 100644
-> index 0000000..638fb32
-> --- /dev/null
-> +++ b/include/dt-bindings/pinctrl/nomadik.h
-> @@ -0,0 +1,36 @@
-> +/*
-> + * nomadik.h
-> + *
-> + * Copyright (C) ST-Ericsson SA 2013
-> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com> for ST-Ericsson.
-> + * License terms:  GNU General Public License (GPL), version 2
-> + */
-> +
-> +#define INPUT_NOPULL           0
-> +#define INPUT_PULLUP           1
-> +#define INPUT_PULLDOWN         2
-> +
-> +#define OUTPUT_LOW             0
-> +#define OUTPUT_HIGH            1
-> +#define DIR_OUTPUT             2
-> +
-> +#define SLPM_DISABLED          0
-> +#define SLPM_ENABLED           1
-> +
-> +#define SLPM_INPUT_NOPULL      0
-> +#define SLPM_INPUT_PULLUP      1
-> +#define SLPM_INPUT_PULLDOWN    2
-> +#define SLPM_DIR_INPUT         3
-> +
-> +#define SLPM_OUTPUT_LOW                0
-> +#define SLPM_OUTPUT_HIGH       1
-> +#define SLPM_DIR_OUTPUT                2
-> +
-> +#define SLPM_WAKEUP_DISABLE    0
-> +#define SLPM_WAKEUP_ENABLE     1
-> +
-> +#define GPIOMODE_DISABLED      0
-> +#define GPIOMODE_ENABLED       1
-> +
-> +#define SLPM_PDIS_DISABLED     0
-> +#define SLPM_PDIS_ENABLED      1
-> --
-> 1.8.1.1
->
+A quick look in MAINTAINNERS would have told you:
+
+ARM PORT
+...
+L:      linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+
+Please direct ARM-specific questions to that list.
