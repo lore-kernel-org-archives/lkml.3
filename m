@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965867Ab3E2LY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:24:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51541 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965525Ab3E2LY0 (ORCPT
+	id S965880Ab3E2LYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:24:52 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:41562 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965798Ab3E2LYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:24:26 -0400
-Date: Wed, 29 May 2013 13:24:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: Joerg Roedel <joro@8bytes.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 2/2 V3] perf/x86/amd: AMD IOMMU PC PERF uncore PMU
- implementation
-Message-ID: <20130529112418.GI12193@twins.programming.kicks-ass.net>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
- <20130528121850.GC2575@8bytes.org>
- <51A4E6A8.7080004@amd.com>
+	Wed, 29 May 2013 07:24:50 -0400
+Date: Wed, 29 May 2013 13:24:46 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: airlied@linux.ie, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, tbergstrom@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/7] Miscellaneous fixes to host1x
+Message-ID: <20130529112444.GA18195@mithrandir>
+References: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
 Content-Disposition: inline
-In-Reply-To: <51A4E6A8.7080004@amd.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 12:17:28PM -0500, Suravee Suthikulanit wrote:
-> On 5/28/2013 7:18 AM, Joerg Roedel wrote:
 
-> >That implementation is very basic. Any reason for not using the event
-> >reporting mechanism of the IOMMU? You could implement a nice perf
-> >iommutop or something to see which devices do the most transactions or
-> >something like that.
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This patch is adding perf system-wide counting mode support which is used by
-> "perf stat" tool.  We are not implementing the sampling mode since MSI
-> interrupt of the IOMMU cannot be used for current perf sampling tools (e.g.
-> perf record or top) since the IOMMU counters are not core-specific.   The
-> current "perf record" and "perf top" needs to attribute each sample to a
-> particular core/pid which would allow the tools to figure out the
-> instruction pointer and map the sample to a paticular module.
-> 
-> If I understand correctly, when you mentioned "perf iommutop", you want a
-> new perf user-space tool which will show real-time IOMMU events per IOMMU HW
-> and/or device?
+On Wed, May 29, 2013 at 01:26:01PM +0300, Arto Merilainen wrote:
+> This patch series fixes two issues in the host1x driver: First, the
+> command buffer validation routine had vulnerabilities that were not
+> detected in earlier testing. Second, the return codes of some
+> functions were misleading or completely missing. This caused the
+> driver to give wrong return codes also to the userspace.
+>=20
+> The series is based on top of 3.10rc3. I have tested the patch series
+> on cardhu by running host1x and gr2d test cases (available at [0]).
+> I would appreciate any help in testing/reviewing these patches.
+>=20
+> Changes from v1:
+>  * Rebased on top of 3.10rc3
+>  * Split firewall fixes to smaller patches
+>  * Reworked no-reloc case in firewall code. Fix in v1 was not
+>    sufficient in all cases
+>  * Dropped patch "Fix syncpoint wait return value" as it is not
+>    critical and discussion on it has not yet settled.
+>  * Fixed style and whitespace issues
+>=20
+> [0] https://gitorious.org/linux-host1x/libdrm-host1x
+>=20
+> Arto Merilainen (5):
+>   gpu: host1x: Check reloc table before usage
+>   gpu: host1x: Copy gathers before verification
+>   gpu: host1x: Fix memory access in syncpt request
+>   gpu: host1x: Fix client_managed type
+>   gpu: host1x: Rework CPU syncpoint increment
+>=20
+> Terje Bergstrom (2):
+>   gpu: host1x: Check INCR opcode correctly
+>   gpu: host1x: Don't reset firewall between gathers
+>=20
+>  drivers/gpu/host1x/dev.h          |   8 +--
+>  drivers/gpu/host1x/drm/drm.c      |   3 +-
+>  drivers/gpu/host1x/drm/gr2d.c     |   2 +-
+>  drivers/gpu/host1x/hw/cdma_hw.c   |   2 +-
+>  drivers/gpu/host1x/hw/syncpt_hw.c |  12 ++--
+>  drivers/gpu/host1x/job.c          | 135 +++++++++++++++++---------------=
+------
+>  drivers/gpu/host1x/syncpt.c       |  26 +++-----
+>  drivers/gpu/host1x/syncpt.h       |  13 ++--
+>  8 files changed, 85 insertions(+), 116 deletions(-)
 
-Right, unless there's more to the IOMMU event reporting than setting an
-event threshold to get an interrupt of kinds I don't see how an
-interrupt would be useful except for making sure we don't loose a
-counter overflow.
+Applied, thanks.
 
-Note that for Intel uncore we poll with a software timer to ensure we
-don't miss the overflow because its interrupt facility is either broken
-or missing.
+Thierry
 
-If otoh the event reporting thing includes more data than just 'hey
-counter overflow!' it might be useful. Not exactly sure how yet because
-it would be the first PMU to need this.
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRpeV8AAoJEN0jrNd/PrOhxAUP/3PVv4UAt3ZQ0rGwL1Tnh1uX
+9pUclkVHrj7dWx3v4gZAXPlhC3CrEstrU9hU081Xu9YCi1gN8zBCTy/h+rTYKRN3
+MSIAhDQhPd+UtDJRyikjYfar195/9h0Z22SGmLklqj9pDUJGVeZC/0fqahZvTq3l
+/J+1HFfjAmMq2LWHpBRcRLjpSqNIa53AFKQp9gk2muW6ztEtAabpyHT7spFTuNIj
+beKfzPFUvw4SOzv12ECwwEKT3+Mkz1PN5qo162woPcgwmHIVFV6iJv2VgSWdapHt
+Gz5H1Yv3F7+6AsYmCUTNnZWHgHWS/ssJiCmhQLAZlYg/Se7Ly1iqAz/f+6pwXFsh
+o3yGlFwRXfqVTuzSrGkSXTXIW3fM5+8J8q4Atogo4yYBCUhBMUbZZqXyTwabXbnr
+4iqjjMHdB5ViAtTEDk8yJF60wNT8dV47G0aKDxS5JD1XJrMI1j2d+G56NYYCwA7v
+0ML94yKVRcUJdFxsuGZgLIZNgTbB3fdwvLN9lCguDfPeWfXnwRaW4vB2hf6Q8Otw
+xstgt5ONuK3tShe+34mTs4VMg29Ue7vft50hWqLTeFUUAC3HzX7wLXFGDfongStW
+C7FXK54idO2MVKmFkACoh/u4P32sLYJc1b66xcqmRJj7W2w4A89QmIztvmw8D/Y7
+Yyb8zlReeSP/EbBt23Yi
+=A2fB
+-----END PGP SIGNATURE-----
+
+--7AUc2qLy4jB3hD7Z--
