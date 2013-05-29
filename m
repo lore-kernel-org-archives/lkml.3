@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488Ab3E2KHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:07:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:20990 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965230Ab3E2KHy (ORCPT
+	id S965531Ab3E2KJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:09:38 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:49201 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965230Ab3E2KJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:07:54 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A5D346.4010007@asianux.com>
-Date: Wed, 29 May 2013 18:07:02 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 29 May 2013 06:09:37 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51A5D3D9.1000106@yandex-team.ru>
+Date: Wed, 29 May 2013 14:09:29 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>, anton.vorontsov@linaro.org,
-        Richard Kuo <rkuo@codeaurora.org>, jesper.nilsson@axis.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: blackfin: kernel: memory overflow, 'namebuf' length
- need be more than 256
-References: <51A5CDB4.9000204@asianux.com>
-In-Reply-To: <51A5CDB4.9000204@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>, paulmck@linux.vnet.ibm.com
+CC: Jesper Dangaard Brouer <brouer@redhat.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+References: <519CB2D8.103@yandex-team.ru>  <1369225837.3301.324.camel@edumazet-glaptop>  <519CC2FB.2010006@yandex-team.ru>  <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>  <20130525113715.GA3795@linux.vnet.ibm.com>  <51A39E11.5020405@yandex-team.ru>  <1369699930.3301.494.camel@edumazet-glaptop>  <51A47496.6000100@yandex-team.ru>  <1369787693.3301.586.camel@edumazet-glaptop>  <20130529013111.GS6172@linux.vnet.ibm.com> <1369804097.3301.615.camel@edumazet-glaptop>
+In-Reply-To: <1369804097.3301.615.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29.05.2013 09:08, Eric Dumazet wrote:
+> On Tue, 2013-05-28 at 18:31 -0700, Paul E. McKenney wrote:
+>> On Tue, May 28, 2013 at 05:34:53PM -0700, Eric Dumazet wrote:
+>>> On Tue, 2013-05-28 at 13:10 +0400, Roman Gushchin wrote:
+>>>> On 28.05.2013 04:12, Eric Dumazet wrote:
 
-The 'name' length in decode_address() may be 255, after call d_path()
-successfully.
+> About your earlier question, I really don't know why compiler would
+> cache a memory read if we explicitly use barrier() to prevent this from
+> happening.
 
-So for decode_address(), the input 'buf' need be more than 256, or may
-memory overflow.
+I agree.
 
-For simply thinking of, use 'namebuf[512]' instead of 'namebuf[150]'
-which will pass to decode_address() as input 'buf'.
+> BTW Roman patch generates a double load as in :
+>
+> 2cb1:       49 8b 07                mov    (%r15),%rax
+> 2cb4:       49 8b 07                mov    (%r15),%rax
+>
+>
+> ...
+> 2ea2:       e8 f9 dc ff ff          callq  ba0 <sock_put>
+> 2ea7:       8b 0c 24                mov    (%rsp),%ecx
+> 2eaa:       e9 02 fe ff ff          jmpq   2cb1 <udp4_lib_lookup2+0x91>
+>
+> because of ACCESS_ONCE() used twice, once explicitly in
+> hlist_nulls_for_each_entry_rcu(), and once in rcu_dereference_raw()
+>
+> While barrier();ptr = rcu_dereference(X); does generate a single load.
 
-Also better use macro instead of hard code number when processing
-symbols work.
+It's true.
 
+Unfortunately, using barrier() can also prevent gcc from making some
+(acceptable) code optimizations, because barrier() has a global effect,
+and everything we want to reload is the (head->first) pointer.
+So, to be absolutely precise, we have to introduce and use
+the ACCESS_FIELD_ONCE() macro.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/blackfin/kernel/trace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+In any case, it doesn't look like a big problem.
+In my mind, the best solution is to use the ACCESS_FIELD_ONCE() macro,
+but using barrier() is also an acceptable solution.
 
-diff --git a/arch/blackfin/kernel/trace.c b/arch/blackfin/kernel/trace.c
-index c36efa0..4fecd3e 100644
---- a/arch/blackfin/kernel/trace.c
-+++ b/arch/blackfin/kernel/trace.c
-@@ -37,7 +37,7 @@ void decode_address(char *buf, unsigned long address)
- 	const char *symname;
- 	char *modname;
- 	char *delim = ":";
--	char namebuf[128];
-+	char namebuf[KSYM_NAME_LEN];
- #endif
- 
- 	buf += sprintf(buf, "<0x%08lx> ", address);
-@@ -845,7 +845,7 @@ void dump_bfin_mem(struct pt_regs *fp)
- 
- void show_regs(struct pt_regs *fp)
- {
--	char buf[150];
-+	char buf[512];
- 	struct irqaction *action;
- 	unsigned int i;
- 	unsigned long flags = 0;
--- 
-1.7.7.6
+Regards,
+Roman
