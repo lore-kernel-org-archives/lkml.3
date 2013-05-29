@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965483Ab3E2SQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:16:17 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:49821 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964985Ab3E2SQL (ORCPT
+	id S965452Ab3E2SST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:18:19 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:40907 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964985Ab3E2SSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:16:11 -0400
+	Wed, 29 May 2013 14:18:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 29 May 2013 20:15:49 +0200
-Message-ID: <CACQ1gAgp6o8HqQcv=4cWoAZze3wtXHMX+g+7KvV-pnC2W5=iyg@mail.gmail.com>
-Subject: Re: [PATCHv3 RESEND 0/6] ARM: sunxi: Add support for A10 Ethernet controller
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: davem@davemloft.net, Emilio Lopez <emilio@elopez.com.ar>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20130528210833.GA5065@oc6784271780.ibm.com>
+References: <20130528210833.GA5065@oc6784271780.ibm.com>
+Date: Wed, 29 May 2013 21:18:12 +0300
+Message-ID: <CAHp75VdFZmGEPXHQpW3YnvzXHqYsvo2-MhGk-p9itkZu7SnyUg@mail.gmail.com>
+Subject: Re: [PATCH 1/8] rsxx: Adding in debugfs entries.
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+Cc: axboe@kernel.dk,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/24 Maxime Ripard <maxime.ripard@free-electrons.com>:
-> Hi,
+On Wed, May 29, 2013 at 12:08 AM, Philip J. Kelleher
+<pjk1939@linux.vnet.ibm.com> wrote:
+> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 >
-> The Allwinner A10 SoC has an ethernet controller that seem to be specific to
-> Allwinner. This IP has no public documentation, so exact
-> details are quite sparse, and this code come from refactored Allwinner
-> code.
->
-> The rework to use NAPI is taking more time than expected, I'm still working
-> on it, but it could probably be sent as a follow-up patch.
->
-> Thanks,
-> Maxime
->
-> Changes from v2:
->   - Split the MDIO controller to a separate driver and make use of standards
->     device tree bindings
->   - Fixed various minor things as suggested by Florian Fainelli
->   - Added clock support now that we have a clock driver
->
-> Changes from v1:
->   - Use phylib for the phy-related functions
->   - Use an optional regulator to power up the phy
->   - Rename the driver from Davicom Wemac to Allwinner EMAC, since it's the name
->     mentionned in the datasheet, and we have no strong evidence of a
->     relationship with Davicom
->   - Fix various small things around the driver: add defines for undocumented
->     values, fix documentation name and compatible example, etc.
->
-> Maxime Ripard (4):
->   net: Add MDIO bus driver for the Allwinner EMAC
->   ARM: sun4i: Add muxing options for the ethernet controller
->   ARM: sunxi: Add EMAC controller node to sun4i DTSI
->   ARM: sunxi: Add EMAC Controller to Hackberry dt
->
-> Stefan Roese (2):
->   net: Add EMAC ethernet driver found on Allwinner A10 SoC's
->   ARM: cubieboard: Enable ethernet (EMAC) support in dts
->
->  .../bindings/net/allwinner,sun4i-emac.txt          |  22 +
->  .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +
->  arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |  15 +
->  arch/arm/boot/dts/sun4i-a10-hackberry.dts          |  41 +
->  arch/arm/boot/dts/sun4i-a10.dtsi                   |  27 +
->  drivers/net/ethernet/Kconfig                       |   1 +
->  drivers/net/ethernet/Makefile                      |   1 +
->  drivers/net/ethernet/allwinner/Kconfig             |  44 +
->  drivers/net/ethernet/allwinner/Makefile            |   6 +
->  drivers/net/ethernet/allwinner/sun4i-emac.c        | 960 +++++++++++++++++++++
->  drivers/net/ethernet/allwinner/sun4i-emac.h        | 108 +++
->  drivers/net/ethernet/allwinner/sun4i-mdio.c        | 191 ++++
->  12 files changed, 1442 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-emac.txt
->  create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-mdio.txt
->  create mode 100644 drivers/net/ethernet/allwinner/Kconfig
->  create mode 100644 drivers/net/ethernet/allwinner/Makefile
->  create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.c
->  create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.h
->  create mode 100644 drivers/net/ethernet/allwinner/sun4i-mdio.c
->
-> --
+> Adding in some debugfs entries to help with debugging and
+> testing code.
 
-I tested it successfully on cubieboard 1GB, on top of kernel 3.10-rc3,
-nfsroot (debian wheezy)
-I also added in sun4i-a10-cubieboard.dts
-phy0: ethernet-phy@0 {
- reg = <1>;
-},
-like Emilio suggested.
+> +++ linux-block/drivers/block/rsxx/core.c       2013-05-02 17:18:22.944239791 -0500
+> @@ -52,6 +54,191 @@ MODULE_PARM_DESC(force_legacy, "Force th
+>  static DEFINE_IDA(rsxx_disk_ida);
+>  static DEFINE_SPINLOCK(rsxx_ida_lock);
+>
+> +/* --------------------Debugfs Setup ------------------- */
+> +
+> +static struct dentry *rsxx_debugfs_root;
 
-running an iperf, there's some good perfs !
-iperf -s
-------------------------------------------------------------
-Server listening on TCP port 5001
-TCP window size: 85.3 KByte (default)
-------------------------------------------------------------
-[  4] local 192.168.1.10 port 5001 connected with 192.168.1.232 port 38169
-[ ID] Interval       Transfer     Bandwidth
-[  4]  0.0-10.0 sec   112 MBytes  94.1 Mbits/sec
+I didn't get if you use only one debugfs_root per instance? How do you
+distinguish two or more cards then?
 
-That's great ! with this patchset, we can now run a server with a
-vanilla kernel ( who needs more that a serial port and ethernet,
-really ? ;) )
+> +static void rsxx_debugfs_dev_new(struct rsxx_cardinfo *card)
+> +{
+> +       if (!rsxx_debugfs_root)
+> +               return;
 
-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+It seems you always call this after debugfs_init(). So, remove this
+check (keep in mind you have to check debugfs_init() return code - see
+below).
+
+> +static void rsxx_debugfs_dev_remove(struct rsxx_cardinfo *card)
+> +{
+> +}
+
+Useless function. See below.
+
+> +static void rsxx_debugfs_init(void)
+> +{
+> +       rsxx_debugfs_root = debugfs_create_dir(DRIVER_NAME, NULL);
+
+Same comment for DRIVER_NAME as for global variable debugfs_root above.
+
+> +       if (!rsxx_debugfs_root)
+> +               return;
+
+It should be checked for NULL and for ERR_PTR. Return error instead of void.
+
+> +static void rsxx_debugfs_destroy(void)
+> +{
+> +       if (!rsxx_debugfs_root)
+> +               return;
+
+Use debugfs_remove_recursive().
+It's also NULL-proof.
+
+> +       debugfs_remove(rsxx_debugfs_root);
+> +       rsxx_debugfs_root = NULL;
+
+If you will use this on card based, you  probably have to move this
+from global space to card space.
+
+> +++ linux-block/drivers/block/rsxx/rsxx_priv.h  2013-05-02 17:17:25.154498245 -0500
+> @@ -181,6 +181,11 @@ struct rsxx_cardinfo {
+>
+>         int                     n_targets;
+>         struct rsxx_dma_ctrl    *ctrl;
+> +
+> +       /* Debugfs Variables */
+> +       struct dentry           *debugfs_dir;
+> +       struct dentry           *debugfs_stats;
+> +       struct dentry           *debugfs_pci_regs;
+
+No need to keep those pointers since you may use debugfs_remove_recursive().
+
+--
+With Best Regards,
+Andy Shevchenko
