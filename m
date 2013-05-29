@@ -1,141 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965286Ab3E2Ixr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:53:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47908 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117Ab3E2Ixo (ORCPT
+	id S965267Ab3E2IzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:55:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39284 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965117Ab3E2IzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:53:44 -0400
-Message-ID: <51A5C1F3.2070605@ti.com>
-Date: Wed, 29 May 2013 10:53:07 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 04:55:14 -0400
+Date: Wed, 29 May 2013 09:54:27 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: Sricharan R <r.sricharan@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: map_init_section flushes incorrect pmd
+Message-ID: <20130529085426.GA13095@mudshark.cambridge.arm.com>
+References: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com>
+ <20130528130502.GA28971@mudshark.cambridge.arm.com>
+ <51A4B938.7080708@ti.com>
+ <20130528140705.GE28971@mudshark.cambridge.arm.com>
+ <51A4FC08.3060906@ti.com>
+ <CANutaR-2gTP7ubiEdgjFyzVMc6=4t5GPjLkH8pkup=O882Hb-Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ankur Kishore <a-kishore@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>
-Subject: Re: [PATCH v2 14/14] ARM: dts: AM43x: initial support
-References: <cover.1369658705.git.afzal@ti.com> <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com>
-In-Reply-To: <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANutaR-2gTP7ubiEdgjFyzVMc6=4t5GPjLkH8pkup=O882Hb-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Florian
+On Wed, May 29, 2013 at 03:14:58AM +0100, Po-Yu Chuang wrote:
+> Will,
+> I guess nobody noticed this because the MMU of later v7 processors
+> fetches page table
+> from D-cache. It even doesn't need to clean pmd to PoU.
 
-Hi Afzal,
+It does if it's UP. The walker is only guaranteed to read from L1 if you
+have the multiprocessing extensions.
 
-On 05/27/2013 04:37 PM, Afzal Mohammed wrote:
-> DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
-> represented here are the minimal DT nodes necessary to get kernel
-> booting.
-> 
-> In DT nodes, "ti,hwmod" property has not been added, this would be
-> added along with PRCM support for AM43x.
-> 
-> Signed-off-by: Ankur Kishore <a-kishore@ti.com>
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
-> 
-> v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
-> 
->  arch/arm/boot/dts/am4372.dtsi | 66 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 66 insertions(+)
->  create mode 100644 arch/arm/boot/dts/am4372.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-> new file mode 100644
-> index 0000000..1d58298
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/am4372.dtsi
-> @@ -0,0 +1,66 @@
-> +/*
-> + * Device Tree Source for AM4372 SoC
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + *
-> + * This file is licensed under the terms of the GNU General Public License
-> + * version 2.  This program is licensed "as is" without any warranty of any
-> + * kind, whether express or implied.
-> + */
-> +
-> +/include/ "skeleton.dtsi"
+As for this function, looks like it's ok because it has precisely one
+caller, so it might be worth prefixing it with some underscores to make it
+clear that nobody else should be calling it!
 
-You can now use the C preprocessor statement instead of this one.
-Florian already started doing the change [1].
-
-Beside that detail, that patch looks good to me.
-I'll pull it separately of the series.
-
-Regards,
-Benoit
-
-[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/98320
-
-> +
-> +/ {
-> +	compatible = "ti,am4372", "ti,am43";
-> +	interrupt-parent = <&gic>;
-> +
-> +
-> +	aliases {
-> +		serial0 = &uart1;
-> +	};
-> +
-> +	cpus {
-> +		cpu@0 {
-> +			compatible = "arm,cortex-a9";
-> +		};
-> +	};
-> +
-> +	gic: interrupt-controller@48241000 {
-> +		compatible = "arm,cortex-a9-gic";
-> +		interrupt-controller;
-> +		#interrupt-cells = <3>;
-> +		reg = <0x48241000 0x1000>,
-> +		      <0x48240100 0x0100>;
-> +	};
-> +
-> +	ocp {
-> +		compatible = "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +
-> +		uart1: serial@44e09000 {
-> +			compatible = "ti,am4372-uart","ti,omap2-uart";
-> +			reg = <0x44e09000 0x2000>;
-> +			interrupts = <0 72 0x4>;
-> +		};
-> +
-> +		timer1: timer@44e31000 {
-> +			compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
-> +			reg = <0x44e31000 0x400>;
-> +			interrupts = <0 67 0x4>;
-> +			ti,timer-alwon;
-> +		};
-> +
-> +		timer2: timer@48040000  {
-> +			compatible = "ti,am4372-timer","ti,am335x-timer";
-> +			reg = <0x48040000  0x400>;
-> +			interrupts = <0 68 0x4>;
-> +		};
-> +
-> +		counter32k: counter@44e86000 {
-> +			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
-> +			reg = <0x44e86000 0x40>;
-> +		};
-> +	};
-> +};
-> 
-
+Will
