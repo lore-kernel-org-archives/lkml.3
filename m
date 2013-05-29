@@ -1,73 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967099Ab3E2VKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:10:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21242 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967033Ab3E2VKO (ORCPT
+	id S967098Ab3E2VK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:10:56 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.208]:56040 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966998Ab3E2VKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:10:14 -0400
-Date: Thu, 30 May 2013 00:09:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        "open list:LED SUBSYSTEM" <linux-leds@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: [patch v2] leds: renesas-tpu: cleanup a small type issue
-Message-ID: <20130529210955.GJ23987@mwanda>
+	Wed, 29 May 2013 17:10:48 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-132.messagelabs.com!1369861844!11427302!3
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] pwm: add sysfs interface
+Date: Wed, 29 May 2013 14:08:06 -0700
+User-Agent: KMail/1.9.9
+CC: <thierry.reding@avionic-design.de>, <poeschel@lemonage.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-Jyb8xfyiy=iM_bLSF-uofQ9r8uNmuBryLVujKVJ-SALQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Message-ID: <201305291408.07000.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static checkers complain that, although this is declared as an
-unsigned long, we can only use the lower 32 bits.  For anything
-higher, we hit bugs widening then bitwise negate or wrapping bugs
-doing the left shift.
+Add a simple sysfs interface to the PWM framework.
 
->From looking at the context, this is not a problem because we only
-use 16 bits.  I've changed some types to make it more clear.
+  /sys/class/pwm/
+  `-- pwmchipN/          for each PWM chip
+      |-- export         (w/o) ask the kernel to export a PWM to userspace
+      |-- npwm           (r/o) number of PWM in pwmchipN
+      |-- pwmN/          for each exported PWM
+      |   |-- duty_ns    (r/w) duty cycle (in nanoseconds)
+      |   |-- enable     (r/w) enable/disable PWM
+      |   |-- period_ns  (r/w) period (in nanoseconds)
+      |   `-- polarity   (r/w) polarity of PWM
+      `-- unexport       (w/o) return a PWM to the kernel
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>
 ---
-v2: Changed unsigned short to u16.  Re-wrote the commit message.
+This is based on previous work by Lars Poeshel.
 
-diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
-index 9483f1c..adebf49 100644
---- a/drivers/leds/leds-renesas-tpu.c
-+++ b/drivers/leds/leds-renesas-tpu.c
-@@ -63,7 +63,7 @@ static DEFINE_SPINLOCK(r_tpu_lock);
- #define TGRC 8 /* Timer general register C (+0x20) */
- #define TGRD 9 /* Timer general register D (+0x24) */
+ drivers/pwm/Kconfig     |   6 +
+ drivers/pwm/Makefile    |   1 +
+ drivers/pwm/core.c      |  25 +++-
+ drivers/pwm/pwm-sysfs.c | 357 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pwm.h     |  28 ++++
+ 5 files changed, 415 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/pwm/pwm-sysfs.c
+
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 115b644..61a53b5 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -28,6 +28,12 @@ menuconfig PWM
  
--static inline unsigned short r_tpu_read(struct r_tpu_priv *p, int reg_nr)
-+static inline u16 r_tpu_read(struct r_tpu_priv *p, int reg_nr)
+ if PWM
+ 
++config PWM_SYSFS
++	bool "/sys/class/pwm/... (sysfs interface)"
++	depends on SYSFS
++	help
++	  Say Y here to provide a sysfs interface to control PWMs.
++
+ config PWM_AB8500
+ 	tristate "AB8500 PWM support"
+ 	depends on AB8500_CORE && ARCH_U8500
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 94ba21e..fb92e1d 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_PWM)		+= core.o
++obj-$(CONFIG_PWM_SYSFS)		+= pwm-sysfs.o
+ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index 32221cb..f67465c 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -274,6 +274,8 @@ int pwmchip_add(struct pwm_chip *chip)
+ 	if (IS_ENABLED(CONFIG_OF))
+ 		of_pwmchip_add(chip);
+ 
++	pwmchip_sysfs_export(chip);
++
+ out:
+ 	mutex_unlock(&pwm_lock);
+ 	return ret;
+@@ -310,6 +312,8 @@ int pwmchip_remove(struct pwm_chip *chip)
+ 
+ 	free_pwms(chip);
+ 
++	pwmchip_sysfs_unexport(chip);
++
+ out:
+ 	mutex_unlock(&pwm_lock);
+ 	return ret;
+@@ -402,10 +406,19 @@ EXPORT_SYMBOL_GPL(pwm_free);
+  */
+ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
  {
- 	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
- 	void __iomem *base = p->mapbase;
-@@ -75,8 +75,7 @@ static inline unsigned short r_tpu_read(struct r_tpu_priv *p, int reg_nr)
- 	return ioread16(base + offs);
++	int err;
++
+ 	if (!pwm || duty_ns < 0 || period_ns <= 0 || duty_ns > period_ns)
+ 		return -EINVAL;
+ 
+-	return pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
++	err = pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
++	if (err)
++		return err;
++
++	pwm->duty = duty_ns;
++	pwm->period = period_ns;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pwm_config);
+ 
+@@ -418,6 +431,8 @@ EXPORT_SYMBOL_GPL(pwm_config);
+  */
+ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
+ {
++	int err;
++
+ 	if (!pwm || !pwm->chip->ops)
+ 		return -EINVAL;
+ 
+@@ -427,7 +442,13 @@ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
+ 	if (test_bit(PWMF_ENABLED, &pwm->flags))
+ 		return -EBUSY;
+ 
+-	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
++	err = pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
++	if (err)
++		return err;
++
++	pwm->polarity = polarity;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pwm_set_polarity);
+ 
+diff --git a/drivers/pwm/pwm-sysfs.c b/drivers/pwm/pwm-sysfs.c
+new file mode 100644
+index 0000000..6a2bf76
+--- /dev/null
++++ b/drivers/pwm/pwm-sysfs.c
+@@ -0,0 +1,357 @@
++/*
++ * A simple sysfs interface for the generic PWM framework
++ *
++ * Copyright (C) 2013 H Hartley Sweeten <hsweeten@visionengravers.com>
++ *
++ * Based on previous work by Lars Poeschel <poeschel@lemonage.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/device.h>
++#include <linux/mutex.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/kdev_t.h>
++#include <linux/pwm.h>
++
++struct pwm_export {
++	struct device dev;
++	struct pwm_device *pwm;
++};
++
++static struct pwm_export *dev_to_pwm_export(struct device *dev)
++{
++	return container_of(dev, struct pwm_export, dev);
++}
++
++static struct pwm_device *dev_to_pwm_device(struct device *dev)
++{
++	struct pwm_export *pwm_export = dev_to_pwm_export(dev);
++
++	return pwm_export->pwm;
++}
++
++static ssize_t pwm_period_ns_show(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	const struct pwm_device *pwm = dev_to_pwm_device(dev);
++
++	return sprintf(buf, "%u\n", pwm->period);
++}
++
++static ssize_t pwm_period_ns_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_to_pwm_device(dev);
++	unsigned int val;
++	int ret;
++
++	ret = kstrtouint(buf, 0, &val);
++	if (ret)
++		return ret;
++
++	if (val <= pwm->duty)
++		return -EINVAL;
++
++	pwm->period = val;
++
++	if (test_bit(PWMF_ENABLED, &pwm->flags))
++		ret = pwm_config(pwm, pwm->duty, pwm->period);
++
++	return ret ? : size;
++}
++
++static ssize_t pwm_duty_ns_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	const struct pwm_device *pwm = dev_to_pwm_device(dev);
++
++	return sprintf(buf, "%u\n", pwm->duty);
++}
++
++static ssize_t pwm_duty_ns_store(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_to_pwm_device(dev);
++	unsigned int val;
++	int ret;
++
++	ret = kstrtouint(buf, 0, &val);
++	if (ret)
++		return ret;
++
++	if (val >= pwm->period)
++		return -EINVAL;
++
++	pwm->duty = val;
++
++	if (test_bit(PWMF_ENABLED, &pwm->flags))
++		ret = pwm_config(pwm, pwm->duty, pwm->period);
++
++	return ret ? : size;
++}
++
++static ssize_t pwm_enable_show(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
++{
++	const struct pwm_device *pwm = dev_to_pwm_device(dev);
++	int enabled = test_bit(PWMF_ENABLED, &pwm->flags);
++
++	return sprintf(buf, "%sabled\n", enabled ? "en" : "dis");
++}
++
++static ssize_t pwm_enable_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_to_pwm_device(dev);
++	int val;
++	int ret;
++
++	ret = kstrtoint(buf, 0, &val);
++	if (ret)
++		return ret;
++
++	if (val) {
++		ret = pwm_config(pwm, pwm->duty, pwm->period);
++		if (ret)
++			return ret;
++		ret = pwm_enable(pwm);
++	} else {
++		pwm_disable(pwm);
++	}
++
++	return ret ? : size;
++}
++
++static ssize_t pwm_polarity_show(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	const struct pwm_device *pwm = dev_to_pwm_device(dev);
++	int polarity = (pwm->polarity == PWM_POLARITY_NORMAL);
++
++	return sprintf(buf, "%s\n", polarity ? "normal" : "inversed");
++}
++
++static ssize_t pwm_polarity_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_to_pwm_device(dev);
++	enum pwm_polarity polarity;
++	int val;
++	int ret;
++
++	ret = kstrtoint(buf, 0, &val);
++	if (ret)
++		return ret;
++
++	switch (val) {
++	case 0:
++		polarity = PWM_POLARITY_NORMAL;
++		break;
++	case 1:
++		polarity = PWM_POLARITY_INVERSED;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = pwm_set_polarity(pwm, polarity);
++
++	return ret ? : size;
++}
++
++static DEVICE_ATTR(period_ns, 0644, pwm_period_ns_show, pwm_period_ns_store);
++static DEVICE_ATTR(duty_ns, 0644, pwm_duty_ns_show, pwm_duty_ns_store);
++static DEVICE_ATTR(enable, 0644, pwm_enable_show, pwm_enable_store);
++static DEVICE_ATTR(polarity, 0644, pwm_polarity_show, pwm_polarity_store);
++
++static struct attribute *pwm_attrs[] = {
++	&dev_attr_period_ns.attr,
++	&dev_attr_duty_ns.attr,
++	&dev_attr_enable.attr,
++	NULL
++};
++
++static struct attribute_group pwm_attr_group = {
++	.attrs		= pwm_attrs,
++};
++
++static void pwm_export_release(struct device *dev)
++{
++	struct pwm_export *pwm_export = dev_to_pwm_export(dev);
++
++	kfree(pwm_export);
++}
++
++static int pwm_export(struct device *dev, struct pwm_device *pwm)
++{
++	struct pwm_export *pwm_export;
++	struct kobject *kobj;
++	int ret;
++
++	if (test_and_set_bit(PWMF_EXPORTED, &pwm->flags))
++		return -EBUSY;
++
++	pwm_export = kzalloc(sizeof(*pwm_export), GFP_KERNEL);
++	if (!pwm_export)
++		return -ENOMEM;
++
++	pwm_export->pwm = pwm;
++
++	pwm_export->dev.release = pwm_export_release;
++	pwm_export->dev.parent = dev;
++	pwm_export->dev.devt = MKDEV(0, 0);
++	dev_set_name(&pwm_export->dev, "pwm%u", pwm->hwpwm);
++	ret = device_register(&pwm_export->dev);
++	if (ret)
++		return ret;
++
++	kobj = &pwm_export->dev.kobj;
++
++	ret = sysfs_create_group(kobj, &pwm_attr_group);
++	if (ret)
++		return ret;
++
++	if (pwm->chip->ops->set_polarity) {
++		ret = sysfs_create_file(kobj, &dev_attr_polarity.attr);
++		if (ret) {
++			sysfs_remove_group(kobj, &pwm_attr_group);
++		}
++	}
++
++	return ret;
++}
++
++static int pwm_unexport_match(struct device *dev, void *data)
++{
++	return dev_to_pwm_device(dev) == data;
++}
++
++static int pwm_unexport(struct device *dev, struct pwm_device *pwm)
++{
++	if (test_and_clear_bit(PWMF_EXPORTED, &pwm->flags)) {
++		struct device *export_dev;
++		struct pwm_export *pwm_export;
++		struct kobject *kobj;
++
++		export_dev = device_find_child(dev, pwm, pwm_unexport_match);
++		pwm_export = dev_to_pwm_export(export_dev);
++		kobj = &pwm_export->dev.kobj;
++
++		if (pwm->chip->ops->set_polarity)
++			sysfs_remove_file(kobj, &dev_attr_polarity.attr);
++
++		sysfs_remove_group(kobj, &pwm_attr_group);
++
++		put_device(&pwm_export->dev);
++		device_unregister(&pwm_export->dev);
++		pwm_put(pwm);
++	}
++	return 0;
++}
++
++static ssize_t pwm_export_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t len)
++{
++	struct pwm_chip *chip = dev_get_drvdata(dev);
++	struct pwm_device *pwm;
++	unsigned int hwpwm;
++	int ret;
++
++	ret = kstrtouint(buf, 0, &hwpwm);
++	if (ret < 0)
++		return ret;
++
++	if (hwpwm >= chip->npwm)
++		return -ENODEV;
++
++	pwm = pwm_request_from_chip(chip, hwpwm, "sysfs");
++	if (IS_ERR(pwm))
++		return PTR_ERR(pwm);
++
++	ret = pwm_export(dev, pwm);
++	if (ret < 0)
++		pwm_put(pwm);
++
++	return ret ? : len;
++}
++
++static ssize_t pwm_unexport_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t len)
++{
++	struct pwm_chip *chip = dev_get_drvdata(dev);
++	unsigned int hwpwm;
++	int ret;
++
++	ret = kstrtouint(buf, 0, &hwpwm);
++	if (ret < 0)
++		return ret;
++
++	if (hwpwm >= chip->npwm)
++		return -ENODEV;
++
++	ret = pwm_unexport(dev, &chip->pwms[hwpwm]);
++
++	return ret ? : len;
++}
++
++static ssize_t pwm_npwm_show(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	const struct pwm_chip *chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%u\n", chip->npwm);
++}
++
++static struct device_attribute pwm_chip_attrs[] = {
++	__ATTR(export, 0200, NULL, pwm_export_store),
++	__ATTR(unexport, 0200, NULL, pwm_unexport_store),
++	__ATTR(npwm, 0444, pwm_npwm_show, NULL),
++	__ATTR_NULL,
++};
++
++static struct class pwm_class = {
++	.name		= "pwm",
++	.owner		= THIS_MODULE,
++	.dev_attrs	= pwm_chip_attrs,
++};
++
++void pwmchip_sysfs_export(struct pwm_chip *chip)
++{
++	chip->dev = device_create(&pwm_class, chip->dev, MKDEV(0, 0), chip,
++				  "pwmchip%d", chip->base);
++}
++
++void pwmchip_sysfs_unexport(struct pwm_chip *chip)
++{
++	if (chip->dev) {
++		put_device(chip->dev);
++		device_unregister(chip->dev);
++	}
++}
++
++static int __init pwm_sysfs_init(void)
++{
++	return class_register(&pwm_class);
++}
++subsys_initcall(pwm_sysfs_init);
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index a4df204..e734ce6 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -76,6 +76,7 @@ enum pwm_polarity {
+ enum {
+ 	PWMF_REQUESTED = 1 << 0,
+ 	PWMF_ENABLED = 1 << 1,
++	PWMF_EXPORTED = 1 << 2,
+ };
+ 
+ struct pwm_device {
+@@ -86,7 +87,10 @@ struct pwm_device {
+ 	struct pwm_chip		*chip;
+ 	void			*chip_data;
+ 
++	struct device		*dev;	/* for sysfs export */
+ 	unsigned int		period; /* in nanoseconds */
++	unsigned int		duty;	/* in nanoseconds */
++	enum pwm_polarity 	polarity;
+ };
+ 
+ static inline void pwm_set_period(struct pwm_device *pwm, unsigned int period)
+@@ -100,6 +104,17 @@ static inline unsigned int pwm_get_period(struct pwm_device *pwm)
+ 	return pwm ? pwm->period : 0;
  }
  
--static inline void r_tpu_write(struct r_tpu_priv *p, int reg_nr,
--			       unsigned short value)
-+static inline void r_tpu_write(struct r_tpu_priv *p, int reg_nr, u16 value)
- {
- 	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
- 	void __iomem *base = p->mapbase;
-@@ -93,7 +92,8 @@ static inline void r_tpu_write(struct r_tpu_priv *p, int reg_nr,
- static void r_tpu_start_stop_ch(struct r_tpu_priv *p, int start)
- {
- 	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--	unsigned long flags, value;
-+	unsigned long flags;
-+	u16 value;
++static inline void pwm_set_duty_cycle(struct pwm_device *pwm, unsigned int duty)
++{
++	if (pwm)
++		pwm->duty = duty;
++}
++
++static inline unsigned int pwm_get_duty_cycle(struct pwm_device *pwm)
++{
++	return pwm ? pwm->duty : 0;
++}
++
+ /*
+  * pwm_set_polarity - configure the polarity of a PWM signal
+  */
+@@ -278,4 +293,17 @@ static inline void pwm_add_table(struct pwm_lookup *table, size_t num)
+ }
+ #endif
  
- 	/* start stop register shared by multiple timer channels */
- 	spin_lock_irqsave(&r_tpu_lock, flags);
++#ifdef CONFIG_PWM_SYSFS
++void pwmchip_sysfs_export(struct pwm_chip *chip);
++void pwmchip_sysfs_unexport(struct pwm_chip *chip);
++#else
++static inline void pwmchip_sysfs_export(struct pwm_chip *chip)
++{
++}
++
++static inline void pwmchip_sysfs_unexport(struct pwm_chip *chip)
++{
++}
++#endif /* CONFIG_PWM_SYSFS */
++
+ #endif /* __LINUX_PWM_H */
+-- 
+1.8.1.4
+
