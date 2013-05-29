@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966308Ab3E2OkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:40:05 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:47976 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966162Ab3E2OkD (ORCPT
+	id S966323Ab3E2OkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:40:22 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56701 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966104Ab3E2OkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:40:03 -0400
+	Wed, 29 May 2013 10:40:21 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Simon Horman <horms@verge.net.au>, Axel Lin <axel.lin@ingics.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call in tpu_remove()
+Date: Wed, 29 May 2013 16:39:51 +0200
+Message-ID: <3139245.zTJ3azFhlR@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <20130526091824.GA12361@avionic-0098.adnet.avionic-design.de>
+References: <1369057541.11578.1.camel@phoenix> <4528298.O99iVSpig9@avalon> <20130526091824.GA12361@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-	<20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-	<CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
-Date: Wed, 29 May 2013 17:40:02 +0300
-Message-ID: <CALuTh9EcKCgx3pktq7FXkojhDxKn580csJV-u3BBokhhY2SrSg@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
- socket polling
-From: yaniv saar <yaniv.mellanox@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="nextPart1868329.yMO35QUxc7"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eliezer,
 
-(If I'm too late then a future note...)
-Why make polling a system-wide configuration?
-Wouldn't it make more sense to implement a sock option?
-An even better solution might be aggregation/combination of both types
-of configurations.
+--nextPart1868329.yMO35QUxc7
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
--- Yaniv Sa'ar
+Hi Thierry,
 
+On Sunday 26 May 2013 11:18:24 Thierry Reding wrote:
+> On Sat, May 25, 2013 at 03:42:42PM +0200, Laurent Pinchart wrote:
+> > On Thursday 23 May 2013 21:12:17 Thierry Reding wrote:
+> > > On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
+> > > > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
+> > > > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
+> > > > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > > > > 
+> > > > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > > 
+> > > > Thanks. I have queued this up for v3.11 in the pinmux branch
+> > > > of my renesas tree on kernel.org.
+> > > 
+> > > I'd rather take this through the PWM tree along with the original driver
+> > > patch.
+> > 
+> > As I will need to submit a new version of the renesas-tpu patches should I
+> > fold this patch in ?
+> 
+> Yes, that's fine with me. It'd be nice to credit Axel, though.
 
-On Wed, May 29, 2013 at 5:14 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
-> On Wed, May 29, 2013 at 9:39 AM, Eliezer Tamir
-> <eliezer.tamir@linux.intel.com> wrote:
->> Adds a new ndo_ll_poll method and the code that supports and uses it.
->> This method can be used by low latency applications to busy poll Ethernet
->> device queues directly from the socket code. The value of sysctl_net_ll_poll
->> controls how many microseconds to poll. Set to zero to disable.
->
-> Unlike with TCP sockets, UDP sockets may receive packets from multiple
-> sources and hence the receiving context may be steered to be executed
-> on different cores through RSS or other Flow-Steering HW mechanisms
-> which could mean different napi contexts for the same socket, is that
-> a problem here? what's the severity?
->
-> Or.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sure. I'll add Axel's SoB line to the patch.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
+--nextPart1868329.yMO35QUxc7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQEcBAABAgAGBQJRphM9AAoJEIkPb2GL7hl1FyoH/iDam1oxOC4Q+vSOkoB1QN4u
+OkJJ92apZwXx7vULqYtdUEl70vA9/XA5ecFO/IPvgKFw7oByrbmo5zJKyeuLXfTS
+tAIHVx+u3z28tznMV04Q0affzklSq2cJFmZ0UUDcrUaMXsTKt/suk2KJTf2rHkWU
+y8zetsecc6X7MagCycs8Hgt/KNOk3g5daYUgV+BFd1C6cu2Vc3VLbSH6+01lTW3Z
+dVWXkWNLaZ5LCe3r2YziQ+Yhm9JhDRLU9VdFGdqbARzvbi/yHfmOY8v+N052y5Rb
+FCTBouOkJVAIpe2jGPfiW2lxL5Ge0RKJokDRIG8pSdpwcwVBUhQowKmpXViut14=
+=g0Oy
+-----END PGP SIGNATURE-----
+
+--nextPart1868329.yMO35QUxc7--
+
