@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966595Ab3E2Opw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:45:52 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:52867 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966482Ab3E2Opt (ORCPT
+	id S966314Ab3E2OrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:47:07 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33954 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966175Ab3E2OrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:45:49 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH, v2 10/13] mm/SH: prepare for killing free_all_bootmem_node()
-Date: Wed, 29 May 2013 22:44:49 +0800
-Message-Id: <1369838692-26860-11-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
-References: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 29 May 2013 10:47:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAB9dFdunPQo5a9bgwFvaZ4++4Zm1HEaQ8VEK7pmKuwc7+DTv6g@mail.gmail.com>
+References: <CAB9dFdunPQo5a9bgwFvaZ4++4Zm1HEaQ8VEK7pmKuwc7+DTv6g@mail.gmail.com>
+Date: Wed, 29 May 2013 10:47:00 -0400
+Message-ID: <CAB9dFdvjbQxE+G-ME044OcNcc5GRXMXzp+qiNXg5ehmL+RtfQA@mail.gmail.com>
+Subject: Re: Reboot problem with nouveau - bisected
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: Ben Skeggs <skeggsb@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for killing free_all_bootmem_node() by using
-free_all_bootmem().
+On Thu, Apr 18, 2013 at 2:14 PM, Marc Dionne <marc.c.dionne@gmail.com> wrote:
+> My machine has been getting stuck when rebooting during the current
+> 3.9 cycle, and yesterday I took the time to bisect the problem to this
+> commit:
+>
+> 32256c87ead3edec86bed5023a0ff96a6d907931:  drm/nouveau/fifo/nvc0:
+> improve interrupt handler somewhat
+>
+>     Logs extra info for interrupts that have a sub-status register, and
+>     handles the "special" ack from INTR bit 31.
+>
+>     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+>
+> The symptom when rebooting is that the console starts spitting out a
+> continuous stream of identical messages like this (transcribed by
+> hand):
+>
+>     nouveau W[   PFIFO][0000:03:00.0] INTR 0x01000000: 0x00000005
+>
+> The system is then unresponsive until it is reset.  Just commenting
+> out the corresponding nv_warn() in
+> drivers/gpu/drm/nouveau/core/engine/fifo/nvc0.c is enough to allow the
+> system to reboot normally.
+>
+> Video card in this system is (from lspci -v):
+>
+> 03:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce
+> GT 520] (rev a1) (prog-if 00 [VGA controller])
+>     Subsystem: Micro-Star International Co., Ltd. Device 2630
+>     Flags: bus master, fast devsel, latency 0, IRQ 16
+>     Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
+>     Memory at d8000000 (64-bit, prefetchable) [size=128M]
+>     Memory at d6000000 (64-bit, prefetchable) [size=32M]
+>     I/O ports at bc00 [size=128]
+>     Expansion ROM at fbb80000 [disabled] [size=512K]
+>     Capabilities: <access denied>
+>     Kernel driver in use: nouveau
+>
+> Marc
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-sh@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/sh/mm/init.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+Ping..
 
-diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
-index c9a517c..33890fd 100644
---- a/arch/sh/mm/init.c
-+++ b/arch/sh/mm/init.c
-@@ -412,19 +412,11 @@ void __init mem_init(void)
- 	iommu_init();
- 
- 	high_memory = NULL;
-+	for_each_online_pgdat(pgdat)
-+		high_memory = max_t(void *, high_memory,
-+				    __va(pgdat_end_pfn(pgdat) << PAGE_SHIFT));
- 
--	for_each_online_pgdat(pgdat) {
--		void *node_high_memory;
--
--		if (pgdat->node_spanned_pages)
--			free_all_bootmem_node(pgdat);
--
--		node_high_memory = (void *)__va((pgdat->node_start_pfn +
--						 pgdat->node_spanned_pages) <<
--						 PAGE_SHIFT);
--		if (node_high_memory > high_memory)
--			high_memory = node_high_memory;
--	}
-+	free_all_bootmem();
- 
- 	/* Set this up early, so we can take care of the zero page */
- 	cpu_cache_init();
--- 
-1.8.1.2
+Any ideas on this one?  This machine still needs a hard reset to
+reboot as of 3.10-rc3, with the same symptoms as described above.
 
+Thanks,
+Marc
