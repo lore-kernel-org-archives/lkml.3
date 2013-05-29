@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab3E2AHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:07:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10651 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab3E2AHL (ORCPT
+	id S932840Ab3E2ALo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:11:44 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38907 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab3E2ALm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:07:11 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-01-51a546ad8401
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Olof Johansson'" <olof@lixom.net>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Doug Anderson'" <dianders@chromium.org>,
-        "'Patch Tracking'" <patches@linaro.org>
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
- <CAOesGMjirb0h4kZ1hB9=1JnDV+azTEG=_6RR9v000xbMsvuv2Q@mail.gmail.com>
-In-reply-to: <CAOesGMjirb0h4kZ1hB9=1JnDV+azTEG=_6RR9v000xbMsvuv2Q@mail.gmail.com>
-Subject: RE: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-Date: Wed, 29 May 2013 09:07:09 +0900
-Message-id: <17ec01ce5c00$76384e40$62a8eac0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5b+nrEuZPvXurcThqaVC5vRqgd8wABahBA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zA921bksDDZaskbY4u+wgm8Wmx9dY
-	LS7vmsNmMeP8PiaLU9c/s1lMOfyFxaL97142B3aP2Q0XWTzuXNvD5rF5Sb3HlRNNrB6fN8kF
-	sEZx2aSk5mSWpRbp2yVwZUw4MoWxoIOtYtabNawNjHdYuhg5OCQETCTaP+h0MXICmWISF+6t
-	Z+ti5OIQEljGKPH2xQ5GiISJxP7vTUwQiUWMEjeuLWQGSQgJ/GWU6D3ACmKzCWhIHH7/jB3E
-	FhEIllg+uYcFpIFZYC+jxOLHL1ghuvsZJQ6ufQ7WwQlU9ejEarAVwgL+ElsvdzGB2CwCqhLf
-	904Am8QrYCtx7PoRJghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yQ7yjLvHory7EEUYShxqe
-	skKUiEjse/GOEeQGCYGP7BKz+++wQOwSkPg2+RA0KGQlNh1ghvhYUuLgihssExglZiHZPAvJ
-	5llINs9CsmIBI8sqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjJDonbCD8d4B60OMyUDrJzJL
-	iSbnA6M/ryTe0NjMyMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTByc
-	Ug2MbhFmxXJSO9xXctfJKSz83jo9Ys98ZzUFW1fpKRcSPvw4ebtjxqblZ9oD5CO/eMxgEGPv
-	cVzp1+Cyt26Py47vvB4iWTtrmQ9+bZn8OHLLrDd+U2bWteYlVluobv3KbmLQcna/qSLj7Dd/
-	bl65btr58oj9jP+LmNJOCqiwP3m8JeXP46mbEi9xKbEUZyQaajEXFScCAFgtl3L0AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd21bksDDS70ilucXXaQzWLT42us
-	Fpd3zWGzmHF+H5PFqeuf2SymHP7CYtH+dy+bA7vH7IaLLB53ru1h89i8pN7jyokmVo/Pm+QC
-	WKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5Q
-	UihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZMODKFsaCDrWLWmzWsDYx3
-	WLoYOTkkBEwk9n9vYoKwxSQu3FvP1sXIxSEksIhR4sa1hcwgCSGBv4wSvQdYQWw2AQ2Jw++f
-	sYPYIgLBEssn97CANDAL7GWUWPz4BStEdz+jxMG1z8E6OIGqHp1YzQhiCwv4S2y93AW2jkVA
-	VeL73glgk3gFbCWOXT/CBGELSvyYfA/sPGYBLYn1O48zQdjyEpvXvAW6iAPoVHWJR391IY4w
-	kjjU8JQVokREYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66
-	XnJ+7iZGcHJ4JrWDcWWDxSFGAQ5GJR5ehl9LAoVYE8uKK3MPMUpwMCuJ8KYKLg0U4k1JrKxK
-	LcqPLyrNSS0+xJgM9OhEZinR5Hxg4soriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6Yklq
-	dmpqQWoRzBYmDk6pBkZetXWV2941WJ1aJPy2fNN+z3plhUSeKJst5bcKnZQ7g63/Lf/F9Dv9
-	ggLjlTzxG9lzDooEHjeSCc89Z23seqZp0tn7bidFHjU+Llqzaq2QkF7D1elS/0OfW1533fWN
-	PTuX7Zjtvc+1h7wXNexe4e3qcuGp9LeVPrOf+8izJQhE6Xt7PH8cOlGJpTgj0VCLuag4EQCt
-	EfuVUgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 28 May 2013 20:11:42 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Christopher Sacchi <christophersacchi@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: Definition for loglevel in KERN_OOPS
+In-Reply-To: Your message of "Tue, 28 May 2013 20:00:45 -0400."
+             <CABQQNFGaS9rKaWto75fVQ5Ru+XKU2hgBRBjnV8G6WGf_TeMt9g@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CABQQNFGaS9rKaWto75fVQ5Ru+XKU2hgBRBjnV8G6WGf_TeMt9g@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1369786271_1846P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 28 May 2013 20:11:11 -0400
+Message-ID: <4136.1369786271@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.51A5479F.0100,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson wrote:
-> 
-> Hi,
-> 
-> On Thu, May 9, 2013 at 11:49 PM, Tushar Behera <tushar.behera@linaro.org>
-> wrote:
-> > It updates following drivers for EXYNOS based DT platform.
-> >
-> > * S5M8767 driver
-> > * MAX8997 driver
-> > * MMC SDHCI driver
-> >
-> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> 
-> I didn't see any movement from Kukjin on this, so I have (tentatively)
-> applied this together with my base defconfig update to the fixes
-> branch of arm-soc. I'll take it out in case he protests, but it's very
-> useful since the simplefb driver has landed in 3.10-rc3.
-> 
-I'm fine on this, so please go ahead with my ack if you want,
+--==_Exmh_1369786271_1846P
+Content-Type: text/plain; charset=us-ascii
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+On Tue, 28 May 2013 20:00:45 -0400, Christopher Sacchi said:
+>  This patch is for linux-3.10-rc2 and adds the definition for
+> KERN_OOPS (it can be used for whenever kernel oops occur) in
+> <linux/kern_loglevel.h> for <linux/printk.h>. It is below the
+> double-dashes.
 
-Thanks for your gentle reminder :-)
+OK, I'll bite.
 
-- Kukjin
+1) Where in the kernel will this actually get used?
+
+2) Are there any matching patches for userspace tools like syslog
+to make it useful?
+
+3) Was it intenional that you added this:
+
++#define KERN_OOPS         KERN_SOH "2"          /* kernel oops condition */
+instead of
++#define KERN_OOPS         KERN_CRIT
+
+4) How does a syslog daemon distringuish between KERN_CRIT and KERN_OOPS?
+
+In other words - why do we need this patch?
+
+--==_Exmh_1369786271_1846P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUaVHnwdmEQWDXROgAQJubA/+POlYPXaRokBUEkjIo+VE4XFHQ5W8wQtb
+LZhkLkzuatdeGeryl1xXe2C3na8Ih6OoQmtAqrEk5LNAHpRs/fajJDchVwb2nqur
+he3LWnZUhD3dwvUYL06idIiMxvTaQHS6EMQeWIuVvcUQ20xnRk115buy9NCFnp7s
+/vrfQMS7NyY3J6fv70e2qKLWlUBzCRr/OvtfP+FiDXXU9pUPpDtEBdJ5XmEgXdRk
+TvLYHanQWJaIx6YXVZxJ/yZxuBpniQOa67D7AXX1P8TlYi9U0GiyM8erKWTu++GW
+QiBkz0rcMjvyUImQOq48E0jaEYSkCk3t95bybGsBq/xV6plH8p9UtU19vrGIO+PM
+q1CeH9MZqcMsBpE6YkQFysgV+/a5wbMkNqDipBd4ELsT4Hb0UcO5YEP3T8HD8CZz
+/6y4WbxPkmeJtbMdxQe6RjEXYtHOHHrhrcueoBAkNWjbgFe9PiH9EfMGbZFn3tqb
+3Xio0JerWtEiompyDAtrVBCs/o/AuimdGMvCkdVjvjbzpHeLUNkXeWGEsizHlE/N
+Dm7L09SeDekfVh4UNfz9uavC12+PEWa4n/W8NqOwtoCQRgefZtZ0of8UvVr+BjdJ
+iSDM5g+DLT5nZYkCOA4Y+xAcB7/bFYnzRByCdpRJE1dxTKNqd+S/u3gaSKCBnhsW
+eCQSm5z2wOs=
+=rO9+
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1369786271_1846P--
 
