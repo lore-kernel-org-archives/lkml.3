@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab3E2DDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:03:30 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60925 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241Ab3E2DD2 (ORCPT
+	id S1759479Ab3E2DJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:09:10 -0400
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:19789
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756241Ab3E2DJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:03:28 -0400
-Message-ID: <51A56FF7.2000907@linux.vnet.ibm.com>
-Date: Wed, 29 May 2013 11:03:19 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 28 May 2013 23:09:09 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 May 2013 23:09:09 EDT
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 29 May 2013 10:54:30 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Jingchang Lu <b35083@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <john.stultz@linaro.org>, <tglx@linutronix.de>,
+        <daniel.lezcano@linaro.org>, <s.hauer@pengutronix.de>
+Subject: Re: [PATCH v5] clocksource: add Freescale Vybrid pit timer support
+Message-ID: <20130529025428.GE370@S2101-09.ap.freescale.net>
+References: <1369732899-17142-1-git-send-email-b35083@freescale.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
- pages
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130528003611.GA1958@amt.cnet> <51A4CAED.7060608@linux.vnet.ibm.com>
-In-Reply-To: <51A4CAED.7060608@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052902-1618-0000-0000-000003F98108
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1369732899-17142-1-git-send-email-b35083@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 11:19 PM, Xiao Guangrong wrote:
-> On 05/28/2013 08:36 AM, Marcelo Tosatti wrote:
->> On Thu, May 23, 2013 at 03:55:59AM +0800, Xiao Guangrong wrote:
->>> kvm_zap_obsolete_pages uses lock-break technique to zap pages,
->>> it will flush tlb every time when it does lock-break
->>>
->>> We can reload mmu on all vcpus after updating the generation
->>> number so that the obsolete pages are not used on any vcpus,
->>> after that we do not need to flush tlb when obsolete pages
->>> are zapped
->>
->> After that point batching is also not relevant anymore?
+On Tue, May 28, 2013 at 05:21:39PM +0800, Jingchang Lu wrote:
+> Add Freescale Vybrid Family period interrupt timer support.
 > 
-> no... without batching, we do not know how much time we will
-> spend to zap pages. It is not good for the case that
-> zap_all_pages is called in the vcpu context.
-> 
->>
->>
->> Still concerned about a similar case mentioned earlier:
->>
->> "
->> Note the account for pages freed step after pages are actually
->> freed: as discussed with Takuya, having pages freed and freed page
->> accounting out of sync across mmu_lock is potentially problematic:
->> kvm->arch.n_used_mmu_pages and friends do not reflect reality which can
->> cause problems for SLAB freeing and page allocation throttling.
->> "
->>
->> This is a real problem, if you decrease n_used_mmu_pages at
->> kvm_mmu_prepare_zap_page, but only actually free pages later 
->> at kvm_mmu_commit_zap_page, there is the possibility of allowing
->> a huge number to be retained. There should be a maximum number of pages
->> at invalid_list.
->>
->> (even higher possibility if you schedule without freeing pages reported
->> as released!).
->>
->>> Note: kvm_mmu_commit_zap_page is still needed before free
->>> the pages since other vcpus may be doing locklessly shadow
->>> page walking
-> 
-> Ah, yes, i agree with you.
-> 
-> We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
-> zapped-page, the page-shrink will free the page on that list first.
-> 
-> Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
-> let them merged first, and do add some comments and tlb optimization later?
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
 
-Exclude patch 11 please, since it depends on the "collapse" optimization.
-
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
