@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965746Ab3E2LDB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:01 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45473 "EHLO relay.sw.ru"
+	id S965762Ab3E2LDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:03:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4770 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965626Ab3E2LC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:02:59 -0400
+	id S965728Ab3E2LDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:03:07 -0400
 From: Glauber Costa <glommer@openvz.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
         Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>
-Subject: [PATCH v7 00/11] per-cgroup cpu-stat
-Date: Wed, 29 May 2013 15:03:11 +0400
-Message-Id: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
+        Glauber Costa <glommer@openvz.org>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v7 01/11] don't call cpuacct_charge in stop_task.c
+Date: Wed, 29 May 2013 15:03:12 +0400
+Message-Id: <1369825402-31046-2-git-send-email-glommer@openvz.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter et. al,
+Commit 8f618968 changed stop_task to do the same bookkeping as the
+other classes. However, the call to cpuacct_charge() doesn't affect
+the scheduler decisions at all, and doesn't need to be moved over.
 
-I am coming again with this series, hoping this is a better time for you all to
-look at it.
+Moreover, being a kthread, the migration thread won't belong to any
+cgroup anyway, rendering this call quite useless.
 
-I am *not* going as far as marking cpuacct deprecated, because I think it
-deserves a special discussion (even though my position in this matter is widely
-known), but all the infrastructure to make it happen is here. But after this,
-it should be a matter of setting a flag (or not).
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+CC: Mike Galbraith <mgalbraith@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/stop_task.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Through this patchset I am making cpu cgroup provide the same functionality of
-cpuacct, and now with a more clear semantics, I attempt to provide userspace
-with enough information to reconstruct per-container version of files like
-"/proc/stat". In particular, we are interested in knowing the per-cgroup slices
-of user time, system time, wait time, number of processes, and a variety of
-statistics.
-
-To make sure we can count nr of switches correctly, I am ressurecting one of
-Peter's patches that apparently got nowhere in the past.
-
-Glauber Costa (8):
-  don't call cpuacct_charge in stop_task.c
-  sched: adjust exec_clock to use it as cpu usage metric
-  cpuacct: don't actually do anything.
-  sched: document the cpu cgroup.
-  sched: account guest time per-cgroup as well.
-  sched: record per-cgroup number of context switches
-  sched: change nr_context_switches calculation.
-  sched: introduce cgroup file stat_percpu
-
-Peter Zijlstra (1):
-  sched: Push put_prev_task() into pick_next_task()
-
-Tejun Heo (2):
-  cgroup: implement CFTYPE_NO_PREFIX
-  cgroup, sched: let cpu serve the same files as cpuacct
-
- Documentation/cgroups/cpu.txt |  99 +++++++++++
- include/linux/cgroup.h        |   1 +
- kernel/cgroup.c               |  16 +-
- kernel/sched/core.c           | 385 ++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/cputime.c        |  33 +++-
- kernel/sched/fair.c           |  39 ++++-
- kernel/sched/idle_task.c      |   9 +-
- kernel/sched/rt.c             |  42 +++--
- kernel/sched/sched.h          |  35 +++-
- kernel/sched/stop_task.c      |   8 +-
- 10 files changed, 626 insertions(+), 41 deletions(-)
- create mode 100644 Documentation/cgroups/cpu.txt
-
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index e08fbee..4142d7e 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -68,7 +68,6 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+ 	curr->se.exec_start = rq_clock_task(rq);
+-	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
 -- 
 1.8.1.4
 
