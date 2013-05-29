@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967055Ab3E2VJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:09:12 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42253 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967065Ab3E2VJA (ORCPT
+	id S967066Ab3E2VKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:10:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20188 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966985Ab3E2VJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:09:00 -0400
-Date: Wed, 29 May 2013 16:08:20 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 3/4] zswap: add to mm/
-Message-ID: <20130529210820.GF428@cerebellum>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
- <20130529145720.GA428@cerebellum>
- <20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
- <20130529195027.GC428@cerebellum>
- <20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052921-3620-0000-0000-000002C70DA2
+	Wed, 29 May 2013 17:09:56 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2] x86: Fix adjust_range_size_mask calling position
+Date: Wed, 29 May 2013 14:09:29 -0700
+Message-Id: <1369861769-30687-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <CAE9FiQXr4S0P5P5JdegRyozSX4OCJ6+6MMybmAaMPCzfqe6yWg@mail.gmail.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:57:47PM -0700, Andrew Morton wrote:
-> On Wed, 29 May 2013 14:50:27 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-> 
-> > On Wed, May 29, 2013 at 11:29:29AM -0700, Andrew Morton wrote:
-> > > On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > > > +/*********************************
-> > > > > > +* helpers
-> > > > > > +**********************************/
-> > > > > > +static inline bool zswap_is_full(void)
-> > > > > > +{
-> > > > > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
-> > > > > > +		zswap_pool_pages);
-> > > > > > +}
-> > > > > 
-> > > > > We have had issues in the past where percentage-based tunables were too
-> > > > > coarse on very large machines.  For example, a terabyte machine where 0
-> > > > > bytes is too small and 10GB is too large.
-> > > > 
-> > > > Yes, this is known limitation of the code right now and it is a high priority
-> > > > to come up with something better.  It isn't clear what dynamic sizing policy
-> > > > should be used so, until such time as that policy can be determined, this is a
-> > > > simple stop-gap that works well enough for simple setups.
-> > > 
-> > > It's a module parameter and hence is part of the userspace interface. 
-> > > It's undesirable that the interface be changed, and it would be rather
-> > > dumb to merge it as-is when we *know* that it will be changed.
-> > > 
-> > > I don't think we can remove the parameter altogether (or can we?), so I
-> > > suggest we finalise it ASAP.  Perhaps rename it to
-> > > zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
-> > 
-> > zswap_max_pool_ratio is fine with me.  I'm not entirely clear on the change
-> > though.  Would that just be a name change or a change in meaning?
-> 
-> It would be a change in behaviour.  The problem which I'm suggesting we
-> address is that a 1% increment is too coarse.
+Commit 8d57470d cause a kernel panic while setting mem=2G.
+     [mem 0x00000000-0x000fffff] page 4k
+     [mem 0x7fe00000-0x7fffffff] page 1G
+     [mem 0x7c000000-0x7fdfffff] page 1G
+     [mem 0x00100000-0x001fffff] page 4k
+     [mem 0x00200000-0x7bffffff] page 2M
 
-Sorry, but I'm not getting this.  This zswap_max_pool_ratio is a ratio of what
-to what?  Maybe if you wrote out the calculation of the max pool size using
-this ratio I'll get it.
+for last entry is not what we want, we should have
+     [mem 0x00200000-0x3fffffff] page 2M
+     [mem 0x40000000-0x7bffffff] page 1G
 
-Seth
+Actually we merge the continuous ranges with same page size too early.
+in this case, before merging we have
+     [mem 0x00200000-0x3fffffff] page 2M
+     [mem 0x40000000-0x7bffffff] page 2M
+after merging them, will get
+     [mem 0x00200000-0x7bffffff] page 2M
+even we can use 1G page to map
+     [mem 0x40000000-0x7bffffff]
 
+that will cause problem, because we already map
+     [mem 0x7fe00000-0x7fffffff] page 1G
+     [mem 0x7c000000-0x7fdfffff] page 1G
+with 1G page.
+
+Fix that by calling adjust_range_size_mask before merging range
+with same page size.
+
+We need this one for v3.9 stable.
+
+-v2: update change log.
+
+Bisected-by: "Xie, ChanglongX" <changlongx.xie@intel.com>
+Bisected-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Reported-and-tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/mm/init.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -277,6 +277,9 @@ static int __meminit split_mem_range(str
+ 	end_pfn = limit_pfn;
+ 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 
++	if (!after_bootmem)
++		adjust_range_page_size_mask(mr, nr_range);
++
+ 	/* try to merge same page size and continuous */
+ 	for (i = 0; nr_range > 1 && i < nr_range - 1; i++) {
+ 		unsigned long old_start;
+@@ -291,9 +294,6 @@ static int __meminit split_mem_range(str
+ 		nr_range--;
+ 	}
+ 
+-	if (!after_bootmem)
+-		adjust_range_page_size_mask(mr, nr_range);
+-
+ 	for (i = 0; i < nr_range; i++)
+ 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
+ 				mr[i].start, mr[i].end - 1,
