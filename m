@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967105Ab3E2Wqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:46:55 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:40873 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966329Ab3E2Wqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:46:47 -0400
-Date: Wed, 29 May 2013 17:46:45 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
-	info to runtime code
-Message-ID: <20130529224645.GA16582@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130522162747.GA20816@sgi.com> <20130523115801.GJ14575@console-pimps.org> <20130523203234.GD20913@sgi.com> <20130524074331.GL14575@console-pimps.org> <20130529210115.GC28027@sgi.com> <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
+	id S967118Ab3E2Wsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:48:50 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59327 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab3E2Wsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 18:48:39 -0400
+Date: Wed, 29 May 2013 17:19:17 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Waiman Long <waiman.long@hp.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529211917.GB6658@logfs.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+ <20130529184640.GA3243@fieldses.org>
+ <20130529203700.GM6123@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130529203700.GM6123@two.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 12:22:13AM +0200, Jiri Kosina wrote:
-> On Wed, 29 May 2013, Russ Anderson wrote:
+On Wed, 29 May 2013 22:37:00 +0200, Andi Kleen wrote:
 > 
-> > > What appears to be happening is that your the EFI runtime services code
-> > > is calling into the EFI boot services code, which is definitely a bug in
-> > > your firmware because we're at runtime, but we've seen other machines
-> > > that do similar things so we usually handle it just fine. However, what
-> > > makes your case different, and the reason you see the above splat, is
-> > > that it's using the physical address of the EFI boot services region,
-> > > not the virtual one we setup with SetVirtualAddressMap(). Which is a
-> > > second firmware bug. Again, we have seen other machines that access
-> > > physical addresses after SetVirtualAddressMap(), but until now we
-> > > haven't had any non-optional code that triggered them.
-> > > 
-> > > The only reason I can see that the offending commit would introduce this
-> > > problem is because it calls QueryVariableInfo() at boot time. I notice
-> > > that your machine is an SGI UV one, is there any chance you could get a
-> > > firmware fix for this? If possible, it would be also good to confirm
-> > > that it's this chunk of code in setup_efi_vars(),
-> > > 
-> > > 	status = efi_call_phys4(sys_table->runtime->query_variable_info,
-> > > 				EFI_VARIABLE_NON_VOLATILE |
-> > > 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> > > 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
-> > > 				&remaining_size, &var_size);
-> > 
-> > This does trigger the problem.  Note that the definition of
-> > QueryVariableInfo() in the UEFI spec says:
-> > 
-> >   The returned MaximumVariableStorageSize, RemainingVariableStorageSize,
-> >   MaximumVariableSize information may change immediately after the call
-> >   based on other runtime activities including asynchronous error events.
-> >   Also, these values associated with different attributes are not
-> >   additive in nature.
-> > 
-> > Note the values may be accurate at the point in time when returned,
-> > but may not be after that.
-> > 
-> >   After the system has transitioned into runtime (after
-> >   ExitBootServices() is called), an implementation may not be able to
-> >   accurately return information about the Boot Services variable store.
-> >   In such cases, EFI_INVALID_PARAMETER should be returned.
-> > 
-> > It is not clear to me exactly when ExitBootServices() is called.
-> > Our bios is returning a failing indication on the call.
+> > As Dave said before, is the last path component sufficient?  Or how
+> > about an inode number?
 > 
-> Yes, but this call is clearly happening way before ExitBootServices() -- 
-> see the surrounding code, see for example this in efi_main():
-> 
-> [ ... snip ... ]
-> 	setup_efi_vars(boot_params);
-> 
-> 	setup_efi_pci(boot_params);
-> 
-> 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-> 				EFI_LOADER_DATA, sizeof(*gdt),
-> 				(void **)&gdt);
-> 	if (status != EFI_SUCCESS) {
-> 		efi_printk("Failed to alloc mem for gdt structure\n");
-> 		goto fail;
-> 	}
-> [ ... snip ... ]
+> Neither works, the profiler needs to find the file and read it.
 
-Yes.  Note the failing call is sys_table->runtime while all the
-other calls are sys_table->boottime and seem to work.  Not sure
-why the sys_table->runtime call has a problem but it may be
-a clue.  Could something in the runtime path not be set up???
+Ignoring all the complexity this would cause downstream, you could do
+the path lookup just once, attach some cookie to it and return the
+cookie ever-after.  Maybe some combination of i_sb and i_ino would be
+good enough as a cookie.
 
-> We are calling QueryVariableInfo() in setup_efi_vars(), and later on 
-> AllocatePool is being called (through boot table).
+Jörn
 
-On my system the QueryVariableInfo() call fails, so AllocatePool()
-is not called in setup_efi_vars().
-
->                                                    That'd inherently fail 
-> if we were calling it after ExitBootServices() has happened, but I believe 
-> that call is succeeding on your affected system as well.
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+--
+Data dominates. If you've chosen the right data structures and organized
+things well, the algorithms will almost always be self-evident. Data
+structures, not algorithms, are central to programming.
+-- Rob Pike
