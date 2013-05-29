@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966506Ab3E2T45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:56:57 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45295 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab3E2T4u (ORCPT
+	id S966540Ab3E2T54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:57:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50005 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934455Ab3E2T5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:56:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYjph7swctH0VUJTnEX3O2EKEhX3_HcZz0JvK9L+NKhdA@mail.gmail.com>
-References: <1369793454-19197-1-git-send-email-grant.likely@linaro.org>
- <1369793454-19197-4-git-send-email-grant.likely@linaro.org> <CACRpkdYjph7swctH0VUJTnEX3O2EKEhX3_HcZz0JvK9L+NKhdA@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 29 May 2013 20:56:29 +0100
-X-Google-Sender-Auth: UxvwtgGLJsyIt0EwZkg-6kSr2N4
-Message-ID: <CACxGe6vP0F+E_UwULykPLyurO_uDQMVQhShR5VXJ7k0FynuTDw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] irqchip: Make versatile fpga irq driver a generic chip
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 May 2013 15:57:50 -0400
+Date: Wed, 29 May 2013 12:57:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 3/4] zswap: add to mm/
+Message-Id: <20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
+In-Reply-To: <20130529195027.GC428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	<20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
+	<20130529145720.GA428@cerebellum>
+	<20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
+	<20130529195027.GC428@cerebellum>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 6:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, May 29, 2013 at 4:10 AM, Grant Likely <grant.likely@linaro.org> wrote:
->
->> This is an RFC patch to convert the versatile FPGA irq controller driver
->> to use generic irq chip. It builds on the series that extends the
->> generic chip code to allow a linear irq domain to contain one or more
->> generic irq chips so that each interrupt controller doesn't need to hand
->> code the generic chip setup.
->>
->> I've written this as a proof of concept to see if the new generic irq
->> code does what it needs to. I had to extend it slightly to properly
->> handle the valid mask used by the versatile FPGA driver.
->>
->> Tested on QEMU, but not on real hardware.
->
->
-> Hm, I could test this but what is the needed baseline? I think
-> I need Thomas' patches underneath right?
->
-> Could you publish a branch that I can test?
+On Wed, 29 May 2013 14:50:27 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-Try this one:
+> On Wed, May 29, 2013 at 11:29:29AM -0700, Andrew Morton wrote:
+> > On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> > 
+> > > > > +/*********************************
+> > > > > +* helpers
+> > > > > +**********************************/
+> > > > > +static inline bool zswap_is_full(void)
+> > > > > +{
+> > > > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
+> > > > > +		zswap_pool_pages);
+> > > > > +}
+> > > > 
+> > > > We have had issues in the past where percentage-based tunables were too
+> > > > coarse on very large machines.  For example, a terabyte machine where 0
+> > > > bytes is too small and 10GB is too large.
+> > > 
+> > > Yes, this is known limitation of the code right now and it is a high priority
+> > > to come up with something better.  It isn't clear what dynamic sizing policy
+> > > should be used so, until such time as that policy can be determined, this is a
+> > > simple stop-gap that works well enough for simple setups.
+> > 
+> > It's a module parameter and hence is part of the userspace interface. 
+> > It's undesirable that the interface be changed, and it would be rather
+> > dumb to merge it as-is when we *know* that it will be changed.
+> > 
+> > I don't think we can remove the parameter altogether (or can we?), so I
+> > suggest we finalise it ASAP.  Perhaps rename it to
+> > zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
+> 
+> zswap_max_pool_ratio is fine with me.  I'm not entirely clear on the change
+> though.  Would that just be a name change or a change in meaning?
 
-git://git.secretlab.ca/git/linux irqdomain/generic-chip
+It would be a change in behaviour.  The problem which I'm suggesting we
+address is that a 1% increment is too coarse.
 
-g.
+> Also, we can keep the tunable as I imagine there will always be some use for a
+> manual override of the (future) dynamic policy.  When the dynamic policy is
+> available, we can just say that zswap_max_pool_ratio = 0 means "use dynamic
+> policy" and change the default to 0.  Does that sounds reasonable?
+
+Sounds OK.
+
