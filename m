@@ -1,61 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966628Ab3E2OGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:06:44 -0400
-Received: from antcom.de ([188.40.178.216]:57014 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966252Ab3E2OGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:06:42 -0400
-Message-ID: <51A60B6D.3060402@antcom.de>
-Date: Wed, 29 May 2013 16:06:37 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        kishon@ti.com, arnd@arndb.de, adrienverge@gmail.com,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] USB: lpc32xx: USB_LPC32XX need not depend on USB_PHY
-References: <1369827811-534-1-git-send-email-rogerq@ti.com> <1369827811-534-5-git-send-email-rogerq@ti.com>
-In-Reply-To: <1369827811-534-5-git-send-email-rogerq@ti.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S966543Ab3E2OHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:07:13 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:58084 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966466Ab3E2N73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 09:59:29 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH v6, part4 22/41] mm/IA64: prepare for removing num_physpages and simplify mem_init()
+Date: Wed, 29 May 2013 21:57:40 +0800
+Message-Id: <1369835879-23553-23-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
+References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 01:43 PM, Roger Quadros wrote:
-> As the USB PHY drivers no longer depend on USB_PHY but
-> select it if needed, the controller drivers need not
-> depend on USB_PHY. They can safely select the necessary
-> PHY driver i.e. USB_ISP1301 in this case.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+Prepare for removing num_physpages and simplify mem_init().
 
-Acked-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/ia64/mm/contig.c    | 11 -----------
+ arch/ia64/mm/discontig.c |  3 ---
+ arch/ia64/mm/init.c      | 27 +--------------------------
+ 3 files changed, 1 insertion(+), 40 deletions(-)
 
-Thanks!
-
-> CC: Roland Stigge <stigge@antcom.de>
-> ---
->  drivers/usb/gadget/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index f41aa0d..2b98bce 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -144,7 +144,6 @@ config USB_AT91
->  config USB_LPC32XX
->  	tristate "LPC32XX USB Peripheral Controller"
->  	depends on ARCH_LPC32XX
-> -	depends on USB_PHY
->  	select USB_ISP1301
->  	help
->  	   This option selects the USB device controller in the LPC32xx SoC.
+diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
+index 955fd25..b975c8b 100644
+--- a/arch/ia64/mm/contig.c
++++ b/arch/ia64/mm/contig.c
+@@ -295,14 +295,6 @@ find_memory (void)
+ 	alloc_per_cpu_data();
+ }
+ 
+-static int count_pages(u64 start, u64 end, void *arg)
+-{
+-	unsigned long *count = arg;
+-
+-	*count += (end - start) >> PAGE_SHIFT;
+-	return 0;
+-}
+-
+ /*
+  * Set up the page tables.
+  */
+@@ -313,9 +305,6 @@ paging_init (void)
+ 	unsigned long max_dma;
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 
+-	num_physpages = 0;
+-	efi_memmap_walk(count_pages, &num_physpages);
+-
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+ #ifdef CONFIG_ZONE_DMA
+ 	max_dma = virt_to_phys((void *) MAX_DMA_ADDRESS) >> PAGE_SHIFT;
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+index 254ae8e..3aef17c 100644
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -37,7 +37,6 @@ struct early_node_data {
+ 	struct ia64_node_data *node_data;
+ 	unsigned long pernode_addr;
+ 	unsigned long pernode_size;
+-	unsigned long num_physpages;
+ #ifdef CONFIG_ZONE_DMA
+ 	unsigned long num_dma_physpages;
+ #endif
+@@ -732,7 +731,6 @@ static __init int count_node_pages(unsigned long start, unsigned long len, int n
+ {
+ 	unsigned long end = start + len;
+ 
+-	mem_data[node].num_physpages += len >> PAGE_SHIFT;
+ #ifdef CONFIG_ZONE_DMA
+ 	if (start <= __pa(MAX_DMA_ADDRESS))
+ 		mem_data[node].num_dma_physpages +=
+@@ -778,7 +776,6 @@ void __init paging_init(void)
+ #endif
+ 
+ 	for_each_online_node(node) {
+-		num_physpages += mem_data[node].num_physpages;
+ 		pfn_offset = mem_data[node].min_pfn;
+ 
+ #ifdef CONFIG_VIRTUAL_MEM_MAP
+diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+index d141f7e..2d372b4 100644
+--- a/arch/ia64/mm/init.c
++++ b/arch/ia64/mm/init.c
+@@ -545,19 +545,6 @@ int __init register_active_ranges(u64 start, u64 len, int nid)
+ 	return 0;
+ }
+ 
+-static int __init
+-count_reserved_pages(u64 start, u64 end, void *arg)
+-{
+-	unsigned long num_reserved = 0;
+-	unsigned long *count = arg;
+-
+-	for (; start < end; start += PAGE_SIZE)
+-		if (PageReserved(virt_to_page(start)))
+-			++num_reserved;
+-	*count += num_reserved;
+-	return 0;
+-}
+-
+ int
+ find_max_min_low_pfn (u64 start, u64 end, void *arg)
+ {
+@@ -596,7 +583,6 @@ __setup("nolwsys", nolwsys_setup);
+ void __init
+ mem_init (void)
+ {
+-	long reserved_pages, codesize, datasize, initsize;
+ 	pg_data_t *pgdat;
+ 	int i;
+ 
+@@ -624,18 +610,7 @@ mem_init (void)
+ 		if (pgdat->bdata->node_bootmem_map)
+ 			free_all_bootmem_node(pgdat);
+ 
+-	reserved_pages = 0;
+-	efi_memmap_walk(count_reserved_pages, &reserved_pages);
+-
+-	codesize =  (unsigned long) _etext - (unsigned long) _stext;
+-	datasize =  (unsigned long) _edata - (unsigned long) _etext;
+-	initsize =  (unsigned long) __init_end - (unsigned long) __init_begin;
+-
+-	printk(KERN_INFO "Memory: %luk/%luk available (%luk code, %luk reserved, "
+-	       "%luk data, %luk init)\n", nr_free_pages() << (PAGE_SHIFT - 10),
+-	       num_physpages << (PAGE_SHIFT - 10), codesize >> 10,
+-	       reserved_pages << (PAGE_SHIFT - 10), datasize >> 10, initsize >> 10);
+-
++	mem_init_print_info(NULL);
+ 
+ 	/*
+ 	 * For fsyscall entrpoints with no light-weight handler, use the ordinary
+-- 
+1.8.1.2
 
