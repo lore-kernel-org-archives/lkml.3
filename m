@@ -1,64 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965345Ab3E2SPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:15:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46705 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964985Ab3E2SPs (ORCPT
+	id S965483Ab3E2SQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:16:17 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:49821 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964985Ab3E2SQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:15:48 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 14:15:48 EDT
-Message-ID: <51A64453.5040005@codeaurora.org>
-Date: Wed, 29 May 2013 14:09:23 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 29 May 2013 14:16:11 -0400
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: xen-devel@lists.xensource.com, linux@arm.linux.org.uk,
-        Ian.Campbell@citrix.com, arnd@arndb.de, marc.zyngier@arm.com,
-        konrad.wilk@oracle.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, nico@linaro.org, olof@lixom.net,
+In-Reply-To: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 29 May 2013 20:15:49 +0200
+Message-ID: <CACQ1gAgp6o8HqQcv=4cWoAZze3wtXHMX+g+7KvV-pnC2W5=iyg@mail.gmail.com>
+Subject: Re: [PATCHv3 RESEND 0/6] ARM: sunxi: Add support for A10 Ethernet controller
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: davem@davemloft.net, Emilio Lopez <emilio@elopez.com.ar>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
+        Florian Fainelli <florian@openwrt.org>,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 3/4] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
- and pv_time_ops
-References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com> <1369763672-12919-3-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1369763672-12919-3-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
+2013/5/24 Maxime Ripard <maxime.ripard@free-electrons.com>:
+> Hi,
+>
+> The Allwinner A10 SoC has an ethernet controller that seem to be specific to
+> Allwinner. This IP has no public documentation, so exact
+> details are quite sparse, and this code come from refactored Allwinner
+> code.
+>
+> The rework to use NAPI is taking more time than expected, I'm still working
+> on it, but it could probably be sent as a follow-up patch.
+>
+> Thanks,
+> Maxime
+>
+> Changes from v2:
+>   - Split the MDIO controller to a separate driver and make use of standards
+>     device tree bindings
+>   - Fixed various minor things as suggested by Florian Fainelli
+>   - Added clock support now that we have a clock driver
+>
+> Changes from v1:
+>   - Use phylib for the phy-related functions
+>   - Use an optional regulator to power up the phy
+>   - Rename the driver from Davicom Wemac to Allwinner EMAC, since it's the name
+>     mentionned in the datasheet, and we have no strong evidence of a
+>     relationship with Davicom
+>   - Fix various small things around the driver: add defines for undocumented
+>     values, fix documentation name and compatible example, etc.
+>
+> Maxime Ripard (4):
+>   net: Add MDIO bus driver for the Allwinner EMAC
+>   ARM: sun4i: Add muxing options for the ethernet controller
+>   ARM: sunxi: Add EMAC controller node to sun4i DTSI
+>   ARM: sunxi: Add EMAC Controller to Hackberry dt
+>
+> Stefan Roese (2):
+>   net: Add EMAC ethernet driver found on Allwinner A10 SoC's
+>   ARM: cubieboard: Enable ethernet (EMAC) support in dts
+>
+>  .../bindings/net/allwinner,sun4i-emac.txt          |  22 +
+>  .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +
+>  arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |  15 +
+>  arch/arm/boot/dts/sun4i-a10-hackberry.dts          |  41 +
+>  arch/arm/boot/dts/sun4i-a10.dtsi                   |  27 +
+>  drivers/net/ethernet/Kconfig                       |   1 +
+>  drivers/net/ethernet/Makefile                      |   1 +
+>  drivers/net/ethernet/allwinner/Kconfig             |  44 +
+>  drivers/net/ethernet/allwinner/Makefile            |   6 +
+>  drivers/net/ethernet/allwinner/sun4i-emac.c        | 960 +++++++++++++++++++++
+>  drivers/net/ethernet/allwinner/sun4i-emac.h        | 108 +++
+>  drivers/net/ethernet/allwinner/sun4i-mdio.c        | 191 ++++
+>  12 files changed, 1442 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-emac.txt
+>  create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-mdio.txt
+>  create mode 100644 drivers/net/ethernet/allwinner/Kconfig
+>  create mode 100644 drivers/net/ethernet/allwinner/Makefile
+>  create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.c
+>  create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.h
+>  create mode 100644 drivers/net/ethernet/allwinner/sun4i-mdio.c
+>
+> --
 
-On 05/28/2013 01:54 PM, Stefano Stabellini wrote:
-> Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
-> 
-> The only paravirt interface supported is pv_time_ops.steal_clock, so no
-> runtime pvops patching needed.
-> 
-> This allows us to make use of steal_account_process_tick for stolen
-> ticks accounting.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: linux@arm.linux.org.uk
-> CC: will.deacon@arm.com
-> CC: nico@linaro.org
-> CC: marc.zyngier@arm.com
-> CC: cov@codeaurora.org
-> CC: arnd@arndb.de
-> CC: olof@lixom.net
-> 
-> Changes in v3:
-> - improve commit description and Kconfig help text;
-> - no need to initialize pv_time_ops;
-> - add PARAVIRT_TIME_ACCOUNTING.
+I tested it successfully on cubieboard 1GB, on top of kernel 3.10-rc3,
+nfsroot (debian wheezy)
+I also added in sun4i-a10-cubieboard.dts
+phy0: ethernet-phy@0 {
+ reg = <1>;
+},
+like Emilio suggested.
 
-Looks good to me.
+running an iperf, there's some good perfs !
+iperf -s
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size: 85.3 KByte (default)
+------------------------------------------------------------
+[  4] local 192.168.1.10 port 5001 connected with 192.168.1.232 port 38169
+[ ID] Interval       Transfer     Bandwidth
+[  4]  0.0-10.0 sec   112 MBytes  94.1 Mbits/sec
 
-Acked-by: Christopher Covington <cov@codeaurora.org>
+That's great ! with this patchset, we can now run a server with a
+vanilla kernel ( who needs more that a serial port and ethernet,
+really ? ;) )
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
