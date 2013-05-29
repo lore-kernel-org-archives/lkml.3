@@ -1,117 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964889Ab3E2Hel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:34:41 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:46873 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935084Ab3E2Hej (ORCPT
+	id S964969Ab3E2Hfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:35:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44258 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935099Ab3E2Hft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:34:39 -0400
+	Wed, 29 May 2013 03:35:49 -0400
+From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/1] i2c: omap: correct usage of the interrupt enable register
+Date: Wed, 29 May 2013 10:35:43 +0300
+Message-ID: <1369812944-685-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+X-Mailer: git-send-email 1.8.2.rc2
 MIME-Version: 1.0
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
-Date: Wed, 29 May 2013 09:34:38 +0200
-Message-ID: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
-Subject: Re: A bug about system call on ARM
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Interrupts from i2c controller are enabled while i2c bus is in the
+suspend mode (I2C_IE register doesn't equals to 0).
 
-On Wed, May 29, 2013 at 8:52 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
-> Hi  all,
->
-> I am a new comer to this mailing list ,
-> I am happy to join this community .
->
-> I have a bug reported from our android phones which is caused by  the system call .
-> It seems like kernel bugs from my view .
+Starting from the OMAP chips with version2 registers scheme there
+are 2 registers (I2C_IRQENABLE_SET and I2C_IRQENABLE_CLR) to manage
+interrupts instead of the older OMAP chips old scheme which have
+only one register (I2C_IE). Now for enabling interrupts we must
+use I2C_IRQENABLE_SET register and for disabling interrupts we must
+use I2C_IRQENABLE_CLR register.
 
-Is this a unmodified Linux kernel from kernel.org? In other works, no
-(half broken) board support package
-from your hardware vendor?
-Did you try a more recent kernel? (At least 3.4.47).
-Maybe your problem is already known and fixed...
+Next patch fixes it.
 
-> Crash in  file  arch\arm\kernel\ entry-common.S
->
-> /***************************************************************/
->
-> ENTRY(vector_swi)
->         sub     sp, sp, #S_FRAME_SIZE
->         stmia   sp, {r0 - r12}                  @ Calling r0 - r12
->  ARM(   add     r8, sp, #S_PC           )
->  ARM(   stmdb   r8, {sp, lr}^           )       @ Calling sp, lr
->  THUMB( mov     r8, sp                  )
->  THUMB( store_user_sp_lr r8, r10, S_SP  )       @ calling sp, lr
->         mrs     r8, spsr                        @ called from non-FIQ mode, so ok.
->         str     lr, [sp, #S_PC]                 @ Save calling PC
->         str     r8, [sp, #S_PSR]                @ Save CPSR
->         str     r0, [sp, #S_OLD_R0]             @ Save OLD_R0
->         zero_fp
->
->         /*
->          * Get the system call number.
->          */
->
-> #if defined(CONFIG_OABI_COMPAT)
->
->         /*
->          * If we have CONFIG_OABI_COMPAT then we need to look at the swi
->          * value to determine if it is an EABI or an old ABI call.
->          */
-> #ifdef CONFIG_ARM_THUMB
->         tst     r8, #PSR_T_BIT
->         movne   r10, #0                         @ no thumb OABI emulation
->         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
-> #else
->         ldr     r10, [lr, #-4]                  @ get SWI instruction
->   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
->   A710( teq     ip, #0x0f000000                                         )
->   A710( bne     .Larm710bug                                             )
-> #endif
-> #ifdef CONFIG_CPU_ENDIAN_BE8
->         rev     r10, r10                        @ little endian instruction
-> #endif
->
-> /***************************************************************************************************/
->
-> Then reason why it will crash when get SWI instruction is maybe
-> This page is clear to aged by kernel,
-> But this MMU fault happpened in kernel,
-> So the kernel do_page_fault function will not clear this page to young,
-> So that  will crash .
->
-> It should poll this page to make it present or the fault should be handled by fixup section ,
-> Anyway, this place should not crash by kernel .
->
-> The kernel version I used  is  3.4.0
-> I have add the kernel log and the call stack recovered  by trace32 tools
-> Pls have a look at it .
->
->
-> Thanks .
->
->
->
-> Sony Mobile Communications
-> Tel: +86 10 5966 9819
-> Phone: 18610323092
-> Address: No.16 Guangshun South Street, Chaoyang, Beijing, P.R.C.
->
-> sonymobile.com
->
->
->
+Patch is based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+tag: v3.10-rc2
 
+Verified on OMAP4430.
 
+Oleksandr Dmytryshyn (1):
+  i2c: omap: correct usage of the interrupt enable register
 
---
-Thanks,
-//richard
+ drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+-- 
+1.8.2.rc2
+
