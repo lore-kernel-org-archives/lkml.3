@@ -1,361 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935754Ab3E2P5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:57:05 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17765 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934551Ab3E2P42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:56:28 -0400
-Date: Wed, 29 May 2013 11:55:44 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
-        will.deacon@arm.com, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v4 1/4] xen: move xen_setup_runstate_info and
- get_runstate_snapshot to drivers/xen/time.c
-Message-ID: <20130529155544.GG23775@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com>
- <1369763672-12919-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130528181515.GB27718@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
+	id S935212Ab3E2P6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:58:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35481 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934551Ab3E2P57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:57:59 -0400
+Date: Wed, 29 May 2013 17:57:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
+ zone shrinking code
+Message-ID: <20130529155756.GH10224@dhcp22.suse.cz>
+References: <20130517160247.GA10023@cmpxchg.org>
+ <1369674791-13861-1-git-send-email-mhocko@suse.cz>
+ <20130529130538.GD10224@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
+In-Reply-To: <20130529130538.GD10224@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:03:26PM +0100, Stefano Stabellini wrote:
-> On Tue, 28 May 2013, Konrad Rzeszutek Wilk wrote:
-> > On Tue, May 28, 2013 at 06:54:29PM +0100, Stefano Stabellini wrote:
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > > CC: konrad.wilk@oracle.com
-> > > 
-> > > Changes in v2:
-> > > - leave do_stolen_accounting in arch/x86/xen/time.c;
-> > > - use the new common functions in arch/ia64/xen/time.c.
-> > 
-> > So you also modify the function.
+On Wed 29-05-13 15:05:38, Michal Hocko wrote:
+> On Mon 27-05-13 19:13:08, Michal Hocko wrote:
+> [...]
+> > Nevertheless I have encountered an issue while testing the huge number
+> > of groups scenario. And the issue is not limitted to only to this
+> > scenario unfortunately. As memcg iterators use per node-zone-priority
+> > cache to prevent from over reclaim it might quite easily happen that
+> > the walk will not visit all groups and will terminate the loop either
+> > prematurely or skip some groups. An example could be the direct reclaim
+> > racing with kswapd. This might cause that the loop misses over limit
+> > groups so no pages are scanned and so we will fall back to all groups
+> > reclaim.
 > 
-> do_stolen_accounting? Just enought to call the new common function
-> xen_get_runstate_snapshot instead of the old x86 specific
-> get_runstate_snapshot.
-> 
-> 
-> > > ---
-> > >  arch/ia64/xen/time.c  |   48 +++----------------------
-> > >  arch/x86/xen/time.c   |   76 +----------------------------------------
-> > >  drivers/xen/Makefile  |    2 +-
-> > >  drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  include/xen/xen-ops.h |    5 +++
-> > >  5 files changed, 104 insertions(+), 118 deletions(-)
-> > >  create mode 100644 drivers/xen/time.c
-> > > 
-> > > diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
-> > > index 1f8244a..79a0b8c 100644
-> > > --- a/arch/ia64/xen/time.c
-> > > +++ b/arch/ia64/xen/time.c
-> > > @@ -34,53 +34,17 @@
-> > >  
-> > >  #include "../kernel/fsyscall_gtod_data.h"
-> > >  
-> > > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> > >  static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
-> > >  static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
-> > >  
-> > >  /* taken from i386/kernel/time-xen.c */
-> > >  static void xen_init_missing_ticks_accounting(int cpu)
-> > >  {
-> > > -	struct vcpu_register_runstate_memory_area area;
-> > > -	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
-> > > -	int rc;
-> > > +	xen_setup_runstate_info(&runstate);
-> > >  
-> > > -	memset(runstate, 0, sizeof(*runstate));
-> > > -
-> > > -	area.addr.v = runstate;
-> > > -	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
-> > > -				&area);
-> > > -	WARN_ON(rc && rc != -ENOSYS);
-> > > -
-> > > -	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
-> > > -	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
-> > > -					    + runstate->time[RUNSTATE_offline];
-> > > -}
-> > > -
-> > > -/*
-> > > - * Runstate accounting
-> > > - */
-> > > -/* stolen from arch/x86/xen/time.c */
-> > > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > > -{
-> > > -	u64 state_time;
-> > > -	struct vcpu_runstate_info *state;
-> > > -
-> > > -	BUG_ON(preemptible());
-> > > -
-> > > -	state = &__get_cpu_var(xen_runstate);
-> > > -
-> > > -	/*
-> > > -	 * The runstate info is always updated by the hypervisor on
-> > > -	 * the current CPU, so there's no need to use anything
-> > > -	 * stronger than a compiler barrier when fetching it.
-> > > -	 */
-> > > -	do {
-> > > -		state_time = state->state_entry_time;
-> > > -		rmb();
-> > > -		*res = *state;
-> > > -		rmb();
-> > > -	} while (state->state_entry_time != state_time);
-> > > +	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
-> > > +	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
-> > > +					    + runstate.time[RUNSTATE_offline];
-> > >  }
-> > >  
-> > >  #define NS_PER_TICK (1000000000LL/HZ)
-> > > @@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
-> > >  	struct vcpu_runstate_info runstate;
-> > >  	struct task_struct *p = current;
-> > >  
-> > > -	get_runstate_snapshot(&runstate);
-> > > +	xen_get_runstate_snapshot(&runstate);
-> > >  
-> > >  	/*
-> > >  	 * Check for vcpu migration effect
-> > > @@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
-> > >  	 */
-> > >  	now = ia64_native_sched_clock();
-> > >  
-> > > -	get_runstate_snapshot(&runstate);
-> > > +	xen_get_runstate_snapshot(&runstate);
-> > >  
-> > >  	WARN_ON(runstate.state != RUNSTATE_running);
-> > >  
-> > > diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-> > > index 3d88bfd..c0ca15e 100644
-> > > --- a/arch/x86/xen/time.c
-> > > +++ b/arch/x86/xen/time.c
-> > > @@ -30,9 +30,6 @@
-> > >  #define TIMER_SLOP	100000
-> > >  #define NS_PER_TICK	(1000000000LL / HZ)
-> > >  
-> > > -/* runstate info updated by Xen */
-> > > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> > > -
-> > >  /* snapshots of runstate info */
-> > >  static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
-> > >  
-> > > @@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
-> > >  static DEFINE_PER_CPU(u64, xen_residual_stolen);
-> > >  static DEFINE_PER_CPU(u64, xen_residual_blocked);
-> > >  
-> > > -/* return an consistent snapshot of 64-bit time/counter value */
-> > > -static u64 get64(const u64 *p)
-> > > -{
-> > > -	u64 ret;
-> > > -
-> > > -	if (BITS_PER_LONG < 64) {
-> > > -		u32 *p32 = (u32 *)p;
-> > > -		u32 h, l;
-> > > -
-> > > -		/*
-> > > -		 * Read high then low, and then make sure high is
-> > > -		 * still the same; this will only loop if low wraps
-> > > -		 * and carries into high.
-> > > -		 * XXX some clean way to make this endian-proof?
-> > > -		 */
-> > > -		do {
-> > > -			h = p32[1];
-> > > -			barrier();
-> > > -			l = p32[0];
-> > > -			barrier();
-> > > -		} while (p32[1] != h);
-> > > -
-> > > -		ret = (((u64)h) << 32) | l;
-> > > -	} else
-> > > -		ret = *p;
-> > > -
-> > > -	return ret;
-> > > -}
-> > > -
-> > > -/*
-> > > - * Runstate accounting
-> > > - */
-> > > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > > -{
-> > > -	u64 state_time;
-> > > -	struct vcpu_runstate_info *state;
-> > > -
-> > > -	BUG_ON(preemptible());
-> > > -
-> > > -	state = &__get_cpu_var(xen_runstate);
-> > > -
-> > > -	/*
-> > > -	 * The runstate info is always updated by the hypervisor on
-> > > -	 * the current CPU, so there's no need to use anything
-> > > -	 * stronger than a compiler barrier when fetching it.
-> > > -	 */
-> > > -	do {
-> > > -		state_time = get64(&state->state_entry_time);
-> > > -		barrier();
-> > > -		*res = *state;
-> > > -		barrier();
-> > > -	} while (get64(&state->state_entry_time) != state_time);
-> > > -}
-> > > -
-> > > -/* return true when a vcpu could run but has no real cpu to run on */
-> > > -bool xen_vcpu_stolen(int vcpu)
-> > > -{
-> > > -	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
-> > > -}
-> > > -
-> > > -void xen_setup_runstate_info(int cpu)
-> > > -{
-> > > -	struct vcpu_register_runstate_memory_area area;
-> > > -
-> > > -	area.addr.v = &per_cpu(xen_runstate, cpu);
-> > > -
-> > > -	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
-> > > -			       cpu, &area))
-> > > -		BUG();
-> > > -}
-> > > -
-> > >  static void do_stolen_accounting(void)
-> > >  {
-> > >  	struct vcpu_runstate_info state;
-> > > @@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
-> > >  	s64 blocked, runnable, offline, stolen;
-> > >  	cputime_t ticks;
-> > >  
-> > > -	get_runstate_snapshot(&state);
-> > > +	xen_get_runstate_snapshot(&state);
-> > >  
-> > >  	WARN_ON(state.state != RUNSTATE_running);
-> > >  
-> > > diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> > > index eabd0ee..2bf461a 100644
-> > > --- a/drivers/xen/Makefile
-> > > +++ b/drivers/xen/Makefile
-> > > @@ -3,7 +3,7 @@ obj-y	+= manage.o
-> > >  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-> > >  endif
-> > >  obj-$(CONFIG_X86)			+= fallback.o
-> > > -obj-y	+= grant-table.o features.o events.o balloon.o
-> > > +obj-y	+= grant-table.o features.o events.o balloon.o time.o
-> > >  obj-y	+= xenbus/
-> > >  
-> > >  nostackp := $(call cc-option, -fno-stack-protector)
-> > > diff --git a/drivers/xen/time.c b/drivers/xen/time.c
-> > > new file mode 100644
-> > > index 0000000..c2e39d3
-> > > --- /dev/null
-> > > +++ b/drivers/xen/time.c
-> > > @@ -0,0 +1,91 @@
-> > > +/*
-> > > + * Xen stolen ticks accounting.
-> > > + */
-> > > +#include <linux/kernel.h>
-> > > +#include <linux/kernel_stat.h>
-> > > +#include <linux/math64.h>
-> > > +#include <linux/gfp.h>
-> > > +
-> > > +#include <asm/xen/hypervisor.h>
-> > > +#include <asm/xen/hypercall.h>
-> > > +
-> > > +#include <xen/events.h>
-> > > +#include <xen/features.h>
-> > > +#include <xen/interface/xen.h>
-> > > +#include <xen/interface/vcpu.h>
-> > > +#include <xen/xen-ops.h>
-> > > +
-> > > +/* runstate info updated by Xen */
-> > > +static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> > > +
-> > > +/* return an consistent snapshot of 64-bit time/counter value */
-> > > +static u64 get64(const u64 *p)
-> > > +{
-> > > +	u64 ret;
-> > > +
-> > > +	if (BITS_PER_LONG < 64) {
-> > > +		u32 *p32 = (u32 *)p;
-> > > +		u32 h, l;
-> > > +
-> > > +		/*
-> > > +		 * Read high then low, and then make sure high is
-> > > +		 * still the same; this will only loop if low wraps
-> > > +		 * and carries into high.
-> > > +		 * XXX some clean way to make this endian-proof?
-> > > +		 */
-> > > +		do {
-> > > +			h = p32[1];
-> > > +			barrier();
-> > > +			l = p32[0];
-> > > +			barrier();
-> > > +		} while (p32[1] != h);
-> > > +
-> > > +		ret = (((u64)h) << 32) | l;
-> > > +	} else
-> > > +		ret = *p;
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +
-> > > +/*
-> > > + * Runstate accounting
-> > > + */
-> > > +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > > +{
-> > > +	u64 state_time;
-> > > +	struct vcpu_runstate_info *state;
-> > > +
-> > > +	BUG_ON(preemptible());
-> > > +
-> > > +	state = &__get_cpu_var(xen_runstate);
-> > > +
-> > > +	/*
-> > > +	 * The runstate info is always updated by the hypervisor on
-> > > +	 * the current CPU, so there's no need to use anything
-> > > +	 * stronger than a compiler barrier when fetching it.
-> > > +	 */
-> > > +	do {
-> > > +		state_time = get64(&state->state_entry_time);
-> > > +		barrier();
-> > > +		*res = *state;
-> > > +		barrier();
-> > > +	} while (get64(&state->state_entry_time) != state_time);
-> > > +}
-> > > +
-> > > +/* return true when a vcpu could run but has no real cpu to run on */
-> > > +bool xen_vcpu_stolen(int vcpu)
-> > > +{
-> > > +	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
-> > > +}
-> > > +
-> > > +void xen_setup_runstate_info(int cpu)
-> > > +{
-> > > +	struct vcpu_register_runstate_memory_area area;
-> > > +
-> > > +	area.addr.v = &per_cpu(xen_runstate, cpu);
-> > > +
-> > > +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
-> > > +			       cpu, &area))
-> > > +		BUG();
-> > 
-> > The original code did:
-> > 
-> > -       rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
-> > -                               &area);
-> > -       WARN_ON(rc && rc != -ENOSYS);
-> > -
-> > Any reason not to do this?
-> 
-> The original x86 code just BUGs out: I took that version over the ia64
-> version.
+> And after some more testing and head scratching it turned out that
+> fallbacks to pass#2 I was seeing are caused by something else. It is
+> not race between iterators but rather reclaiming from zone DMA which
+> has troubles to scan anything despite there are pages on LRU and so we
+> fall back. I have to look into that more but what-ever the issue is it
+> shouldn't be related to the patch series.
 
-Ah, I see it now. OK, then this looks good to me.
+Think I know what is going on. get_scan_count sees relatively small
+amount of pages in the lists (around 2k). This means that get_scan_count
+will tell us to scan nothing for DEF_PRIORITY (as the DMA32 is usually
+~16M) then the DEF_PRIORITY is basically no-op and we have to wait and
+fall down to a priority which actually let us scan something.
+
+Hmm, maybe ignoring soft reclaim for DMA zone would help to reduce
+one pointless loop over groups.
+-- 
+Michal Hocko
+SUSE Labs
