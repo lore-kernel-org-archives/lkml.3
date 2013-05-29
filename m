@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab3E2GW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 02:22:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33786 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756378Ab3E2GW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 02:22:26 -0400
-Date: Wed, 29 May 2013 09:22:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sage Weil <sage@inktank.com>
-Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [patch] ceph: tidy ceph_mdsmap_decode() a little
-Message-ID: <20130529062213.GF23932@mwanda>
+	id S1759525Ab3E2Gj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 02:39:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18872 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745Ab3E2Gj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 02:39:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,763,1363158000"; 
+   d="scan'208";a="344926089"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v6 net-next 0/5] net: low latency Ethernet device polling
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 29 May 2013 09:39:16 +0300
+Message-ID: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I introduced a new temporary variable "info" instead of
-"m->m_info[mds]".  Also I reversed the if condition and pulled
-everything in one indent level.
+One more round of fixes.
+Thank you all for your input.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-This goes on top of Emil Goode's patch.
+-Eliezer
 
-diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
-index d4d3897..132b64e 100644
---- a/fs/ceph/mdsmap.c
-+++ b/fs/ceph/mdsmap.c
-@@ -92,6 +92,7 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
- 		u32 num_export_targets;
- 		void *pexport_targets = NULL;
- 		struct ceph_timespec laggy_since;
-+		struct ceph_mds_info *info;
- 
- 		ceph_decode_need(p, end, sizeof(u64)*2 + 1 + sizeof(u32), bad);
- 		global_id = ceph_decode_64(p);
-@@ -126,26 +127,27 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
- 		     i+1, n, global_id, mds, inc,
- 		     ceph_pr_addr(&addr.in_addr),
- 		     ceph_mds_state_name(state));
--		if (mds >= 0 && mds < m->m_max_mds && state > 0) {
--			m->m_info[mds].global_id = global_id;
--			m->m_info[mds].state = state;
--			m->m_info[mds].addr = addr;
--			m->m_info[mds].laggy =
--				(laggy_since.tv_sec != 0 ||
--				 laggy_since.tv_nsec != 0);
--			m->m_info[mds].num_export_targets = num_export_targets;
--			if (num_export_targets) {
--				m->m_info[mds].export_targets =
--					kcalloc(num_export_targets, sizeof(u32),
--						GFP_NOFS);
--				if (m->m_info[mds].export_targets == NULL)
--					goto badmem;
--				for (j = 0; j < num_export_targets; j++)
--					m->m_info[mds].export_targets[j] =
--					       ceph_decode_32(&pexport_targets);
--			} else {
--				m->m_info[mds].export_targets = NULL;
--			}
-+
-+		if (mds < 0 || mds >= m->m_max_mds || state <= 0)
-+			continue;
-+
-+		info = &m->m_info[mds];
-+		info->global_id = global_id;
-+		info->state = state;
-+		info->addr = addr;
-+		info->laggy = (laggy_since.tv_sec != 0 ||
-+			       laggy_since.tv_nsec != 0);
-+		info->num_export_targets = num_export_targets;
-+		if (num_export_targets) {
-+			info->export_targets = kcalloc(num_export_targets,
-+						       sizeof(u32), GFP_NOFS);
-+			if (info->export_targets == NULL)
-+				goto badmem;
-+			for (j = 0; j < num_export_targets; j++)
-+				info->export_targets[j] =
-+				       ceph_decode_32(&pexport_targets);
-+		} else {
-+			info->export_targets = NULL;
- 		}
- 	}
- 
+change log:
+v6
+- many small fixes suggested by Eric Dumazet:
+  data locality, typos, documentation
+  protect napi_hash insert/delete with a spinlock (napi_gen_id is no
+  longer atomic_t since it's only accessed with the spinlock held.)
+- added IPv6 TCP and UDP support (only minimally tested)
+
+v5
+- corrections suggested by Ben Hutchings:
+  fixed typos, moved the config option and sysctl value from IPv4 to net
+- moved sk_mark_ll() to the protocol handlers
+- removed global id mechanism, replaced with a hashed napi_id.
+  based on code sample from Eric Dumazet
+  Note that ixgbe_free_q_vector() already waits an rcu grace period
+  before freeing the q_vector, so nothing additional needs to be done
+  when adding a call to napi_hash_del().
+- simple poll/select support
+
+v4
+- removed separate config option for TCP as suggested Eric Dumazet.
+- added linux mib counter for packets received through the low latency path,
+  as suggested by Andi Kleen.
+- re-allow module unloading, remove module param, use a global generation id
+  instead to prevent the use of a stale napi pointer, as suggested
+  by Eric Dumazet
+- updated Documentation/networking/ip-sysctl.txt text
+
+v3
+- coding style changes suggested by Dave Miller
+
+v2
+- the sysctl knob is now in microseconds. The default value is now 0 (off).
+- for now the code depends at configure time on CONFIG_I86_TSC 
+- the napi reference in struct skb is now a union with the dma cookie
+  since the former is only used on RX and the latter on TX,
+  as suggested by Eric Dumazet.
+- we do a better job at honoring non-blocking operations.
+- removed busy-polling support for tcp_read_sock()
+- remove dynamic disabling of GRO
+- coding style fixes
+- disallow unloading the device module after the feature has been used
+
+Credit:
+Jesse Brandeburg, Arun Chekhov Ilango, Julie Cummings,
+Alexander Duyck, Eric Geisler, Jason Neighbors, Yadong Li,
+Mike Polehn, Anil Vasudevan, Don Wood
+Special thanks for finding bugs in earlier versions:
+Willem de Bruijn and Andi Kleen
+
+Thanks,
+Eliezer
