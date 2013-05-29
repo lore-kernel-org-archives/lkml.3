@@ -1,78 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965248Ab3E2IuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:50:11 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:60619 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117Ab3E2IuI (ORCPT
+	id S965268Ab3E2IuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:50:23 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43630 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965117Ab3E2IuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:50:08 -0400
-Message-ID: <51A5C126.9030105@synopsys.com>
-Date: Wed, 29 May 2013 14:19:42 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 04:50:19 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, <linux-mm@kvack.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7, part3 14/16] mm: concentrate modification of totalram_pages
- into the mm core
-References: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com> <1368805518-2634-15-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1368805518-2634-15-git-send-email-jiang.liu@huawei.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.232]
+In-Reply-To: <1369771281-5527-1-git-send-email-n.a.balandin@gmail.com>
+References: <1369771281-5527-1-git-send-email-n.a.balandin@gmail.com>
+Date: Wed, 29 May 2013 11:50:16 +0300
+Message-ID: <CAHp75Vek0AAiU0MHHHVckwPv-9KXhSDyWU6O=y3_48vYkORsrw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] drivers/misc: at25: convert to use devm_kzalloc
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Nikolay Balandin <n.a.balandin@gmail.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 09:15 PM, Jiang Liu wrote:
-> Concentrate code to modify totalram_pages into the mm core, so the arch
-> memory initialized code doesn't need to take care of it. With these
-> changes applied, only following functions from mm core modify global
-> variable totalram_pages:
-> free_bootmem_late(), free_all_bootmem(), free_all_bootmem_node(),
-> adjust_managed_page_count().
-> 
-> With this patch applied, it will be much more easier for us to keep
-> totalram_pages and zone->managed_pages in consistence.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: David Howells <dhowells@redhat.com>
+On Tue, May 28, 2013 at 11:01 PM, Nikolay Balandin
+<n.a.balandin@gmail.com> wrote:
+> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+>
+> Use devm_kzalloc to make cleanup paths simpler
+>
+> Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+
 > ---
->  arch/alpha/mm/init.c             | 2 +-
->  arch/alpha/mm/numa.c             | 2 +-
->  arch/arc/mm/init.c               | 2 +-
+>  drivers/misc/eeprom/at25.c |   25 ++++++++-----------------
+>  1 file changed, 8 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+> index ad8fd8e..840b359 100644
+> --- a/drivers/misc/eeprom/at25.c
+> +++ b/drivers/misc/eeprom/at25.c
+> @@ -371,11 +371,10 @@ static int at25_probe(struct spi_device *spi)
+>                 if (np) {
+>                         err = at25_np_to_chip(&spi->dev, np, &chip);
+>                         if (err)
+> -                               goto fail;
+> +                               return err;
+>                 } else {
+>                         dev_err(&spi->dev, "Error: no chip description\n");
+> -                       err = -ENODEV;
+> -                       goto fail;
+> +                       return -ENODEV;
+>                 }
+>         } else
+>                 chip = *(struct spi_eeprom *)spi->dev.platform_data;
+> @@ -389,8 +388,7 @@ static int at25_probe(struct spi_device *spi)
+>                 addrlen = 3;
+>         else {
+>                 dev_dbg(&spi->dev, "unsupported address type\n");
+> -               err = -EINVAL;
+> -               goto fail;
+> +               return -EINVAL;
+>         }
+>
+>         /* Ping the chip ... the status register is pretty portable,
+> @@ -400,14 +398,12 @@ static int at25_probe(struct spi_device *spi)
+>         sr = spi_w8r8(spi, AT25_RDSR);
+>         if (sr < 0 || sr & AT25_SR_nRDY) {
+>                 dev_dbg(&spi->dev, "rdsr --> %d (%02x)\n", sr, sr);
+> -               err = -ENXIO;
+> -               goto fail;
+> +               return -ENXIO;
+>         }
+>
+> -       if (!(at25 = kzalloc(sizeof *at25, GFP_KERNEL))) {
+> -               err = -ENOMEM;
+> -               goto fail;
+> -       }
+> +       at25 = devm_kzalloc(&spi->dev, sizeof(struct at25_data), GFP_KERNEL);
+> +       if (!at25)
+> +               return -ENOMEM;
+>
+>         mutex_init(&at25->lock);
+>         at25->chip = chip;
+> @@ -439,7 +435,7 @@ static int at25_probe(struct spi_device *spi)
+>
+>         err = sysfs_create_bin_file(&spi->dev.kobj, &at25->bin);
+>         if (err)
+> -               goto fail;
+> +               return err;
+>
+>         if (chip.setup)
+>                 chip.setup(&at25->mem, chip.context);
+> @@ -453,10 +449,6 @@ static int at25_probe(struct spi_device *spi)
+>                 (chip.flags & EE_READONLY) ? " (readonly)" : "",
+>                 at25->chip.page_size);
+>         return 0;
+> -fail:
+> -       dev_dbg(&spi->dev, "probe err %d\n", err);
+> -       kfree(at25);
+> -       return err;
+>  }
+>
+>  static int at25_remove(struct spi_device *spi)
+> @@ -465,7 +457,6 @@ static int at25_remove(struct spi_device *spi)
+>
+>         at25 = spi_get_drvdata(spi);
+>         sysfs_remove_bin_file(&spi->dev.kobj, &at25->bin);
+> -       kfree(at25);
+>         return 0;
+>  }
+>
+> --
+> 1.7.9.5
+>
 
-...
 
-> diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
-> index f9c7077..c668a60 100644
-> --- a/arch/arc/mm/init.c
-> +++ b/arch/arc/mm/init.c
-> @@ -111,7 +111,7 @@ void __init mem_init(void)
->  
->  	high_memory = (void *)(CONFIG_LINUX_LINK_BASE + arc_mem_sz);
->  
-> -	totalram_pages = free_all_bootmem();
-> +	free_all_bootmem();
->  
->  	/* count all reserved pages [kernel code/data/mem_map..] */
->  	reserved_pages = 0;
 
-Acked-by: Vineet Gupta <vgupta@synopsys.com>	for arch/arc bits
-
-Thx,
--Vineet
-
+--
+With Best Regards,
+Andy Shevchenko
