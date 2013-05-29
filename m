@@ -1,46 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965271Ab3E2I5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:57:17 -0400
-Received: from smtp1.uu.se ([130.238.7.54]:45065 "EHLO smtp1.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965086Ab3E2I5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:57:15 -0400
+	id S965321Ab3E2I52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:57:28 -0400
+Received: from smtp5.epfl.ch ([128.178.224.8]:42770 "HELO smtp5.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S965229Ab3E2I5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 04:57:23 -0400
+Message-ID: <51A5C2EE.4060607@epfl.ch>
+Date: Wed, 29 May 2013 10:57:18 +0200
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Afzal Mohammed <afzal@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ankur Kishore <a-kishore@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>
+Subject: Re: [PATCH v2 14/14] ARM: dts: AM43x: initial support
+References: <cover.1369658705.git.afzal@ti.com> <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com> <51A5C1F3.2070605@ti.com>
+In-Reply-To: <51A5C1F3.2070605@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <20901.49731.549060.203528@pilspetsen.it.uu.se>
-Date: Wed, 29 May 2013 10:54:27 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: RE: A bug about system call on ARM
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
-	<CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wang, Yalin writes:
- > Hi  
- > 
- > I have download the latest linux kernel code  3.9.4
- > And Compare with  3.4.0 kernel .
- > 
- > It seems there is no change for this part ,
- > So it will still happen .
- > Does anyone know who is responsible for  arm arch part kernel code ?
+Hello,
 
-A quick look in MAINTAINNERS would have told you:
+On 05/29/2013 10:53 AM, Benoit Cousson wrote:
+> + Florian
+>
+> Hi Afzal,
+>
+> On 05/27/2013 04:37 PM, Afzal Mohammed wrote:
+>> DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
+>> represented here are the minimal DT nodes necessary to get kernel
+>> booting.
+>>
+>> In DT nodes, "ti,hwmod" property has not been added, this would be
+>> added along with PRCM support for AM43x.
+>>
+>> Signed-off-by: Ankur Kishore <a-kishore@ti.com>
+>> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+>> ---
+>>
+>> v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
+>>
+>>   arch/arm/boot/dts/am4372.dtsi | 66 +++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 66 insertions(+)
+>>   create mode 100644 arch/arm/boot/dts/am4372.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+>> new file mode 100644
+>> index 0000000..1d58298
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/am4372.dtsi
+>> @@ -0,0 +1,66 @@
+>> +/*
+>> + * Device Tree Source for AM4372 SoC
+>> + *
+>> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public License
+>> + * version 2.  This program is licensed "as is" without any warranty of any
+>> + * kind, whether express or implied.
+>> + */
+>> +
+>> +/include/ "skeleton.dtsi"
+>
+> You can now use the C preprocessor statement instead of this one.
+> Florian already started doing the change [1].
+>
+> Beside that detail, that patch looks good to me.
+> I'll pull it separately of the series.
+>
 
-ARM PORT
-...
-L:      linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+If you pull the patch in your branch, I can take care of the changes 
+when I rebase
+my series. This will allow me to clean the 'interrupts' statements below 
+as well.
 
-Please direct ARM-specific questions to that list.
+Regards,
+
+Florian
+
+> Regards,
+> Benoit
+>
+> [1] http://thread.gmane.org/gmane.linux.ports.arm.omap/98320
+>
+>> +
+>> +/ {
+>> +	compatible = "ti,am4372", "ti,am43";
+>> +	interrupt-parent = <&gic>;
+>> +
+>> +
+>> +	aliases {
+>> +		serial0 = &uart1;
+>> +	};
+>> +
+>> +	cpus {
+>> +		cpu@0 {
+>> +			compatible = "arm,cortex-a9";
+>> +		};
+>> +	};
+>> +
+>> +	gic: interrupt-controller@48241000 {
+>> +		compatible = "arm,cortex-a9-gic";
+>> +		interrupt-controller;
+>> +		#interrupt-cells = <3>;
+>> +		reg = <0x48241000 0x1000>,
+>> +		      <0x48240100 0x0100>;
+>> +	};
+>> +
+>> +	ocp {
+>> +		compatible = "simple-bus";
+>> +		#address-cells = <1>;
+>> +		#size-cells = <1>;
+>> +		ranges;
+>> +
+>> +		uart1: serial@44e09000 {
+>> +			compatible = "ti,am4372-uart","ti,omap2-uart";
+>> +			reg = <0x44e09000 0x2000>;
+>> +			interrupts = <0 72 0x4>;
+>> +		};
+>> +
+>> +		timer1: timer@44e31000 {
+>> +			compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
+>> +			reg = <0x44e31000 0x400>;
+>> +			interrupts = <0 67 0x4>;
+>> +			ti,timer-alwon;
+>> +		};
+>> +
+>> +		timer2: timer@48040000  {
+>> +			compatible = "ti,am4372-timer","ti,am335x-timer";
+>> +			reg = <0x48040000  0x400>;
+>> +			interrupts = <0 68 0x4>;
+>> +		};
+>> +
+>> +		counter32k: counter@44e86000 {
+>> +			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+>> +			reg = <0x44e86000 0x40>;
+>> +		};
+>> +	};
+>> +};
+>>
+>
