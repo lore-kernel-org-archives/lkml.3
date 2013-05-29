@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965840Ab3E2LYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:24:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42886 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965525Ab3E2LYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:24:13 -0400
-Message-ID: <1369826652.22004.106.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: forgive use of mixed case variables
- measuring units
-From: Joe Perches <joe@perches.com>
-To: Phil Carmody <phil.carmody@partner.samsung.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org
-Date: Wed, 29 May 2013 04:24:12 -0700
-In-Reply-To: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
-References: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965867Ab3E2LY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:24:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51541 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965525Ab3E2LY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:24:26 -0400
+Date: Wed, 29 May 2013 13:24:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: Joerg Roedel <joro@8bytes.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 2/2 V3] perf/x86/amd: AMD IOMMU PC PERF uncore PMU
+ implementation
+Message-ID: <20130529112418.GI12193@twins.programming.kicks-ass.net>
+References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1368819813-6481-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130528121850.GC2575@8bytes.org>
+ <51A4E6A8.7080004@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A4E6A8.7080004@amd.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 14:02 +0300, Phil Carmody wrote:
-> I don't think anyone really has an issue with things like max_mV.
-> And whilst nS et al. may not be SI standard, at least it's clear
-> what they represent.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -2940,6 +2940,7 @@ sub process {
->  			if ($var !~ /$Constant/ &&
->  			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
->  			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
-> +			    $var !~ /^[a-z_]*_[numk][VAS]$/ &&
->  			    !defined $camelcase{$var}) {
->  				$camelcase{$var} = 1;
->  				WARN("CAMELCASE",
+On Tue, May 28, 2013 at 12:17:28PM -0500, Suravee Suthikulanit wrote:
+> On 5/28/2013 7:18 AM, Joerg Roedel wrote:
 
-Hi Phil.
+> >That implementation is very basic. Any reason for not using the event
+> >reporting mechanism of the IOMMU? You could implement a nice perf
+> >iommutop or something to see which devices do the most transactions or
+> >something like that.
 
-CamelCase was downgraded to a --strict only (CHK)
-test in -next recently.  commit f0e8102413
-("checkpatch: change CamelCase test and make it --strict")
+> This patch is adding perf system-wide counting mode support which is used by
+> "perf stat" tool.  We are not implementing the sampling mode since MSI
+> interrupt of the IOMMU cannot be used for current perf sampling tools (e.g.
+> perf record or top) since the IOMMU counters are not core-specific.   The
+> current "perf record" and "perf top" needs to attribute each sample to a
+> particular core/pid which would allow the tools to figure out the
+> instruction pointer and map the sample to a paticular module.
+> 
+> If I understand correctly, when you mentioned "perf iommutop", you want a
+> new perf user-space tool which will show real-time IOMMU events per IOMMU HW
+> and/or device?
 
-I'm hesitant to add a longish whitelist inside
-checkpatch itself, but if it's added, it should
-probably be an array.
+Right, unless there's more to the IOMMU event reporting than setting an
+event threshold to get an interrupt of kinds I don't see how an
+interrupt would be useful except for making sure we don't loose a
+counter overflow.
 
+Note that for Intel uncore we poll with a software timer to ensure we
+don't miss the overflow because its interrupt facility is either broken
+or missing.
 
+If otoh the event reporting thing includes more data than just 'hey
+counter overflow!' it might be useful. Not exactly sure how yet because
+it would be the first PMU to need this.
