@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab3E2ALo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:11:44 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38907 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab3E2ALm (ORCPT
+	id S933133Ab3E2AMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:12:41 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41861 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932409Ab3E2AMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:11:42 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Christopher Sacchi <christophersacchi@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: Definition for loglevel in KERN_OOPS
-In-Reply-To: Your message of "Tue, 28 May 2013 20:00:45 -0400."
-             <CABQQNFGaS9rKaWto75fVQ5Ru+XKU2hgBRBjnV8G6WGf_TeMt9g@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CABQQNFGaS9rKaWto75fVQ5Ru+XKU2hgBRBjnV8G6WGf_TeMt9g@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1369786271_1846P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 28 May 2013 20:12:40 -0400
+Message-ID: <51A547F0.8090406@ozlabs.ru>
+Date: Wed, 29 May 2013 10:12:32 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Scott Wood <scottwood@freescale.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru> <1369784115.18630.27@snotra>
+In-Reply-To: <1369784115.18630.27@snotra>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
-Date: Tue, 28 May 2013 20:11:11 -0400
-Message-ID: <4136.1369786271@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.51A5479F.0100,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1369786271_1846P
-Content-Type: text/plain; charset=us-ascii
+On 05/29/2013 09:35 AM, Scott Wood wrote:
+> On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
+>> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
+>> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
+>> >> >>> kvm_device_attr)
+>> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
+>> >> >>> kvm_device_attr)
+>> >> >>>
+>> >> >>> +/* ioctl for SPAPR TCE IOMMU */
+>> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
+>> >> >>> kvm_create_spapr_tce_iommu)
+>> >> >>
+>> >> >> Shouldn't this go under the vm ioctl section?
+>> >>
+>> >>
+>> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
+>> devices) is
+>> >> in this section so I decided to keep them together. Wrong?
+>> >
+>> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
+>> > KVM_CREATE_SPAPR_TCE_IOMMU?
+>>
+>> Yes.
+> 
+> Sigh.  That's the same thing repeated.  There's only one IOCTL.  Nothing is
+> being "kept together".
 
-On Tue, 28 May 2013 20:00:45 -0400, Christopher Sacchi said:
->  This patch is for linux-3.10-rc2 and adds the definition for
-> KERN_OOPS (it can be used for whenever kernel oops occur) in
-> <linux/kern_loglevel.h> for <linux/printk.h>. It is below the
-> double-dashes.
+Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
 
-OK, I'll bite.
 
-1) Where in the kernel will this actually get used?
-
-2) Are there any matching patches for userspace tools like syslog
-to make it useful?
-
-3) Was it intenional that you added this:
-
-+#define KERN_OOPS         KERN_SOH "2"          /* kernel oops condition */
-instead of
-+#define KERN_OOPS         KERN_CRIT
-
-4) How does a syslog daemon distringuish between KERN_CRIT and KERN_OOPS?
-
-In other words - why do we need this patch?
-
---==_Exmh_1369786271_1846P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUaVHnwdmEQWDXROgAQJubA/+POlYPXaRokBUEkjIo+VE4XFHQ5W8wQtb
-LZhkLkzuatdeGeryl1xXe2C3na8Ih6OoQmtAqrEk5LNAHpRs/fajJDchVwb2nqur
-he3LWnZUhD3dwvUYL06idIiMxvTaQHS6EMQeWIuVvcUQ20xnRk115buy9NCFnp7s
-/vrfQMS7NyY3J6fv70e2qKLWlUBzCRr/OvtfP+FiDXXU9pUPpDtEBdJ5XmEgXdRk
-TvLYHanQWJaIx6YXVZxJ/yZxuBpniQOa67D7AXX1P8TlYi9U0GiyM8erKWTu++GW
-QiBkz0rcMjvyUImQOq48E0jaEYSkCk3t95bybGsBq/xV6plH8p9UtU19vrGIO+PM
-q1CeH9MZqcMsBpE6YkQFysgV+/a5wbMkNqDipBd4ELsT4Hb0UcO5YEP3T8HD8CZz
-/6y4WbxPkmeJtbMdxQe6RjEXYtHOHHrhrcueoBAkNWjbgFe9PiH9EfMGbZFn3tqb
-3Xio0JerWtEiompyDAtrVBCs/o/AuimdGMvCkdVjvjbzpHeLUNkXeWGEsizHlE/N
-Dm7L09SeDekfVh4UNfz9uavC12+PEWa4n/W8NqOwtoCQRgefZtZ0of8UvVr+BjdJ
-iSDM5g+DLT5nZYkCOA4Y+xAcB7/bFYnzRByCdpRJE1dxTKNqd+S/u3gaSKCBnhsW
-eCQSm5z2wOs=
-=rO9+
------END PGP SIGNATURE-----
-
---==_Exmh_1369786271_1846P--
-
+-- 
+Alexey
