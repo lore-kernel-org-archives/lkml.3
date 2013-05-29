@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966828Ab3E2PIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:08:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53948 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966095Ab3E2PIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:08:13 -0400
+	id S966844Ab3E2PIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:08:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38096 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966095Ab3E2PIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:08:18 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <rui.zhang@intel.com>
 CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 2/7] thermal: ti-soc-thermal: remove external heat while extrapolating hotspot
-Date: Wed, 29 May 2013 11:07:41 -0400
-Message-ID: <1369840066-20357-3-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 3/7] thermal: ti-soc-thermal: freeze FSM while computing trend
+Date: Wed, 29 May 2013 11:07:42 -0400
+Message-ID: <1369840066-20357-4-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1369840066-20357-1-git-send-email-eduardo.valentin@ti.com>
 References: <1369840066-20357-1-git-send-email-eduardo.valentin@ti.com>
@@ -22,95 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For boards that provide a PCB sensor close to SoC junction
-temperature, it is possible to remove the cumulative heat
-reported by the SoC temperature sensor.
-
-This patch changes the extrapolation computation to consider
-an external sensor in the extrapolation equations.
+In order to read the history buffer, it is required to
+freeze BG FSM. This patch adds the missing piece of code
+to freeze the FSM and also a contention area to avoid
+other parts of the code to access the DTEMPs.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 30 ++++++++++++++--------
- 1 file changed, 20 insertions(+), 10 deletions(-)
----
-This patch was added to the staging tree post 3.10-rc1 but
-is not included after the move from staging to thermal. This is
-because the thermal tree is based of 3.10-rc1 and not staging/next
-or linux-next/master.
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-For your reference:
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/commit/drivers/staging/ti-soc-thermal?h=staging-next&id=a85fd2c8fdefa0d504882f0e110d68e564903fcb
-
-diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-index e3c5e67..8e67ebf 100644
---- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-@@ -38,6 +38,7 @@
- /* common data structures */
- struct ti_thermal_data {
- 	struct thermal_zone_device *ti_thermal;
-+	struct thermal_zone_device *pcb_tz;
- 	struct thermal_cooling_device *cool_dev;
- 	struct ti_bandgap *bgp;
- 	enum thermal_device_mode mode;
-@@ -77,10 +78,12 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
- static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 				      unsigned long *temp)
- {
-+	struct thermal_zone_device *pcb_tz = NULL;
- 	struct ti_thermal_data *data = thermal->devdata;
- 	struct ti_bandgap *bgp;
- 	const struct ti_temp_sensor *s;
--	int ret, tmp, pcb_temp, slope, constant;
-+	int ret, tmp, slope, constant;
-+	unsigned long pcb_temp;
- 
- 	if (!data)
- 		return 0;
-@@ -92,16 +95,22 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 	if (ret)
- 		return ret;
- 
--	pcb_temp = 0;
--	/* TODO: Introduce pcb temperature lookup */
-+	/* Default constants */
-+	slope = s->slope;
-+	constant = s->constant;
-+
-+	pcb_tz = data->pcb_tz;
- 	/* In case pcb zone is available, use the extrapolation rule with it */
--	if (pcb_temp) {
--		tmp -= pcb_temp;
--		slope = s->slope_pcb;
--		constant = s->constant_pcb;
--	} else {
--		slope = s->slope;
--		constant = s->constant;
-+	if (!IS_ERR_OR_NULL(pcb_tz)) {
-+		ret = thermal_zone_get_temp(pcb_tz, &pcb_temp);
-+		if (!ret) {
-+			tmp -= pcb_temp; /* got a valid PCB temp */
-+			slope = s->slope_pcb;
-+			constant = s->constant_pcb;
-+		} else {
-+			dev_err(bgp->dev,
-+				"Failed to read PCB state. Using defaults\n");
-+		}
+diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+index f20c1cf..be9dba5 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+@@ -992,9 +992,12 @@ int ti_bandgap_get_trend(struct ti_bandgap *bgp, int id, int *trend)
+ 		goto exit;
  	}
- 	*temp = ti_thermal_hotspot_temperature(tmp, slope, constant);
  
-@@ -273,6 +282,7 @@ static struct ti_thermal_data
- 	data->sensor_id = id;
- 	data->bgp = bgp;
- 	data->mode = THERMAL_DEVICE_ENABLED;
-+	data->pcb_tz = thermal_zone_get_zone_by_name("pcb");
- 	INIT_WORK(&data->thermal_wq, ti_thermal_work);
++	spin_lock(&bgp->lock);
++
+ 	tsr = bgp->conf->sensors[id].registers;
  
- 	return data;
+ 	/* Freeze and read the last 2 valid readings */
++	RMW_BITS(bgp, id, bgap_mask_ctrl, mask_freeze_mask, 1);
+ 	reg1 = tsr->ctrl_dtemp_1;
+ 	reg2 = tsr->ctrl_dtemp_2;
+ 
+@@ -1008,22 +1011,26 @@ int ti_bandgap_get_trend(struct ti_bandgap *bgp, int id, int *trend)
+ 	/* Convert from adc values to mCelsius temperature */
+ 	ret = ti_bandgap_adc_to_mcelsius(bgp, temp1, &t1);
+ 	if (ret)
+-		goto exit;
++		goto unfreeze;
+ 
+ 	ret = ti_bandgap_adc_to_mcelsius(bgp, temp2, &t2);
+ 	if (ret)
+-		goto exit;
++		goto unfreeze;
+ 
+ 	/* Fetch the update interval */
+ 	ret = ti_bandgap_read_update_interval(bgp, id, &interval);
+ 	if (ret || !interval)
+-		goto exit;
++		goto unfreeze;
+ 
+ 	*trend = (t1 - t2) / interval;
+ 
+ 	dev_dbg(bgp->dev, "The temperatures are t1 = %d and t2 = %d and trend =%d\n",
+ 		t1, t2, *trend);
+ 
++unfreeze:
++	RMW_BITS(bgp, id, bgap_mask_ctrl, mask_freeze_mask, 0);
++unlock:
++	spin_unlock(&bgp->lock);
+ exit:
+ 	return ret;
+ }
 -- 
 1.8.2.1.342.gfa7285d
 
