@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966674Ab3E2Op4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:45:56 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:38061 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966590Ab3E2Opw (ORCPT
+	id S966744Ab3E2OqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:46:06 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:52160 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966590Ab3E2Op7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:45:52 -0400
+	Wed, 29 May 2013 10:45:59 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH, v2 11/13] mm: kill free_all_bootmem_node()
-Date: Wed, 29 May 2013 22:44:50 +0800
-Message-Id: <1369838692-26860-12-git-send-email-jiang.liu@huawei.com>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        linux-m68k@vger.kernel.org
+Subject: [PATCH, v2 13/13] mm/m68k: fix build warning of unused variable
+Date: Wed, 29 May 2013 22:44:52 +0800
+Message-Id: <1369838692-26860-14-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
 References: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
@@ -32,62 +33,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now nobody makes use of free_all_bootmem_node(), kill it.
+Fix build warning of unused variable:
+arch/m68k/mm/init.c: In function 'mem_init':
+arch/m68k/mm/init.c:151:6: warning: unused variable 'i' [-Wunused-variable]
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-m68k@lists.linux-m68k.org
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
 ---
- include/linux/bootmem.h |  1 -
- mm/bootmem.c            | 18 ------------------
- 2 files changed, 19 deletions(-)
+ arch/m68k/mm/init.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 0e48c32..f1f07d3 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -44,7 +44,6 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
- 				       unsigned long endpfn);
- extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
- 
--extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
- extern unsigned long free_all_bootmem(void);
- extern void reset_all_zones_managed_pages(void);
- 
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 58609bb..6ab7744 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -264,24 +264,6 @@ void __init reset_all_zones_managed_pages(void)
+diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
+index 6e0a938..6b4baa6 100644
+--- a/arch/m68k/mm/init.c
++++ b/arch/m68k/mm/init.c
+@@ -146,14 +146,11 @@ void __init print_memmap(void)
+ 		MLK_ROUNDUP(__bss_start, __bss_stop));
  }
  
- /**
-- * free_all_bootmem_node - release a node's free pages to the buddy allocator
-- * @pgdat: node to be released
-- *
-- * Returns the number of pages actually released.
-- */
--unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
--{
--	unsigned long pages;
+-void __init mem_init(void)
++static inline void init_pointer_tables(void)
+ {
++#if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
+ 	int i;
+ 
+-	/* this will put all memory onto the freelists */
+-	free_all_bootmem();
 -
--	register_page_bootmem_info_node(pgdat);
--	reset_node_managed_pages(pgdat);
--	pages = free_all_bootmem_core(pgdat->bdata);
--	totalram_pages += pages;
--
--	return pages;
--}
--
--/**
-  * free_all_bootmem - release free pages to the buddy allocator
-  *
-  * Returns the number of pages actually released.
+-#if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
+ 	/* insert pointer tables allocated so far into the tablelist */
+ 	init_pointer_table((unsigned long)kernel_pg_dir);
+ 	for (i = 0; i < PTRS_PER_PGD; i++) {
+@@ -165,7 +162,13 @@ void __init mem_init(void)
+ 	if (zero_pgtable)
+ 		init_pointer_table((unsigned long)zero_pgtable);
+ #endif
++}
+ 
++void __init mem_init(void)
++{
++	/* this will put all memory onto the freelists */
++	free_all_bootmem();
++	init_pointer_tables();
+ 	mem_init_print_info(NULL);
+ 	print_memmap();
+ }
 -- 
 1.8.1.2
 
