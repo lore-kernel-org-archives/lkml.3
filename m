@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935216Ab3E2NhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:37:25 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:43025 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935174Ab3E2NgZ (ORCPT
+	id S966176Ab3E2Nhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:37:32 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:50496 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966078Ab3E2Nh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:36:25 -0400
-From: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Olivier Clergeaud <olivier.clergeaud@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
-Subject: [PATCH 1/4] ARM: ux540: Add ccu8540-uib-v3 Device Tree Machine
-Date: Wed, 29 May 2013 15:33:24 +0200
-Message-Id: <1369834407-30762-2-git-send-email-gabriel.fernandez.st@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1369834407-30762-1-git-send-email-gabriel.fernandez.st@gmail.com>
-References: <1369834407-30762-1-git-send-email-gabriel.fernandez.st@gmail.com>
+	Wed, 29 May 2013 09:37:29 -0400
+Message-ID: <1369834647.5109.15.camel@edumazet-glaptop>
+Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
+ socket polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 29 May 2013 06:37:27 -0700
+In-Reply-To: <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+	 <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@st.com>
+On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
 
-This board includes the U8540 platform and specifies only the
-ST-Ericsson UIB version 3.
+> +/* we don't mind a ~2.5% imprecision */
+> +#define TSC_MHZ (tsc_khz >> 10)
+> +
+> +static inline unsigned long ll_end_time(void)
+> +{
+> +	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
+> +}static inline unsigned long ll_end_time(void)
+>+{
+>+	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
+>+}
 
----
- arch/arm/boot/dts/Makefile           |  1 +
- arch/arm/boot/dts/ccu8540-uib-v3.dts | 16 ++++++++++++++++
- 2 files changed, 17 insertions(+)
- create mode 100644 arch/arm/boot/dts/ccu8540-uib-v3.dts
+This can overflow.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 1995988..29cb5db 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -159,6 +159,7 @@ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
- 	hrefprev60.dtb \
- 	hrefv60plus.dtb \
- 	ccu8540.dtb \
-+	ccu8540-uib-v3.dtb 	\
- 	ccu9540.dtb
- dtb-$(CONFIG_ARCH_SHMOBILE) += emev2-kzm9d.dtb \
- 	r8a7740-armadillo800eva.dtb \
-diff --git a/arch/arm/boot/dts/ccu8540-uib-v3.dts b/arch/arm/boot/dts/ccu8540-uib-v3.dts
-new file mode 100644
-index 0000000..4b4982e
---- /dev/null
-+++ b/arch/arm/boot/dts/ccu8540-uib-v3.dts
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright 2012 ST-Ericsson AB
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+#include "ccu8540.dts"
-+
-+/ {
-+	model = "ST-Ericsson U8540 platform with device tree UIB v3";
-+};
--- 
-1.8.1.1
+Multiply is giving 32bits, as tsc_khz is an int, and sysctl_net_ll_poll
+is an int.
+
+unsigned long sysctl_net_ll_poll ?
+
+Also, if we want this to work on i386, the correct type to use for
+ll_end_time(void) would be cycles_t
+
+
 
