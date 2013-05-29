@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965531Ab3E2KJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:09:38 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:49201 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965230Ab3E2KJh (ORCPT
+	id S965544Ab3E2KKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:10:24 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10336 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965463Ab3E2KKW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:09:37 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51A5D3D9.1000106@yandex-team.ru>
-Date: Wed, 29 May 2013 14:09:29 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 06:10:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 29 May 2013 03:10:21 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Stephen Warren'" <swarren@wwwdotorg.org>,
+        "'thierry.reding@avionic-design.de'" 
+	<thierry.reding@avionic-design.de>
+CC: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'bhelgaas@google.com'" <bhelgaas@google.com>,
+        "'olof@lixom.net'" <olof@lixom.net>,
+        "'mturquette@linaro.org'" <mturquette@linaro.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-pci@vger.kernel.org'" <linux-pci@vger.kernel.org>
+Date: Wed, 29 May 2013 15:40:17 +0530
+Subject: RE: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
+Thread-Topic: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
+Thread-Index: Ac5MDiVYvwys7HTSTmeNS4cCuSA+NgFgtlKgAGM6UfACTaA1oA==
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B616BE9B@BGMAIL01.nvidia.com>
+References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com>
+ <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
+ <518A8596.7070702@wwwdotorg.org>
+ <C79B248886DD134989C8FF6B096A91AB91B4886B5D@BGMAIL01.nvidia.com>
+ <C79B248886DD134989C8FF6B096A91AB91B4886B6C@BGMAIL01.nvidia.com>
+In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B4886B6C@BGMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>, paulmck@linux.vnet.ibm.com
-CC: Jesper Dangaard Brouer <brouer@redhat.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-References: <519CB2D8.103@yandex-team.ru>  <1369225837.3301.324.camel@edumazet-glaptop>  <519CC2FB.2010006@yandex-team.ru>  <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>  <20130525113715.GA3795@linux.vnet.ibm.com>  <51A39E11.5020405@yandex-team.ru>  <1369699930.3301.494.camel@edumazet-glaptop>  <51A47496.6000100@yandex-team.ru>  <1369787693.3301.586.camel@edumazet-glaptop>  <20130529013111.GS6172@linux.vnet.ibm.com> <1369804097.3301.615.camel@edumazet-glaptop>
-In-Reply-To: <1369804097.3301.615.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.05.2013 09:08, Eric Dumazet wrote:
-> On Tue, 2013-05-28 at 18:31 -0700, Paul E. McKenney wrote:
->> On Tue, May 28, 2013 at 05:34:53PM -0700, Eric Dumazet wrote:
->>> On Tue, 2013-05-28 at 13:10 +0400, Roman Gushchin wrote:
->>>> On 28.05.2013 04:12, Eric Dumazet wrote:
+> > > So, if I apply this series, I do see the PCIe bridge and Ethernet
+> > > device get enumerated, but I don't see the USB3 controller get
+> > > enumerated. I believe that is a PCIe device behind the same bridge
+> > > on the
+> > same Tegra PCIe port.
+> > > Shouldn't this device show up?
+> > I have also reproduced this problem. I see somehow no non-
+> > prefetchable memory is assigned to any of pcie devices.
+> > Probably that is the reason for USB3 (pci 0000:04:00.0) not getting
+> > enumerated since it uses only non-prefetchable memory.
+> 
+> 1. Bus4(on which usb3 device resides) always return 0xffffffff from it's
+> config space. which means device is not present?
+> 2. That's why it is not assigned any resources and hence no usb3 probe
+> happens.
+> 3. But same bus does return valid info like vendor/device id etc from it's
+> config space in downstream kernel and hence usb3 probe does happen.
+> 
+> Thierry, Stephen,
+> 4. Any idea why bus4 should return 0xffffffff values in upstream kernel?
+> Anything missing?
+> 5. Also, how config space of all pcie devices are mapped? I mean if I change
+> the config space offset in dts file, then also I find correct vendor/device id
+> etc for bus0/device0/fun0.
+>     So how this mapping happens that even after changing the config space
+> offset in PCIe address space, it always finds correct vendor/device id.
 
-> About your earlier question, I really don't know why compiler would
-> cache a memory read if we explicitly use barrier() to prevent this from
-> happening.
-
-I agree.
-
-> BTW Roman patch generates a double load as in :
->
-> 2cb1:       49 8b 07                mov    (%r15),%rax
-> 2cb4:       49 8b 07                mov    (%r15),%rax
->
->
-> ...
-> 2ea2:       e8 f9 dc ff ff          callq  ba0 <sock_put>
-> 2ea7:       8b 0c 24                mov    (%rsp),%ecx
-> 2eaa:       e9 02 fe ff ff          jmpq   2cb1 <udp4_lib_lookup2+0x91>
->
-> because of ACCESS_ONCE() used twice, once explicitly in
-> hlist_nulls_for_each_entry_rcu(), and once in rcu_dereference_raw()
->
-> While barrier();ptr = rcu_dereference(X); does generate a single load.
-
-It's true.
-
-Unfortunately, using barrier() can also prevent gcc from making some
-(acceptable) code optimizations, because barrier() has a global effect,
-and everything we want to reload is the (head->first) pointer.
-So, to be absolutely precise, we have to introduce and use
-the ACCESS_FIELD_ONCE() macro.
-
-In any case, it doesn't look like a big problem.
-In my mind, the best solution is to use the ACCESS_FIELD_ONCE() macro,
-but using barrier() is also an acceptable solution.
-
-Regards,
-Roman
+ Any idea on this?
