@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965005Ab3E2Hvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:51:32 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:65531 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964806Ab3E2Hvb convert rfc822-to-8bit (ORCPT
+	id S965017Ab3E2HxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:53:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47748 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964806Ab3E2Hw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:51:31 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 29 May 2013 03:52:59 -0400
+Date: Wed, 29 May 2013 09:52:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
+ synchronize_sched()
+Message-ID: <20130529075249.GC12193@twins.programming.kicks-ass.net>
+References: <1369785676.15552.55.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Saravana Kannan <skannan@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <519461BB.3010209@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1368124502-18830-1-git-send-email-skannan@codeaurora.org>
- <519461BB.3010209@codeaurora.org>
-Message-ID: <20130529075126.6058.58923@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v2 1/2] clk: Disable unused clocks after deferred probing is done
-Date: Wed, 29 May 2013 00:51:26 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369785676.15552.55.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Saravana Kannan (2013-05-15 21:34:03)
-> On 05/09/2013 11:35 AM, Saravana Kannan wrote:
-> > With deferred probing, late_initcall() is too soon to declare a clock as
-> > unused. Wait for deferred probing to finish before declaring a clock as
-> > unused. Since deferred probing is done in late_initcall(), do the unused
-> > check to late_initcall_sync.
-> >
-> > Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> > ---
-> >   drivers/clk/clk.c |    2 +-
-> >   1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> > index fe4055f..5ecb64c 100644
-> > --- a/drivers/clk/clk.c
-> > +++ b/drivers/clk/clk.c
-> > @@ -534,7 +534,7 @@ static int clk_disable_unused(void)
-> >
-> >       return 0;
-> >   }
-> > -late_initcall(clk_disable_unused);
-> > +late_initcall_sync(clk_disable_unused);
-> >
-> >   /***    helper functions   ***/
+On Tue, May 28, 2013 at 08:01:16PM -0400, Steven Rostedt wrote:
+> The function tracer uses preempt_disable/enable_notrace() for
+> synchronization between reading registered ftrace_ops and unregistering
+> them.
 > 
-> Mike,
+> Most of the ftrace_ops are global permanent structures that do not
+> require this synchronization. That is, ops may be added and removed from
+> the hlist but are never freed, and wont hurt if a synchronization is
+> missed.
 > 
-> Thoughts? Picking it up? Removing the existing auto-disable code (I 
-> think they are still useful)?
+> But this is not true for dynamically created ftrace_ops or control_ops,
+> which are used by the perf function tracing.
 > 
+> The problem here is that the function tracer can be used to trace
+> kernel/user context switches as well as going to and from idle.
+> Basically, it can be used to trace blind spots of the RCU subsystem.
+> This means that even though preempt_disable() is done, a
+> synchronize_sched() will ignore CPUs that haven't made it out of user
+> space or idle. These can include functions that are being traced just
+> before entering or exiting the kernel sections.
 
-Hi Saravana,
+Just to be clear, its the idle part that's a problem, right? Being stuck
+in userspace isn't a problem since if that CPU is in userspace its
+certainly not got a reference to whatever list entry we're removing.
 
-I've taken this into clk-next for testing.
+Now when the CPU really is idle, its obviously not using tracing either;
+so only the gray area where RCU thinks we're idle but we're not actually
+idle is a problem?
 
-Regards,
-Mike
+Is there something a little smarter we can do? Could we use
+on_each_cpu_cond() with a function that checks if the CPU really is
+fully idle?
 
-> -Saravana
-> 
-> 
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> To implement the RCU synchronization, instead of using
+> synchronize_sched() the use of schedule_on_each_cpu() is performed. This
+> means that when a dynamically allocated ftrace_ops, or a control ops is
+> being unregistered, all CPUs must be touched and execute a ftrace_sync()
+> stub function via the work queues. This will rip CPUs out from idle or
+> in dynamic tick mode. This only happens when a user disables perf
+> function tracing or other dynamically allocated function tracers, but it
+> allows us to continue to debug RCU and context tracking with function
+> tracing.
+
+I don't suppose there's anything perf can do to about this right? Since
+its all on user demand we're kinda stuck with dynamic memory.
+
