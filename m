@@ -1,150 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965355Ab3E2JSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:18:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59683 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965261Ab3E2JSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:18:10 -0400
-Date: Wed, 29 May 2013 02:17:16 -0700
-From: tip-bot for Gerlando Falauto <tipbot@zytor.com>
-Message-ID: <tip-af80b0fed67261dcba2ce2406db1d553d07cbe75@git.kernel.org>
-Cc: mingo@kernel.org, moinejf@free.fr, jgunthorpe@obsidianresearch.com,
-        arnd@arndb.de, Holger.Brunck@keymile.com,
-        thomas.petazzoni@free-electrons.com, kernel@wantstofly.org,
-        linux@arm.linux.org.uk, simon@sequanux.org,
-        ezequiel.garcia@free-electrons.com, tglx@linutronix.de,
-        joravec@drewtech.com, maxime.ripard@free-electrons.com,
-        rob@landley.net, nico@fluxnic.net, linux-kernel@vger.kernel.org,
-        ben-linux@fluff.org, hpa@zytor.com, grant.likely@linaro.org,
-        jason@lakedaemon.net, gerlando.falauto@keymile.com,
-        gregory.clement@free-electrons.com, sebastian.hesselbarth@gmail.com,
-        rob.herring@calxeda.com, andrew@lunn.ch
-Reply-To: mingo@kernel.org, moinejf@free.fr, jgunthorpe@obsidianresearch.com,
-        arnd@arndb.de, Holger.Brunck@keymile.com,
-        thomas.petazzoni@free-electrons.com, kernel@wantstofly.org,
-        linux@arm.linux.org.uk, joravec@drewtech.com, tglx@linutronix.de,
-        ezequiel.garcia@free-electrons.com, simon@sequanux.org,
-        maxime.ripard@free-electrons.com, nico@fluxnic.net, rob@landley.net,
-        jason@lakedaemon.net, grant.likely@linaro.org, hpa@zytor.com,
-        ben-linux@fluff.org, linux-kernel@vger.kernel.org,
-        gerlando.falauto@keymile.com, rob.herring@calxeda.com,
-        sebastian.hesselbarth@gmail.com, gregory.clement@free-electrons.com,
-        andrew@lunn.ch
-In-Reply-To: <20130506142539.152569748@linutronix.de>
-References: <20130506142539.152569748@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Generic chip:
-  Handle separate mask registers
-Git-Commit-ID: af80b0fed67261dcba2ce2406db1d553d07cbe75
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S965366Ab3E2JS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:18:27 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:2524 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965261Ab3E2JSY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 05:18:24 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'johnspaul92'" <johns@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 May 2013 17:18:19 +0800
+Subject: RE: definition of sys_access function
+Thread-Topic: definition of sys_access function
+Thread-Index: Ac5cRmnKiakdhtD+RLGqRp/MIfuBxgABvdfQ
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B864@CNBJMBX05.corpusers.net>
+References: <1369815177019-657210.post@n7.nabble.com>
+ <CAFLxGvx4v3xNE_rAzRULLbmbJFpaPakCw8Ng7EJKsWLx1b+Xjw@mail.gmail.com>
+ <1369816052236-657226.post@n7.nabble.com>
+In-Reply-To: <1369816052236-657226.post@n7.nabble.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  af80b0fed67261dcba2ce2406db1d553d07cbe75
-Gitweb:     http://git.kernel.org/tip/af80b0fed67261dcba2ce2406db1d553d07cbe75
-Author:     Gerlando Falauto <gerlando.falauto@keymile.com>
-AuthorDate: Mon, 6 May 2013 14:30:21 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 29 May 2013 10:57:10 +0200
+Hi  
 
-genirq: Generic chip: Handle separate mask registers
+You should search like this in  fs/open.c
 
-There are cases where all irq_chip_type instances have separate mask
-registers, making a shared mask register cache unsuitable for the
-purpose.
+SYSCALL_DEFINE2(access, const char __user *, filename, int, mode)
 
-Introduce a new flag IRQ_GC_MASK_CACHE_PER_TYPE. If set, point the per
-chip mask pointer to the per chip private mask cache instead.
+You can find it .
 
-[ tglx: Simplified code, renamed flag and massaged changelog ]
+Thanks 
 
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Joey Oravec <joravec@drewtech.com>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Holger Brunck <Holger.Brunck@keymile.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Simon Guinot <simon@sequanux.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Rob Landley <rob@landley.net>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-Link: http://lkml.kernel.org/r/20130506142539.152569748@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irq.h       |  2 ++
- kernel/irq/generic-chip.c | 17 ++++++++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of johnspaul92
+Sent: Wednesday, May 29, 2013 4:28 PM
+To: linux-kernel@vger.kernel.org
+Subject: Re: definition of sys_access function
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 38709a3..7f1f015 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -704,10 +704,12 @@ struct irq_chip_generic {
-  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
-  *				irq chips which need to call irq_set_wake() on
-  *				the parent irq. Usually GPIO implementations
-+ * @IRQ_GC_MASK_CACHE_PER_TYPE:	Mask cache is chip type private
-  */
- enum irq_gc_flags {
- 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
- 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
-+	IRQ_GC_MASK_CACHE_PER_TYPE	= 1 << 2,
- };
- 
- /* Generic chip callback functions */
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 113d9eb..da2a941 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -241,18 +241,21 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
- {
- 	struct irq_chip_type *ct = gc->chip_types;
- 	unsigned int i;
-+	u32 *mskptr = &gc->mask_cache, mskreg = ct->regs.mask;
- 
- 	raw_spin_lock(&gc_lock);
- 	list_add_tail(&gc->list, &gc_list);
- 	raw_spin_unlock(&gc_lock);
- 
--	/* Init mask cache ? */
--	if (flags & IRQ_GC_INIT_MASK_CACHE)
--		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
--
--	/* Initialize mask cache pointer */
--	for (i = 0; i < gc->num_ct; i++)
--		ct[i].mask_cache = &gc->mask_cache;
-+	for (i = 0; i < gc->num_ct; i++) {
-+		if (flags & IRQ_GC_MASK_CACHE_PER_TYPE) {
-+			mskptr = &ct[i].mask_cache_priv;
-+			mskreg = ct[i].regs.mask;
-+		}
-+		ct[i].mask_cache = mskptr;
-+		if (flags & IRQ_GC_INIT_MASK_CACHE)
-+			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
-+	}
- 
- 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
- 		if (!(msk & 0x01))
+I tried that and i got the result as fs/open.c But i couldnt find any references to sys_access.
+
+
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/definition-of-sys-access-function-tp657210p657226.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
