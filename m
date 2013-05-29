@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964997Ab3E2HgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:36:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60298 "EHLO bear.ext.ti.com"
+	id S935127Ab3E2HhA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:37:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964932Ab3E2Hfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:35:50 -0400
-From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] i2c: omap: correct usage of the interrupt enable register
-Date: Wed, 29 May 2013 10:35:44 +0300
-Message-ID: <1369812944-685-2-git-send-email-oleksandr.dmytryshyn@ti.com>
-X-Mailer: git-send-email 1.8.2.rc2
-In-Reply-To: <1369812944-685-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-References: <1369812944-685-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+	id S935097Ab3E2Hg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 03:36:59 -0400
+Message-ID: <51A5B011.7000101@redhat.com>
+Date: Wed, 29 May 2013 03:36:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: atomlin@redhat.com, netdev@vger.kernel.org, davem@davemloft.net,
+        edumazet@google.com, pshelar@nicira.com, mst@redhat.com,
+        alexander.h.duyck@intel.com, aquini@redhat.com,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
+ dropped packets
+References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>  <51A39A3F.8080903@redhat.com> <1369693520.3301.477.camel@edumazet-glaptop>
+In-Reply-To: <1369693520.3301.477.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting from the OMAP chips with version2 registers scheme there
-are 2 registers (I2C_IRQENABLE_SET and I2C_IRQENABLE_CLR) to manage
-interrupts instead of the older OMAP chips with old scheme which have
-only one register (I2C_IE). Now we should use I2C_IRQENABLE_SET
-register for enabling interrupts and  I2C_IRQENABLE_CLR register
-for disabling interrupts.
+On 05/27/2013 06:25 PM, Eric Dumazet wrote:
+> On Mon, 2013-05-27 at 13:39 -0400, Rik van Riel wrote:
 
-Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
-addresses, the interrupt enabling procedure is unchanged.
 
-Change-Id: Ie49165990a4e7c67a4ccf2e4a66cd3b78f2e2b70
-Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
----
- drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+>> Yes please. Getting memory management bug reports for
+>> dropped network packets got old years ago.  Lets get
+>> rid of those messages.
+>
+> I am only wondering why this path has anything needing special
+> attention, over thousands of kmalloc() like call sites in the kernel.
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index e02f9e3..2419899 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -180,6 +180,8 @@ enum {
- #define I2C_OMAP_ERRATA_I207		(1 << 0)
- #define I2C_OMAP_ERRATA_I462		(1 << 1)
- 
-+#define OMAP_I2C_INTERRUPTS_MASK	0x6FFF
-+
- struct omap_i2c_dev {
- 	spinlock_t		lock;		/* IRQ synchronization */
- 	struct device		*dev;
-@@ -193,6 +195,7 @@ struct omap_i2c_dev {
- 						    long latency);
- 	u32			speed;		/* Speed of bus in kHz */
- 	u32			flags;
-+	u16			scheme;
- 	u16			cmd_err;
- 	u8			*buf;
- 	u8			*regs;
-@@ -1082,7 +1085,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	int irq;
- 	int r;
- 	u32 rev;
--	u16 minor, major, scheme;
-+	u16 minor, major;
- 
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -1159,8 +1162,8 @@ omap_i2c_probe(struct platform_device *pdev)
- 	 */
- 	rev = __raw_readw(dev->base + 0x04);
- 
--	scheme = OMAP_I2C_SCHEME(rev);
--	switch (scheme) {
-+	dev->scheme = OMAP_I2C_SCHEME(rev);
-+	switch (dev->scheme) {
- 	case OMAP_I2C_SCHEME_0:
- 		dev->regs = (u8 *)reg_map_ip_v1;
- 		dev->rev = omap_i2c_read_reg(dev, OMAP_I2C_REV_REG);
-@@ -1289,7 +1292,11 @@ static int omap_i2c_runtime_suspend(struct device *dev)
- 
- 	_dev->iestate = omap_i2c_read_reg(_dev, OMAP_I2C_IE_REG);
- 
--	omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
-+	if (_dev->scheme == OMAP_I2C_SCHEME_0)
-+		omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
-+	else
-+		omap_i2c_write_reg(_dev, OMAP_I2C_IP_V2_IRQENABLE_CLR,
-+				   OMAP_I2C_INTERRUPTS_MASK);
- 
- 	if (_dev->rev < OMAP_I2C_OMAP1_REV_2) {
- 		omap_i2c_read_reg(_dev, OMAP_I2C_IV_REG); /* Read clears */
--- 
-1.8.2.rc2
+There are a few special things about the network code:
+
+1) network packets can arrive extremely fast, in
+    large batches
+2) the network code cannot wait for the VM to free
+    memory (GFP_ATOMIC)
+
+Other allocations tend to be done less at a time, and/or
+allow the VM to free up memory before proceeding.
+
+> If mm allocation warnings are useless, just make __GFP_NOWARN the
+> default, and save us thousand of patches (adding the __GFP_NOWARN
+> everywhere)
+>
+> Truth is : some network drivers don't deal very well with allocation
+> errors. mlx4 for example absolutely wants order-2 pages in RX path, with
+> no fallback to order-0 pages.
+
+Network protocols and network applications tend to deal
+with packet loss by retransmitting data, though.
+
+Also, once all the data from one of those order-2 page
+buffers has been delivered or forwarded, that buffer
+becomes available to subsequent network packets.
+
+Other allocations tend not to free & reuse their
+memory as quickly as the network stack.
+
+> So I am not against this patch, but I can not really acknowledge it,
+> sorry.
+>
+>
+>
 
