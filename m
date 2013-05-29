@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965926Ab3E2M4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:56:41 -0400
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:37023 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965690Ab3E2M4j (ORCPT
+	id S965987Ab3E2M4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:56:49 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46640 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965690Ab3E2M4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 08:56:39 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page() runs out of slots
-Date: Wed, 29 May 2013 18:26:13 +0530
-Message-ID: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.232]
+	Wed, 29 May 2013 08:56:44 -0400
+Message-ID: <1369832201.5109.8.camel@edumazet-glaptop>
+Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 29 May 2013 05:56:41 -0700
+In-Reply-To: <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+	 <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zap_pte_range loops from @addr to @end. In the middle, if it runs out of
-batching slots, TLB entries needs to be flushed for @start to @interim,
-NOT @interim to @end.
+On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+> Adds a napi_id and a hashing mechanism to lookup a napi by id.
+> This will be used by subsequent patches to implement low latency
+> Ethernet device polling.
+> Based on a code sample by Eric Dumazet.
+> 
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
 
-Since ARC port doesn't use page free batching I can't test it myself but
-this seems like the right thing to do.
-Observed this when working on a fix for the issue at thread:
-	http://www.spinics.net/lists/linux-arch/msg21736.html
+OK this looks good enough for inclusion.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-mm@kvack.org
-Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
----
- mm/memory.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+If a v7 ever is submitted, please add a 'static' for
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..d9d5fd9 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 	spinlock_t *ptl;
- 	pte_t *start_pte;
- 	pte_t *pte;
-+	unsigned long range_start = addr;
- 
- again:
- 	init_rss_vec(rss);
-@@ -1215,12 +1216,14 @@ again:
- 		force_flush = 0;
- 
- #ifdef HAVE_GENERIC_MMU_GATHER
--		tlb->start = addr;
--		tlb->end = end;
-+		tlb->start = range_start;
-+		tlb->end = addr;
- #endif
- 		tlb_flush_mmu(tlb);
--		if (addr != end)
-+		if (addr != end) {
-+			range_start = addr;
- 			goto again;
-+		}
- 	}
- 
- 	return addr;
--- 
-1.7.10.4
+static DEFINE_SPINLOCK(napi_hash_lock);
+static unsigned int napi_gen_id;
+static DEFINE_HASHTABLE(napi_hash, 8);
+
+If David chose to apply v6, I'll submit a patch for this.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+
+
 
