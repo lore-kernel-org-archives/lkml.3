@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965772Ab3E2LDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22134 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965727Ab3E2LDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:03:34 -0400
-From: Glauber Costa <glommer@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        Glauber Costa <glommer@openvz.org>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [PATCH v7 04/11] sched: adjust exec_clock to use it as cpu usage metric
-Date: Wed, 29 May 2013 15:03:15 +0400
-Message-Id: <1369825402-31046-5-git-send-email-glommer@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
-References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+	id S965696Ab3E2LGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:06:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51267 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965542Ab3E2LGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:06:38 -0400
+Date: Wed, 29 May 2013 13:06:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        fenghua.yu@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/x86: construct all sibling maps if smt
+Message-ID: <20130529110620.GD12193@twins.programming.kicks-ass.net>
+References: <1369674540-10601-1-git-send-email-drjones@redhat.com>
+ <20130529102600.GA10582@hawk.usersys.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529102600.GA10582@hawk.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exec_clock already provides per-group cpu usage metrics, and can be
-reused by cpuacct in case cpu and cpuacct are comounted.
+On Wed, May 29, 2013 at 12:26:01PM +0200, Andrew Jones wrote:
+> On Mon, May 27, 2013 at 07:09:00PM +0200, Andrew Jones wrote:
+> > Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()") broke
+> > the construction of sibling maps, which also broke the booted_cores
+> > accounting.
+> > 
+> > Before the rewrite, if smt was present, then each map was updated for
+> > each smt sibling. After the rewrite only cpu_sibling_mask gets updated,
+> > as the llc and core maps depend on 'has_mc = x86_max_cores > 1' instead.
+> > This leads to problems with topologies like the following
+> > 
+> > (qemu -smp sockets=2,cores=1,threads=2)
+> > 
+> > processor	: 0
+> > physical id	: 0
+> > siblings	: 1    <= should be 2
+> > core id		: 0
+> > cpu cores	: 1
+> > 
+> > processor	: 1
+> > physical id	: 0
+> > siblings	: 1    <= should be 2
+> > core id		: 0
+> > cpu cores	: 0    <= should be 1
+> > 
+> > processor	: 2
+> > physical id	: 1
+> > siblings	: 1    <= should be 2
+> > core id		: 0
+> > cpu cores	: 1
+> > 
+> > processor	: 3
+> > physical id	: 1
+> > siblings	: 1    <= should be 2
+> > core id		: 0
+> > cpu cores	: 0    <= should be 1
+> > 
+> > This patch restores the former construction by defining has_mc as
+> > (has_smt || x86_max_cores > 1). This should be fine as there were no
+> > (has_smt && !has_mc) conditions in the context.
+> > 
+> > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > ---
+> >  arch/x86/kernel/smpboot.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> > index 9c73b51817e47..886a3234eaff3 100644
+> > --- a/arch/x86/kernel/smpboot.c
+> > +++ b/arch/x86/kernel/smpboot.c
+> > @@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+> >  
+> >  void __cpuinit set_cpu_sibling_map(int cpu)
+> >  {
+> > -	bool has_mc = boot_cpu_data.x86_max_cores > 1;
+> >  	bool has_smt = smp_num_siblings > 1;
+> > +	bool has_mc = has_smt || boot_cpu_data.x86_max_cores > 1;
+> >  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+> >  	struct cpuinfo_x86 *o;
+> >  	int i;
+> >  
+> >  	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+> >  
+> > -	if (!has_smt && !has_mc) {
+> > +	if (!has_mc) {
+> >  		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+> >  		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
+> >  		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+> > -- 
+> > 1.8.1.4
+> >
+> 
+> Any acks? This patch fixes a regression. Also, in case anybody is
+> wondering, this is not the same regression as was already fixed with
+> 
+> ceb1cbac8eda6 sched/x86: Calculate booted cores after construction of sibling_mask
+> 
+> (Hmm, I probably should have renamed has_mc to has_mp, as the redefinition
+> expands its scope. I'm not sure if that deserves a v2 though.)
 
-However, it is only provided by tasks in fair class. Doing the same for
-rt is easy, and can be done in an already existing hierarchy loop. This
-is an improvement over the independent hierarchy walk executed by
-cpuacct.
+Right, took me a while to bend my brain around that code again -- I
+obviously don't have the best track record since this is the second bug
+in it since I rewrote the thing (with the intent of making it 'easier'
+to read ha!).
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-CC: Dave Jones <davej@redhat.com>
-CC: Ben Hutchings <ben@decadent.org.uk>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
-CC: Lennart Poettering <lennart@poettering.net>
-CC: Kay Sievers <kay.sievers@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>
----
- kernel/sched/rt.c    | 1 +
- kernel/sched/sched.h | 3 +++
- 2 files changed, 4 insertions(+)
+Yes, I think your patch is correct, and your suggestion of doing
+s/has_mc/has_mp/ seems a sensible one too.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index e9f8dcd..4a21045 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -907,6 +907,7 @@ static void update_curr_rt(struct rq *rq)
- 
- 	for_each_sched_rt_entity(rt_se) {
- 		rt_rq = rt_rq_of_se(rt_se);
-+		schedstat_add(rt_rq, exec_clock, delta_exec);
- 
- 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
- 			raw_spin_lock(&rt_rq->rt_runtime_lock);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 765c687..b05dd84 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -254,6 +254,7 @@ struct cfs_rq {
- 	unsigned int nr_running, h_nr_running;
- 
- 	u64 exec_clock;
-+	u64 prev_exec_clock;
- 	u64 min_vruntime;
- #ifndef CONFIG_64BIT
- 	u64 min_vruntime_copy;
-@@ -356,6 +357,8 @@ struct rt_rq {
- 	struct plist_head pushable_tasks;
- #endif
- 	int rt_throttled;
-+	u64 exec_clock;
-+	u64 prev_exec_clock;
- 	u64 rt_time;
- 	u64 rt_runtime;
- 	/* Nests inside the rq lock: */
--- 
-1.8.1.4
-
+Thanks!
