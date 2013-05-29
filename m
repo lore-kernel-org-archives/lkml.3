@@ -1,23 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966892Ab3E2PIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:08:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48534 "EHLO arroyo.ext.ti.com"
+	id S966907Ab3E2PIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:08:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53967 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966809Ab3E2PId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:08:33 -0400
+	id S966882Ab3E2PIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:08:37 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <rui.zhang@intel.com>
 CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        J Keerthy <j-keerthy@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>
-Subject: [PATCH 1/7] thermal: ti-soc-thermal: update DT reference for OMAP5430
-Date: Wed, 29 May 2013 11:07:40 -0400
-Message-ID: <1369840066-20357-2-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 6/7] thermal: ti-soc-thermal: add dra752 chip to device table
+Date: Wed, 29 May 2013 11:07:45 -0400
+Message-ID: <1369840066-20357-7-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1369840066-20357-1-git-send-email-eduardo.valentin@ti.com>
 References: <1369840066-20357-1-git-send-email-eduardo.valentin@ti.com>
@@ -27,41 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing irq line for TALERT on DT entry for OMAP5430.
+Add support to TI dra752 chips by adapting the driver
+device table.
 
-Cc: linux-pm@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: J Keerthy <j-keerthy@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt | 1 +
- 1 file changed, 1 insertion(+)
----
-This patch was added to the staging tree post 3.10-rc1 but
-is not included after the move from staging to thermal. This is
-because the thermal tree is based of 3.10-rc1 and not staging/next
-or linux-next/master.
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c | 6 ++++++
+ drivers/thermal/ti-soc-thermal/ti-bandgap.h | 5 +++++
+ 2 files changed, 11 insertions(+)
 
-For your reference:
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/commit/drivers/staging/ti-soc-thermal?h=staging-next&id=faa4b9de12fa433f06be917feb3f13792b12fefa
-
-diff --git a/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt b/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-index a4a33d1..1629652 100644
---- a/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-@@ -57,4 +57,5 @@ bandgap {
- 		0x4a002380 0x2c
- 		0x4a0023C0 0x3c>;
- 	compatible = "ti,omap5430-bandgap";
-+	interrupts = <0 126 4>; /* talert */
+diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+index f72695f..dea097d 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+@@ -1532,6 +1532,12 @@ static const struct of_device_id of_ti_bandgap_match[] = {
+ 		.data = (void *)&omap5430_data,
+ 	},
+ #endif
++#ifdef CONFIG_DRA752_THERMAL
++	{
++		.compatible = "ti,dra752-bandgap",
++		.data = (void *)&dra752_data,
++	},
++#endif
+ 	/* Sentinel */
+ 	{ },
  };
+diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.h b/drivers/thermal/ti-soc-thermal/ti-bandgap.h
+index 5f4794a..b3adf72 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-bandgap.h
++++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.h
+@@ -400,4 +400,9 @@ extern const struct ti_bandgap_data omap5430_data;
+ #define omap5430_data					NULL
+ #endif
+ 
++#ifdef CONFIG_DRA752_THERMAL
++extern const struct ti_bandgap_data dra752_data;
++#else
++#define dra752_data					NULL
++#endif
+ #endif
 -- 
 1.8.2.1.342.gfa7285d
 
