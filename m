@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966779Ab3E2UM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:12:57 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:56850 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965519Ab3E2UMv (ORCPT
+	id S966810Ab3E2UNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:13:08 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:34730 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966743Ab3E2UM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:12:51 -0400
+	Wed, 29 May 2013 16:12:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130529122707.997236928e9f87dc6ba2eaa7@linux-foundation.org>
-References: <1369271045-17410-1-git-send-email-dbasehore@chromium.org>
-	<20130529122707.997236928e9f87dc6ba2eaa7@linux-foundation.org>
-Date: Wed, 29 May 2013 13:12:51 -0700
-X-Google-Sender-Auth: Sj6MJA5nyZxGtYwtsaKh3ksQ9NE
-Message-ID: <CAGAzgsrXzGHEmSo3U7Sbo9A=hDeCk2zKifszJXdmAUf5Tf66-w@mail.gmail.com>
-Subject: Re: [PATCH] rtc: cmos: Fix accidentally enabling rtc channel
-From: "dbasehore ." <dbasehore@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>, rostedt@goodmis.org,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 29 May 2013 23:12:54 +0300
+Message-ID: <CAHp75VcpdQqd+evBNhwMGHvXwCoVdaXYdBqQeSDGwt25dLkpGQ@mail.gmail.com>
+Subject: Re: [PATCH] HID: multitouch: prevent memleak with the allocated name
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm still debugging all of the issues, but allowing the cmos interrupt
-handler to run before resuming caused some issues where the timer for
-the alarm was not removed. This would cause other, later timers to not
-be cleared, so utilities such as hwclock would time out when waiting
-for the update interrupt.
-
-There's another patch needed that I am currently testing that works
-around an issue seen in coreboot (and probably other firmware) where
-the RTC_CONTROL register is cleared before we get to the kernel. This
-prevents the cmos interrupt handler from clearing an alarm.
-
-On Wed, May 29, 2013 at 12:27 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 22 May 2013 18:04:05 -0700 Derek Basehore <dbasehore@chromium.org> wrote:
+On Wed, May 29, 2013 at 11:45 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> mt_free_input_name() was never called during .remove():
+> hid_hw_stop() removes the hid_input items in hdev->inputs, and so the
+> list is therefore empty after the call. In the end, we never free the
+> special names that has been allocated during .probe().
 >
->> During resume, we call hpet_rtc_timer_init after masking an irq bit in hpet.
->> This will cause the call to hpet_disable_rtc_channel to be undone if RTC_AIE is
->> the only bit not masked.
+> Restore the original name before freeing it to avoid acessing already
+> freed pointer.
 >
-> What were the user-visible runtime effects of this bug?
+
+> I just spotted this one yesterday... My guess is that this way is safe (without
+> a locking mechanism to prevent accessing hi->input->name), but I'm not 100% sure.
+
+Hi Jiri, Benjamin.
+
+What do you think about patch I just sent?
+
+P.S. Benjamin, I re-used your commit message, I think you have no objections.
+
+--
+With Best Regards,
+Andy Shevchenko
