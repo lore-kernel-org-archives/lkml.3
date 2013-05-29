@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3E2PnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:43:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50633 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753904Ab3E2PnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:43:13 -0400
-Message-ID: <51A621EB.5080805@ti.com>
-Date: Wed, 29 May 2013 11:42:35 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1758748Ab3E2Pnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:43:40 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:25951 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757687Ab3E2Pnh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:43:37 -0400
+From: "Pearson, Greg" <greg.pearson@hp.com>
+To: "Dall, Elizabeth J (MCLinux)" <betty.dall@hp.com>
+CC: "rjw@sisk.pl" <rjw@sisk.pl>, "bhelgaas@google.com" <bhelgaas@google.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ACPI/APEI: Force fatal AER severity when bus has
+ been reset
+Thread-Topic: [PATCH 2/3] ACPI/APEI: Force fatal AER severity when bus has
+ been reset
+Thread-Index: AQHOXIMdCBPKB68wd0Gyqc2+z2coIQ==
+Date: Wed, 29 May 2013 15:42:24 +0000
+Message-ID: <51A621E0.9030307@hp.com>
+References: <1369766929-4386-1-git-send-email-betty.dall@hp.com>
+ <1369766929-4386-3-git-send-email-betty.dall@hp.com>
+In-Reply-To: <1369766929-4386-3-git-send-email-betty.dall@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
+ Thunderbird/17.0.5
+x-originating-ip: [16.210.16.251]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <036514CC7E0DBE4C88BCDE20B2302EB2@Compaq.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 3/3] arm: dts: add bandgap entry for OMAP4460 devices
-References: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com> <1368629928-6723-4-git-send-email-eduardo.valentin@ti.com> <5193A875.1020000@ti.com> <5193B9AA.7020507@ti.com> <519488D3.5070003@ti.com> <5194D0AF.3010407@ti.com> <51A60C74.4010307@ti.com> <51A60E7E.2070905@ti.com>
-In-Reply-To: <51A60E7E.2070905@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2KVESOHHRXAJFUWOMHFSK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2KVESOHHRXAJFUWOMHFSK
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 05/28/2013 12:48 PM, Betty Dall wrote:
+> The CPER error record has a reset bit that indicates that the platform
+> has reset the bus. The reset bit can be set for any severity error
+> including recoverable.  From the AER code path's perspective,
+> any error is fatal if the bus has been reset. This patch upgrades the
+> severity of the AER recovery to AER_FATAL whenever the CPER error record
+> indicates that the bus has been reset.
+>
+> Signed-off-by: Betty Dall <betty.dall@hp.com>
+> ---
+>
+>   drivers/acpi/apei/ghes.c |   21 ++++++++++++++++++++-
+>   1 files changed, 20 insertions(+), 1 deletions(-)
+>
+>
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index d668a8a..4a42afc 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -451,7 +451,26 @@ static void ghes_do_proc(struct ghes *ghes,
+>   				int aer_severity;
+>   				devfn = PCI_DEVFN(pcie_err->device_id.device,
+>   						  pcie_err->device_id.function);
+> -				aer_severity = cper_severity_to_aer(sev);
+> +				/*
+> +				 * Some Firmware First implementations
+> +				 * put the device in SBR to contain
+> +				 * the error. This is indicated by the
+> +				 * CPER Section Decriptor Flags reset
 
-On 29-05-2013 10:19, Cousson, Benoit wrote:
-> Hi Eduardo,
->=20
-> On 5/29/2013 4:11 PM, Eduardo Valentin wrote:
->> Salut Monsieur Benoit,
->>
->> On 16-05-2013 08:27, Eduardo Valentin wrote:
->>> On 16-05-2013 03:20, Benoit Cousson wrote:
->>>> Hi Eduardo,
->>>>
->>
->> <cut>
->>
->>>> We need to check.
->>>
->>> Yeah, I also dont think this will work, because we will reparent the
->>> interrupt, setting to a different controller. That will break the TAL=
-ERT
->>> signal already defined at GIC (check original patch).
->>>
->>> I propose keeping the way I sent. Unless there is a way to set two
->>> different controllers to same device.
->>>
->>
->> Any idea on this patch? Shall we keep the way it is?
->=20
-> Well since we cannot use directly interrupt, I think we need to use at
-> least the proper gpio binding.
->=20
+Nit Pick, change "Decriptor" to "Descriptor".
 
-hmm... OK. sounds reasonable. I will change the driver and resend this
-one in one single series.
+--
+Greg
 
-> Thanks,
-> Benoit
->=20
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-------enig2KVESOHHRXAJFUWOMHFSK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlGmIesACgkQCXcVR3XQvP37TQEAxrSUBxkTI4JmfVk7HhZWLm0g
-G9lnqJzWPAGmxXVi6yYA/jiTHsN0hzhgGxYSTuTK2S/iITYDpfH6mDuLyew4Z64A
-=wxT/
------END PGP SIGNATURE-----
-
-------enig2KVESOHHRXAJFUWOMHFSK--
+> +				 * bit which means the component must
+> +				 * be re-initialized or re-enabled
+> +				 * prior to use. Promoting the AER
+> +				 * serverity to FATAL will cause the
+> +				 * AER code to link_reset and allow
+> +				 * drivers to reprogram their cards.
+> +				 */
+> +				if (gdata->flags & CPER_SEC_RESET)
+> +					aer_severity = cper_severity_to_aer(
+> +							CPER_SEV_FATAL);
+> +				else
+> +					aer_severity =
+> +						cper_severity_to_aer(sev);
+> +
+> +
+>   				aer_recover_queue(pcie_err->device_id.segment,
+>   						  pcie_err->device_id.bus,
+>   						  devfn, aer_severity);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
