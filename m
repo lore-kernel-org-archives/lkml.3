@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab3E2Cci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 22:32:38 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52828 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab3E2Cch (ORCPT
+	id S934243Ab3E2Cdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 22:33:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42886 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab3E2Cdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 22:32:37 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] media: davinci: vpif_capture: move the freeing of irq and global variables to remove()
-Date: Wed, 29 May 2013 04:32:30 +0200
-Message-ID: <2564718.Z6XYOtT7FL@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
-References: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com> <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 28 May 2013 22:33:50 -0400
+Date: Wed, 29 May 2013 12:33:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the trivial tree with the net-next tree
+Message-Id: <20130529123317.5523988bebf0b9a19d04e53e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+--Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the patch.
+Hi Jiri,
 
-On Sunday 26 May 2013 17:30:07 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> Ideally the freeing of irq's and the global variables needs to be
-> done in the remove() rather than module_exit(), this patch moves
-> the freeing up of irq's and freeing the memory allocated to channel
-> objects to remove() callback of struct platform_driver.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/media/platform/davinci/vpif_capture.c |   31 ++++++++++------------
->  1 files changed, 13 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c
-> b/drivers/media/platform/davinci/vpif_capture.c index caaf4fe..f8b7304
-> 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -2225,17 +2225,29 @@ vpif_int_err:
->   */
->  static int vpif_remove(struct platform_device *device)
->  {
-> -	int i;
-> +	struct platform_device *pdev;
->  	struct channel_obj *ch;
-> +	struct resource *res;
-> +	int irq_num, i = 0;
-> +
-> +	pdev = container_of(vpif_dev, struct platform_device, dev);
+Today's linux-next merge of the trivial tree got a conflict in
+Documentation/networking/netlink_mmap.txt between commit 3dd17edea018
+("doc:networking: Fix typo in documentation/networking") from the
+net-next tree and commit f884ab15afdc ("doc: fix misspellings with
+'codespell' tool") from the trivial tree.
 
-As Sergei mentioned, the platform device is already passed to the function as 
-an argument.
+The fix in the net-next tree was a superset of the one in the trivial
+tree, so I used that and can carry the fix as necessary (no action is
+required).
 
-> +	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
-> +		for (irq_num = res->start; irq_num <= res->end; irq_num++)
-> +			free_irq(irq_num,
-> +				 (void *)(&vpif_obj.dev[i]->channel_id));
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-A quick look at board code shows that each IRQ resource contains a single IRQ. 
-The second loop could thus be removed. You could also add another patch to 
-perform similar cleanup for the probe code.
+--Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er
+Content-Type: application/pgp-signature
 
-> +		i++;
-> +	}
-> 
->  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
-> 
-> +	kfree(vpif_obj.sd);
->  	/* un-register device */
->  	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
->  		/* Get the pointer to the channel object */
->  		ch = vpif_obj.dev[i];
->  		/* Unregister video device */
->  		video_unregister_device(ch->video_dev);
-> +		kfree(vpif_obj.dev[i]);
->  	}
->  	return 0;
->  }
-> @@ -2347,24 +2359,7 @@ static __init int vpif_init(void)
->   */
->  static void vpif_cleanup(void)
->  {
-> -	struct platform_device *pdev;
-> -	struct resource *res;
-> -	int irq_num;
-> -	int i = 0;
-> -
-> -	pdev = container_of(vpif_dev, struct platform_device, dev);
-> -	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
-> -		for (irq_num = res->start; irq_num <= res->end; irq_num++)
-> -			free_irq(irq_num,
-> -				 (void *)(&vpif_obj.dev[i]->channel_id));
-> -		i++;
-> -	}
-> -
->  	platform_driver_unregister(&vpif_driver);
-> -
-> -	kfree(vpif_obj.sd);
-> -	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++)
-> -		kfree(vpif_obj.dev[i]);
->  }
-> 
->  /* Function for module initialization and cleanup */
--- 
-Regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Laurent Pinchart
+iQIcBAEBCAAGBQJRpWkHAAoJEECxmPOUX5FEBdwP/A+By50J/4vbc0Gfji9No6gy
+Ch3Pf3UBhB3fogxSvDtlFtoAC9+OQaea79Rk1jPuTXMpSQ/Fg0HYTwjzqztasdfd
+in1uu4q8dUpNI2PayS+Ip4hE5e1mPz0fEkaAPV0Txs7JbCj5S6MeEcawCiWfJVY9
+d8f+IJjXziH8MZs7q8fUf73f1H2nzQl5pAsMOI9FL/Q6mALGu4wRdvPg+y7830UM
+4yQ43ILta1BGAXVypiPBVvbNI6uCKH2sM7WwQZTc1VgMEbnW+rDQVL2rzeDENH5Q
+KDJqIbf3m6j1WwoD4EQ823RTnNAuhODwb6ln+fEMH+g8Cj/S6oaDFbL0PyH9SBfh
+Q5LOLiRIDli8PDuvWgylWZDAMZZ8G7cH97jsYtLwcJESPWhLMHvbCUOnZqUCf2xQ
+LpGc2ginSDtE0mSXlktDf61zJYZmoOLD3OT61R33nkYqp3BHFObdSkIpiEbbT/pM
+4+nBEJqQSdsPxqUPs6A4dXg2Fj+wHWzE8vd+9Lqzg+0+1Tx+CypBF0bLFghhtgSI
+/gBk1lhwAjVg0YIpbbM2Bb6pb69hktxTqhv5N3BeKGfimVZhvV4Ixwz1+1lzD2LH
+J9bnuZSjFgUFjaOYofCdoVBYwerGzLiR/pSjAz/z0EemdGxPIkspCldAVun8mHob
+LgbeGil+Oi+oE0sONYhw
+=a1F1
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er--
