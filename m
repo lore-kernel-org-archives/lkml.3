@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966976Ab3E2Uhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:37:33 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:30702 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966821Ab3E2Uh0 (ORCPT
+	id S967027Ab3E2Uiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:38:50 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:32911 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966869Ab3E2Uia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:37:26 -0400
-Message-ID: <51A66701.6050104@hp.com>
-Date: Wed, 29 May 2013 16:37:21 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 29 May 2013 16:38:30 -0400
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, mchehab@redhat.com, hans.verkuil@cisco.com,
+        prabhakar.csengg@gmail.com, g.liakhovetski@gmx.de,
+        ezequiel.garcia@free-electrons.com, timo.teras@iki.fi
+Subject: [RFC 1/3] saa7115: Set saa7113 init to values from datasheet
+Date: Wed, 29 May 2013 22:41:16 +0200
+Message-Id: <1369860078-10334-2-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
+References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Simo Sorce <simo@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com> <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com> <20130527020903.GR29466@dastard> <51A624E2.3000301@hp.com> <1369844289.2769.146.camel@willson.li.ssimo.org> <20130529165603.GL6123@two.firstfloor.org>
-In-Reply-To: <20130529165603.GL6123@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 12:56 PM, Andi Kleen wrote:
-> On Wed, May 29, 2013 at 12:18:09PM -0400, Simo Sorce wrote:
->> To be honest a workload base on /etc/passwd or /etc/group is completely
->> artificial, in actual usage, if you really have  such access you use
->> nscd or sssd with their shared memory caches to completely remove most
->> of the file access.
-> I don't fully agree at this point. A lot of things can be tuned away,
-> but in practice we want things to perform well out of the box without
-> needing all kinds of magic tuning that only
->
-> Also this is just normal file access, nothing special about it.
-> It simply has to scale. For all kinds of workloads.
->
-> And it does, just d_path messes it up.
+Change all default values in the initial setup table to match the table
+in the datasheet.
 
-Just for clarification, the AIM7 workload is not affected by the current 
-d_path() code, they are speed-limited by the lock contention in the 
-dcache reference counting code. However, both the d_path() change and  
-the dentry reference counting change are needed to to eliminate the 
-overhead introduced by the use of the perf-record command.
+Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+---
+ drivers/media/i2c/saa7115.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Regards,
-Longman
+diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
+index d6f589a..4403679 100644
+--- a/drivers/media/i2c/saa7115.c
++++ b/drivers/media/i2c/saa7115.c
+@@ -223,12 +223,12 @@ static const unsigned char saa7111_init[] = {
+ static const unsigned char saa7113_init[] = {
+ 	R_01_INC_DELAY, 0x08,
+ 	R_02_INPUT_CNTL_1, 0xc2,
+-	R_03_INPUT_CNTL_2, 0x30,
++	R_03_INPUT_CNTL_2, 0x33,
+ 	R_04_INPUT_CNTL_3, 0x00,
+ 	R_05_INPUT_CNTL_4, 0x00,
+-	R_06_H_SYNC_START, 0x89,
++	R_06_H_SYNC_START, 0xe9,
+ 	R_07_H_SYNC_STOP, 0x0d,
+-	R_08_SYNC_CNTL, 0x88,
++	R_08_SYNC_CNTL, 0x98,
+ 	R_09_LUMA_CNTL, 0x01,
+ 	R_0A_LUMA_BRIGHT_CNTL, 0x80,
+ 	R_0B_LUMA_CONTRAST_CNTL, 0x47,
+@@ -236,11 +236,11 @@ static const unsigned char saa7113_init[] = {
+ 	R_0D_CHROMA_HUE_CNTL, 0x00,
+ 	R_0E_CHROMA_CNTL_1, 0x01,
+ 	R_0F_CHROMA_GAIN_CNTL, 0x2a,
+-	R_10_CHROMA_CNTL_2, 0x08,
++	R_10_CHROMA_CNTL_2, 0x00,
+ 	R_11_MODE_DELAY_CNTL, 0x0c,
+-	R_12_RT_SIGNAL_CNTL, 0x07,
++	R_12_RT_SIGNAL_CNTL, 0x01,
+ 	R_13_RT_X_PORT_OUT_CNTL, 0x00,
+-	R_14_ANAL_ADC_COMPAT_CNTL, 0x00,
++	R_14_ANAL_ADC_COMPAT_CNTL, 0x00,	/* RESERVED */
+ 	R_15_VGATE_START_FID_CHG, 0x00,
+ 	R_16_VGATE_STOP, 0x00,
+ 	R_17_MISC_VGATE_CONF_AND_MSB, 0x00,
+-- 
+1.8.2.3
+
