@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967016Ab3E2U6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:58:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46261 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966943Ab3E2U6i (ORCPT
+	id S967037Ab3E2VBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:01:17 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:37443 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966862Ab3E2VBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:58:38 -0400
+	Wed, 29 May 2013 17:01:03 -0400
+Date: Wed, 29 May 2013 23:01:01 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Waiman Long <waiman.long@hp.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529210101.GN6123@two.firstfloor.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+ <20130529184640.GA3243@fieldses.org>
+ <20130529203700.GM6123@two.firstfloor.org>
+ <20130529204323.GC3243@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <20130529083652.GA25971@dhcp-26-207.brq.redhat.com>
-References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
- <20130529083652.GA25971@dhcp-26-207.brq.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 29 May 2013 14:58:17 -0600
-Message-ID: <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529204323.GC3243@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[-cc Suresh]
+On Wed, May 29, 2013 at 04:43:23PM -0400, J. Bruce Fields wrote:
+> On Wed, May 29, 2013 at 10:37:00PM +0200, Andi Kleen wrote:
+> > > As Dave said before, is the last path component sufficient?  Or how
+> > > about an inode number?
+> > 
+> > Neither works, the profiler needs to find the file and read it.
+> > 
+> > inode searching would be incredible expensive,
+> 
+> How fast does it need to be?  Actually analyzing the profile is
+> something you only do once after everything's over, right?
 
-On Wed, May 29, 2013 at 2:36 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Tue, May 28, 2013 at 03:51:52PM -0600, Bjorn Helgaas wrote:
->> On Mon, May 13, 2013 at 3:05 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->>
->> The subject would make more sense as "Allocate *only* as many MSIs as
->> requested."
->
-> 1.
->
->> > When multiple MSIs are enabled with pci_enable_msi_block(), the
->> > requested number of interrupts 'nvec' is rounded up to the nearest
->> > power-of-two value.
->>
->> This rounding is just a consequence of the encodings of the Multiple
->> Message Enable field in the Message Control register (PCI spec r3.0,
->> sec 6.8.1.3), isn't it?
->
-> Yes, it is.
->
->> > The result is then used for setting up the
->> > number of MSI messages in the PCI device and allocation of
->> > interrupt resources in the operating system (i.e. vector numbers).
->> > Thus, in cases when a device driver requests some number of MSIs
->> > and this number is not a power-of-two value, the extra operating
->> > system resources (allocated as the result of rounding) are wasted.
->> >
->> > This fix introduces 'msi_desc::nvec' field to address the above
->> > issue. When non-zero, it will report the actual number of MSIs the
->> > device will send, as requested by the device driver. This value
->> > should be used by architectures to properly set up and tear down
->> > associated interrupt resources.
->>
->> This name needs a little more context, like "nvec_used" or something.
->
-> I chose "nvec" to indicate it is what was passed to pci_enable_msi_block().
-> I can resend with "nvec_used", along with subject change [1], if you want.
->
->> I think the idea is that the Message Control register can only tell
->> the OS that the device requires 1, 2, 4, 8, 16, or 32 vectors, and
->> similarly the OS can only tell the device that 1, 2, 4, 8, 16, or 32
->> vectors are assigned.  If a device can only make use of 18 vectors, it
->> must advertise the next larger value (32 vectors).  As far as I can
->> tell, a device *could* advertise 32 vectors in Multiple Message
->> Capable even if it can only use 1 vector.
->
-> Yes, that is what we have with i.e. ICH AHCI device - it advertises
-> 16 vectors while makes use of 6 only. I tried to explain this in my
-> changelog's last paragraph (below).
->
->> These patches are to avoid allocating resources for the unused
->> vectors, i.e., the ones between the last one the driver requested and
->> the last one advertised in Multiple Message Capable.
->
-> Almost :) Rather ...between the last one the driver requested and
-> the last one *written* in Multiple Message *Enable*, not Capable.
-> IOW, between the last one the driver requested and the closest power
-> of two - which will be written to the device.
+"perf top" does it live.
 
-Ah, right.
+-Andi
 
-> As of now, neither pci_enable_msi_block(), nor pci_enable_msi_block_auto()
-> are able to address the case you described, but if we decide to change
-> that then 'msi_desc::nvec' is what would be used. Again, the last paragraph
-> (may be too subtly) implies that.
->
->> The driver might
->> request fewer than the maximum either because it knows the device
->> isn't capable of using them all, or because the driver author decided
->> not to use them all.
->
-> Exactly. (I assume here "or the driver author decided not to use them all"
-> means the author can tell the device how many interrupts to use by means
-> other than Multiple Message Enable - otherwise it would be a bug).
-
-Yep, makes sense.  Thanks for the clarifications.
-
->> (Sorry, just thinking out loud above, let me know if I'm not
->> understanding this correctly.)
->>
->> > Note, although the existing 'msi_desc::multiple' field might seem
->> > redundant, in fact in does not. In general case the number of MSIs a
->> > PCI device is initialized with is not necessarily the closest power-
->> > of-two value of the number of MSIs the device will send. Thus, in
->> > theory it would not be always possible to derive the former from the
->> > latter and we need to keep them both, to stress this corner case.
->> > Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
->> > would not save us any space.
->
-> --
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
-
-No need to resend as far as I'm concerned; I can tweak those bits
-locally.  I can put these in my tree
-if Joerg or Konrad ack the iommu/irq_remapping.c bit.
-
-Bjorn
+-- 
+ak@linux.intel.com -- Speaking for myself only.
