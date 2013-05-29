@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935360Ab3E2W0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:26:06 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:54560 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935300Ab3E2WZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:25:10 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Gouders <dirk@gouders.net>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 3/3] kconfig/menu.c: fix multiple references to expressions in menu_add_prop()
-Date: Thu, 30 May 2013 00:24:55 +0200
-Message-Id: <e983b7b17ad1a978e954e6aaa62cf12bfc747883.1369866004.git.yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <cover.1369866004.git.yann.morin.1998@free.fr>
-References: <cover.1369866004.git.yann.morin.1998@free.fr>
-In-Reply-To: <cover.1369866004.git.yann.morin.1998@free.fr>
-References: <cover.1369866004.git.yann.morin.1998@free.fr>
+	id S935317Ab3E2W2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:28:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15899 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935277Ab3E2W15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 18:27:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,766,1363158000"; 
+   d="scan'208";a="248386631"
+Subject: [v3][PATCH 0/4] Work around perf NMI-induced hangs
+To: a.p.zijlstra@chello.nl
+Cc: mingo@redhat.com, paulus@samba.org, acme@ghostprotocols.net,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 29 May 2013 15:27:56 -0700
+Message-Id: <20130529222756.25535229@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Gouders <dirk@gouders.net>
+Changes from v2:
 
-menu_add_prop() applies upper menus' visibilities to actual prompts
-by AND-ing the prompts visibilities with the upper menus ones.
+2/4:
+ * Only warn on the longest NMIs.  Don't print when over
+   a threshhold.
+ * Output in ms as opposed to ns
+4/4:
+ * Add some Documentation/ for the tracepoint
+ * keep tracepoint delta in a s64 instead of an int, and
+   vall it 'delta_ns' instead of 'len'
 
-This creates a further reference to the menu's visibilities and when
-the expression reduction functions do their work, they may remove or
-modify expressions that have multiple references, thus causing
-unpredictable side-effects.
+Changes from v1:
 
-The following example Kconfig constructs a case where this causes
-problems: a menu and a prompt which's visibilities depend on the same
-symbol.  When invoking mconf with this Kconfig and pressing "Z" we
-see a problem caused by a free'd expression still referenced by the
-menu's visibility:
+ * keep a running average instead of taking a single value
+   for determining NMI lengths.
+ * Fixed some of the math converting from ns to/from
+   percentages (it was backwards)
+ * Included nmi length tracepoint at end of series 
 
-------------------------------------------------------------------------
-mainmenu "Kconfig Testing Configuration"
+--
 
-config VISIBLE
-	def_bool n
+If root or an unprivileged user runs 'perf top', my system hangs.
+If I'm lucky, I get a warning out to dmesg, along these lines:
 
-config Placeholder
-	bool "Place holder"
+	hrtimer: interrupt took 13915457 ns cpu: 132
 
-menu "Invisible"
-	visible if VISIBLE
+or a hard-lockup message on occasion.
 
-config TEST_VAR
-	bool "Test option" if VISIBLE
+The proxmiate cause of this is that perf_event_nmi_handler() has
+been observed to take tens of ms on occasion.  That needs to get
+fixed, and I'm working on tracking the root cause down.
 
-endmenu
-------------------------------------------------------------------------
-
-This patch fixes this problem by creating copies of the menu's
-visibility expressions before AND-ing them with the prompt's one.
-
-Signed-off-by: Dirk Gouders <dirk@gouders.net>
-[yann.morin.1998@free.fr: move variable into its block-scope,
-                          keep lines <80 chars, typo]
-Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
----
- scripts/kconfig/menu.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index b5c7d90..fd3f018 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -146,11 +146,24 @@ struct property *menu_add_prop(enum prop_type type, char *prompt, struct expr *e
- 			struct menu *menu = current_entry;
- 
- 			while ((menu = menu->parent) != NULL) {
-+				struct expr *dup_expr;
-+
- 				if (!menu->visibility)
- 					continue;
-+				/*
-+				 * Do not add a reference to the
-+				 * menu's visibility expression but
-+				 * use a copy of it.  Otherwise the
-+				 * expression reduction functions
-+				 * will modify expressions that have
-+				 * multiple references which can
-+				 * cause unwanted side effects.
-+				 */
-+				dup_expr = expr_copy(menu->visibility);
-+
- 				prop->visible.expr
- 					= expr_alloc_and(prop->visible.expr,
--							 menu->visibility);
-+							 dup_expr);
- 			}
- 		}
- 
--- 
-1.8.1.2
-
+But, These patches make the situation better: perf can no longer
+simply wedge the box, and we have a safe, controlled exit path
+when things go wrong.
