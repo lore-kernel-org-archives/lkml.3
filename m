@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935177Ab3E2R7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:59:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35249 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934764Ab3E2R7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:59:07 -0400
-Date: Wed, 29 May 2013 20:57:41 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-crypto@vger.kernel.org>, <davem@davemloft.net>,
-        <herbert@gondor.hengli.com.au>, <vinod.koul@intel.com>,
-        <arnd@arndb.de>, <linus.walleij@stericsson.com>,
-        <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 20/39] usb: musb: ux500: move channel number knowledge
- into the driver
-Message-ID: <20130529175741.GG21290@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-21-git-send-email-lee.jones@linaro.org>
+	id S965161Ab3E2SCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:02:18 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28925 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934995Ab3E2SCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 14:02:09 -0400
+Date: Wed, 29 May 2013 14:01:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
+        will.deacon@arm.com, Ian.Campbell@citrix.com
+Subject: Re: [PATCH v4 1/4] xen: move xen_setup_runstate_info and
+ get_runstate_snapshot to drivers/xen/time.c
+Message-ID: <20130529180132.GB10845@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com>
+ <1369763672-12919-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130528181515.GB27718@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
+ <20130529155544.GG23775@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305291718430.4799@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/i8j2F0k9BYX4qLc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368611522-9984-21-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <alpine.DEB.2.02.1305291718430.4799@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---/i8j2F0k9BYX4qLc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > > > +void xen_setup_runstate_info(int cpu)
+> > > > > +{
+> > > > > +	struct vcpu_register_runstate_memory_area area;
+> > > > > +
+> > > > > +	area.addr.v = &per_cpu(xen_runstate, cpu);
+> > > > > +
+> > > > > +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> > > > > +			       cpu, &area))
+> > > > > +		BUG();
+> > > > 
+> > > > The original code did:
+> > > > 
+> > > > -       rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> > > > -                               &area);
+> > > > -       WARN_ON(rc && rc != -ENOSYS);
+> > > > -
+> > > > Any reason not to do this?
+> > > 
+> > > The original x86 code just BUGs out: I took that version over the ia64
+> > > version.
+> > 
+> > Ah, I see it now. OK, then this looks good to me.
+> > 
+> 
+> Can I add your acked-by? ;-)
 
-On Wed, May 15, 2013 at 10:51:43AM +0100, Lee Jones wrote:
-> For all ux500 based platforms the maximum number of end-points are used.
-> Move this knowledge into the driver so we can relinquish the burden from
-> platform data. This also removes quite a bit of complexity from the driver
-> and will aid us when we come to enable the driver for Device Tree.
->=20
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: linux-usb@vger.kernel.org
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+How about?
 
-for drivers/usb/musb
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---/i8j2F0k9BYX4qLc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRpkGVAAoJEIaOsuA1yqRE6v8QALBoV3kkhWM5sDVzuZCCWlMB
-XLCfsgjK4qc0F3FBBEACkl4sU86APPSADaI1asBamWQ56zRl95FB5Ggzt7kdRxCo
-klkyuNbNtidFaRss27WJOnzn3rU9FphjCbmDv5mbW6dR4v5FqJeD3VpPMAXgKSjo
-N5DngSrLRYuj1mftAM4GeCxeJURl+4Vx/gvFpsqKPuFq/Z+jmxZbM9HFeJptkaba
-1SZhkCxsEhF/sLxyLcmnQDxuyB3u4ExVzKZbc0TAUI49azxd0m7f/kwZ7hpA91QM
-kkK8aq/FGrqhY0cVuLhxT7WvIw+4UxSSSNgEl5eycQtK+zhm7h/JDW9M79GZulJ3
-SBJKWPJjPC1x5iGPz7itkCoMrWMn+mpnCy+B/bSQBZTTTav2cNvntvvhRp3QvPJo
-zie+0phWGXFKRoBBUOiw/o3qZxJ6ioOFoC8WHbqiuuA+l1Nkm3WFEgj6EQhLXGVV
-BRoJpcsUsDlkLmrN0ffupTRxCKJNlMiD1pwbxyBa7dv1Hapb12DOkNIEo5kejequ
-6pulkBDd5VhgIRqotwfZoLOfSvI4yYyuAGm9fW06PVEsfpUZjQYkyu/IMFMk+JRE
-0AT02dKO39rj+914Vi2xkR3cvMS8GzM7PTKeMga3FM1dd1l0g6L+XinVL6VCfghE
-ZVutlZ2vNHBFJqFTeZnD
-=9Ex2
------END PGP SIGNATURE-----
-
---/i8j2F0k9BYX4qLc--
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
