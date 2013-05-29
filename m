@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965900Ab3E2LoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:44:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49806 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965564Ab3E2Lnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:43:46 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <balbi@ti.com>, <stern@rowland.harvard.edu>, <kishon@ti.com>,
-        <arnd@arndb.de>, <adrienverge@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 2/5] USB: ehci-omap: select NOP_USB_XCEIV PHY driver
-Date: Wed, 29 May 2013 14:43:28 +0300
-Message-ID: <1369827811-534-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369827811-534-1-git-send-email-rogerq@ti.com>
-References: <1369827811-534-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S965908Ab3E2Lpk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:45:40 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:35023 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965530Ab3E2Lpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:45:36 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Eric Piel <eric.piel@tremplin-utc.net>, linux-kernel@vger.kernel.org
+Cc: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Subject: [PATCH v1 1/1] drivers/misc: lis3lv02d: convert to use devm_regulator_bulk_get
+Date: Wed, 29 May 2013 15:45:13 +0400
+Message-Id: <1369827913-31033-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ehci-omap needs NOP_USB_XCEIV PHY driver to function
-properly, so select it. As the USB PHY drivers no longer
-depend on USB_PHY, it is safe to select the PHY drivers.
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Use devm_regulator_bulk_get to make cleanup paths simpler
+
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 ---
- drivers/usb/host/Kconfig |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 344d5e2..5561b47 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -150,13 +150,11 @@ config USB_EHCI_MXC
- config USB_EHCI_HCD_OMAP
- 	tristate "EHCI support for OMAP3 and later chips"
- 	depends on ARCH_OMAP
-+	select NOP_USB_XCEIV
- 	default y
- 	---help---
- 	  Enables support for the on-chip EHCI controller on
- 	  OMAP3 and later chips.
--	  If your system uses a PHY on the USB port, you will need to
--	  enable USB_PHY and the appropriate PHY driver as well. Most
--	  boards need the NOP_USB_XCEIV PHY driver.
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+index 7c97550..01ddcf0 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+@@ -154,7 +154,7 @@ static int lis3lv02d_i2c_probe(struct i2c_client *client,
  
- config USB_EHCI_HCD_ORION
- 	tristate  "Support for Marvell EBU on-chip EHCI USB controller"
+ 	lis3_dev.regulators[0].supply = reg_vdd;
+ 	lis3_dev.regulators[1].supply = reg_vdd_io;
+-	ret = regulator_bulk_get(&client->dev,
++	ret = devm_regulator_bulk_get(&client->dev,
+ 				 ARRAY_SIZE(lis3_dev.regulators),
+ 				 lis3_dev.regulators);
+ 	if (ret < 0)
+@@ -179,12 +179,9 @@ static int lis3lv02d_i2c_probe(struct i2c_client *client,
+ 	lis3_reg_ctrl(&lis3_dev, LIS3_REG_OFF);
+ 
+ 	if (ret)
+-		goto fail2;
++		goto fail;
+ 	return 0;
+ 
+-fail2:
+-	regulator_bulk_free(ARRAY_SIZE(lis3_dev.regulators),
+-				lis3_dev.regulators);
+ fail:
+ 	if (pdata && pdata->release_resources)
+ 		pdata->release_resources();
+@@ -202,8 +199,6 @@ static int lis3lv02d_i2c_remove(struct i2c_client *client)
+ 	lis3lv02d_joystick_disable(lis3);
+ 	lis3lv02d_remove_fs(&lis3_dev);
+ 
+-	regulator_bulk_free(ARRAY_SIZE(lis3->regulators),
+-			    lis3_dev.regulators);
+ 	return 0;
+ }
+ 
 -- 
-1.7.4.1
+1.7.9.5
 
