@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935127Ab3E2HhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:37:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935097Ab3E2Hg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:36:59 -0400
-Message-ID: <51A5B011.7000101@redhat.com>
-Date: Wed, 29 May 2013 03:36:49 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S935141Ab3E2Hhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:37:55 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:17095 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935097Ab3E2Hhy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 03:37:54 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 May 2013 15:37:49 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5cPvzjYaBEBPWJTwuyQi2e6ELslQAAFfwQ
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+ <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+In-Reply-To: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: atomlin@redhat.com, netdev@vger.kernel.org, davem@davemloft.net,
-        edumazet@google.com, pshelar@nicira.com, mst@redhat.com,
-        alexander.h.duyck@intel.com, aquini@redhat.com,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2] skbuff: Hide GFP_ATOMIC page allocation failures for
- dropped packets
-References: <1369599557-22677-1-git-send-email-atomlin@redhat.com>  <51A39A3F.8080903@redhat.com> <1369693520.3301.477.camel@edumazet-glaptop>
-In-Reply-To: <1369693520.3301.477.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2013 06:25 PM, Eric Dumazet wrote:
-> On Mon, 2013-05-27 at 13:39 -0400, Rik van Riel wrote:
+Hi  Richard,
+
+Thanks for your reply ,
+I will make a check for this .
 
 
->> Yes please. Getting memory management bug reports for
->> dropped network packets got old years ago.  Lets get
->> rid of those messages.
+-----Original Message-----
+From: richard -rw- weinberger [mailto:richard.weinberger@gmail.com] 
+Sent: Wednesday, May 29, 2013 3:35 PM
+To: Wang, Yalin
+Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: A bug about system call on ARM
+
+Hi!
+
+On Wed, May 29, 2013 at 8:52 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+> Hi  all,
 >
-> I am only wondering why this path has anything needing special
-> attention, over thousands of kmalloc() like call sites in the kernel.
-
-There are a few special things about the network code:
-
-1) network packets can arrive extremely fast, in
-    large batches
-2) the network code cannot wait for the VM to free
-    memory (GFP_ATOMIC)
-
-Other allocations tend to be done less at a time, and/or
-allow the VM to free up memory before proceeding.
-
-> If mm allocation warnings are useless, just make __GFP_NOWARN the
-> default, and save us thousand of patches (adding the __GFP_NOWARN
-> everywhere)
+> I am a new comer to this mailing list , I am happy to join this 
+> community .
 >
-> Truth is : some network drivers don't deal very well with allocation
-> errors. mlx4 for example absolutely wants order-2 pages in RX path, with
-> no fallback to order-0 pages.
+> I have a bug reported from our android phones which is caused by  the system call .
+> It seems like kernel bugs from my view .
 
-Network protocols and network applications tend to deal
-with packet loss by retransmitting data, though.
+Is this a unmodified Linux kernel from kernel.org? In other works, no (half broken) board support package from your hardware vendor?
+Did you try a more recent kernel? (At least 3.4.47).
+Maybe your problem is already known and fixed...
 
-Also, once all the data from one of those order-2 page
-buffers has been delivered or forwarded, that buffer
-becomes available to subsequent network packets.
-
-Other allocations tend not to free & reuse their
-memory as quickly as the network stack.
-
-> So I am not against this patch, but I can not really acknowledge it,
-> sorry.
+> Crash in  file  arch\arm\kernel\ entry-common.S
+>
+> /***************************************************************/
+>
+> ENTRY(vector_swi)
+>         sub     sp, sp, #S_FRAME_SIZE
+>         stmia   sp, {r0 - r12}                  @ Calling r0 - r12
+>  ARM(   add     r8, sp, #S_PC           )
+>  ARM(   stmdb   r8, {sp, lr}^           )       @ Calling sp, lr
+>  THUMB( mov     r8, sp                  )
+>  THUMB( store_user_sp_lr r8, r10, S_SP  )       @ calling sp, lr
+>         mrs     r8, spsr                        @ called from non-FIQ mode, so ok.
+>         str     lr, [sp, #S_PC]                 @ Save calling PC
+>         str     r8, [sp, #S_PSR]                @ Save CPSR
+>         str     r0, [sp, #S_OLD_R0]             @ Save OLD_R0
+>         zero_fp
+>
+>         /*
+>          * Get the system call number.
+>          */
+>
+> #if defined(CONFIG_OABI_COMPAT)
+>
+>         /*
+>          * If we have CONFIG_OABI_COMPAT then we need to look at the swi
+>          * value to determine if it is an EABI or an old ABI call.
+>          */
+> #ifdef CONFIG_ARM_THUMB
+>         tst     r8, #PSR_T_BIT
+>         movne   r10, #0                         @ no thumb OABI emulation
+>         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
+> #else
+>         ldr     r10, [lr, #-4]                  @ get SWI instruction
+>   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
+>   A710( teq     ip, #0x0f000000                                         )
+>   A710( bne     .Larm710bug                                             )
+> #endif
+> #ifdef CONFIG_CPU_ENDIAN_BE8
+>         rev     r10, r10                        @ little endian instruction
+> #endif
+>
+> /*********************************************************************
+> ******************************/
+>
+> Then reason why it will crash when get SWI instruction is maybe This 
+> page is clear to aged by kernel, But this MMU fault happpened in 
+> kernel, So the kernel do_page_fault function will not clear this page 
+> to young, So that  will crash .
+>
+> It should poll this page to make it present or the fault should be 
+> handled by fixup section , Anyway, this place should not crash by kernel .
+>
+> The kernel version I used  is  3.4.0
+> I have add the kernel log and the call stack recovered  by trace32 
+> tools Pls have a look at it .
+>
+>
+> Thanks .
+>
+>
+>
+> Sony Mobile Communications
+> Tel: +86 10 5966 9819
+> Phone: 18610323092
+> Address: No.16 Guangshun South Street, Chaoyang, Beijing, P.R.C.
+>
+> sonymobile.com
 >
 >
 >
 
+
+
+--
+Thanks,
+//richard
