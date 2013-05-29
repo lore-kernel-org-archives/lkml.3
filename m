@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935294Ab3E2WSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:18:12 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23070 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935228Ab3E2WSH (ORCPT
+	id S935298Ab3E2WUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:20:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50775 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935228Ab3E2WUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:18:07 -0400
-Date: Wed, 29 May 2013 17:16:47 -0500
-From: scameron@beardog.cce.hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: axboe@kernel.dk, stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] cciss: fix broken mutex usage in ioctl
-Message-ID: <20130529221647.GG1703@beardog.cce.hp.com>
-References: <20130524192841.21256.51523.stgit@beardog.cce.hp.com> <20130529150342.7f16e4402c82227604931984@linux-foundation.org>
+	Wed, 29 May 2013 18:20:09 -0400
+Date: Wed, 29 May 2013 15:20:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        davej@redhat.com, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 2/7] Documentation/devices.txt: Remove /dev/oldmem
+ description
+Message-Id: <20130529152007.893940a04d95fa1e38e851d4@linux-foundation.org>
+In-Reply-To: <51A2B68E.4060605@cn.fujitsu.com>
+References: <51A02E50.5020507@gmail.com>
+	<51A02F59.8000103@gmail.com>
+	<87vc668x4w.fsf@xmission.com>
+	<51A15E2F.7010308@gmail.com>
+	<51A2B693.7000701@jp.fujitsu.com>
+	<51A2B68E.4060605@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529150342.7f16e4402c82227604931984@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:03:42PM -0700, Andrew Morton wrote:
-> On Fri, 24 May 2013 14:28:41 -0500 "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
+On Mon, 27 May 2013 09:27:42 +0800 Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
+
+> ___ 2013___05___27___ 09:27, HATAYAMA Daisuke ______:
+> > (2013/05/26 9:58), Zhang Yanfei wrote:
+> >> ___ 2013___05___26___ 07:20, Eric W. Biederman ______:
+> >>> Zhang Yanfei <zhangyanfei.yes@gmail.com> writes:
+> >>>
+> >>>> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> >>>
+> >>> Won't we want to keep this reservation around to so that this number
+> >>> doesn't get reused, and cause people confusion when
+> >>> upgrading/downgrading kernels?
+> >>
+> >> Ah, yes. I will just keep this and add a note to make people know that
+> >> it is removed in the next version.
+> >>
+> > 
+> > It looks enough writing "obsolete" according to the other parts of the same file.
+> > 
 > 
-> > If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
-> > (as is normal with the Array Configuration Utility) the process
-> > will hang as below.  It attempts to acquire the same mutex twice, once
-> > in do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
-> > the mutex isn't.
-> 
-> huh, now that's a really old-school deadlock.  I wonder why lockdep
-> didn't shout about it.
+> I've sent the v2 version and actually did what you said.
 
-Yeah, and it's been there for a long time, and nobody has complained
-that I know of which seems really weird.  We found it here testing sles11sp2
-which picked up the bug, and then only accidentally, since we failed
-to install the driver that was intended to be tested.   The drivers
-that HP distributes for supported distros don't contain the bug (we
-didn't pick up the BKL removing patch, mainly due to not noticing it
-other than noticing lock_kernel() had disappeared), so anybody
-that installs those HP drivers doesn't see the problem, and most of
-the testing here involves those drivers.
+I can't find any v2 version of this patchset.
 
-I think it must mean that almost nobody who runs kernel.org kernels
-is also running the HP array config utility, which is the main thing
-that will trigger it.  Perhaps they use the offline ROM based
-Array config utility instead.
+I did this:
 
-Or, maybe the controllers that cciss supports are so old now that nobody
-uses them, or maybe nobody uses them with new kernels.  I did have a slightly
-hard time scraping up old hardware to test this.  The accountants like to make
-us throw away old stuff.
-
--- steve
+--- a/Documentation/devices.txt~dev-oldmem-remove-the-interface-fix
++++ a/Documentation/devices.txt
+@@ -102,6 +102,7 @@ Your cooperation is appreciated.
+ 					export the buffered printk records.
+ 		 12 = /dev/oldmem	Used by crashdump kernels to access
+ 					the memory of the kernel that crashed.
++					(obsolete)
+ 
+   1 block	RAM disk
+ 		  0 = /dev/ram0		First RAM disk
+_
 
