@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935230Ab3E2Vhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:37:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46193 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab3E2VhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:37:24 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <rui.zhang@intel.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Durgadoss R <durgadoss.r@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] thermal: consider emul_temperature while computing trend
-Date: Wed, 29 May 2013 17:37:00 -0400
-Message-ID: <1369863420-21913-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+	id S935233Ab3E2VkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:40:17 -0400
+Received: from serlx29.essex.ac.uk ([155.245.48.16]:54469 "EHLO
+	serlx29.essex.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609Ab3E2VkM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 17:40:12 -0400
+X-Greylist: delayed 1014 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 17:40:12 EDT
+From: "Fuller, Jack T W" <jfulleb@essex.ac.uk>
+Subject: HELP DESK
+Thread-Topic: HELP DESK
+Thread-Index: Ac5csm/aD2nVE5fcRHSC9ofSI7ZVYg==
+Date: Wed, 29 May 2013 21:21:09 +0000
+Message-ID: <265258B89B99964299765192ECA87E863415A7A7@mbx0-node1.essex.ac.uk>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [155.245.42.90]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-MailScanner-ID: 1Uhnnw-0008P9-SY
+X-Essex-MailScanner: Found to be clean
+X-Essex-MailScanner-SpamCheck: spam, SpamAssassin (score=10.41, required 5,
+	autolearn=disabled, ESSEX_PHISHURL_82 10.00, MISSING_HEADERS 1.21,
+	RCVD_IN_DNSWL_LOW -0.70, RP_MATCHES_RCVD -1.07, SPF_SOFTFAIL 0.97,
+	URIBL_BLOCKED 0.00)
+X-Essex-MailScanner-SpamScore: ssssssssss
+X-Essex-MailScanner-From: jfulleb@essex.ac.uk
+X-Essex-MailScanner-Watermark: 1370467269.09997@19oCsnCtI3irRFiW/mqQOQ
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case emulated temperature is in use, using the trend
-provided by driver layer can lead to bogus situation.
-In this case, debugger user would set a temperature value,
-but the trend would be from driver computation.
+Your Mailbox Has Exceeded It's loted Quota As Set By Your Administrator, And You Will Not Be Able To Receive Or Send New Mails Until You Re-Validate.To Re-Validate
 
-To avoid this situation, this patch changes the get_tz_trend()
-to consider the emulated temperature whenever that is in use.
+CLICK HERE: <http://xrt.3dn.ru/outlook.html>
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Durgadoss R <durgadoss.r@intel.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/thermal/thermal_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index d755440..c00dc92 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -155,7 +155,8 @@ int get_tz_trend(struct thermal_zone_device *tz, int trip)
- {
- 	enum thermal_trend trend;
- 
--	if (!tz->ops->get_trend || tz->ops->get_trend(tz, trip, &trend)) {
-+	if (tz->emul_temperature || !tz->ops->get_trend ||
-+	    tz->ops->get_trend(tz, trip, &trend)) {
- 		if (tz->temperature > tz->last_temperature)
- 			trend = THERMAL_TREND_RAISING;
- 		else if (tz->temperature < tz->last_temperature)
--- 
-1.8.2.1.342.gfa7285d
-
+System Administrator
