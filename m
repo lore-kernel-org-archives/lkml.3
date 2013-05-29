@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965745Ab3E2S3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:29:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965160Ab3E2S3c (ORCPT
+	id S1757287Ab3E2SeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:34:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:50524 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965290Ab3E2SeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:29:32 -0400
-Date: Wed, 29 May 2013 11:29:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 3/4] zswap: add to mm/
-Message-Id: <20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
-In-Reply-To: <20130529145720.GA428@cerebellum>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
-	<20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
-	<20130529145720.GA428@cerebellum>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 14:34:11 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dianders@chromium.org, patches@linaro.org
+Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
+References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
+	<87sj1qzaov.fsf@linaro.org> <5191AA89.6010901@linaro.org>
+	<20130528231740.GA28879@quad.lixom.net> <51A57D39.8030506@linaro.org>
+Date: Wed, 29 May 2013 11:34:07 -0700
+In-Reply-To: <51A57D39.8030506@linaro.org> (Tushar Behera's message of "Wed,
+	29 May 2013 09:29:53 +0530")
+Message-ID: <87mwrd63fk.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+Tushar Behera <tushar.behera@linaro.org> writes:
 
-> > > +/*********************************
-> > > +* helpers
-> > > +**********************************/
-> > > +static inline bool zswap_is_full(void)
-> > > +{
-> > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
-> > > +		zswap_pool_pages);
-> > > +}
-> > 
-> > We have had issues in the past where percentage-based tunables were too
-> > coarse on very large machines.  For example, a terabyte machine where 0
-> > bytes is too small and 10GB is too large.
-> 
-> Yes, this is known limitation of the code right now and it is a high priority
-> to come up with something better.  It isn't clear what dynamic sizing policy
-> should be used so, until such time as that policy can be determined, this is a
-> simple stop-gap that works well enough for simple setups.
+[...]
 
-It's a module parameter and hence is part of the userspace interface. 
-It's undesirable that the interface be changed, and it would be rather
-dumb to merge it as-is when we *know* that it will be changed.
+> The patches are at [1]. There are a total of 6 patches on top of
+> v3.10-rc3. 3 of them (a, b, d) are queued for 3.10-rc4 and another patch
+> (c) is just a defconfig hack to get Arndale booting. Remaining 2 patches
+> (e, f) are required to reset the hub during EHCI initialization.
+>
+> a. ARM: exynos: defconfig update
+> b. ARM: EXYNOS: Update defconfig for Arndale and Origen board
+> c. [TEMP] ARM: EXYNOS: Set low-level UART port to 2
+> d. ARM: dts: Enabling samsung-usb2phy driver for exynos5250
+> e. usb: ehci-s5p: add the HSIC port initialization
+> f. ARM: dts: Add USB gpio entries for Arndale board
+>
+> I am not sure whether such kind of board-specific patches (e, f) are
+> appreciated in the drivers. But that is all we need to get USB and
+> Ethernet to work on v3.10-rc3 kernel.
 
-I don't think we can remove the parameter altogether (or can we?), so I
-suggest we finalise it ASAP.  Perhaps rename it to
-zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
+I confirm that using v3.10-rc3 + these patches, the wired network is
+working on Arndale.
 
+Thanks,
 
+Kevin
