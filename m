@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965787Ab3E2LDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:37 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46736 "EHLO relay.sw.ru"
+	id S965801Ab3E2LDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:03:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:3557 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965732Ab3E2LDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:03:34 -0400
+	id S965732Ab3E2LDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:03:38 -0400
 From: Glauber Costa <glommer@openvz.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
         Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
         Glauber Costa <glommer@openvz.org>
-Subject: [PATCH v7 06/11] sched: document the cpu cgroup.
-Date: Wed, 29 May 2013 15:03:17 +0400
-Message-Id: <1369825402-31046-7-git-send-email-glommer@openvz.org>
+Subject: [PATCH v7 07/11] sched: account guest time per-cgroup as well.
+Date: Wed, 29 May 2013 15:03:18 +0400
+Message-Id: <1369825402-31046-8-git-send-email-glommer@openvz.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
 References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
@@ -22,104 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU cgroup is so far, undocumented. Although data exists in the
-Documentation directory about its functioning, it is usually spread,
-and/or presented in the context of something else. This file
-consolidates all cgroup-related information about it.
+We already track multiple tick statistics per-cgroup, using
+the task_group_account_field facility. This patch accounts
+guest_time in that manner as well.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
 ---
- Documentation/cgroups/cpu.txt | 81 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 81 insertions(+)
- create mode 100644 Documentation/cgroups/cpu.txt
+ kernel/sched/cputime.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/cgroups/cpu.txt b/Documentation/cgroups/cpu.txt
-new file mode 100644
-index 0000000..072fd58
---- /dev/null
-+++ b/Documentation/cgroups/cpu.txt
-@@ -0,0 +1,81 @@
-+CPU Controller
-+--------------
-+
-+The CPU controller is responsible for grouping tasks together that will be
-+viewed by the scheduler as a single unit. The CFS scheduler will first divide
-+CPU time equally between all entities in the same level, and then proceed by
-+doing the same in the next level. Basic use cases for that are described in the
-+main cgroup documentation file, cgroups.txt.
-+
-+Users of this functionality should be aware that deep hierarchies will of
-+course impose scheduler overhead, since the scheduler will have to take extra
-+steps and look up additional data structures to make its final decision.
-+
-+Through the CPU controller, the scheduler is also able to cap the CPU
-+utilization of a particular group. This is particularly useful in environments
-+in which CPU is paid for by the hour, and one values predictability over
-+performance.
-+
-+CPU Accounting
-+--------------
-+
-+The CPU cgroup will also provide additional files under the prefix "cpuacct".
-+Those files provide accounting statistics and were previously provided by the
-+separate cpuacct controller. Although the cpuacct controller will still be kept
-+around for compatibility reasons, its usage is discouraged. If both the CPU and
-+cpuacct controllers are present in the system, distributors are encouraged to
-+always mount them together.
-+
-+Files
-+-----
-+
-+The CPU controller exposes the following files to the user:
-+
-+ - cpu.shares: The weight of each group living in the same hierarchy, that
-+ translates into the amount of CPU it is expected to get. Upon cgroup creation,
-+ each group gets assigned a default of 1024. The percentage of CPU assigned to
-+ the cgroup is the value of shares divided by the sum of all shares in all
-+ cgroups in the same level.
-+
-+ - cpu.cfs_period_us: The duration in microseconds of each scheduler period, for
-+ bandwidth decisions. This defaults to 100000us or 100ms. Larger periods will
-+ improve throughput at the expense of latency, since the scheduler will be able
-+ to sustain a cpu-bound workload for longer. The opposite of true for smaller
-+ periods. Note that this only affects non-RT tasks that are scheduled by the
-+ CFS scheduler.
-+
-+- cpu.cfs_quota_us: The maximum time in microseconds during each cfs_period_us
-+  in for the current group will be allowed to run. For instance, if it is set to
-+  half of cpu_period_us, the cgroup will only be able to peak run for 50 % of
-+  the time. One should note that this represents aggregate time over all CPUs
-+  in the system. Therefore, in order to allow full usage of two CPUs, for
-+  instance, one should set this value to twice the value of cfs_period_us.
-+
-+- cpu.stat: statistics about the bandwidth controls. No data will be presented
-+  if cpu.cfs_quota_us is not set. The file presents three
-+  numbers:
-+	nr_periods: how many full periods have been elapsed.
-+	nr_throttled: number of times we exausted the full allowed bandwidth
-+	throttled_time: total time the tasks were not run due to being overquota
-+
-+ - cpu.rt_runtime_us and cpu.rt_period_us: Those files are the RT-tasks
-+   analogous to the CFS files cfs_quota_us and cfs_period_us. One important
-+   difference, though, is that while the cfs quotas are upper bounds that
-+   won't necessarily be met, the rt runtimes form a stricter guarantee.
-+   Therefore, no overlap is allowed. Implications of that are that given a
-+   hierarchy with multiple children, the sum of all rt_runtime_us may not exceed
-+   the runtime of the parent. Also, a rt_runtime_us of 0, means that no rt tasks
-+   can ever be run in this cgroup. For more information about rt tasks runtime
-+   assignments, see scheduler/sched-rt-group.txt
-+
-+ - cpuacct.usage: The aggregate CPU time, in nanoseconds, consumed by all tasks
-+   in this group.
-+
-+ - cpuacct.usage_percpu: The CPU time, in nanoseconds, consumed by all tasks in
-+   this group, separated by CPU. The format is an space-separated array of time
-+   values, one for each present CPU.
-+
-+ - cpuacct.stat: aggregate user and system time consumed by tasks in this group.
-+   The format is
-+	user: x
-+	system: y
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 74a44ef..e653e52 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -183,8 +183,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 			       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+ 	/* Add guest time to process. */
+ 	p->utime += cputime;
+ 	p->utimescaled += cputime_scaled;
+@@ -193,11 +191,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 
+ 	/* Add guest time to cpustat. */
+ 	if (TASK_NICE(p) > 0) {
+-		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_NICE, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	} else {
+-		cpustat[CPUTIME_USER] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_USER, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	}
+ }
+ 
 -- 
 1.8.1.4
 
