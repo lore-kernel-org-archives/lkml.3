@@ -1,68 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725Ab3E2Q2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:28:32 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:65311 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3E2Q20 (ORCPT
+	id S1757821Ab3E2QcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:32:10 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:57828 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab3E2QcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:28:26 -0400
+	Wed, 29 May 2013 12:32:04 -0400
+Message-ID: <51A62D7F.4030607@gmail.com>
+Date: Thu, 30 May 2013 00:31:59 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <51A4C9BA.40903@wwwdotorg.org>
-References: <1368690525-32252-1-git-send-email-linus.walleij@stericsson.com>
-	<519A8A57.9060007@wwwdotorg.org>
-	<CACRpkdZieCmFnHCGUkv8EqcAtb3DA7dSZpimSdB4P81tZPJRoQ@mail.gmail.com>
-	<519F8B02.1080000@wwwdotorg.org>
-	<CACRpkdYxvBvYAnmp-p5WwB3QD0rd83qDcdg-BMhN7-2Jv8Oo_w@mail.gmail.com>
-	<51A4C9BA.40903@wwwdotorg.org>
-Date: Wed, 29 May 2013 18:28:26 +0200
-Message-ID: <CACRpkdaC54jJxfPiaEborfuozHCgvH6vMzsQT_6kJsM-=6fedQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: sink pinctrldev_list_mutex
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: ext Tony Lindgren <tony@atomide.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH updated] drivers/base: Use attribute groups to create
+ sysfs memory files
+References: <51A58F4D.3020804@linux.vnet.ibm.com>
+In-Reply-To: <51A58F4D.3020804@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 5:14 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> [Me]
->> But it'd be even cooler to actually just iterate over the
->> pinctrl_list och handles and orphan them, and later recouple
->> them if a driver is loaded back in.
+Hi Nathan,
+         Good cleanup!
+Reviewed-by: Jiang Liu <jiang.liu@huawei.com>
+
+On Wed 29 May 2013 01:17:01 PM CST, Nathan Fontenot wrote:
+> Update the sysfs memory code to create/delete files at the time of device
+> and subsystem registration.
 >
-> Hmm. What happens if the client driver wants to select a different state
-> while the pinctrl driver itself isn't loaded? I'm not sure how workable
-> that is. I think the only way to make it work would be to cache enough
-> information in the struct pinctrl that it could be activated even if the
-> driver wasn't loaded. That seems a little scary.
+> The current code creates files in the root memory directory explicitly
+> through
+> the use of init_* routines. The files for each memory block are
+> created and
+> deleted explicitly using the mem_[create|delete]_simple_file macros.
+>
+> This patch creates attribute groups for the memory root files and
+> files in
+> each memory block directory so that they are created and deleted
+> implicitly
+> at subsys and device register and unregister time.
+>
+> This did necessitate moving the register_memory() routine and update
+> it to set the dev.groups field.
+>
+> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+>
+> Updated to apply cleanly to rc2.
+>
+> Please cc me on responses/comments.
+> ---
+>  drivers/base/memory.c |  143
+> +++++++++++++++++++++-----------------------------
+>  1 file changed, 62 insertions(+), 81 deletions(-)
+>
+> Index: linux/drivers/base/memory.c
+> ===================================================================
+> --- linux.orig/drivers/base/memory.c    2013-05-28 22:53:58.000000000
+> -0500
+> +++ linux/drivers/base/memory.c 2013-05-28 22:56:49.000000000 -0500
+> @@ -77,22 +77,6 @@
+>         kfree(mem);
+>  }
+>
+> -/*
+> - * register_memory - Setup a sysfs device for a memory block
+> - */
+> -static
+> -int register_memory(struct memory_block *memory)
+> -{
+> -       int error;
+> -
+> -       memory->dev.bus = &memory_subsys;
+> -       memory->dev.id = memory->start_section_nr / sections_per_block;
+> -       memory->dev.release = memory_block_release;
+> -
+> -       error = device_register(&memory->dev);
+> -       return error;
+> -}
+> -
+>  unsigned long __weak memory_block_size_bytes(void)
+>  {
+>         return MIN_MEMORY_BLOCK_SIZE;
+> @@ -371,11 +355,6 @@
+>  static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+>  static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+>
+> -#define mem_create_simple_file(mem, attr_name) \
+> -       device_create_file(&mem->dev, &dev_attr_##attr_name)
+> -#define mem_remove_simple_file(mem, attr_name) \
+> -       device_remove_file(&mem->dev, &dev_attr_##attr_name)
+> -
+>  /*
+>   * Block size attribute stuff
+>   */
+> @@ -388,12 +367,6 @@
+>
+>  static DEVICE_ATTR(block_size_bytes, 0444, print_block_size, NULL);
+>
+> -static int block_size_init(void)
+> -{
+> -       return device_create_file(memory_subsys.dev_root,
+> -                                 &dev_attr_block_size_bytes);
+> -}
+> -
+>  /*
+>   * Some architectures will have custom drivers to do this, and
+>   * will not need to do it from userspace.  The fake hot-add code
+> @@ -429,17 +402,8 @@
+>  out:
+>         return ret;
+>  }
+> -static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+>
+> -static int memory_probe_init(void)
+> -{
+> -       return device_create_file(memory_subsys.dev_root,
+> &dev_attr_probe);
+> -}
+> -#else
+> -static inline int memory_probe_init(void)
+> -{
+> -       return 0;
+> -}
+> +static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+>  #endif
+>
+>  #ifdef CONFIG_MEMORY_FAILURE
+> @@ -485,23 +449,6 @@
+>
+>  static DEVICE_ATTR(soft_offline_page, S_IWUSR, NULL,
+> store_soft_offline_page);
+>  static DEVICE_ATTR(hard_offline_page, S_IWUSR, NULL,
+> store_hard_offline_page);
+> -
+> -static __init int memory_fail_init(void)
+> -{
+> -       int err;
+> -
+> -       err = device_create_file(memory_subsys.dev_root,
+> -                               &dev_attr_soft_offline_page);
+> -       if (!err)
+> -               err = device_create_file(memory_subsys.dev_root,
+> -                               &dev_attr_hard_offline_page);
+> -       return err;
+> -}
+> -#else
+> -static inline int memory_fail_init(void)
+> -{
+> -       return 0;
+> -}
+>  #endif
+>
+>  /*
+> @@ -546,6 +493,41 @@
+>         return find_memory_block_hinted(section, NULL);
+>  }
+>
+> +static struct attribute *memory_memblk_attrs[] = {
+> +       &dev_attr_phys_index.attr,
+> +       &dev_attr_end_phys_index.attr,
+> +       &dev_attr_state.attr,
+> +       &dev_attr_phys_device.attr,
+> +       &dev_attr_removable.attr,
+> +       NULL
+> +};
+> +
+> +static struct attribute_group memory_memblk_attr_group = {
+> +       .attrs = memory_memblk_attrs,
+> +};
+> +
+> +static const struct attribute_group *memory_memblk_attr_groups[] = {
+> +       &memory_memblk_attr_group,
+> +       NULL,
+> +};
+> +
+> +/*
+> + * register_memory - Setup a sysfs device for a memory block
+> + */
+> +static
+> +int register_memory(struct memory_block *memory)
+> +{
+> +       int error;
+> +
+> +       memory->dev.bus = &memory_subsys;
+> +       memory->dev.id = memory->start_section_nr / sections_per_block;
+> +       memory->dev.release = memory_block_release;
+> +       memory->dev.groups = memory_memblk_attr_groups;
+> +
+> +       error = device_register(&memory->dev);
+> +       return error;
+> +}
+> +
+>  static int init_memory_block(struct memory_block **memory,
+>                              struct mem_section *section, unsigned
+> long state)
+>  {
+> @@ -569,16 +551,6 @@
+>         mem->phys_device = arch_get_memory_phys_device(start_pfn);
+>
+>         ret = register_memory(mem);
+> -       if (!ret)
+> -               ret = mem_create_simple_file(mem, phys_index);
+> -       if (!ret)
+> -               ret = mem_create_simple_file(mem, end_phys_index);
+> -       if (!ret)
+> -               ret = mem_create_simple_file(mem, state);
+> -       if (!ret)
+> -               ret = mem_create_simple_file(mem, phys_device);
+> -       if (!ret)
+> -               ret = mem_create_simple_file(mem, removable);
+>
+>         *memory = mem;
+>         return ret;
+> @@ -656,14 +628,9 @@
+>         unregister_mem_sect_under_nodes(mem, __section_nr(section));
+>
+>         mem->section_count--;
+> -       if (mem->section_count == 0) {
+> -               mem_remove_simple_file(mem, phys_index);
+> -               mem_remove_simple_file(mem, end_phys_index);
+> -               mem_remove_simple_file(mem, state);
+> -               mem_remove_simple_file(mem, phys_device);
+> -               mem_remove_simple_file(mem, removable);
+> +       if (mem->section_count == 0)
+>                 unregister_memory(mem);
+> -       } else
+> +       else
+>                 kobject_put(&mem->dev.kobj);
+>
+>         mutex_unlock(&mem_sysfs_mutex);
+> @@ -700,6 +667,29 @@
+>         return mem->state == MEM_OFFLINE;
+>  }
+>
+> +static struct attribute *memory_root_attrs[] = {
+> +#ifdef CONFIG_ARCH_MEMORY_PROBE
+> +       &dev_attr_probe.attr,
+> +#endif
+> +
+> +#ifdef CONFIG_MEMORY_FAILURE
+> +       &dev_attr_soft_offline_page.attr,
+> +       &dev_attr_hard_offline_page.attr,
+> +#endif
+> +
+> +       &dev_attr_block_size_bytes.attr,
+> +       NULL
+> +};
+> +
+> +static struct attribute_group memory_root_attr_group = {
+> +       .attrs = memory_root_attrs,
+> +};
+> +
+> +static const struct attribute_group *memory_root_attr_groups[] = {
+> +       &memory_root_attr_group,
+> +       NULL,
+> +};
+> +
+>  /*
+>   * Initialize the sysfs support for memory devices...
+>   */
+> @@ -711,7 +701,7 @@
+>         unsigned long block_sz;
+>         struct memory_block *mem = NULL;
+>
+> -       ret = subsys_system_register(&memory_subsys, NULL);
+> +       ret = subsys_system_register(&memory_subsys,
+> memory_root_attr_groups);
+>         if (ret)
+>                 goto out;
+>
+> @@ -734,15 +724,6 @@
+>                         ret = err;
+>         }
+>
+> -       err = memory_probe_init();
+> -       if (!ret)
+> -               ret = err;
+> -       err = memory_fail_init();
+> -       if (!ret)
+> -               ret = err;
+> -       err = block_size_init();
+> -       if (!ret)
+> -               ret = err;
+>  out:
+>         if (ret)
+>                 printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Yes it looks like that would lead to a bit of scalability problem in the
-struct pinctrl. If for nothing else than for the fact that it will eat
-memory and such :-(
 
-> I'd be fine if there was a requirement to unload all drives that were
-> clients of the pinctrl driver before you could unload the pinctrl
-> driver, just like any other driver/subsystem. This would work fine at
-> least for testing with just hogs, which while not great for full-system
-> testing would surely be fine at least when first developing the pinctrl
-> driver.
-
-Yes ... so if we call
-get_device(pctldev->dev)/put_device(pctldev->dev)
-for any successful pinctrl_get() which is not a hog,
-we increase the refcount so that the device core will disallow
-unloading of the driver.
-
-Now I need to figure out how to do that.
-
-Yours,
-Linus Walleij
