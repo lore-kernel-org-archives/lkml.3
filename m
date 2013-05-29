@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965559Ab3E2KZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:25:09 -0400
-Received: from mailhost-y2-m4.netultra.net ([78.40.49.239]:58272 "EHLO
-	smtp-delay2.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965412Ab3E2KZH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:25:07 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 06:25:06 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5.7235.2
+	id S965565Ab3E2K0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965527Ab3E2K0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 06:26:21 -0400
+Date: Wed, 29 May 2013 12:26:01 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, fenghua.yu@intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/x86: construct all sibling maps if smt
+Message-ID: <20130529102600.GA10582@hawk.usersys.redhat.com>
+References: <1369674540-10601-1-git-send-email-drjones@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-Content-class: urn:content-classes:message
-Subject: Re: [I2C] informations + advice about messages handling
-Date: Wed, 29 May 2013 12:17:58 +0200
-Message-ID: <CA78C307B8F06747967D122FC656B15398645D@SERVEUR0.nvp.local>
-In-Reply-To: <20130524142017.52545a52@endymion.delvare>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [I2C] informations + advice about messages handling
-Thread-Index: Ac5cVcxTBMRJc5iYRIqJ+BJrcHlrmQ==
-References: <CA78C307B8F06747967D122FC656B153986448@SERVEUR0.nvp.local> <CAK7N6vpg6QUAKODKO2Msr4+GTASLDpA2cG1teQV3yiwt7D4SSw@mail.gmail.com> <20130524094407.61d0ec42@endymion.delvare> <CA78C307B8F06747967D122FC656B15398644A@SERVEUR0.nvp.local> <20130524110706.6052493e@endymion.delvare> <CA78C307B8F06747967D122FC656B15398644B@SERVEUR0.nvp.local> <20130524142017.52545a52@endymion.delvare>
-From: "Mylene Josserand" <Mylene.Josserand@navocap.com>
-To: "Jean Delvare" <khali@linux-fr.org>
-Cc: "anish singh" <anish198519851985@gmail.com>,
-        "kernelnewbies" <kernelnewbies@kernelnewbies.org>,
-        "Linux I2C" <linux-i2c@vger.kernel.org>,
-        "linux-kernel-mail" <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369674540-10601-1-git-send-email-drjones@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-Le 24/05/2013 14:20, Jean Delvare a écrit :
-> On Fri, 24 May 2013 11:52:54 +0200, Mylene Josserand wrote:
->> - an audio codec tlv320aic3204 : There is a driver for this device but
->> for some reasons, we did not use it. Did not find a "SMBus compliant" in
->> its datasheet.
+On Mon, May 27, 2013 at 07:09:00PM +0200, Andrew Jones wrote:
+> Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()") broke
+> the construction of sibling maps, which also broke the booted_cores
+> accounting.
+> 
+> Before the rewrite, if smt was present, then each map was updated for
+> each smt sibling. After the rewrite only cpu_sibling_mask gets updated,
+> as the llc and core maps depend on 'has_mc = x86_max_cores > 1' instead.
+> This leads to problems with topologies like the following
+> 
+> (qemu -smp sockets=2,cores=1,threads=2)
+> 
+> processor	: 0
+> physical id	: 0
+> siblings	: 1    <= should be 2
+> core id		: 0
+> cpu cores	: 1
+> 
+> processor	: 1
+> physical id	: 0
+> siblings	: 1    <= should be 2
+> core id		: 0
+> cpu cores	: 0    <= should be 1
+> 
+> processor	: 2
+> physical id	: 1
+> siblings	: 1    <= should be 2
+> core id		: 0
+> cpu cores	: 1
+> 
+> processor	: 3
+> physical id	: 1
+> siblings	: 1    <= should be 2
+> core id		: 0
+> cpu cores	: 0    <= should be 1
+> 
+> This patch restores the former construction by defining has_mc as
+> (has_smt || x86_max_cores > 1). This should be fine as there were no
+> (has_smt && !has_mc) conditions in the context.
+> 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  arch/x86/kernel/smpboot.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 9c73b51817e47..886a3234eaff3 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+>  
+>  void __cpuinit set_cpu_sibling_map(int cpu)
+>  {
+> -	bool has_mc = boot_cpu_data.x86_max_cores > 1;
+>  	bool has_smt = smp_num_siblings > 1;
+> +	bool has_mc = has_smt || boot_cpu_data.x86_max_cores > 1;
+>  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+>  	struct cpuinfo_x86 *o;
+>  	int i;
+>  
+>  	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+>  
+> -	if (!has_smt && !has_mc) {
+> +	if (!has_mc) {
+>  		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+>  		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
+>  		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+> -- 
+> 1.8.1.4
 >
-> The tlv320aic32x4 driver uses i2c_master_send, which is a shortcut to
-> i2c_transfer. However it seems to only send 2 bytes on the bus at once,
-> the same could be achieved with i2c_smbus_write_byte_data if needed.
 
-Okay, thanks to have looked at it !
+Any acks? This patch fixes a regression. Also, in case anybody is
+wondering, this is not the same regression as was already fixed with
 
->
-> For completeness: a device might use transactions which are compliant
-> with SMBus without being formally "SMBus-compliant", because SMBus has
-> more constraints than just transaction types (I kept things simple
-> originally to not confuse you.) This may explain why it isn't mentioned
-> in the datasheet. Or just because the manufacturer did not care because
-> they target fully I2C-capable systems anyway.
->
-> What you have to look at is the transaction types. They are usually
-> described in the datasheet. Then compare with either the SMBus
-> specification or
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/i2c/smbus-protocol
-> and if they match then you can use the i2c_smbus_*() calls.
+ceb1cbac8eda6 sched/x86: Calculate booted cores after construction of sibling_mask
 
+(Hmm, I probably should have renamed has_mc to has_mp, as the redefinition
+expands its scope. I'm not sure if that deserves a v2 though.)
 
-I have checked the PIC18F24201 according to your advice and, of what I 
-have seen, it can handle the SMBus protocol.
-
-Thank you for the explanation and trying to keep it simple for me :)
-
-
--- 
-Mylène JOSSERAND
+drew
