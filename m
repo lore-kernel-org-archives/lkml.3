@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967118Ab3E2Wsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:48:50 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59327 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab3E2Wsj (ORCPT
+	id S967131Ab3E2WtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:49:04 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63484 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab3E2Wsz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:48:39 -0400
-Date: Wed, 29 May 2013 17:19:17 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Waiman Long <waiman.long@hp.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-Message-ID: <20130529211917.GB6658@logfs.org>
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
- <20130523094201.GA24543@dastard>
- <519E8B5F.3080905@hp.com>
- <20130527020903.GR29466@dastard>
- <51A624E2.3000301@hp.com>
- <20130529184640.GA3243@fieldses.org>
- <20130529203700.GM6123@two.firstfloor.org>
+	Wed, 29 May 2013 18:48:55 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130529203700.GM6123@two.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+To: =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>, cate@cateee.net
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1368798200-7063-1-git-send-email-emilio@elopez.com.ar>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>
+References: <5195D615.70608@cateee.net>
+ <1368798200-7063-1-git-send-email-emilio@elopez.com.ar>
+Message-ID: <20130529224849.6058.25112@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH] clk: sunxi: "cpu_data" is defined in header files of some
+ architectures
+Date: Wed, 29 May 2013 15:48:49 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013 22:37:00 +0200, Andi Kleen wrote:
+Quoting Emilio López (2013-05-17 06:43:20)
+> From: "Giacomo A. Catenazzi" <cate@cateee.net>
 > 
-> > As Dave said before, is the last path component sufficient?  Or how
-> > about an inode number?
+> In some architectures, the #define cpu_data is not a "macro-function",
+> so the compiler will substitute the identifier with probably something
+> wrong.
 > 
-> Neither works, the profiler needs to find the file and read it.
+> Signed-off-by: Giacomo A. Catenazzi <cate@cateee.net>
+> Signed-off-by: Emilio López <emilio@elopez.com.ar>
+> [emilio@elopez.com.ar: use cpu_mux_data instead of this_cpu_data]
 
-Ignoring all the complexity this would cause downstream, you could do
-the path lookup just once, attach some cookie to it and return the
-cookie ever-after.  Maybe some combination of i_sb and i_ino would be
-good enough as a cookie.
+Taken into clk-next.
 
-Jörn
+Regards,
+Mike
 
---
-Data dominates. If you've chosen the right data structures and organized
-things well, the algorithms will almost always be self-evident. Data
-structures, not algorithms, are central to programming.
--- Rob Pike
+> ---
+> 
+> Hi Giacomo,
+> 
+> I have taken your patch and resent it to linux-arm-kernel and Mike 
+> Turquette this time, but please try to use git send-email on your next 
+> patch.
+> 
+> Here is a video from Greg that explains how to use it as well as other 
+> things (checkpatch.pl, get_maintainer.pl, etc)
+> 
+> http://www.youtube.com/watch?v=LLBrBBImJt4
+> 
+> Thanks! :)
+> 
+> Emilio
+> 
+>  drivers/clk/sunxi/clk-sunxi.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index 930d36f..412912b 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -239,7 +239,7 @@ struct mux_data {
+>         u8 shift;
+>  };
+>  
+> -static const __initconst struct mux_data cpu_data = {
+> +static const __initconst struct mux_data cpu_mux_data = {
+>         .shift = 16,
+>  };
+>  
+> @@ -433,7 +433,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
+>  
+>  /* Matches for mux clocks */
+>  static const __initconst struct of_device_id clk_mux_match[] = {
+> -       {.compatible = "allwinner,sun4i-cpu-clk", .data = &cpu_data,},
+> +       {.compatible = "allwinner,sun4i-cpu-clk", .data = &cpu_mux_data,},
+>         {.compatible = "allwinner,sun4i-apb1-mux-clk", .data = &apb1_mux_data,},
+>         {}
+>  };
+> -- 
+> 1.8.2.3
