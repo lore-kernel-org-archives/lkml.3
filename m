@@ -1,39 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3E2PdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:33:09 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:33524 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab3E2PdG convert rfc822-to-8bit (ORCPT
+	id S1757779Ab3E2PdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:33:24 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51134 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab3E2PdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:33:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369827811-534-3-git-send-email-rogerq@ti.com>
-References: <1369827811-534-1-git-send-email-rogerq@ti.com>
-	<1369827811-534-3-git-send-email-rogerq@ti.com>
-Date: Wed, 29 May 2013 11:33:05 -0400
-Message-ID: <CANsc=4VicTFGLO_zbDDsQam3dKsNNUgvQa=zR_u7beKseWh3UA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] USB: ehci-omap: select NOP_USB_XCEIV PHY driver
-From: =?UTF-8?Q?Adrien_Verg=C3=A9?= <adrienverge@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        kishon@ti.com, arnd@arndb.de, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 May 2013 11:33:20 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH 01/11] phy: Clean coding style in vitesse phy
+Date: Wed, 29 May 2013 17:33:01 +0200
+Message-Id: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-27560-1369841591-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/29 Roger Quadros <rogerq@ti.com>:
-> ehci-omap needs NOP_USB_XCEIV PHY driver to function
-> properly, so select it. As the USB PHY drivers no longer
-> depend on USB_PHY, it is safe to select the PHY drivers.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Acked-by: Adrien Vergé <adrienverge@gmail.com>
-Tested-by: Adrien Vergé <adrienverge@gmail.com>
+--=_mimegpg-monstr-desktop-27560-1369841591-0001
 
-Works well on Pandaboard (OMAP4430).
-Thank you!
+- Remove trailing white space
+- Remove spaces before tag
+- Fix comments
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/net/phy/vitesse.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
+index 3492b53..d6e988f 100644
+--- a/drivers/net/phy/vitesse.c
++++ b/drivers/net/phy/vitesse.c
+@@ -44,12 +44,12 @@
+ #define MII_VSC8244_ISTAT_DUPLEX	0x1000
+
+ /* Vitesse Auxiliary Control/Status Register */
+-#define MII_VSC8244_AUX_CONSTAT        	0x1c
+-#define MII_VSC8244_AUXCONSTAT_INIT    	0x0000
+-#define MII_VSC8244_AUXCONSTAT_DUPLEX  	0x0020
+-#define MII_VSC8244_AUXCONSTAT_SPEED   	0x0018
+-#define MII_VSC8244_AUXCONSTAT_GBIT    	0x0010
+-#define MII_VSC8244_AUXCONSTAT_100     	0x0008
++#define MII_VSC8244_AUX_CONSTAT		0x1c
++#define MII_VSC8244_AUXCONSTAT_INIT	0x0000
++#define MII_VSC8244_AUXCONSTAT_DUPLEX	0x0020
++#define MII_VSC8244_AUXCONSTAT_SPEED	0x0018
++#define MII_VSC8244_AUXCONSTAT_GBIT	0x0010
++#define MII_VSC8244_AUXCONSTAT_100	0x0008
+
+ #define MII_VSC8221_AUXCONSTAT_INIT	0x0004 /* need to set this bit? */
+ #define MII_VSC8221_AUXCONSTAT_RESERVED	0x0004
+@@ -100,9 +100,8 @@ static int vsc824x_config_init(struct phy_device *phydev)
+ static int vsc824x_ack_interrupt(struct phy_device *phydev)
+ {
+ 	int err = 0;
+-	
+-	/*
+-	 * Don't bother to ACK the interrupts if interrupts
++
++	/* Don't bother to ACK the interrupts if interrupts
+ 	 * are disabled.  The 824x cannot clear the interrupts
+ 	 * if they are disabled.
+ 	 */
+@@ -122,8 +121,7 @@ static int vsc82xx_config_intr(struct phy_device *phydev)
+ 				MII_VSC8244_IMASK_MASK :
+ 				MII_VSC8221_IMASK_MASK);
+ 	else {
+-		/*
+-		 * The Vitesse PHY cannot clear the interrupt
++		/* The Vitesse PHY cannot clear the interrupt
+ 		 * once it has disabled them, so we clear them first
+ 		 */
+ 		err = phy_read(phydev, MII_VSC8244_ISTAT);
+@@ -146,7 +144,8 @@ static int vsc8221_config_init(struct phy_device *phydev)
+ 	return err;
+
+ 	/* Perhaps we should set EXT_CON1 based on the interface?
+-	   Options are 802.3Z SerDes or SGMII */
++	 * Options are 802.3Z SerDes or SGMII
++	 */
+ }
+
+ /* Vitesse 824x */
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-27560-1369841591-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGmH7cACgkQykllyylKDCGj2wCfd6UQyyFeHANN3uOZ/d+m5217
+WEkAn3y5uvKayQdre+S/jtmaJMmykYhW
+=Iu+F
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-27560-1369841591-0001--
