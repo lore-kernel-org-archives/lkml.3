@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab3E2QNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:13:32 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:64710 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab3E2QNE (ORCPT
+	id S933363Ab3E2QOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:14:14 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:36562 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab3E2QOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:13:04 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Pallav Joshi <pallav.joshi@xilinx.com>, git-dev@xilinx.com,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH 2/3] video: xilinxfb: Do not use out_be32 IO function
-Date: Wed, 29 May 2013 18:12:57 +0200
-Message-Id: <b05a2b1821043b192bb38d7ba0b04342db26c1f9.1369843969.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <502367ddf6d79b7b343b3165ad54cb9e2d4713db.1369843969.git.michal.simek@xilinx.com>
-References: <502367ddf6d79b7b343b3165ad54cb9e2d4713db.1369843969.git.michal.simek@xilinx.com>
-In-Reply-To: <502367ddf6d79b7b343b3165ad54cb9e2d4713db.1369843969.git.michal.simek@xilinx.com>
-References: <502367ddf6d79b7b343b3165ad54cb9e2d4713db.1369843969.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-20195-1369843980-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 29 May 2013 12:14:06 -0400
+Date: Wed, 29 May 2013 18:13:58 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529161358.GJ6123@two.firstfloor.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A624E2.3000301@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+> The d_path() is called by perf_event_mmap_event() which translates
+> VMA to its file path for memory segments backed by files. As perf is
+> not just for sampling data within the kernel, it can also be used
+> for checking access pattern in the user space. As a result, it needs
+> to map VMAs back to the backing files to access their symbols
+> information. If d_path() is not the right function to call for this
+> purpose, what other alternatives do we have?
 
---=_mimegpg-monstr-desktop-20195-1369843980-0001
+In principle it should be only called for new file mappings
+getting maped.  Do you really have that many new file mappings all
+the time? Or is this related to program startup?
 
-out_be32 IO function is not supported by ARM.
-It is only available for PPC and Microblaze.
+> 
+> My patch set consists of 2 different changes. The first one is to
+> avoid taking the d_lock lock when updating the reference count in
+> the dentries. This particular change also benefit some other
+> workloads that are filesystem intensive. One particular example is
+> the short workload in the AIM7 benchmark. One of the job type in the
+> short workload is "misc_rtns_1" which calls security functions like
+> getpwnam(), getpwuid(), getgrgid() a couple of times. These
+> functions open the /etc/passwd or /etc/group files, read their
+> content and close the files. It is the intensive open/read/close
+> sequence from multiple threads that is causing 80%+ contention in
+> the d_lock on a system with large number of cores. The MIT's
+> MOSBench paper also outlined dentry reference counting as a
 
-Remove all out_be32 references and start to use __raw_writel
-function.
+The paper was before Nick Piggin's RCU (and our) work on this.
+Modern kernels do not have dcache problems with mosbench, unless
+you run weird security modules like SMACK that effectively 
+disable dcache RCU.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/video/xilinxfb.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+BTW lock elision may fix these problems anyways, in a much
+simpler way.
 
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 5af341e..dcf0552 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -57,7 +57,7 @@
-  * In case of direct PLB access the second control register will be at
-  * an offset of 4 as compared to the DCR access where the offset is 1
-  * i.e. REG_CTRL. So this is taken care in the function
-- * xilinx_fb_out_be32 where it left shifts the offset 2 times in case of
-+ * xilinx_fb_out32 where it left shifts the offset 2 times in case of
-  * direct PLB access.
-  */
- #define NUM_REGS	2
-@@ -150,11 +150,11 @@ struct xilinxfb_drvdata {
-  * To perform the read/write on the registers we need to check on
-  * which bus its connected and call the appropriate write API.
-  */
--static void xilinx_fb_out_be32(struct xilinxfb_drvdata *drvdata, u32 offset,
-+static void xilinx_fb_out32(struct xilinxfb_drvdata *drvdata, u32 offset,
- 				u32 val)
- {
- 	if (drvdata->flags & PLB_ACCESS_FLAG)
--		out_be32(drvdata->regs + (offset << 2), val);
-+		__raw_writel(val, drvdata->regs + (offset << 2));
- #ifdef CONFIG_PPC_DCR
- 	else
- 		dcr_write(drvdata->dcr_host, offset, val);
-@@ -197,7 +197,7 @@ xilinx_fb_blank(int blank_mode, struct fb_info *fbi)
- 	switch (blank_mode) {
- 	case FB_BLANK_UNBLANK:
- 		/* turn on panel */
--		xilinx_fb_out_be32(drvdata, REG_CTRL, drvdata->reg_ctrl_default);
-+		xilinx_fb_out32(drvdata, REG_CTRL, drvdata->reg_ctrl_default);
- 		break;
+-Andi
 
- 	case FB_BLANK_NORMAL:
-@@ -205,7 +205,7 @@ xilinx_fb_blank(int blank_mode, struct fb_info *fbi)
- 	case FB_BLANK_HSYNC_SUSPEND:
- 	case FB_BLANK_POWERDOWN:
- 		/* turn off panel */
--		xilinx_fb_out_be32(drvdata, REG_CTRL, 0);
-+		xilinx_fb_out32(drvdata, REG_CTRL, 0);
- 	default:
- 		break;
-
-@@ -280,13 +280,13 @@ static int xilinxfb_assign(struct device *dev,
- 	memset_io((void __iomem *)drvdata->fb_virt, 0, fbsize);
-
- 	/* Tell the hardware where the frame buffer is */
--	xilinx_fb_out_be32(drvdata, REG_FB_ADDR, drvdata->fb_phys);
-+	xilinx_fb_out32(drvdata, REG_FB_ADDR, drvdata->fb_phys);
-
- 	/* Turn on the display */
- 	drvdata->reg_ctrl_default = REG_CTRL_ENABLE;
- 	if (pdata->rotate_screen)
- 		drvdata->reg_ctrl_default |= REG_CTRL_ROTATE;
--	xilinx_fb_out_be32(drvdata, REG_CTRL,
-+	xilinx_fb_out32(drvdata, REG_CTRL,
- 					drvdata->reg_ctrl_default);
-
- 	/* Fill struct fb_info */
-@@ -345,7 +345,7 @@ err_cmap:
- 		iounmap(drvdata->fb_virt);
-
- 	/* Turn off the display */
--	xilinx_fb_out_be32(drvdata, REG_CTRL, 0);
-+	xilinx_fb_out32(drvdata, REG_CTRL, 0);
-
- err_fbmem:
- 	if (drvdata->flags & PLB_ACCESS_FLAG)
-@@ -381,7 +381,7 @@ static int xilinxfb_release(struct device *dev)
- 		iounmap(drvdata->fb_virt);
-
- 	/* Turn off the display */
--	xilinx_fb_out_be32(drvdata, REG_CTRL, 0);
-+	xilinx_fb_out32(drvdata, REG_CTRL, 0);
-
- 	/* Release the resources, as allocated based on interface */
- 	if (drvdata->flags & PLB_ACCESS_FLAG) {
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-20195-1369843980-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGmKQwACgkQykllyylKDCGPTQCbBayeyuXORsQbC1/LgqAvcvxc
-2o0AoIm6qgXDKsJwDTXp5qXu0FYOnj/I
-=iADK
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-20195-1369843980-0001--
+ak@linux.intel.com -- Speaking for myself only.
