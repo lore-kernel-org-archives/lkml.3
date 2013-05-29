@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966726Ab3E2Pdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:33:38 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54464 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155Ab3E2Pdc (ORCPT
+	id S966854Ab3E2Pdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:33:50 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64660 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966826Ab3E2Pdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:33:32 -0400
+	Wed, 29 May 2013 11:33:47 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        Rick Hoover <RHoover@digilentinc.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        Steven Wang <steven.wang@digilentinc.com>, netdev@vger.kernel.org
-Subject: [PATCH 05/11] phy: Add Marvell 88E1510 phy ID
-Date: Wed, 29 May 2013 17:33:05 +0200
-Message-Id: <7eb71ca9746285a667a4754178ca4e04a53f2520.1369841519.git.michal.simek@xilinx.com>
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH 11/11] net: emaclite: Update driver header
+Date: Wed, 29 May 2013 17:33:11 +0200
+Message-Id: <c0a6ab3410dd6e6a9198a4605993164700d1b965.1369841519.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-27609-1369841608-0001";
+    boundary="=_mimegpg-monstr-desktop-27676-1369841624-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,95 +34,45 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-27609-1369841608-0001
+--=_mimegpg-monstr-desktop-27676-1369841624-0001
 
-Add support for this new phy ID.
+Corrent email address and years.
 
-Signed-off-by: Rick Hoover <RHoover@digilentinc.com>
-Signed-off-by: Steven Wang <steven.wang@digilentinc.com>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/net/phy/marvell.c   | 25 +++++++++++++++++++++++++
- include/linux/marvell_phy.h |  1 +
- 2 files changed, 26 insertions(+)
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-index df5a9f6..2e91477 100644
---- a/drivers/net/phy/marvell.c
-+++ b/drivers/net/phy/marvell.c
-@@ -374,6 +374,17 @@ static int m88e1318_config_aneg(struct phy_device *phydev)
- 	return m88e1121_config_aneg(phydev);
- }
-
-+static int m88e1510_config_aneg(struct phy_device *phydev)
-+{
-+	int err;
-+
-+	err = m88e1318_config_aneg(phydev);
-+	if (err < 0)
-+		return err;
-+
-+	return marvell_of_reg_init(phydev);
-+}
-+
- static int m88e1116r_config_init(struct phy_device *phydev)
- {
- 	int temp;
-@@ -1004,6 +1015,19 @@ static struct phy_driver marvell_drivers[] = {
- 		.config_intr = &marvell_config_intr,
- 		.driver = { .owner = THIS_MODULE },
- 	},
-+	{
-+		.phy_id = MARVELL_PHY_ID_88E1510,
-+		.phy_id_mask = MARVELL_PHY_ID_MASK,
-+		.name = "Marvell 88E1510",
-+		.features = PHY_GBIT_FEATURES,
-+		.flags = PHY_HAS_INTERRUPT,
-+		.config_aneg = &m88e1510_config_aneg,
-+		.read_status = &marvell_read_status,
-+		.ack_interrupt = &marvell_ack_interrupt,
-+		.config_intr = &marvell_config_intr,
-+		.did_interrupt = &m88e1121_did_interrupt,
-+		.driver = { .owner = THIS_MODULE },
-+	},
- };
-
- static int __init marvell_init(void)
-@@ -1032,6 +1056,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
- 	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
- 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
- 	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK },
- 	{ }
- };
-
-diff --git a/include/linux/marvell_phy.h b/include/linux/marvell_phy.h
-index ec41025..8e9a029 100644
---- a/include/linux/marvell_phy.h
-+++ b/include/linux/marvell_phy.h
-@@ -15,6 +15,7 @@
- #define MARVELL_PHY_ID_88E1240		0x01410e30
- #define MARVELL_PHY_ID_88E1318S		0x01410e90
- #define MARVELL_PHY_ID_88E1116R		0x01410e40
-+#define MARVELL_PHY_ID_88E1510		0x01410dd0
-
- /* struct phy_device dev_flags definitions */
- #define MARVELL_PHY_M1145_FLAGS_RESISTANCE	0x00000001
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 0d8515b..af12314 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -2,9 +2,9 @@
+  * Xilinx EmacLite Linux driver for the Xilinx Ethernet MAC Lite device.
+  *
+  * This is a new flat driver which is based on the original emac_lite
+- * driver from John Williams <john.williams@petalogix.com>.
++ * driver from John Williams <john.williams@xilinx.com>.
+  *
+- * 2007-2009 (c) Xilinx, Inc.
++ * 2007 - 2013 (c) Xilinx, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-27609-1369841608-0001
+--=_mimegpg-monstr-desktop-27676-1369841624-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGmH8gACgkQykllyylKDCFacACdF5X4/618B6WiORId4CmukrvG
-PuwAoJpEEUkAqrvAxCCQPTOykzwpv4X9
-=CpSZ
+iEYEABECAAYFAlGmH9gACgkQykllyylKDCEjqgCffZYwSfazgY2dbMWKOlBwQlvi
+TvgAoJQ/jTISuGiWdU/W23MA6lc1C0YQ
+=nNtM
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-27609-1369841608-0001--
+--=_mimegpg-monstr-desktop-27676-1369841624-0001--
