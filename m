@@ -1,236 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965816Ab3E2LDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:42353 "EHLO relay.sw.ru"
+	id S965843Ab3E2LD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:03:56 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35866 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965624Ab3E2LDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:03:44 -0400
-From: Glauber Costa <glommer@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        Glauber Costa <glommer@openvz.org>
-Subject: [PATCH v7 08/11] sched: Push put_prev_task() into pick_next_task()
-Date: Wed, 29 May 2013 15:03:19 +0400
-Message-Id: <1369825402-31046-9-git-send-email-glommer@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
-References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+	id S965804Ab3E2LDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:03:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,763,1363132800"; 
+   d="scan'208";a="27941724"
+Date: Wed, 29 May 2013 12:03:26 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v4 1/4] xen: move xen_setup_runstate_info and
+ get_runstate_snapshot to drivers/xen/time.c
+In-Reply-To: <20130528181515.GB27718@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com> <1369763672-12919-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130528181515.GB27718@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Tue, 28 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Tue, May 28, 2013 at 06:54:29PM +0100, Stefano Stabellini wrote:
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > CC: konrad.wilk@oracle.com
+> > 
+> > Changes in v2:
+> > - leave do_stolen_accounting in arch/x86/xen/time.c;
+> > - use the new common functions in arch/ia64/xen/time.c.
+> 
+> So you also modify the function.
 
-In order to avoid having to do put/set on a whole cgroup hierarchy
-when we context switch, push the put into pick_next_task() so that
-both operations are in the same function. Further changes then allow
-us to possibly optimize away redundant work.
+do_stolen_accounting? Just enought to call the new common function
+xen_get_runstate_snapshot instead of the old x86 specific
+get_runstate_snapshot.
 
-[ glommer@openvz.org: incorporated mailing list feedback ]
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Glauber Costa <glommer@openvz.org>
----
- kernel/sched/core.c      | 20 +++++++-------------
- kernel/sched/fair.c      |  6 +++++-
- kernel/sched/idle_task.c |  6 +++++-
- kernel/sched/rt.c        | 27 ++++++++++++++++-----------
- kernel/sched/sched.h     |  8 +++++++-
- kernel/sched/stop_task.c |  5 ++++-
- 6 files changed, 44 insertions(+), 28 deletions(-)
+> > ---
+> >  arch/ia64/xen/time.c  |   48 +++----------------------
+> >  arch/x86/xen/time.c   |   76 +----------------------------------------
+> >  drivers/xen/Makefile  |    2 +-
+> >  drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/xen/xen-ops.h |    5 +++
+> >  5 files changed, 104 insertions(+), 118 deletions(-)
+> >  create mode 100644 drivers/xen/time.c
+> > 
+> > diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+> > index 1f8244a..79a0b8c 100644
+> > --- a/arch/ia64/xen/time.c
+> > +++ b/arch/ia64/xen/time.c
+> > @@ -34,53 +34,17 @@
+> >  
+> >  #include "../kernel/fsyscall_gtod_data.h"
+> >  
+> > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> >  static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
+> >  static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
+> >  
+> >  /* taken from i386/kernel/time-xen.c */
+> >  static void xen_init_missing_ticks_accounting(int cpu)
+> >  {
+> > -	struct vcpu_register_runstate_memory_area area;
+> > -	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
+> > -	int rc;
+> > +	xen_setup_runstate_info(&runstate);
+> >  
+> > -	memset(runstate, 0, sizeof(*runstate));
+> > -
+> > -	area.addr.v = runstate;
+> > -	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> > -				&area);
+> > -	WARN_ON(rc && rc != -ENOSYS);
+> > -
+> > -	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
+> > -	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
+> > -					    + runstate->time[RUNSTATE_offline];
+> > -}
+> > -
+> > -/*
+> > - * Runstate accounting
+> > - */
+> > -/* stolen from arch/x86/xen/time.c */
+> > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > -{
+> > -	u64 state_time;
+> > -	struct vcpu_runstate_info *state;
+> > -
+> > -	BUG_ON(preemptible());
+> > -
+> > -	state = &__get_cpu_var(xen_runstate);
+> > -
+> > -	/*
+> > -	 * The runstate info is always updated by the hypervisor on
+> > -	 * the current CPU, so there's no need to use anything
+> > -	 * stronger than a compiler barrier when fetching it.
+> > -	 */
+> > -	do {
+> > -		state_time = state->state_entry_time;
+> > -		rmb();
+> > -		*res = *state;
+> > -		rmb();
+> > -	} while (state->state_entry_time != state_time);
+> > +	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
+> > +	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
+> > +					    + runstate.time[RUNSTATE_offline];
+> >  }
+> >  
+> >  #define NS_PER_TICK (1000000000LL/HZ)
+> > @@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
+> >  	struct vcpu_runstate_info runstate;
+> >  	struct task_struct *p = current;
+> >  
+> > -	get_runstate_snapshot(&runstate);
+> > +	xen_get_runstate_snapshot(&runstate);
+> >  
+> >  	/*
+> >  	 * Check for vcpu migration effect
+> > @@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
+> >  	 */
+> >  	now = ia64_native_sched_clock();
+> >  
+> > -	get_runstate_snapshot(&runstate);
+> > +	xen_get_runstate_snapshot(&runstate);
+> >  
+> >  	WARN_ON(runstate.state != RUNSTATE_running);
+> >  
+> > diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> > index 3d88bfd..c0ca15e 100644
+> > --- a/arch/x86/xen/time.c
+> > +++ b/arch/x86/xen/time.c
+> > @@ -30,9 +30,6 @@
+> >  #define TIMER_SLOP	100000
+> >  #define NS_PER_TICK	(1000000000LL / HZ)
+> >  
+> > -/* runstate info updated by Xen */
+> > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> > -
+> >  /* snapshots of runstate info */
+> >  static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+> >  
+> > @@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+> >  static DEFINE_PER_CPU(u64, xen_residual_stolen);
+> >  static DEFINE_PER_CPU(u64, xen_residual_blocked);
+> >  
+> > -/* return an consistent snapshot of 64-bit time/counter value */
+> > -static u64 get64(const u64 *p)
+> > -{
+> > -	u64 ret;
+> > -
+> > -	if (BITS_PER_LONG < 64) {
+> > -		u32 *p32 = (u32 *)p;
+> > -		u32 h, l;
+> > -
+> > -		/*
+> > -		 * Read high then low, and then make sure high is
+> > -		 * still the same; this will only loop if low wraps
+> > -		 * and carries into high.
+> > -		 * XXX some clean way to make this endian-proof?
+> > -		 */
+> > -		do {
+> > -			h = p32[1];
+> > -			barrier();
+> > -			l = p32[0];
+> > -			barrier();
+> > -		} while (p32[1] != h);
+> > -
+> > -		ret = (((u64)h) << 32) | l;
+> > -	} else
+> > -		ret = *p;
+> > -
+> > -	return ret;
+> > -}
+> > -
+> > -/*
+> > - * Runstate accounting
+> > - */
+> > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > -{
+> > -	u64 state_time;
+> > -	struct vcpu_runstate_info *state;
+> > -
+> > -	BUG_ON(preemptible());
+> > -
+> > -	state = &__get_cpu_var(xen_runstate);
+> > -
+> > -	/*
+> > -	 * The runstate info is always updated by the hypervisor on
+> > -	 * the current CPU, so there's no need to use anything
+> > -	 * stronger than a compiler barrier when fetching it.
+> > -	 */
+> > -	do {
+> > -		state_time = get64(&state->state_entry_time);
+> > -		barrier();
+> > -		*res = *state;
+> > -		barrier();
+> > -	} while (get64(&state->state_entry_time) != state_time);
+> > -}
+> > -
+> > -/* return true when a vcpu could run but has no real cpu to run on */
+> > -bool xen_vcpu_stolen(int vcpu)
+> > -{
+> > -	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> > -}
+> > -
+> > -void xen_setup_runstate_info(int cpu)
+> > -{
+> > -	struct vcpu_register_runstate_memory_area area;
+> > -
+> > -	area.addr.v = &per_cpu(xen_runstate, cpu);
+> > -
+> > -	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> > -			       cpu, &area))
+> > -		BUG();
+> > -}
+> > -
+> >  static void do_stolen_accounting(void)
+> >  {
+> >  	struct vcpu_runstate_info state;
+> > @@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
+> >  	s64 blocked, runnable, offline, stolen;
+> >  	cputime_t ticks;
+> >  
+> > -	get_runstate_snapshot(&state);
+> > +	xen_get_runstate_snapshot(&state);
+> >  
+> >  	WARN_ON(state.state != RUNSTATE_running);
+> >  
+> > diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> > index eabd0ee..2bf461a 100644
+> > --- a/drivers/xen/Makefile
+> > +++ b/drivers/xen/Makefile
+> > @@ -3,7 +3,7 @@ obj-y	+= manage.o
+> >  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+> >  endif
+> >  obj-$(CONFIG_X86)			+= fallback.o
+> > -obj-y	+= grant-table.o features.o events.o balloon.o
+> > +obj-y	+= grant-table.o features.o events.o balloon.o time.o
+> >  obj-y	+= xenbus/
+> >  
+> >  nostackp := $(call cc-option, -fno-stack-protector)
+> > diff --git a/drivers/xen/time.c b/drivers/xen/time.c
+> > new file mode 100644
+> > index 0000000..c2e39d3
+> > --- /dev/null
+> > +++ b/drivers/xen/time.c
+> > @@ -0,0 +1,91 @@
+> > +/*
+> > + * Xen stolen ticks accounting.
+> > + */
+> > +#include <linux/kernel.h>
+> > +#include <linux/kernel_stat.h>
+> > +#include <linux/math64.h>
+> > +#include <linux/gfp.h>
+> > +
+> > +#include <asm/xen/hypervisor.h>
+> > +#include <asm/xen/hypercall.h>
+> > +
+> > +#include <xen/events.h>
+> > +#include <xen/features.h>
+> > +#include <xen/interface/xen.h>
+> > +#include <xen/interface/vcpu.h>
+> > +#include <xen/xen-ops.h>
+> > +
+> > +/* runstate info updated by Xen */
+> > +static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> > +
+> > +/* return an consistent snapshot of 64-bit time/counter value */
+> > +static u64 get64(const u64 *p)
+> > +{
+> > +	u64 ret;
+> > +
+> > +	if (BITS_PER_LONG < 64) {
+> > +		u32 *p32 = (u32 *)p;
+> > +		u32 h, l;
+> > +
+> > +		/*
+> > +		 * Read high then low, and then make sure high is
+> > +		 * still the same; this will only loop if low wraps
+> > +		 * and carries into high.
+> > +		 * XXX some clean way to make this endian-proof?
+> > +		 */
+> > +		do {
+> > +			h = p32[1];
+> > +			barrier();
+> > +			l = p32[0];
+> > +			barrier();
+> > +		} while (p32[1] != h);
+> > +
+> > +		ret = (((u64)h) << 32) | l;
+> > +	} else
+> > +		ret = *p;
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +/*
+> > + * Runstate accounting
+> > + */
+> > +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > +{
+> > +	u64 state_time;
+> > +	struct vcpu_runstate_info *state;
+> > +
+> > +	BUG_ON(preemptible());
+> > +
+> > +	state = &__get_cpu_var(xen_runstate);
+> > +
+> > +	/*
+> > +	 * The runstate info is always updated by the hypervisor on
+> > +	 * the current CPU, so there's no need to use anything
+> > +	 * stronger than a compiler barrier when fetching it.
+> > +	 */
+> > +	do {
+> > +		state_time = get64(&state->state_entry_time);
+> > +		barrier();
+> > +		*res = *state;
+> > +		barrier();
+> > +	} while (get64(&state->state_entry_time) != state_time);
+> > +}
+> > +
+> > +/* return true when a vcpu could run but has no real cpu to run on */
+> > +bool xen_vcpu_stolen(int vcpu)
+> > +{
+> > +	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> > +}
+> > +
+> > +void xen_setup_runstate_info(int cpu)
+> > +{
+> > +	struct vcpu_register_runstate_memory_area area;
+> > +
+> > +	area.addr.v = &per_cpu(xen_runstate, cpu);
+> > +
+> > +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> > +			       cpu, &area))
+> > +		BUG();
+> 
+> The original code did:
+> 
+> -       rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> -                               &area);
+> -       WARN_ON(rc && rc != -ENOSYS);
+> -
+> Any reason not to do this?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0fa0f87..3b1441f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2295,18 +2295,11 @@ static inline void schedule_debug(struct task_struct *prev)
- 	schedstat_inc(this_rq(), sched_count);
- }
- 
--static void put_prev_task(struct rq *rq, struct task_struct *prev)
--{
--	if (prev->on_rq || rq->skip_clock_update < 0)
--		update_rq_clock(rq);
--	prev->sched_class->put_prev_task(rq, prev);
--}
--
- /*
-  * Pick up the highest-prio task:
-  */
- static inline struct task_struct *
--pick_next_task(struct rq *rq)
-+pick_next_task(struct rq *rq, struct task_struct *prev)
- {
- 	const struct sched_class *class;
- 	struct task_struct *p;
-@@ -2316,13 +2309,13 @@ pick_next_task(struct rq *rq)
- 	 * the fair class we can call that function directly:
- 	 */
- 	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
--		p = fair_sched_class.pick_next_task(rq);
-+		p = fair_sched_class.pick_next_task(rq, prev);
- 		if (likely(p))
- 			return p;
- 	}
- 
- 	for_each_class(class) {
--		p = class->pick_next_task(rq);
-+		p = class->pick_next_task(rq, prev);
- 		if (p)
- 			return p;
- 	}
-@@ -2417,8 +2410,9 @@ need_resched:
- 	if (unlikely(!rq->nr_running))
- 		idle_balance(cpu, rq);
- 
--	put_prev_task(rq, prev);
--	next = pick_next_task(rq);
-+	if (prev->on_rq || rq->skip_clock_update < 0)
-+		update_rq_clock(rq);
-+	next = pick_next_task(rq, prev);
- 	clear_tsk_need_resched(prev);
- 	rq->skip_clock_update = 0;
- 
-@@ -4395,7 +4389,7 @@ static void migrate_tasks(unsigned int dead_cpu)
- 		if (rq->nr_running == 1)
- 			break;
- 
--		next = pick_next_task(rq);
-+		next = pick_next_task(rq, NULL);
- 		BUG_ON(!next);
- 		next->sched_class->put_prev_task(rq, next);
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a7f5c39..414cf1c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3628,7 +3628,8 @@ preempt:
- 		set_last_buddy(se);
- }
- 
--static struct task_struct *pick_next_task_fair(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- {
- 	struct task_struct *p;
- 	struct cfs_rq *cfs_rq = &rq->cfs;
-@@ -3637,6 +3638,9 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
- 	if (!cfs_rq->nr_running)
- 		return NULL;
- 
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
- 	do {
- 		se = pick_next_entity(cfs_rq);
- 		set_next_entity(cfs_rq, se);
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index d8da010..4f0a332 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -33,8 +33,12 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
- 	resched_task(rq->idle);
- }
- 
--static struct task_struct *pick_next_task_idle(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
- 	schedstat_inc(rq, sched_goidle);
- #ifdef CONFIG_SMP
- 	/* Trigger the post schedule to do an idle_enter for CFS */
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 4a21045..6c41fa1 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1330,15 +1330,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
- {
- 	struct sched_rt_entity *rt_se;
- 	struct task_struct *p;
--	struct rt_rq *rt_rq;
--
--	rt_rq = &rq->rt;
--
--	if (!rt_rq->rt_nr_running)
--		return NULL;
--
--	if (rt_rq_throttled(rt_rq))
--		return NULL;
-+	struct rt_rq *rt_rq  = &rq->rt;
- 
- 	do {
- 		rt_se = pick_next_rt_entity(rq, rt_rq);
-@@ -1352,9 +1344,22 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
- 	return p;
- }
- 
--static struct task_struct *pick_next_task_rt(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- {
--	struct task_struct *p = _pick_next_task_rt(rq);
-+	struct task_struct *p;
-+	struct rt_rq *rt_rq = &rq->rt;
-+
-+	if (!rt_rq->rt_nr_running)
-+		return NULL;
-+
-+	if (rt_rq_throttled(rt_rq))
-+		return NULL;
-+
-+	if (prev)
-+		prev->sched_class->put_prev_task(rq, prev);
-+
-+	p = _pick_next_task_rt(rq);
- 
- 	/* The running task is never eligible for pushing */
- 	if (p)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 0e5e795..a39eb9b 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -987,7 +987,13 @@ struct sched_class {
- 
- 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
- 
--	struct task_struct * (*pick_next_task) (struct rq *rq);
-+	/*
-+	 * It is the responsibility of the pick_next_task() method that will
-+	 * return the next task to call put_prev_task() on the @prev task or
-+	 * something equivalent.
-+	 */
-+	struct task_struct * (*pick_next_task) (struct rq *rq,
-+						struct task_struct *prev);
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
- 
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 4142d7e..6adf6a9 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -23,12 +23,15 @@ check_preempt_curr_stop(struct rq *rq, struct task_struct *p, int flags)
- 	/* we're never preempted */
- }
- 
--static struct task_struct *pick_next_task_stop(struct rq *rq)
-+static struct task_struct *
-+pick_next_task_stop(struct rq *rq, struct task_struct *prev)
- {
- 	struct task_struct *stop = rq->stop;
- 
- 	if (stop && stop->on_rq) {
- 		stop->se.exec_start = rq_clock_task(rq);
-+		if (prev)
-+			prev->sched_class->put_prev_task(rq, prev);
- 		return stop;
- 	}
- 
--- 
-1.8.1.4
-
+The original x86 code just BUGs out: I took that version over the ia64
+version.
