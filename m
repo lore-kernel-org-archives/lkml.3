@@ -1,65 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935212Ab3E2P6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:58:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35481 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934551Ab3E2P57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:57:59 -0400
-Date: Wed, 29 May 2013 17:57:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
- zone shrinking code
-Message-ID: <20130529155756.GH10224@dhcp22.suse.cz>
-References: <20130517160247.GA10023@cmpxchg.org>
- <1369674791-13861-1-git-send-email-mhocko@suse.cz>
- <20130529130538.GD10224@dhcp22.suse.cz>
+	id S934556Ab3E2QEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:04:05 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53568 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934455Ab3E2QDy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 12:03:54 -0400
+Message-ID: <51A626E0.9030308@linux.vnet.ibm.com>
+Date: Thu, 30 May 2013 00:03:44 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529130538.GD10224@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 04/11] KVM: MMU: zap pages in batch
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130524203432.GB4525@amt.cnet> <51A2C2DC.6080403@linux.vnet.ibm.com> <20130528001802.GB1359@amt.cnet> <51A4C6F1.9000607@linux.vnet.ibm.com> <20130529111132.GA5931@amt.cnet> <51A5FDF5.8020003@linux.vnet.ibm.com> <20130529133243.GG5931@amt.cnet> <51A60A64.2080509@linux.vnet.ibm.com>
+In-Reply-To: <51A60A64.2080509@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052915-8878-0000-0000-0000074E5DE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-05-13 15:05:38, Michal Hocko wrote:
-> On Mon 27-05-13 19:13:08, Michal Hocko wrote:
-> [...]
-> > Nevertheless I have encountered an issue while testing the huge number
-> > of groups scenario. And the issue is not limitted to only to this
-> > scenario unfortunately. As memcg iterators use per node-zone-priority
-> > cache to prevent from over reclaim it might quite easily happen that
-> > the walk will not visit all groups and will terminate the loop either
-> > prematurely or skip some groups. An example could be the direct reclaim
-> > racing with kswapd. This might cause that the loop misses over limit
-> > groups so no pages are scanned and so we will fall back to all groups
-> > reclaim.
+On 05/29/2013 10:02 PM, Xiao Guangrong wrote:
+> On 05/29/2013 09:32 PM, Marcelo Tosatti wrote:
+>> On Wed, May 29, 2013 at 09:09:09PM +0800, Xiao Guangrong wrote:
+>>> This information is I replied Gleb in his mail where he raced a question that
+>>> why "collapse tlb flush is needed":
+>>>
+>>> ======
+>>> It seems no.
+>>> Since we have reloaded mmu before zapping the obsolete pages, the mmu-lock
+>>> is easily contended. I did the simple track:
+>>>
+>>> +       int num = 0;
+>>>  restart:
+>>>         list_for_each_entry_safe_reverse(sp, node,
+>>>               &kvm->arch.active_mmu_pages, link) {
+>>> @@ -4265,6 +4265,7 @@ restart:
+>>>                 if (batch >= BATCH_ZAP_PAGES &&
+>>>                       cond_resched_lock(&kvm->mmu_lock)) {
+>>>                         batch = 0;
+>>> +                       num++;
+>>>                         goto restart;
+>>>                 }
+>>>
+>>> @@ -4277,6 +4278,7 @@ restart:
+>>>          * may use the pages.
+>>>          */
+>>>         kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>> +       printk("lock-break: %d.\n", num);
+>>>  }
+>>>
+>>> I do read pci rom when doing kernel building in the guest which
+>>> has 1G memory and 4vcpus with ept enabled, this is the normal
+>>> workload and normal configuration.
+>>>
+>>> # dmesg
+>>> [ 2338.759099] lock-break: 8.
+>>> [ 2339.732442] lock-break: 5.
+>>> [ 2340.904446] lock-break: 3.
+>>> [ 2342.513514] lock-break: 3.
+>>> [ 2343.452229] lock-break: 3.
+>>> [ 2344.981599] lock-break: 4.
+>>>
+>>> Basically, we need to break many times.
+>>
+>> Should measure kvm_mmu_zap_all latency.
+>>
+>>> ======
+>>>
+>>> You can see we should break 3 times to zap all pages even if we have zapoed
+>>> 10 pages in batch. It is obviously that it need break more times without
+>>> batch-zapping.
+>>
+>> Again, breaking should be no problem, what matters is latency. Please
+>> measure kvm_mmu_zap_all latency after all optimizations to justify 
+>> this minimum batching.
 > 
-> And after some more testing and head scratching it turned out that
-> fallbacks to pass#2 I was seeing are caused by something else. It is
-> not race between iterators but rather reclaiming from zone DMA which
-> has troubles to scan anything despite there are pages on LRU and so we
-> fall back. I have to look into that more but what-ever the issue is it
-> shouldn't be related to the patch series.
+> Okay, okay. I will benchmark the latency.
 
-Think I know what is going on. get_scan_count sees relatively small
-amount of pages in the lists (around 2k). This means that get_scan_count
-will tell us to scan nothing for DEF_PRIORITY (as the DMA32 is usually
-~16M) then the DEF_PRIORITY is basically no-op and we have to wait and
-fall down to a priority which actually let us scan something.
+Okay, I have done the test, the test environment is the same that
+"I do read pci rom when doing kernel building in the guest which
+has 1G memory and 4vcpus with ept enabled, this is the normal
+workload and normal configuration.".
 
-Hmm, maybe ignoring soft reclaim for DMA zone would help to reduce
-one pointless loop over groups.
--- 
-Michal Hocko
-SUSE Labs
+Batch-zapped:
+Guest:
+# cat     /sys/bus/pci/devices/0000\:00\:03.0/rom
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:           975        793        181          0          6        438
+-/+ buffers/cache:        347        627
+Swap:         2015         43       1972
+
+Host shows:
+[ 2229.918558] lock-break: 5.
+[ 2229.918564] kvm_mmu_invalidate_zap_all_pages: 174706e.
+
+
+No-batch:
+Guest:
+# cat     /sys/bus/pci/devices/0000\:00\:03.0/rom
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:           975        843        131          0         17        476
+-/+ buffers/cache:        348        626
+Swap:         2015          2
+
+Host shows:
+[ 2931.675285] lock-break: 13.
+[ 2931.675291] kvm_mmu_invalidate_zap_all_pages: 69c1676.
+
+That means, nearly the same memory accessed on guest:
+- batch-zapped need to break 5 times, the latency is 174706e.
+- no-batch need to break 13 times, the latency is 69c1676.
+
+The code change to track the latency:
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 055d675..a66f21b 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -4233,13 +4233,13 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+        spin_unlock(&kvm->mmu_lock);
+ }
+
+-#define BATCH_ZAP_PAGES        10
++#define BATCH_ZAP_PAGES        0
+ static void kvm_zap_obsolete_pages(struct kvm *kvm)
+ {
+        struct kvm_mmu_page *sp, *node;
+        LIST_HEAD(invalid_list);
+        int batch = 0;
+-
++       int num = 0;
+ restart:
+        list_for_each_entry_safe_reverse(sp, node,
+              &kvm->arch.active_mmu_pages, link) {
+@@ -4265,6 +4265,7 @@ restart:
+                if (batch >= BATCH_ZAP_PAGES &&
+                      cond_resched_lock(&kvm->mmu_lock)) {
+                        batch = 0;
++                       num++;
+                        goto restart;
+                }
+
+@@ -4277,6 +4278,7 @@ restart:
+         * may use the pages.
+         */
+        kvm_mmu_commit_zap_page(kvm, &invalid_list);
++       printk("lock-break: %d.\n", num);
+ }
+
+ /*
+@@ -4290,7 +4292,12 @@ restart:
+  */
+ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
+ {
++       u64 start;
++
+        spin_lock(&kvm->mmu_lock);
++
++       start = local_clock();
++
+        trace_kvm_mmu_invalidate_zap_all_pages(kvm);
+        kvm->arch.mmu_valid_gen++;
+
+@@ -4306,6 +4313,9 @@ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
+        kvm_reload_remote_mmus(kvm);
+
+        kvm_zap_obsolete_pages(kvm);
++
++       printk("%s: %llx.\n", __FUNCTION__, local_clock() - start);
++
+        spin_unlock(&kvm->mmu_lock);
+ }
+
+
+
