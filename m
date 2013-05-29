@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966056Ab3E2MhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:37:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31970 "EHLO mga14.intel.com"
+	id S966036Ab3E2Mk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:40:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965709Ab3E2MhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 08:37:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,763,1363158000"; 
-   d="scan'208";a="341932742"
-Message-ID: <1369831224.24286.25.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] drivers: mtd: devices: elm: use devm_ioremap_resource()
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: dwmw2@infradead.org, avinashphilip@ti.com, jacmet@sunsite.dk,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 May 2013 15:40:24 +0300
-In-Reply-To: <1367507346-29382-1-git-send-email-laurent.navet@gmail.com>
-References: <1367507346-29382-1-git-send-email-laurent.navet@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965926Ab3E2Mk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 08:40:27 -0400
+Date: Wed, 29 May 2013 09:39:59 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
+ pages
+Message-ID: <20130529123959.GC5931@amt.cnet>
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130528003611.GA1958@amt.cnet>
+ <51A4CAED.7060608@linux.vnet.ibm.com>
+ <51A56FF7.2000907@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A56FF7.2000907@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 17:09 +0200, Laurent Navet wrote:
-> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+On Wed, May 29, 2013 at 11:03:19AM +0800, Xiao Guangrong wrote:
+> >>> the pages since other vcpus may be doing locklessly shadow
+> >>> page walking
+> > 
+> > Ah, yes, i agree with you.
+> > 
+> > We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
+> > zapped-page, the page-shrink will free the page on that list first.
+> > 
+> > Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
+> > let them merged first, and do add some comments and tlb optimization later?
 > 
-> Found with coccicheck and this semantic patch:
->  scripts/coccinelle/api/devm_request_and_ioremap.cocci.
-> 
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> Exclude patch 11 please, since it depends on the "collapse" optimization.
 
-We already have this changed in the l2-mtd.git tree:
+I'm fine with patch 1 being merged. I think the remaining patches need better
+understanding or explanation. The problems i see are:
 
-commit f7393098da2aadf535787c74abd147aabaca491a
-Author: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Date:   Thu Apr 11 00:01:51 2013 +0300
+1) The magic number "10" to zap before considering reschedule is
+annoying. It would be good to understand why it is needed at all.
 
-    mtd: devices: convert to devm_ioremap_resource()
-    
-    Convert all uses of devm_request_and_ioremap() to the newly introduced
-    devm_ioremap_resource() which provides more consistent error handling.
-    
-    Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-    Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+But then again, the testcase is measuring kvm_mmu_zap_all performance
+alone which we know is not a common operation, so perhaps there is
+no need for that minimum-pages-to-zap-before-reschedule.
 
+2) The problem above (retention of large number of pages while zapping)
+can be fatal, it can lead to OOM and host crash.
 
--- 
-Best Regards,
-Artem Bityutskiy
+3) Make sure that introduction of obsolete pages can not lead to a 
+huge number of shadow pages around (the correct reason you gave for not merging
+https://patchwork.kernel.org/patch/2309641/ is not true anymore
+obsolete pages).
+
+Other than these points, i'm fine with obsolete pages optimization
+to speed up kvm_mmu_zap_all and the rest of the patchset.
 
