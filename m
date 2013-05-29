@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966746Ab3E2UGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:06:07 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:29874
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966427Ab3E2UF4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:05:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Date: Wed, 29 May 2013 15:05:49 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: David Gibson <david@gibson.dropbear.id.au>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru>
-	<1369784115.18630.27@snotra> <51A547F0.8090406@ozlabs.ru>
-In-Reply-To: <51A547F0.8090406@ozlabs.ru> (from aik@ozlabs.ru on Tue May 28
-	19:12:32 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1369857949.18630.42@snotra>
+	id S966759Ab3E2UKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:10:07 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:15337 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965519Ab3E2UJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:09:58 -0400
+Message-ID: <1369858192.1971.21.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        "Don Skidmore" <donald.c.skidmore@intel.com>,
+        <e1000-devel@lists.sourceforge.net>,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 29 May 2013 21:09:52 +0100
+In-Reply-To: <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+	 <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19900.004
+X-TM-AS-Result: No--13.811100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 07:12:32 PM, Alexey Kardashevskiy wrote:
-> On 05/29/2013 09:35 AM, Scott Wood wrote:
-> > On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
-> >> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
-> >> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
-> >> >> >>> kvm_device_attr)
-> >> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
-> >> >> >>> kvm_device_attr)
-> >> >> >>>
-> >> >> >>> +/* ioctl for SPAPR TCE IOMMU */
-> >> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4,  
-> struct
-> >> >> >>> kvm_create_spapr_tce_iommu)
-> >> >> >>
-> >> >> >> Shouldn't this go under the vm ioctl section?
-> >> >>
-> >> >>
-> >> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
-> >> devices) is
-> >> >> in this section so I decided to keep them together. Wrong?
-> >> >
-> >> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
-> >> > KVM_CREATE_SPAPR_TCE_IOMMU?
-> >>
-> >> Yes.
-> >
-> > Sigh.  That's the same thing repeated.  There's only one IOCTL.   
-> Nothing is
-> > being "kept together".
+On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+> Adds a napi_id and a hashing mechanism to lookup a napi by id.
+> This will be used by subsequent patches to implement low latency
+> Ethernet device polling.
+> Based on a code sample by Eric Dumazet.
 > 
-> Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+[...]
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+[...]
+> @@ -4136,6 +4143,53 @@ void napi_complete(struct napi_struct *n)
+>  }
+>  EXPORT_SYMBOL(napi_complete);
+>  
+> +void napi_hash_add(struct napi_struct *napi)
+> +{
+> +	if (!test_and_set_bit(NAPI_STATE_HASHED, &napi->state)) {
+> +
+> +		spin_lock(&napi_hash_lock);
+> +
+> +		/* 0 is not a valid id */
+> +		napi->napi_id = 0;
+> +		while (!napi->napi_id)
+> +			napi->napi_id = ++napi_gen_id;
 
-But you didn't put it in the same section as KVM_CREATE_SPAPR_TCE.   
-0xe0 begins a different section.
+Suppose we're loading/unloading one driver repeatedly while another one
+remains loaded the whole time.  Then once napi_gen_id wraps around, the
+same ID can be assigned to multiple contexts.
 
--Scott
+So far as I can see, assigning the same ID twice will just make polling
+stop working for one of the NAPI contexts; I don't think it causes a
+crash.  And it is exceedingly unlikely to happen in production.  But if
+you're going to the trouble of handling wrap-around at all, you'd better
+handle this.
+
+[...]
+> +/* must be called under rcu_read_lock(), as we dont take a reference */
+> +struct napi_struct *napi_by_id(int napi_id)
+> +{
+> +	unsigned int hash = napi_id % HASH_SIZE(napi_hash);
+[...]
+
+napi_id should be declared unsigned int here, as elsewhere.  The
+division can't actually yield a negative result because HASH_SIZE() has
+type size_t and napi_id is promoted to match, but I had to go and look
+at hashtable.h to check that.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
