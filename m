@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965045Ab3E2Hz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:55:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39964 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964850Ab3E2Hz4 (ORCPT
+	id S965051Ab3E2H6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:58:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58632 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964850Ab3E2H6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:55:56 -0400
-Date: Wed, 29 May 2013 10:55:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: walter harms <wharms@bfs.de>
-Cc: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: Re: [patch] ceph: tidy ceph_mdsmap_decode() a little
-Message-ID: <20130529075538.GE23987@mwanda>
-References: <20130529062213.GF23932@mwanda>
- <51A5AB81.5070908@bfs.de>
+	Wed, 29 May 2013 03:58:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Daniel Tang <dt.tangr@gmail.com>,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>
+Subject: Re: [RFC PATCHv4 1/6] arm: TI-Nspire platform code
+Date: Wed, 29 May 2013 09:58:13 +0200
+Message-ID: <1659233.o2ovIRIt66@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <10704A21-6BEC-42DC-BB1E-88A0E87D288B@gmail.com>
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305271715.02385.arnd@arndb.de> <10704A21-6BEC-42DC-BB1E-88A0E87D288B@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A5AB81.5070908@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QfS9RBw4LxjAtEvOedNVqex69zfiNPasDrCxzri6oqo
+ +075YzdyXSVrL1peUFBey8Ps/r9fyWS3INXqFIqcyK9e1as/Vh
+ 3fyAQRi1i4sYZMgzpzuR1qlzhMGjSQifC3CGEj4kyhMfgBXS2R
+ Hyc2/f1+QHD7Xo+gMr2RPtp2DsGNQ+tAmLdoqRCWWmWU4eYOqe
+ EtqaJMvkrj+GoUXZEB0EW+B+jY1EOYtJxc5Scvql7S020n71ZZ
+ BrVbeV6XfXUhPUCCPQSspQUsddd7ICgqIrRfZfowthtoIAKqv5
+ hFxyuO8QuKviMCAcFSs1rsFBQgLNFAkfRW/kHtLumZSLX5fzpS
+ oWzYOSYoFIuGWPCCSln8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 09:17:21AM +0200, walter harms wrote:
-> personally i would go for:
-> 		info->export_targets = NULL;
-> and remove the else below.
+On Wednesday 29 May 2013 15:14:41 Daniel Tang wrote:
 > 
+> That's the idea for the long term.
+> 
+> For now though, I'll probably just let the bootloader enable 
+> everything and work on a proper driver for power management later.
 
-I don't have strong feelings one way or the other, but honestly, I
-think the way I sent it is more clear.
+Ok, sounds good.
 
-regards,
-dan carpenter
-
+	Arnd
