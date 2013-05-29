@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934243Ab3E2Cdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 22:33:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42886 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3E2Cdu (ORCPT
+	id S934421Ab3E2Cea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 22:34:30 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9564 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932580Ab3E2Ce2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 22:33:50 -0400
-Date: Wed, 29 May 2013 12:33:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the trivial tree with the net-next tree
-Message-Id: <20130529123317.5523988bebf0b9a19d04e53e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er"
+	Tue, 28 May 2013 22:34:28 -0400
+Message-ID: <51A568EC.2070103@huawei.com>
+Date: Wed, 29 May 2013 10:33:16 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: <timur@tabi.org>, Greg KH <gregkh@linuxfoundation.org>
+CC: <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-serial@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] driver: tty: add missing unregister in err case
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jiri,
+when platform_driver_register broken, we should unregister ucc_uart_driver
 
-Today's linux-next merge of the trivial tree got a conflict in
-Documentation/networking/netlink_mmap.txt between commit 3dd17edea018
-("doc:networking: Fix typo in documentation/networking") from the
-net-next tree and commit f884ab15afdc ("doc: fix misspellings with
-'codespell' tool") from the trivial tree.
+Signed-off-by: Libo chen <libo.chen@huawei.com>
+---
+ drivers/tty/serial/ucc_uart.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-The fix in the net-next tree was a superset of the one in the trivial
-tree, so I used that and can carry the fix as necessary (no action is
-required).
+diff --git a/drivers/tty/serial/ucc_uart.c b/drivers/tty/serial/ucc_uart.c
+index 7355303..f86f447 100644
+--- a/drivers/tty/serial/ucc_uart.c
++++ b/drivers/tty/serial/ucc_uart.c
+@@ -1518,9 +1518,11 @@ static int __init ucc_uart_init(void)
+ 	}
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ 	ret = platform_driver_register(&ucc_uart_of_driver);
+-	if (ret)
++	if (ret) {
+ 		printk(KERN_ERR
+ 		       "ucc-uart: could not register platform driver\n");
++		uart_unregister_driver(&ucc_uart_driver);
++	}
 
---Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er
-Content-Type: application/pgp-signature
+ 	return ret;
+ }
+-- 
+1.7.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRpWkHAAoJEECxmPOUX5FEBdwP/A+By50J/4vbc0Gfji9No6gy
-Ch3Pf3UBhB3fogxSvDtlFtoAC9+OQaea79Rk1jPuTXMpSQ/Fg0HYTwjzqztasdfd
-in1uu4q8dUpNI2PayS+Ip4hE5e1mPz0fEkaAPV0Txs7JbCj5S6MeEcawCiWfJVY9
-d8f+IJjXziH8MZs7q8fUf73f1H2nzQl5pAsMOI9FL/Q6mALGu4wRdvPg+y7830UM
-4yQ43ILta1BGAXVypiPBVvbNI6uCKH2sM7WwQZTc1VgMEbnW+rDQVL2rzeDENH5Q
-KDJqIbf3m6j1WwoD4EQ823RTnNAuhODwb6ln+fEMH+g8Cj/S6oaDFbL0PyH9SBfh
-Q5LOLiRIDli8PDuvWgylWZDAMZZ8G7cH97jsYtLwcJESPWhLMHvbCUOnZqUCf2xQ
-LpGc2ginSDtE0mSXlktDf61zJYZmoOLD3OT61R33nkYqp3BHFObdSkIpiEbbT/pM
-4+nBEJqQSdsPxqUPs6A4dXg2Fj+wHWzE8vd+9Lqzg+0+1Tx+CypBF0bLFghhtgSI
-/gBk1lhwAjVg0YIpbbM2Bb6pb69hktxTqhv5N3BeKGfimVZhvV4Ixwz1+1lzD2LH
-J9bnuZSjFgUFjaOYofCdoVBYwerGzLiR/pSjAz/z0EemdGxPIkspCldAVun8mHob
-LgbeGil+Oi+oE0sONYhw
-=a1F1
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_May_2013_12_33_17_+1000_vwwtKaJgG/nXr/er--
