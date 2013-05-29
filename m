@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965951Ab3E2MVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:21:08 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:48398 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965859Ab3E2MVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 08:21:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130524115053.GB5203@ab42.lan>
-References: <20130429161725.GB30136@ab42.lan>
-	<5182B557.4040804@wwwdotorg.org>
-	<CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
-	<20130508164123.GA10248@ab42.lan>
-	<518AAF31.8080502@wwwdotorg.org>
-	<20130510082521.GA2125@ab42.lan>
-	<51942472.9010402@wwwdotorg.org>
-	<CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
-	<20130522142824.GC4789@ab42.lan>
-	<CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
-	<20130524115053.GB5203@ab42.lan>
-Date: Wed, 29 May 2013 14:21:05 +0200
-Message-ID: <CACRpkdbqzSZefYB2jywkkKDE_Qse83+MDJ+D+UNYnQGFUzwQWQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965965Ab3E2MW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:22:28 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:35804 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965860Ab3E2MW1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 29 May 2013 08:22:27 -0400
+Message-Id: <51A60F1F02000078000D997C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 29 May 2013 13:22:23 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Marcelo Tosatti" <mtosatti@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ix86: don't waste fixmap entries
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 1:50 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
+The vsyscall related pvclock entries can only ever be used on x86-64,
+and hence they shouldn't even get allocated for 32-bit kernels (the
+more that it is there where address space is relatively precious).
 
-> I haven't understood how to associate GPIOs to
-> other functions, however: Our hardware pin controller makes GPIO pins
-> available depending on the configuration of the non-GPIO interfaces.
-> This means that in many configurations, GPIO banks are only partially
-> available because some pins are used for other purposes. We can't expect
-> our customers to manually change the pin assignments in the device tree
-> in order to take this into account for every PCB.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
 
-But what is it your customers do when customizing a board then?
+---
+ arch/x86/include/asm/fixmap.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Part of the promise of the device tree is to make it easy for downstream
-users to customize the kernel, *especially* for different boards/systems
-using the same SoC, for example. It is very much intended as a
-customization tools for embedded developers getting boards from
-a chipset vendor.
+--- 3.10-rc3/arch/x86/include/asm/fixmap.h
++++ 3.10-rc3-ix86-fixmap-no-pvclock/arch/x86/include/asm/fixmap.h
+@@ -81,11 +81,11 @@ enum fixed_addresses {
+ 			    + ((VSYSCALL_END-VSYSCALL_START) >> PAGE_SHIFT) - 1,
+ 	VVAR_PAGE,
+ 	VSYSCALL_HPET,
+-#endif
+ #ifdef CONFIG_PARAVIRT_CLOCK
+ 	PVCLOCK_FIXMAP_BEGIN,
+ 	PVCLOCK_FIXMAP_END = PVCLOCK_FIXMAP_BEGIN+PVCLOCK_VSYSCALL_NR_PAGES-1,
+ #endif
++#endif
+ 	FIX_DBGP_BASE,
+ 	FIX_EARLYCON_MEM_BASE,
+ #ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
 
-Maybe I don't understand what is meant by changing the pin
-assignments above ...
 
-Yours,
-Linus Walleij
+
