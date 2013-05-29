@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933297Ab3E2ASG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:18:06 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:53458 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab3E2ASE (ORCPT
+	id S933508Ab3E2ASe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:18:34 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39863 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab3E2ASc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:18:04 -0400
-Message-ID: <51A54939.10905@linaro.org>
-Date: Tue, 28 May 2013 17:18:01 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: increase precision of x86_platform.get/set_wallclock()
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 28 May 2013 20:18:32 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: Stupid VFS name lookup interface..
+In-Reply-To: Your message of "Sun, 26 May 2013 08:02:51 -0400."
+             <20130526120251.GA32729@thunk.org>
+From: Valdis.Kletnieks@vt.edu
+References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com> <CA+55aFw_ic=4OvH0Ys2CUjgotdbfdbuxUsx77RYEYPGrbqzbAA@mail.gmail.com> <20130525165710.GC25399@ZenIV.linux.org.uk> <51A1040A.80003@schaufler-ca.com>
+            <20130526120251.GA32729@thunk.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1369786675_1846P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 28 May 2013 20:17:55 -0400
+Message-ID: <4439.1369786675@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.51A54934.011C,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 10:56 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> All the virtualized platforms (KVM, lguest and Xen) have persistent
-> wallclocks that have more than one second of precision.
->
-> read_persistent_wallclock() and update_persistent_wallclock() allow
-> for nanosecond precision but their implementation on x86 with
-> x86_platform.get/set_wallclock() only allows for one second precision.
-> This means guests may see a wallclock time that is off by up to 1
-> second.
->
-> Make set_wallclock() and get_wallclock() take a struct timespec
-> parameter (which allows for nanosecond precision) so KVM and Xen
-> guests may start with a more accurate wallclock time and a Xen dom0
-> can maintain a more accurate wallclock for guests.
->
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->   arch/x86/include/asm/mc146818rtc.h |    4 ++--
->   arch/x86/include/asm/x86_init.h    |    6 ++++--
->   arch/x86/kernel/kvmclock.c         |    9 +++------
->   arch/x86/kernel/rtc.c              |   17 +++++++----------
->   arch/x86/lguest/boot.c             |    4 ++--
->   arch/x86/platform/efi/efi.c        |   10 ++++++----
->   arch/x86/xen/time.c                |   19 ++++++-------------
->   include/linux/efi.h                |    4 ++--
+--==_Exmh_1369786675_1846P
+Content-Type: text/plain; charset=us-ascii
 
-Just FYI, David: You missed the vrtc code with this conversion.
+On Sun, 26 May 2013 08:02:51 -0400, "Theodore Ts'o" said:
 
-I finally got around to pushing my current queue to my public tree and 
-the kbuild robot noticed the build failure (required INTEL_MID config to 
-trigger).
+> Have any of the arguments over the proper security models changed over
+> or have gotten resolved over the past six years, while I haven't been
+> looking?
 
-The fix I've queued is here:
-https://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commitdiff;h=52d8e9cc6718ae9e6c44b7723028e4717ba91c8b;hp=1dd5234774b33a17743ae62e8b46b5cd0059e1c7
+Doubtful, because the security models are addressing different threat
+models.  If you can't agree on what you're trying to secure against,
+there can be no agreement on how to do the securing.
 
-Let me know if you have any objection or comments on this.
+--==_Exmh_1369786675_1846P
+Content-Type: application/pgp-signature
 
-thanks
--john
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUaVJMwdmEQWDXROgAQJFlBAAgJK5R64a6v2ce0Ha+0VxO8LbBs8t9pqt
+ZkYc/KzQyO0ay+bKsAe/MvyZ5DNlEPDvBRx9J25bpSZV2oMl+Udp9vlqNtlAd55D
+/xN2aL4v1b7IhCfMLWZZuyHwzV0J656vxn7RXNKAglvowiumKDau0biVJCROqswd
+/lJnMzJHegACmt1zqFVcBYibkmKep5w/6kQNVkJkJpPg/IUtXKse0Jx/B+ZKchsu
+PsUngYiSZSpwEg2WWmaq3a2fifEw5MZemaD8fuyMcuTm1kgp6iypY5/kFVtCKj1s
+U4b/BxFUuykFrlxJgO7IeQJIF67JtvYdC9m6UkwINuLu8oaaNqQjPM7l1fQoOHo/
+xG4D4W9iztSwM/0yhkf7yBIbbgmM0CmuGUFONzn/muq6On1VEdd7JUuJlyQv+RCB
+5Ia3Lc+PQ6qIdqRm9FKLrHahRRTIFRMZbBEITMLPY5ekz9ggNQr7kEtS8ag72QMU
+7xPvi3zUzkR2FyWzN3URqNvpS6Kvm1vO4dbYCXIR6pELyQFe4tUtQIwl2UMj2FU9
+7h2wfED2Ipbwvt+Of+6kKgL+KtVR7pFnPgYUyZlYmI9YfmhHyPouztyQx7B9v65/
+jmy92A+C0gWD11/oHPlIGY/q27FjUCuDg3IbgwVjZxC7A8WijVaWNjWsqfAQ0CVf
+RerQecMCjtA=
+=SzgT
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1369786675_1846P--
 
