@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967171Ab3E2XH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:07:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57930 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966322Ab3E2XHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:07:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,766,1363158000"; 
-   d="scan'208";a="345343038"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Lance Ortiz <lance.ortiz@hp.com>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
- context
-Thread-Topic: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
- context
-Thread-Index: AQHOXKB4VO1K+Vpt70q3tQ/opKKdDJkdOXqA//+M9oA=
-Date: Wed, 29 May 2013 23:07:47 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
-References: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
- <30463843.EmBn1xaq3I@vostro.rjw.lan>
-In-Reply-To: <30463843.EmBn1xaq3I@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S967115Ab3E2XKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:10:51 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:51888 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966322Ab3E2XKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:10:40 -0400
+Message-ID: <51A68AE9.6070709@ozlabs.ru>
+Date: Thu, 30 May 2013 09:10:33 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Scott Wood <scottwood@freescale.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru> <1369784115.18630.27@snotra> <51A547F0.8090406@ozlabs.ru> <1369857949.18630.42@snotra>
+In-Reply-To: <1369857949.18630.42@snotra>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4TN802c013682
 
-> +	/*
-> +	 * TODO: This function needs to be re-written so that it's output
-> +	 * matches the output of aer_print_error().  Right now, the output
-> +	 * is formatted very differently.
-> +	 */
+On 05/30/2013 06:05 AM, Scott Wood wrote:
+> On 05/28/2013 07:12:32 PM, Alexey Kardashevskiy wrote:
+>> On 05/29/2013 09:35 AM, Scott Wood wrote:
+>> > On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
+>> >> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
+>> >> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
+>> >> >> >>> kvm_device_attr)
+>> >> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
+>> >> >> >>> kvm_device_attr)
+>> >> >> >>>
+>> >> >> >>> +/* ioctl for SPAPR TCE IOMMU */
+>> >> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
+>> >> >> >>> kvm_create_spapr_tce_iommu)
+>> >> >> >>
+>> >> >> >> Shouldn't this go under the vm ioctl section?
+>> >> >>
+>> >> >>
+>> >> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
+>> >> devices) is
+>> >> >> in this section so I decided to keep them together. Wrong?
+>> >> >
+>> >> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
+>> >> > KVM_CREATE_SPAPR_TCE_IOMMU?
+>> >>
+>> >> Yes.
+>> >
+>> > Sigh.  That's the same thing repeated.  There's only one IOCTL. 
+>> Nothing is
+>> > being "kept together".
+>>
+>> Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
+> 
+> But you didn't put it in the same section as KVM_CREATE_SPAPR_TCE.  0xe0
+> begins a different section.
 
-So we have this big "TODO" comment sitting there very prominently ... which Linus
-is bound to ask about if I ask him to pull this into 3.10-rcX ... what's the impact of
-this?  What should I say when he asks why should he pull this fix into 3.10 when
-there is still some work to do?  Is matching the output no big deal and can wait for
-some future, while moving the pci bits to the work function needs to go in now?
+It is not really obvious that there are sections as no comment defines
+those :) But yes, makes sense to move it up a bit and change the code to 0xad.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+-- 
+Alexey
