@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab3E2Nzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:55:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17755 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759565Ab3E2Nza (ORCPT
+	id S966131Ab3E2N4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:56:10 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58444 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935163Ab3E2N4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:55:30 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=SF8-ipd7Fh4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=cu63OdLxYnwA:10 a=W4eAmNYtzYbRQgHzC04A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369835728.15552.69.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
- synchronize_sched()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Date: Wed, 29 May 2013 09:55:28 -0400
-In-Reply-To: <20130529133315.GC6172@linux.vnet.ibm.com>
-References: <1369785676.15552.55.camel@gandalf.local.home>
-	 <20130529075249.GC12193@twins.programming.kicks-ass.net>
-	 <20130529133315.GC6172@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 09:56:08 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Olivier Martin <olivier.martin@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [RFC] arm: Update Booting document for FDT placement and reserved map
+Date: Wed, 29 May 2013 14:55:57 +0100
+Message-Id: <1369835757-16371-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 06:33 -0700, Paul E. McKenney wrote:
+The Booting document isn't very clear about what a bootloader is
+required to do when booting with an FDT. First, the placement of the FDT
+isn't as strict as the document suggests. It can actually appear
+anywhere in RAM and the decompressor will relocated if it absolutely
+needs to (but it is better if it doesn't have to).
 
-> > Is there something a little smarter we can do? Could we use
-> > on_each_cpu_cond() with a function that checks if the CPU really is
-> > fully idle?
-> 
-> One recent change that should help is making the _rcuidle variants of
-> the tracing functions callable from both idle and irq.  To make the
-> on_each_cpu_cond() approach work, event tracing would need to switch
-> from RCU (which might be preemptible RCU) to RCU-sched (whose read-side
-> critical sections can pair with on_each_cpu().  I have to defer to Steven
-> on whether this is a good approach.
-> 
+Second, the bootloader is expected to update the reserved map if there
+are any memory regions that are hands-off for the firmware. While this
+has always been the case, such as when an initrd is provided, it became
+more obvious when starting to work with UEFI. UEFI may provide
+additional data to the OS like a block of SMBIOS tables, but if those
+regions aren't described in the reserved map then the kernel will
+happily reclaim that memory for it's own purposes.
 
-Just to be clear, the issue is only with the function tracer. This has
-nothing to do with trace events, as we have the _rcuidle() variants to
-deal with that.
+It is possible in the future when the kernel is able to parse UEFI
+memory maps directly that we'll relax the requirement for UEFI
+regions, but it is safe and pragmatic to be strict about it now, and it
+really doesn't cause any new hardship. The existing UEFI LinuxLoader
+already update the FDT reserved map.
 
-We want the function tracer to trace pretty much everything it can,
-especially a complex system like RCU. Thus, I would say that the burden
-goes onto the tracing facility to solve this and not prevent tracing
-critical parts of RCU.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Nicolas Pitre <nico@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Olivier Martin <olivier.martin@arm.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+---
 
-As you stated with the problem of in_irq(), there's a point where we are
-in an interrupt but the in_irq() isn't set yet. And this even shows up
-in function tracing:
+In this patch I've stated that the initrd doesn't need to be included in
+the reserved map. However, should this be changed? Right now the
+decompressor doesn't actually look at the reserved map when
+decompressing and moving things around. If I'm reading the code
+correctly it is possible that the decompressor will overwrite the initrd
+if it gets placed too close to the kernel.
 
-  <idle>-0       0d...   141.555326: function:             smp_apic_timer_interrupt
-  <idle>-0       0d...   141.555327: function:                native_apic_mem_write
-  <idle>-0       0d...   141.555327: function:                exit_idle
-  <idle>-0       0d...   141.555327: function:                irq_enter
-  <idle>-0       0d...   141.555327: function:                   rcu_irq_enter
-  <idle>-0       0d...   141.555328: function:                   idle_cpu
-  <idle>-0       0d.h.   141.555328: function:                   tick_check_idle
-  <idle>-0       0d.h.   141.555328: function:                      tick_check_oneshot_broadcast
-  <idle>-0       0d.h.   141.555328: function:                      ktime_get
+So, my question is this; would it be better to require (or strongly
+recommend) the initrd be included in the reserved map and make the
+zImage wrapper aware of mem regions that is must not touch. Or should I
+leave well enough alone because in practical terms it's working fine
+as-is?
 
-Notice that we traced smp_apic_timer_interrupt, native_apic_mem_write,
-exit_idle, irq_enter, and rcu_irq_enter, before rcu even was informed
-that we are coming out of idle.
+ Documentation/arm/Booting | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-Then idle_cpu was also traced before the preempt_count was changed to
-notify that we are in an interrupt (the 'h' in "0d.h.").
-
--- Steve
-
+diff --git a/Documentation/arm/Booting b/Documentation/arm/Booting
+index 0c1f475..1ea5020 100644
+--- a/Documentation/arm/Booting
++++ b/Documentation/arm/Booting
+@@ -118,13 +118,28 @@ physical address to determine if a dtb has been passed instead of a
+ tagged list.
+ 
+ The boot loader must pass at a minimum the size and location of the
+-system memory, and the root filesystem location.  The dtb must be
++system memory, and the root filesystem location.  The dtb should be
+ placed in a region of memory where the kernel decompressor will not
+-overwrite it.  The recommended placement is in the first 16KiB of RAM
+-with the caveat that it may not be located at physical address 0 since
+-the kernel interprets a value of 0 in r2 to mean neither a tagged list
++overwrite it. The decompressor will relocate an inconveniently placed
++DTB, but it is better if it doesn't have to. The recommended placement
++is either in the first 16KiB of RAM with the caveat that it may not be
++located at physical address 0[1], or several megabytes past the end of the
++kernel image.
++
++[1] the kernel interprets a value of 0 in r2 to mean neither a tagged list
+ nor a dtb were passed.
+ 
++The boot loader must also ensure that the FDT reserve memory map covers
++all areas of main memory that must not be overwritten. This includes
++firmware runtime support data[2], fixed framebuffers and DMA buffers.
++However the initrd does not need to be included as the kernel already
++knows how to protect the initrd location.
++
++[2] In particular when booting from UEFI the OS loader is expected to retrieve the
++UEFI memory map and add all UEFI runtime memory regions to the reserved
++map. This include UEFI runtime services, SMBIOS tables and ACPI tables
++if they exist.
++
+ 5. Calling the kernel image
+ ---------------------------
+ 
+-- 
+1.8.1.2
 
