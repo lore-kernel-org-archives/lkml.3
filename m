@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966331Ab3E2OnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:43:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966095Ab3E2OnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:43:23 -0400
-Date: Wed, 29 May 2013 16:39:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
+	id S966355Ab3E2OpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:45:16 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:57566 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966095Ab3E2OpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 10:45:14 -0400
+From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Michal Hocko <mhocko@suse.cz>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] don't use task->pid/tgid in
-	same_thread_group/has_group_leader_pid
-Message-ID: <20130529143938.GA22211@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH, v2 00/13] kill free_all_bootmem_node() for all architectures
+Date: Wed, 29 May 2013 22:44:39 +0800
+Message-Id: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_struct->pid/tgid should go away.
+This is an effort to simplify arch mm initialization code by killing
+free_all_bootmem_node().
 
-1. Change same_thread_group() to use task->signal for comparison.
+It's applied on top of
+	http://marc.info/?l=linux-mm&m=136983589203930&w=2
 
-2. Change has_group_leader_pid(task) to compare task_pid(task) with
-   signal->leader_pid.
+You may access the patch series at:
+	git://github.com/jiangliu/linux.git mem_init_v6
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/sched.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Jiang Liu (13):
+  mm: introduce accessor function set_max_mapnr()
+  mm/AVR32: prepare for killing free_all_bootmem_node()
+  mm/IA64: prepare for killing free_all_bootmem_node()
+  mm/m32r: prepare for killing free_all_bootmem_node()
+  mm/m68k: prepare for killing free_all_bootmem_node()
+  mm/metag: prepare for killing free_all_bootmem_node()
+  mm/MIPS: prepare for killing free_all_bootmem_node()
+  mm/PARISC: prepare for killing free_all_bootmem_node()
+  mm/PPC: prepare for killing free_all_bootmem_node()
+  mm/SH: prepare for killing free_all_bootmem_node()
+  mm: kill free_all_bootmem_node()
+  mm/alpha: unify mem_init() for both UMA and NUMA architectures
+  mm/m68k: fix build warning of unused variable
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 178a8d9..ce51dfd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2179,15 +2179,15 @@ static inline bool thread_group_leader(struct task_struct *p)
-  * all we care about is that we have a task with the appropriate
-  * pid, we don't actually care if we have the right task.
-  */
--static inline int has_group_leader_pid(struct task_struct *p)
-+static inline bool has_group_leader_pid(struct task_struct *p)
- {
--	return p->pid == p->tgid;
-+	return task_pid(p) == p->signal->leader_pid;
- }
- 
- static inline
--int same_thread_group(struct task_struct *p1, struct task_struct *p2)
-+bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
- {
--	return p1->tgid == p2->tgid;
-+	return p1->signal == p2->signal;
- }
- 
- static inline struct task_struct *next_thread(const struct task_struct *p)
+ arch/alpha/mm/init.c             |  7 ++-----
+ arch/alpha/mm/numa.c             | 10 ----------
+ arch/avr32/mm/init.c             | 21 +++++----------------
+ arch/ia64/mm/init.c              |  9 ++-------
+ arch/m32r/mm/init.c              | 17 ++++-------------
+ arch/m68k/mm/init.c              | 15 ++++++++-------
+ arch/metag/mm/init.c             | 14 ++------------
+ arch/mips/sgi-ip27/ip27-memory.c | 12 +-----------
+ arch/parisc/mm/init.c            | 12 +-----------
+ arch/powerpc/mm/mem.c            | 16 +---------------
+ arch/sh/mm/init.c                | 16 ++++------------
+ include/linux/bootmem.h          |  1 -
+ include/linux/mm.h               |  9 ++++++++-
+ mm/bootmem.c                     | 18 ------------------
+ 14 files changed, 38 insertions(+), 139 deletions(-)
+
 -- 
-1.5.5.1
-
+1.8.1.2
 
