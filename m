@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab3E2FIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 01:08:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46084 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab3E2FIT (ORCPT
+	id S1753224Ab3E2FOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 01:14:50 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33537 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3E2FOt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 01:08:19 -0400
-Message-ID: <1369804097.3301.615.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Roman Gushchin <klamm@yandex-team.ru>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Tue, 28 May 2013 22:08:17 -0700
-In-Reply-To: <20130529013111.GS6172@linux.vnet.ibm.com>
-References: <519CB2D8.103@yandex-team.ru>
-	 <1369225837.3301.324.camel@edumazet-glaptop>
-	 <519CC2FB.2010006@yandex-team.ru>
-	 <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>
-	 <20130525113715.GA3795@linux.vnet.ibm.com>
-	 <51A39E11.5020405@yandex-team.ru>
-	 <1369699930.3301.494.camel@edumazet-glaptop>
-	 <51A47496.6000100@yandex-team.ru>
-	 <1369787693.3301.586.camel@edumazet-glaptop>
-	 <20130529013111.GS6172@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 29 May 2013 01:14:49 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [RFC PATCHv4 1/6] arm: TI-Nspire platform code
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <201305271715.02385.arnd@arndb.de>
+Date: Wed, 29 May 2013 15:14:41 +1000
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <10704A21-6BEC-42DC-BB1E-88A0E87D288B@gmail.com>
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305270856.19456.arnd@arndb.de> <CAPnH9dnA22C3ZS9jgJNytnmKM_8Vfk7OxNRB1Mg03=q7KhHZBA@mail.gmail.com> <201305271715.02385.arnd@arndb.de>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 18:31 -0700, Paul E. McKenney wrote:
-> On Tue, May 28, 2013 at 05:34:53PM -0700, Eric Dumazet wrote:
-> > On Tue, 2013-05-28 at 13:10 +0400, Roman Gushchin wrote:
-> > > On 28.05.2013 04:12, Eric Dumazet wrote:
-> > 
-> > > > Adding a barrier() is probably what we want.
-> > > 
-> > > I agree, inserting barrier() is also a correct and working fix.
-> > 
-> > Yeah, but I can not find a clean way to put it inside the "for (;;)"
-> > 
-> > for (barrier();;)  ->
-> > 
-> > error: expected expression before ‘__asm__’
-> > 
-> > No user currently does :
-> > 
-> > if (condition)
-> > 	hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)
-> > 
-> > But who knows...
+
+On 28/05/2013, at 1:15 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+
+> On Monday 27 May 2013, Daniel Tang wrote:
+>> Before any peripheral is accessed. I.e. before the clocksource and irqchip
+>> drivers.
 > 
-> I still have my earlier question, but I suggest "({ barrier(); XXX })"
-> to put the barrier into the for loop, either in the second or third
-> clause, where XXX was the original second or third clause.
+> The irqchip comes first, and by that time, you can actually call
+> of_iomap().
 > 
-> 	
+>> The write to the port is supposed to ensure all mmio peripherals can be
+>> accessed. Without it, access to certain peripherals will result in
+>> undefined reads or ignored writes.
+>> 
+>> On second thoughts, would this actually be the job of the boot loader?
+> 
+> Doing it in the boot loader would certainly simplify things. I wonder
+> about the dynamic aspects of power management though: It might be
+> better to expose the individual bits of this register through a proper
+> driver. The boot loader can start out enabling everything, but then
+> you turn off everything that is not needed when that driver gets
+> loaded.
 
-Hmm, it doesn't work, I wanted to replace :
+That's the idea for the long term.
 
-barrier();
-for (expr1 ; expr2; expr3) {
+For now though, I'll probably just let the bootloader enable everything and work on a proper driver for power management later.
 
-by :
+> 
+> I'm still not sure what the register actually does: Does it
+> control reset lines, clock signals, voltage regulators or something
+> else? These things all have their own subsystems, and then there
+> is also the power domain framework.
 
-for ( some_clever_thing ; expr2; expr3) {
+To be perfectly honest, I'm not too sure. The documentation for the TI-Nspire is all gathered from reverse engineering and all it says is that register "disables bus access to peripherals".
 
-So barrier() should not be in second or third clause : it must be done
-once and before "expr1".
+> 
+> 	Arnd
 
-Not a big deal anyway, we're not adding new
-hlist_nulls_for_each_entry_rcu() users :)
-
-
-About your earlier question, I really don't know why compiler would
-cache a memory read if we explicitly use barrier() to prevent this from
-happening.
-
-BTW Roman patch generates a double load as in :
-
-2cb1:       49 8b 07                mov    (%r15),%rax    
-2cb4:       49 8b 07                mov    (%r15),%rax        
-
-
-...
-2ea2:       e8 f9 dc ff ff          callq  ba0 <sock_put>
-2ea7:       8b 0c 24                mov    (%rsp),%ecx
-2eaa:       e9 02 fe ff ff          jmpq   2cb1 <udp4_lib_lookup2+0x91> 
-
-because of ACCESS_ONCE() used twice, once explicitly in
-hlist_nulls_for_each_entry_rcu(), and once in rcu_dereference_raw()
-
-While barrier();ptr = rcu_dereference(X); does generate a single load.
-
-
-
+Cheers,
+Daniel Tang
