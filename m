@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965664Ab3E2K2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:28:12 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12076 "EHLO
+	id S965658Ab3E2K2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:28:51 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12065 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965638Ab3E2K2D (ORCPT
+	with ESMTP id S965604Ab3E2K1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:28:03 -0400
+	Wed, 29 May 2013 06:27:55 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 29 May 2013 03:28:02 -0700
+	by hqnvupgp08.nvidia.com on Wed, 29 May 2013 03:27:55 -0700
 From: Arto Merilainen <amerilainen@nvidia.com>
 To: <thierry.reding@gmail.com>, <airlied@linux.ie>,
         <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
 CC: <tbergstrom@nvidia.com>, <linux-kernel@vger.kernel.org>,
         Arto Merilainen <amerilainen@nvidia.com>
-Subject: [PATCHv2 7/7] gpu: host1x: Rework CPU syncpoint increment
-Date: Wed, 29 May 2013 13:26:08 +0300
-Message-ID: <1369823168-5396-8-git-send-email-amerilainen@nvidia.com>
+Subject: [PATCHv2 4/7] gpu: host1x: Copy gathers before verification
+Date: Wed, 29 May 2013 13:26:05 +0300
+Message-ID: <1369823168-5396-5-git-send-email-amerilainen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
 References: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
@@ -27,160 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch merges host1x_syncpt_cpu_incr to host1x_syncpt_incr() as
-they are in practise doing the same thing. host1x_syncpt_incr() is
-also modified to return error codes. User space interface is modified
-accordingly to pass return values.
+The firewall verified gather buffers before copying them. This
+allowed a malicious application to rewrite the buffer content by
+timing the rewrite carefully.
+
+This patch makes the buffer validation occur after copying the
+buffers.
 
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
+Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
- drivers/gpu/host1x/dev.h          |  8 ++++----
- drivers/gpu/host1x/drm/drm.c      |  3 +--
- drivers/gpu/host1x/hw/cdma_hw.c   |  2 +-
- drivers/gpu/host1x/hw/syncpt_hw.c | 12 +++++-------
- drivers/gpu/host1x/syncpt.c       | 15 ++-------------
- drivers/gpu/host1x/syncpt.h       |  7 ++-----
- 6 files changed, 15 insertions(+), 32 deletions(-)
+ drivers/gpu/host1x/job.c | 50 +++++++++++++++++++-----------------------------
+ 1 file changed, 20 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
-index a1607d6..790ddf1 100644
---- a/drivers/gpu/host1x/dev.h
-+++ b/drivers/gpu/host1x/dev.h
-@@ -73,7 +73,7 @@ struct host1x_syncpt_ops {
- 	void (*restore_wait_base)(struct host1x_syncpt *syncpt);
- 	void (*load_wait_base)(struct host1x_syncpt *syncpt);
- 	u32 (*load)(struct host1x_syncpt *syncpt);
--	void (*cpu_incr)(struct host1x_syncpt *syncpt);
-+	int (*cpu_incr)(struct host1x_syncpt *syncpt);
- 	int (*patch_wait)(struct host1x_syncpt *syncpt, void *patch_addr);
- };
+diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+index 028d2d4..cc80766 100644
+--- a/drivers/gpu/host1x/job.c
++++ b/drivers/gpu/host1x/job.c
+@@ -228,17 +228,15 @@ static unsigned int do_relocs(struct host1x_job *job, struct host1x_bo *cmdbuf)
+ 	void *cmdbuf_page_addr = NULL;
  
-@@ -157,10 +157,10 @@ static inline u32 host1x_hw_syncpt_load(struct host1x *host,
- 	return host->syncpt_op->load(sp);
- }
+ 	/* pin & patch the relocs for one gather */
+-	while (i < job->num_relocs) {
++	for (i = 0; i < job->num_relocs; i++) {
+ 		struct host1x_reloc *reloc = &job->relocarray[i];
+ 		u32 reloc_addr = (job->reloc_addr_phys[i] +
+ 			reloc->target_offset) >> reloc->shift;
+ 		u32 *target;
  
--static inline void host1x_hw_syncpt_cpu_incr(struct host1x *host,
--					     struct host1x_syncpt *sp)
-+static inline int host1x_hw_syncpt_cpu_incr(struct host1x *host,
-+					    struct host1x_syncpt *sp)
+ 		/* skip all other gathers */
+-		if (!(reloc->cmdbuf && cmdbuf == reloc->cmdbuf)) {
+-			i++;
++		if (cmdbuf != reloc->cmdbuf)
+ 			continue;
+-		}
+ 
+ 		if (last_page != reloc->cmdbuf_offset >> PAGE_SHIFT) {
+ 			if (cmdbuf_page_addr)
+@@ -257,9 +255,6 @@ static unsigned int do_relocs(struct host1x_job *job, struct host1x_bo *cmdbuf)
+ 
+ 		target = cmdbuf_page_addr + (reloc->cmdbuf_offset & ~PAGE_MASK);
+ 		*target = reloc_addr;
+-
+-		/* mark this gather as handled */
+-		reloc->cmdbuf = 0;
+ 	}
+ 
+ 	if (cmdbuf_page_addr)
+@@ -378,15 +373,13 @@ static int check_nonincr(struct host1x_firewall *fw)
+ 
+ static int validate(struct host1x_firewall *fw, struct host1x_job_gather *g)
  {
--	host->syncpt_op->cpu_incr(sp);
-+	return host->syncpt_op->cpu_incr(sp);
- }
+-	u32 *cmdbuf_base;
++	u32 *cmdbuf_base = (u32 *)fw->job->gather_copy_mapped +
++		(g->offset / sizeof(u32));
+ 	int err = 0;
  
- static inline int host1x_hw_syncpt_patch_wait(struct host1x *host,
-diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
-index 2b561c9..1dfd454 100644
---- a/drivers/gpu/host1x/drm/drm.c
-+++ b/drivers/gpu/host1x/drm/drm.c
-@@ -378,8 +378,7 @@ static int tegra_syncpt_incr(struct drm_device *drm, void *data,
- 	if (!sp)
- 		return -EINVAL;
+ 	if (!fw->job->is_addr_reg)
+ 		return 0;
  
--	host1x_syncpt_incr(sp);
--	return 0;
-+	return host1x_syncpt_incr(sp);
- }
+-	cmdbuf_base = host1x_bo_mmap(g->bo);
+-	if (!cmdbuf_base)
+-		return -ENOMEM;
+ 	fw->words = g->words;
+ 	fw->cmdbuf_id = g->bo;
+ 	fw->offset = 0;
+@@ -453,10 +446,17 @@ out:
  
- static int tegra_syncpt_wait(struct drm_device *drm, void *data,
-diff --git a/drivers/gpu/host1x/hw/cdma_hw.c b/drivers/gpu/host1x/hw/cdma_hw.c
-index 590b69d..2ee4ad5 100644
---- a/drivers/gpu/host1x/hw/cdma_hw.c
-+++ b/drivers/gpu/host1x/hw/cdma_hw.c
-@@ -44,7 +44,7 @@ static void cdma_timeout_cpu_incr(struct host1x_cdma *cdma, u32 getptr,
- 	u32 i;
- 
- 	for (i = 0; i < syncpt_incrs; i++)
--		host1x_syncpt_cpu_incr(cdma->timeout.syncpt);
-+		host1x_syncpt_incr(cdma->timeout.syncpt);
- 
- 	/* after CPU incr, ensure shadow is up to date */
- 	host1x_syncpt_load(cdma->timeout.syncpt);
-diff --git a/drivers/gpu/host1x/hw/syncpt_hw.c b/drivers/gpu/host1x/hw/syncpt_hw.c
-index 6117499..0cf6095 100644
---- a/drivers/gpu/host1x/hw/syncpt_hw.c
-+++ b/drivers/gpu/host1x/hw/syncpt_hw.c
-@@ -77,21 +77,19 @@ static u32 syncpt_load(struct host1x_syncpt *sp)
-  * Write a cpu syncpoint increment to the hardware, without touching
-  * the cache.
-  */
--static void syncpt_cpu_incr(struct host1x_syncpt *sp)
-+static int syncpt_cpu_incr(struct host1x_syncpt *sp)
+ static inline int copy_gathers(struct host1x_job *job, struct device *dev)
  {
- 	struct host1x *host = sp->host;
- 	u32 reg_offset = sp->id / 32;
++	struct host1x_firewall fw;
+ 	size_t size = 0;
+ 	size_t offset = 0;
+ 	int i;
  
- 	if (!host1x_syncpt_client_managed(sp) &&
--	    host1x_syncpt_idle(sp)) {
--		dev_err(host->dev, "Trying to increment syncpoint id %d beyond max\n",
--			sp->id);
--		host1x_debug_dump(sp->host);
--		return;
--	}
-+	    host1x_syncpt_idle(sp))
-+		return -EINVAL;
- 	host1x_sync_writel(host, BIT_MASK(sp->id),
- 			   HOST1X_SYNC_SYNCPT_CPU_INCR(reg_offset));
- 	wmb();
++	fw.job = job;
++	fw.dev = dev;
++	fw.reloc = job->relocarray;
++	fw.num_relocs = job->num_relocs;
++	fw.class = 0;
 +
-+	return 0;
- }
+ 	for (i = 0; i < job->num_gathers; i++) {
+ 		struct host1x_job_gather *g = &job->gathers[i];
+ 		size += g->words * sizeof(u32);
+@@ -477,14 +477,19 @@ static inline int copy_gathers(struct host1x_job *job, struct device *dev)
+ 		struct host1x_job_gather *g = &job->gathers[i];
+ 		void *gather;
  
- /* remove a wait pointed to by patch_addr */
-diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
-index 27201b5..409745b 100644
---- a/drivers/gpu/host1x/syncpt.c
-+++ b/drivers/gpu/host1x/syncpt.c
-@@ -129,22 +129,11 @@ u32 host1x_syncpt_load_wait_base(struct host1x_syncpt *sp)
- }
++		/* Copy the gather */
+ 		gather = host1x_bo_mmap(g->bo);
+ 		memcpy(job->gather_copy_mapped + offset, gather + g->offset,
+ 		       g->words * sizeof(u32));
+ 		host1x_bo_munmap(g->bo, gather);
  
- /*
-- * Write a cpu syncpoint increment to the hardware, without touching
-- * the cache. Caller is responsible for host being powered.
-- */
--void host1x_syncpt_cpu_incr(struct host1x_syncpt *sp)
--{
--	host1x_hw_syncpt_cpu_incr(sp->host, sp);
--}
++		/* Store the location in the buffer */
+ 		g->base = job->gather_copy;
+ 		g->offset = offset;
+-		g->bo = NULL;
++
++		/* Validate the job */
++		if (validate(&fw, g))
++			return -EINVAL;
+ 
+ 		offset += g->words * sizeof(u32);
+ 	}
+@@ -497,15 +502,8 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
+ 	int err;
+ 	unsigned int i, j;
+ 	struct host1x *host = dev_get_drvdata(dev->parent);
+-	struct host1x_firewall fw;
+ 	DECLARE_BITMAP(waitchk_mask, host1x_syncpt_nb_pts(host));
+ 
+-	fw.job = job;
+-	fw.dev = dev;
+-	fw.reloc = job->relocarray;
+-	fw.num_relocs = job->num_relocs;
+-	fw.class = 0;
 -
--/*
-  * Increment syncpoint value from cpu, updating cache
-  */
--void host1x_syncpt_incr(struct host1x_syncpt *sp)
-+int host1x_syncpt_incr(struct host1x_syncpt *sp)
- {
--	if (host1x_syncpt_client_managed(sp))
--		host1x_syncpt_incr_max(sp, 1);
--	host1x_syncpt_cpu_incr(sp);
-+	return host1x_hw_syncpt_cpu_incr(sp->host, sp);
- }
+ 	bitmap_zero(waitchk_mask, host1x_syncpt_nb_pts(host));
+ 	for (i = 0; i < job->num_waitchk; i++) {
+ 		u32 syncpt_id = job->waitchk[i].syncpt_id;
+@@ -536,19 +534,11 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
+ 			if (job->gathers[j].bo == g->bo)
+ 				job->gathers[j].handled = true;
  
- /*
-diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
-index d00e758..267c0b9 100644
---- a/drivers/gpu/host1x/syncpt.h
-+++ b/drivers/gpu/host1x/syncpt.h
-@@ -115,9 +115,6 @@ static inline bool host1x_syncpt_idle(struct host1x_syncpt *sp)
- /* Return pointer to struct denoting sync point id. */
- struct host1x_syncpt *host1x_syncpt_get(struct host1x *host, u32 id);
- 
--/* Request incrementing a sync point. */
--void host1x_syncpt_cpu_incr(struct host1x_syncpt *sp);
+-		err = 0;
 -
- /* Load current value from hardware to the shadow register. */
- u32 host1x_syncpt_load(struct host1x_syncpt *sp);
+-		if (IS_ENABLED(CONFIG_TEGRA_HOST1X_FIREWALL))
+-			err = validate(&fw, g);
+-
++		err = do_relocs(job, g->bo);
+ 		if (err)
+-			dev_err(dev, "Job invalid (err=%d)\n", err);
+-
+-		if (!err)
+-			err = do_relocs(job, g->bo);
++			break;
  
-@@ -133,8 +130,8 @@ void host1x_syncpt_restore(struct host1x *host);
- /* Read current wait base value into shadow register and return it. */
- u32 host1x_syncpt_load_wait_base(struct host1x_syncpt *sp);
- 
--/* Increment sync point and its max. */
--void host1x_syncpt_incr(struct host1x_syncpt *sp);
-+/* Request incrementing a sync point. */
-+int host1x_syncpt_incr(struct host1x_syncpt *sp);
- 
- /* Indicate future operations by incrementing the sync point max. */
- u32 host1x_syncpt_incr_max(struct host1x_syncpt *sp, u32 incrs);
+-		if (!err)
+-			err = do_waitchks(job, host, g->bo);
++		err = do_waitchks(job, host, g->bo);
+ 		if (err)
+ 			break;
+ 	}
 -- 
 1.8.1.5
 
