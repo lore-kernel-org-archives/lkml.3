@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab3E2AMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:12:41 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:41861 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab3E2AMk (ORCPT
+	id S933227Ab3E2APj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:15:39 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39447 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab3E2APi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:12:40 -0400
-Message-ID: <51A547F0.8090406@ozlabs.ru>
-Date: Wed, 29 May 2013 10:12:32 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: David Gibson <david@gibson.dropbear.id.au>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru> <1369784115.18630.27@snotra>
-In-Reply-To: <1369784115.18630.27@snotra>
-Content-Type: text/plain; charset=KOI8-R
+	Tue, 28 May 2013 20:15:38 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: ethan <ethan.kernel@gmail.com>
+Cc: Fredrik Tolf <fredrik@dolda2000.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Weird disk idling
+In-Reply-To: Your message of "Sun, 26 May 2013 16:58:59 +0800."
+             <99E50EC5-59B7-45D5-95A6-0C861C5C8AB3@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <alpine.DEB.2.02.1305260712220.8957@shack.dolda2000.com>
+            <99E50EC5-59B7-45D5-95A6-0C861C5C8AB3@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1369786468_1846P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 28 May 2013 20:14:28 -0400
+Message-ID: <4287.1369786468@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.51A54865.0032,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 09:35 AM, Scott Wood wrote:
-> On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
->> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
->> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
->> >> >>> kvm_device_attr)
->> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
->> >> >>> kvm_device_attr)
->> >> >>>
->> >> >>> +/* ioctl for SPAPR TCE IOMMU */
->> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
->> >> >>> kvm_create_spapr_tce_iommu)
->> >> >>
->> >> >> Shouldn't this go under the vm ioctl section?
->> >>
->> >>
->> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
->> devices) is
->> >> in this section so I decided to keep them together. Wrong?
->> >
->> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
->> > KVM_CREATE_SPAPR_TCE_IOMMU?
->>
->> Yes.
-> 
-> Sigh.  That's the same thing repeated.  There's only one IOCTL.  Nothing is
-> being "kept together".
+--==_Exmh_1369786468_1846P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
+On Sun, 26 May 2013 16:58:59 +0800, ethan said:
+> Fred=A3=AC
+>       How do you know the disk is completely idle ?
 
+Actually, my first question was =22How do you know the disk is *spinning*=
+?=22
+A second or two delay sounds suspiciously like a spun-down disk in powers=
+ave
+move....
 
--- 
-Alexey
+--==_Exmh_1369786468_1846P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUaVIZAdmEQWDXROgAQJ6SBAAl/ZrP2iy9scdUfd9GIcaWJrcKYAVS2fx
+H2EfNu6rjj2VUK6K7gDiSL2MgDwMWNvun2kQYrVXgRD19vzFkLAI0akHqjx+sZmL
+8dAd0X1K15zDYZz+sV44a7VS/O0zzvMnX1LIeX85GBQYPcXy/P/FJIUF20qkiAZu
+57DB7gC0nq5d/K33INNICzz+fN6ZhBT615HSfnfaZaqNb05FbmCmFa/CPkDfr+vx
+hTdo2KsDeIXe2ka9ylhHciMrHNuOwYke9gqL4MO6NRaNWAntWCEmfNw4r9YMj6p+
+JMIpsduMp9J0Dh8yWRnFgs2lWX1ht+ClytzQeh9RfJVPqwSPXZx79XbNqycKMSmq
+1EdYBNhC0KdS5oZTEtKKV5xIoSJ7ABkhYT/RHdBSeavNzIJ/SiTYUCXJySqTx+6F
+3sG1w4vAIipeU43gOX2lfJansgnqQgfMvkrWABQFq9R8Sq1l1/eDh7a1iBLY10g9
+1dDo/MUvuVy4ar1r+Psd9vceMoR/MB/iHO7wYd31A/HnpjSBFNG9jaHBJh/v/Rro
+8W/Zgg4V2AfTSuyegJIY9lPJxMUzYRaZZcoVST6d4HOT1XZZSxtnFhA8oJE5sr4X
+CQGXqMEsrTyF9K7Cfw03BNToBcOaxnA19EQtL2/aJpK3MLq22gKkaqMIKcTI6tUn
+cEaYdPt2CSI=
+=/xGj
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1369786468_1846P--
+
