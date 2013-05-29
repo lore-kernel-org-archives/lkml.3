@@ -1,80 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965265Ab3E2JC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:02:26 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41589 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965039Ab3E2JCY (ORCPT
+	id S965285Ab3E2JGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:06:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48582 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965039Ab3E2JGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:02:24 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] tg3: remove redundant pm init code
-Date: Wed, 29 May 2013 17:00:32 +0800
-Message-ID: <1369818032-36272-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Wed, 29 May 2013 05:06:32 -0400
+Message-ID: <51A5C4F1.3010809@ti.com>
+Date: Wed, 29 May 2013 11:05:53 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+To: <florian.vaussard@epfl.ch>
+CC: Afzal Mohammed <afzal@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ankur Kishore <a-kishore@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>
+Subject: Re: [PATCH v2 14/14] ARM: dts: AM43x: initial support
+References: <cover.1369658705.git.afzal@ti.com> <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com> <51A5C1F3.2070605@ti.com> <51A5C2EE.4060607@epfl.ch>
+In-Reply-To: <51A5C2EE.4060607@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci_enable_device() will set device pm state to D0, so
-it's no need to do it again in tg3_init_one().
+On 05/29/2013 10:57 AM, Florian Vaussard wrote:
+> Hello,
+> 
+> On 05/29/2013 10:53 AM, Benoit Cousson wrote:
+>> + Florian
+>>
+>> Hi Afzal,
+>>
+>> On 05/27/2013 04:37 PM, Afzal Mohammed wrote:
+>>> DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
+>>> represented here are the minimal DT nodes necessary to get kernel
+>>> booting.
+>>>
+>>> In DT nodes, "ti,hwmod" property has not been added, this would be
+>>> added along with PRCM support for AM43x.
+>>>
+>>> Signed-off-by: Ankur Kishore <a-kishore@ti.com>
+>>> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+>>> ---
+>>>
+>>> v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
+>>>
+>>>   arch/arm/boot/dts/am4372.dtsi | 66
+>>> +++++++++++++++++++++++++++++++++++++++++++
+>>>   1 file changed, 66 insertions(+)
+>>>   create mode 100644 arch/arm/boot/dts/am4372.dtsi
+>>>
+>>> diff --git a/arch/arm/boot/dts/am4372.dtsi
+>>> b/arch/arm/boot/dts/am4372.dtsi
+>>> new file mode 100644
+>>> index 0000000..1d58298
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/am4372.dtsi
+>>> @@ -0,0 +1,66 @@
+>>> +/*
+>>> + * Device Tree Source for AM4372 SoC
+>>> + *
+>>> + * Copyright (C) 2013 Texas Instruments Incorporated -
+>>> http://www.ti.com/
+>>> + *
+>>> + * This file is licensed under the terms of the GNU General Public
+>>> License
+>>> + * version 2.  This program is licensed "as is" without any warranty
+>>> of any
+>>> + * kind, whether express or implied.
+>>> + */
+>>> +
+>>> +/include/ "skeleton.dtsi"
+>>
+>> You can now use the C preprocessor statement instead of this one.
+>> Florian already started doing the change [1].
+>>
+>> Beside that detail, that patch looks good to me.
+>> I'll pull it separately of the series.
+>>
+> 
+> If you pull the patch in your branch, I can take care of the changes
+> when I rebase
+> my series. This will allow me to clean the 'interrupts' statements below
+> as well.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/net/ethernet/broadcom/tg3.c |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+Ooops, thanks, I missed that one.
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 728d42a..1396ab3 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -17042,25 +17042,10 @@ static int tg3_init_one(struct pci_dev *pdev,
- 
- 	pci_set_master(pdev);
- 
--	/* Find power-management capability. */
--	pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM);
--	if (pm_cap == 0) {
--		dev_err(&pdev->dev,
--			"Cannot find Power Management capability, aborting\n");
--		err = -EIO;
--		goto err_out_free_res;
--	}
--
--	err = pci_set_power_state(pdev, PCI_D0);
--	if (err) {
--		dev_err(&pdev->dev, "Transition to D0 failed, aborting\n");
--		goto err_out_free_res;
--	}
--
- 	dev = alloc_etherdev_mq(sizeof(*tp), TG3_IRQ_MAX_VECS);
- 	if (!dev) {
- 		err = -ENOMEM;
--		goto err_out_power_down;
-+		goto err_out_free_res;
- 	}
- 
- 	SET_NETDEV_DEV(dev, &pdev->dev);
-@@ -17406,9 +17391,6 @@ err_out_iounmap:
- err_out_free_dev:
- 	free_netdev(dev);
- 
--err_out_power_down:
--	pci_set_power_state(pdev, PCI_D3hot);
--
- err_out_free_res:
- 	pci_release_regions(pdev);
- 
--- 
-1.7.1
+Thanks,
+Benoit
 
+> 
+> Regards,
+> 
+> Florian
+> 
+>> Regards,
+>> Benoit
+>>
+>> [1] http://thread.gmane.org/gmane.linux.ports.arm.omap/98320
+>>
+>>> +
+>>> +/ {
+>>> +    compatible = "ti,am4372", "ti,am43";
+>>> +    interrupt-parent = <&gic>;
+>>> +
+>>> +
+>>> +    aliases {
+>>> +        serial0 = &uart1;
+>>> +    };
+>>> +
+>>> +    cpus {
+>>> +        cpu@0 {
+>>> +            compatible = "arm,cortex-a9";
+>>> +        };
+>>> +    };
+>>> +
+>>> +    gic: interrupt-controller@48241000 {
+>>> +        compatible = "arm,cortex-a9-gic";
+>>> +        interrupt-controller;
+>>> +        #interrupt-cells = <3>;
+>>> +        reg = <0x48241000 0x1000>,
+>>> +              <0x48240100 0x0100>;
+>>> +    };
+>>> +
+>>> +    ocp {
+>>> +        compatible = "simple-bus";
+>>> +        #address-cells = <1>;
+>>> +        #size-cells = <1>;
+>>> +        ranges;
+>>> +
+>>> +        uart1: serial@44e09000 {
+>>> +            compatible = "ti,am4372-uart","ti,omap2-uart";
+>>> +            reg = <0x44e09000 0x2000>;
+>>> +            interrupts = <0 72 0x4>;
+>>> +        };
+>>> +
+>>> +        timer1: timer@44e31000 {
+>>> +            compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
+>>> +            reg = <0x44e31000 0x400>;
+>>> +            interrupts = <0 67 0x4>;
+>>> +            ti,timer-alwon;
+>>> +        };
+>>> +
+>>> +        timer2: timer@48040000  {
+>>> +            compatible = "ti,am4372-timer","ti,am335x-timer";
+>>> +            reg = <0x48040000  0x400>;
+>>> +            interrupts = <0 68 0x4>;
+>>> +        };
+>>> +
+>>> +        counter32k: counter@44e86000 {
+>>> +            compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+>>> +            reg = <0x44e86000 0x40>;
+>>> +        };
+>>> +    };
+>>> +};
+>>>
+>>
 
