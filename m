@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845Ab3E2RTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:19:41 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:53171 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3E2RTf (ORCPT
+	id S933793Ab3E2RXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 13:23:09 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:59588 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab3E2RXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:19:35 -0400
-Message-ID: <51A638A4.2000705@gmail.com>
-Date: Wed, 29 May 2013 10:19:32 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 29 May 2013 13:23:04 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] i2c: omap: correct usage of the interrupt enable register
+References: <1369812944-685-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+	<1369812944-685-2-git-send-email-oleksandr.dmytryshyn@ti.com>
+Date: Wed, 29 May 2013 10:22:59 -0700
+In-Reply-To: <1369812944-685-2-git-send-email-oleksandr.dmytryshyn@ti.com>
+	(Oleksandr Dmytryshyn's message of "Wed, 29 May 2013 10:35:44 +0300")
+Message-ID: <878v2x7lak.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [RFC PATCH] kernel/signal.c: avoid BUG_ON with SIG128 (MIPS)
-References: <1369846916-13202-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1369846916-13202-1-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 10:01 AM, James Hogan wrote:
-> MIPS has 128 signals, the highest of which has the number 128. The
+Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com> writes:
 
-I wonder if we should change the ABI and reduce the number of signals to 
-127 instead of this patch.
+> Starting from the OMAP chips with version2 registers scheme there are
+> 2 registers (I2C_IRQENABLE_SET and I2C_IRQENABLE_CLR) to manage
+> interrupts instead of the older OMAP chips with old scheme which have
+> only one register (I2C_IE).  Now we should use I2C_IRQENABLE_SET
+> register for enabling interrupts and I2C_IRQENABLE_CLR register for
+> disabling interrupts.
 
-David Daney
+Why?  (changelogs should always answer the "why" question)
 
+IOW, what is broken without this change, how does it fail?  And equally
+important, how is it currently working?
 
+Kevin
 
-> following command causes get_signal_to_deliver() to pass this signal
-> number straight through to do_group_exit() as the exit code:
->
->    strace sleep 10 & sleep 1 && kill -128 `pidof sleep`
->
-> However do_group_exit() checks for the core dump bit (0x80) in the exit
-> code which matches in this particular case and the kernel panics:
->
->    BUG_ON(exit_code & 0x80); /* core dumps don't get here */
->
-> This is worked around by changing get_signal_to_deliver() to pass
-> min(info->si_signo, 127) instead of info->si_signo, so that this highest
-> of signal numbers get rounded down to 127. This makes the exit code
-> technically incorrect, but it's better than killing the whole kernel.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> ---
->
-> This is based on v3.10-rc3.
->
-> It's a little hacky, but aside from reducing the number of signals to
-> 127 to avoid this case (which isn't backwards compatible) I'm not sure
-> what else can be done. Any comments?
->
->   kernel/signal.c | 6 +++++-
->   1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 113411b..69bc00f 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2366,8 +2366,12 @@ relock:
->
->   		/*
->   		 * Death signals, no core dump.
-> +		 *
-> +		 * MIPS has a signal number 128 which clashes with the core dump
-> +		 * bit. If this was the signal we still want to report a valid
-> +		 * exit code, so round it down to 127.
->   		 */
-> -		do_group_exit(info->si_signo);
-> +		do_group_exit(min(info->si_signo, 127));
->   		/* NOTREACHED */
->   	}
->   	spin_unlock_irq(&sighand->siglock);
->
 
