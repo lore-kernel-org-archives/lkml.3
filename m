@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966904Ab3E2UdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:33:07 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:29160 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966083Ab3E2UdC (ORCPT
+	id S966919Ab3E2UeC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:34:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50237 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966083Ab3E2Ud4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:33:02 -0400
-Message-ID: <51A665F7.6050208@hp.com>
-Date: Wed, 29 May 2013 16:32:55 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Simo Sorce <simo@redhat.com>
-CC: Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>  <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com>  <20130527020903.GR29466@dastard>  <51A624E2.3000301@hp.com> <1369844289.2769.146.camel@willson.li.ssimo.org>
-In-Reply-To: <1369844289.2769.146.camel@willson.li.ssimo.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 29 May 2013 16:33:56 -0400
+Date: Wed, 29 May 2013 13:33:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Robert Nelson <Robert.Nelson@digikey.com>
+Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
+Message-Id: <20130529133354.dd181c845ee4e96527483345@linux-foundation.org>
+In-Reply-To: <1369298335-24597-1-git-send-email-jhovold@gmail.com>
+References: <1364983415-20298-1-git-send-email-jhovold@gmail.com>
+	<1369298335-24597-1-git-send-email-jhovold@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 12:18 PM, Simo Sorce wrote:
-> On Wed, 2013-05-29 at 11:55 -0400, Waiman Long wrote:
->
->> My patch set consists of 2 different changes. The first one is to avoid
->> taking the d_lock lock when updating the reference count in the
->> dentries. This particular change also benefit some other workloads that
->> are filesystem intensive. One particular example is the short workload
->> in the AIM7 benchmark. One of the job type in the short workload is
->> "misc_rtns_1" which calls security functions like getpwnam(),
->> getpwuid(), getgrgid() a couple of times. These functions open the
->> /etc/passwd or /etc/group files, read their content and close the files.
->> It is the intensive open/read/close sequence from multiple threads that
->> is causing 80%+ contention in the d_lock on a system with large number
->> of cores.
-> To be honest a workload base on /etc/passwd or /etc/group is completely
-> artificial, in actual usage, if you really have  such access you use
-> nscd or sssd with their shared memory caches to completely remove most
-> of the file access.
-> I have no beef on the rest but repeated access to Nsswitch information
-> is not something you need to optimize at the file system layer and
-> should not be brought up as a point in favor.
+On Thu, 23 May 2013 10:38:50 +0200 Johan Hovold <jhovold@gmail.com> wrote:
 
-The misc_rtns_1 workload that I described here is just part of a larger 
-workload involving other activities. It represents just 1/17 of the 
-total jobs that were spawned. This particular job type, however, 
-dominates the time because of the lock contention that it created. I 
-agree that it is an artificial workload as most benchmarks are. It is 
-certainly an exaggeration of what a real workload may be, but it doesn't 
-mean that similar contention will not happen in the real world 
-especially when the trend is to have more and more CPU cores packed in 
-the same machine.
+> This is an update of the shadow-interrupt-mask series against v3.10-rc2.
+> 
+> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
+> affected. If not, then some probing mechanism as the one Doug suggested
+> could be implemented on top of (a subset of) these patches. What do you
+> say, Nicolas?
+> 
+> Note that the first patch (adding a missing OF compile guard) could be
+> applied straight away.
 
-Regards,
-Longman
+At this stage it is unclear to me how to proceed with patches 2-5.
