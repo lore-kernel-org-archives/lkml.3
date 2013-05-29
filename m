@@ -1,110 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934689Ab3E2BUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 21:20:04 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58521 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933868Ab3E2BUB (ORCPT
+	id S934755Ab3E2BXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:23:19 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52508 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863Ab3E2BXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 21:20:01 -0400
-Date: Tue, 28 May 2013 18:19:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130529011952.GQ6172@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1369201765.3301.299.camel@edumazet-glaptop>
- <519CB2D8.103@yandex-team.ru>
- <1369225837.3301.324.camel@edumazet-glaptop>
- <519CC2FB.2010006@yandex-team.ru>
- <20130522174532.GC3431@linux.vnet.ibm.com>
- <519D19DA.50400@yandex-team.ru>
- <20130525113715.GA3795@linux.vnet.ibm.com>
- <51A39E11.5020405@yandex-team.ru>
- <1369699930.3301.494.camel@edumazet-glaptop>
- <51A47496.6000100@yandex-team.ru>
+	Tue, 28 May 2013 21:23:17 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v5] media: i2c: tvp514x: add OF support
+Date: Wed, 29 May 2013 03:22:59 +0200
+Message-ID: <1417519.vVjfDJcATe@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369574386-24486-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369574386-24486-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A47496.6000100@yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052901-4834-0000-0000-0000077D29A8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 01:10:46PM +0400, Roman Gushchin wrote:
-> On 28.05.2013 04:12, Eric Dumazet wrote:
-> >On Mon, 2013-05-27 at 21:55 +0400, Roman Gushchin wrote:
-> >>Hi, Paul!
-> >>
-> >>>On 25.05.2013 15:37, Paul E. McKenney wrote:
-> >>>>Again, I believe that your retry logic needs to extend back into the
-> >>>>calling function for your some_func() example above.
-> >>
-> >>And what do you think about the following approach (diff below)?
-> >>
-> >>It seems to me, it's enough clear (especially with good accompanying comments)
-> >>and produces a good binary code (without significant overhead).
-> >>Also, we will remove a hidden reef in using rcu-protected (h)list traverses with restarts.
-> >>
-> >
-> >>diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> >>index 2ae1371..4af5ee5 100644
-> >>--- a/include/linux/rculist_nulls.h
-> >>+++ b/include/linux/rculist_nulls.h
-> >>@@ -107,7 +107,8 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-> >>    *
-> >>    */
-> >>   #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
-> >>-       for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
-> >>+       for (ACCESS_ONCE(*(head)),                                              \
-> >>+               pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));         \
-> >>                  (!is_a_nulls(pos)) &&                                           \
-> >>                  ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
-> >>                  pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
-> >
-> >It looks like this still relies on gcc being friendly here.
-> >
-> >I repeat again : @head here is a constant.
-> 
-> No.
-> Actually, there are two volatile objects: pointer to the first element (as a part of the head structure),
-> and the first element by itself. So, to be strict, head as a structure contains a volatile field.
-> Head->first should be treated as a volatile pointer to a volatile data. So, the whole head object is volatile.
-> 
-> >
-> >Macro already uses ACCESS_ONCE(), we only have to instruct gcc that
-> >caching the value is forbidden if we restart the loop
-> >(aka "goto begin;" see Documentation/RCU/rculist_nulls.txt line 146)
-> 
-> My patch seems to be correct, because, ACCESS_ONCE(*(head)) will cause gcc to (re)read head data from the memory.
-> According to gcc documentation:
-> 	"A scalar volatile object is read when it is accessed in a void context:
->      		volatile int *src = somevalue;
->      		*src;
-> 	Such expressions are rvalues, and GCC implements this as a read of the volatile object being pointed to."
-> And this is exactly our case.
-> 
-> >Adding a barrier() is probably what we want.
-> 
-> I agree, inserting barrier() is also a correct and working fix.
+Hi Prabhakar,
 
-I have to ask this question of both of you...
+Thanks for the patch.
 
-Are either of Eric's or Roman's fixes really guaranteed to work if gcc
-elects not to inline the function containing the RCU list traversal?
+On Sunday 26 May 2013 18:49:46 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> add OF support for the tvp514x driver.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
 
-							Thanx, Paul
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+(with two small comment below).
+
+> ---
+> Tested on da850-evm.
+> 
+>  RFC v1: https://patchwork.kernel.org/patch/2030061/
+>  RFC v2: https://patchwork.kernel.org/patch/2061811/
+> 
+>  Changes for current version from RFC v2:
+>  1: Fixed review comments pointed by Sylwester.
+> 
+>  Changes for v2:
+>  1: Listed all the compatible property values in the documentation text
+> file. 2: Removed "-decoder" from compatible property values.
+>  3: Added a reference to the V4L2 DT bindings documentation to explain
+>     what the port and endpoint nodes are for.
+>  4: Fixed some Nits pointed by Laurent.
+>  5: Removed unnecessary header file includes and sort them alphabetically.
+> 
+>  Changes for v3:
+>  1: Rebased on patch https://patchwork.kernel.org/patch/2539411/
+> 
+>  Changes for v4:
+>  1: added missing call for of_node_put().
+>  2: Rebased the patch on v3.11.
+> 
+>  Changes for v5:
+>  1: Fixed calling to a wrong label.
+> 
+>  .../devicetree/bindings/media/i2c/tvp514x.txt      |   45 ++++++++++++++
+>  drivers/media/i2c/tvp514x.c                        |   62 +++++++++++++++--
+>  2 files changed, 101 insertions(+), 6 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+> b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt new file mode
+> 100644
+> index 0000000..cc09424
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+> @@ -0,0 +1,45 @@
+> +* Texas Instruments TVP514x video decoder
+> +
+> +The TVP5146/TVP5146m2/TVP5147/TVP5147m1 device is high quality, single-chip
+> +digital video decoder that digitizes and decodes all popular baseband
+> analog +video formats into digital video component. The tvp514x decoder
+> supports analog- +to-digital (A/D) conversion of component RGB and YPbPr
+> signals as well as A/D +conversion and decoding of NTSC, PAL and SECAM
+> composite and S-video into +component YCbCr.
+> +
+> +Required Properties :
+> +- compatible : value should be either one among the following
+> +	(a) "ti,tvp5146" for tvp5146 decoder.
+> +	(b) "ti,tvp5146m2" for tvp5146m2 decoder.
+> +	(c) "ti,tvp5147" for tvp5147 decoder.
+> +	(d) "ti,tvp5147m1" for tvp5147m1 decoder.
+> +
+> +- hsync-active: HSYNC Polarity configuration for endpoint.
+> +
+> +- vsync-active: VSYNC Polarity configuration for endpoint.
+> +
+> +- pclk-sample: Clock polarity of the endpoint.
+> +
+> +
+> +For further reading of port node refer
+
+s/of port/on port/
+s/refer/refer to/
+
+> Documentation/devicetree/bindings/media/video-interfaces.txt.
+> +
+> +Example:
+> +
+> +	i2c0@1c22000 {
+> +		...
+> +		...
+> +		tvp514x@5c {
+> +			compatible = "ti,tvp5146";
+> +			reg = <0x5c>;
+> +
+> +			port {
+> +				tvp514x_1: endpoint {
+> +					hsync-active = <1>;
+> +					vsync-active = <1>;
+> +					pclk-sample = <0>;
+> +				};
+> +			};
+> +		};
+> +		...
+> +	};
+> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
+> index 7438e01..7ed999b 100644
+> --- a/drivers/media/i2c/tvp514x.c
+> +++ b/drivers/media/i2c/tvp514x.c
+> @@ -39,6 +39,7 @@
+>  #include <media/v4l2-device.h>
+>  #include <media/v4l2-common.h>
+>  #include <media/v4l2-mediabus.h>
+> +#include <media/v4l2-of.h>
+>  #include <media/v4l2-chip-ident.h>
+>  #include <media/v4l2-ctrls.h>
+>  #include <media/tvp514x.h>
+> @@ -1055,6 +1056,42 @@ static struct tvp514x_decoder tvp514x_dev = {
+> 
+>  };
+> 
+> +static struct tvp514x_platform_data *
+> +tvp514x_get_pdata(struct i2c_client *client)
+> +{
+> +	struct tvp514x_platform_data *pdata = NULL;
+
+No need to initialize pdata to NULL.
+
+> +	struct v4l2_of_endpoint bus_cfg;
+> +	struct device_node *endpoint;
+> +	unsigned int flags;
+> +
+> +	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
+> +		return client->dev.platform_data;
+> +
+> +	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
+> +	if (!endpoint)
+> +		return NULL;
+> +
+> +	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		goto done;
+> +
+> +	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
+> +	flags = bus_cfg.bus.parallel.flags;
+> +
+> +	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
+> +		pdata->hs_polarity = 1;
+> +
+> +	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
+> +		pdata->vs_polarity = 1;
+> +
+> +	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
+> +		pdata->clk_polarity = 1;
+> +
+> +done:
+> +	of_node_put(endpoint);
+> +	return pdata;
+> +}
+> +
+>  /**
+>   * tvp514x_probe() - decoder driver i2c probe handler
+>   * @client: i2c driver client device structure
+> @@ -1066,19 +1103,20 @@ static struct tvp514x_decoder tvp514x_dev = {
+>  static int
+>  tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  {
+> +	struct tvp514x_platform_data *pdata = tvp514x_get_pdata(client);
+>  	struct tvp514x_decoder *decoder;
+>  	struct v4l2_subdev *sd;
+>  	int ret;
+> 
+> +	if (pdata == NULL) {
+> +		dev_err(&client->dev, "No platform data\n");
+> +		return -EINVAL;
+> +	}
+> +
+>  	/* Check if the adapter supports the needed features */
+>  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+>  		return -EIO;
+> 
+> -	if (!client->dev.platform_data) {
+> -		v4l2_err(client, "No platform data!!\n");
+> -		return -ENODEV;
+> -	}
+> -
+>  	decoder = devm_kzalloc(&client->dev, sizeof(*decoder), GFP_KERNEL);
+>  	if (!decoder)
+>  		return -ENOMEM;
+> @@ -1090,7 +1128,7 @@ tvp514x_probe(struct i2c_client *client, const struct
+> i2c_device_id *id) sizeof(tvp514x_reg_list_default));
+> 
+>  	/* Copy board specific information here */
+> -	decoder->pdata = client->dev.platform_data;
+> +	decoder->pdata = pdata;
+> 
+>  	/**
+>  	 * Fetch platform specific data, and configure the
+> @@ -1230,8 +1268,20 @@ static const struct i2c_device_id tvp514x_id[] = {
+> 
+>  MODULE_DEVICE_TABLE(i2c, tvp514x_id);
+> 
+> +#if IS_ENABLED(CONFIG_OF)
+> +static const struct of_device_id tvp514x_of_match[] = {
+> +	{ .compatible = "ti,tvp5146", },
+> +	{ .compatible = "ti,tvp5146m2", },
+> +	{ .compatible = "ti,tvp5147", },
+> +	{ .compatible = "ti,tvp5147m1", },
+> +	{ /* sentinel */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, tvp514x_of_match);
+> +#endif
+> +
+>  static struct i2c_driver tvp514x_driver = {
+>  	.driver = {
+> +		.of_match_table = of_match_ptr(tvp514x_of_match),
+>  		.owner = THIS_MODULE,
+>  		.name = TVP514X_MODULE_NAME,
+>  	},
+-- 
+Regards,
+
+Laurent Pinchart
 
