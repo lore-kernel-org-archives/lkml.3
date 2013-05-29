@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965767Ab3E2Slf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:41:35 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:62906 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab3E2Sl1 (ORCPT
+	id S965717Ab3E2Sq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:46:57 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:48026 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965413Ab3E2Sqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:41:27 -0400
+	Wed, 29 May 2013 14:46:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130528093815.GH22683@gmail.com>
-References: <1369232581-18923-1-git-send-email-lee.jones@linaro.org>
-	<1369232581-18923-8-git-send-email-lee.jones@linaro.org>
-	<CACRpkdYyZZSy4VgFc+Uo=5iAF++EPmHM0U2pHcLdkDZc=Xb_sQ@mail.gmail.com>
-	<20130528093815.GH22683@gmail.com>
-Date: Wed, 29 May 2013 20:41:26 +0200
-Message-ID: <CACRpkdYyZuReZEJCO6h8Ez3=7AmOm=JdT0_Gd+hDaGFnNJ8cGw@mail.gmail.com>
-Subject: Re: [PATCH 7/7] Documentation: Update binding for Nomadik and DBx5x
- based platforms
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+X-Originating-IP: [2001:470:1f05:1640:4978:ebac:5b1e:deda]
+In-Reply-To: <000001ce5c4f$839f4cb0$8adde610$@samsung.com>
+References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
+	<87sj1qzaov.fsf@linaro.org>
+	<5191AA89.6010901@linaro.org>
+	<20130528231740.GA28879@quad.lixom.net>
+	<51A57D39.8030506@linaro.org>
+	<CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
+	<51A5C16D.20408@linaro.org>
+	<000001ce5c4f$839f4cb0$8adde610$@samsung.com>
+Date: Wed, 29 May 2013 11:46:47 -0700
+Message-ID: <CAOesGMiYs6GfaWGWYB8cw_cJ6_RmmZTb4oPfXo1PYJT8-jdHzw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
+From: Olof Johansson <olof@lixom.net>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Tushar Behera <tushar.behera@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Patch Tracking <patches@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 11:38 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >  Required properties:
->> > -- compatible: "stericsson,nmk-pinctrl", "stericsson,nmk-pinctrl-db8540",
->> > -              "stericsson,nmk-pinctrl-stn8815"
->> > +- compatible: "stericsson,db8500-pinctrl", "stericsson,db8540-pinctrl",
->> > +              "stericsson,stn8815-pinctrl"
->>
->> OK...
->>
->> >         pinctrl@80157000 {
->> > -               compatible = "stericsson,nmk-pinctrl";
->> > +               compatible = "stericsson,u8500-pinctrl";
->>
->> This does not look like a supported compatible string?
->
-> Do you still think this, or did you change you mind?
+On Wed, May 29, 2013 at 2:33 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-Que? It is not among the listed compatible strings?
+> However, Olof Johansson mentioned, 'drivers/platform/arm/board_arndale.c'
+> would be a good alternative.
 
-> If so, what makes you think it? How does it differ from:
->
-> compatible = "arm,cortex-a9-twd-timer";
-> compatible = "arm,rtc-pl031";
-> compatible = "stericsson,db8500-gpio",
-> compatible = "stericsson,db8500-musb",
-> compatible = "stericsson,db8500-dma40",
-> compatible = "stericsson,db8500-prcmu";
-> compatible = "stericsson,db8500-prcmu-timer-4";
-> compatible = "stericsson,db8500-thermal";
-> compatible = "stericsson,db8500-prcmu-regulator";
 
-It says u8500-pinctrl, not db8500-pinctrl.
+Whoa. I didn't quite realize what I proposed, or rather, how what I
+proposed could be perceived. I take it back. :)
 
-Could it be that you're not actually seeing your own typo?
+We must _not_ introduce something that will be abused as a new home
+for board file junk. If we do introduce a platform glue directory it
+would need to be very limited in scope. Compare to what's in
+drivers/platform/x86 today.
 
-Yours,
-Linus Walleij
+
+-Olof
