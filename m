@@ -1,48 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966052Ab3E2N2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:28:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62826 "EHLO mga09.intel.com"
+	id S966067Ab3E2NcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:32:04 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64025 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab3E2N2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:28:11 -0400
+	id S965945Ab3E2NcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 09:32:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,764,1363158000"; 
-   d="scan'208";a="341956011"
-Message-ID: <51A60263.4020404@intel.com>
-Date: Wed, 29 May 2013 21:28:03 +0800
+   d="scan'208";a="341957624"
+Message-ID: <51A6034E.2080007@intel.com>
+Date: Wed, 29 May 2013 21:31:58 +0800
 From: Alex Shi <alex.shi@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
-        peterz@infradead.org, pjt@google.com
-CC: tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [patch 0/8]: use runnable load avg in balance
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <51948AD4.3020104@linux.vnet.ibm.com> <51A4B19A.5090500@intel.com>
-In-Reply-To: <51A4B19A.5090500@intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: gregkh <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+References: <519ED65B.7040707@intel.com> <51A4B391.6060503@intel.com>
+In-Reply-To: <51A4B391.6060503@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 09:31 PM, Alex Shi wrote:
->> > Tested the latest patch set (new 3/8 and 6/8) with pgbench, tip
->> > 3.10.0-rc1 and 12 cpu X86 box, works well and still benefit ;-)
+On 05/28/2013 09:39 PM, Alex Shi wrote:
+> On 05/24/2013 10:54 AM, Alex Shi wrote:
+>>
+>> Ops, I just find a old patch left on my laptop. and it still works on latest
+>> Linus tree. I don't remember there is a reasonable excuse to reject this patch.
+>>
+>> So, anyone like to pick it up?
 > 
-> Paul:
+> Ping ...
+
+Is there someone like to give a bit comments on this patch?
+>>
+>> ------
+>> From 6ae1b9e71f9b14be5774ae9c1b4cf57cd4e747ac Mon Sep 17 00:00:00 2001
+>> From: Alex Shi <alex.shi@intel.com>
+>> Date: Mon, 11 Jun 2012 15:10:18 +0800
+>> Subject: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+>>
+>> According to Felipe and Alan's comments the second parameter of irq
+>> handler should be 'void *' not a specific structure pointer.
+>> So change it.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> Acked-by: Felipe Balbi <balbi@ti.com>
+>> ---
+>>  drivers/usb/host/xhci-ring.c |    2 +-
+>>  drivers/usb/host/xhci.c      |    4 ++--
+>>  drivers/usb/host/xhci.h      |    2 +-
+>>  3 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+>> index 23b4aef..cc8a52f 100644
+>> --- a/drivers/usb/host/xhci-ring.c
+>> +++ b/drivers/usb/host/xhci-ring.c
+>> @@ -2479,7 +2479,7 @@ hw_died:
+>>  	return IRQ_HANDLED;
+>>  }
+>>  
+>> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
+>> +irqreturn_t xhci_msi_irq(int irq, void *hcd)
+>>  {
+>>  	return xhci_irq(hcd);
+>>  }
+>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+>> index afdc73e..f7d40c1 100644
+>> --- a/drivers/usb/host/xhci.c
+>> +++ b/drivers/usb/host/xhci.c
+>> @@ -215,7 +215,7 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
+>>  		return ret;
+>>  	}
+>>  
+>> -	ret = request_irq(pdev->irq, (irq_handler_t)xhci_msi_irq,
+>> +	ret = request_irq(pdev->irq, xhci_msi_irq,
+>>  				0, "xhci_hcd", xhci_to_hcd(xhci));
+>>  	if (ret) {
+>>  		xhci_dbg(xhci, "disable MSI interrupt\n");
+>> @@ -287,7 +287,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
+>>  
+>>  	for (i = 0; i < xhci->msix_count; i++) {
+>>  		ret = request_irq(xhci->msix_entries[i].vector,
+>> -				(irq_handler_t)xhci_msi_irq,
+>> +				xhci_msi_irq,
+>>  				0, "xhci_hcd", xhci_to_hcd(xhci));
+>>  		if (ret)
+>>  			goto disable_msix;
+>> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+>> index de3d6e3..737ef54 100644
+>> --- a/drivers/usb/host/xhci.h
+>> +++ b/drivers/usb/host/xhci.h
+>> @@ -1710,7 +1710,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
+>>  
+>>  int xhci_get_frame(struct usb_hcd *hcd);
+>>  irqreturn_t xhci_irq(struct usb_hcd *hcd);
+>> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
+>> +irqreturn_t xhci_msi_irq(int irq, void *hcd);
+>>  int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev);
+>>  void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev);
+>>  int xhci_alloc_tt_info(struct xhci_hcd *xhci,
+>>
 > 
-> Would you like to give more comments/ideas of this patch set?
+> 
 
-Peter,
-
-If no more idea of the blocked_load_avg usages, could we have the
-patchset clobbered in tip tree? Any way we get better performance on
-hackbench/pgbench/cgroup stress etc benchmarks.
 
 -- 
 Thanks
