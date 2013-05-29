@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966468Ab3E2Osc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:48:32 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:34411 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966384Ab3E2OpY (ORCPT
+	id S966360Ab3E2OvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:51:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38958 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S966311Ab3E2OvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:45:24 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH, v2 03/13] mm/IA64: prepare for killing free_all_bootmem_node()
-Date: Wed, 29 May 2013 22:44:42 +0800
-Message-Id: <1369838692-26860-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
-References: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 29 May 2013 10:51:12 -0400
+Date: Wed, 29 May 2013 10:51:11 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH RFC] PM / Runtime: Rework the "runtime idle" helper
+ routine
+In-Reply-To: <1463685.qFyr66vqF2@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1305291023170.1473-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for killing free_all_bootmem_node() by using
-free_all_bootmem().
+On Wed, 29 May 2013, Rafael J. Wysocki wrote:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/ia64/mm/init.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The "runtime idle" helper routine, rpm_idle(), currently ignores
+> return values from .runtime_idle() callbacks executed by it.
+> 
+> However, it turns out that many subsystems use the generic idle
+> callback routine pm_generic_runtime_idle() which checks the return
+> value of the driver's callback and executes pm_runtime_suspend() for
+> the device unless that value is different from 0.  If that logic is
+> moved to rpm_idle() instead, pm_generic_runtime_idle() can be dropped
+> and its users will not need any .runtime_idle() callbacks any more.
 
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 2d372b4..b6f7f43 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -583,7 +583,6 @@ __setup("nolwsys", nolwsys_setup);
- void __init
- mem_init (void)
- {
--	pg_data_t *pgdat;
- 	int i;
- 
- 	BUG_ON(PTRS_PER_PGD * sizeof(pgd_t) != PAGE_SIZE);
-@@ -601,15 +600,11 @@ mem_init (void)
- 
- #ifdef CONFIG_FLATMEM
- 	BUG_ON(!mem_map);
--	max_mapnr = max_low_pfn;
- #endif
- 
-+	set_max_mapnr(max_low_pfn);
- 	high_memory = __va(max_low_pfn * PAGE_SIZE);
--
--	for_each_online_pgdat(pgdat)
--		if (pgdat->bdata->node_bootmem_map)
--			free_all_bootmem_node(pgdat);
--
-+	free_all_bootmem();
- 	mem_init_print_info(NULL);
- 
- 	/*
--- 
-1.8.1.2
+Since you're making this change, wouldn't it be a good idea to adopt
+Mika's original suggestion and turn on the RPM_AUTO bit in rpmflags
+when the use_autosuspend flag is set?
+
+> Moreover, the PCI subsystem's .runtime_idle() routine,
+> pci_pm_runtime_idle(), works in analogy with the generic one and if
+> rpm_idle() calls rpm_suspend() after 0 has been returned by the
+> .runtime_idle() callback executed by it, that routine will not be
+> necessary any more and may be dropped.
+
+See below.
+
+What about cases where the runtime-idle callback does
+rpm_schedule_suspend or rpm_request_suspend?  You'd have to make sure
+that it returns -EBUSY in such cases.  Did you audit for this?
+
+> Index: linux-pm/Documentation/power/runtime_pm.txt
+> ===================================================================
+> --- linux-pm.orig/Documentation/power/runtime_pm.txt
+> +++ linux-pm/Documentation/power/runtime_pm.txt
+> @@ -660,11 +660,6 @@ Subsystems may wish to conserve code spa
+>  management callbacks provided by the PM core, defined in
+>  driver/base/power/generic_ops.c:
+>  
+> -  int pm_generic_runtime_idle(struct device *dev);
+> -    - invoke the ->runtime_idle() callback provided by the driver of this
+> -      device, if defined, and call pm_runtime_suspend() for this device if the
+> -      return value is 0 or the callback is not defined
+> -
+
+The documentation for the runtime-idle callback needs to be updated too.
+
+> Index: linux-pm/drivers/pci/pci-driver.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-driver.c
+> +++ linux-pm/drivers/pci/pci-driver.c
+> @@ -1046,32 +1046,6 @@ static int pci_pm_runtime_resume(struct
+>  	return rc;
+>  }
+>  
+> -static int pci_pm_runtime_idle(struct device *dev)
+> -{
+> -	struct pci_dev *pci_dev = to_pci_dev(dev);
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> -
+> -	/*
+> -	 * If pci_dev->driver is not set (unbound), the device should
+> -	 * always remain in D0 regardless of the runtime PM status
+> -	 */
+> -	if (!pci_dev->driver)
+> -		goto out;
+> -
+> -	if (!pm)
+> -		return -ENOSYS;
+> -
+> -	if (pm->runtime_idle) {
+> -		int ret = pm->runtime_idle(dev);
+> -		if (ret)
+> -			return ret;
+> -	}
+> -
+> -out:
+> -	pm_runtime_suspend(dev);
+> -	return 0;
+> -}
+
+This may not be a safe change, because now the behavior is different
+in the case where dev->driver is set but pci_dev->driver isn't.  The
+difference is that you will now call the driver's runtime-idle
+handler, whereas the existing code doesn't.
+
+In fact, this may turn out to be a more widespread problem.  
+dev->driver gets set before the probe routine is called, and it gets
+cleared after the remove routine is called.  A runtime PM callback to
+the driver during these windows isn't a good idea.  Erasing subsystems'
+runtime_idle handlers, as this patch does, makes it impossible for the
+subsystems to protect against this.
+
+The patch also needs to update
+drivers/usb/core/driver.c:usb_runtime_idle().  If you include Mika's
+suggestion, the routine can be removed entirely.
+
+Alan Stern
 
