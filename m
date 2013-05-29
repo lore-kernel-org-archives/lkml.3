@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966302Ab3E2TuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:50:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52409 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab3E2TuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:50:10 -0400
-Date: Wed, 29 May 2013 20:49:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        Mike Frysinger <vapier@gentoo.org>
-Message-ID: <20130529194950.GC5180@sirena.org.uk>
-References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org>
- <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
+	id S935039Ab3E2Tuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:50:52 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35839 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759629Ab3E2Tuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 15:50:46 -0400
+Date: Wed, 29 May 2013 14:50:27 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 3/4] zswap: add to mm/
+Message-ID: <20130529195027.GC428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
+ <20130529145720.GA428@cerebellum>
+ <20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Beware of Bigfoot!
+In-Reply-To: <20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.128.126
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052919-5806-0000-0000-000021671312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 29, 2013 at 11:29:29AM -0700, Andrew Morton wrote:
+> On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+> > > > +/*********************************
+> > > > +* helpers
+> > > > +**********************************/
+> > > > +static inline bool zswap_is_full(void)
+> > > > +{
+> > > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
+> > > > +		zswap_pool_pages);
+> > > > +}
+> > > 
+> > > We have had issues in the past where percentage-based tunables were too
+> > > coarse on very large machines.  For example, a terabyte machine where 0
+> > > bytes is too small and 10GB is too large.
+> > 
+> > Yes, this is known limitation of the code right now and it is a high priority
+> > to come up with something better.  It isn't clear what dynamic sizing policy
+> > should be used so, until such time as that policy can be determined, this is a
+> > simple stop-gap that works well enough for simple setups.
+> 
+> It's a module parameter and hence is part of the userspace interface. 
+> It's undesirable that the interface be changed, and it would be rather
+> dumb to merge it as-is when we *know* that it will be changed.
+> 
+> I don't think we can remove the parameter altogether (or can we?), so I
+> suggest we finalise it ASAP.  Perhaps rename it to
+> zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
 
---JWEK1jqKZ6MHAcjA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+zswap_max_pool_ratio is fine with me.  I'm not entirely clear on the change
+though.  Would that just be a name change or a change in meaning?
 
-On Tue, May 21, 2013 at 08:36:35PM -0600, Stephen Warren wrote:
-> Fill in the recently added spi_master.bits_per_word_mask field in as
-> many drivers as possible. Make related cleanups, such as removing any
-> redundant error-checking, or empty setup callbacks.
+Also, we can keep the tunable as I imagine there will always be some use for a
+manual override of the (future) dynamic policy.  When the dynamic policy is
+available, we can just say that zswap_max_pool_ratio = 0 means "use dynamic
+policy" and change the default to 0.  Does that sounds reasonable?
 
-Applied, thanks.
+Seth
 
---JWEK1jqKZ6MHAcjA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRplvbAAoJELSic+t+oim9NcEP/jQlSi4rxx6f/33hz3GTb8tO
-uTl1q2uuYT7AotzGbgFYX4Vjbuc1qqWhJ1wz2HKQd09/jHTqixQric/nrpai5dee
-SeWRbeiyxaBdNt2oqvQSbOrr7CLP0E/hShZfSL2jPYWHXh40KY4ncYE0XLkws9Rt
-lVBJHs5Mcy+IPGWkTjb4q9aqZ24q9w63k6t31w2/P3EQ9uyZvQ7vxV9BZDN9KYIF
-hcn3SZTkky/iDdES0M4EkjxyZfUM1ppiu1YVClnFAMZrshWQR/k6tHW8BnYLd5vX
-A7vcpDATs+3DQlASykuePV9eBUrquqFtgS1Opz8rdoDbROFmMJZWZ9mR3n19nIad
-9j2JxRenyPRgLRx2iyeNyOuYxVT14RITQFjDLaW2LIyNaUqLofrZqOd6YpSK7wHg
-VxV9DpbFh1rNmkpf3/n1h0mHMCBjNzDlrY8/+G/S1BH6upkITvABoTxv9B6bT9WX
-KHoqADGqX+4Zmp6l016zdcfHVusopQvi40T/lDFO/WJd4GHl6qxoJx+ihy3355ms
-xOmDoYkbkoo2pBjphvdPa7qSuBw1GogcA6vSpAjvRezbaNO0Pw1OfbzvQnhV3oHa
-po0+5xoogSy0p0nUnVfSSLrYHCCEQaM1s1zNuVcu+c7k63fYKfGUArjq9g2f7EjS
-DAcs47oR9c7WPRU2JOPO
-=yEGr
------END PGP SIGNATURE-----
-
---JWEK1jqKZ6MHAcjA--
