@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966851Ab3E2UNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:13:55 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:49177 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965519Ab3E2UNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:13:47 -0400
+	id S966791Ab3E2UQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:16:24 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:44322 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965519Ab3E2UQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:16:19 -0400
+Date: Wed, 29 May 2013 15:16:17 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+	info to runtime code
+Message-ID: <20130529201616.GB28027@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20130522162747.GA20816@sgi.com> <20130523115801.GJ14575@console-pimps.org> <20130523222321.GB31880@sgi.com> <20130524074544.GM14575@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <7385243.PHJHW0xyGs@vostro.rjw.lan>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
-	<2013173.c6WKZTQWxj@vostro.rjw.lan>
-	<CAE9FiQUqHBuoAMeLYDa1GCD8yD+S1QHwxnF4gVPFpgQaatf+Hg@mail.gmail.com>
-	<7385243.PHJHW0xyGs@vostro.rjw.lan>
-Date: Wed, 29 May 2013 13:13:46 -0700
-X-Google-Sender-Auth: Z9ZHL4TdsiuKESi0TP2YqyYaekc
-Message-ID: <CAE9FiQX99+V-jS_h9Lr=mz_n8e1KazUOxcLrAyPG19KJM_3ABg@mail.gmail.com>
-Subject: Re: System slow down from udev
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524074544.GM14575@console-pimps.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 4:29 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On your systems the processor driver is built-in.  Any chance to build it as
-> a module and see if that helps?
+On Fri, May 24, 2013 at 08:45:44AM +0100, Matt Fleming wrote:
+> On Thu, 23 May, at 05:23:21PM, Russ Anderson wrote:
+> > Interesting data point.  The failure is on a rhel7/grub2 root.
+> > The identical kernel on a rhel6/grub root boots.  So maybe
+> > grub2 brings out the failure?  I suspect Fedora19/grub2 on
+> > EFI should hit the problem (for someone looking to reproduce
+> > it).
+> > 
+> > In both cases the kernel boot line options are the same.
+> 
+> I'll bet that rhel7 is using the EFI handover protocol which uses the
+> internal mechanisms of the EFI boot stub.
 
-it CONFIG_ACPI_PROCESSOR it not set in the config
-the boot get to normal speed.
+To be more specific (now that I've dug through the code), grub2 (used
+by rhel7) uses EFI boot stubs.  grub and elilo apparently do not use
+EFI boot stubs, so they don't hit the problem (at least on my test
+systems).
 
-Yinghai
+
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
