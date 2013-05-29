@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967242Ab3E2XqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:46:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54421 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935040Ab3E2XqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:46:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: System slow down from udev
-Date: Thu, 30 May 2013 01:55:07 +0200
-Message-ID: <19316305.cljVYtP0Hv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV8CZN+mQvZScr16y9R1y6Tyx7uQg_DbNwE5KkHdi5H1w@mail.gmail.com>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com> <2968280.mrRQeH7SYv@vostro.rjw.lan> <CAE9FiQV8CZN+mQvZScr16y9R1y6Tyx7uQg_DbNwE5KkHdi5H1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S967251Ab3E2Xsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:48:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60510 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S967182Ab3E2Xs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:48:27 -0400
+Message-ID: <1369871306.22004.126.camel@joe-AO722>
+Subject: Re: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bart Van Assche <bart.vanassche@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 29 May 2013 16:48:26 -0700
+In-Reply-To: <20130529163813.5f637f04.akpm@linux-foundation.org>
+References: <519BC066.5080600@acm.org>
+	 <20130529160150.f0a498d188dc790d018200e9@linux-foundation.org>
+	 <1369869467.22004.122.camel@joe-AO722>
+	 <20130529163813.5f637f04.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 29, 2013 03:49:38 PM Yinghai Lu wrote:
-> On Wed, May 29, 2013 at 2:34 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, May 29, 2013 01:13:46 PM Yinghai Lu wrote:
-> >> On Wed, May 29, 2013 at 4:29 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On your systems the processor driver is built-in.  Any chance to build it as
-> >> > a module and see if that helps?
-> >>
-> >> it CONFIG_ACPI_PROCESSOR it not set in the config
-> >> the boot get to normal speed.
-> >
-> > Well, if it is not set at all, there won't be problems with it. :-)
-> >
-> > I've tested my linux-next branch on OpenSUSE 11.3 both with the processor
-> > driver built in and modular and I'm not able to reproduce the issue you're
-> > seeing.
-> >
-> > Moreover, I'm not sure if user space is involved here at all, because the
-> > problem triggers for you when all of the relevant kernel code is non-modular.
-> >
-> > With the processor driver enabled, when the slowdown happens, are the systems
-> > usable enough to get some debug info out of them?
+On Wed, 2013-05-29 at 16:38 -0700, Andrew Morton wrote:
+> On Wed, 29 May 2013 16:17:47 -0700 Joe Perches <joe@perches.com> wrote:
 > 
-> please check the bootchart data.
+> > >   We could perhaps have a checkpatch rule
+> > > which looks for comparisons against jiffes (and any other
+> > > time-measuring variables we can detect)
+> > 
+> > other variables like?
 > 
-> looks like it take 200s if no acpi_processor ...
-> otherwise will take 800s or more.
+> Grepping for time_after finds a bunch.  There's no real pattern to it though.
 
-Well, something's fishy for sure.
+Yup, that's the problem.
+Thought I'd ask what I was missing though.
 
-To my eyes it looks like we're getting lots of notifications related to the
-processor driver and that generates a lot of workqueue load.
+No variable really stands out as testable other
+than jiffies.
 
-Can you please get /proc/interrupts from both cases and the output of
-"find /sys/firmware/acpi/interrupts/ -print -exec cat {} \;"?
+I added this to my local queue and I'll send it later.
 
-Also please send the output of "ls -l /sys/devices/system/cpu/cpu*" with the
-processor driver present.
+# check for comparisons of jiffies
+		if ($line =~ /\bif\s*\((\s*jiffies\s*[\<\>]|.*[\<\>]=?\s*jiffies\b)/) {
+			WARN("JIFFIES_COMPARISON",
+			     "Comparing jiffies is almost always wrong; prefer time_after, time_before and friends\n" . $herecurr);
+		}
 
-Thanks,
-Rafael
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
