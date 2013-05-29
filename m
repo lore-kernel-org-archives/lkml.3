@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549Ab3E2Msu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:48:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755454Ab3E2Mss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 08:48:48 -0400
-From: Andrew Jones <drjones@redhat.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, fenghua.yu@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] sched/x86: construct all sibling maps if smt
-Date: Wed, 29 May 2013 14:48:15 +0200
-Message-Id: <1369831695-11970-1-git-send-email-drjones@redhat.com>
-In-Reply-To: <1369674540-10601-1-git-send-email-drjones@redhat.com>
-References: <1369674540-10601-1-git-send-email-drjones@redhat.com>
+	id S965926Ab3E2M4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:56:41 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:37023 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965690Ab3E2M4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 08:56:39 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page() runs out of slots
+Date: Wed, 29 May 2013 18:26:13 +0530
+Message-ID: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.232]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()") broke
-the construction of sibling maps, which also broke the booted_cores
-accounting.
+zap_pte_range loops from @addr to @end. In the middle, if it runs out of
+batching slots, TLB entries needs to be flushed for @start to @interim,
+NOT @interim to @end.
 
-Before the rewrite, if smt was present, then each map was updated for
-each smt sibling. After the rewrite only cpu_sibling_mask gets updated,
-as the llc and core maps depend on 'has_mc = x86_max_cores > 1' instead.
-This leads to problems with topologies like the following
+Since ARC port doesn't use page free batching I can't test it myself but
+this seems like the right thing to do.
+Observed this when working on a fix for the issue at thread:
+	http://www.spinics.net/lists/linux-arch/msg21736.html
 
-(qemu -smp sockets=2,cores=1,threads=2)
-
-processor       : 0
-physical id     : 0
-siblings        : 1    <= should be 2
-core id         : 0
-cpu cores       : 1
-
-processor       : 1
-physical id     : 0
-siblings        : 1    <= should be 2
-core id         : 0
-cpu cores       : 0    <= should be 1
-
-processor       : 2
-physical id     : 1
-siblings        : 1    <= should be 2
-core id         : 0
-cpu cores       : 1
-
-processor       : 3
-physical id     : 1
-siblings        : 1    <= should be 2
-core id         : 0
-cpu cores       : 0    <= should be 1
-
-This patch restores the former construction by defining has_mc as
-(has_smt || x86_max_cores > 1). This should be fine as there were no
-(has_smt && !has_mc) conditions in the context.
-
-v2:
- - rename has_mc to has_mp now that it's not just for cores
-
-Signed-off-by: Andrew Jones <drjones@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-mm@kvack.org
+Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>
 ---
- arch/x86/kernel/smpboot.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/memory.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 9c73b51817e47..bfd348e993692 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+diff --git a/mm/memory.c b/mm/memory.c
+index 6dc1882..d9d5fd9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
+ 	spinlock_t *ptl;
+ 	pte_t *start_pte;
+ 	pte_t *pte;
++	unsigned long range_start = addr;
  
- void __cpuinit set_cpu_sibling_map(int cpu)
- {
--	bool has_mc = boot_cpu_data.x86_max_cores > 1;
- 	bool has_smt = smp_num_siblings > 1;
-+	bool has_mp = has_smt || boot_cpu_data.x86_max_cores > 1;
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 	struct cpuinfo_x86 *o;
- 	int i;
+ again:
+ 	init_rss_vec(rss);
+@@ -1215,12 +1216,14 @@ again:
+ 		force_flush = 0;
  
- 	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
- 
--	if (!has_smt && !has_mc) {
-+	if (!has_mp) {
- 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
- 		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
- 		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
-@@ -394,7 +394,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 		if ((i == cpu) || (has_smt && match_smt(c, o)))
- 			link_mask(sibling, cpu, i);
- 
--		if ((i == cpu) || (has_mc && match_llc(c, o)))
-+		if ((i == cpu) || (has_mp && match_llc(c, o)))
- 			link_mask(llc_shared, cpu, i);
- 
+ #ifdef HAVE_GENERIC_MMU_GATHER
+-		tlb->start = addr;
+-		tlb->end = end;
++		tlb->start = range_start;
++		tlb->end = addr;
+ #endif
+ 		tlb_flush_mmu(tlb);
+-		if (addr != end)
++		if (addr != end) {
++			range_start = addr;
+ 			goto again;
++		}
  	}
-@@ -406,7 +406,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
- 		o = &cpu_data(i);
  
--		if ((i == cpu) || (has_mc && match_mc(c, o))) {
-+		if ((i == cpu) || (has_mp && match_mc(c, o))) {
- 			link_mask(core, cpu, i);
- 
- 			/*
+ 	return addr;
 -- 
-1.8.1.4
+1.7.10.4
 
