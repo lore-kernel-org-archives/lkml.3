@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966831Ab3E2Pdr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:33:47 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56322 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966438Ab3E2Pdh (ORCPT
+	id S935182Ab3E2Pe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:34:28 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:52270 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966797Ab3E2Pdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:33:37 -0400
+	Wed, 29 May 2013 11:33:45 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org
-Subject: [PATCH 07/11] net: emaclite: Support multiple phys connected to one MDIO bus
-Date: Wed, 29 May 2013 17:33:07 +0200
-Message-Id: <7c5f92357e1b6614ea1f51df616a703865f0dd70.1369841519.git.michal.simek@xilinx.com>
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 10/11] net: emaclite: Enable emaclite for Xilinx Arm Zynq platform
+Date: Wed, 29 May 2013 17:33:10 +0200
+Message-Id: <cf3f1ba185ec5ed4a86f129480c9e861b2d4c11a.1369841519.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-27631-1369841613-0001";
+    boundary="=_mimegpg-monstr-desktop-27666-1369841621-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,110 +32,51 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-27631-1369841613-0001
+--=_mimegpg-monstr-desktop-27666-1369841621-0001
 
-For system which contains at least two ethernet IP where
-one IP manage MDIO bus with several PHYs.
-
-Example dts node:
-ethernet_mac0: ethernet@81000000 {
-	compatible = "xlnx,xps-ethernetlite-1.00.a";
-	device_type = "network";
-	interrupt-parent = <&xps_intc_0>;
-	interrupts = < 1 0 >;
-		local-mac-address = [ 00 0a 35 00 db bb ];
-	phy-handle = <&ethernet_mac0_phy0>;
-	reg = < 0x81000000 0x10000 >;
-	xlnx,duplex = <0x1>;
-	xlnx,family = "spartan3e";
-	xlnx,include-internal-loopback = <0x0>;
-	xlnx,include-mdio = <0x1>;
-	xlnx,rx-ping-pong = <0x0>;
-	xlnx,tx-ping-pong = <0x0>;
-	ethernet_mac0_mdio {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		ethernet_mac0_phy0: phy@1 {
-			reg = <0x1>;
-		} ;
-		ethernet_mac0_phy1: phy@3 {
-			reg = <0x3>;
-		} ;
-	} ;
-} ;
-ethernet_mac2: ethernet@81040000 {
-	compatible = "xlnx,xps-ethernetlite-1.00.a";
-	device_type = "network";
-	interrupt-parent = <&xps_intc_0>;
-	interrupts = < 11 0 >;
-		local-mac-address = [ 00 0a 35 00 db bb ];
-	phy-handle = <&ethernet_mac0_phy1>;
-	reg = < 0x81040000 0x10000 >;
-	xlnx,duplex = <0x1>;
-	xlnx,family = "spartan3e";
-	xlnx,include-internal-loopback = <0x0>;
-	xlnx,include-mdio = <0x0>;
-	xlnx,rx-ping-pong = <0x0>;
-	xlnx,tx-ping-pong = <0x0>;
-} ;
+Enable emaclite for Xilinx ARM Zynq platform.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/xilinx/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index a16dc35..fcd1e0b 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -848,6 +848,7 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 	int rc;
- 	struct resource res;
- 	struct device_node *np = of_get_parent(lp->phy_node);
-+	struct device_node *npp;
+diff --git a/drivers/net/ethernet/xilinx/Kconfig b/drivers/net/ethernet/xilinx/Kconfig
+index 122d60c..7b90a5e 100644
+--- a/drivers/net/ethernet/xilinx/Kconfig
++++ b/drivers/net/ethernet/xilinx/Kconfig
+@@ -5,7 +5,7 @@
+ config NET_VENDOR_XILINX
+ 	bool "Xilinx devices"
+ 	default y
+-	depends on PPC || PPC32 || MICROBLAZE
++	depends on PPC || PPC32 || MICROBLAZE || ARCH_ZYNQ
+ 	---help---
+ 	  If you have a network (Ethernet) card belonging to this class, say Y
+ 	  and read the Ethernet-HOWTO, available from
+@@ -20,7 +20,7 @@ if NET_VENDOR_XILINX
 
- 	/* Don't register the MDIO bus if the phy_node or its parent node
- 	 * can't be found.
-@@ -856,6 +857,17 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 		dev_err(dev, "Failed to register mdio bus.\n");
- 		return -ENODEV;
- 	}
-+	npp = of_get_parent(np);
-+
-+	of_address_to_resource(npp, 0, &res);
-+	if (lp->ndev->mem_start != res.start) {
-+		struct phy_device *phydev;
-+		phydev = of_phy_find_device(lp->phy_node);
-+		if (!phydev)
-+			dev_info(dev,
-+				 "MDIO of the phy is not registered yet\n");
-+		return 0;
-+	}
-
- 	/* Enable the MDIO bus by asserting the enable bit in MDIO Control
- 	 * register.
-@@ -869,7 +881,6 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 		return -ENOMEM;
- 	}
-
--	of_address_to_resource(np, 0, &res);
- 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
- 		 (unsigned long long)res.start);
- 	bus->priv = lp;
+ config XILINX_EMACLITE
+ 	tristate "Xilinx 10/100 Ethernet Lite support"
+-	depends on (PPC32 || MICROBLAZE)
++	depends on (PPC32 || MICROBLAZE || ARCH_ZYNQ)
+ 	select PHYLIB
+ 	---help---
+ 	  This driver supports the 10/100 Ethernet Lite from Xilinx.
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-27631-1369841613-0001
+--=_mimegpg-monstr-desktop-27666-1369841621-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGmH80ACgkQykllyylKDCHEugCfYIgywNdnlNiFkNmsYvZ0wJ7Y
-kY4An1NAMRwxvkmIeH0G+ESWEUpdrHWd
-=b7E2
+iEYEABECAAYFAlGmH9UACgkQykllyylKDCHJ1wCcCmRpnin5fADt9cKNzg7hJfPr
+0pwAn3TTcOvPOQUKV84+0ubvn20hpycI
+=hkrX
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-27631-1369841613-0001--
+--=_mimegpg-monstr-desktop-27666-1369841621-0001--
