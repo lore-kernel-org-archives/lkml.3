@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab3E2GMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 02:12:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63642 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3E2GMt (ORCPT
+	id S1759513Ab3E2GW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 02:22:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33786 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756378Ab3E2GW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 02:12:49 -0400
-Message-ID: <51A59C4C.1050005@vlnb.net>
-Date: Tue, 28 May 2013 23:12:28 -0700
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+	Wed, 29 May 2013 02:22:26 -0400
+Date: Wed, 29 May 2013 09:22:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sage Weil <sage@inktank.com>
+Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [patch] ceph: tidy ceph_mdsmap_decode() a little
+Message-ID: <20130529062213.GF23932@mwanda>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>	<519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>	<519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>	<519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org>	<519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org>	<519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net>	<51A035FA.6070409@vlnb.net> <yq17gii3l93.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq17gii3l93.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:mmC8FiErWv7dUc8A/gk1Ky9W00xp5URigxTTN8/8/ce
- Dt6PMZuGjQkr8XjkUAy4EJtYf7t29AjthGdSxbus7FD/Jg7dmN
- ihS+ZC3MfT3j+x1W/FLTUUiGESajX9u7S5c62MK2SAGtxBLWlS
- /P3YpNZs4PAvK0RjX21stFXXcd4B8Bb/I2D3rsa3gZ7cd0sGIQ
- +91gZnrFMtQg7ttI5x8qDDz1QBbAco0xndfvkw1HX8bvqx2slD
- CEAZtpH2jZLkyhh1meV+kFEIKgK3bR55tqasw0U/Gany6gLF/m
- ry1JbfEMl/2z9muTVYckrfjRjdF0HK3aWj9KKPRbyq3IUTaaQ=
- =
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369753140-28802-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin K. Petersen, on 05/28/2013 01:25 PM wrote:
-> Vladislav> Linux block layer is purely artificial creature slowly
-> Vladislav> reinventing wheel creating more problems, than solving.
-> 
-> On the contrary. I do think we solve a whole bunch of problems.
-> 
-> 
-> Vladislav> It enforces approach, where often "impossible" means
-> Vladislav> "impossible in this interface".
-> 
-> I agree we have limitations. I do not agree that all limitations are
-> bad. Sometimes it's OK to say no.
-> 
-> 
-> Vladislav> For instance, how about copy offload?  How about atomic
-> Vladislav> writes?
-> 
-> I'm actively working on copy offload. Nobody appears to be interested in
-> atomic writes. Otherwise I'd work on those as well.
-> 
-> 
-> Vladislav> Why was it needed to create special blk integrity interface
-> Vladislav> with the only end user - SCSI?
-> 
-> Simple. Because we did not want to interleave data and PI 512+8+512+8
-> neither in memory, nor at DMA time.
+I introduced a new temporary variable "info" instead of
+"m->m_info[mds]".  Also I reversed the if condition and pulled
+everything in one indent level.
 
-It can similarly be done in SCSI-like interface without need for any middleman.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+This goes on top of Emil Goode's patch.
 
-> Furthermore, the ATA EPP proposal
-> was still on the table so I also needed to support ATA.
-> 
-> And finally, NVM Express uses the blk_integrity interface as well.
-> 
-> 
-> Vladislav> The block layer keeps repeating SCSI. So, maybe, after all,
-> Vladislav> it's better to acknowledge that direct usage of SCSI without
-> Vladislav> any intermediate layers and translations is more productive?
-> Vladislav> And for those minors not using SCSI internally, translate
-> Vladislav> from SCSI to their internal commands? Creating and filling
-> Vladislav> CDB fields for most cases isn't anyhow harder, than creating
-> Vladislav> and feeling bio fields.
-> 
-> This is quite possibly the worst idea I have heard all week.
-> 
-> As it stands it's a headache for the disk ULD driver to figure out which
-> of the bazillion READ/WRITE variants to send to a SCSI/ATA device. What
-> makes you think that an application or filesystem would be better
-> equipped to make that call?
-> 
-> See also: WRITE SAME w/ zeroes vs. WRITE SAME w/ UNMAP vs. UNMAP 
-> 
-> See also: EXTENDED COPY vs. the PROXY command set
-> 
-> See also: USB-ATA bridge chips
-> 
-> You make it sound like all the block layer does is filling out
-> CDBs. Which it doesn't in fact have anything to do with at all.
-> 
-> When you are talking about CDBs we're down in the SBC/SSC territory.
-> Which is such a tiny bit of what's going on. We have transports, we have
-> SAM, we have HBA controller DMA constraints, system DMA constraints,
-> buffer bouncing, etc. There's a ton of stuff that needs to happen before
-> the CDB and the data physically reach the storage.
-> 
-> You seem to be advocating that everything up to the point where the
-> device receives the command is in the way. Well, by all means. Why limit
-> ourselves to the confines of SCSI? Why not get rid of POSIX
-> read()/write(), page cache, filesystems and let applications speak
-> ST-506 directly?
-> 
-> I know we're doing different things. My job is to make a general purpose
-> operating system with interfaces that make sense to normal applications.
-> That does not preclude special cases where it may make sense to poke at
-> the device directly. For testing purposes, for instance. But I consider
-> it a failure when we start having applications that know about hardware
-> intricacies, cylinders/heads/sectors, etc. That road leads straight to
-> the 1980s...
-
-What you mean is true, but my point is that this abstraction is better to be done in
-SCSI, i.e. SAM, manner. Now need to write fields inside of CDBs, it would be pretty
-inconvenient ;). But CDBs fields can be fields in some scsi_io structure. Exact opcodes
-can be easily abstracted to be filled on the last stage, where end CDB is constructed
-from those fields.
-
-Problem with block abstraction is that it is the least common denominator of all block
-devices capabilities, hence advanced capabilities, available only some class of
-devices, are automatically become "impossible". Hence, it would be more productive
-instead to use the most capable abstraction, which is SAM. In this abstraction there's
-no need to reinvent complex interfaces and write complex middleman code for every
-advanced capability. All advanced capabilities there are available by definition, if
-supported by underlying hardware. That's my point.
-
-POSIX is for simple applications, for which read()/write() calls are sufficient. They
-are outside of our discussions. But advanced applications need more. I know plenty of
-applications issuing direct SCSI commands, but how many can you name applications using
-block interface (bsg)? I can recall only one quite relatively used Linux specific
-library. That's all. This interface is not demanded by applications.
-
-Vlad
+diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+index d4d3897..132b64e 100644
+--- a/fs/ceph/mdsmap.c
++++ b/fs/ceph/mdsmap.c
+@@ -92,6 +92,7 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+ 		u32 num_export_targets;
+ 		void *pexport_targets = NULL;
+ 		struct ceph_timespec laggy_since;
++		struct ceph_mds_info *info;
+ 
+ 		ceph_decode_need(p, end, sizeof(u64)*2 + 1 + sizeof(u32), bad);
+ 		global_id = ceph_decode_64(p);
+@@ -126,26 +127,27 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+ 		     i+1, n, global_id, mds, inc,
+ 		     ceph_pr_addr(&addr.in_addr),
+ 		     ceph_mds_state_name(state));
+-		if (mds >= 0 && mds < m->m_max_mds && state > 0) {
+-			m->m_info[mds].global_id = global_id;
+-			m->m_info[mds].state = state;
+-			m->m_info[mds].addr = addr;
+-			m->m_info[mds].laggy =
+-				(laggy_since.tv_sec != 0 ||
+-				 laggy_since.tv_nsec != 0);
+-			m->m_info[mds].num_export_targets = num_export_targets;
+-			if (num_export_targets) {
+-				m->m_info[mds].export_targets =
+-					kcalloc(num_export_targets, sizeof(u32),
+-						GFP_NOFS);
+-				if (m->m_info[mds].export_targets == NULL)
+-					goto badmem;
+-				for (j = 0; j < num_export_targets; j++)
+-					m->m_info[mds].export_targets[j] =
+-					       ceph_decode_32(&pexport_targets);
+-			} else {
+-				m->m_info[mds].export_targets = NULL;
+-			}
++
++		if (mds < 0 || mds >= m->m_max_mds || state <= 0)
++			continue;
++
++		info = &m->m_info[mds];
++		info->global_id = global_id;
++		info->state = state;
++		info->addr = addr;
++		info->laggy = (laggy_since.tv_sec != 0 ||
++			       laggy_since.tv_nsec != 0);
++		info->num_export_targets = num_export_targets;
++		if (num_export_targets) {
++			info->export_targets = kcalloc(num_export_targets,
++						       sizeof(u32), GFP_NOFS);
++			if (info->export_targets == NULL)
++				goto badmem;
++			for (j = 0; j < num_export_targets; j++)
++				info->export_targets[j] =
++				       ceph_decode_32(&pexport_targets);
++		} else {
++			info->export_targets = NULL;
+ 		}
+ 	}
+ 
