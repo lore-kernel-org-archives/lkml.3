@@ -1,153 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965720Ab3E2Sem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:34:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49535 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965290Ab3E2Seh (ORCPT
+	id S965755Ab3E2SgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:36:13 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:9269 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab3E2SgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:34:37 -0400
-Date: Wed, 29 May 2013 11:34:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 2/4] zbud: add to mm/
-Message-Id: <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
-In-Reply-To: <20130529154500.GB428@cerebellum>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
-	<20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
-	<20130529154500.GB428@cerebellum>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 29 May 2013 14:36:02 -0400
+Message-ID: <1369852557.16819.54.camel@misato.fc.hp.com>
+Subject: Re: possible_cpus broken in linux-next
+From: Toshi Kani <toshi.kani@hp.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Date: Wed, 29 May 2013 12:35:57 -0600
+In-Reply-To: <51A6367E.1060400@intel.com>
+References: <51A6367E.1060400@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013 10:45:00 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-
-> > > +struct zbud_page {
-> > > +	union {
-> > > +		struct page page;
-> > > +		struct {
-> > > +			unsigned long donotuse;
-> > > +			u16 first_chunks;
-> > > +			u16 last_chunks;
-> > > +			struct list_head buddy;
-> > > +			struct list_head lru;
-> > > +		};
-> > > +	};
-> > > +};
+On Wed, 2013-05-29 at 10:10 -0700, Dave Hansen wrote:
+> If I boot with: maxcpus=2 possible_cpus=4, I get
+> 
+> 	# grep . /sys/devices/system/cpu/cpu[0-9]*/online'
+> 	/sys/devices/system/cpu/cpu1/online:1
+> 	/sys/devices/system/cpu/cpu2/online:1
+> 	/sys/devices/system/cpu/cpu3/online:1
+> 
+> on bad kernels, and this on working ones:
+> 
+> 	/sys/devices/system/cpu/cpu1/online:1
+> 	/sys/devices/system/cpu/cpu2/online:0
+> 	/sys/devices/system/cpu/cpu3/online:0
+> 
+> 
+> I also get -EINVAL if I try to re-offline them in this state.  2 and 3
+> don't show up in /proc/cpuinfo, so sysfs just looks broken here.  This
+> happens in a KVM guest, so it should be dirt-simple for anyone to reproduce.
+> 
+> I bisected it down to:
+> 
+> > commit 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c
+> > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Date:   Fri May 3 00:25:49 2013 +0200
 > > 
-> > Whoa.  So zbud scribbles on existing pageframes?
-> 
-> Yes.
-> 
-> > 
-> > Please tell us about this, in some detail.  How is it done and why is
-> > this necessary?
-> > 
-> > Presumably the pageframe must be restored at some stage, so this code
-> > has to be kept in sync with external unrelated changes to core MM?
-> 
-> Yes, this is done in free_zbud_page().
-> 
-> > 
-> > Why was it implemented in this fashion rather than going into the main
-> > `struct page' definition and adding the appropriate unionised fields?
-> 
-> Yes, modifying the struct page is the cleaner way.  I thought that adding more
-> convolution to struct page would create more friction on the path to getting
-> this merged.  Plus overlaying the struct page was the approach used by zsmalloc
-> and so I was thinking more along these lines.
+> >     Driver core: Use generic offline/online for CPU offline/online
+> >     
+> >     Rework the CPU hotplug code in drivers/base/cpu.c to use the
+> >     generic offline/online support introduced previously instead of
+> >     its own CPU-specific code.
+> >     
+> >     For this purpose, modify cpu_subsys to provide offline and online
+> >     callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
+> >     the CPU-specific 'online' sysfs attribute.
+> >     
+> >     This modification is not supposed to change the user-observable
+> >     behavior of the kernel (i.e. the 'online' attribute will be present
+> >     in exactly the same place in sysfs and should trigger exactly the
+> >     same actions as before).
+> >     
+> >     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >     Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >     Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
-I'd be interested in seeing what the modifications to struct page look
-like.  It really is the better way.
 
-> If you'd rather add the zbud fields directly into unions in struct page,
-> I'm ok with that if you are.
-> 
-> Of course, this doesn't avoid having to reset the fields for the page allocator
-> before we free them.  Even slub/slob reset the mapcount before calling
-> __free_page(), for example.
-> 
-> > 
-> > I worry about any code which independently looks at the pageframe
-> > tables and expects to find page struts there.  One example is probably
-> > memory_failure() but there are probably others.
+Thanks for the report.  The following patch fixes the problem.
+-Toshi
 
-^^ this, please.  It could be kinda fatal.
+====
+From: Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Fix sysfs cpu/online of offlined cpus
 
-> > > 
-> > > ...
-> > >
-> > > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-> > > +			unsigned long *handle)
-> > > +{
-> > > +	int chunks, i, freechunks;
-> > > +	struct zbud_page *zbpage = NULL;
-> > > +	enum buddy bud;
-> > > +	struct page *page;
-> > > +
-> > > +	if (size <= 0 || gfp & __GFP_HIGHMEM)
-> > > +		return -EINVAL;
-> > > +	if (size > PAGE_SIZE)
-> > > +		return -E2BIG;
-> > 
-> > Means "Argument list too long" and isn't appropriate here.
-> 
-> Ok, I need a return value other than -EINVAL to convey to the user that the
-> allocation is larger than what the allocator can hold. I don't see an existing
-> errno that would be more suited for that.  Do you have a suggestion?
+As reported by Dave Hansen, sysfs cpu/online shows 1 for
+offlined cpus at boot.
+https://lkml.org/lkml/2013/5/29/403
 
-ENOMEM perhaps.  That's also somewhat misleading, but I guess there's
-precedent for ENOMEM meaning "allocation too large" as well as "out
-of memory".
+Fix this problem by initializing dev.offline with cpu_online()
+when registering a cpu.
 
-> > > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
-> > > +{
-> > > +	int i, ret, freechunks;
-> > > +	struct zbud_page *zbpage;
-> > > +	unsigned long first_handle = 0, last_handle = 0;
-> > > +
-> > > +	spin_lock(&pool->lock);
-> > > +	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
-> > > +			retries == 0) {
-> > > +		spin_unlock(&pool->lock);
-> > > +		return -EINVAL;
-> > > +	}
-> > > +	for (i = 0; i < retries; i++) {
-> > > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
-> > > +		list_del(&zbpage->lru);
-> > > +		list_del(&zbpage->buddy);
-> > > +		/* Protect zbpage against free */
-> > 
-> > Against free by who?  What other code paths can access this page at
-> > this time?
-> 
-> zbud has no way of serializing with the user (zswap) to prevent it calling
-> zbud_free() during zbud reclaim.  To prevent the zbud page from being freed
-> while reclaim is operating on it, we set the reclaim flag in the struct page.
-> zbud_free() checks this flag and, if set, only sets the chunk length of the
-> allocation to 0, but does not actually free the zbud page.  That is left to
-> this reclaim path.
+Reported-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/base/cpu.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Sounds strange.  Page refcounting is a well-established protocol and
-works well in other places?
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 130ba0b..b9f0eec 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -281,6 +281,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	cpu->dev.bus = &cpu_subsys;
+ 	cpu->dev.release = cpu_device_release;
+ 	cpu->dev.offline_disabled = !cpu->hotpluggable;
++	cpu->dev.offline = !cpu_online(num);
+ #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = arch_cpu_uevent;
+ #endif
+-- 
+1.8.1.4
+
+
 
