@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966228Ab3E2PJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:09:59 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49274 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966961Ab3E2PJU (ORCPT
+	id S966954Ab3E2PJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:09:16 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58557 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966297Ab3E2PJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:09:20 -0400
+	Wed, 29 May 2013 11:09:13 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,10 +19,14 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikael Starvik <starvik@axis.com>, linux-cris-kernel@axis.com
-Subject: [PATCH, v2 3/5] mm/CRIS: clean up unused VALID_PAGE()
-Date: Wed, 29 May 2013 23:08:54 +0800
-Message-Id: <1369840136-1491-4-git-send-email-jiang.liu@huawei.com>
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-alpha@vger.kernel.org
+Subject: [PATCH, v2 1/5] mm/ALPHA: clean up unused VALID_PAGE()
+Date: Wed, 29 May 2013 23:08:52 +0800
+Message-Id: <1369840136-1491-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369840136-1491-1-git-send-email-jiang.liu@huawei.com>
 References: <1369840136-1491-1-git-send-email-jiang.liu@huawei.com>
@@ -33,27 +37,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 VALID_PAGE() has been removed from kernel long time ago, so clean up it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: linux-cris-kernel@axis.com
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-alpha@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/cris/include/asm/page.h | 1 -
- 1 file changed, 1 deletion(-)
+ arch/alpha/include/asm/mmzone.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/cris/include/asm/page.h b/arch/cris/include/asm/page.h
-index be45ee3..dfc53f9 100644
---- a/arch/cris/include/asm/page.h
-+++ b/arch/cris/include/asm/page.h
-@@ -51,7 +51,6 @@ typedef struct page *pgtable_t;
-  */ 
+diff --git a/arch/alpha/include/asm/mmzone.h b/arch/alpha/include/asm/mmzone.h
+index c5b5d6b..14ce27b 100644
+--- a/arch/alpha/include/asm/mmzone.h
++++ b/arch/alpha/include/asm/mmzone.h
+@@ -71,8 +71,6 @@ PLAT_NODE_DATA_LOCALNR(unsigned long p, int n)
  
- #define virt_to_page(kaddr)    (mem_map + (((unsigned long)(kaddr) - PAGE_OFFSET) >> PAGE_SHIFT))
--#define VALID_PAGE(page)       (((page) - mem_map) < max_mapnr)
- #define virt_addr_valid(kaddr)	pfn_valid((unsigned)(kaddr) >> PAGE_SHIFT)
+ #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
  
- /* convert a page (based on mem_map and forward) to a physical address
+-#define VALID_PAGE(page)	(((page) - mem_map) < max_mapnr)
+-
+ #define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> 32))
+ #define pgd_page(pgd)		(pfn_to_page(pgd_val(pgd) >> 32))
+ #define pte_pfn(pte)		(pte_val(pte) >> 32)
 -- 
 1.8.1.2
 
