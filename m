@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965834Ab3E2LVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:21:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54072 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965683Ab3E2LVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:21:04 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v7] ARM: dts: omap4-panda: Update the LED support for the panda DTS
-Date: Wed, 29 May 2013 06:20:27 -0500
-Message-ID: <1369826427-31963-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S965840Ab3E2LYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:24:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42886 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965525Ab3E2LYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:24:13 -0400
+Message-ID: <1369826652.22004.106.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: forgive use of mixed case variables
+ measuring units
+From: Joe Perches <joe@perches.com>
+To: Phil Carmody <phil.carmody@partner.samsung.com>
+Cc: apw@canonical.com, linux-kernel@vger.kernel.org
+Date: Wed, 29 May 2013 04:24:12 -0700
+In-Reply-To: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
+References: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-are different.
+On Wed, 2013-05-29 at 14:02 +0300, Phil Carmody wrote:
+> I don't think anyone really has an issue with things like max_mV.
+> And whilst nS et al. may not be SI standard, at least it's clear
+> what they represent.
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> @@ -2940,6 +2940,7 @@ sub process {
+>  			if ($var !~ /$Constant/ &&
+>  			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
+>  			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
+> +			    $var !~ /^[a-z_]*_[numk][VAS]$/ &&
+>  			    !defined $camelcase{$var}) {
+>  				$camelcase{$var} = 1;
+>  				WARN("CAMELCASE",
 
-A1-A3 = gpio_wk7
-ES = gpio_110
+Hi Phil.
 
-There is no change to LED D2
+CamelCase was downgraded to a --strict only (CHK)
+test in -next recently.  commit f0e8102413
+("checkpatch: change CamelCase test and make it --strict")
 
-Abstract away the pinmux and the LED definitions for the two boards into
-the respective DTS files.
+I'm hesitant to add a longish whitelist inside
+checkpatch itself, but if it's added, it should
+probably be an array.
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
-v7 - Update headline to add spaces - https://patchwork.kernel.org/patch/2583661/
-v6 - Review comments updated - https://patchwork.kernel.org/patch/2582771/
-v5 - Provide pincrtl phandle to the gpio-led driver - https://patchwork.kernel.org/patch/2573981/
-
- arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
- arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 03bd60d..5fd59b3 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -16,8 +16,13 @@
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
- 
--	leds {
-+	leds: leds {
- 		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <
-+			&led_wkgpio_pins
-+		>;
-+
- 		heartbeat {
- 			label = "pandaboard::status1";
- 			gpios = <&gpio1 7 0>;
-@@ -137,6 +142,15 @@
- 	};
- };
- 
-+&omap4_pmx_wkup {
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
-+			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index f1d8c21..c968a3b 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -34,3 +34,31 @@
- 		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
- 		>;
- };
-+
-+&omap4_pmx_core {
-+	led_gpio_pins: gpio_led_pmx {
-+		pinctrl-single,pins = <
-+			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
-+&led_wkgpio_pins {
-+	pinctrl-single,pins = <
-+		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+	>;
-+};
-+
-+&leds {
-+	pinctrl-0 = <
-+		&led_gpio_pins
-+		&led_wkgpio_pins
-+	>;
-+
-+	heartbeat {
-+		gpios = <&gpio4 14 0>;
-+	};
-+	mmc {
-+		gpios = <&gpio1 8 0>;
-+	};
-+};
--- 
-1.7.5.4
 
