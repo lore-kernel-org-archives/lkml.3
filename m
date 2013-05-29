@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539Ab3E2S0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:26:39 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:53813 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965160Ab3E2S0b (ORCPT
+	id S965669Ab3E2S2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:28:11 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:34006 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965160Ab3E2S2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:26:31 -0400
+	Wed, 29 May 2013 14:28:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130528211420.GG5065@oc6784271780.ibm.com>
-References: <20130528211420.GG5065@oc6784271780.ibm.com>
-Date: Wed, 29 May 2013 21:26:30 +0300
-Message-ID: <CAHp75Ve73bLosxtKNA71WDo10_pxXYj_rhFOd+A-VwO7bxduaA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] rsxx: Adding EEH check inside cregs timeout.
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
+References: <CAPgLHd-Mw4MQwS8=p9+ZBHHehH7B-Hs49BqiUMrq-aV_5M4pQQ@mail.gmail.com>
+Date: Wed, 29 May 2013 20:27:59 +0200
+Message-ID: <CACRpkdZH8jai84q6uwSRjMR+HCzohH-JMaKw1SCShYwgSKJYXQ@mail.gmail.com>
+Subject: Re: [PATCH -next] dmaengine: ste_dma40: fix error return code in d40_probe()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:14 AM, Philip J. Kelleher
-<pjk1939@linux.vnet.ibm.com> wrote:
-> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Tue, May 28, 2013 at 11:06 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
-> Unfortunaly, our CPU register path does not do any kind of
-> EEH error checking. So to fix this issue, an ioread32 was
-> added to the CPU register timeout code. This way, the
-> driver can check to see if the timeout was caused by an EEH
-> error or not.
-
-
-> +++ linux-block/drivers/block/rsxx/cregs.c      2013-05-01 18:59:57.596197150 -0500
-> @@ -431,6 +431,15 @@ static int __issue_creg_rw(struct rsxx_c
->         *hw_stat = completion.creg_status;
+> In many of the error handling case, the return value 'ret' not set
+> and 0 will be return from d40_probe() even if error, but we should
+> return a negative error code instead in those error handling case.
+> This patch fixed them, and also removed useless variable 'err'.
 >
->         if (completion.st) {
-> +               /*
-> +                * This read is needed to verify that there has not been any
-> +                * extreme errors that might have occurred, i.e. EEH. The
-> +                * function iowrite32 will not detect EEH errors, so it is
-> +                * necessary that we recover if such an error is the reason
-> +                * for the timeout.
-> +                */
-> +               ioread32(card->regmap + SCRATCH);
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-This is just a dummy read, right? Perhaps you may add this word to the
-explanation.
+Hm it seems it does not apply on my dma40 branch (the same
+as mentioned by Andy):
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-stericsson.git/log/?h=ux500-dma40
 
---
-With Best Regards,
-Andy Shevchenko
+I have already queued some 36 patches from this branch into
+ARM SoC so it is in -next today (and conflicting with this patch).
+
+Could you rebase it and get Vinod's ACK so I can queue it?
+
+Also pls include Lee Jones on CC.
+
+Yours,
+Linus Walleij
