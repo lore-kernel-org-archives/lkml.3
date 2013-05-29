@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965446Ab3E2KAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:00:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39314 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965107Ab3E2KAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:00:09 -0400
-Message-ID: <51A5D1A6.8060603@ti.com>
-Date: Wed, 29 May 2013 13:00:06 +0300
-From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S965488Ab3E2KHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:07:55 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:20990 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965230Ab3E2KHy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 06:07:54 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A5D346.4010007@asianux.com>
+Date: Wed, 29 May 2013 18:07:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v1 0/3] PM / AVS: SmartReflex: driver misc fixes
-References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com> <87li6ybywj.fsf@linaro.org>
-In-Reply-To: <87li6ybywj.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Mike Frysinger <vapier@gentoo.org>, anton.vorontsov@linaro.org,
+        Richard Kuo <rkuo@codeaurora.org>, jesper.nilsson@axis.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: blackfin: kernel: memory overflow, 'namebuf' length
+ need be more than 256
+References: <51A5CDB4.9000204@asianux.com>
+In-Reply-To: <51A5CDB4.9000204@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 12:03 AM, Kevin Hilman wrote:
-> Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
->
->> The following patch series contain several misc fixes to SmartReflex driver:
->>
->> 1. disable errgen before vpbound disable. Critical fix, needed for
->> proper work of AVS-VP communicaton protocol.
->>
->> 2. disable runtime PM on driver remove. Trivial - runtime PM cleanup.
->>
->> 3. fix driver name. Trivial - proper DRIVER_NAME was not defined
->> since SmartReflex driver was introduced with initial commit.
->>
->> Patches are based on:
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->> tag: v3.10-rc2
->>
->> Verified on OMAP4430. Boot - OK. SmartReflex registers debug dump - OK
->>
->> Available on GitHub:
->> https://github.com/andriit/linux-omap-k3.8/commits/avs_sr_driver_misc_fixes_v01
->>
->> Andrii Tseglytskyi (2):
->>    PM / AVS: SmartReflex: disable runtime PM on driver remove
->>    PM / AVS: SmartReflex: fix driver name
->>
->> Nishanth Menon (1):
->>    PM / AVS: SmartReflex: disable errgen before vpbound disable
->>
->>   drivers/power/avs/smartreflex.c |   15 +++++++++++----
->>   1 file changed, 11 insertions(+), 4 deletions(-)
-> I had a minor comment on PATCH 1/3, otherwise these look good for v3.11
-> (since they are not regressions, they don't qualify for v3.10.)
->
-> Please repost with the changes and be sure to copy linux-pm@vger.kernel.org
 
-OK. Will Cc to linux-pm@vger.kernel.org in next patch version.
-Thank you for review.
+The 'name' length in decode_address() may be 255, after call d_path()
+successfully.
 
->
-> Thanks,
->
-> Kevin
->
+So for decode_address(), the input 'buf' need be more than 256, or may
+memory overflow.
 
+For simply thinking of, use 'namebuf[512]' instead of 'namebuf[150]'
+which will pass to decode_address() as input 'buf'.
+
+Also better use macro instead of hard code number when processing
+symbols work.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/blackfin/kernel/trace.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/blackfin/kernel/trace.c b/arch/blackfin/kernel/trace.c
+index c36efa0..4fecd3e 100644
+--- a/arch/blackfin/kernel/trace.c
++++ b/arch/blackfin/kernel/trace.c
+@@ -37,7 +37,7 @@ void decode_address(char *buf, unsigned long address)
+ 	const char *symname;
+ 	char *modname;
+ 	char *delim = ":";
+-	char namebuf[128];
++	char namebuf[KSYM_NAME_LEN];
+ #endif
+ 
+ 	buf += sprintf(buf, "<0x%08lx> ", address);
+@@ -845,7 +845,7 @@ void dump_bfin_mem(struct pt_regs *fp)
+ 
+ void show_regs(struct pt_regs *fp)
+ {
+-	char buf[150];
++	char buf[512];
+ 	struct irqaction *action;
+ 	unsigned int i;
+ 	unsigned long flags = 0;
+-- 
+1.7.7.6
