@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3E2FZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 01:25:24 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:43353 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3E2FZX (ORCPT
+	id S1754113Ab3E2F3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 01:29:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49746 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab3E2F3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 01:25:23 -0400
-Message-ID: <51A5913A.5030302@gmail.com>
-Date: Wed, 29 May 2013 13:25:14 +0800
-From: jgq516@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org
-Subject: ftrace calltrace when boot through kexec
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 01:29:30 -0400
+Date: Wed, 29 May 2013 15:29:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>
+Subject: linux-next: build warning after merge of the final tree
+Message-Id: <20130529152915.efba860c7e825fe786b1ee99@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_May_2013_15_29_15_+1000_b=x_FMU/gJ=Q=ovg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Wed__29_May_2013_15_29_15_+1000_b=x_FMU/gJ=Q=ovg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When I reboot a preempt_rt 3.4 kernel with cortex a15 tc2 board thru 
-kexec, I got below calltrace appeared:
+Hi all,
 
-------------[ cut here ]------------
-WARNING: at kernel/trace/ftrace.c:1584 ftrace_bug+0x1e0/0x224()
-Modules linked in:
-[<c0017e14>] (unwind_backtrace+0x0/0x104) from [<c062a468>] 
-(dump_stack+0x20/0x24)
-[<c062a468>] (dump_stack+0x20/0x24) from [<c00265a4>] 
-(warn_slowpath_common+0x64/0x74)
-[<c00265a4>] (warn_slowpath_common+0x64/0x74) from [<c00265e0>] 
-(warn_slowpath_null+0x2c/0x34)
-[<c00265e0>] (warn_slowpath_null+0x2c/0x34) from [<c00bf70c>] 
-(ftrace_bug+0x1e0/0x224)
-[<c00bf70c>] (ftrace_bug+0x1e0/0x224) from [<c00c03b4>] 
-(ftrace_process_locs+0x880/0x930)
-[<c00c03b4>] (ftrace_process_locs+0x880/0x930) from [<c082d018>] 
-(ftrace_init+0xb4/0x194)
-[<c082d018>] (ftrace_init+0xb4/0x194) from [<c081e8c4>] 
-(start_kernel+0x338/0x348)
-[<c081e8c4>] (start_kernel+0x338/0x348) from [<80008054>] (0x80008054)
----[ end trace af5b256dd27bb7ab ]---
-ftrace failed to modify [<c0022b88>] platform_cpu_kill+0x10/0x1c
-  actual: 00:40:bd:e8
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig, i386 defconfig, sparc32 defconfig) produced these
+warning:
 
-Add notrace before platform_cpu_kill can workaround this calltrace, but 
-it is weird that this problem can't
-reproduce in another cortex-a9 (xilinx-zynq) board, could someone give 
-some hints about this? Thanks.
+In file included from /scratch/sfr/next/include/net/tcp.h:44:0,
+                 from /scratch/sfr/next/net/core/sock.c:139:
+/scratch/sfr/next/include/net/inet_ecn.h: In function 'INET_ECN_set_ce':
+/scratch/sfr/next/include/net/inet_ecn.h:137:50: warning: comparison betwee=
+n pointer and integer [enabled by default]
+/scratch/sfr/next/include/net/inet_ecn.h:142:52: warning: comparison betwee=
+n pointer and integer [enabled by default]
 
-Regards,
-Xiao
+I got lots of these :-(
 
+Introduced by commit 1a37e412a022 ("net: Use 16bits for *_headers fields
+of struct skbuff") from the net-next tree.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__29_May_2013_15_29_15_+1000_b=x_FMU/gJ=Q=ovg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRpZIvAAoJEECxmPOUX5FE/rYP/3x6OkJJbYePE/Hp0wFyQwDE
+zz6F2mQpukPaRLHx0mBZAMQe4ey7iMxQPAkP5g3/LsATJAoi6+fOrP/uvhUzV1hZ
+iNqTQAVrVDctOCXX26d7cOLomNwLo4tJkxypsHYPEdqzEwY/hkr87n/cikbI+W5s
+Y1vOVRhn5CX9K7vnRAZHfxLX0PnPUuh3a0boEh/iVjTdLP5Zcv76qaXxesJaD1U+
+LUwlSpJcYK3VguVSg9swPAPlDLhPfFMetSIxBU4/JjqoLVPHfq8SGg51CPoQGEHt
+x7bM+Z00+4FHYwQBArdKklfZykHYLrlXzmdtsdWlMJOEOABm5HorAVH2z1S9niYr
+w8eSQwWtTPV0e28JY4zzinwSjBsjIiTmdTfAXjWo/A0gkoNSHyibTzP0DBTgwQBI
+fnyDKsLiEFIvS809+3UKJdKE1Lndd1ghWtoAh1J3PwKbz1v4+l1HzwuZEyqN58mJ
+stCOELhwBZ01MKPhUeV8mBMFupCWOE+kDBu+ICx833X1Ub8G2+d3hgNtk++LLrK1
+Em2X64f3tR6ExY1DjTt0wrOasusexB6Z0MM5HANvcTL9bDFDL7UjrbSqQvJIgOrw
+kn7nJD1pEBaRni+d61Y7Ph6S0Bdn2lGccYW4ghr9+0QcdkBlPwkxDja20NrKdhiZ
+Y8mMo34idv7Q8IZgTM7V
+=tNiV
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_May_2013_15_29_15_+1000_b=x_FMU/gJ=Q=ovg--
