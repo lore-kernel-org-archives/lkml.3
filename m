@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935283Ab3E2WMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:12:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50758 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935228Ab3E2WMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:12:01 -0400
-Date: Wed, 29 May 2013 15:11:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] Remove unused /dev/oldmem interface
-Message-Id: <20130529151159.2f1d6b5092c58b61724bee7c@linux-foundation.org>
-In-Reply-To: <51A4C926.2040701@zytor.com>
-References: <51A02E50.5020507@gmail.com>
-	<87mwri8wwu.fsf@xmission.com>
-	<20130528143756.GD7088@redhat.com>
-	<51A4C926.2040701@zytor.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S935287Ab3E2WOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:14:20 -0400
+Received: from www.sr71.net ([198.145.64.142]:50562 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935228Ab3E2WOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 18:14:14 -0400
+Message-ID: <51A67DB4.9090404@sr71.net>
+Date: Wed, 29 May 2013 15:14:12 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave.hansen@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: possible_cpus broken in linux-next
+References: <51A6367E.1060400@intel.com>  <1369852557.16819.54.camel@misato.fc.hp.com> <1369853414.16819.56.camel@misato.fc.hp.com> <51A650BC.7030604@intel.com>
+In-Reply-To: <51A650BC.7030604@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013 08:11:34 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+On 05/29/2013 12:02 PM, Rafael J. Wysocki wrote:
+>>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>>> index 130ba0b..b9f0eec 100644
+>>> --- a/drivers/base/cpu.c
+>>> +++ b/drivers/base/cpu.c
+>>> @@ -281,6 +281,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+>>>       cpu->dev.bus = &cpu_subsys;
+>>>       cpu->dev.release = cpu_device_release;
+>>>       cpu->dev.offline_disabled = !cpu->hotpluggable;
+>>> +    cpu->dev.offline = !cpu_online(num);
+>>>   #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+>>>       cpu->dev.bus->uevent = arch_cpu_uevent;
+>>>   #endif
 
-> On 05/28/2013 07:37 AM, Vivek Goyal wrote:
-> > 
-> > Eric,
-> > 
-> > Should we schedule the removal of this interface after 1-2 releases
-> > and give a warning once if anybody opens /dev/oldmem and tell them
-> > to use /proc/vmcore instead? 
-> > 
-> > I am kind of inclined towards warning approarch. If there is any xyz
-> > /dev/oldmem user in the wild out there, he/she atleast gets a chance to
-> > migrate to /proc/vmcore.
-> > 
-> 
-> This has been discussed ad nauseam at the Kernel Summit.  It doesn't work.
-> 
+This gets things working for me again.  Thanks for the quick response!
 
-Who said that and what was their evidence?  Giving users (especially
-the more technical ones) several months warning is eminently sensible.
-
-Although it doesn't appear to be necessary in this case.
+Tested-by: Dave Hansen <dave.hansen@intel.com>
