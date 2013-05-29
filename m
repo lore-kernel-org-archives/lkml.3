@@ -1,178 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966979Ab3E2Umy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:42:54 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42174 "EHLO e7.ny.us.ibm.com"
+	id S967008Ab3E2Unv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:43:51 -0400
+Received: from fieldses.org ([174.143.236.118]:57465 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966874Ab3E2Umr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:42:47 -0400
-Date: Wed, 29 May 2013 15:42:36 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 2/4] zbud: add to mm/
-Message-ID: <20130529204236.GD428@cerebellum>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
- <20130529154500.GB428@cerebellum>
- <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+	id S966874Ab3E2Unr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:43:47 -0400
+Date: Wed, 29 May 2013 16:43:23 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Waiman Long <waiman.long@hp.com>, Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529204323.GC3243@fieldses.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+ <20130529184640.GA3243@fieldses.org>
+ <20130529203700.GM6123@two.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+In-Reply-To: <20130529203700.GM6123@two.firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052920-5806-0000-0000-0000216778AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 11:34:34AM -0700, Andrew Morton wrote:
-> On Wed, 29 May 2013 10:45:00 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+On Wed, May 29, 2013 at 10:37:00PM +0200, Andi Kleen wrote:
+> > As Dave said before, is the last path component sufficient?  Or how
+> > about an inode number?
 > 
-> > > > +struct zbud_page {
-> > > > +	union {
-> > > > +		struct page page;
-> > > > +		struct {
-> > > > +			unsigned long donotuse;
-> > > > +			u16 first_chunks;
-> > > > +			u16 last_chunks;
-> > > > +			struct list_head buddy;
-> > > > +			struct list_head lru;
-> > > > +		};
-> > > > +	};
-> > > > +};
-> > > 
-> > > Whoa.  So zbud scribbles on existing pageframes?
-> > 
-> > Yes.
-> > 
-> > > 
-> > > Please tell us about this, in some detail.  How is it done and why is
-> > > this necessary?
-> > > 
-> > > Presumably the pageframe must be restored at some stage, so this code
-> > > has to be kept in sync with external unrelated changes to core MM?
-> > 
-> > Yes, this is done in free_zbud_page().
-> > 
-> > > 
-> > > Why was it implemented in this fashion rather than going into the main
-> > > `struct page' definition and adding the appropriate unionised fields?
-> > 
-> > Yes, modifying the struct page is the cleaner way.  I thought that adding more
-> > convolution to struct page would create more friction on the path to getting
-> > this merged.  Plus overlaying the struct page was the approach used by zsmalloc
-> > and so I was thinking more along these lines.
+> Neither works, the profiler needs to find the file and read it.
 > 
-> I'd be interested in seeing what the modifications to struct page look
-> like.  It really is the better way.
+> inode searching would be incredible expensive,
 
-I'll do it then.
+How fast does it need to be?  Actually analyzing the profile is
+something you only do once after everything's over, right?
 
+> unless the file system provided a "open-by-inode" primitive
+
+Well, I suppose there is open_by_handle_at.
+
+--b.
+
+> In normal operation you only have that event when starting up the
+> program and when each shared library gets mapped in.
 > 
-> > If you'd rather add the zbud fields directly into unions in struct page,
-> > I'm ok with that if you are.
-> > 
-> > Of course, this doesn't avoid having to reset the fields for the page allocator
-> > before we free them.  Even slub/slob reset the mapcount before calling
-> > __free_page(), for example.
-> > 
-> > > 
-> > > I worry about any code which independently looks at the pageframe
-> > > tables and expects to find page struts there.  One example is probably
-> > > memory_failure() but there are probably others.
-> 
-> ^^ this, please.  It could be kinda fatal.
-
-I'll look into this.
-
-The expected behavior is that memory_failure() should handle zbud pages in the
-same way that it handles in-use slub/slab/slob pages and return -EBUSY.
-
-> 
-> > > > 
-> > > > ...
-> > > >
-> > > > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-> > > > +			unsigned long *handle)
-> > > > +{
-> > > > +	int chunks, i, freechunks;
-> > > > +	struct zbud_page *zbpage = NULL;
-> > > > +	enum buddy bud;
-> > > > +	struct page *page;
-> > > > +
-> > > > +	if (size <= 0 || gfp & __GFP_HIGHMEM)
-> > > > +		return -EINVAL;
-> > > > +	if (size > PAGE_SIZE)
-> > > > +		return -E2BIG;
-> > > 
-> > > Means "Argument list too long" and isn't appropriate here.
-> > 
-> > Ok, I need a return value other than -EINVAL to convey to the user that the
-> > allocation is larger than what the allocator can hold. I don't see an existing
-> > errno that would be more suited for that.  Do you have a suggestion?
-> 
-> ENOMEM perhaps.  That's also somewhat misleading, but I guess there's
-> precedent for ENOMEM meaning "allocation too large" as well as "out
-> of memory".
-
-Works for me.
-
-> 
-> > > > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
-> > > > +{
-> > > > +	int i, ret, freechunks;
-> > > > +	struct zbud_page *zbpage;
-> > > > +	unsigned long first_handle = 0, last_handle = 0;
-> > > > +
-> > > > +	spin_lock(&pool->lock);
-> > > > +	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
-> > > > +			retries == 0) {
-> > > > +		spin_unlock(&pool->lock);
-> > > > +		return -EINVAL;
-> > > > +	}
-> > > > +	for (i = 0; i < retries; i++) {
-> > > > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
-> > > > +		list_del(&zbpage->lru);
-> > > > +		list_del(&zbpage->buddy);
-> > > > +		/* Protect zbpage against free */
-> > > 
-> > > Against free by who?  What other code paths can access this page at
-> > > this time?
-> > 
-> > zbud has no way of serializing with the user (zswap) to prevent it calling
-> > zbud_free() during zbud reclaim.  To prevent the zbud page from being freed
-> > while reclaim is operating on it, we set the reclaim flag in the struct page.
-> > zbud_free() checks this flag and, if set, only sets the chunk length of the
-> > allocation to 0, but does not actually free the zbud page.  That is left to
-> > this reclaim path.
-> 
-> Sounds strange.  Page refcounting is a well-established protocol and
-> works well in other places?
-
-Yes, refcounting seemed like overkill for this situation since the refcount
-will only ever be 1 or 2 (2 if under reclaim) which basically reduces it to a
-boolean. I'm also not sure if there is room left in the struct page for a
-refcount with all the existing zbud metadata.
-
-However, if you really don't like this, I can look at doing it via refcounts.
-
-Seth
-
+> -Andi
