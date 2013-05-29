@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934697Ab3E2BMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 21:12:09 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52443 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863Ab3E2BMH (ORCPT
+	id S934547Ab3E2BPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:15:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34976 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863Ab3E2BO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 21:12:07 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v2 2/5] media: davinci: vpif: Convert to devm_* api
-Date: Wed, 29 May 2013 03:12:01 +0200
-Message-ID: <25368927.Jiqsh9t82O@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51A218F7.7050804@cogentembedded.com>
-References: <1369499796-18762-1-git-send-email-prabhakar.csengg@gmail.com> <1492638.E2728sugZv@avalon> <51A218F7.7050804@cogentembedded.com>
+	Tue, 28 May 2013 21:14:59 -0400
+Date: Wed, 29 May 2013 10:15:22 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Cc: "Matthew O'Connor" <matt@ecsorl.com>, davem@davemloft.net,
+        andy@greyhouse.net, fubar@us.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com,
+        liquidhorse@gmail.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+Message-ID: <20130529011522.GA5653@kroah.com>
+References: <20130522162336.GA5761@kroah.com>
+ <519D0B79.6010307@smart-weblications.de>
+ <20130522190640.GA20276@kroah.com>
+ <519D1DEF.8090206@smart-weblications.de>
+ <20130522200439.GA21367@kroah.com>
+ <519D37F4.2030202@smart-weblications.de>
+ <519D5206.8080701@gmail.com>
+ <519DEE6E.7060700@smart-weblications.de>
+ <519E0F97.1050102@ecsorl.com>
+ <51A55381.9080807@smart-weblications.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A55381.9080807@smart-weblications.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
-
-On Sunday 26 May 2013 18:15:19 Sergei Shtylyov wrote:
-> On 26-05-2013 4:49, Laurent Pinchart wrote:
-> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> 
-> >> Use devm_ioremap_resource instead of reques_mem_region()/ioremap().
-> >> This ensures more consistent error values and simplifies error paths.
-> >> 
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> ---
-> >> 
-> >>   drivers/media/platform/davinci/vpif.c |   27
-> >>   ++++-----------------------
-> >>   1 files changed, 4 insertions(+), 23 deletions(-)
-> >> 
-> >> diff --git a/drivers/media/platform/davinci/vpif.c
-> >> b/drivers/media/platform/davinci/vpif.c index 761c825..164c1b7 100644
-> >> --- a/drivers/media/platform/davinci/vpif.c
-> >> +++ b/drivers/media/platform/davinci/vpif.c
-> 
-> [...]
-> 
-> >> @@ -421,23 +419,12 @@ EXPORT_SYMBOL(vpif_channel_getfid);
-> >> 
-> >>   static int vpif_probe(struct platform_device *pdev)
-> >>   {
-> >> 
-> >> -	int status = 0;
-> >> +	static struct resource	*res;
-> >> 
-> >>   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >> 
-> >> -	if (!res)
-> >> -		return -ENOENT;
-> >> -
-> >> -	res_len = resource_size(res);
-> >> -
-> >> -	res = request_mem_region(res->start, res_len, res->name);
-> >> -	if (!res)
-> >> -		return -EBUSY;
-> >> -
-> >> -	vpif_base = ioremap(res->start, res_len);
-> >> -	if (!vpif_base) {
-> >> -		status = -EBUSY;
-> >> -		goto fail;
-> >> -	}
-> >> +	vpif_base = devm_ioremap_resource(&pdev->dev, res);
-> >> +	if (IS_ERR(vpif_base))
-> >> +		return PTR_ERR(vpif_base);
+On Wed, May 29, 2013 at 03:01:53AM +0200, Smart Weblications GmbH - Florian Wiessner wrote:
+> Am 23.05.2013 14:46, schrieb Matthew O'Connor:
+> > On 05/23/2013 06:24 AM, Smart Weblications GmbH - Florian Wiessner wrote:
+> >> node02:/ocfs2/usr/src/linux-3.4.46# cat drivers/net/bonding/bond_alb.c.rej
+> > My most sincere apologies - one more time, from a different mail server
+> > that hopefully won't go around changing my attachments.  If this doesn't
+> > work I guess sendmail will be the next alternative.
 > > 
-> > You're loosing the request_mem_region().
 > 
-> He's not losing anything, first look at how devm_ioremp_resource() is
-> defined.
-
-My bad. I'm not sure where I got that idea from. Thanks for pointing out the 
-mistake.
-
-> > You should use devm_request_and_ioremap()
+> 3.4.47 got released without that included :-/?!
 > 
->      Already deprecated by now.
-> 
-> > function instead of devm_ioremap_resource(). With that change,
-> > 
-> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.4.47
 
--- 
-Regards,
+Yes, it missed that last release, I'll get a new one out when I get back
+from Japan next week.
 
-Laurent Pinchart
+thanks,
 
+greg k-h
