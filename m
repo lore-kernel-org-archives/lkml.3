@@ -1,56 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965300Ab3E2Iw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:52:26 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:50786 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117Ab3E2IwY (ORCPT
+	id S965286Ab3E2Ixr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:53:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47908 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965117Ab3E2Ixo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:52:24 -0400
-Message-ID: <51A5C1AE.6000805@synopsys.com>
-Date: Wed, 29 May 2013 14:21:58 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 04:53:44 -0400
+Message-ID: <51A5C1F3.2070605@ti.com>
+Date: Wed, 29 May 2013 10:53:07 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, <linux-mm@kvack.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH v8, part3 02/14] mm: enhance free_reserved_area() to support
- poisoning memory with zero
-References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com> <1369575522-26405-3-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1369575522-26405-3-git-send-email-jiang.liu@huawei.com>
-X-Enigmail-Version: 1.5.1
+To: Afzal Mohammed <afzal@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ankur Kishore <a-kishore@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: Re: [PATCH v2 14/14] ARM: dts: AM43x: initial support
+References: <cover.1369658705.git.afzal@ti.com> <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com>
+In-Reply-To: <3790fa57fc4c69da12224fbcec17cd07c59771a0.1369658705.git.afzal@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.232]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2013 07:08 PM, Jiang Liu wrote:
-> Address more review comments from last round of code review.
-> 1) Enhance free_reserved_area() to support poisoning freed memory with
->    pattern '0'. This could be used to get rid of poison_init_mem()
->    on ARM64.
-> 2) A previous patch has disabled memory poison for initmem on s390
->    by mistake, so restore to the original behavior.
-> 3) Remove redundant PAGE_ALIGN() when calling free_reserved_area().
++ Florian
+
+Hi Afzal,
+
+On 05/27/2013 04:37 PM, Afzal Mohammed wrote:
+> DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
+> represented here are the minimal DT nodes necessary to get kernel
+> booting.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> In DT nodes, "ti,hwmod" property has not been added, this would be
+> added along with PRCM support for AM43x.
+> 
+> Signed-off-by: Ankur Kishore <a-kishore@ti.com>
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+> 
+> v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
+> 
+>  arch/arm/boot/dts/am4372.dtsi | 66 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 66 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/am4372.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+> new file mode 100644
+> index 0000000..1d58298
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/am4372.dtsi
+> @@ -0,0 +1,66 @@
+> +/*
+> + * Device Tree Source for AM4372 SoC
+> + *
+> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
+> + *
+> + * This file is licensed under the terms of the GNU General Public License
+> + * version 2.  This program is licensed "as is" without any warranty of any
+> + * kind, whether express or implied.
+> + */
+> +
+> +/include/ "skeleton.dtsi"
 
-Can you apply these to you github v5 branch as well !
+You can now use the C preprocessor statement instead of this one.
+Florian already started doing the change [1].
 
-Thx,
--Vineet
+Beside that detail, that patch looks good to me.
+I'll pull it separately of the series.
+
+Regards,
+Benoit
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/98320
+
+> +
+> +/ {
+> +	compatible = "ti,am4372", "ti,am43";
+> +	interrupt-parent = <&gic>;
+> +
+> +
+> +	aliases {
+> +		serial0 = &uart1;
+> +	};
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			compatible = "arm,cortex-a9";
+> +		};
+> +	};
+> +
+> +	gic: interrupt-controller@48241000 {
+> +		compatible = "arm,cortex-a9-gic";
+> +		interrupt-controller;
+> +		#interrupt-cells = <3>;
+> +		reg = <0x48241000 0x1000>,
+> +		      <0x48240100 0x0100>;
+> +	};
+> +
+> +	ocp {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		ranges;
+> +
+> +		uart1: serial@44e09000 {
+> +			compatible = "ti,am4372-uart","ti,omap2-uart";
+> +			reg = <0x44e09000 0x2000>;
+> +			interrupts = <0 72 0x4>;
+> +		};
+> +
+> +		timer1: timer@44e31000 {
+> +			compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
+> +			reg = <0x44e31000 0x400>;
+> +			interrupts = <0 67 0x4>;
+> +			ti,timer-alwon;
+> +		};
+> +
+> +		timer2: timer@48040000  {
+> +			compatible = "ti,am4372-timer","ti,am335x-timer";
+> +			reg = <0x48040000  0x400>;
+> +			interrupts = <0 68 0x4>;
+> +		};
+> +
+> +		counter32k: counter@44e86000 {
+> +			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+> +			reg = <0x44e86000 0x40>;
+> +		};
+> +	};
+> +};
+> 
 
