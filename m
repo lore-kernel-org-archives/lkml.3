@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935188Ab3E2VZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:25:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54342 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab3E2VZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:25:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: System slow down from udev
-Date: Wed, 29 May 2013 23:34:39 +0200
-Message-ID: <2968280.mrRQeH7SYv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQX99+V-jS_h9Lr=mz_n8e1KazUOxcLrAyPG19KJM_3ABg@mail.gmail.com>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com> <7385243.PHJHW0xyGs@vostro.rjw.lan> <CAE9FiQX99+V-jS_h9Lr=mz_n8e1KazUOxcLrAyPG19KJM_3ABg@mail.gmail.com>
+	id S935207Ab3E2V2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:28:06 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:48791 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935124Ab3E2V2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 17:28:00 -0400
+Message-ID: <51A672CC.9020403@linux.vnet.ibm.com>
+Date: Wed, 29 May 2013 14:27:40 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH updated] drivers/base: Use attribute groups to create
+ sysfs memory files
+References: <51A58F4D.3020804@linux.vnet.ibm.com>
+In-Reply-To: <51A58F4D.3020804@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052921-7606-0000-0000-00000BEE02B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 29, 2013 01:13:46 PM Yinghai Lu wrote:
-> On Wed, May 29, 2013 at 4:29 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On your systems the processor driver is built-in.  Any chance to build it as
-> > a module and see if that helps?
-> 
-> it CONFIG_ACPI_PROCESSOR it not set in the config
-> the boot get to normal speed.
+On 05/28/2013 10:17 PM, Nathan Fontenot wrote:
+> Update the sysfs memory code to create/delete files at the time of device
+> and subsystem registration.
+>
+> The current code creates files in the root memory directory explicitly
+> through
+> the use of init_* routines. The files for each memory block are created and
+> deleted explicitly using the mem_[create|delete]_simple_file macros.
+>
+> This patch creates attribute groups for the memory root files and files in
+> each memory block directory so that they are created and deleted implicitly
+> at subsys and device register and unregister time.
+>
+> This did necessitate moving the register_memory() routine and update
+> it to set the dev.groups field.
+>
+> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+>
+> Updated to apply cleanly to rc2.
+>
+> Please cc me on responses/comments.
+> ---
+>   drivers/base/memory.c |  143
+> +++++++++++++++++++++-----------------------------
+>   1 file changed, 62 insertions(+), 81 deletions(-)
+>
+> Index: linux/drivers/base/memory.c
+> ===================================================================
+> --- linux.orig/drivers/base/memory.c    2013-05-28 22:53:58.000000000 -0500
+> +++ linux/drivers/base/memory.c 2013-05-28 22:56:49.000000000 -0500
 
-Well, if it is not set at all, there won't be problems with it. :-)
+These changes look good, but this email doesn't play nice with `git am`. ex:
 
-I've tested my linux-next branch on OpenSUSE 11.3 both with the processor
-driver built in and modular and I'm not able to reproduce the issue you're
-seeing.
+	"fatal: corrupt patch at line 80"
 
-Moreover, I'm not sure if user space is involved here at all, because the
-problem triggers for you when all of the relevant kernel code is non-modular.
-
-With the processor driver enabled, when the slowdown happens, are the systems
-usable enough to get some debug info out of them?
-
-Rafael
+There is nothing particularly bad about line 80. Please fix and resend 
+(git format-patch generally gets this right, maybe use that?)
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
