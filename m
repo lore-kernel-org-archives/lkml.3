@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967217Ab3E2XX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:23:27 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:43714 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967167Ab3E2XXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:23:17 -0400
-Message-ID: <51A68DC8.3090703@interlog.com>
-Date: Wed, 29 May 2013 19:22:48 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S967199Ab3E2X31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:29:27 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:41825 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab3E2X3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:29:21 -0400
+Message-ID: <51A68F49.6020908@ozlabs.ru>
+Date: Thu, 30 May 2013 09:29:13 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Robert Nelson <robertcnelson@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johan Hovold <jhovold@gmail.com>,
-        Robert Nelson <Robert.Nelson@digikey.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com> <1369298335-24597-1-git-send-email-jhovold@gmail.com> <20130529133354.dd181c845ee4e96527483345@linux-foundation.org> <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com>
-In-Reply-To: <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Scott Wood <scottwood@freescale.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru> <1369784115.18630.27@snotra> <51A547F0.8090406@ozlabs.ru> <1369857949.18630.42@snotra> <51A68AE9.6070709@ozlabs.ru> <1369869272.18630.47@snotra>
+In-Reply-To: <1369869272.18630.47@snotra>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-05-29 04:41 PM, Robert Nelson wrote:
-> On Wed, May 29, 2013 at 3:33 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Thu, 23 May 2013 10:38:50 +0200 Johan Hovold <jhovold@gmail.com> wrote:
+On 05/30/2013 09:14 AM, Scott Wood wrote:
+> On 05/29/2013 06:10:33 PM, Alexey Kardashevskiy wrote:
+>> On 05/30/2013 06:05 AM, Scott Wood wrote:
+>> > On 05/28/2013 07:12:32 PM, Alexey Kardashevskiy wrote:
+>> >> On 05/29/2013 09:35 AM, Scott Wood wrote:
+>> >> > On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
+>> >> >> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
+>> >> >> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
+>> >> >> >> >>> kvm_device_attr)
+>> >> >> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
+>> >> >> >> >>> kvm_device_attr)
+>> >> >> >> >>>
+>> >> >> >> >>> +/* ioctl for SPAPR TCE IOMMU */
+>> >> >> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
+>> >> >> >> >>> kvm_create_spapr_tce_iommu)
+>> >> >> >> >>
+>> >> >> >> >> Shouldn't this go under the vm ioctl section?
+>> >> >> >>
+>> >> >> >>
+>> >> >> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
+>> >> >> devices) is
+>> >> >> >> in this section so I decided to keep them together. Wrong?
+>> >> >> >
+>> >> >> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
+>> >> >> > KVM_CREATE_SPAPR_TCE_IOMMU?
+>> >> >>
+>> >> >> Yes.
+>> >> >
+>> >> > Sigh.  That's the same thing repeated.  There's only one IOCTL.
+>> >> Nothing is
+>> >> > being "kept together".
+>> >>
+>> >> Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
+>> >
+>> > But you didn't put it in the same section as KVM_CREATE_SPAPR_TCE.  0xe0
+>> > begins a different section.
 >>
->>> This is an update of the shadow-interrupt-mask series against v3.10-rc2.
->>>
->>> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
->>> affected. If not, then some probing mechanism as the one Doug suggested
->>> could be implemented on top of (a subset of) these patches. What do you
->>> say, Nicolas?
->>>
->>> Note that the first patch (adding a missing OF compile guard) could be
->>> applied straight away.
->>
->> At this stage it is unclear to me how to proceed with patches 2-5.
->
-> fyi:
->
-> A version of these patches had been applied once before:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0ef1594c017521ea89278e80fe3f80dafb17abde
->
-> But due to a few issues it was later reverted:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e24b0bfa2f0446ffaad2661040be23668133aef8
+>> It is not really obvious that there are sections as no comment defines
+>> those :)
+> 
+> There is a comment /* ioctls for fds returned by KVM_CREATE_DEVICE */
+> 
+> Putting KVM_CREATE_DEVICE in there was mainly to avoid dealing with the
+> ioctl number conflict mess in the vm-ioctl section, but at least that one
+> is related to the device control API. :-)
+> 
+>> But yes, makes sense to move it up a bit and change the code to 0xad.
+> 
+> 0xad is KVM_KVMCLOCK_CTRL
 
-Strange life of a patch. Mine was the original, Johan Hovold
-objected and had it reverted. Johan then presented his first
-patch then v2. They got lost in the weeds.
-
-My hardware was still broken and this bug caused collateral
-damage. My original patch no longer applied to lk 3.10.0-rc1
-so I rewrote it, borrowing some of Johan's ideas and doing a
-probe time check for the broken RTC_IMR. That patch was
-presented about a week ago:
-   http://marc.info/?l=linux-arm-kernel&m=136917492531478&w=2
-The top of that post gives some more background.
-
-That prompted Johan to produce v3 of his patch which is the
-subject of this thread. I was hoping that Nicolas Ferre would
-comment or ack one of these patches. Still waiting.
+That's it. I am _completely_ confused now. No system whatsoever :(
+What rule should I use in order to choose the number for my new ioctl? :)
 
 
-I have a copy of the original, publicly released manual for
-the at91sam9g25 (a member of the at91sam9x5 family) marked
-"11032A–ATARM–27-Jul-11". It contains the following:
-   Errata
-   49.3.1
-     RTC: Interrupt Mask Register cannot be used
-          Interrupt Mask Register reading always returns 0.
 
-Both Rev B and Rev C of that manual drop that particular
-erratum. My g25 SoC-based subsystems come from an Atmel
-partner and still have the RTC IMR bug.
-
-Doug Gilbert
-
-
+-- 
+Alexey
