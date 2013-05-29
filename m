@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934959Ab3E2Dq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:46:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55388 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932888Ab3E2Dq0 convert rfc822-to-8bit (ORCPT
+	id S1759472Ab3E2Drx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:47:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34405 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759239Ab3E2Drv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:46:26 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1 0/9] adding dual instance and usb-phy support for
- am335x platform
-Thread-Topic: [PATCH v1 0/9] adding dual instance and usb-phy support for
- am335x platform
-Thread-Index: AQHOV3r6wMyvlgFQ2UaKBAsz40ji1JkaX6AAgAEowcA=
-Date: Wed, 29 May 2013 03:46:20 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAEB992@DBDE04.ent.ti.com>
-References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
- <20130528173947.GF15794@arwen.pp.htv.fi>
-In-Reply-To: <20130528173947.GF15794@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 May 2013 23:47:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <8619949.XQMpgRNGdV@avalon>
+References: <1369573734-19272-1-git-send-email-prabhakar.csengg@gmail.com> <8619949.XQMpgRNGdV@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 29 May 2013 09:17:29 +0530
+Message-ID: <CA+V-a8sX7uynnUt9GebH5hu=K_AQ5p-g7mpeSZhRJ5LeF6BhKA@mail.gmail.com>
+Subject: Re: [PATCH] media: i2c: mt9p031: add OF support
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe
+Hi Laurent,
 
-> Subject: Re: [PATCH v1 0/9] adding dual instance and usb-phy support for am335x platform
+On Wed, May 29, 2013 at 9:01 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> Thanks for the patch.
+>
+> On Sunday 26 May 2013 18:38:54 Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> add OF support for the mt9p031 sensor driver.
+>> Alongside this patch sorts the header inclusion alphabetically.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+>> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Rob Landley <rob@landley.net>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: devicetree-discuss@lists.ozlabs.org
+>> Cc: davinci-linux-open-source@linux.davincidsp.com
+>> Cc: linux-doc@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>
+> And added to my tree with three small changes (please see below).
+>
+Thanks for applying it, with the changes :)
 
-> Hi,
-
->On Thu, May 23, 2013 at 11:31:19AM +0530, Ravi Babu wrote:
->> This patch set series
->>         - adds dual musb instances support for am335x platform
->>         - adds phy-dsps-usb driver based on TI's gs70 driver
->>         - adds DT bindings for am33xx usb-phy
->> 	- removed references to usb-nop-xceiv from musb
-
->as Sergei pointed out, this would break some DaVinci/DA8xx platforms, so I'm dropping from it from my queue.
-
-As I understand, already all musb glue platform drivers(dsps/davinci/da8xx) are changed to new usb_get_phy() API set.  
-Currently the mainline code snippet as shown.
-
-dsps/davinci/da8xx/xxx_musb_init() {
-...
-        usb_nop_xceiv_register() 
-..
-        musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-        if (IS_ERR_OR_NULL(musb->xceiv)) {
-                ret = -EPROBE_DEFER;
-                goto fail;
-        }
-..
-}
-Because of this all glue xxx_musb_init() will fail to get the phy without the phy-bindings for each controller. 
-Without this patch series am335x musb will fail to get usb_phy(). Similarly phy support to be added for all davinci/da8xx
-platform also. The usb_nop_xciev_xx() is dummy unused API here and hence removed from all glue in this patch series.
-
-1) dsps platforms (am335x/dm81xx) series uses TI gs70 based phy 
-	This patch adds support for ths dsps phy driver at drivers/usb/phy/usb-dsps-phy.c 
-2) omapl13x/da8xx series of soc uses different phy
-	Separate phy driver need to be added at drivers/usb/phy/usb-da8xx-phy.c
-3) similarly all davinci series of soc uses separate TI-phy 
-	Separate phy driver need to added at drivers/usb/phy/usb-davinci-phy.c
-
-The bindings of the respective usb-phy and controller need to done in DT or non-DT way.  
-I can add usb-phy support for davinci/da8xx platform in similar way.
-
----
-Ravi B
+Regards,
+--Prabhakar lad
