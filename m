@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836Ab3E2PvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:51:25 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:46374 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754976Ab3E2PvY (ORCPT
+	id S933317Ab3E2Pw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:52:56 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:60709 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab3E2Pwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:51:24 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, tj@kernel.org, linux-ide@vger.kernel.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH] ata: increase retry count but shorten duration for Calxeda controller
-Date: Wed, 29 May 2013 10:51:19 -0500
-Message-Id: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 29 May 2013 11:52:55 -0400
+Date: Wed, 29 May 2013 16:52:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Subject: Re: [PATCH 2/4] ARM: u8540: Add device tree support for lp5521 leds
+Message-ID: <20130529155249.GF3012@gmail.com>
+References: <1369834407-30762-1-git-send-email-gabriel.fernandez.st@gmail.com>
+ <1369834407-30762-3-git-send-email-gabriel.fernandez.st@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369834407-30762-3-git-send-email-gabriel.fernandez.st@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Calxeda SATA phy intermittently fails to bring up a link with Gen3
-Retrying the phy hard reset can work around the issue, but the drive
-may fail again. In less than 150 out of 15000 test runs, it took more
-than 10 tries for the link to be established (but never more than 35).
-Increase the retry count to guarantee the link is established.
+On Wed, 29 May 2013, Gabriel Fernandez wrote:
 
-Also, the default 2 second time-out on a failed drive is too long in
-this situation. Shorten it to 500 ms. This was also tested 15000 times
-on 24 drives and none of them experienced a time out.
+> From: Gabriel Fernandez <gabriel.fernandez@st.com>
+> 
+> This patch adds DT probing of lp5521 leds for u8540.
+> 
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+> ---
+>  arch/arm/boot/dts/ccu8540-uib-v3.dts | 22 ++++++++++++++++++++++
+>  1 file changed, 22 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/ccu8540-uib-v3.dts b/arch/arm/boot/dts/ccu8540-uib-v3.dts
+> index 4b4982e..422a292 100644
+> --- a/arch/arm/boot/dts/ccu8540-uib-v3.dts
+> +++ b/arch/arm/boot/dts/ccu8540-uib-v3.dts
+> @@ -14,3 +14,25 @@
+>  / {
+>  	model = "ST-Ericsson U8540 platform with device tree UIB v3";
+>  };
+> +
+> +&i2c2 {
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
----
- drivers/ata/sata_highbank.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I'm really not a fan of this syntax.
 
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index 0d7c4c2..536936f 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -199,7 +199,7 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
- static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 				unsigned long deadline)
- {
--	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-+	unsigned long timing[] = { 5, 100, 500};
- 	struct ata_port *ap = link->ap;
- 	struct ahci_port_priv *pp = ap->private_data;
- 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
-@@ -207,7 +207,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 	bool online;
- 	u32 sstatus;
- 	int rc;
--	int retry = 10;
-+	int retry = 100;
- 
- 	ahci_stop_engine(ap);
- 
+I only see it lending itself to more abstraction and obfuscation.
+
+> +
+> +	lp5521@32 {
+> +		compatible = "national,lp5521";
+> +		reg = <0x32>;
+> +		label = "lp5521_pri";
+> +		clock-mode = /bits/ 8 <2>;
+> +		chan0 {
+> +			led-cur = /bits/ 8 <0x2f>;
+> +			max-cur = /bits/ 8 <0x5f>;
+> +		};
+> +		chan1 {
+> +			led-cur = /bits/ 8 <0x2f>;
+> +			max-cur = /bits/ 8 <0x5f>;
+> +		};
+> +		chan2 {
+> +			led-cur = /bits/ 8 <0x2f>;
+> +			max-cur = /bits/ 8 <0x5f>;
+> +		};
+> +	};
+> +};
+
+More odd tabbing above.
+
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
