@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934788Ab3E2BYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 21:24:52 -0400
-Received: from tundra.namei.org ([65.99.196.166]:60010 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932863Ab3E2BYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 21:24:50 -0400
-Date: Wed, 29 May 2013 11:33:06 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-cc: Tony Camuso <tcamuso@redhat.com>, linux-kernel@vger.kernel.org,
-        LeonidasDaSilvaBarbosa <leosilva@linux.vnet.ibm.com>,
-        AshleyLai <ashley@ashleylai.com>, sfr@canb.auug.org.au,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PULL] TPM: fix regression caused by section type conflict of
- tpm_dev_release() in ppc builds
-In-Reply-To: <201305272218.41915.PeterHuewe@gmx.de>
-Message-ID: <alpine.LRH.2.02.1305291132490.28040@tundra.namei.org>
-References: <51A39A0C.8040405@redhat.com> <1369684307-11014-1-git-send-email-peterhuewe@gmx.de> <201305272218.41915.PeterHuewe@gmx.de>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S934807Ab3E2B3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:29:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59301 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863Ab3E2B3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 May 2013 21:29:35 -0400
+Date: Tue, 28 May 2013 18:29:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
+ delay from HZ
+Message-ID: <20130529012926.GR6172@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130413063804.GV29861@linux.vnet.ibm.com>
+ <20130413181800.GA12096@leaf>
+ <20130413193425.GY29861@linux.vnet.ibm.com>
+ <20130413195336.GA14799@leaf>
+ <20130413220943.GB29861@linux.vnet.ibm.com>
+ <20130514122049.GH15942@dyad.programming.kicks-ass.net>
+ <20130514141245.GA4442@linux.vnet.ibm.com>
+ <20130515092055.GB7027@gmail.com>
+ <20130515154457.GJ4442@linux.vnet.ibm.com>
+ <20130528100742.GA11088@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528100742.GA11088@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052901-3620-0000-0000-000002BFB318
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 May 2013, Peter H?we wrote:
+On Tue, May 28, 2013 at 12:07:42PM +0200, Ingo Molnar wrote:
+> 
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, May 15, 2013 at 11:20:55AM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > rcu: Fix comparison sense in rcu_needs_cpu()
+> > > > 
+> > > > Commit c0f4dfd4f (rcu: Make RCU_FAST_NO_HZ take advantage of numbered
+> > > > callbacks) introduced a bug that can result in excessively long grace
+> > > > periods.  This bug reverse the senes of the "if" statement checking
+> > > > for lazy callbacks, so that RCU takes a lazy approach when there are
+> > > > in fact non-lazy callbacks.  This can result in excessive boot, suspend,
+> > > > and resume times.
+> > > > 
+> > > > This commit therefore fixes the sense of this "if" statement.
+> > > > 
+> > > > Reported-by: Borislav Petkov <bp@alien8.de>
+> > > > Reported-by: Bj?rn Mork <bjorn@mork.no>
+> > > > Reported-by: Joerg Roedel <joro@8bytes.org>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > > > index 170814d..6d939a6 100644
+> > > > --- a/kernel/rcutree_plugin.h
+> > > > +++ b/kernel/rcutree_plugin.h
+> > > > @@ -1667,7 +1667,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
+> > > >  	rdtp->last_accelerate = jiffies;
+> > > >  
+> > > >  	/* Request timer delay depending on laziness, and round. */
+> > > > -	if (rdtp->all_lazy) {
+> > > > +	if (!rdtp->all_lazy) {
+> > > >  		*dj = round_up(rcu_idle_gp_delay + jiffies,
+> > > >  			       rcu_idle_gp_delay) - jiffies;
+> > > 
+> > > Neat - could this explain sporadic long (but not infinite) boot times with 
+> > > NOHZ_FULL?
+> > > 
+> > > We changed HZ to be at least 1 Hz pretty recently, which might have worked 
+> > > around this bug.
+> > 
+> > Quite possibly...
+> > 
+> > Of course, I don't see the boot slowdowns in my testing.  :-/
+> 
+> They were pretty sporadic and only popped up (and down) during randconfig 
+> testing. Simple unrelated changes to the .config made them go away - 
+> heisenbugs.
 
-> Hi James,
-> 
-> The following changes since commit 5b88e270253db6d817e6a2f61909d1e53620e990:
-> 
->  maintainers: Remove Kent from maintainers	
-> 
-> are available in the git repository at:
-> 
->   git://github.com/PeterHuewe/linux-tpmdd.git for-james
-> 
-> for you to fetch changes up to e2fa3d799b7471f00adae59ff36260ad8237929f:
-> 
->  tpm: fix regression caused by section type conflict of tpm_dev_release() in ppc builds
+I can believe that...  The system has to be very quiet for this bug to
+significantly slow down boot.  Interrupts scattered across CPUs (for
+example) would tend to force RCU's state machine forward.
 
-Pulled, thanks.
+							Thanx, Paul
 
+> Thanks,
+> 
+> 	Ingo
+> 
 
--- 
-James Morris
-<jmorris@namei.org>
