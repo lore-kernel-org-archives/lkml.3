@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965306Ab3E2JIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:08:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55153 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965039Ab3E2JIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:08:16 -0400
-Date: Wed, 29 May 2013 11:08:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.a.cohen@intel.com
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] irq/x86/io_apic: Fix number of pre-allocated
- irqs
-In-Reply-To: <tip-8c956b1b935ec98decb470a6abff8c1f8b28e9f0@git.kernel.org>
-Message-ID: <alpine.LFD.2.02.1305291104550.2995@ionos>
-References: <1367364015-12521-1-git-send-email-david.a.cohen@intel.com> <tip-8c956b1b935ec98decb470a6abff8c1f8b28e9f0@git.kernel.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S965315Ab3E2JPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:15:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45975 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965201Ab3E2JPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 05:15:37 -0400
+Date: Wed, 29 May 2013 10:15:30 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Shaohua Li <shli@kernel.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: mmotm-2013-05-22: Bad page state
+Message-ID: <20130529091530.GA29426@suse.de>
+References: <51A526D9.3020803@sr71.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <51A526D9.3020803@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, tip-bot for David Cohen wrote:
-
-> Commit-ID:  8c956b1b935ec98decb470a6abff8c1f8b28e9f0
-> Gitweb:     http://git.kernel.org/tip/8c956b1b935ec98decb470a6abff8c1f8b28e9f0
-> Author:     David Cohen <david.a.cohen@intel.com>
-> AuthorDate: Tue, 30 Apr 2013 16:20:15 -0700
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 28 May 2013 12:01:29 +0200
+On Tue, May 28, 2013 at 02:51:21PM -0700, Dave Hansen wrote:
+> I was rebasing my mapping->radix_tree lock batching patches on top of
+> Mel's stuff.  It looks like something is jumping the gun and freeing a
+> page before it has been written out.  Somebody probably did an extra
+> put_page() or something.
 > 
-> irq/x86/io_apic: Fix number of pre-allocated irqs
+> I'm running 3.10.0-rc2-mm1-00322-g8d4c612 from
 > 
-> arch_probe_nr_irqs() has a typo when returning number of
-> preallocated irqs. Instead of returning the calculated value, it
-> returns a constant number NR_IRQ_LEGACY.
-
-That's not a typo. That's on purpose.
-
-We don't want to allocate a gazillion of interrupt descriptors for
-nothing. The only ones which must be pre-allocated are the legacy
-ones.
-
-> This patch makes sure the calculated value is returned intead.
-
-And therefor defeats the whole purpose of sparse irqs.
-
-I'll zap that commit.
- 
-> Signed-off-by: David Cohen <david.a.cohen@intel.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: joro@8bytes.org
-> Link: http://lkml.kernel.org/r/1367364015-12521-1-git-send-email-david.a.cohen@intel.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/kernel/apic/io_apic.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> 	git://git.cmpxchg.org/linux-mmotm.git
 > 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 9ed796c..7ef2bd9 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -3437,7 +3437,7 @@ int __init arch_probe_nr_irqs(void)
->  	if (nr < nr_irqs)
->  		nr_irqs = nr;
->  
-> -	return NR_IRQS_LEGACY;
-> +	return nr;
->  }
->  
->  int io_apic_set_pci_routing(struct device *dev, int irq,
+> This is pretty reproducible.  I'll go try and test plain 3.10-rc2 next
+> to make sure it's not coming from Linus's stuff.
 > 
+
+Patch 1 from the follow-up series "mm: vmscan: Block kswapd if it is
+encountering pages under writeback -fix"
+
+The rest of that follow-up series needs further work and I'm still
+working on it but patch 1 is what fixes this particular problem.
+Changelog says why.
+
+-- 
+Mel Gorman
+SUSE Labs
