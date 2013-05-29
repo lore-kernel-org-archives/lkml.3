@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965021Ab3E2Hjo (ORCPT <rfc822;w@1wt.eu>);
+	id S965035Ab3E2Hjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:39:46 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41148 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935105Ab3E2Hjo convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
 	Wed, 29 May 2013 03:39:44 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:62581 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935099Ab3E2Hjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:39:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130529090902.66c29c26@amdc308.digital.local>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-	<2272781.tC3OqoQmKI@vostro.rjw.lan>
-	<20130528152625.1b7833e5@amdc308.digital.local>
-	<76114024.UaPHgm94jK@vostro.rjw.lan>
-	<CAKohpon8CScv_GgXL4eTvKqPo1oC67TujMH4WdOQCit7jz+FeQ@mail.gmail.com>
-	<20130529090902.66c29c26@amdc308.digital.local>
-Date: Wed, 29 May 2013 13:09:41 +0530
-Message-ID: <CAKohpo=xuasNEaOBajze2nGVX48_8AE+3eWwbmhXcG9r7PG+EA@mail.gmail.com>
-Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
- governor - tests results
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Vicent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <51A5CCDB02000078000D9798@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 29 May 2013 08:39:39 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>
+Cc: "John Stultz" <john.stultz@linaro.org>, <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] x86/xen: sync the wallclock when
+ the system time changes
+References: <1369765368-10823-1-git-send-email-david.vrabel@citrix.com>
+ <1369765368-10823-3-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1369765368-10823-3-git-send-email-david.vrabel@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 May 2013 12:39, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> I also agree. Moreover, I think that there should be only one set of
-> "boost" sysfs entries either it is supported by HW (Intel) or SW (ARM).
+>>> On 28.05.13 at 20:22, David Vrabel <david.vrabel@citrix.com> wrote:
+> +static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long unused,
+> +				   void *priv)
+> +{
+> +	static struct timespec last, next;
+> +	struct timespec now;
+> +	struct timekeeper *tk = priv;
+> +	struct xen_platform_op op;
+> +	int ret;
+> +
+> +	/*
+> +	 * Set the Xen wallclock from Linux system time.
+> +	 *
+> +	 * dom0 hasn't historically maintained a very accurate
+> +	 * wallclock so guests don't expect it. We can therefore
+> +	 * reduce the number of expensive hypercalls by only updating
+> +	 * the wallclock every 0.5 s.
+> +	 */
+> +
+> +	now.tv_sec = tk->xtime_sec;
+> +	now.tv_nsec = tk->xtime_nsec >> tk->shift;
+> +
+> +	if (timespec_compare(&now, &last) > 0
+> +	    && timespec_compare(&now, &next) < 0)
 
-Yes, you need to change acpi-cpufreq driver too to use this common
-infrastructure.
+Is this really working the first time through (when both last and
+next are still all zeros)?
 
-> I can think of two "basic" one:
-> - max_turbo_freq (ro)
+Jan
 
-This is surely per policy as two separate clusters can have separate values.
-And probably a better one would be scaling_boost_frequencies, that will
-list all boost frequencies.
+> +		return 0;
+> +
+>  	op.cmd = XENPF_settime;
+> -	op.u.settime.secs = now->tv_sec;
+> -	op.u.settime.nsecs = now->tv_nsec;
+> +	op.u.settime.secs = now.tv_sec;
+> +	op.u.settime.nsecs = now.tv_nsec;
+>  	op.u.settime.system_time = xen_clocksource_read();
+>  
+>  	ret = HYPERVISOR_dom0_op(&op);
+>  	if (ret)
+> -		return ret;
+> +		return 0;
+>  
+> -	/* Set the hardware RTC. */
+> -	return mach_set_rtc_mmss(now);
+> +	last = now;
+> +	next = timespec_add(now, ns_to_timespec(NSEC_PER_SEC / 2));
+>  
+> +	return 0;
+>  }
 
-> - turbo_mode/boost (rw)
 
-I am confused with these two names: boost and turbo.. Probably we
-should use a single name everywhere. Because acpi-cpufreq is already
-using boost, we might shift to that.
-
-> - /sys/devices/system/cpu/cpufreq/boost
-
-Obviously this one.
-
-> On the other hand first option would be used with systems, where
-> per-core (or core sets) frequency setting is possible (b.L, Snapdragon
-> S4)
-
-For now this feature would be enabled on all clusters and controlled
-by cpu/cpufreq/boost.
-
-> To sum up - the idea is as follow:
->
-> 1. cpufreq_driver exports turbo_mode=1 when it supports overclocking
-> (this support can be hardcoded or read from device tree)
->
-> 2. Then proper entries are exported to sysfs.
->
-> 3. User via sysfs (at [*]) can enable/disable the feature on demand
-
-Bingo!!
