@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966537Ab3E2Tin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:38:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64221 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966298Ab3E2Tid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:38:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
-   d="scan'208";a="321499521"
-Date: Wed, 29 May 2013 12:38:28 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Shawn Nematbakhsh <shawnn@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
- controllers.
-Message-ID: <20130529193828.GK32085@xanatos>
-References: <20130524210503.GC15788@xanatos>
- <Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
- <CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
- <20130528205842.GE32085@xanatos>
- <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+	id S966302Ab3E2TuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:50:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52409 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758817Ab3E2TuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 15:50:10 -0400
+Date: Wed, 29 May 2013 20:49:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        Mike Frysinger <vapier@gentoo.org>
+Message-ID: <20130529194950.GC5180@sirena.org.uk>
+References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org>
+ <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
 Content-Disposition: inline
-In-Reply-To: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+In-Reply-To: <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: Beware of Bigfoot!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.128.126
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 02:41:18PM -0700, Julius Werner wrote:
-> The policy we want to achieve is to disable runtime PM iff there is a
-> device connected that doesn't have persist_enabled or a reset_resume()
-> handler and whose parent/root hub resets on resume, right?
 
-Makes sense.  However, not all distros may want that policy, so there
-should be a way to change that policy via sysfs.  Some distros may
-choose to take the power savings over having a particular USB device
-work, especially in the server market.
+--JWEK1jqKZ6MHAcjA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Don, Oliver, what do you think of this patch:
-http://marc.info/?l=linux-usb&m=136941922715772&w=2
+On Tue, May 21, 2013 at 08:36:35PM -0600, Stephen Warren wrote:
+> Fill in the recently added spi_master.bits_per_word_mask field in as
+> many drivers as possible. Make related cleanups, such as removing any
+> redundant error-checking, or empty setup callbacks.
 
-Julius is proposing to limit the scope of the patch a bit, but the
-impact will still be that TI hosts will be active more often than not.
+Applied, thanks.
 
-> So couldn't
-> we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
-> generic USB_QUIRK_RESET_RESUME on the root hub instead?  Then we could
-> handle all of this in the USB core (during device initialization and
-> when changing persist_enabled through sysfs) by just checking for
-> udev->reset_resume on all parent hubs of the device in question (and
-> use pm_runtime_get/put() on said device to prevent its parents from
-> suspending as appropriate).
+--JWEK1jqKZ6MHAcjA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Alan, what happens if we set USB_QUIRK_RESET_RESUME on the roothub?
-I don't think that currently translates into the host controller's Reset
-register getting written, which is what I think Julius is proposing.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Sarah Sharp
+iQIcBAEBAgAGBQJRplvbAAoJELSic+t+oim9NcEP/jQlSi4rxx6f/33hz3GTb8tO
+uTl1q2uuYT7AotzGbgFYX4Vjbuc1qqWhJ1wz2HKQd09/jHTqixQric/nrpai5dee
+SeWRbeiyxaBdNt2oqvQSbOrr7CLP0E/hShZfSL2jPYWHXh40KY4ncYE0XLkws9Rt
+lVBJHs5Mcy+IPGWkTjb4q9aqZ24q9w63k6t31w2/P3EQ9uyZvQ7vxV9BZDN9KYIF
+hcn3SZTkky/iDdES0M4EkjxyZfUM1ppiu1YVClnFAMZrshWQR/k6tHW8BnYLd5vX
+A7vcpDATs+3DQlASykuePV9eBUrquqFtgS1Opz8rdoDbROFmMJZWZ9mR3n19nIad
+9j2JxRenyPRgLRx2iyeNyOuYxVT14RITQFjDLaW2LIyNaUqLofrZqOd6YpSK7wHg
+VxV9DpbFh1rNmkpf3/n1h0mHMCBjNzDlrY8/+G/S1BH6upkITvABoTxv9B6bT9WX
+KHoqADGqX+4Zmp6l016zdcfHVusopQvi40T/lDFO/WJd4GHl6qxoJx+ihy3355ms
+xOmDoYkbkoo2pBjphvdPa7qSuBw1GogcA6vSpAjvRezbaNO0Pw1OfbzvQnhV3oHa
+po0+5xoogSy0p0nUnVfSSLrYHCCEQaM1s1zNuVcu+c7k63fYKfGUArjq9g2f7EjS
+DAcs47oR9c7WPRU2JOPO
+=yEGr
+-----END PGP SIGNATURE-----
+
+--JWEK1jqKZ6MHAcjA--
