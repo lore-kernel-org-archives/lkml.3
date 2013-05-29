@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934845Ab3E2DfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:35:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36772 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab3E2DfM (ORCPT
+	id S934811Ab3E2DhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:37:05 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:53168 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932427Ab3E2DhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:35:12 -0400
-Date: Wed, 29 May 2013 13:34:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the xen-arm tree
-Message-Id: <20130529133459.fb060dcd20cb00049bed55cd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_May_2013_13_34_59_+1000_LdZ9BN/mVqYZMTWX"
+	Tue, 28 May 2013 23:37:03 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/9] media: davinci: vpif_capture: Convert to devm_* api
+Date: Wed, 29 May 2013 05:37:01 +0200
+Message-ID: <1758769.0xLW0L5ybf@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369569612-30915-7-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com> <1369569612-30915-7-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_May_2013_13_34_59_+1000_LdZ9BN/mVqYZMTWX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sunday 26 May 2013 17:30:09 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> use devm_request_irq() instead of request_irq(). This ensures
+> more consistent error values and simplifies error paths.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Hi Stefano,
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-After merging the xen-arm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> ---
+>  drivers/media/platform/davinci/vpif_capture.c |   38 ++++++++--------------
+>  1 files changed, 12 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c
+> b/drivers/media/platform/davinci/vpif_capture.c index 38c1fba..5e1e5f6
+> 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -2082,14 +2082,14 @@ static __init int vpif_probe(struct platform_device
+> *pdev)
+> 
+>  	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
+>  		for (i = res->start; i <= res->end; i++) {
+> -			if (request_irq(i, vpif_channel_isr, IRQF_SHARED,
+> -					"VPIF_Capture", (void *)
+> -					(&vpif_obj.dev[res_idx]->channel_id))) {
+> -				err = -EBUSY;
+> -				for (j = 0; j < i; j++)
+> -					free_irq(j, (void *)
+> -					(&vpif_obj.dev[res_idx]->channel_id));
+> -				goto vpif_int_err;
+> +			err = devm_request_irq(&pdev->dev, i, vpif_channel_isr,
+> +					     IRQF_SHARED, "VPIF_Capture",
+> +					     (void *)(&vpif_obj.dev[res_idx]->
+> +					     channel_id));
+> +			if (err) {
+> +				err = -EINVAL;
+> +				goto vpif_unregister;
+> +
+>  			}
+>  		}
+>  		res_idx++;
+> @@ -2106,7 +2106,7 @@ static __init int vpif_probe(struct platform_device
+> *pdev) video_device_release(ch->video_dev);
+>  			}
+>  			err = -ENOMEM;
+> -			goto vpif_int_err;
+> +			goto vpif_unregister;
+>  		}
+> 
+>  		/* Initialize field of video device */
+> @@ -2207,13 +2207,9 @@ vpif_sd_error:
+>  		/* Note: does nothing if ch->video_dev == NULL */
+>  		video_device_release(ch->video_dev);
+>  	}
+> -vpif_int_err:
+> +vpif_unregister:
+>  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+> -	for (i = 0; i < res_idx; i++) {
+> -		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+> -		for (j = res->start; j <= res->end; j++)
+> -			free_irq(j, (void *)(&vpif_obj.dev[i]->channel_id));
+> -	}
+> +
+>  	return err;
+>  }
+> 
+> @@ -2225,18 +2221,8 @@ vpif_int_err:
+>   */
+>  static int vpif_remove(struct platform_device *device)
+>  {
+> -	struct platform_device *pdev;
+>  	struct channel_obj *ch;
+> -	struct resource *res;
+> -	int irq_num, i = 0;
+> -
+> -	pdev = container_of(vpif_dev, struct platform_device, dev);
+> -	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+> -		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+> -			free_irq(irq_num,
+> -				 (void *)(&vpif_obj.dev[i]->channel_id));
+> -		i++;
+> -	}
+> +	int i;
+> 
+>  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+-- 
+Regards,
 
-kernel/sched/cputime.c:8:26: fatal error: asm/paravirt.h: No such file or d=
-irectory
- #include <asm/paravirt.h>
-                          ^
+Laurent Pinchart
 
-Caused by commit d31d069a9f68 ("kernel: missing include in cputime.c").
-Only three architectures have that file (x86, arm and ia64).
-
-I have used the xen-arm tree from next-20130528 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__29_May_2013_13_34_59_+1000_LdZ9BN/mVqYZMTWX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRpXdnAAoJEECxmPOUX5FEAcEP/14lBH1E8VBk2P05aCDp6Leu
-FxBWAW74DX0a99epqyopyy7I2dXhPMTT/4PlDA9uNycYmI57eFlmY9s1Iny2N4Cs
-j7tlfBewAttSOTIIciuFM3O8pPgeXNj/c5roghri6UKmLh9oGSmlUFCwXJNo1CMy
-OygpKWlQ805CcZ2ut8ln8J8D52C3bQV5S11+Et0ka3frGftkcEQISzP9XN4iP0sP
-AXDEiTdihJt6YbdSNms+cE3OGpibA4rPuaTeLadg/cn0pQYMOv6+ACBNtSKsyxAn
-tMJ6y3QOhoyWO/ftCkRUgW23YT5HwIu7sZW6uF+XzuBhdd0vbWncHC6DTAFoW+Z3
-KNNuEq9odm2i12adFRZvy4BvjX4Gz5MnriFhDKjYnYk2pNCXb7w5ByyEkja+UpOB
-rX3lT/6XMlNUdqjfDHRZ3EfQYdcuMFo+DHcvWZEMUsutHZ2SpfO4wPnogQWPVYQP
-LQS3OK6/0zAA+s6hrubezwpsZhkWJl9ky2Pw5dQIcY4caS0gnTJFr8RXcqxoNwyO
-lXEuY5fMi7rdKR5r5bg4ry/voEUyeCQGQDbafDMxLIKpThxZO0iowRDGAGzJrALU
-Q9BpIF8x9qxFhdID/efhLhZUeF7tPKJ3FwJ5hGKEQSFqxzrOFPUC9vMM6KUmZ0iw
-yU9QnoJKorDaPMEOQNux
-=Yv5C
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_May_2013_13_34_59_+1000_LdZ9BN/mVqYZMTWX--
