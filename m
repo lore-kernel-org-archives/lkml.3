@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759626Ab3E2Pfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:35:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42373 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab3E2Pfe (ORCPT
+	id S1759647Ab3E2Pf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:35:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38541 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759622Ab3E2Pdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:35:34 -0400
-Message-ID: <51A62042.7070304@wwwdotorg.org>
-Date: Wed, 29 May 2013 09:35:30 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jay Agarwal <jagarwal@nvidia.com>
-CC: "'thierry.reding@avionic-design.de'" 
-	<thierry.reding@avionic-design.de>,
-        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
-        "'bhelgaas@google.com'" <bhelgaas@google.com>,
-        "'olof@lixom.net'" <olof@lixom.net>,
-        "'mturquette@linaro.org'" <mturquette@linaro.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-pci@vger.kernel.org'" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
-References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com> <1368010660-31465-4-git-send-email-jagarwal@nvidia.com> <518A8596.7070702@wwwdotorg.org> <C79B248886DD134989C8FF6B096A91AB91B4886B5D@BGMAIL01.nvidia.com> <C79B248886DD134989C8FF6B096A91AB91B4886B6C@BGMAIL01.nvidia.com> <C79B248886DD134989C8FF6B096A91AB91B616BE9B@BGMAIL01.nvidia.com>
-In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B616BE9B@BGMAIL01.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 11:33:35 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH 06/11] net: emaclite: Report failures in mdio setup
+Date: Wed, 29 May 2013 17:33:06 +0200
+Message-Id: <eaeecf9ad936704028401e97b315d2bfc18ad175.1369841519.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
+References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
+In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
+References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-27621-1369841611-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 04:10 AM, Jay Agarwal wrote:
->>>> So, if I apply this series, I do see the PCIe bridge and Ethernet
->>>> device get enumerated, but I don't see the USB3 controller get
->>>> enumerated. I believe that is a PCIe device behind the same bridge
->>>> on the
->>> same Tegra PCIe port.
->>>> Shouldn't this device show up?
->>> I have also reproduced this problem. I see somehow no non-
->>> prefetchable memory is assigned to any of pcie devices.
->>> Probably that is the reason for USB3 (pci 0000:04:00.0) not getting
->>> enumerated since it uses only non-prefetchable memory.
->>
->> 1. Bus4(on which usb3 device resides) always return 0xffffffff from it's
->> config space. which means device is not present?
->> 2. That's why it is not assigned any resources and hence no usb3 probe
->> happens.
->> 3. But same bus does return valid info like vendor/device id etc from it's
->> config space in downstream kernel and hence usb3 probe does happen.
->>
->> Thierry, Stephen,
->> 4. Any idea why bus4 should return 0xffffffff values in upstream kernel?
->> Anything missing?
->> 5. Also, how config space of all pcie devices are mapped? I mean if I change
->> the config space offset in dts file, then also I find correct vendor/device id
->> etc for bus0/device0/fun0.
->>     So how this mapping happens that even after changing the config space
->> offset in PCIe address space, it always finds correct vendor/device id.
-> 
->  Any idea on this?
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-I did already reply the same day you sent the original email. My
-response was:
+--=_mimegpg-monstr-desktop-27621-1369841611-0001
 
-Is there some reset/enable GPIO or regulator that needs to be programmed
-to enable the PCIe USB3 controller? Take a look at the schematic. If you
-can make it work by tweaking those GPIOs/... manually, then we can
-ignore this issue and fix it up later, since it's not directly related
-to the PCIe controller driver patches. It's more important to get the
-Ethernet working than USB, I think.
+Be more verbose when any problem happens.
 
-To be honest though, I would expect you to be asking around inside
-NVIDIA to determine the answer here. As the PCIe SW expert, I'd expect
-you to drive this process. Try asking the Cardhu board and PCIe HW
-experts within NVIDIA.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Did you make any progress on the issues with the Ethernet device?
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 919b983..a16dc35 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -852,8 +852,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 	/* Don't register the MDIO bus if the phy_node or its parent node
+ 	 * can't be found.
+ 	 */
+-	if (!np)
++	if (!np) {
++		dev_err(dev, "Failed to register mdio bus.\n");
+ 		return -ENODEV;
++	}
+
+ 	/* Enable the MDIO bus by asserting the enable bit in MDIO Control
+ 	 * register.
+@@ -862,8 +864,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 		 XEL_MDIOCTRL_MDIOEN_MASK);
+
+ 	bus = mdiobus_alloc();
+-	if (!bus)
++	if (!bus) {
++		dev_err(dev, "Failed to allocal mdiobus\n");
+ 		return -ENOMEM;
++	}
+
+ 	of_address_to_resource(np, 0, &res);
+ 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
+@@ -879,8 +883,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 	lp->mii_bus = bus;
+
+ 	rc = of_mdiobus_register(bus, np);
+-	if (rc)
++	if (rc) {
++		dev_err(dev, "Failed to register mdio bus.\n");
+ 		goto err_register;
++	}
+
+ 	return 0;
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-27621-1369841611-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGmH8sACgkQykllyylKDCFx2wCcDMGJ7P96nYDCyVw/TFXl9Fr4
+OecAoJbu2p2vjc+1PDjHriHv3PgNdwlM
+=1kUD
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-27621-1369841611-0001--
