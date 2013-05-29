@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935220Ab3E2VeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:34:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab3E2VeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:34:06 -0400
-Date: Wed, 29 May 2013 14:34:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
- configurable
-Message-Id: <20130529143404.68feeed7a3e7934275220735@linux-foundation.org>
-In-Reply-To: <1369862412.27102.368.camel@schen9-DESK>
-References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-	<20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
-	<1369178849.27102.330.camel@schen9-DESK>
-	<20130521164154.bed705c6e117ceb76205cd65@linux-foundation.org>
-	<1369183390.27102.337.camel@schen9-DESK>
-	<20130522002020.60c3808f.akpm@linux-foundation.org>
-	<1369265838.27102.351.camel@schen9-DESK>
-	<20130529122605.082cbb1ad8f5cbc9e82e7b16@linux-foundation.org>
-	<1369862412.27102.368.camel@schen9-DESK>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S935226Ab3E2VfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:35:22 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.206]:37208 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932609Ab3E2VfQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 17:35:16 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1369863303!11433691!9
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Lars Poeschel <poeschel@lemonage.de>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        "mcrapet@gmail.com" <mcrapet@gmail.com>
+Date: Wed, 29 May 2013 16:33:21 -0500
+Subject: RE: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion to
+ PWM framework
+Thread-Topic: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion
+ to PWM framework
+Thread-Index: Ac5bmGgtlVMDojCgSx+HocMYCiv4GwBGvI7Q
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DA657044E@AUSP01VMBX24.collaborationhost.net>
+References: <201305241619.52328.hartleys@visionengravers.com>
+ <201305271912.08882.arnd@arndb.de> <20130528110011.GC11547@mithrandir>
+ <201305281342.05530.poeschel@lemonage.de>
+In-Reply-To: <201305281342.05530.poeschel@lemonage.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013 14:20:12 -0700 Tim Chen <tim.c.chen@linux.intel.com> wrote:
+On Tuesday, May 28, 2013 4:42 AM, Lars Poeschel wrote:
+> On Tuesday 28 May 2013 at 13:00:12, Thierry Reding wrote:
+>> I've added Lars Poeschel on Cc, who's done some work on a sysfs
+>> interface for the PWM subsystem already. It's undergone some review
+>> already[0] and I think he's working on a v2 now.
+>> 
+>> Thierry
+>> 
+>> [0]: http://marc.info/?l=linux-kernel&m=136499756101273&w=2
+>
+> I currently do not have the time to work on a v2 of the pwm sysfs patch but 
+> I will do it as soon as possible - if not someone else will do. 
+> Unfortunately my current involvements in other project will not allow me to 
+> do so for at least next two months.
+> I received some off-list reactions to my patches from users asking for pwm 
+> sysfs, so there is definitely a need for it!
+> If you decide to take attempt 2) (which is preferable) I recommend you to 
+> take a look at what I have done and Thierrys review comments. I took the 
+> gpiolib way and the result got rejected for very good reasons.
 
-> > Do we have any performance testing results?  They're pretty important
-> > for a performance-improvement patch ;)
-> > 
-> 
-> I've done a repeated brk test of 800KB (from will-it-scale test suite)
-> with 80 concurrent processes on a 4 socket Westmere machine with a 
-> total of 40 cores.  Without the patch, about 80% of cpu is spent on
-> spin-lock contention within the vm_committed_as counter. With the patch,
-> there's a 73x speedup on the benchmark and the lock contention drops off
-> almost entirely.
+I just posted a PWM sysfs interface patch based on the previous work by
+Lars. Hopefully I addressed all of Thierrys review comments.
 
-Only a 73x speedup?  I dunno what they pay you for ;)
+I still need to add the Documentation and the ABI doc for the sysfs but I
+want to make sure the interface looks acceptable.
 
-How serious is this performance problem in real-world work?  For
-something of this magnitude we might want to backport the patch into
-earlier kernels (because most everyone who uses those kernels will be
-doing this anyway).  However such an act would require a pretty clear
-explanation of the benefit which end-users will see.
+I also spotted a couple checkpatch.pl issues after I posted the patch. These
+are already fixed for v2.
 
+Thanks,
+Hartley
 
