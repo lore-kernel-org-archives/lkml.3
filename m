@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3E2CW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 22:22:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61603 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758274Ab3E2CWy (ORCPT
+	id S1759394Ab3E2Cci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 22:32:38 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52828 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab3E2Cch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 22:22:54 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [patch 7/8] genirq: generic chip: Add linear irq domain support
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20130506142539.450634298@linutronix.de>
-References: <20130503212258.385818955@linutronix.de> <20130506142348.321859745@linutronix.de> <20130506142539.450634298@linutronix.de>
-Date: Wed, 29 May 2013 03:22:49 +0100
-Message-Id: <20130529022249.DE5ED3E14F1@localhost>
+	Tue, 28 May 2013 22:32:37 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/9] media: davinci: vpif_capture: move the freeing of irq and global variables to remove()
+Date: Wed, 29 May 2013 04:32:30 +0200
+Message-ID: <2564718.Z6XYOtT7FL@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369569612-30915-1-git-send-email-prabhakar.csengg@gmail.com> <1369569612-30915-5-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 May 2013 14:30:27 -0000, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Provide infrastructure for irq chip implementations which work on
-> linear irq domains.
-> 
-> - Interface to allocate multiple generic chips which are associated to
->   the irq domain.
-> 
-> - Interface to get the generic chip pointer for a particular hardware
->   interrupt in the domain.
-> 
-> - irq domain mapping function to install the chip for a particular
->   interrupt.
-> 
-> Note: This lacks a removal function for now, but this is a draft patch
-> the ARM folks to work on.
-> 
-> [ Sebastian Hesselbarth: Mask cache and pointer math fixups ]
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Hi Prabhakar,
 
-Hi Thomas,
+Thanks for the patch.
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-But I have some comments below...
-
+On Sunday 26 May 2013 17:30:07 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> Ideally the freeing of irq's and the global variables needs to be
+> done in the remove() rather than module_exit(), this patch moves
+> the freeing up of irq's and freeing the memory allocated to channel
+> objects to remove() callback of struct platform_driver.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > ---
->  include/linux/irq.h       |   30 +++++++
->  include/linux/irqdomain.h |   12 ++
->  kernel/irq/generic-chip.c |  187 ++++++++++++++++++++++++++++++++++++++++++++--
->  kernel/irq/irqdomain.c    |    6 -
->  4 files changed, 223 insertions(+), 12 deletions(-)
+>  drivers/media/platform/davinci/vpif_capture.c |   31 ++++++++++------------
+>  1 files changed, 13 insertions(+), 18 deletions(-)
 > 
-> Index: linux-2.6/include/linux/irq.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/irq.h
-> +++ linux-2.6/include/linux/irq.h
-> @@ -678,6 +678,8 @@ struct irq_chip_type {
->   * @wake_active:	Interrupt is marked as an wakeup from suspend source
->   * @num_ct:		Number of available irq_chip_type instances (usually 1)
->   * @private:		Private data for non generic chip callbacks
-> + * @installed:		bitfield to denote installed interrupts
-> + * @domain:		irq domain pointer
->   * @list:		List head for keeping track of instances
->   * @chip_types:		Array of interrupt irq_chip_types
->   *
-> @@ -699,6 +701,8 @@ struct irq_chip_generic {
->  	u32			wake_active;
->  	unsigned int		num_ct;
->  	void			*private;
-> +	unsigned long		installed;
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c
+> b/drivers/media/platform/davinci/vpif_capture.c index caaf4fe..f8b7304
+> 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -2225,17 +2225,29 @@ vpif_int_err:
+>   */
+>  static int vpif_remove(struct platform_device *device)
+>  {
+> -	int i;
+> +	struct platform_device *pdev;
+>  	struct channel_obj *ch;
+> +	struct resource *res;
+> +	int irq_num, i = 0;
+> +
+> +	pdev = container_of(vpif_dev, struct platform_device, dev);
 
-This is probably something that the irqdomain should be keeping track of
-internally, but that's an issue for a separate patch series.
+As Sergei mentioned, the platform device is already passed to the function as 
+an argument.
 
-[...]
-> +struct irq_domain_ops irq_generic_chip_ops = {
-> +	.map = irq_map_generic_chip,
-> +	.xlate = irq_domain_xlate_onecell,
+> +	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+> +		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+> +			free_irq(irq_num,
+> +				 (void *)(&vpif_obj.dev[i]->channel_id));
 
-As discussed on IRC, should use onetwocell here for greater
-compatibility with existing bindings.
+A quick look at board code shows that each IRQ resource contains a single IRQ. 
+The second loop could thus be removed. You could also add another patch to 
+perform similar cleanup for the probe code.
 
-Cheers,
-g.
+> +		i++;
+> +	}
+> 
+>  	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+> 
+> +	kfree(vpif_obj.sd);
+>  	/* un-register device */
+>  	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+>  		/* Get the pointer to the channel object */
+>  		ch = vpif_obj.dev[i];
+>  		/* Unregister video device */
+>  		video_unregister_device(ch->video_dev);
+> +		kfree(vpif_obj.dev[i]);
+>  	}
+>  	return 0;
+>  }
+> @@ -2347,24 +2359,7 @@ static __init int vpif_init(void)
+>   */
+>  static void vpif_cleanup(void)
+>  {
+> -	struct platform_device *pdev;
+> -	struct resource *res;
+> -	int irq_num;
+> -	int i = 0;
+> -
+> -	pdev = container_of(vpif_dev, struct platform_device, dev);
+> -	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+> -		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+> -			free_irq(irq_num,
+> -				 (void *)(&vpif_obj.dev[i]->channel_id));
+> -		i++;
+> -	}
+> -
+>  	platform_driver_unregister(&vpif_driver);
+> -
+> -	kfree(vpif_obj.sd);
+> -	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++)
+> -		kfree(vpif_obj.dev[i]);
+>  }
+> 
+>  /* Function for module initialization and cleanup */
+-- 
+Regards,
+
+Laurent Pinchart
+
