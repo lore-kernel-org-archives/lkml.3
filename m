@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966638Ab3E2Opy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:45:54 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:37256 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966521Ab3E2Opq (ORCPT
+	id S966674Ab3E2Op4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:45:56 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:38061 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966590Ab3E2Opw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:45:46 -0400
+	Wed, 29 May 2013 10:45:52 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH, v2 09/13] mm/PPC: prepare for killing free_all_bootmem_node()
-Date: Wed, 29 May 2013 22:44:48 +0800
-Message-Id: <1369838692-26860-10-git-send-email-jiang.liu@huawei.com>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH, v2 11/13] mm: kill free_all_bootmem_node()
+Date: Wed, 29 May 2013 22:44:50 +0800
+Message-Id: <1369838692-26860-12-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
 References: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
@@ -32,48 +32,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for killing free_all_bootmem_node() by using
-free_all_bootmem().
+Now nobody makes use of free_all_bootmem_node(), kill it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
 ---
- arch/powerpc/mm/mem.c | 16 +---------------
- 1 file changed, 1 insertion(+), 15 deletions(-)
+ include/linux/bootmem.h |  1 -
+ mm/bootmem.c            | 18 ------------------
+ 2 files changed, 19 deletions(-)
 
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 49c18b6..1cb1ea1 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -304,22 +304,8 @@ void __init mem_init(void)
- #endif
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 0e48c32..f1f07d3 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -44,7 +44,6 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
+ 				       unsigned long endpfn);
+ extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
  
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
--
--#ifdef CONFIG_NEED_MULTIPLE_NODES
--	{
--		pg_data_t *pgdat;
--
--		for_each_online_pgdat(pgdat)
--			if (pgdat->node_spanned_pages != 0) {
--				printk("freeing bootmem node %d\n",
--					pgdat->node_id);
--				free_all_bootmem_node(pgdat);
--			}
--	}
--#else
--	max_mapnr = max_pfn;
-+	set_max_mapnr(max_pfn);
- 	free_all_bootmem();
--#endif
+-extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
+ extern unsigned long free_all_bootmem(void);
+ extern void reset_all_zones_managed_pages(void);
  
- #ifdef CONFIG_HIGHMEM
- 	{
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 58609bb..6ab7744 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -264,24 +264,6 @@ void __init reset_all_zones_managed_pages(void)
+ }
+ 
+ /**
+- * free_all_bootmem_node - release a node's free pages to the buddy allocator
+- * @pgdat: node to be released
+- *
+- * Returns the number of pages actually released.
+- */
+-unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
+-{
+-	unsigned long pages;
+-
+-	register_page_bootmem_info_node(pgdat);
+-	reset_node_managed_pages(pgdat);
+-	pages = free_all_bootmem_core(pgdat->bdata);
+-	totalram_pages += pages;
+-
+-	return pages;
+-}
+-
+-/**
+  * free_all_bootmem - release free pages to the buddy allocator
+  *
+  * Returns the number of pages actually released.
 -- 
 1.8.1.2
 
