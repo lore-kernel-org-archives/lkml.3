@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab3E2QOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:14:14 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:36562 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab3E2QOG (ORCPT
+	id S1754737Ab3E2QRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:17:01 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:38643 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759727Ab3E2QQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:14:06 -0400
-Date: Wed, 29 May 2013 18:13:58 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-Message-ID: <20130529161358.GJ6123@two.firstfloor.org>
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
- <20130523094201.GA24543@dastard>
- <519E8B5F.3080905@hp.com>
- <20130527020903.GR29466@dastard>
- <51A624E2.3000301@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A624E2.3000301@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 29 May 2013 12:16:28 -0400
+Message-ID: <1369844170.12792.2.camel@ejdallLaptop>
+Subject: Re: [PATCH 2/3] ACPI/APEI: Force fatal AER severity when bus has
+ been reset
+From: Betty Dall <betty.dall@hp.com>
+To: "Pearson, Greg" <greg.pearson@hp.com>
+Cc: "rjw@sisk.pl" <rjw@sisk.pl>, "bhelgaas@google.com" <bhelgaas@google.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Wed, 29 May 2013 10:16:10 -0600
+In-Reply-To: <51A621E0.9030307@hp.com>
+References: <1369766929-4386-1-git-send-email-betty.dall@hp.com>
+	 <1369766929-4386-3-git-send-email-betty.dall@hp.com>
+	 <51A621E0.9030307@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The d_path() is called by perf_event_mmap_event() which translates
-> VMA to its file path for memory segments backed by files. As perf is
-> not just for sampling data within the kernel, it can also be used
-> for checking access pattern in the user space. As a result, it needs
-> to map VMAs back to the backing files to access their symbols
-> information. If d_path() is not the right function to call for this
-> purpose, what other alternatives do we have?
-
-In principle it should be only called for new file mappings
-getting maped.  Do you really have that many new file mappings all
-the time? Or is this related to program startup?
-
+On Wed, 2013-05-29 at 09:42 -0600, Pearson, Greg wrote:
+> On 05/28/2013 12:48 PM, Betty Dall wrote:
+> > The CPER error record has a reset bit that indicates that the platform
+> > has reset the bus. The reset bit can be set for any severity error
+> > including recoverable.  From the AER code path's perspective,
+> > any error is fatal if the bus has been reset. This patch upgrades the
+> > severity of the AER recovery to AER_FATAL whenever the CPER error record
+> > indicates that the bus has been reset.
+> >
+> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+> > ---
+> >
+> >   drivers/acpi/apei/ghes.c |   21 ++++++++++++++++++++-
+> >   1 files changed, 20 insertions(+), 1 deletions(-)
+> >
+> >
+> > diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> > index d668a8a..4a42afc 100644
+> > --- a/drivers/acpi/apei/ghes.c
+> > +++ b/drivers/acpi/apei/ghes.c
+> > @@ -451,7 +451,26 @@ static void ghes_do_proc(struct ghes *ghes,
+> >   				int aer_severity;
+> >   				devfn = PCI_DEVFN(pcie_err->device_id.device,
+> >   						  pcie_err->device_id.function);
+> > -				aer_severity = cper_severity_to_aer(sev);
+> > +				/*
+> > +				 * Some Firmware First implementations
+> > +				 * put the device in SBR to contain
+> > +				 * the error. This is indicated by the
+> > +				 * CPER Section Decriptor Flags reset
 > 
-> My patch set consists of 2 different changes. The first one is to
-> avoid taking the d_lock lock when updating the reference count in
-> the dentries. This particular change also benefit some other
-> workloads that are filesystem intensive. One particular example is
-> the short workload in the AIM7 benchmark. One of the job type in the
-> short workload is "misc_rtns_1" which calls security functions like
-> getpwnam(), getpwuid(), getgrgid() a couple of times. These
-> functions open the /etc/passwd or /etc/group files, read their
-> content and close the files. It is the intensive open/read/close
-> sequence from multiple threads that is causing 80%+ contention in
-> the d_lock on a system with large number of cores. The MIT's
-> MOSBench paper also outlined dentry reference counting as a
+> Nit Pick, change "Decriptor" to "Descriptor".
+> 
+> --
+> Greg
 
-The paper was before Nick Piggin's RCU (and our) work on this.
-Modern kernels do not have dcache problems with mosbench, unless
-you run weird security modules like SMACK that effectively 
-disable dcache RCU.
+I will fix that. Thanks.
 
-BTW lock elision may fix these problems anyways, in a much
-simpler way.
+-Betty
+> > +				 * bit which means the component must
+> > +				 * be re-initialized or re-enabled
+> > +				 * prior to use. Promoting the AER
+> > +				 * serverity to FATAL will cause the
+> > +				 * AER code to link_reset and allow
+> > +				 * drivers to reprogram their cards.
+> > +				 */
+> > +				if (gdata->flags & CPER_SEC_RESET)
+> > +					aer_severity = cper_severity_to_aer(
+> > +							CPER_SEV_FATAL);
+> > +				else
+> > +					aer_severity =
+> > +						cper_severity_to_aer(sev);
+> > +
+> > +
+> >   				aer_recover_queue(pcie_err->device_id.segment,
+> >   						  pcie_err->device_id.bus,
+> >   						  devfn, aer_severity);
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> >
 
--Andi
 
-ak@linux.intel.com -- Speaking for myself only.
