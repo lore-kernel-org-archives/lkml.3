@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966847Ab3E2UXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:23:13 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:17250 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966427Ab3E2UXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:23:10 -0400
-Message-ID: <51A663A6.90904@hp.com>
-Date: Wed, 29 May 2013 16:23:02 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S966870Ab3E2Ucz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:32:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966083Ab3E2Ucp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:32:45 -0400
+Date: Wed, 29 May 2013 16:32:38 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Shawn Nematbakhsh <shawnn@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oliver Neukum <oliver@neukum.org>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
+ controllers.
+Message-ID: <20130529203238.GC133453@redhat.com>
+References: <20130524210503.GC15788@xanatos>
+ <Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
+ <CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
+ <20130528205842.GE32085@xanatos>
+ <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+ <20130529193828.GK32085@xanatos>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com> <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com> <20130527020903.GR29466@dastard> <51A624E2.3000301@hp.com> <20130529161358.GJ6123@two.firstfloor.org>
-In-Reply-To: <20130529161358.GJ6123@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529193828.GK32085@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 12:13 PM, Andi Kleen wrote:
->> The d_path() is called by perf_event_mmap_event() which translates
->> VMA to its file path for memory segments backed by files. As perf is
->> not just for sampling data within the kernel, it can also be used
->> for checking access pattern in the user space. As a result, it needs
->> to map VMAs back to the backing files to access their symbols
->> information. If d_path() is not the right function to call for this
->> purpose, what other alternatives do we have?
-> In principle it should be only called for new file mappings
-> getting maped.  Do you really have that many new file mappings all
-> the time? Or is this related to program startup?
+On Wed, May 29, 2013 at 12:38:28PM -0700, Sarah Sharp wrote:
+> On Tue, May 28, 2013 at 02:41:18PM -0700, Julius Werner wrote:
+> > The policy we want to achieve is to disable runtime PM iff there is a
+> > device connected that doesn't have persist_enabled or a reset_resume()
+> > handler and whose parent/root hub resets on resume, right?
+> 
+> Makes sense.  However, not all distros may want that policy, so there
+> should be a way to change that policy via sysfs.  Some distros may
+> choose to take the power savings over having a particular USB device
+> work, especially in the server market.
+> 
+> Don, Oliver, what do you think of this patch:
+> http://marc.info/?l=linux-usb&m=136941922715772&w=2
 
-The AIM7 benchmark that I used runs a large number of relatively short 
-jobs. I think each time a new job is spawned, the file mappngs have to 
-be redone again. It is probably not a big problem for long running 
-processes.
+That is limited only to certain controllers right?  RHEL6 doesn't support
+runtime suspend, so we don't hear to many complaints.  Most of our server
+customers don't have much plugged into USB, so I don't expect much
+problems there.  Our laptop customers prefer the power savings, but I
+don't know how many of them have chipsets with XHCI_RESET_ON_RESUME.
 
->> My patch set consists of 2 different changes. The first one is to
->> avoid taking the d_lock lock when updating the reference count in
->> the dentries. This particular change also benefit some other
->> workloads that are filesystem intensive. One particular example is
->> the short workload in the AIM7 benchmark. One of the job type in the
->> short workload is "misc_rtns_1" which calls security functions like
->> getpwnam(), getpwuid(), getgrgid() a couple of times. These
->> functions open the /etc/passwd or /etc/group files, read their
->> content and close the files. It is the intensive open/read/close
->> sequence from multiple threads that is causing 80%+ contention in
->> the d_lock on a system with large number of cores. The MIT's
->> MOSBench paper also outlined dentry reference counting as a
-> The paper was before Nick Piggin's RCU (and our) work on this.
-> Modern kernels do not have dcache problems with mosbench, unless
-> you run weird security modules like SMACK that effectively
-> disable dcache RCU.
+> 
+> Julius is proposing to limit the scope of the patch a bit, but the
+> impact will still be that TI hosts will be active more often than not.
 
-I had tried, but not yet able to run the MOSBench myself. Thank for 
-letting me know that the dcache problem wrt MOSBench was fixed.
+Hmm, for some reason I don't see TI having the XHCI_RESET_ON_RESUME quirk
+set, just VIA and ETRON.  Neither of which seem to be normally shipped
+with servers.
 
-> BTW lock elision may fix these problems anyways, in a much
-> simpler way.
-
-I will certainly hope so. However, there will still be a lot of 
-computers out there running pre-Haswell Intel chips. For them, locking 
-is still a problem that need to be solved.
-
-Regards,
-Longman
+Cheers,
+Don
