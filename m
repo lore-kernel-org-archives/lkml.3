@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965563Ab3E2K1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:27:48 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12057 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965412Ab3E2K1r (ORCPT
+	id S965608Ab3E2KlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:41:13 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:45682 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965542Ab3E2KlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:27:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 29 May 2013 03:27:33 -0700
-From: Arto Merilainen <amerilainen@nvidia.com>
-To: <thierry.reding@gmail.com>, <airlied@linux.ie>,
-        <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-CC: <tbergstrom@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: [PATCHv2 0/7] Miscellaneous fixes to host1x
-Date: Wed, 29 May 2013 13:26:01 +0300
-Message-ID: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 29 May 2013 06:41:10 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: MAINTAINERS: Add git tree path for ARM specific updates
+Date: Wed, 29 May 2013 16:10:43 +0530
+Message-Id: <aab5b5dc92b960e81e8fd1975eba81234a4ecac8.1369817795.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series fixes two issues in the host1x driver: First, the
-command buffer validation routine had vulnerabilities that were not
-detected in earlier testing. Second, the return codes of some
-functions were misleading or completely missing. This caused the
-driver to give wrong return codes also to the userspace.
+To reduce cpufreq maintenance load on Rafael, ARM specific patches would be
+Applied by me now. Rafael will pull in these changes from time to time (at
+rc's). Additionally I would be sending him pull request for every merge window
+and rc's (for fixes).
 
-The series is based on top of 3.10rc3. I have tested the patch series
-on cardhu by running host1x and gr2d test cases (available at [0]).
-I would appreciate any help in testing/reviewing these patches.
+Web interface of my tree is present here:
 
-Changes from v1:
- * Rebased on top of 3.10rc3
- * Split firewall fixes to smaller patches
- * Reworked no-reloc case in firewall code. Fix in v1 was not
-   sufficient in all cases
- * Dropped patch "Fix syncpoint wait return value" as it is not
-   critical and discussion on it has not yet settled.
- * Fixed style and whitespace issues
+https://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=summary
 
-[0] https://gitorious.org/linux-host1x/libdrm-host1x
+Branch names would be: cpufreq-next and cpufreq-fixes.
 
-Arto Merilainen (5):
-  gpu: host1x: Check reloc table before usage
-  gpu: host1x: Copy gathers before verification
-  gpu: host1x: Fix memory access in syncpt request
-  gpu: host1x: Fix client_managed type
-  gpu: host1x: Rework CPU syncpoint increment
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-Terje Bergstrom (2):
-  gpu: host1x: Check INCR opcode correctly
-  gpu: host1x: Don't reset firewall between gathers
-
- drivers/gpu/host1x/dev.h          |   8 +--
- drivers/gpu/host1x/drm/drm.c      |   3 +-
- drivers/gpu/host1x/drm/gr2d.c     |   2 +-
- drivers/gpu/host1x/hw/cdma_hw.c   |   2 +-
- drivers/gpu/host1x/hw/syncpt_hw.c |  12 ++--
- drivers/gpu/host1x/job.c          | 135 +++++++++++++++++---------------------
- drivers/gpu/host1x/syncpt.c       |  26 +++-----
- drivers/gpu/host1x/syncpt.h       |  13 ++--
- 8 files changed, 85 insertions(+), 116 deletions(-)
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fd3a495..50c81bd 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2216,6 +2216,7 @@ L:	cpufreq@vger.kernel.org
+ L:	linux-pm@vger.kernel.org
+ S:	Maintained
+ T:	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
++T:	git://git.linaro.org/people/vireshk/linux.git (For ARM Updates)
+ F:	drivers/cpufreq/
+ F:	include/linux/cpufreq.h
+ 
 -- 
-1.8.1.5
+1.7.12.rc2.18.g61b472e
 
