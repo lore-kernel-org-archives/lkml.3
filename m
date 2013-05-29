@@ -1,307 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab3E2D3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:29:25 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41419 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759346Ab3E2D3Y (ORCPT
+	id S934186Ab3E2DcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:32:00 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:53124 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280Ab3E2Db6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:29:24 -0400
-Date: Tue, 28 May 2013 20:29:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [BUG] with rcu nocb, don't call wake up holding rnp->lock (was:
- rcu_read_lock() used illegally while idle!)
-Message-ID: <20130529032914.GY6172@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130522093624.GZ3578@linux.vnet.ibm.com>
- <1369226958.6828.175.camel@gandalf.local.home>
- <20130523164004.GJ16419@redhat.com>
- <1369403180.6828.223.camel@gandalf.local.home>
- <20130524142338.GB3106@redhat.com>
- <1369423420.6828.226.camel@gandalf.local.home>
- <20130525135959.GA1784@redhat.com>
- <1369506004.15552.5.camel@gandalf.local.home>
- <20130528201329.GA24342@redhat.com>
- <1369776773.15552.43.camel@gandalf.local.home>
+	Tue, 28 May 2013 23:31:58 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] media: i2c: mt9p031: add OF support
+Date: Wed, 29 May 2013 05:31:54 +0200
+Message-ID: <8619949.XQMpgRNGdV@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1369573734-19272-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1369573734-19272-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369776773.15552.43.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052903-7606-0000-0000-00000BE5A90F
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 05:32:53PM -0400, Steven Rostedt wrote:
-> Paul, this looks to be a nocb rcu bug.
+Hi Prabhakar,
 
-Excellent work tracing this down!  I have queued your fix, and if it
-passes testing, I will push for 3.10.
+Thanks for the patch.
 
-							Thanx, Paul
+On Sunday 26 May 2013 18:38:54 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> add OF support for the mt9p031 sensor driver.
+> Alongside this patch sorts the header inclusion alphabetically.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
-> On Tue, 2013-05-28 at 16:13 -0400, Dave Jones wrote:
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+And added to my tree with three small changes (please see below).
+
+> ---
+>  Changes for NON RFC v1:
+>  1: added missing call for of_node_put().
 > 
-> > [12572.705832] ======================================================
-> > [12572.750317] [ INFO: possible circular locking dependency detected ]
-> > [12572.796978] 3.10.0-rc3+ #39 Not tainted
-> > [12572.833381] -------------------------------------------------------
-> > [12572.862233] trinity-child17/31341 is trying to acquire lock:
-> > [12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> > [12572.878859] 
-> > but task is already holding lock:
-> > [12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-> > [12572.903381] 
-> > which lock already depends on the new lock.
-> > 
-> > [12572.927541] 
-> > the existing dependency chain (in reverse order) is:
-> > [12572.943736] 
-> > -> #4 (&ctx->lock){-.-...}:
-> > [12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> > [12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
-> > [12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
-> > [12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
-> > [12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
-> > [12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
-> > [12573.018321] 
-> > -> #3 (&rq->lock){-.-.-.}:
-> > [12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> > [12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
-> > [12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
-> > [12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
-> > [12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
-> > [12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
-> > [12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
-> > [12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
-> > [12573.109528] 
-> > -> #2 (&p->pi_lock){-.-.-.}:
-> > [12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-> > [12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
-> > [12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
-> > [12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
-> > [12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
-> > [12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
-> > [12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-> > [12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-> > [12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-> > [12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
-> > [12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
-> > [12573.221379] 
-> > -> #1 (&rsp->gp_wq){..-.-.}:
-> > [12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
-> > [12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
-> > [12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
-> > [12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
-> > [12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
-> > [12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
-> > [12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+>  Changes for RFC v4 (https://patchwork.kernel.org/patch/2556251/):
+>  1: Renamed "gpio-reset" property to "reset-gpios".
+>  2: Dropped assigning the driver data from the of node.
 > 
-> Notice the above call chain.
+>  Changes for RFC v3(https://patchwork.kernel.org/patch/2515921/):
+>  1: Dropped check if gpio-reset is valid.
+>  2: Fixed some code nits.
+>  3: Included a reference to the V4L2 DT bindings documentation.
 > 
-> rcu_start_future_gp() is called with the rnp->lock held. Then it calls
-> rcu_start_gp_advance, which does a wakeup.
+>  Changes for RFC v2 (https://patchwork.kernel.org/patch/2510201/):
+>  1: Used '-' instead of '_' for device properties.
+>  2: Specified gpio reset pin as phandle in device node.
+>  3: Handle platform data properly even if kernel is compiled with
+>     devicetree support.
+>  4: Used dev_* for messages in drivers instead of pr_*.
+>  5: Changed compatible property to "aptina,mt9p031" and "aptina,mt9p031m".
+>  6: Sorted the header inclusion alphabetically and fixed some minor code
+> nits.
 > 
-> You can't do wakeups while holding the rnp->lock, as that would mean
-> that you could not do a rcu_read_unlock() while holding the rq lock, or
-> any lock that was taken while holding the rq lock. This is because...
-> (See below).
+>  RFC v1: https://patchwork.kernel.org/patch/2498791/
 > 
+>  .../devicetree/bindings/media/i2c/mt9p031.txt      |   40
+> ++++++++++++++++++ drivers/media/i2c/mt9p031.c                        |  
+> 43 +++++++++++++++++++- 2 files changed, 81 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/media/i2c/mt9p031.txt
 > 
-> > [12573.295067] 
-> > -> #0 (rcu_node_0){..-.-.}:
-> > [12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-> > [12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> > [12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> > [12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-> > [12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-> > [12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-> > [12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-> > [12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-> > [12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
-> 
-> Notice the above trace.
-> 
-> perf took its own ctx->lock, which can be taken while holding the rq
-> lock. While holding this lock, it did a rcu_read_unlock(). The
-> perf_lock_task_context() basically looks like:
-> 
-> rcu_read_lock();
-> raw_spin_lock(ctx->lock);
-> rcu_read_unlock();
-> 
-> Now, what looks to have happened, is that we scheduled after taking that
-> first rcu_read_lock() but before taking the spin lock. When we scheduled
-> back in and took the ctx->lock, the following rcu_read_unlock()
-> triggered the "special" code.
-> 
-> The rcu_read_unlock_special() takes the rnp->lock, which gives us a
-> possible deadlock scenario.
-> 
-> 	CPU0		CPU1		CPU2
-> 	----		----		----
-> 
-> 				     rcu_nocb_kthread()
->     lock(rq->lock);
-> 		    lock(ctx->lock);
-> 				     lock(rnp->lock);
-> 
-> 				     wake_up();
-> 
-> 				     lock(rq->lock);
-> 
-> 		    rcu_read_unlock();
-> 
-> 		    rcu_read_unlock_special();
-> 
-> 		    lock(rnp->lock);
->     lock(ctx->lock);
-> 
-> **** DEADLOCK ****
-> 
-> 
-> > [12573.382068] 
-> > other info that might help us debug this:
-> > 
-> > [12573.403229] Chain exists of:
-> >   rcu_node_0 --> &rq->lock --> &ctx->lock
-> > 
-> > [12573.424471]  Possible unsafe locking scenario:
-> > 
-> > [12573.438499]        CPU0                    CPU1
-> > [12573.445599]        ----                    ----
-> > [12573.452691]   lock(&ctx->lock);
-> > [12573.459799]                                lock(&rq->lock);
-> > [12573.467010]                                lock(&ctx->lock);
-> > [12573.474192]   lock(rcu_node_0);
-> > [12573.481262] 
-> >  *** DEADLOCK ***
-> > 
-> > [12573.501931] 1 lock held by trinity-child17/31341:
-> > [12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
-> > [12573.516475] 
-> > stack backtrace:
-> > [12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
-> > [12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
-> > [12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
-> > [12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
-> > [12573.567856] Call Trace:
-> > [12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
-> > [12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
-> > [12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
-> > [12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
-> > [12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
-> > [12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-> > [12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
-> > [12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
-> > [12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
-> > [12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
-> > [12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
-> > [12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
-> > [12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
-> > [12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
-> > [12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
-> > [12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
-> > [12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
-> > [12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
-> > [12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-> > [12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
-> > [12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
-> 
-> Here's one solution, to delay the wakeup via a irq_work: This is what
-> perf and ftrace use to perform wakeups in critical sections.
-> 
-> -- Steve
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Index: linux-trace.git/init/Kconfig
-> ===================================================================
-> --- linux-trace.git.orig/init/Kconfig
-> +++ linux-trace.git/init/Kconfig
-> @@ -431,6 +431,7 @@ choice
->  config TREE_RCU
->  	bool "Tree-based hierarchical RCU"
->  	depends on !PREEMPT && SMP
-> +	select IRQ_WORK
->  	help
->  	  This option selects the RCU implementation that is
->  	  designed for very large SMP system with hundreds or
-> Index: linux-trace.git/kernel/rcutree.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/rcutree.c
-> +++ linux-trace.git/kernel/rcutree.c
-> @@ -1613,6 +1613,14 @@ static int __noreturn rcu_gp_kthread(voi
->  	}
->  }
-> 
-> +static void rsp_wakeup(struct irq_work *work)
-> +{
-> +	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
+> diff --git a/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+> b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt new file mode
+> 100644
+> index 0000000..59d613c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+> @@ -0,0 +1,40 @@
+> +* Aptina 1/2.5-Inch 5Mp CMOS Digital Image Sensor
 > +
-> +	/* Wake up rcu_gp_kthread() to start the grace period. */
-> +	wake_up(&rsp->gp_wq);
+> +The Aptina MT9P031 is a 1/2.5-inch CMOS active pixel digital image sensor
+> with +an active array size of 2592H x 1944V. It is programmable through a
+> simple +two-wire serial interface.
+> +
+> +Required Properties :
+> +- compatible : value should be either one among the following
+> +	(a) "aptina,mt9p031" for mt9p031 sensor
+> +	(b) "aptina,mt9p031m" for mt9p031m sensor
+> +
+> +- input-clock-frequency : Input clock frequency.
+> +
+> +- pixel-clock-frequency : Pixel clock frequency.
+> +
+> +Optional Properties :
+> +- reset-gpios: Chip reset GPIO
+
+There's usually no space before a colon in English.
+
+> +For further reading of port node refer
+> Documentation/devicetree/bindings/media/video-interfaces.txt.
+> +
+> +Example:
+> +
+> +	i2c0@1c22000 {
+> +		...
+> +		...
+> +		mt9p031@5d {
+> +			compatible = "aptina,mt9p031";
+> +			reg = <0x5d>;
+> +			reset-gpios = <&gpio3 30 0>;
+> +
+> +			port {
+> +				mt9p031_1: endpoint {
+> +					input-clock-frequency = <6000000>;
+> +					pixel-clock-frequency = <96000000>;
+> +				};
+> +			};
+> +		};
+> +		...
+> +	};
+> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+> index bf49899..bb1f993 100644
+> --- a/drivers/media/i2c/mt9p031.c
+> +++ b/drivers/media/i2c/mt9p031.c
+> @@ -16,9 +16,10 @@
+>  #include <linux/delay.h>
+>  #include <linux/device.h>
+>  #include <linux/gpio.h>
+> -#include <linux/module.h>
+>  #include <linux/i2c.h>
+>  #include <linux/log2.h>
+> +#include <linux/module.h>
+> +#include <linux/of_gpio.h>
+>  #include <linux/pm.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/slab.h>
+> @@ -28,6 +29,7 @@
+>  #include <media/v4l2-chip-ident.h>
+>  #include <media/v4l2-ctrls.h>
+>  #include <media/v4l2-device.h>
+> +#include <media/v4l2-of.h>
+>  #include <media/v4l2-subdev.h>
+> 
+>  #include "aptina-pll.h"
+> @@ -928,10 +930,37 @@ static const struct v4l2_subdev_internal_ops
+> mt9p031_subdev_internal_ops = { * Driver initialization and probing
+>   */
+> 
+> +static struct mt9p031_platform_data *
+> +mt9p031_get_pdata(struct i2c_client *client)
+> +{
+> +	struct mt9p031_platform_data *pdata = NULL;
+
+No need to initialize pdata to NULL here.
+
+> +	struct device_node *np;
+> +
+> +	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
+> +		return client->dev.platform_data;
+> +
+> +	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
+> +	if (!np)
+> +		return NULL;
+> +
+> +	pdata = devm_kzalloc(&client->dev, sizeof(struct mt9p031_platform_data),
+> +			     GFP_KERNEL);
+
+The preferred way to use sizeof in the kernel is sizeof(*var) instead of 
+sizeof(type). I've thus replaced the above line with
+
+	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+
+> +	if (!pdata)
+> +		goto done;
+> +
+> +	pdata->reset = of_get_named_gpio(client->dev.of_node, "reset-gpios", 0);
+> +	of_property_read_u32(np, "input-clock-frequency", &pdata->ext_freq);
+> +	of_property_read_u32(np, "pixel-clock-frequency", &pdata->target_freq);
+> +
+> +done:
+> +	of_node_put(np);
+> +	return pdata;
 > +}
 > +
->  /*
->   * Start a new RCU grace period if warranted, re-initializing the hierarchy
->   * in preparation for detecting the next grace period.  The caller must hold
-> @@ -1637,8 +1645,12 @@ rcu_start_gp_advanced(struct rcu_state *
->  	}
->  	rsp->gp_flags = RCU_GP_FLAG_INIT;
-> 
-> -	/* Wake up rcu_gp_kthread() to start the grace period. */
-> -	wake_up(&rsp->gp_wq);
-> +	/*
-> +	 * We can't do wakeups while holding the rnp->lock, as that
-> +	 * could cause possible deadlocks with the rq->lock. Deter
-> +	 * the wakeup to interrupt context.
-> +	 */
-> +	irq_work_queue(&rsp->wakeup_work);
->  }
-> 
->  /*
-> @@ -3235,6 +3247,7 @@ static void __init rcu_init_one(struct r
-> 
->  	rsp->rda = rda;
->  	init_waitqueue_head(&rsp->gp_wq);
-> +	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
->  	rnp = rsp->level[rcu_num_lvls - 1];
->  	for_each_possible_cpu(i) {
->  		while (i > rnp->grphi)
-> Index: linux-trace.git/kernel/rcutree.h
-> ===================================================================
-> --- linux-trace.git.orig/kernel/rcutree.h
-> +++ linux-trace.git/kernel/rcutree.h
-> @@ -27,6 +27,7 @@
->  #include <linux/threads.h>
->  #include <linux/cpumask.h>
->  #include <linux/seqlock.h>
-> +#include <linux/irq_work.h>
-> 
->  /*
->   * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
-> @@ -442,6 +443,7 @@ struct rcu_state {
->  	char *name;				/* Name of structure. */
->  	char abbr;				/* Abbreviated name. */
->  	struct list_head flavors;		/* List of RCU flavors. */
-> +	struct irq_work wakeup_work;		/* Postponed wakeups */
+>  static int mt9p031_probe(struct i2c_client *client,
+>  			 const struct i2c_device_id *did)
+>  {
+> -	struct mt9p031_platform_data *pdata = client->dev.platform_data;
+> +	struct mt9p031_platform_data *pdata = mt9p031_get_pdata(client);
+>  	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+>  	struct mt9p031 *mt9p031;
+>  	unsigned int i;
+> @@ -1070,8 +1099,18 @@ static const struct i2c_device_id mt9p031_id[] = {
 >  };
+>  MODULE_DEVICE_TABLE(i2c, mt9p031_id);
 > 
->  /* Values for rcu_state structure's gp_flags field. */
-> 
-> 
+> +#if IS_ENABLED(CONFIG_OF)
+> +static const struct of_device_id mt9p031_of_match[] = {
+> +	{ .compatible = "aptina,mt9p031", },
+> +	{ .compatible = "aptina,mt9p031m", },
+> +	{ /* sentinel */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, mt9p031_of_match);
+> +#endif
+> +
+>  static struct i2c_driver mt9p031_i2c_driver = {
+>  	.driver = {
+> +		.of_match_table = of_match_ptr(mt9p031_of_match),
+>  		.name = "mt9p031",
+>  	},
+>  	.probe          = mt9p031_probe,
+-- 
+Regards,
+
+Laurent Pinchart
 
