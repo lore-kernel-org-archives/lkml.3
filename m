@@ -1,124 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab3E2Pnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:43:43 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:25958 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757797Ab3E2Pnh convert rfc822-to-8bit (ORCPT
+	id S1758317Ab3E2Ppu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:45:50 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49344 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756304Ab3E2Ppt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:43:37 -0400
-From: "Pearson, Greg" <greg.pearson@hp.com>
-To: "Dall, Elizabeth J (MCLinux)" <betty.dall@hp.com>
-CC: "rjw@sisk.pl" <rjw@sisk.pl>, "bhelgaas@google.com" <bhelgaas@google.com>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 3/3] PCI/AER: Provide reset_link for firmware first root
- port
-Thread-Topic: [PATCH 3/3] PCI/AER: Provide reset_link for firmware first
- root port
-Thread-Index: AQHOXIMfWPUbKGAb7UyF7S06eh+fzw==
-Date: Wed, 29 May 2013 15:42:27 +0000
-Message-ID: <51A621E2.2050202@hp.com>
-References: <1369766929-4386-1-git-send-email-betty.dall@hp.com>
- <1369766929-4386-4-git-send-email-betty.dall@hp.com>
-In-Reply-To: <1369766929-4386-4-git-send-email-betty.dall@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
- Thunderbird/17.0.5
-x-originating-ip: [16.210.16.251]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <AEA19B9B076D5840B61DDE2BB6343B4E@Compaq.com>
-Content-Transfer-Encoding: 7BIT
+	Wed, 29 May 2013 11:45:49 -0400
+Date: Wed, 29 May 2013 10:45:00 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 2/4] zbud: add to mm/
+Message-ID: <20130529154500.GB428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052915-5518-0000-0000-00000F241B44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 12:48 PM, Betty Dall wrote:
-> The firmware first path does not install the aerdrv root port
-> service driver, so the firmware first root port does not have
-> a reset_link callback. When a firmware first root port does not have
-> a reset_link callback, use a new default reset_link similar to what
-> we already do for the default_downstream_reset_link(). The firmware
-> first default reset_link brings the root port out of SBR if firmware
-> left it in SBR.
->
-> Signed-off-by: Betty Dall <betty.dall@hp.com>
-> ---
->
->   drivers/pci/pcie/aer/aerdrv_core.c |   37 ++++++++++++++++++++++++++++++++++++
->   1 files changed, 37 insertions(+), 0 deletions(-)
->
->
-> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> index 8ec8b4f..6862fe3 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> @@ -413,6 +413,40 @@ static pci_ers_result_t default_downstream_reset_link(struct pci_dev *dev)
->   	return PCI_ERS_RESULT_RECOVERED;
->   }
->   
-> +/**
-> + * default_ff_root_port_reset_link - default reset function for firmware
-> + *		first Root Port
-> + * @dev: pointer to root port's pci_dev data structure
-> + *
-> + * Invoked when performing link reset at Root Port w/ no aer driver.
-> + * This happens through the firmware first path. Firmware may leave
-> + * the Root Port in SBR and it is the OS responsiblity to bring it out
-> + * of SBR.
-> + */
-> +static pci_ers_result_t default_ff_root_port_reset_link(struct pci_dev *dev)
-> +{
-> +	u16 p2p_ctrl;
-> +
-> +	/* Read Secondary Bus Reset */
-> +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &p2p_ctrl);
-> +	p2p_ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+On Tue, May 28, 2013 at 02:59:11PM -0700, Andrew Morton wrote:
+> On Mon, 20 May 2013 11:26:06 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+> > zbud is an special purpose allocator for storing compressed pages. It is
+> > designed to store up to two compressed pages per physical page.  While this
+> > design limits storage density, it has simple and deterministic reclaim
+> > properties that make it preferable to a higher density approach when reclaim
+> > will be used.
+> > 
+> > zbud works by storing compressed pages, or "zpages", together in pairs in a
+> > single memory page called a "zbud page".  The first buddy is "left
+> > justifed" at the beginning of the zbud page, and the last buddy is "right
+> > justified" at the end of the zbud page.  The benefit is that if either
+> > buddy is freed, the freed buddy space, coalesced with whatever slack space
+> > that existed between the buddies, results in the largest possible free region
+> > within the zbud page.
+> > 
+> > zbud also provides an attractive lower bound on density. The ratio of zpages
+> > to zbud pages can not be less than 1.  This ensures that zbud can never "do
+> > harm" by using more pages to store zpages than the uncompressed zpages would
+> > have used on their own.
+> > 
+> > This implementation is a rewrite of the zbud allocator internally used
+> > by zcache in the driver/staging tree.  The rewrite was necessary to
+> > remove some of the zcache specific elements that were ingrained throughout
+> > and provide a generic allocation interface that can later be used by
+> > zsmalloc and others.
+> > 
+> > This patch adds zbud to mm/ for later use by zswap.
+> > 
+> > ...
+> >
+> > +/**
+> > + * struct zbud_page - zbud page metadata overlay
+> > + * @page:	typed reference to the underlying struct page
+> > + * @donotuse:	this overlays the page flags and should not be used
+> > + * @first_chunks:	the size of the first buddy in chunks, 0 if free
+> > + * @last_chunks:	the size of the last buddy in chunks, 0 if free
+> > + * @buddy:	links the zbud page into the unbuddied/buddied lists in the pool
+> > + * @lru:	links the zbud page into the lru list in the pool
+> > + *
+> > + * This structure overlays the struct page to store metadata needed for a
+> > + * single storage page in for zbud.  There is a BUILD_BUG_ON in zbud_init()
+> > + * that ensures this structure is not larger that struct page.
+> > + *
+> > + * The PG_reclaim flag of the underlying page is used for indicating
+> > + * that this zbud page is under reclaim (see zbud_reclaim_page())
+> > + */
+> > +struct zbud_page {
+> > +	union {
+> > +		struct page page;
+> > +		struct {
+> > +			unsigned long donotuse;
+> > +			u16 first_chunks;
+> > +			u16 last_chunks;
+> > +			struct list_head buddy;
+> > +			struct list_head lru;
+> > +		};
+> > +	};
+> > +};
+> 
+> Whoa.  So zbud scribbles on existing pageframes?
 
-Remove "p2p_ctrl |= PCI_BRIDGE_CTL_BUS_RESET;" otherwise the following 
-conditional is always taken.
+Yes.
 
---
-Greg
+> 
+> Please tell us about this, in some detail.  How is it done and why is
+> this necessary?
+> 
+> Presumably the pageframe must be restored at some stage, so this code
+> has to be kept in sync with external unrelated changes to core MM?
 
-> +
-> +	/* De-assert Secondary Bus Reset, if it is set */
-> +	if (p2p_ctrl & PCI_BRIDGE_CTL_BUS_RESET) {
-> +		p2p_ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-> +		pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
-> +
-> +		/*
-> +		 * System software must wait for at least 100ms from the end
-> +		 * of a reset of one or more device before it is permitted
-> +		 * to issue Configuration Requests to those devices.
-> +		 */
-> +		msleep(200);
-> +		dev_dbg(&dev->dev, "Root Port link has been reset\n");
-> +	}
-> +	return PCI_ERS_RESULT_RECOVERED;
-> +}
-> +
->   static int find_aer_service_iter(struct device *device, void *data)
->   {
->   	struct pcie_port_service_driver *service_driver, **drv;
-> @@ -460,6 +494,9 @@ static pci_ers_result_t reset_link(struct pci_dev *dev)
->   		status = driver->reset_link(udev);
->   	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_DOWNSTREAM) {
->   		status = default_downstream_reset_link(udev);
-> +	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_ROOT_PORT &&
-> +		pcie_aer_get_firmware_first(udev)) {
-> +		status = default_ff_root_port_reset_link(udev);
->   	} else {
->   		dev_printk(KERN_DEBUG, &dev->dev,
->   			"no link-reset support at upstream device %s\n",
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Yes, this is done in free_zbud_page().
+
+> 
+> Why was it implemented in this fashion rather than going into the main
+> `struct page' definition and adding the appropriate unionised fields?
+
+Yes, modifying the struct page is the cleaner way.  I thought that adding more
+convolution to struct page would create more friction on the path to getting
+this merged.  Plus overlaying the struct page was the approach used by zsmalloc
+and so I was thinking more along these lines.
+
+If you'd rather add the zbud fields directly into unions in struct page,
+I'm ok with that if you are.
+
+Of course, this doesn't avoid having to reset the fields for the page allocator
+before we free them.  Even slub/slob reset the mapcount before calling
+__free_page(), for example.
+
+> 
+> I worry about any code which independently looks at the pageframe
+> tables and expects to find page struts there.  One example is probably
+> memory_failure() but there are probably others.
+> 
+> > 
+> > ...
+> >
+> > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> > +			unsigned long *handle)
+> > +{
+> > +	int chunks, i, freechunks;
+> > +	struct zbud_page *zbpage = NULL;
+> > +	enum buddy bud;
+> > +	struct page *page;
+> > +
+> > +	if (size <= 0 || gfp & __GFP_HIGHMEM)
+> > +		return -EINVAL;
+> > +	if (size > PAGE_SIZE)
+> > +		return -E2BIG;
+> 
+> Means "Argument list too long" and isn't appropriate here.
+
+Ok, I need a return value other than -EINVAL to convey to the user that the
+allocation is larger than what the allocator can hold. I don't see an existing
+errno that would be more suited for that.  Do you have a suggestion?
+
+> 
+> > +	chunks = size_to_chunks(size);
+> > +	spin_lock(&pool->lock);
+> > +
+> > +	/* First, try to find an unbuddied zbpage. */
+> > +	zbpage = NULL;
+> > +	for_each_unbuddied_list(i, chunks) {
+> > +		if (!list_empty(&pool->unbuddied[i])) {
+> > +			zbpage = list_first_entry(&pool->unbuddied[i],
+> > +					struct zbud_page, buddy);
+> > +			list_del(&zbpage->buddy);
+> > +			if (zbpage->first_chunks == 0)
+> > +				bud = FIRST;
+> > +			else
+> > +				bud = LAST;
+> > +			goto found;
+> > +		}
+> > +	}
+> > +
+> > +	/* Couldn't find unbuddied zbpage, create new one */
+> > +	spin_unlock(&pool->lock);
+> > +	page = alloc_page(gfp);
+> > +	if (!page)
+> > +		return -ENOMEM;
+> > +	spin_lock(&pool->lock);
+> > +	pool->pages_nr++;
+> > +	zbpage = init_zbud_page(page);
+> > +	bud = FIRST;
+> > +
+> > +found:
+> > +	if (bud == FIRST)
+> > +		zbpage->first_chunks = chunks;
+> > +	else
+> > +		zbpage->last_chunks = chunks;
+> > +
+> > +	if (zbpage->first_chunks == 0 || zbpage->last_chunks == 0) {
+> > +		/* Add to unbuddied list */
+> > +		freechunks = num_free_chunks(zbpage);
+> > +		list_add(&zbpage->buddy, &pool->unbuddied[freechunks]);
+> > +	} else {
+> > +		/* Add to buddied list */
+> > +		list_add(&zbpage->buddy, &pool->buddied);
+> > +	}
+> > +
+> > +	/* Add/move zbpage to beginning of LRU */
+> > +	if (!list_empty(&zbpage->lru))
+> > +		list_del(&zbpage->lru);
+> > +	list_add(&zbpage->lru, &pool->lru);
+> > +
+> > +	*handle = encode_handle(zbpage, bud);
+> > +	spin_unlock(&pool->lock);
+> > +
+> > +	return 0;
+> > +}
+> > 
+> > ...
+> >
+> > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+> > +{
+> > +	int i, ret, freechunks;
+> > +	struct zbud_page *zbpage;
+> > +	unsigned long first_handle = 0, last_handle = 0;
+> > +
+> > +	spin_lock(&pool->lock);
+> > +	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
+> > +			retries == 0) {
+> > +		spin_unlock(&pool->lock);
+> > +		return -EINVAL;
+> > +	}
+> > +	for (i = 0; i < retries; i++) {
+> > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
+> > +		list_del(&zbpage->lru);
+> > +		list_del(&zbpage->buddy);
+> > +		/* Protect zbpage against free */
+> 
+> Against free by who?  What other code paths can access this page at
+> this time?
+
+zbud has no way of serializing with the user (zswap) to prevent it calling
+zbud_free() during zbud reclaim.  To prevent the zbud page from being freed
+while reclaim is operating on it, we set the reclaim flag in the struct page.
+zbud_free() checks this flag and, if set, only sets the chunk length of the
+allocation to 0, but does not actually free the zbud page.  That is left to
+this reclaim path.
+
+Seth
+
