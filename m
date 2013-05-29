@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965908Ab3E2Lpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:45:40 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:35023 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965530Ab3E2Lpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965783Ab3E2Lpg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 May 2013 07:45:36 -0400
-From: Nikolay Balandin <n.a.balandin@gmail.com>
-To: Eric Piel <eric.piel@tremplin-utc.net>, linux-kernel@vger.kernel.org
-Cc: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-Subject: [PATCH v1 1/1] drivers/misc: lis3lv02d: convert to use devm_regulator_bulk_get
-Date: Wed, 29 May 2013 15:45:13 +0400
-Message-Id: <1369827913-31033-1-git-send-email-n.a.balandin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34804 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965571Ab3E2Lpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:45:30 -0400
+Message-ID: <51A5EA5D.6010408@inktank.com>
+Date: Wed, 29 May 2013 06:45:33 -0500
+From: Alex Elder <elder@inktank.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: Re: [patch] ceph: tidy ceph_mdsmap_decode() a little
+References: <20130529062213.GF23932@mwanda>
+In-Reply-To: <20130529062213.GF23932@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+On 05/29/2013 01:22 AM, Dan Carpenter wrote:
+> I introduced a new temporary variable "info" instead of
+> "m->m_info[mds]".  Also I reversed the if condition and pulled
+> everything in one indent level.
 
-Use devm_regulator_bulk_get to make cleanup paths simpler
+Looks good.  I will apply this for you.
 
-Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
----
- drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+Reviewed-by: Alex Elder <elder@inktank.com>
 
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-index 7c97550..01ddcf0 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-@@ -154,7 +154,7 @@ static int lis3lv02d_i2c_probe(struct i2c_client *client,
- 
- 	lis3_dev.regulators[0].supply = reg_vdd;
- 	lis3_dev.regulators[1].supply = reg_vdd_io;
--	ret = regulator_bulk_get(&client->dev,
-+	ret = devm_regulator_bulk_get(&client->dev,
- 				 ARRAY_SIZE(lis3_dev.regulators),
- 				 lis3_dev.regulators);
- 	if (ret < 0)
-@@ -179,12 +179,9 @@ static int lis3lv02d_i2c_probe(struct i2c_client *client,
- 	lis3_reg_ctrl(&lis3_dev, LIS3_REG_OFF);
- 
- 	if (ret)
--		goto fail2;
-+		goto fail;
- 	return 0;
- 
--fail2:
--	regulator_bulk_free(ARRAY_SIZE(lis3_dev.regulators),
--				lis3_dev.regulators);
- fail:
- 	if (pdata && pdata->release_resources)
- 		pdata->release_resources();
-@@ -202,8 +199,6 @@ static int lis3lv02d_i2c_remove(struct i2c_client *client)
- 	lis3lv02d_joystick_disable(lis3);
- 	lis3lv02d_remove_fs(&lis3_dev);
- 
--	regulator_bulk_free(ARRAY_SIZE(lis3->regulators),
--			    lis3_dev.regulators);
- 	return 0;
- }
- 
--- 
-1.7.9.5
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> This goes on top of Emil Goode's patch.
+> 
+> diff --git a/fs/ceph/mdsmap.c b/fs/ceph/mdsmap.c
+> index d4d3897..132b64e 100644
+> --- a/fs/ceph/mdsmap.c
+> +++ b/fs/ceph/mdsmap.c
+> @@ -92,6 +92,7 @@ struct ceph_mdsmap *ceph_mdsmap_decode(void **p, void *end)
+>  		u32 num_export_targets;
+>  		void *pexport_targets = NULL;
+>  		struct ceph_timespec laggy_since;
+> +		struct ceph_mds_info *info;
+>  
+>  		ceph_decode_need(p, end, sizeof(u64)*2 + 1 + sizeof(u32), bad);
+>  		global_id = ceph_decode_64(p);
+
+. . .
 
