@@ -1,61 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966696Ab3E2ODC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:03:02 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48992 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966534Ab3E2OCA (ORCPT
+	id S966714Ab3E2ODa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:03:30 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:33447 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966547Ab3E2OAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:02:00 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-Cc: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
-References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
-	<1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
-	<87sj17aqq2.fsf@linaro.org> <51A5D148.8050203@ti.com>
-Date: Wed, 29 May 2013 07:01:57 -0700
-In-Reply-To: <51A5D148.8050203@ti.com> (Andrii Tseglytskyi's message of "Wed,
-	29 May 2013 12:58:32 +0300")
-Message-ID: <87fvx5anqi.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 29 May 2013 10:00:19 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v6, part4 36/41] mm/tile: prepare for removing num_physpages and simplify mem_init()
+Date: Wed, 29 May 2013 21:57:54 +0800
+Message-Id: <1369835879-23553-37-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
+References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
+Prepare for removing num_physpages and simplify mem_init().
 
-[...]
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/tile/kernel/setup.c | 16 ++++++++--------
+ arch/tile/mm/init.c      | 15 +--------------
+ 2 files changed, 9 insertions(+), 22 deletions(-)
 
->>> Signed-off-by: Vincent Bour <v-bour@ti.com>
->>> Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
->>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>> Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
->>  From Documentation/SubbmittingPatches:
->>
->>     "If a person was not directly involved in the preparation or handling
->>     of a patch but wishes to signify and record their approval of it then
->>     they can arrange to have an Acked-by: line added to the patch's
->>     changelog."
->>
->> Are all of the tags above co-authors or on the delivery path?  I suspect
->> an Acked-by or Reviewed-by is more appropriate here.
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 41818e3..68b5426 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -329,6 +329,7 @@ static void __init setup_memory(void)
+ #if defined(CONFIG_HIGHMEM) || defined(__tilegx__)
+ 	long lowmem_pages;
+ #endif
++	unsigned long physpages = 0;
+ 
+ 	/* We are using a char to hold the cpu_2_node[] mapping */
+ 	BUILD_BUG_ON(MAX_NUMNODES > 127);
+@@ -388,8 +389,8 @@ static void __init setup_memory(void)
+ 				continue;
+ 			}
+ 		}
+-		if (num_physpages + PFN_DOWN(range.size) > maxmem_pfn) {
+-			int max_size = maxmem_pfn - num_physpages;
++		if (physpages + PFN_DOWN(range.size) > maxmem_pfn) {
++			int max_size = maxmem_pfn - physpages;
+ 			if (max_size > 0) {
+ 				pr_err("Maxmem reduced node %d to %d pages\n",
+ 				       i, max_size);
+@@ -446,7 +447,7 @@ static void __init setup_memory(void)
+ 		node_start_pfn[i] = start;
+ 		node_end_pfn[i] = end;
+ 		node_controller[i] = range.controller;
+-		num_physpages += size;
++		physpages += size;
+ 		max_pfn = end;
+ 
+ 		/* Mark node as online */
+@@ -465,7 +466,7 @@ static void __init setup_memory(void)
+ 	 * we're willing to use at 8 million pages (32GB of 4KB pages).
+ 	 */
+ 	cap = 8 * 1024 * 1024;  /* 8 million pages */
+-	if (num_physpages > cap) {
++	if (physpages > cap) {
+ 		int num_nodes = num_online_nodes();
+ 		int cap_each = cap / num_nodes;
+ 		unsigned long dropped_pages = 0;
+@@ -476,10 +477,10 @@ static void __init setup_memory(void)
+ 				node_end_pfn[i] = node_start_pfn[i] + cap_each;
+ 			}
+ 		}
+-		num_physpages -= dropped_pages;
++		physpages -= dropped_pages;
+ 		pr_warning("Only using %ldMB memory;"
+ 		       " ignoring %ldMB.\n",
+-		       num_physpages >> (20 - PAGE_SHIFT),
++		       physpages >> (20 - PAGE_SHIFT),
+ 		       dropped_pages >> (20 - PAGE_SHIFT));
+ 		pr_warning("Consider using a larger page size.\n");
+ 	}
+@@ -497,7 +498,7 @@ static void __init setup_memory(void)
+ 
+ 	lowmem_pages = (mappable_physpages > MAXMEM_PFN) ?
+ 		MAXMEM_PFN : mappable_physpages;
+-	highmem_pages = (long) (num_physpages - lowmem_pages);
++	highmem_pages = (long) (physpages - lowmem_pages);
+ 
+ 	pr_notice("%ldMB HIGHMEM available.\n",
+ 	       pages_to_mb(highmem_pages > 0 ? highmem_pages : 0));
+@@ -514,7 +515,6 @@ static void __init setup_memory(void)
+ 		pr_warning("Use a HIGHMEM enabled kernel.\n");
+ 		max_low_pfn = MAXMEM_PFN;
+ 		max_pfn = MAXMEM_PFN;
+-		num_physpages = MAXMEM_PFN;
+ 		node_end_pfn[0] = MAXMEM_PFN;
+ 	} else {
+ 		pr_notice("%ldMB memory available.\n",
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index f2ac2f4..e182958 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -821,7 +821,6 @@ static void __init set_max_mapnr_init(void)
+ 
+ void __init mem_init(void)
+ {
+-	int codesize, datasize, initsize;
+ 	int i;
+ #ifndef __tilegx__
+ 	void *last;
+@@ -853,19 +852,7 @@ void __init mem_init(void)
+ 	set_non_bootmem_pages_init();
+ #endif
+ 
+-	codesize =  (unsigned long)&_etext - (unsigned long)&_text;
+-	datasize =  (unsigned long)&_end - (unsigned long)&_sdata;
+-	initsize =  (unsigned long)&_einittext - (unsigned long)&_sinittext;
+-	initsize += (unsigned long)&_einitdata - (unsigned long)&_sinitdata;
+-
+-	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init, %ldk highmem)\n",
+-		(unsigned long) nr_free_pages() << (PAGE_SHIFT-10),
+-		num_physpages << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		datasize >> 10,
+-		initsize >> 10,
+-		(unsigned long) (totalhigh_pages << (PAGE_SHIFT-10))
+-	       );
++	mem_init_print_info(NULL);
+ 
+ 	/*
+ 	 * In debug mode, dump some interesting memory mappings.
+-- 
+1.8.1.2
 
-[...]
-
-> This patch was developed by Nishanth, he is the author of the code.
-> Patch is the result of 2-week debug session. Vincent, Leonardo and
-> Nishanth were involved to that debug session.
-> My contribution to this patch - is sending it to upstream, no more
-> than this.
-> Could you please suggest - who should remain in Signed-offs ?
-
-Nishanth as the author, and you since you're on the delivery path.
-
-If Vincent & Leonardo should be considered as co-authors, then their
-signoffs are fine, otherwise they should be reviewed-by or acked-by.
-
-Kevin
