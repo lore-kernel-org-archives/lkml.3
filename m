@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966333Ab3E2N6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:58:34 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46874 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966161Ab3E2N6b (ORCPT
+	id S966366Ab3E2N6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:58:44 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:33878 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966350Ab3E2N6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:58:31 -0400
+	Wed, 29 May 2013 09:58:38 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v6, part4 06/41] tile: normalize global variables exported by vmlinux.lds
-Date: Wed, 29 May 2013 21:57:24 +0800
-Message-Id: <1369835879-23553-7-git-send-email-jiang.liu@huawei.com>
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH v6, part4 08/41] mm: introduce helper function mem_init_print_info() to simplify mem_init()
+Date: Wed, 29 May 2013 21:57:26 +0800
+Message-Id: <1369835879-23553-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
@@ -32,103 +31,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normalize global variables exported by vmlinux.lds to conform usage
-guidelines from include/asm-generic/sections.h.
+Introduce helper function mem_init_print_info() to simplify mem_init()
+across different architectures, which also unifies the format and
+information printed.
 
-1) Use _text to mark the start of the kernel image including the head
-text, and _stext to mark the start of the .text section.
-2) Export mandatory global variables __init_begin and __init_end.
+Function mem_init_print_info() calculates memory statistics information
+without walking each page, so it should be a little faster on some
+architectures.
+
+Also introduce another helper get_num_physpages() to kill the global
+variable num_physpages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/tile/include/asm/sections.h | 2 +-
- arch/tile/kernel/setup.c         | 4 ++--
- arch/tile/kernel/vmlinux.lds.S   | 4 +++-
- arch/tile/mm/init.c              | 2 +-
- 4 files changed, 7 insertions(+), 5 deletions(-)
+ include/linux/mm.h | 12 ++++++++++++
+ mm/page_alloc.c    | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
-diff --git a/arch/tile/include/asm/sections.h b/arch/tile/include/asm/sections.h
-index d062d46..7d8a935 100644
---- a/arch/tile/include/asm/sections.h
-+++ b/arch/tile/include/asm/sections.h
-@@ -34,7 +34,7 @@ extern char __sys_cmpxchg_grab_lock[];
- extern char __start_atomic_asm_code[], __end_atomic_asm_code[];
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bfe3686..8e4f0ed 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1319,6 +1319,7 @@ extern void free_highmem_page(struct page *page);
  #endif
  
--/* Handle the discontiguity between _sdata and _stext. */
-+/* Handle the discontiguity between _sdata and _text. */
- static inline int arch_is_kernel_data(unsigned long addr)
- {
- 	return addr >= (unsigned long)_sdata &&
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 7a5aa1a..41818e3 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -307,8 +307,8 @@ static void __cpuinit store_permanent_mappings(void)
- 		hv_store_mapping(addr, pages << PAGE_SHIFT, pa);
- 	}
+ extern void adjust_managed_page_count(struct page *page, long count);
++extern void mem_init_print_info(const char *str);
  
--	hv_store_mapping((HV_VirtAddr)_stext,
--			 (uint32_t)(_einittext - _stext), 0);
-+	hv_store_mapping((HV_VirtAddr)_text,
-+			 (uint32_t)(_einittext - _text), 0);
+ /* Free the reserved page into the buddy system, so it gets managed. */
+ static inline void __free_reserved_page(struct page *page)
+@@ -1354,6 +1355,17 @@ static inline unsigned long free_initmem_default(int poison)
+ 				  poison, "unused kernel");
  }
  
++static inline unsigned long get_num_physpages(void)
++{
++	int nid;
++	unsigned long phys_pages = 0;
++
++	for_each_online_node(nid)
++		phys_pages += node_present_pages(nid);
++
++	return phys_pages;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
  /*
-diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
-index 631f10d..a13ed90 100644
---- a/arch/tile/kernel/vmlinux.lds.S
-+++ b/arch/tile/kernel/vmlinux.lds.S
-@@ -27,7 +27,6 @@ SECTIONS
-   .intrpt1 (LOAD_OFFSET) : AT ( 0 )   /* put at the start of physical memory */
-   {
-     _text = .;
--    _stext = .;
-     *(.intrpt1)
-   } :intrpt1 =0
+  * With CONFIG_HAVE_MEMBLOCK_NODE_MAP set, an architecture may initialise its
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c9568aa..92f604a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -61,6 +61,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
  
-@@ -36,6 +35,7 @@ SECTIONS
++#include <asm/sections.h>
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+ #include "internal.h"
+@@ -5271,6 +5272,57 @@ void free_highmem_page(struct page *page)
+ }
+ #endif
  
-   /* Now the real code */
-   . = ALIGN(0x20000);
-+  _stext = .;
-   .text : AT (ADDR(.text) - LOAD_OFFSET) {
-     HEAD_TEXT
-     SCHED_TEXT
-@@ -58,11 +58,13 @@ SECTIONS
-   #define LOAD_OFFSET PAGE_OFFSET
- 
-   . = ALIGN(PAGE_SIZE);
-+  __init_begin = .;
-   VMLINUX_SYMBOL(_sinitdata) = .;
-   INIT_DATA_SECTION(16) :data =0
-   PERCPU_SECTION(L2_CACHE_BYTES)
-   . = ALIGN(PAGE_SIZE);
-   VMLINUX_SYMBOL(_einitdata) = .;
-+  __init_end = .;
- 
-   _sdata = .;                   /* Start of data section */
- 
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index 45ce26d..f2ac2f4 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -562,7 +562,7 @@ static void __init kernel_physical_mapping_init(pgd_t *pgd_base)
- 			prot = ktext_set_nocache(prot);
- 		}
- 
--		BUG_ON(address != (unsigned long)_stext);
-+		BUG_ON(address != (unsigned long)_text);
- 		pte = NULL;
- 		for (; address < (unsigned long)_einittext;
- 		     pfn++, address += PAGE_SIZE) {
++
++void __init mem_init_print_info(const char *str)
++{
++	unsigned long physpages, codesize, datasize, rosize, bss_size;
++	unsigned long init_code_size, init_data_size;
++
++	physpages = get_num_physpages();
++	codesize = _etext - _stext;
++	datasize = _edata - _sdata;
++	rosize = __end_rodata - __start_rodata;
++	bss_size = __bss_stop - __bss_start;
++	init_data_size = __init_end - __init_begin;
++	init_code_size = _einittext - _sinittext;
++
++	/*
++	 * Detect special cases and adjust section sizes accordingly:
++	 * 1) .init.* may be embedded into .data sections
++	 * 2) .init.text.* may be out of [__init_begin, __init_end],
++	 *    please refer to arch/tile/kernel/vmlinux.lds.S.
++	 * 3) .rodata.* may be embedded into .text or .data sections.
++	 */
++#define adj_init_size(start, end, size, pos, adj) \
++	if (start <= pos && pos < end && size > adj) \
++		size -= adj;
++
++	adj_init_size(__init_begin, __init_end, init_data_size,
++		     _sinittext, init_code_size);
++	adj_init_size(_stext, _etext, codesize, _sinittext, init_code_size);
++	adj_init_size(_sdata, _edata, datasize, __init_begin, init_data_size);
++	adj_init_size(_stext, _etext, codesize, __start_rodata, rosize);
++	adj_init_size(_sdata, _edata, datasize, __start_rodata, rosize);
++
++#undef	adj_init_size
++
++	printk("Memory: %luK/%luK available "
++	       "(%luK kernel code, %luK rwdata, %luK rodata, "
++	       "%luK init, %luK bss, %luK reserved"
++#ifdef	CONFIG_HIGHMEM
++	       ", %luK highmem"
++#endif
++	       "%s%s)\n",
++	       nr_free_pages() << (PAGE_SHIFT-10), physpages << (PAGE_SHIFT-10),
++	       codesize >> 10, datasize >> 10, rosize >> 10,
++	       (init_data_size + init_code_size) >> 10, bss_size >> 10,
++	       (physpages - totalram_pages) << (PAGE_SHIFT-10),
++#ifdef	CONFIG_HIGHMEM
++	       totalhigh_pages << (PAGE_SHIFT-10),
++#endif
++	       str ? ", " : "", str ? str : "");
++}
++
+ /**
+  * set_dma_reserve - set the specified number of pages reserved in the first zone
+  * @new_dma_reserve: The number of pages to mark reserved
 -- 
 1.8.1.2
 
