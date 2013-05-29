@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965738Ab3E2LCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:02:05 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:49453 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965628Ab3E2LCC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:02:02 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-89-51a5e028097c
-From: Phil Carmody <phil.carmody@partner.samsung.com>
-To: apw@canonical.com, joe@perches.com
-Cc: linux-kernel@vger.kernel.org,
-        Phil Carmody <phil.carmody@partner.samsung.com>
-Subject: [PATCH] checkpatch: forgive use of mixed case variables measuring units
-Date: Wed, 29 May 2013 14:02:50 +0300
-Message-id: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xy7oaD5YGGtz8qWjxYa2Gxez7j1ks
-	Lu+aw2ax+9VSVgcWj1kNvWweB9/tYfL4suoas8fnTXIBLFFcNimpOZllqUX6dglcGdtaNzEX
-	dLFV7Lo2k7GB8SlLFyMHh4SAicSBte5djJxAppjEhXvr2boYuTiEBJYySnxs6mSEcLqYJH5M
-	Os4IUsUmYCoxZcU3JhBbREBNoqVnGjuIzSwQLPH47QxmEFtYIEDi4snHYDUsAqoSdza/AbN5
-	geJbGs8zQSxWkJgzyWYCI/cCRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGe/7KDcfEx
-	q0OMAhyMSjy8gV+XBAqxJpYVV+YeYpTgYFYS4U0VXBooxJuSWFmVWpQfX1Sak1p8iJGJg1Oq
-	gXHZuZTtzIJLrQI/JN6w5DhTr8R/xLD1kn9MDOOjWO8NAXMbbmxm0zom4scqv9VkNVPACcY8
-	D6+73BKzazzF3i4zkJHwvWc+pWo5L/P2qcz729P5ypLfZ6Vt1o/mzng39ZFe41Xm+6azLXYu
-	UK2pLZI9uerO93nmZ47eZF+uHnR0L8P8JWf9ViuxFGckGmoxFxUnAgBlj+V82gEAAA==
+	id S965746Ab3E2LDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:03:01 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45473 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965626Ab3E2LC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:02:59 -0400
+From: Glauber Costa <glommer@openvz.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>
+Subject: [PATCH v7 00/11] per-cgroup cpu-stat
+Date: Wed, 29 May 2013 15:03:11 +0400
+Message-Id: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think anyone really has an issue with things like max_mV.
-And whilst nS et al. may not be SI standard, at least it's clear
-what they represent.
+Peter et. al,
 
-Signed-off-by: Phil Carmody <phil.carmody@partner.samsung.com>
----
- scripts/checkpatch.pl |    1 +
- 1 file changed, 1 insertion(+)
+I am coming again with this series, hoping this is a better time for you all to
+look at it.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b954de5..c29fd2f 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2940,6 +2940,7 @@ sub process {
- 			if ($var !~ /$Constant/ &&
- 			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
- 			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
-+			    $var !~ /^[a-z_]*_[numk][VAS]$/ &&
- 			    !defined $camelcase{$var}) {
- 				$camelcase{$var} = 1;
- 				WARN("CAMELCASE",
+I am *not* going as far as marking cpuacct deprecated, because I think it
+deserves a special discussion (even though my position in this matter is widely
+known), but all the infrastructure to make it happen is here. But after this,
+it should be a matter of setting a flag (or not).
+
+Through this patchset I am making cpu cgroup provide the same functionality of
+cpuacct, and now with a more clear semantics, I attempt to provide userspace
+with enough information to reconstruct per-container version of files like
+"/proc/stat". In particular, we are interested in knowing the per-cgroup slices
+of user time, system time, wait time, number of processes, and a variety of
+statistics.
+
+To make sure we can count nr of switches correctly, I am ressurecting one of
+Peter's patches that apparently got nowhere in the past.
+
+Glauber Costa (8):
+  don't call cpuacct_charge in stop_task.c
+  sched: adjust exec_clock to use it as cpu usage metric
+  cpuacct: don't actually do anything.
+  sched: document the cpu cgroup.
+  sched: account guest time per-cgroup as well.
+  sched: record per-cgroup number of context switches
+  sched: change nr_context_switches calculation.
+  sched: introduce cgroup file stat_percpu
+
+Peter Zijlstra (1):
+  sched: Push put_prev_task() into pick_next_task()
+
+Tejun Heo (2):
+  cgroup: implement CFTYPE_NO_PREFIX
+  cgroup, sched: let cpu serve the same files as cpuacct
+
+ Documentation/cgroups/cpu.txt |  99 +++++++++++
+ include/linux/cgroup.h        |   1 +
+ kernel/cgroup.c               |  16 +-
+ kernel/sched/core.c           | 385 ++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched/cputime.c        |  33 +++-
+ kernel/sched/fair.c           |  39 ++++-
+ kernel/sched/idle_task.c      |   9 +-
+ kernel/sched/rt.c             |  42 +++--
+ kernel/sched/sched.h          |  35 +++-
+ kernel/sched/stop_task.c      |   8 +-
+ 10 files changed, 626 insertions(+), 41 deletions(-)
+ create mode 100644 Documentation/cgroups/cpu.txt
+
 -- 
-1.7.9.5
+1.8.1.4
 
