@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966919Ab3E2UeC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:34:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50237 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966083Ab3E2Ud4 (ORCPT
+	id S966915Ab3E2Ufh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:35:37 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:44612 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966083Ab3E2Uf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:33:56 -0400
-Date: Wed, 29 May 2013 13:33:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Robert Nelson <Robert.Nelson@digikey.com>
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-Message-Id: <20130529133354.dd181c845ee4e96527483345@linux-foundation.org>
-In-Reply-To: <1369298335-24597-1-git-send-email-jhovold@gmail.com>
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com>
-	<1369298335-24597-1-git-send-email-jhovold@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 29 May 2013 16:35:29 -0400
+X-Greylist: delayed 17045 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 16:35:29 EDT
+Message-ID: <51A66690.6060109@calxeda.com>
+Date: Wed, 29 May 2013 15:35:28 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Timur Tabi <timur@tabi.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH] ata: increase retry count but shorten duration for Calxeda
+ controller
+References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com> <CAOZdJXUHb1Kbu=LoqUgKA3_EMjPU3Q1KrZ-pENb-0Siym8_Pvw@mail.gmail.com>
+In-Reply-To: <CAOZdJXUHb1Kbu=LoqUgKA3_EMjPU3Q1KrZ-pENb-0Siym8_Pvw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013 10:38:50 +0200 Johan Hovold <jhovold@gmail.com> wrote:
-
-> This is an update of the shadow-interrupt-mask series against v3.10-rc2.
+On 05/29/2013 03:12 PM, Timur Tabi wrote:
+> On Wed, May 29, 2013 at 10:51 AM, Mark Langsdorf
+> <mark.langsdorf@calxeda.com> wrote:
+>>
+>>  {
+>> -       const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
+>> +       unsigned long timing[] = { 5, 100, 500};
 > 
-> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
-> affected. If not, then some probing mechanism as the one Doug suggested
-> could be implemented on top of (a subset of) these patches. What do you
-> say, Nicolas?
 > 
-> Note that the first patch (adding a missing OF compile guard) could be
-> applied straight away.
+> You didn't address my comments the last time you posted this.  I'll
+> post them again:
+> 
+> 
+> Why are you dropping the 'const'?
+> 
+> Assuming it works, this should be more efficient:
+> 
+> static const unsigned long timing[] = {5, 100, 500};
 
-At this stage it is unclear to me how to proceed with patches 2-5.
+I thought there was a compile issue, but I just rechecked and there
+wasn't. I'll fix for the next submission.
+
+Thanks for the review.
+
+--Mark Langsdorf
+
