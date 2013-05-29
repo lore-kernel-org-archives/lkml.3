@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965406Ab3E2JbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:31:00 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:17897
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965201Ab3E2Ja7 (ORCPT
+	id S965428Ab3E2JcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:32:03 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:34304 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965388Ab3E2JcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:30:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <51A5CAC1.6030800@freescale.com>
-Date: Wed, 29 May 2013 17:30:41 +0800
-From: Chen Yuanquan-B41889 <B41889@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 29 May 2013 05:32:01 -0400
+Date: Wed, 29 May 2013 11:31:03 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/6] Convert JZ4740 to dmaengine
+Message-ID: <20130529093103.GA6426@linux-mips.org>
+References: <1369341387-19147-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
-        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
-Subject: Re: [PATCH] powerpc/pci: Improve device hotplug initialization
-References: <1369762514-27352-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1369762514-27352-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369341387-19147-1-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 01:35 AM, Guenter Roeck wrote:
-> bios_add_device(). Drop explicit calls to pcibios_setup_device();
-> this makes pcibios_setup_bus_devices() a noop function which could
-> eve
+On Thu, May 23, 2013 at 10:36:21PM +0200, Lars-Peter Clausen wrote:
 
-Yeah, it's more reasonable to do the irq and DMA related initialization
-in one code path for all devices.
+> done in 3 steps:
+> 	1) Add a dmaengine driver which wraps the custom JZ4740 DMA API
+> 	2) Update all users of the JZ4740 DMA API to use dmaengine instead
+> 	3) Remove the custom API and move all direct hardware access to the
+> 	   dmaengine driver.
+> 
+> The first two patches in the series also make sure that the clock of the DMA
+> core is enabled.
+> 
+> Since the patches in this series depend on each other I'd prefer if they could
+> all go through the DMA tree.
 
-Regards,
-Yuanquan
+No problem - though my experience is that code for MIPS systems, including
+drivers receives most testing if it lives in the MIPS git tree, less in
+linux-next and barely any in in other subsystem-specific trees.
 
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
+  Ralf
