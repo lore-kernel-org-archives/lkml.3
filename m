@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966489Ab3E2Opm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:45:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44808 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966235Ab3E2Opi (ORCPT
+	id S966452Ab3E2Orr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:47:47 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44115 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966445Ab3E2Opf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:45:38 -0400
+	Wed, 29 May 2013 10:45:35 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,10 +19,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH, v2 07/13] mm/MIPS: prepare for killing free_all_bootmem_node()
-Date: Wed, 29 May 2013 22:44:46 +0800
-Message-Id: <1369838692-26860-8-git-send-email-jiang.liu@huawei.com>
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH, v2 06/13] mm/metag: prepare for killing free_all_bootmem_node()
+Date: Wed, 29 May 2013 22:44:45 +0800
+Message-Id: <1369838692-26860-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
 References: <1369838692-26860-1-git-send-email-jiang.liu@huawei.com>
@@ -34,38 +34,50 @@ Prepare for killing free_all_bootmem_node() by using
 free_all_bootmem().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: linux-mips@linux-mips.org
+Cc: James Hogan <james.hogan@imgtec.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/mips/sgi-ip27/ip27-memory.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ arch/metag/mm/init.c | 14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
-diff --git a/arch/mips/sgi-ip27/ip27-memory.c b/arch/mips/sgi-ip27/ip27-memory.c
-index a0c9e34..a95c00f 100644
---- a/arch/mips/sgi-ip27/ip27-memory.c
-+++ b/arch/mips/sgi-ip27/ip27-memory.c
-@@ -477,18 +477,8 @@ void __init paging_init(void)
+diff --git a/arch/metag/mm/init.c b/arch/metag/mm/init.c
+index e0862b7..28813f1 100644
+--- a/arch/metag/mm/init.c
++++ b/arch/metag/mm/init.c
+@@ -376,31 +376,21 @@ void __init paging_init(unsigned long mem_end)
  
  void __init mem_init(void)
  {
--	unsigned node;
+-	int nid;
 -
- 	high_memory = (void *) __va(get_num_physpages() << PAGE_SHIFT);
+ #ifdef CONFIG_HIGHMEM
+ 	unsigned long tmp;
+ 
+ 	/*
+ 	 * Explicitly reset zone->managed_pages because highmem pages are
+-	 * freed before calling free_all_bootmem_node();
++	 * freed before calling free_all_bootmem();
+ 	 */
+ 	reset_all_zones_managed_pages();
+ 	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++)
+ 		free_highmem_page(pfn_to_page(tmp));
+ #endif /* CONFIG_HIGHMEM */
+ 
+-	for_each_online_node(nid) {
+-		pg_data_t *pgdat = NODE_DATA(nid);
 -
--	for_each_online_node(node) {
--		/*
--		 * This will free up the bootmem, ie, slot 0 memory.
--		 */
--		free_all_bootmem_node(NODE_DATA(node));
+-		if (pgdat->node_spanned_pages)
+-			free_all_bootmem_node(pgdat);
 -	}
 -
 +	free_all_bootmem();
- 	setup_zero_pages();	/* This comes from node 0 */
--
  	mem_init_print_info(NULL);
+ 	show_mem(0);
+-
+-	return;
  }
+ 
+ void free_initmem(void)
 -- 
 1.8.1.2
 
