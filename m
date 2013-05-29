@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966500Ab3E2OJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:09:16 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:56812 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966394Ab3E2OJN (ORCPT
+	id S966463Ab3E2OKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:10:00 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:45145 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966359Ab3E2N6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:09:13 -0400
-Message-ID: <51A60BE5.7010905@synopsys.com>
-Date: Wed, 29 May 2013 19:38:37 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
- runs out of slots
-References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com> <20130529140319.GK17767@MacBook-Pro.local>
-In-Reply-To: <20130529140319.GK17767@MacBook-Pro.local>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.232]
+	Wed, 29 May 2013 09:58:43 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, fuse-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: [PATCH v6, part4 09/41] mm: use totalram_pages instead of num_physpages at runtime
+Date: Wed, 29 May 2013 21:57:27 +0800
+Message-Id: <1369835879-23553-10-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
+References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 07:33 PM, Catalin Marinas wrote:
-> On Wed, May 29, 2013 at 01:56:13PM +0100, Vineet Gupta wrote:
->> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
->> batching slots, TLB entries needs to be flushed for @start to @interim,
->> NOT @interim to @end.
->>
->> Since ARC port doesn't use page free batching I can't test it myself but
->> this seems like the right thing to do.
->> Observed this when working on a fix for the issue at thread:
->> 	http://www.spinics.net/lists/linux-arch/msg21736.html
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Hugh Dickins <hughd@google.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: linux-mm@kvack.org
->> Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: Max Filippov <jcmvbkbc@gmail.com>
->> ---
->>  mm/memory.c |    9 ++++++---
->>  1 file changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/mm/memory.c b/mm/memory.c
->> index 6dc1882..d9d5fd9 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->>  	spinlock_t *ptl;
->>  	pte_t *start_pte;
->>  	pte_t *pte;
->> +	unsigned long range_start = addr;
->>  
->>  again:
->>  	init_rss_vec(rss);
->> @@ -1215,12 +1216,14 @@ again:
->>  		force_flush = 0;
->>  
->>  #ifdef HAVE_GENERIC_MMU_GATHER
->> -		tlb->start = addr;
->> -		tlb->end = end;
->> +		tlb->start = range_start;
->> +		tlb->end = addr;
->>  #endif
->>  		tlb_flush_mmu(tlb);
->> -		if (addr != end)
->> +		if (addr != end) {
->> +			range_start = addr;
->>  			goto again;
->> +		}
->>  	}
-> Isn't this code only run if force_flush != 0? force_flush is set to
-> !__tlb_remove_page() and this function always returns 1 on (generic TLB)
-> UP since tlb_fast_mode() is 1. There is no batching on UP with the
-> generic TLB code.
+The global variable num_physpages is scheduled to be removed, so use
+totalram_pages instead of num_physpages at runtime.
 
-Correct ! That's why the changelog says I couldn't test it on ARC port itself :-)
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: fuse-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ fs/fuse/inode.c          | 2 +-
+ kernel/power/snapshot.c  | 4 ++--
+ net/ipv4/inet_fragment.c | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-However based on the other discussion (Max's TLB/PTE inconsistency), as I started
-writing code to reuse this block to flush the TLB even for non forced case, I
-realized that what this is doing is incorrect and won't work for the general flushing.
-
-Ignoring all other threads, do we agree that the exiting code - if used in any
-situations is incorrect semantically ?
-
--Vineet
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 6201f81..c2d44ef 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -785,7 +785,7 @@ static const struct super_operations fuse_super_operations = {
+ static void sanitize_global_limit(unsigned *limit)
+ {
+ 	if (*limit == 0)
+-		*limit = ((num_physpages << PAGE_SHIFT) >> 13) /
++		*limit = ((totalram_pages << PAGE_SHIFT) >> 13) /
+ 			 sizeof(struct fuse_req);
+ 
+ 	if (*limit >= 1 << 16)
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 0de2857..8b5d1cd 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1651,7 +1651,7 @@ unsigned long snapshot_get_image_size(void)
+ static int init_header(struct swsusp_info *info)
+ {
+ 	memset(info, 0, sizeof(struct swsusp_info));
+-	info->num_physpages = num_physpages;
++	info->num_physpages = get_num_physpages();
+ 	info->image_pages = nr_copy_pages;
+ 	info->pages = snapshot_get_image_size();
+ 	info->size = info->pages;
+@@ -1795,7 +1795,7 @@ static int check_header(struct swsusp_info *info)
+ 	char *reason;
+ 
+ 	reason = check_image_kernel(info);
+-	if (!reason && info->num_physpages != num_physpages)
++	if (!reason && info->num_physpages != get_num_physpages())
+ 		reason = "memory size";
+ 	if (reason) {
+ 		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index 7e06641..cec5394 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -93,7 +93,7 @@ void inet_frags_init(struct inet_frags *f)
+ 	}
+ 	rwlock_init(&f->lock);
+ 
+-	f->rnd = (u32) ((num_physpages ^ (num_physpages>>7)) ^
++	f->rnd = (u32) ((totalram_pages ^ (totalram_pages >> 7)) ^
+ 				   (jiffies ^ (jiffies >> 6)));
+ 
+ 	setup_timer(&f->secret_timer, inet_frag_secret_rebuild,
+-- 
+1.8.1.2
 
