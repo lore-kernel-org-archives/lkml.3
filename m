@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934421Ab3E2Cea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 22:34:30 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9564 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580Ab3E2Ce2 (ORCPT
+	id S1759412Ab3E2ChL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 22:37:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7765 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759366Ab3E2ChH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 22:34:28 -0400
-Message-ID: <51A568EC.2070103@huawei.com>
-Date: Wed, 29 May 2013 10:33:16 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 28 May 2013 22:37:07 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=ofFxtc/jepklO3aWSWiKGA==:17 a=99CFIlhQ8dUA:10 a=XqBCkJwx3yUA:10 a=TKDT-wfbsqsA:10 a=vQlp3vXYDpMA:10 a=8nJEP1OIZ-IA:10 a=2KX_Yc5PAAAA:8 a=GZI07OrTq7MA:10 a=i0EeH86SAAAA:8 a=JVblGoGcy55sHo_d2lEA:9 a=wPNLvfGTeEIA:10 a=hPjdaMEvmhQA:10 a=0IWVfpya8SkA:10 a=ofFxtc/jepklO3aWSWiKGA==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.112.99.80
+Message-ID: <51A569CE.6010100@tabi.org>
+Date: Tue, 28 May 2013 21:37:02 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17.1
 MIME-Version: 1.0
-To: <timur@tabi.org>, Greg KH <gregkh@linuxfoundation.org>
-CC: <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-serial@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+To: Libo Chen <clbchenlibo.chen@huawei.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: jslaby@suse.cz, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-serial@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] driver: tty: add missing unregister in err case
-Content-Type: text/plain; charset="ISO-8859-1"
+Subject: Re: [PATCH] driver: tty: add missing unregister in err case
+References: <51A568EC.2070103@huawei.com>
+In-Reply-To: <51A568EC.2070103@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Libo Chen wrote:
+> when platform_driver_register broken, we should unregister ucc_uart_driver
+>
+> Signed-off-by: Libo chen<libo.chen@huawei.com>
 
-when platform_driver_register broken, we should unregister ucc_uart_driver
+Acked-by: Timur Tabi <timur@tabi.org>
 
-Signed-off-by: Libo chen <libo.chen@huawei.com>
----
- drivers/tty/serial/ucc_uart.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks for catching this.
 
-diff --git a/drivers/tty/serial/ucc_uart.c b/drivers/tty/serial/ucc_uart.c
-index 7355303..f86f447 100644
---- a/drivers/tty/serial/ucc_uart.c
-+++ b/drivers/tty/serial/ucc_uart.c
-@@ -1518,9 +1518,11 @@ static int __init ucc_uart_init(void)
- 	}
-
- 	ret = platform_driver_register(&ucc_uart_of_driver);
--	if (ret)
-+	if (ret) {
- 		printk(KERN_ERR
- 		       "ucc-uart: could not register platform driver\n");
-+		uart_unregister_driver(&ucc_uart_driver);
-+	}
-
- 	return ret;
- }
 -- 
-1.7.1
-
-
+Timur Tabi
