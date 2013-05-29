@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966546Ab3E2OGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:06:33 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:60962 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966252Ab3E2N7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:59:37 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH v6, part4 24/41] mm/m68k: prepare for removing num_physpages and simplify mem_init()
-Date: Wed, 29 May 2013 21:57:42 +0800
-Message-Id: <1369835879-23553-25-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
-References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
+	id S966628Ab3E2OGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:06:44 -0400
+Received: from antcom.de ([188.40.178.216]:57014 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966252Ab3E2OGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 10:06:42 -0400
+Message-ID: <51A60B6D.3060402@antcom.de>
+Date: Wed, 29 May 2013 16:06:37 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
+        kishon@ti.com, arnd@arndb.de, adrienverge@gmail.com,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] USB: lpc32xx: USB_LPC32XX need not depend on USB_PHY
+References: <1369827811-534-1-git-send-email-rogerq@ti.com> <1369827811-534-5-git-send-email-rogerq@ti.com>
+In-Reply-To: <1369827811-534-5-git-send-email-rogerq@ti.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+On 05/29/2013 01:43 PM, Roger Quadros wrote:
+> As the USB PHY drivers no longer depend on USB_PHY but
+> select it if needed, the controller drivers need not
+> depend on USB_PHY. They can safely select the necessary
+> PHY driver i.e. USB_ISP1301 in this case.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@lists.linux-m68k.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/m68k/mm/init.c | 31 ++-----------------------------
- 1 file changed, 2 insertions(+), 29 deletions(-)
+Acked-by: Roland Stigge <stigge@antcom.de>
+Tested-by: Roland Stigge <stigge@antcom.de>
 
-diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
-index 614c60a..397a884 100644
---- a/arch/m68k/mm/init.c
-+++ b/arch/m68k/mm/init.c
-@@ -149,33 +149,11 @@ void __init print_memmap(void)
- void __init mem_init(void)
- {
- 	pg_data_t *pgdat;
--	int codepages = 0;
--	int datapages = 0;
--	int initpages = 0;
- 	int i;
- 
- 	/* this will put all memory onto the freelists */
--	num_physpages = 0;
--	for_each_online_pgdat(pgdat) {
--		num_physpages += pgdat->node_present_pages;
--
-+	for_each_online_pgdat(pgdat)
- 		free_all_bootmem_node(pgdat);
--		for (i = 0; i < pgdat->node_spanned_pages; i++) {
--			struct page *page = pgdat->node_mem_map + i;
--			char *addr = page_to_virt(page);
--
--			if (!PageReserved(page))
--				continue;
--			if (addr >= _text &&
--			    addr < _etext)
--				codepages++;
--			else if (addr >= __init_begin &&
--				 addr < __init_end)
--				initpages++;
--			else
--				datapages++;
--		}
--	}
- 
- #if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
- 	/* insert pointer tables allocated so far into the tablelist */
-@@ -190,12 +168,7 @@ void __init mem_init(void)
- 		init_pointer_table((unsigned long)zero_pgtable);
- #endif
- 
--	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       totalram_pages << (PAGE_SHIFT-10),
--	       codepages << (PAGE_SHIFT-10),
--	       datapages << (PAGE_SHIFT-10),
--	       initpages << (PAGE_SHIFT-10));
-+	mem_init_print_info(NULL);
- 	print_memmap();
- }
- 
--- 
-1.8.1.2
+Thanks!
+
+> CC: Roland Stigge <stigge@antcom.de>
+> ---
+>  drivers/usb/gadget/Kconfig |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index f41aa0d..2b98bce 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -144,7 +144,6 @@ config USB_AT91
+>  config USB_LPC32XX
+>  	tristate "LPC32XX USB Peripheral Controller"
+>  	depends on ARCH_LPC32XX
+> -	depends on USB_PHY
+>  	select USB_ISP1301
+>  	help
+>  	   This option selects the USB device controller in the LPC32xx SoC.
 
