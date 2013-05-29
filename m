@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965717Ab3E2Sq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:46:57 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48026 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965413Ab3E2Sqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:46:48 -0400
+	id S965845Ab3E2SrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:47:06 -0400
+Received: from fieldses.org ([174.143.236.118]:53957 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965413Ab3E2SrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 14:47:03 -0400
+Date: Wed, 29 May 2013 14:46:40 -0400
+To: Waiman Long <waiman.long@hp.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529184640.GA3243@fieldses.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:4978:ebac:5b1e:deda]
-In-Reply-To: <000001ce5c4f$839f4cb0$8adde610$@samsung.com>
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-	<87sj1qzaov.fsf@linaro.org>
-	<5191AA89.6010901@linaro.org>
-	<20130528231740.GA28879@quad.lixom.net>
-	<51A57D39.8030506@linaro.org>
-	<CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
-	<51A5C16D.20408@linaro.org>
-	<000001ce5c4f$839f4cb0$8adde610$@samsung.com>
-Date: Wed, 29 May 2013 11:46:47 -0700
-Message-ID: <CAOesGMiYs6GfaWGWYB8cw_cJ6_RmmZTb4oPfXo1PYJT8-jdHzw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-From: Olof Johansson <olof@lixom.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Patch Tracking <patches@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A624E2.3000301@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 2:33 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+On Wed, May 29, 2013 at 11:55:14AM -0400, Waiman Long wrote:
+> On 05/26/2013 10:09 PM, Dave Chinner wrote:
+> >On Thu, May 23, 2013 at 05:34:23PM -0400, Waiman Long wrote:
+> >>On 05/23/2013 05:42 AM, Dave Chinner wrote:
+> >>>
+> >>>What was it I said about this patchset when you posted it to speed
+> >>>up an Oracle benchmark back in february? I'll repeat:
+> >>>
+> >>>"Nobody should be doing reverse dentry-to-name lookups in a quantity
+> >>>sufficient for it to become a performance limiting factor."
+> >>Thank for the comment, but my point is that it is the d_lock
+> >>contention is skewing the data about how much spin lock contention
+> >>had actually happened in the workload and it makes it harder to
+> >>pinpoint problem areas to look at. This is not about performance, it
+> >>is about accurate representation of performance data. Ideally, we
+> >>want the overhead of turning on perf instrumentation to be as low as
+> >>possible.
+> >Right. But d_path will never be "low overhead", and as such it
+> >shouldn't be used by perf.
+> 
+> The d_path() is called by perf_event_mmap_event() which translates
+> VMA to its file path for memory segments backed by files. As perf is
+> not just for sampling data within the kernel, it can also be used
+> for checking access pattern in the user space. As a result, it needs
+> to map VMAs back to the backing files to access their symbols
+> information. If d_path() is not the right function to call for this
+> purpose, what other alternatives do we have?
 
-> However, Olof Johansson mentioned, 'drivers/platform/arm/board_arndale.c'
-> would be a good alternative.
+As Dave said before, is the last path component sufficient?  Or how
+about an inode number?
 
-
-Whoa. I didn't quite realize what I proposed, or rather, how what I
-proposed could be perceived. I take it back. :)
-
-We must _not_ introduce something that will be abused as a new home
-for board file junk. If we do introduce a platform glue directory it
-would need to be very limited in scope. Compare to what's in
-drivers/platform/x86 today.
-
-
--Olof
+--b.
