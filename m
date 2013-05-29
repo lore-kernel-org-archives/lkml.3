@@ -1,224 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965785Ab3E2LIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:08:18 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39590 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965678Ab3E2LIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:08:16 -0400
-From: Glauber Costa <glommer@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        Glauber Costa <glommer@openvz.org>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Hocko <mhocko@suse.cz>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH v7 05/11] cpuacct: don't actually do anything.
-Date: Wed, 29 May 2013 15:03:16 +0400
-Message-Id: <1369825402-31046-6-git-send-email-glommer@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
-References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+	id S965708Ab3E2LLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:11:09 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:60786 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965579Ab3E2LLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:11:07 -0400
+Date: Wed, 29 May 2013 13:11:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Jones <drjones@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/x86: construct all sibling maps if smt
+Message-ID: <20130529111102.GA28305@gmail.com>
+References: <1369674540-10601-1-git-send-email-drjones@redhat.com>
+ <20130529102600.GA10582@hawk.usersys.redhat.com>
+ <20130529110620.GD12193@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529110620.GD12193@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the information we have that is needed for cpuusage (and
-cpuusage_percpu) is present in schedstats. It is already recorded
-in a sane hierarchical way.
 
-If we have CONFIG_SCHEDSTATS, we don't really need to do any extra
-work. All former functions become empty inlines.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Paul Turner <pjt@google.com>
----
- kernel/sched/core.c  | 102 ++++++++++++++++++++++++++++++++++++++++++---------
- kernel/sched/sched.h |  10 +++--
- 2 files changed, 90 insertions(+), 22 deletions(-)
+> On Wed, May 29, 2013 at 12:26:01PM +0200, Andrew Jones wrote:
+> > On Mon, May 27, 2013 at 07:09:00PM +0200, Andrew Jones wrote:
+> > > Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()") broke
+> > > the construction of sibling maps, which also broke the booted_cores
+> > > accounting.
+> > > 
+> > > Before the rewrite, if smt was present, then each map was updated for
+> > > each smt sibling. After the rewrite only cpu_sibling_mask gets updated,
+> > > as the llc and core maps depend on 'has_mc = x86_max_cores > 1' instead.
+> > > This leads to problems with topologies like the following
+> > > 
+> > > (qemu -smp sockets=2,cores=1,threads=2)
+> > > 
+> > > processor	: 0
+> > > physical id	: 0
+> > > siblings	: 1    <= should be 2
+> > > core id		: 0
+> > > cpu cores	: 1
+> > > 
+> > > processor	: 1
+> > > physical id	: 0
+> > > siblings	: 1    <= should be 2
+> > > core id		: 0
+> > > cpu cores	: 0    <= should be 1
+> > > 
+> > > processor	: 2
+> > > physical id	: 1
+> > > siblings	: 1    <= should be 2
+> > > core id		: 0
+> > > cpu cores	: 1
+> > > 
+> > > processor	: 3
+> > > physical id	: 1
+> > > siblings	: 1    <= should be 2
+> > > core id		: 0
+> > > cpu cores	: 0    <= should be 1
+> > > 
+> > > This patch restores the former construction by defining has_mc as
+> > > (has_smt || x86_max_cores > 1). This should be fine as there were no
+> > > (has_smt && !has_mc) conditions in the context.
+> > > 
+> > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > ---
+> > >  arch/x86/kernel/smpboot.c | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> > > index 9c73b51817e47..886a3234eaff3 100644
+> > > --- a/arch/x86/kernel/smpboot.c
+> > > +++ b/arch/x86/kernel/smpboot.c
+> > > @@ -372,15 +372,15 @@ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+> > >  
+> > >  void __cpuinit set_cpu_sibling_map(int cpu)
+> > >  {
+> > > -	bool has_mc = boot_cpu_data.x86_max_cores > 1;
+> > >  	bool has_smt = smp_num_siblings > 1;
+> > > +	bool has_mc = has_smt || boot_cpu_data.x86_max_cores > 1;
+> > >  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+> > >  	struct cpuinfo_x86 *o;
+> > >  	int i;
+> > >  
+> > >  	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+> > >  
+> > > -	if (!has_smt && !has_mc) {
+> > > +	if (!has_mc) {
+> > >  		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+> > >  		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
+> > >  		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+> > > -- 
+> > > 1.8.1.4
+> > >
+> > 
+> > Any acks? This patch fixes a regression. Also, in case anybody is
+> > wondering, this is not the same regression as was already fixed with
+> > 
+> > ceb1cbac8eda6 sched/x86: Calculate booted cores after construction of sibling_mask
+> > 
+> > (Hmm, I probably should have renamed has_mc to has_mp, as the redefinition
+> > expands its scope. I'm not sure if that deserves a v2 though.)
+> 
+> Right, took me a while to bend my brain around that code again -- I
+> obviously don't have the best track record since this is the second bug
+> in it since I rewrote the thing (with the intent of making it 'easier'
+> to read ha!).
+> 
+> Yes, I think your patch is correct, and your suggestion of doing
+> s/has_mc/has_mp/ seems a sensible one too.
+> 
+> Thanks!
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5ae1adf..0fa0f87 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6787,6 +6787,7 @@ void sched_move_task(struct task_struct *tsk)
- 	task_rq_unlock(rq, tsk, &flags);
- }
- 
-+#ifndef CONFIG_SCHEDSTATS
- void task_group_charge(struct task_struct *tsk, u64 cputime)
- {
- 	struct task_group *tg;
-@@ -6804,6 +6805,7 @@ void task_group_charge(struct task_struct *tsk, u64 cputime)
- 
- 	rcu_read_unlock();
- }
-+#endif
- #endif /* CONFIG_CGROUP_SCHED */
- 
- #if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
-@@ -7199,22 +7201,92 @@ cpu_cgroup_exit(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 	sched_move_task(task);
- }
- 
--static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+/*
-+ * Take rq->lock to make 64-bit write safe on 32-bit platforms.
-+ */
-+static inline void lock_rq_dword(int cpu)
- {
--	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
--	u64 data;
--
- #ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
--	 */
- 	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
--	data = *cpuusage;
-+#endif
-+}
-+
-+static inline void unlock_rq_dword(int cpu)
-+{
-+#ifndef CONFIG_64BIT
- 	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-+#endif
-+}
-+
-+#ifdef CONFIG_SCHEDSTATS
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return tg->cfs_rq[cpu]->exec_clock - tg->cfs_rq[cpu]->prev_exec_clock;
-+}
-+
-+static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+	tg->cfs_rq[cpu]->prev_exec_clock = tg->cfs_rq[cpu]->exec_clock;
-+}
- #else
--	data = *cpuusage;
-+static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
-+{
-+}
-+
-+static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+}
-+#endif
-+#ifdef CONFIG_RT_GROUP_SCHED
-+static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return tg->rt_rq[cpu]->exec_clock - tg->rt_rq[cpu]->prev_exec_clock;
-+}
-+
-+static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+	tg->rt_rq[cpu]->prev_exec_clock = tg->rt_rq[cpu]->exec_clock;
-+}
-+#else
-+static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
-+{
-+	return 0;
-+}
-+
-+static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
-+{
-+}
- #endif
- 
-+static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+{
-+	u64 ret = 0;
-+
-+	lock_rq_dword(cpu);
-+	ret = cfs_exec_clock(tg, cpu) + rt_exec_clock(tg, cpu);
-+	unlock_rq_dword(cpu);
-+
-+	return ret;
-+}
-+
-+static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
-+{
-+	lock_rq_dword(cpu);
-+	cfs_exec_clock_reset(tg, cpu);
-+	rt_exec_clock_reset(tg, cpu);
-+	unlock_rq_dword(cpu);
-+}
-+#else
-+static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
-+{
-+	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
-+	u64 data;
-+
-+	lock_rq_dword(cpu);
-+	data = *cpuusage;
-+	unlock_rq_dword(cpu);
-+
- 	return data;
- }
- 
-@@ -7222,17 +7294,11 @@ static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
- {
- 	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
- 
--#ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
--	 */
--	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-+	lock_rq_dword(cpu);
- 	*cpuusage = val;
--	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
--#else
--	*cpuusage = val;
--#endif
-+	unlock_rq_dword(cpu);
- }
-+#endif
- 
- /* return total cpu usage (in nanoseconds) of a group */
- static u64 cpucg_cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index b05dd84..0e5e795 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -710,8 +710,6 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
- #endif
- }
- 
--extern void task_group_charge(struct task_struct *tsk, u64 cputime);
--
- #else /* CONFIG_CGROUP_SCHED */
- 
- static inline void set_task_rq(struct task_struct *p, unsigned int cpu) { }
-@@ -719,10 +717,14 @@ static inline struct task_group *task_group(struct task_struct *p)
- {
- 	return NULL;
- }
--static inline void task_group_charge(struct task_struct *tsk, u64 cputime) { }
--
- #endif /* CONFIG_CGROUP_SCHED */
- 
-+#if defined(CONFIG_CGROUP_SCHED) && !defined(CONFIG_SCHEDSTATS)
-+extern void task_group_charge(struct task_struct *tsk, u64 cputime);
-+#else
-+static inline void task_group_charge(struct task_struct *tsk, u64 cputime) {}
-+#endif
-+
- static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
- {
- 	set_task_rq(p, cpu);
--- 
-1.8.1.4
+Andrew, it would be nice to have a -v2 with that rename and with Peter's 
+Acked-by included.
 
+Thanks,
+
+	Ingo
