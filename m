@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967047Ab3E2UzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:55:18 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:40751 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966896Ab3E2UzP (ORCPT
+	id S967016Ab3E2U6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:58:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46261 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966943Ab3E2U6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:55:15 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-References: <20130529143938.GA22211@redhat.com>
-Date: Wed, 29 May 2013 13:54:45 -0700
-In-Reply-To: <20130529143938.GA22211@redhat.com> (Oleg Nesterov's message of
-	"Wed, 29 May 2013 16:39:38 +0200")
-Message-ID: <87r4gpy0a2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 29 May 2013 16:58:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18w44K+4g2D6ctovo9djr3TdosxSjPQe+A=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0213]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] don't use task->pid/tgid in same_thread_group/has_group_leader_pid
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20130529083652.GA25971@dhcp-26-207.brq.redhat.com>
+References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
+ <20130529083652.GA25971@dhcp-26-207.brq.redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 29 May 2013 14:58:17 -0600
+Message-ID: <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+[-cc Suresh]
 
-> task_struct->pid/tgid should go away.
+On Wed, May 29, 2013 at 2:36 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> On Tue, May 28, 2013 at 03:51:52PM -0600, Bjorn Helgaas wrote:
+>> On Mon, May 13, 2013 at 3:05 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+>>
+>> The subject would make more sense as "Allocate *only* as many MSIs as
+>> requested."
 >
-> 1. Change same_thread_group() to use task->signal for comparison.
+> 1.
 >
-> 2. Change has_group_leader_pid(task) to compare task_pid(task) with
->    signal->leader_pid.
-
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-This change looks good, thanks.
-
-The posix cpu timers usage of has_group_leader_pid looks a little iffy,
-but this change doesn't look like it will break them.
-
-Thanks for this cleanup Oleg.
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/sched.h |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+>> > When multiple MSIs are enabled with pci_enable_msi_block(), the
+>> > requested number of interrupts 'nvec' is rounded up to the nearest
+>> > power-of-two value.
+>>
+>> This rounding is just a consequence of the encodings of the Multiple
+>> Message Enable field in the Message Control register (PCI spec r3.0,
+>> sec 6.8.1.3), isn't it?
 >
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 178a8d9..ce51dfd 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2179,15 +2179,15 @@ static inline bool thread_group_leader(struct task_struct *p)
->   * all we care about is that we have a task with the appropriate
->   * pid, we don't actually care if we have the right task.
->   */
-> -static inline int has_group_leader_pid(struct task_struct *p)
-> +static inline bool has_group_leader_pid(struct task_struct *p)
->  {
-> -	return p->pid == p->tgid;
-> +	return task_pid(p) == p->signal->leader_pid;
->  }
->  
->  static inline
-> -int same_thread_group(struct task_struct *p1, struct task_struct *p2)
-> +bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
->  {
-> -	return p1->tgid == p2->tgid;
-> +	return p1->signal == p2->signal;
->  }
->  
->  static inline struct task_struct *next_thread(const struct task_struct *p)
+> Yes, it is.
+>
+>> > The result is then used for setting up the
+>> > number of MSI messages in the PCI device and allocation of
+>> > interrupt resources in the operating system (i.e. vector numbers).
+>> > Thus, in cases when a device driver requests some number of MSIs
+>> > and this number is not a power-of-two value, the extra operating
+>> > system resources (allocated as the result of rounding) are wasted.
+>> >
+>> > This fix introduces 'msi_desc::nvec' field to address the above
+>> > issue. When non-zero, it will report the actual number of MSIs the
+>> > device will send, as requested by the device driver. This value
+>> > should be used by architectures to properly set up and tear down
+>> > associated interrupt resources.
+>>
+>> This name needs a little more context, like "nvec_used" or something.
+>
+> I chose "nvec" to indicate it is what was passed to pci_enable_msi_block().
+> I can resend with "nvec_used", along with subject change [1], if you want.
+>
+>> I think the idea is that the Message Control register can only tell
+>> the OS that the device requires 1, 2, 4, 8, 16, or 32 vectors, and
+>> similarly the OS can only tell the device that 1, 2, 4, 8, 16, or 32
+>> vectors are assigned.  If a device can only make use of 18 vectors, it
+>> must advertise the next larger value (32 vectors).  As far as I can
+>> tell, a device *could* advertise 32 vectors in Multiple Message
+>> Capable even if it can only use 1 vector.
+>
+> Yes, that is what we have with i.e. ICH AHCI device - it advertises
+> 16 vectors while makes use of 6 only. I tried to explain this in my
+> changelog's last paragraph (below).
+>
+>> These patches are to avoid allocating resources for the unused
+>> vectors, i.e., the ones between the last one the driver requested and
+>> the last one advertised in Multiple Message Capable.
+>
+> Almost :) Rather ...between the last one the driver requested and
+> the last one *written* in Multiple Message *Enable*, not Capable.
+> IOW, between the last one the driver requested and the closest power
+> of two - which will be written to the device.
+
+Ah, right.
+
+> As of now, neither pci_enable_msi_block(), nor pci_enable_msi_block_auto()
+> are able to address the case you described, but if we decide to change
+> that then 'msi_desc::nvec' is what would be used. Again, the last paragraph
+> (may be too subtly) implies that.
+>
+>> The driver might
+>> request fewer than the maximum either because it knows the device
+>> isn't capable of using them all, or because the driver author decided
+>> not to use them all.
+>
+> Exactly. (I assume here "or the driver author decided not to use them all"
+> means the author can tell the device how many interrupts to use by means
+> other than Multiple Message Enable - otherwise it would be a bug).
+
+Yep, makes sense.  Thanks for the clarifications.
+
+>> (Sorry, just thinking out loud above, let me know if I'm not
+>> understanding this correctly.)
+>>
+>> > Note, although the existing 'msi_desc::multiple' field might seem
+>> > redundant, in fact in does not. In general case the number of MSIs a
+>> > PCI device is initialized with is not necessarily the closest power-
+>> > of-two value of the number of MSIs the device will send. Thus, in
+>> > theory it would not be always possible to derive the former from the
+>> > latter and we need to keep them both, to stress this corner case.
+>> > Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
+>> > would not save us any space.
+>
+> --
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
+
+No need to resend as far as I'm concerned; I can tweak those bits
+locally.  I can put these in my tree
+if Joerg or Konrad ack the iommu/irq_remapping.c bit.
+
+Bjorn
