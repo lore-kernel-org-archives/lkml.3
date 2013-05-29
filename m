@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966554Ab3E2N7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:59:51 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43454 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966483Ab3E2N7r (ORCPT
+	id S966502Ab3E2N7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:59:31 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40231 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966483Ab3E2N7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:59:47 -0400
+	Wed, 29 May 2013 09:59:25 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,14 +19,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jiri Kosina <jkosina@suse.cz>, John Crispin <blogic@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH v6, part4 27/41] mm/MIPS: prepare for removing num_physpages and simplify mem_init()
-Date: Wed, 29 May 2013 21:57:45 +0800
-Message-Id: <1369835879-23553-28-git-send-email-jiang.liu@huawei.com>
+        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org
+Subject: [PATCH v6, part4 21/41] mm/hexagon: prepare for removing num_physpages and simplify mem_init()
+Date: Wed, 29 May 2013 21:57:39 +0800
+Message-Id: <1369835879-23553-22-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
@@ -37,171 +33,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Daney <david.daney@cavium.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: John Crispin <blogic@openwrt.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: linux-mips@linux-mips.org
+Cc: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-hexagon@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/mips/mm/init.c              | 57 +++++++++++++---------------------------
- arch/mips/pci/pci-lantiq.c       |  2 +-
- arch/mips/sgi-ip27/ip27-memory.c | 21 ++-------------
- 3 files changed, 21 insertions(+), 59 deletions(-)
+ arch/hexagon/mm/init.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index e7333f1..4e73f10 100644
---- a/arch/mips/mm/init.c
-+++ b/arch/mips/mm/init.c
-@@ -359,11 +359,24 @@ void __init paging_init(void)
- static struct kcore_list kcore_kseg0;
- #endif
- 
--void __init mem_init(void)
-+static inline void mem_init_free_highmem(void)
+diff --git a/arch/hexagon/mm/init.c b/arch/hexagon/mm/init.c
+index 0ab5b43..88977e4 100644
+--- a/arch/hexagon/mm/init.c
++++ b/arch/hexagon/mm/init.c
+@@ -71,9 +71,7 @@ void __init mem_init(void)
  {
--	unsigned long codesize, reservedpages, datasize, initsize;
--	unsigned long tmp, ram;
-+#ifdef CONFIG_HIGHMEM
-+	unsigned long tmp;
- 
-+	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++) {
-+		struct page *page = pfn_to_page(tmp);
-+
-+		if (!page_is_ram(tmp))
-+			SetPageReserved(page);
-+		else
-+			free_highmem_page(page);
-+	}
-+#endif
-+}
-+
-+void __init mem_init(void)
-+{
- #ifdef CONFIG_HIGHMEM
- #ifdef CONFIG_DISCONTIGMEM
- #error "CONFIG_HIGHMEM and CONFIG_DISCONTIGMEM dont work together yet"
-@@ -376,32 +389,8 @@ void __init mem_init(void)
- 
+ 	/*  No idea where this is actually declared.  Seems to evade LXR.  */
  	free_all_bootmem();
- 	setup_zero_pages();	/* Setup zeroed pages.  */
+-	num_physpages = bootmem_lastpg-ARCH_PFN_OFFSET;
 -
--	reservedpages = ram = 0;
--	for (tmp = 0; tmp < max_low_pfn; tmp++)
--		if (page_is_ram(tmp) && pfn_valid(tmp)) {
--			ram++;
--			if (PageReserved(pfn_to_page(tmp)))
--				reservedpages++;
--		}
--	num_physpages = ram;
--
--#ifdef CONFIG_HIGHMEM
--	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++) {
--		struct page *page = pfn_to_page(tmp);
--
--		if (!page_is_ram(tmp)) {
--			SetPageReserved(page);
--			continue;
--		}
--		free_highmem_page(page);
--	}
--	num_physpages += totalhigh_pages;
--#endif
--
--	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
--	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
-+	mem_init_free_highmem();
+-	printk(KERN_INFO "totalram_pages = %ld\n", totalram_pages);
 +	mem_init_print_info(NULL);
  
- #ifdef CONFIG_64BIT
- 	if ((unsigned long) &_text > (unsigned long) CKSEG0)
-@@ -410,16 +399,6 @@ void __init mem_init(void)
- 		kclist_add(&kcore_kseg0, (void *) CKSEG0,
- 				0x80000000 - 4, KCORE_TEXT);
- #endif
--
--	printk(KERN_INFO "Memory: %luk/%luk available (%ldk kernel code, "
--	       "%ldk reserved, %ldk data, %ldk init, %ldk highmem)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       ram << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10,
--	       totalhigh_pages << (PAGE_SHIFT-10));
- }
- #endif /* !CONFIG_NEED_MULTIPLE_NODES */
- 
-diff --git a/arch/mips/pci/pci-lantiq.c b/arch/mips/pci/pci-lantiq.c
-index 879077b..cb1ef99 100644
---- a/arch/mips/pci/pci-lantiq.c
-+++ b/arch/mips/pci/pci-lantiq.c
-@@ -89,7 +89,7 @@ static inline u32 ltq_calc_bar11mask(void)
- 	u32 mem, bar11mask;
- 
- 	/* BAR11MASK value depends on available memory on system. */
--	mem = num_physpages * PAGE_SIZE;
-+	mem = get_num_physpages() * PAGE_SIZE;
- 	bar11mask = (0x0ffffff0 & ~((1 << (fls(mem) - 1)) - 1)) | 8;
- 
- 	return bar11mask;
-diff --git a/arch/mips/sgi-ip27/ip27-memory.c b/arch/mips/sgi-ip27/ip27-memory.c
-index aecac4a..a0c9e34 100644
---- a/arch/mips/sgi-ip27/ip27-memory.c
-+++ b/arch/mips/sgi-ip27/ip27-memory.c
-@@ -357,8 +357,6 @@ static void __init szmem(void)
- 	int slot;
- 	cnodeid_t node;
- 
--	num_physpages = 0;
--
- 	for_each_online_node(node) {
- 		nodebytes = 0;
- 		for (slot = 0; slot < MAX_MEM_SLOTS; slot++) {
-@@ -381,7 +379,6 @@ static void __init szmem(void)
- 				slot = MAX_MEM_SLOTS;
- 				continue;
- 			}
--			num_physpages += slot_psize;
- 			memblock_add_node(PFN_PHYS(slot_getbasepfn(node, slot)),
- 					  PFN_PHYS(slot_psize), node);
- 		}
-@@ -480,10 +477,9 @@ void __init paging_init(void)
- 
- void __init mem_init(void)
- {
--	unsigned long codesize, datasize, initsize, tmp;
- 	unsigned node;
- 
--	high_memory = (void *) __va(num_physpages << PAGE_SHIFT);
-+	high_memory = (void *) __va(get_num_physpages() << PAGE_SHIFT);
- 
- 	for_each_online_node(node) {
- 		/*
-@@ -494,18 +490,5 @@ void __init mem_init(void)
- 
- 	setup_zero_pages();	/* This comes from node 0 */
- 
--	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
--	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
--
--	tmp = nr_free_pages();
--	printk(KERN_INFO "Memory: %luk/%luk available (%ldk kernel code, "
--	       "%ldk reserved, %ldk data, %ldk init, %ldk highmem)\n",
--	       tmp << (PAGE_SHIFT-10),
--	       num_physpages << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       (num_physpages - tmp) << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10,
--	       totalhigh_pages << (PAGE_SHIFT-10));
-+	mem_init_print_info(NULL);
- }
+ 	/*
+ 	 *  To-Do:  someone somewhere should wipe out the bootmem map
 -- 
 1.8.1.2
 
