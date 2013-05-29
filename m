@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759474Ab3E2Cse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 22:48:34 -0400
-Received: from [207.46.163.27] ([207.46.163.27]:50198 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1759366Ab3E2Csb (ORCPT
+	id S1759466Ab3E2DDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:03:30 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60925 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756241Ab3E2DD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 22:48:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 29 May 2013 10:47:47 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-CC: <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: mxs: Include clk mxs header file
-Message-ID: <20130529024746.GD370@S2101-09.ap.freescale.net>
-References: <1369668505-14499-1-git-send-email-fabio.estevam@freescale.com>
+	Tue, 28 May 2013 23:03:28 -0400
+Message-ID: <51A56FF7.2000907@linux.vnet.ibm.com>
+Date: Wed, 29 May 2013 11:03:19 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1369668505-14499-1-git-send-email-fabio.estevam@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
+ pages
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130528003611.GA1958@amt.cnet> <51A4CAED.7060608@linux.vnet.ibm.com>
+In-Reply-To: <51A4CAED.7060608@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052902-1618-0000-0000-000003F98108
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 12:28:25PM -0300, Fabio Estevam wrote:
-> Fix the following sparse warnings:
+On 05/28/2013 11:19 PM, Xiao Guangrong wrote:
+> On 05/28/2013 08:36 AM, Marcelo Tosatti wrote:
+>> On Thu, May 23, 2013 at 03:55:59AM +0800, Xiao Guangrong wrote:
+>>> kvm_zap_obsolete_pages uses lock-break technique to zap pages,
+>>> it will flush tlb every time when it does lock-break
+>>>
+>>> We can reload mmu on all vcpus after updating the generation
+>>> number so that the obsolete pages are not used on any vcpus,
+>>> after that we do not need to flush tlb when obsolete pages
+>>> are zapped
+>>
+>> After that point batching is also not relevant anymore?
 > 
-> drivers/clk/mxs/clk-imx28.c:72:5: warning: symbol 'mxs_saif_clkmux_select' was not declared. Should it be static?
-> drivers/clk/mxs/clk-imx28.c:156:12: warning: symbol 'mx28_clocks_init' was not declared. Should it be static?
+> no... without batching, we do not know how much time we will
+> spend to zap pages. It is not good for the case that
+> zap_all_pages is called in the vcpu context.
 > 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>>
+>>
+>> Still concerned about a similar case mentioned earlier:
+>>
+>> "
+>> Note the account for pages freed step after pages are actually
+>> freed: as discussed with Takuya, having pages freed and freed page
+>> accounting out of sync across mmu_lock is potentially problematic:
+>> kvm->arch.n_used_mmu_pages and friends do not reflect reality which can
+>> cause problems for SLAB freeing and page allocation throttling.
+>> "
+>>
+>> This is a real problem, if you decrease n_used_mmu_pages at
+>> kvm_mmu_prepare_zap_page, but only actually free pages later 
+>> at kvm_mmu_commit_zap_page, there is the possibility of allowing
+>> a huge number to be retained. There should be a maximum number of pages
+>> at invalid_list.
+>>
+>> (even higher possibility if you schedule without freeing pages reported
+>> as released!).
+>>
+>>> Note: kvm_mmu_commit_zap_page is still needed before free
+>>> the pages since other vcpus may be doing locklessly shadow
+>>> page walking
+> 
+> Ah, yes, i agree with you.
+> 
+> We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
+> zapped-page, the page-shrink will free the page on that list first.
+> 
+> Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
+> let them merged first, and do add some comments and tlb optimization later?
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Exclude patch 11 please, since it depends on the "collapse" optimization.
 
-> ---
->  drivers/clk/mxs/clk-imx28.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-> index d0e5eed..4faf0af 100644
-> --- a/drivers/clk/mxs/clk-imx28.c
-> +++ b/drivers/clk/mxs/clk-imx28.c
-> @@ -10,6 +10,7 @@
->   */
->  
->  #include <linux/clk.h>
-> +#include <linux/clk/mxs.h>
->  #include <linux/clkdev.h>
->  #include <linux/err.h>
->  #include <linux/init.h>
-> -- 
-> 1.8.1.2
-> 
-> 
 
