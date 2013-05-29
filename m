@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935332Ab3E2XSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:18:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48091 "EHLO mx2.suse.de"
+	id S967220Ab3E2XTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:19:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48028 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967193Ab3E2XRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:17:51 -0400
+	id S967166Ab3E2XRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:17:45 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -17,9 +17,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 8/8] fs: nfs: Inform the VM about pages being committed or unstable
-Date: Thu, 30 May 2013 00:17:37 +0100
-Message-Id: <1369869457-22570-9-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/8] mm: vmscan: Stall page reclaim after a list of pages have been processed
+Date: Thu, 30 May 2013 00:17:32 +0100
+Message-Id: <1369869457-22570-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369869457-22570-1-git-send-email-mgorman@suse.de>
 References: <1369869457-22570-1-git-send-email-mgorman@suse.de>
@@ -27,72 +27,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VM page reclaim uses dirty and writeback page states to determine if
-flushers are cleaning pages too slowly and that page reclaim should
-stall waiting on flushers to catch up. Page state in NFS is a bit
-more complex and a clean page can be unreclaimable due to being
-unstable which is effectively "dirty" from the perspective of the
-VM from reclaim context. Similarly, if the inode is currently being
-committed then it's similar to being under writeback.
-
-This patch adds a is_dirty_writeback() handled for NFS that checks
-if a pages backing inode is being committed and should be accounted as
-writeback and if a page has private state indicating that it is
-effectively dirty.
+Commit "mm: vmscan: Block kswapd if it is encountering pages under writeback"
+blocks page reclaim if it encounters pages under writeback marked for
+immediate reclaim. It blocks while pages are still isolated from the
+LRU which is unnecessary. This patch defers the blocking until after the
+isolated pages have been processed and tidies up some of the comments.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/nfs/file.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ mm/vmscan.c | 49 +++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 16 deletions(-)
 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index a87a44f..a4250a4 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -493,6 +493,35 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
- 	return nfs_fscache_release_page(page, gfp);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 999ef0b..5b1a79c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -697,6 +697,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 				      enum ttu_flags ttu_flags,
+ 				      unsigned long *ret_nr_unqueued_dirty,
+ 				      unsigned long *ret_nr_writeback,
++				      unsigned long *ret_nr_immediate,
+ 				      bool force_reclaim)
+ {
+ 	LIST_HEAD(ret_pages);
+@@ -707,6 +708,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 	unsigned long nr_congested = 0;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_writeback = 0;
++	unsigned long nr_immediate = 0;
+ 
+ 	cond_resched();
+ 
+@@ -773,8 +775,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		 *    IO can complete. Waiting on the page itself risks an
+ 		 *    indefinite stall if it is impossible to writeback the
+ 		 *    page due to IO error or disconnected storage so instead
+-		 *    block for HZ/10 or until some IO completes then clear the
+-		 *    ZONE_WRITEBACK flag to recheck if the condition exists.
++		 *    note that the LRU is being scanned too quickly and the
++		 *    caller can stall after page list has been processed.
+ 		 *
+ 		 * 2) Global reclaim encounters a page, memcg encounters a
+ 		 *    page that is not marked for immediate reclaim or
+@@ -804,10 +806,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			if (current_is_kswapd() &&
+ 			    PageReclaim(page) &&
+ 			    zone_is_reclaim_writeback(zone)) {
+-				unlock_page(page);
+-				congestion_wait(BLK_RW_ASYNC, HZ/10);
+-				zone_clear_flag(zone, ZONE_WRITEBACK);
+-				goto keep;
++				nr_immediate++;
++				goto keep_locked;
+ 
+ 			/* Case 2 above */
+ 			} else if (global_reclaim(sc) ||
+@@ -1033,6 +1033,7 @@ keep:
+ 	mem_cgroup_uncharge_end();
+ 	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
+ 	*ret_nr_writeback += nr_writeback;
++	*ret_nr_immediate += nr_immediate;
+ 	return nr_reclaimed;
  }
  
-+static void nfs_check_dirty_writeback(struct page *page,
-+				bool *dirty, bool *writeback)
-+{
-+	struct nfs_inode *nfsi;
-+	struct address_space *mapping = page_file_mapping(page);
+@@ -1044,7 +1045,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 		.priority = DEF_PRIORITY,
+ 		.may_unmap = 1,
+ 	};
+-	unsigned long ret, dummy1, dummy2;
++	unsigned long ret, dummy1, dummy2, dummy3;
+ 	struct page *page, *next;
+ 	LIST_HEAD(clean_pages);
+ 
+@@ -1057,7 +1058,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 
+ 	ret = shrink_page_list(&clean_pages, zone, &sc,
+ 				TTU_UNMAP|TTU_IGNORE_ACCESS,
+-				&dummy1, &dummy2, true);
++				&dummy1, &dummy2, &dummy3, true);
+ 	list_splice(&clean_pages, page_list);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+ 	return ret;
+@@ -1353,6 +1354,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	unsigned long nr_taken;
+ 	unsigned long nr_unqueued_dirty = 0;
+ 	unsigned long nr_writeback = 0;
++	unsigned long nr_immediate = 0;
+ 	isolate_mode_t isolate_mode = 0;
+ 	int file = is_file_lru(lru);
+ 	struct zone *zone = lruvec_zone(lruvec);
+@@ -1394,7 +1396,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		return 0;
+ 
+ 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+-				&nr_unqueued_dirty, &nr_writeback, false);
++			&nr_unqueued_dirty, &nr_writeback, &nr_immediate,
++			false);
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1447,14 +1450,28 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	}
+ 
+ 	/*
+-	 * Similarly, if many dirty pages are encountered that are not
+-	 * currently being written then flag that kswapd should start
+-	 * writing back pages and stall to give a chance for flushers
+-	 * to catch up.
++	 * memcg will stall in page writeback so only consider forcibly
++	 * stalling for global reclaim
+ 	 */
+-	if (global_reclaim(sc) && nr_unqueued_dirty == nr_taken) {
+-		congestion_wait(BLK_RW_ASYNC, HZ/10);
+-		zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
++	if (global_reclaim(sc)) {
++		/*
++		 * If dirty pages are scanned that are not queued for IO, it
++		 * implies that flushers are not keeping up. In this case, flag
++		 * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
++		 * pages from reclaim context. It will forcibly stall in the
++		 * next check.
++		 */
++		if (nr_unqueued_dirty == nr_taken)
++			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
 +
-+	if (!mapping || PageSwapCache(page))
-+		return;
-+
-+	/*
-+	 * Check if an unstable page is currently being committed and
-+	 * if so, have the VM treat it as if the page is under writeback
-+	 * so it will not block due to pages that will shortly be freeable.
-+	 */
-+	nfsi = NFS_I(mapping->host);
-+	if (test_bit(NFS_INO_COMMIT, &nfsi->flags)) {
-+		*writeback = true;
-+		return;
-+	}
-+
-+	/*
-+	 * If PagePrivate() is set, then the page is not freeable and as the
-+	 * inode is not being committed, it's not going to be cleaned in the
-+	 * near future so treat it as dirty
-+	 */
-+	if (PagePrivate(page))
-+		*dirty = true;
-+}
-+
- /*
-  * Attempt to clear the private state associated with a page when an error
-  * occurs that requires the cached contents of an inode to be written back or
-@@ -540,6 +569,7 @@ const struct address_space_operations nfs_file_aops = {
- 	.direct_IO = nfs_direct_IO,
- 	.migratepage = nfs_migrate_page,
- 	.launder_page = nfs_launder_page,
-+	.is_dirty_writeback = nfs_check_dirty_writeback,
- 	.error_remove_page = generic_error_remove_page,
- #ifdef CONFIG_NFS_SWAP
- 	.swap_activate = nfs_swap_activate,
++		/*
++		 * In addition, if kswapd scans pages marked marked for
++		 * immediate reclaim and under writeback (nr_immediate), it
++		 * implies that pages are cycling through the LRU faster than
++		 * they are written so also forcibly stall.
++		 */
++		if (nr_unqueued_dirty == nr_taken || nr_immediate)
++			congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 	}
+ 
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
 -- 
 1.8.1.4
 
