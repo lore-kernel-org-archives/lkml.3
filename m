@@ -1,57 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965450Ab3E2Jeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:34:44 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:61237 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965353Ab3E2Jen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:34:43 -0400
+	id S965459Ab3E2JgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:36:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29433 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S965198Ab3E2JgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 05:36:23 -0400
+X-IronPort-AV: E=Sophos;i="4.87,763,1363104000"; 
+   d="scan'208,223";a="7400938"
+Message-ID: <51A5CB83.6070704@cn.fujitsu.com>
+Date: Wed, 29 May 2013 17:33:55 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130529085426.GA13095@mudshark.cambridge.arm.com>
-References: <1369738100-11152-1-git-send-email-ratbert.chuang@gmail.com>
- <20130528130502.GA28971@mudshark.cambridge.arm.com> <51A4B938.7080708@ti.com>
- <20130528140705.GE28971@mudshark.cambridge.arm.com> <51A4FC08.3060906@ti.com>
- <CANutaR-2gTP7ubiEdgjFyzVMc6=4t5GPjLkH8pkup=O882Hb-Q@mail.gmail.com> <20130529085426.GA13095@mudshark.cambridge.arm.com>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Wed, 29 May 2013 17:34:01 +0800
-Message-ID: <CANutaR_8jNDzPeyJ8PLZPS=yiZ8Ywmk08dR9vLcB2CpxuJac3A@mail.gmail.com>
-Subject: Re: [PATCH] ARM: map_init_section flushes incorrect pmd
-To: Will Deacon <will.deacon@arm.com>
-Cc: Sricharan R <r.sricharan@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Linux-Scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] scsi: Introduce a help function local_time_seconds() to simplify
+ the getting time stamp operation
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/29 17:34:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/29 17:34:51,
+	Serialize complete at 2013/05/29 17:34:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+>From 4d4caa16f3886ae910ad6dfe13353fc836f546cc Mon Sep 17 00:00:00 2001
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Date: Wed, 29 May 2013 17:34:22 +0900
+Subject: [PATCH] driver/scsi: Introduce a help function local_time_seconds() to simplify the getting time stamp operation
 
-On Wed, May 29, 2013 at 4:54 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, May 29, 2013 at 03:14:58AM +0100, Po-Yu Chuang wrote:
->> Will,
->> I guess nobody noticed this because the MMU of later v7 processors
->> fetches page table
->> from D-cache. It even doesn't need to clean pmd to PoU.
->
-> It does if it's UP. The walker is only guaranteed to read from L1 if you
-> have the multiprocessing extensions.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/scsi/3w-9xxx.c |   14 ++------------
+ drivers/scsi/3w-sas.c  |   14 ++------------
+ include/scsi/scsi.h    |    9 +++++++++
+ 3 files changed, 13 insertions(+), 24 deletions(-)
 
-Ya, I see.
+diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+index 5e1e12c..44b3ea8 100644
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -374,8 +374,6 @@ out:
+ /* This function will queue an event */
+ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
+ {
+-	u32 local_time;
+-	struct timeval time;
+ 	TW_Event *event;
+ 	unsigned short aen;
+ 	char host[16];
+@@ -398,9 +396,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
+ 	memset(event, 0, sizeof(TW_Event));
+ 
+ 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
+-	do_gettimeofday(&time);
+-	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+-	event->time_stamp_sec = local_time;
++	event->time_stamp_sec = local_time_seconds();
+ 	event->aen_code = aen;
+ 	event->retrieved = TW_AEN_NOT_RETRIEVED;
+ 	event->sequence_id = tw_dev->error_sequence_id;
+@@ -479,11 +475,9 @@ out:
+ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+ {
+ 	u32 schedulertime;
+-	struct timeval utc;
+ 	TW_Command_Full *full_command_packet;
+ 	TW_Command *command_packet;
+ 	TW_Param_Apache *param;
+-	u32 local_time;
+ 
+ 	/* Fill out the command packet */
+ 	full_command_packet = tw_dev->command_packet_virt[request_id];
+@@ -503,11 +497,7 @@ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+ 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
+ 	param->parameter_size_bytes = cpu_to_le16(4);
+ 
+-	/* Convert system time in UTC to local time seconds since last 
+-           Sunday 12:00AM */
+-	do_gettimeofday(&utc);
+-	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
+-	schedulertime = local_time - (3 * 86400);
++	schedulertime = local_time_seconds() - (3 * 86400);
+ 	schedulertime = cpu_to_le32(schedulertime % 604800);
+ 
+ 	memcpy(param->data, &schedulertime, sizeof(u32));
+diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
+index c845bdb..69f1d8a 100644
+--- a/drivers/scsi/3w-sas.c
++++ b/drivers/scsi/3w-sas.c
+@@ -236,8 +236,6 @@ out:
+ /* This function will queue an event */
+ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
+ {
+-	u32 local_time;
+-	struct timeval time;
+ 	TW_Event *event;
+ 	unsigned short aen;
+ 	char host[16];
+@@ -256,9 +254,7 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
+ 	memset(event, 0, sizeof(TW_Event));
+ 
+ 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
+-	do_gettimeofday(&time);
+-	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+-	event->time_stamp_sec = local_time;
++	event->time_stamp_sec = local_time_seconds();
+ 	event->aen_code = aen;
+ 	event->retrieved = TW_AEN_NOT_RETRIEVED;
+ 	event->sequence_id = tw_dev->error_sequence_id;
+@@ -444,11 +440,9 @@ out:
+ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+ {
+ 	u32 schedulertime;
+-	struct timeval utc;
+ 	TW_Command_Full *full_command_packet;
+ 	TW_Command *command_packet;
+ 	TW_Param_Apache *param;
+-	u32 local_time;
+ 
+ 	/* Fill out the command packet */
+ 	full_command_packet = tw_dev->command_packet_virt[request_id];
+@@ -468,11 +462,7 @@ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+ 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
+ 	param->parameter_size_bytes = cpu_to_le16(4);
+ 
+-	/* Convert system time in UTC to local time seconds since last 
+-           Sunday 12:00AM */
+-	do_gettimeofday(&utc);
+-	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
+-	schedulertime = local_time - (3 * 86400);
++	schedulertime = local_time_seconds() - (3 * 86400);
+ 	schedulertime = cpu_to_le32(schedulertime % 604800);
+ 
+ 	memcpy(param->data, &schedulertime, sizeof(u32));
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index 66216c1..f3377ca 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -574,4 +574,13 @@ static inline __u32 scsi_to_u32(__u8 *ptr)
+ 	return (ptr[0]<<24) + (ptr[1]<<16) + (ptr[2]<<8) + ptr[3];
+ }
+ 
++/*
++ * Convert system time in UTC to local time seconds.
++ */
++static inline u32 local_time_seconds(void)
++{
++	struct timeval utc;
++	do_gettimeofday(&utc);
++	return (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
++}
+ #endif /* _SCSI_SCSI_H */
+-- 
+1.7.7
 
->
-> As for this function, looks like it's ok because it has precisely one
-> caller, so it might be worth prefixing it with some underscores to make it
-> clear that nobody else should be calling it!
-
-I am fine with that.
-Should I create a new patch?
-
-Regards,
-Po-Yu
