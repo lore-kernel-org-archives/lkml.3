@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967062Ab3E2VIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:08:54 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:33613 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966887Ab3E2VIs (ORCPT
+	id S967055Ab3E2VJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:09:12 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42253 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967065Ab3E2VJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:08:48 -0400
-Message-ID: <1369861743.4188.33.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH] net: skbuff: use _RET_IP_
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 29 May 2013 14:09:03 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 17:09:00 -0400
+Date: Wed, 29 May 2013 16:08:20 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 3/4] zswap: add to mm/
+Message-ID: <20130529210820.GF428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
+ <20130529145720.GA428@cerebellum>
+ <20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
+ <20130529195027.GC428@cerebellum>
+ <20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052921-3620-0000-0000-000002C70DA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the already defined macro to pass the function return address.
+On Wed, May 29, 2013 at 12:57:47PM -0700, Andrew Morton wrote:
+> On Wed, 29 May 2013 14:50:27 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, May 29, 2013 at 11:29:29AM -0700, Andrew Morton wrote:
+> > > On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > > > +/*********************************
+> > > > > > +* helpers
+> > > > > > +**********************************/
+> > > > > > +static inline bool zswap_is_full(void)
+> > > > > > +{
+> > > > > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
+> > > > > > +		zswap_pool_pages);
+> > > > > > +}
+> > > > > 
+> > > > > We have had issues in the past where percentage-based tunables were too
+> > > > > coarse on very large machines.  For example, a terabyte machine where 0
+> > > > > bytes is too small and 10GB is too large.
+> > > > 
+> > > > Yes, this is known limitation of the code right now and it is a high priority
+> > > > to come up with something better.  It isn't clear what dynamic sizing policy
+> > > > should be used so, until such time as that policy can be determined, this is a
+> > > > simple stop-gap that works well enough for simple setups.
+> > > 
+> > > It's a module parameter and hence is part of the userspace interface. 
+> > > It's undesirable that the interface be changed, and it would be rather
+> > > dumb to merge it as-is when we *know* that it will be changed.
+> > > 
+> > > I don't think we can remove the parameter altogether (or can we?), so I
+> > > suggest we finalise it ASAP.  Perhaps rename it to
+> > > zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
+> > 
+> > zswap_max_pool_ratio is fine with me.  I'm not entirely clear on the change
+> > though.  Would that just be a name change or a change in meaning?
+> 
+> It would be a change in behaviour.  The problem which I'm suggesting we
+> address is that a 1% increment is too coarse.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- net/core/skbuff.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Sorry, but I'm not getting this.  This zswap_max_pool_ratio is a ratio of what
+to what?  Maybe if you wrote out the calculation of the max pool size using
+this ratio I'll get it.
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index af9185d..0d06850 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -116,22 +116,22 @@ static const struct pipe_buf_operations sock_pipe_buf_ops = {
-  *	Keep out of line to prevent kernel bloat.
-  *	__builtin_return_address is not used because it is not always reliable.
-  */
--static void skb_panic(struct sk_buff *skb, unsigned int sz, void *addr,
-+static void skb_panic(struct sk_buff *skb, unsigned int sz, unsigned long addr,
- 		      const char msg[])
- {
--	pr_emerg("%s: text:%p len:%d put:%d head:%p data:%p tail:%#lx end:%#lx dev:%s\n",
-+	pr_emerg("%s: text:0x%lx len:%d put:%d head:%p data:%p tail:%#lx end:%#lx dev:%s\n",
- 		 msg, addr, skb->len, sz, skb->head, skb->data,
- 		 (unsigned long)skb->tail, (unsigned long)skb->end,
- 		 skb->dev ? skb->dev->name : "<NULL>");
- 	BUG();
- }
- 
--static void skb_over_panic(struct sk_buff *skb, unsigned int sz, void *addr)
-+static void skb_over_panic(struct sk_buff *skb, unsigned int sz, unsigned long addr)
- {
- 	skb_panic(skb, sz, addr, __func__);
- }
- 
--static void skb_under_panic(struct sk_buff *skb, unsigned int sz, void *addr)
-+static void skb_under_panic(struct sk_buff *skb, unsigned int sz, unsigned long addr)
- {
- 	skb_panic(skb, sz, addr, __func__);
- }
-@@ -646,7 +646,7 @@ void kfree_skb(struct sk_buff *skb)
- 		smp_rmb();
- 	else if (likely(!atomic_dec_and_test(&skb->users)))
- 		return;
--	trace_kfree_skb(skb, __builtin_return_address(0));
-+	trace_kfree_skb(skb, (void *) _RET_IP_);
- 	__kfree_skb(skb);
- }
- EXPORT_SYMBOL(kfree_skb);
-@@ -1279,7 +1279,7 @@ unsigned char *skb_put(struct sk_buff *skb, unsigned int len)
- 	skb->tail += len;
- 	skb->len  += len;
- 	if (unlikely(skb->tail > skb->end))
--		skb_over_panic(skb, len, __builtin_return_address(0));
-+		skb_over_panic(skb, len, _RET_IP_);
- 	return tmp;
- }
- EXPORT_SYMBOL(skb_put);
-@@ -1298,7 +1298,7 @@ unsigned char *skb_push(struct sk_buff *skb, unsigned int len)
- 	skb->data -= len;
- 	skb->len  += len;
- 	if (unlikely(skb->data<skb->head))
--		skb_under_panic(skb, len, __builtin_return_address(0));
-+		skb_under_panic(skb, len, _RET_IP_);
- 	return skb->data;
- }
- EXPORT_SYMBOL(skb_push);
--- 
-1.7.11.7
-
-
+Seth
 
