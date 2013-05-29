@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab3E2QKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:10:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47075 "EHLO mga11.intel.com"
+	id S1752836Ab3E2QLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:11:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab3E2QKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:10:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
-   d="scan'208";a="345174361"
-From: Youquan Song <youquan.song@intel.com>
-To: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH] core: Fix maxcpus boot option broken
-Date: Thu, 30 May 2013 00:00:06 -0400
-Message-Id: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1753959Ab3E2QKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 12:10:48 -0400
+Date: Wed, 29 May 2013 12:10:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Simon Horman <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Remove unused /dev/oldmem interface
+Message-ID: <20130529161020.GB22146@redhat.com>
+References: <51A02E50.5020507@gmail.com>
+ <87mwri8wwu.fsf@xmission.com>
+ <20130528143756.GD7088@redhat.com>
+ <ec5cd077-c314-49d5-8970-439ffb9539fa@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ec5cd077-c314-49d5-8970-439ffb9539fa@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-maxcpus boot option to limit maximum number of CPUs on system, but this option
-is broken at recent kernel. Though we use maxcpus to limit CPUs number, but
-current kernel will register all of present CPUs in sysfs.
-udev will enumerate all registered cpu at sysfs, and it will bring up the CPU
-if the CPU is offline. So the maxcpus option is broken.
+On Tue, May 28, 2013 at 12:00:45PM -0700, Eric W. Biederman wrote:
 
-This patch will only register the CPU which is not over limitation of maxcpus 
-option in sysfs. So it will keep the maxcpus limitation when udev enumeration
-or other intention of bring up CPUs over the limitation by method like  
-echo 1 > /sys/devices/system/cpu/online 
+[..]
+> How can anyone use /dev/oldmem correctly?  To the best of
+> my knowledge there are no parsers of the ELF header passed
+> by /sbin/kexec in userspace.
+> 
+> If there is anyone who cares they can complain and we can
+> revert the removal. All of the evidence is that everyone uses
+> /proc/vmcore.
+> 
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- drivers/base/cpu.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Ok, that's fine. Given the fact that none of us has ever encountered
+/dev/oldmem user, it is reasonably safe to remove it.
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 3d48fc8..c7d603a 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -272,6 +272,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
- {
- 	int error;
- 
-+	/* return when cpu number greater than maximum number of CPUs */
-+	if (num >= setup_max_cpus)
-+		return 0;
-+
- 	cpu->node_id = cpu_to_node(num);
- 	memset(&cpu->dev, 0x00, sizeof(struct device));
- 	cpu->dev.id = num;
--- 
-1.7.7.4
-
+Thanks
+Vivek
