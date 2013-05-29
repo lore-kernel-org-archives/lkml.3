@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966732Ab3E2OCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:02:24 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38386 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966696Ab3E2OCU (ORCPT
+	id S966696Ab3E2ODC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:03:02 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:48992 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966534Ab3E2OCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:02:20 -0400
-Message-ID: <51A60A64.2080509@linux.vnet.ibm.com>
-Date: Wed, 29 May 2013 22:02:12 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 29 May 2013 10:02:00 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Cc: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
+References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com>
+	<1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com>
+	<87sj17aqq2.fsf@linaro.org> <51A5D148.8050203@ti.com>
+Date: Wed, 29 May 2013 07:01:57 -0700
+In-Reply-To: <51A5D148.8050203@ti.com> (Andrii Tseglytskyi's message of "Wed,
+	29 May 2013 12:58:32 +0300")
+Message-ID: <87fvx5anqi.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 04/11] KVM: MMU: zap pages in batch
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130524203432.GB4525@amt.cnet> <51A2C2DC.6080403@linux.vnet.ibm.com> <20130528001802.GB1359@amt.cnet> <51A4C6F1.9000607@linux.vnet.ibm.com> <20130529111132.GA5931@amt.cnet> <51A5FDF5.8020003@linux.vnet.ibm.com> <20130529133243.GG5931@amt.cnet>
-In-Reply-To: <20130529133243.GG5931@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052913-1396-0000-0000-00000309FC30
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 09:32 PM, Marcelo Tosatti wrote:
-> On Wed, May 29, 2013 at 09:09:09PM +0800, Xiao Guangrong wrote:
->> This information is I replied Gleb in his mail where he raced a question that
->> why "collapse tlb flush is needed":
->>
->> ======
->> It seems no.
->> Since we have reloaded mmu before zapping the obsolete pages, the mmu-lock
->> is easily contended. I did the simple track:
->>
->> +       int num = 0;
->>  restart:
->>         list_for_each_entry_safe_reverse(sp, node,
->>               &kvm->arch.active_mmu_pages, link) {
->> @@ -4265,6 +4265,7 @@ restart:
->>                 if (batch >= BATCH_ZAP_PAGES &&
->>                       cond_resched_lock(&kvm->mmu_lock)) {
->>                         batch = 0;
->> +                       num++;
->>                         goto restart;
->>                 }
->>
->> @@ -4277,6 +4278,7 @@ restart:
->>          * may use the pages.
->>          */
->>         kvm_mmu_commit_zap_page(kvm, &invalid_list);
->> +       printk("lock-break: %d.\n", num);
->>  }
->>
->> I do read pci rom when doing kernel building in the guest which
->> has 1G memory and 4vcpus with ept enabled, this is the normal
->> workload and normal configuration.
->>
->> # dmesg
->> [ 2338.759099] lock-break: 8.
->> [ 2339.732442] lock-break: 5.
->> [ 2340.904446] lock-break: 3.
->> [ 2342.513514] lock-break: 3.
->> [ 2343.452229] lock-break: 3.
->> [ 2344.981599] lock-break: 4.
->>
->> Basically, we need to break many times.
-> 
-> Should measure kvm_mmu_zap_all latency.
-> 
->> ======
->>
->> You can see we should break 3 times to zap all pages even if we have zapoed
->> 10 pages in batch. It is obviously that it need break more times without
->> batch-zapping.
-> 
-> Again, breaking should be no problem, what matters is latency. Please
-> measure kvm_mmu_zap_all latency after all optimizations to justify 
-> this minimum batching.
+Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
 
-Okay, okay. I will benchmark the latency.
+[...]
 
+>>> Signed-off-by: Vincent Bour <v-bour@ti.com>
+>>> Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
+>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>> Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
+>>  From Documentation/SubbmittingPatches:
+>>
+>>     "If a person was not directly involved in the preparation or handling
+>>     of a patch but wishes to signify and record their approval of it then
+>>     they can arrange to have an Acked-by: line added to the patch's
+>>     changelog."
+>>
+>> Are all of the tags above co-authors or on the delivery path?  I suspect
+>> an Acked-by or Reviewed-by is more appropriate here.
 
+[...]
+
+> This patch was developed by Nishanth, he is the author of the code.
+> Patch is the result of 2-week debug session. Vincent, Leonardo and
+> Nishanth were involved to that debug session.
+> My contribution to this patch - is sending it to upstream, no more
+> than this.
+> Could you please suggest - who should remain in Signed-offs ?
+
+Nishanth as the author, and you since you're on the delivery path.
+
+If Vincent & Leonardo should be considered as co-authors, then their
+signoffs are fine, otherwise they should be reviewed-by or acked-by.
+
+Kevin
