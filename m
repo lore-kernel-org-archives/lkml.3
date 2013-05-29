@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965125Ab3E2IPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:15:47 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:63282 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965078Ab3E2IPn (ORCPT
+	id S965139Ab3E2IRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:17:06 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:53085 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965039Ab3E2IRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:15:43 -0400
-Date: Wed, 29 May 2013 10:15:39 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH] x86/UV: GRU distributed mode mappings
-Message-ID: <20130529081539.GA25444@gmail.com>
-References: <20130523155013.GA16496@sgi.com>
- <20130528075912.GA29336@gmail.com>
- <20130528134106.GA5619@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528134106.GA5619@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 May 2013 04:17:00 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH/RFC] sh: Always link in helper functions extracted from libgcc
+Date: Wed, 29 May 2013 10:16:48 +0200
+Message-Id: <1369815408-12719-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
 
-* Dimitri Sivanich <sivanich@sgi.com> wrote:
+ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
 
-> On Tue, May 28, 2013 at 09:59:12AM +0200, Ingo Molnar wrote:
-> > 
-> > * Dimitri Sivanich <sivanich@sgi.com> wrote:
-> > 
-> > > Setup mappings for GRU distributed mode and include them as untracked
-> > > pat ranges.
-> > 
-> > Would be nice to have the customary changelog content:
-> > 
-> >   " Current code does (A), this has a problem when (B).
-> >     We can improve this doing (C), because (D)."
-> > 
-> > Or so - your changelog is pretty light on the 'why' aspect.
-> >
-> How about the following?
+For "lib-y", if no symbols in a compilation unit are referenced by other
+units, the compilation unit will not be included in vmlinux.
+This breaks modules that do reference those symbols.
 
-Looks good to me.
+Use "obj-y" instead to fix this.
 
-> UV GRU hardware will support an optional distributed mode that will allow 
-> per-node address mapping of local GRU space, as opposed to mapping all GRU
-> hardware to the same contiguous high space.
-> 
-> If GRU distributed mode is selected, setup per-node page table mappings and
-> include them as untracked pat ranges.
-> 
-> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-> ---
->  arch/x86/kernel/apic/x2apic_uv_x.c |   63 +++++++++++++++++++++++++++++----
->  1 file changed, 57 insertions(+), 6 deletions(-)
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
 
-So this looks like suitable v3.11 material - not an urgent fix needed for 
-v3.10, right?
+This doesn't fix all cases. There are others, e.g. udivsi3.
+This is also not limited to sh, many architectures handle this in the same
+way.
 
-Noticed this detail:
+A simple solution is to unconditionally include all helper functions.
+A more complex solution is to make the choice of "lib-y" or "obj-y" depend
+on CONFIG_MODULES:
+  obj-$(CONFIG_MODULES) += ...
+  lib-y($CONFIG_MODULES) += ...
+  
+What do you think?
+Thanks for your comments!
 
-> +	} else
-> +		return start >= gru_start_paddr && end <= gru_end_paddr;
+ arch/sh/lib/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-in the kernel we generally try to balance curly braces - either all 
-branches are curly or none.
+diff --git a/arch/sh/lib/Makefile b/arch/sh/lib/Makefile
+index 7b95f29..3baff31 100644
+--- a/arch/sh/lib/Makefile
++++ b/arch/sh/lib/Makefile
+@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
+ 	 checksum.o strlen.o div64.o div64-generic.o
+ 
+ # Extracted from libgcc
+-lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
++obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
+ 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
+ 	 udiv_qrnnd.o
+ 
+-- 
+1.7.0.4
 
-> +	/* Save upper (63:M) bits of address only for is_GRU_range */
-> +	gru_first_node_paddr &= gru_dist_umask;
-> +	gru_last_node_paddr &= gru_dist_umask;
-> +	pr_info("UV: Map GRU_DIST base 0x%016llx  0x%016llx - 0x%016llx\n",
-> +		gru_dist_base, gru_first_node_paddr, gru_last_node_paddr);
-
-I suspect this should be pr_debug()?
-
-Thanks,
-
-	Ingo
