@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759683Ab3E2Qkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:40:32 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:43648 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527Ab3E2Qjr (ORCPT
+	id S1759301Ab3E2Qs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:48:29 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:64481 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757827Ab3E2QsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:39:47 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Bohac <jbohac@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT PULL] nohz fixes
-Date: Wed, 29 May 2013 18:39:39 +0200
-Message-Id: <1369845580-15273-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 29 May 2013 12:48:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130528100941.GK22683@gmail.com>
+References: <1369661455-17839-1-git-send-email-gabriel.fernandez.st@gmail.com>
+	<1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
+	<20130528100941.GK22683@gmail.com>
+Date: Wed, 29 May 2013 18:48:22 +0200
+Message-ID: <CACRpkdYUBn4sv2vtTa1dNsd6RnCVRvep168pmiCzhF1fYsRvCA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: u8540: Add Pinctrl Device Tree settings for
+ uart0, uart2
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Tue, May 28, 2013 at 12:09 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 27 May 2013, Gabriel Fernandez wrote:
+>> From: Gabriel Fernandez <gabriel.fernandez@st.com>
+>>
+>> This patch adds pinctrl device tree settings for uart0 and uart2
+>> for ccu8540 board.
+>>
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+>> ---
+>>  arch/arm/boot/dts/ccu8540-pinctrl.dtsi     | 77 ++++++++++++++++++++++++
+>>  arch/arm/boot/dts/ccu8540.dts              |  7 +++
+>>  arch/arm/boot/dts/dbx5x0.dtsi              |  2 +-
+>>  arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi | 95 ++++++++++++++++++++++++++++++
+>
+> This is starting to get a bit confusing. How intrusive would it be to
+> place the ccu8540-pinctrl information inside ccu8540.dts instead of
+> breaking it out into different files and convoluting the issue?
+>
+> Also, please correct me if I'm wrong, but isn't what we call the
+> Nomadik Pinctrl/GPIO really the same as DBX500 Pinctrl/GPIO? I wonder
+> if this would be a better naming convention?
+>
+> Linus, what do you think?
 
-Please pull the timers/urgent-for-tip branch that can be found at:
+I think the definitions can live in their own file like this since it
+saves a lot of
+lines... And the use of <dt-bindings/*> is really nice.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/urgent-for-tip
+> Nodes look pretty good, except shouldn't 'ste' really be 'stericsson'?
 
-Only the 6th patch is new so I'm posting it along, the others have been
-posted a few days ago.
+I started to use ste-* on the Nomadik and U300 stuff to avoid all too
+long filenames.
 
-Thanks,
-	Frederic
----
+I would actually like to rename all the ux500-related files ste-*
+so they get grouped together in the filelist, but I've heard that there
+was a plan to create per-vendor subdirs in arch/arm/boot/dts
+so maybe I should go for that instead?
 
-Frederic Weisbecker (4):
-      vtime: Use consistent clocks among nohz accounting
-      watchdog: Boot-disable by default on full dynticks
-      kvm: Move guest entry/exit APIs to context_tracking
-      nohz: Prevent broadcast source from stealing full dynticks timekeeping duty
+[Gabriel]
+> i missed
+>           pinctrl {
+>                        compatible = "stericsson,db8540-pinctrl";
 
-Li Zhong (1):
-      nohz: Fix notifier return val that enforce timekeeping
+Are you sending a v2?
 
-Steven Rostedt (1):
-      nohz: Warn if the machine can not perform nohz_full
-
-
- include/linux/context_tracking.h |   35 +++++++++++++++++++++++++++++++++++
- include/linux/kvm_host.h         |   37 +------------------------------------
- include/linux/vtime.h            |    4 ++--
- kernel/context_tracking.c        |    1 -
- kernel/sched/core.c              |    2 +-
- kernel/sched/cputime.c           |    6 +++---
- kernel/time/tick-broadcast.c     |   11 ++++++++---
- kernel/time/tick-sched.c         |    7 ++++++-
- kernel/watchdog.c                |    6 ++++++
- 9 files changed, 62 insertions(+), 47 deletions(-)
+Yours,
+Linus Walleij
