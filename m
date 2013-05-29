@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab3E2RXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:23:09 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59588 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab3E2RXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:23:04 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] i2c: omap: correct usage of the interrupt enable register
-References: <1369812944-685-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-	<1369812944-685-2-git-send-email-oleksandr.dmytryshyn@ti.com>
-Date: Wed, 29 May 2013 10:22:59 -0700
-In-Reply-To: <1369812944-685-2-git-send-email-oleksandr.dmytryshyn@ti.com>
-	(Oleksandr Dmytryshyn's message of "Wed, 29 May 2013 10:35:44 +0300")
-Message-ID: <878v2x7lak.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S933961Ab3E2Rcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 13:32:42 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45812 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932471Ab3E2Rcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 13:32:33 -0400
+Date: Wed, 29 May 2013 13:32:23 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andres Freund <andres@2ndquadrant.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [patch 1/2] mm: fincore()
+Message-ID: <20130529173223.GE15721@cmpxchg.org>
+References: <87a9rbh7b4.fsf@rustcorp.com.au>
+ <20130211162701.GB13218@cmpxchg.org>
+ <20130211141239.f4decf03.akpm@linux-foundation.org>
+ <20130215063450.GA24047@cmpxchg.org>
+ <20130215132738.c85c9eda.akpm@linux-foundation.org>
+ <20130215231304.GB23930@cmpxchg.org>
+ <20130215154235.0fb36f53.akpm@linux-foundation.org>
+ <87621skhtc.fsf@rustcorp.com.au>
+ <20130529145312.GE3955@alap2.anarazel.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529145312.GE3955@alap2.anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com> writes:
+On Wed, May 29, 2013 at 04:53:12PM +0200, Andres Freund wrote:
+> On 2013-02-16 14:53:43 +1030, Rusty Russell wrote:
+> > Andrew Morton <akpm@linux-foundation.org> writes:
+> > > On Fri, 15 Feb 2013 18:13:04 -0500
+> > > Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > >> I dunno.  The byte vector might not be optimal but its worst cases
+> > >> seem more attractive, is just as extensible, and dead simple to use.
+> > >
+> > > But I think "which pages from this 4TB file are in core" will not be an
+> > > uncommon usage, and writing a gig of memory to find three pages is just
+> > > awful.
+> > 
+> > Actually, I don't know of any usage for this call.
+> 
+> [months later, catching up]
+> 
+> I do. Postgres' could really use something like that for making saner
+> assumptions about the cost of doing an index/heap scan. postgres doesn't
+> use mmap() and mmaping larger files into memory isn't all that cheap
+> (32bit...) so having fincore would be nice.
 
-> Starting from the OMAP chips with version2 registers scheme there are
-> 2 registers (I2C_IRQENABLE_SET and I2C_IRQENABLE_CLR) to manage
-> interrupts instead of the older OMAP chips with old scheme which have
-> only one register (I2C_IE).  Now we should use I2C_IRQENABLE_SET
-> register for enabling interrupts and I2C_IRQENABLE_CLR register for
-> disabling interrupts.
+How much of the areas you want to use it against is usually cached?
+I.e. are those 4TB files with 3 cached pages?
 
-Why?  (changelogs should always answer the "why" question)
-
-IOW, what is broken without this change, how does it fail?  And equally
-important, how is it currently working?
-
-Kevin
-
-
+I do wonder if we should just have two separate interfaces.  Ugly, but
+I don't really see how the two requirements (dense but many holes
+vs. huge sparse areas) could be acceptably met with one interface.
