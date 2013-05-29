@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab3E2FSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 01:18:14 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:45414 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab3E2FSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 01:18:13 -0400
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [RFC PATCHv4 0/6] arm: Initial TI-Nspire support
-From: Daniel Tang <dt.tangr@gmail.com>
-In-Reply-To: <201305271231.40693.arnd@arndb.de>
-Date: Wed, 29 May 2013 15:18:03 +1000
-Cc: Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org,
-        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <146FF7AD-650E-4706-B9E1-53C2693D1D0D@gmail.com>
-References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com> <201305262323.29519.arnd@arndb.de> <30BA4666-664F-4DA4-A1D5-C2B8AA63C6AB@gmail.com> <201305271231.40693.arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.1503)
+	id S1753455Ab3E2FWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 01:22:34 -0400
+Received: from etrn.xmission.com ([198.60.22.17]:56885 "EHLO etrn.xmission.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751987Ab3E2FWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 01:22:32 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-kernel@vger.kernel.org
+References: <20130527202751.GA19250@redhat.com>
+Date: Tue, 28 May 2013 22:22:12 -0700
+In-Reply-To: <20130527202751.GA19250@redhat.com> (Oleg Nesterov's message of
+	"Mon, 27 May 2013 22:27:51 +0200")
+Message-ID: <87fvx61htn.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19yw9jwRgcCB0VVTSI80HAr1FZ+EPdu0s0=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1427]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/3] proc: first_tid() fix/cleanup
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Oleg Nesterov <oleg@redhat.com> writes:
 
-On 27/05/2013, at 8:31 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Hello.
+>
+> next_thread() should be avoided, probably next_tid() is the
+> only "valid" user.
+>
+> But now we have another reason to avoid (and probably even kill)
+> it, we are going to replace or fix while_each_thread(), almost
+> every lockless usage is wrong.
+>
+> I was going to send more changes, but this initial series nearly
+> killed me. And I think first_tid() needs another cleanup, ->f_pos
+> truncation doesn't look nice, tomorrow.
 
-> On Monday 27 May 2013, Daniel Tang wrote:
->>> The one remaining bit that sticks out is the clcd platform data. As I
->>> said before, I won't require you to convert that to DT in order to
->>> get your code merged, but I'd also really like to see that happen,
->>> as we will also need that to get rid of auxdata on the ARM reference
->>> platforms (integrator, versatile, realview, vexpress).
->> 
->> How would you like me to convert the platform data to DT? AFAIK, the clcd
->> driver isn't aware of DT so the only way is to use the AUXDATA right now.
-> 
-> Linus Walleij mentioned on IRC that Pawel Moll already posted a series
-> that adds DT support for clcd:
-> 
-> http://lists.freedesktop.org/archives/dri-devel/2013-April/037519.html
-> 
-> The series does a few more things, but you can probbly split out the
-> parts you need and base on that.
+I have made some comments but overall this looks like a good set of
+cleanups.
 
-Would it be fine if I waited until CLCD DT patch gets into mainline instead?
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-> 
-> 	Arnd
+As for f_pos truncation if you want you can safely check
+if f_pos is greater than PID_MAX_LIMIT as we will never more
+threads than we have pids.
 
-Cheers,
-Daniel Tang
+Eric
