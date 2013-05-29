@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966730Ab3E2PDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:03:17 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:48339 "EHLO mail.anarazel.de"
+	id S966760Ab3E2PE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:04:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:16347 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966617Ab3E2PDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:03:13 -0400
-X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 11:03:13 EDT
-Date: Wed, 29 May 2013 16:53:12 +0200
-From: Andres Freund <andres@2ndquadrant.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-Message-ID: <20130529145312.GE3955@alap2.anarazel.de>
-References: <87a9rbh7b4.fsf@rustcorp.com.au>
- <20130211162701.GB13218@cmpxchg.org>
- <20130211141239.f4decf03.akpm@linux-foundation.org>
- <20130215063450.GA24047@cmpxchg.org>
- <20130215132738.c85c9eda.akpm@linux-foundation.org>
- <20130215231304.GB23930@cmpxchg.org>
- <20130215154235.0fb36f53.akpm@linux-foundation.org>
- <87621skhtc.fsf@rustcorp.com.au>
+	id S966381Ab3E2PE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:04:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,764,1363158000"; 
+   d="scan'208";a="342001888"
+Message-ID: <51A618F3.7050407@linux.intel.com>
+Date: Wed, 29 May 2013 18:04:19 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87621skhtc.fsf@rustcorp.com.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>  <20130529063925.27486.46649.stgit@ladj378.jer.intel.com> <1369832201.5109.8.camel@edumazet-glaptop>
+In-Reply-To: <1369832201.5109.8.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-16 14:53:43 +1030, Rusty Russell wrote:
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> > On Fri, 15 Feb 2013 18:13:04 -0500
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> I dunno.  The byte vector might not be optimal but its worst cases
-> >> seem more attractive, is just as extensible, and dead simple to use.
-> >
-> > But I think "which pages from this 4TB file are in core" will not be an
-> > uncommon usage, and writing a gig of memory to find three pages is just
-> > awful.
-> 
-> Actually, I don't know of any usage for this call.
+On 29/05/2013 15:56, Eric Dumazet wrote:
+> On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+>> Adds a napi_id and a hashing mechanism to lookup a napi by id.
+>> This will be used by subsequent patches to implement low latency
+>> Ethernet device polling.
+>> Based on a code sample by Eric Dumazet.
+>>
+>> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+>> ---
+>
+> OK this looks good enough for inclusion.
+>
+> If a v7 ever is submitted, please add a 'static' for
+>
+> static DEFINE_SPINLOCK(napi_hash_lock);
+> static unsigned int napi_gen_id;
+> static DEFINE_HASHTABLE(napi_hash, 8);
+>
 
-[months later, catching up]
+I will post a v7 along with the changes you suggested to 2/5, I will 
+wait a bit to see if there are other things to fix.
 
-I do. Postgres' could really use something like that for making saner
-assumptions about the cost of doing an index/heap scan. postgres doesn't
-use mmap() and mmaping larger files into memory isn't all that cheap
-(32bit...) so having fincore would be nice.
-
-Greetings,
-
-Andres Freund
-
--- 
- Andres Freund	                   http://www.2ndQuadrant.com/
- PostgreSQL Development, 24x7 Support, Training & Services
+Thanks,
+Eliezer
