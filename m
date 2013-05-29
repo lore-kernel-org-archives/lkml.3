@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965661Ab3E2Kza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:55:30 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14196 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965542Ab3E2Kz3 (ORCPT
+	id S965667Ab3E2K5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:57:37 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:41601 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965542Ab3E2K5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:55:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 29 May 2013 03:55:16 -0700
-Message-ID: <51A5DEDC.4040606@nvidia.com>
-Date: Wed, 29 May 2013 16:26:28 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 29 May 2013 06:57:35 -0400
+X-IronPort-AV: E=Sophos;i="4.87,763,1363132800"; 
+   d="scan'208";a="26611613"
+Date: Wed, 29 May 2013 11:57:17 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the xen-arm tree
+In-Reply-To: <20130529133459.fb060dcd20cb00049bed55cd@canb.auug.org.au>
+Message-ID: <alpine.DEB.2.02.1305291156350.4799@kaball.uk.xensource.com>
+References: <20130529133459.fb060dcd20cb00049bed55cd@canb.auug.org.au>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 09/12] tegra20-apb-dma: remove useless use of lock
-References: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com> <1369656882-25241-10-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1369656882-25241-10-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 May 2013 05:44 PM, Andy Shevchenko wrote:
-> Accordingly to dma_cookie_status() description locking is not required.
->
-I think we need lock here:
- From isr handler, we call dma_cookie_complete() which is in 
-spin-locked. This function updates  tx->chan->completed_cookie = tx->cookie;
-In tegra_dma_tx_status(), we check for dma_cookie_status() which access 
-the chan->completed_cookie; and it decides status based on this
+On Wed, 29 May 2013, Stephen Rothwell wrote:
+> Hi Stefano,
+> 
+> After merging the xen-arm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> kernel/sched/cputime.c:8:26: fatal error: asm/paravirt.h: No such file or directory
+>  #include <asm/paravirt.h>
+>                           ^
+> 
+> Caused by commit d31d069a9f68 ("kernel: missing include in cputime.c").
+> Only three architectures have that file (x86, arm and ia64).
+> 
+> I have used the xen-arm tree from next-20130528 for today.
 
-As the access of  chan->completed_cookie  are from different context, we 
-need this locking.
-
-But did not get why it is documented as locking is not require if shared 
-variable is getting changed/access from different context simultaneously.
-
+Thanks, good point.
+I'll fix the issue by adding an ifdef CONFIG_PARAVIRT around it.
