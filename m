@@ -1,57 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966287Ab3E2OXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:23:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38937 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759576Ab3E2OXD (ORCPT
+	id S966281Ab3E2O3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:29:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46798 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966051Ab3E2O3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:23:03 -0400
-Date: Wed, 29 May 2013 10:23:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Shawn Nematbakhsh <shawnn@google.com>, <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
- controllers.
-In-Reply-To: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1305291015230.1473-100000@iolanthe.rowland.org>
+	Wed, 29 May 2013 10:29:43 -0400
+Date: Wed, 29 May 2013 15:29:07 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
+ runs out of slots
+Message-ID: <20130529142907.GM17767@MacBook-Pro.local>
+References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
+ <20130529140319.GK17767@MacBook-Pro.local>
+ <51A60BE5.7010905@synopsys.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A60BE5.7010905@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Julius Werner wrote:
+On Wed, May 29, 2013 at 03:08:37PM +0100, Vineet Gupta wrote:
+> On 05/29/2013 07:33 PM, Catalin Marinas wrote:
+> > On Wed, May 29, 2013 at 01:56:13PM +0100, Vineet Gupta wrote:
+> >> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
+> >> batching slots, TLB entries needs to be flushed for @start to @interim,
+> >> NOT @interim to @end.
+> >>
+> >> Since ARC port doesn't use page free batching I can't test it myself but
+> >> this seems like the right thing to do.
+> >> Observed this when working on a fix for the issue at thread:
+> >> 	http://www.spinics.net/lists/linux-arch/msg21736.html
+> >>
+> >> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Mel Gorman <mgorman@suse.de>
+> >> Cc: Hugh Dickins <hughd@google.com>
+> >> Cc: Rik van Riel <riel@redhat.com>
+> >> Cc: David Rientjes <rientjes@google.com>
+> >> Cc: Peter Zijlstra <peterz@infradead.org>
+> >> Cc: linux-mm@kvack.org
+> >> Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
+> >> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> >> Cc: Max Filippov <jcmvbkbc@gmail.com>
+> >> ---
+> >>  mm/memory.c |    9 ++++++---
+> >>  1 file changed, 6 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/mm/memory.c b/mm/memory.c
+> >> index 6dc1882..d9d5fd9 100644
+> >> --- a/mm/memory.c
+> >> +++ b/mm/memory.c
+> >> @@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
+> >>  	spinlock_t *ptl;
+> >>  	pte_t *start_pte;
+> >>  	pte_t *pte;
+> >> +	unsigned long range_start = addr;
+> >>  
+> >>  again:
+> >>  	init_rss_vec(rss);
+> >> @@ -1215,12 +1216,14 @@ again:
+> >>  		force_flush = 0;
+> >>  
+> >>  #ifdef HAVE_GENERIC_MMU_GATHER
+> >> -		tlb->start = addr;
+> >> -		tlb->end = end;
+> >> +		tlb->start = range_start;
+> >> +		tlb->end = addr;
+> >>  #endif
+> >>  		tlb_flush_mmu(tlb);
+> >> -		if (addr != end)
+> >> +		if (addr != end) {
+> >> +			range_start = addr;
+> >>  			goto again;
+> >> +		}
+> >>  	}
+> > Isn't this code only run if force_flush != 0? force_flush is set to
+> > !__tlb_remove_page() and this function always returns 1 on (generic TLB)
+> > UP since tlb_fast_mode() is 1. There is no batching on UP with the
+> > generic TLB code.
+> 
+> Correct ! That's why the changelog says I couldn't test it on ARC port itself :-)
+> 
+> However based on the other discussion (Max's TLB/PTE inconsistency), as I started
+> writing code to reuse this block to flush the TLB even for non forced case, I
+> realized that what this is doing is incorrect and won't work for the general flushing.
 
-> The policy we want to achieve is to disable runtime PM iff there is a
-> device connected that doesn't have persist_enabled or a reset_resume()
-> handler and whose parent/root hub resets on resume, right? So couldn't
+An alternative would be to make sure the above block is always called
+when tlb_fast_mode():
 
-Probably just root hub, not parent.  A non-root hub that resets upon 
-resume wouldn't be a good idea.  Also, we know in advance that the hub 
-driver _does_ have a reset-resume handler.
+diff --git a/mm/memory.c b/mm/memory.c
+index 6dc1882..f8b1f30 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1211,7 +1211,7 @@ again:
+ 	 * the PTE lock to avoid doing the potential expensive TLB invalidate
+ 	 * and page-free while holding it.
+ 	 */
+-	if (force_flush) {
++	if (force_flush || tlb_fast_mode(tlb)) {
+ 		force_flush = 0;
+ 
+ #ifdef HAVE_GENERIC_MMU_GATHER
 
-> we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
-> generic USB_QUIRK_RESET_RESUME on the root hub instead? Then we could
-> handle all of this in the USB core (during device initialization and
-> when changing persist_enabled through sysfs) by just checking for
-> udev->reset_resume on all parent hubs of the device in question (and
-> use pm_runtime_get/put() on said device to prevent its parents from
-> suspending as appropriate).
+> Ignoring all other threads, do we agree that the exiting code - if used in any
+> situations is incorrect semantically ?
 
-This sounds too intricate to me.  You might want to prevent resets even 
-if the device does support reset-resume, because they consume time.  Or 
-you might not care about resets even if persist isn't enabled (consider 
-a USB mouse, for example).
+It is incorrect unless there are requirements for
+arch_leave_lazy_mmu_mode() to handle the TLB invalidation (it doesn't
+look like it's widely implemented though).
 
-I agree that setting the RESET_RESUME quirk on the root hub is a good
-way to represent the situation.  And perhaps the kernel could implement 
-a useful default policy -- but userspace should ultimately remain in 
-control.
-
-Alan Stern
-
+-- 
+Catalin
