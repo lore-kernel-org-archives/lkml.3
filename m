@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966870Ab3E2Ucz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:32:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966083Ab3E2Ucp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:32:45 -0400
-Date: Wed, 29 May 2013 16:32:38 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Shawn Nematbakhsh <shawnn@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oliver Neukum <oliver@neukum.org>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
- controllers.
-Message-ID: <20130529203238.GC133453@redhat.com>
-References: <20130524210503.GC15788@xanatos>
- <Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
- <CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
- <20130528205842.GE32085@xanatos>
- <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
- <20130529193828.GK32085@xanatos>
+	id S966904Ab3E2UdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:33:07 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:29160 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966083Ab3E2UdC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 16:33:02 -0400
+Message-ID: <51A665F7.6050208@hp.com>
+Date: Wed, 29 May 2013 16:32:55 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529193828.GK32085@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simo Sorce <simo@redhat.com>
+CC: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>  <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com>  <20130527020903.GR29466@dastard>  <51A624E2.3000301@hp.com> <1369844289.2769.146.camel@willson.li.ssimo.org>
+In-Reply-To: <1369844289.2769.146.camel@willson.li.ssimo.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:38:28PM -0700, Sarah Sharp wrote:
-> On Tue, May 28, 2013 at 02:41:18PM -0700, Julius Werner wrote:
-> > The policy we want to achieve is to disable runtime PM iff there is a
-> > device connected that doesn't have persist_enabled or a reset_resume()
-> > handler and whose parent/root hub resets on resume, right?
-> 
-> Makes sense.  However, not all distros may want that policy, so there
-> should be a way to change that policy via sysfs.  Some distros may
-> choose to take the power savings over having a particular USB device
-> work, especially in the server market.
-> 
-> Don, Oliver, what do you think of this patch:
-> http://marc.info/?l=linux-usb&m=136941922715772&w=2
+On 05/29/2013 12:18 PM, Simo Sorce wrote:
+> On Wed, 2013-05-29 at 11:55 -0400, Waiman Long wrote:
+>
+>> My patch set consists of 2 different changes. The first one is to avoid
+>> taking the d_lock lock when updating the reference count in the
+>> dentries. This particular change also benefit some other workloads that
+>> are filesystem intensive. One particular example is the short workload
+>> in the AIM7 benchmark. One of the job type in the short workload is
+>> "misc_rtns_1" which calls security functions like getpwnam(),
+>> getpwuid(), getgrgid() a couple of times. These functions open the
+>> /etc/passwd or /etc/group files, read their content and close the files.
+>> It is the intensive open/read/close sequence from multiple threads that
+>> is causing 80%+ contention in the d_lock on a system with large number
+>> of cores.
+> To be honest a workload base on /etc/passwd or /etc/group is completely
+> artificial, in actual usage, if you really have  such access you use
+> nscd or sssd with their shared memory caches to completely remove most
+> of the file access.
+> I have no beef on the rest but repeated access to Nsswitch information
+> is not something you need to optimize at the file system layer and
+> should not be brought up as a point in favor.
 
-That is limited only to certain controllers right?  RHEL6 doesn't support
-runtime suspend, so we don't hear to many complaints.  Most of our server
-customers don't have much plugged into USB, so I don't expect much
-problems there.  Our laptop customers prefer the power savings, but I
-don't know how many of them have chipsets with XHCI_RESET_ON_RESUME.
+The misc_rtns_1 workload that I described here is just part of a larger 
+workload involving other activities. It represents just 1/17 of the 
+total jobs that were spawned. This particular job type, however, 
+dominates the time because of the lock contention that it created. I 
+agree that it is an artificial workload as most benchmarks are. It is 
+certainly an exaggeration of what a real workload may be, but it doesn't 
+mean that similar contention will not happen in the real world 
+especially when the trend is to have more and more CPU cores packed in 
+the same machine.
 
-> 
-> Julius is proposing to limit the scope of the patch a bit, but the
-> impact will still be that TI hosts will be active more often than not.
-
-Hmm, for some reason I don't see TI having the XHCI_RESET_ON_RESUME quirk
-set, just VIA and ETRON.  Neither of which seem to be normally shipped
-with servers.
-
-Cheers,
-Don
+Regards,
+Longman
