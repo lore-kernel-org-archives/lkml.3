@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935207Ab3E2V2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:28:06 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48791 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935124Ab3E2V2A (ORCPT
+	id S966326Ab3E2V3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:29:19 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59157 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935197Ab3E2V3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:28:00 -0400
-Message-ID: <51A672CC.9020403@linux.vnet.ibm.com>
-Date: Wed, 29 May 2013 14:27:40 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 29 May 2013 17:29:12 -0400
+Date: Wed, 29 May 2013 23:29:09 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, paulus@samba.org, michael@ellerman.id.au,
+        Anton Blanchard <anton@au1.ibm.com>
+Subject: Re: [RFC PATCH v3 0/5] powerpc: Support context tracking for Power
+ pSeries
+Message-ID: <20130529212907.GC17419@somewhere>
+References: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
+ <1368424306.19924.20.camel@pasglop>
+ <1368432193.2618.30.camel@ThinkPad-T5421>
 MIME-Version: 1.0
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH updated] drivers/base: Use attribute groups to create
- sysfs memory files
-References: <51A58F4D.3020804@linux.vnet.ibm.com>
-In-Reply-To: <51A58F4D.3020804@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052921-7606-0000-0000-00000BEE02B6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368432193.2618.30.camel@ThinkPad-T5421>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 10:17 PM, Nathan Fontenot wrote:
-> Update the sysfs memory code to create/delete files at the time of device
-> and subsystem registration.
->
-> The current code creates files in the root memory directory explicitly
-> through
-> the use of init_* routines. The files for each memory block are created and
-> deleted explicitly using the mem_[create|delete]_simple_file macros.
->
-> This patch creates attribute groups for the memory root files and files in
-> each memory block directory so that they are created and deleted implicitly
-> at subsys and device register and unregister time.
->
-> This did necessitate moving the register_memory() routine and update
-> it to set the dev.groups field.
->
-> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
->
-> Updated to apply cleanly to rc2.
->
-> Please cc me on responses/comments.
-> ---
->   drivers/base/memory.c |  143
-> +++++++++++++++++++++-----------------------------
->   1 file changed, 62 insertions(+), 81 deletions(-)
->
-> Index: linux/drivers/base/memory.c
-> ===================================================================
-> --- linux.orig/drivers/base/memory.c    2013-05-28 22:53:58.000000000 -0500
-> +++ linux/drivers/base/memory.c 2013-05-28 22:56:49.000000000 -0500
+On Mon, May 13, 2013 at 04:03:13PM +0800, Li Zhong wrote:
+> On Mon, 2013-05-13 at 15:51 +1000, Benjamin Herrenschmidt wrote:
+> > On Mon, 2013-05-13 at 13:21 +0800, Li Zhong wrote:
+> > > These patches try to support context tracking for Power arch, beginning with
+> > > 64-bit pSeries. The codes are ported from that of the x86_64, and in each
+> > > patch, I listed the corresponding patch for x86.
+> > 
+> > So that's yet another pile of bloat on all syscall entry/exit and
+> > exception entry/exit. What is it used for ? (I haven't followed on
+> > x86_64 side).
+> 
+> To my understanding, it is used to enable RCU user extended quiescent
+> state, so RCU on that cpu doesn't need scheduler ticks. And together
+> with some other code(already in 3.10), we are able to remove the ticks
+> in some cases (e.g. only 1 task running on the cpu, with some other
+> limitations).
+> 
+> Maybe Paul, or Frederic could give some better descriptions. 
 
-These changes look good, but this email doesn't play nice with `git am`. ex:
+That's pretty much it. It helps RCU and cputime accounting infrastructure
+to know when we enter/exit userspace. This way we can:
 
-	"fatal: corrupt patch at line 80"
+* Consider the CPU as idle from an RCU point of view when we run in userspace,
+so RCU won't need the tick to stay alive.
 
-There is nothing particularly bad about line 80. Please fix and resend 
-(git format-patch generally gets this right, maybe use that?)
+* Account cputime (utime/stime/...) without using the tick. Ok powerpc already
+has CONFIG_VIRT_CPU_ACCOUNTING_NATIVE but making it working with full dynticks
+would require some tweaks.
 
+All in one this is to support full dynticks.
 
+Thanks.
