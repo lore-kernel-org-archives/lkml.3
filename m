@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934196Ab3E2A4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:56:13 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:58618 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098Ab3E2A4M (ORCPT
+	id S934574Ab3E2BC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:02:29 -0400
+Received: from mx02.smart-weblications.de ([188.65.144.37]:45208 "EHLO
+	mx02.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934257Ab3E2BCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:56:12 -0400
-Date: Tue, 28 May 2013 17:56:11 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: Exynos fixes for 3.10-rc
-Message-ID: <20130529005611.GA17319@quad.lixom.net>
+	Tue, 28 May 2013 21:02:25 -0400
+Message-ID: <51A55381.9080807@smart-weblications.de>
+Date: Wed, 29 May 2013 03:01:53 +0200
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Matthew O'Connor" <matt@ecsorl.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        andy@greyhouse.net, fubar@us.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com,
+        liquidhorse@gmail.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de> <519D5206.8080701@gmail.com> <519DEE6E.7060700@smart-weblications.de> <519E0F97.1050102@ecsorl.com>
+In-Reply-To: <519E0F97.1050102@ecsorl.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am 23.05.2013 14:46, schrieb Matthew O'Connor:
+> On 05/23/2013 06:24 AM, Smart Weblications GmbH - Florian Wiessner wrote:
+>> node02:/ocfs2/usr/src/linux-3.4.46# cat drivers/net/bonding/bond_alb.c.rej
+> My most sincere apologies - one more time, from a different mail server
+> that hopefully won't go around changing my attachments.  If this doesn't
+> work I guess sendmail will be the next alternative.
+> 
 
-The following changes since commit f4ae176c626311d6507c9a2d263657c4cc4e1667:
+3.4.47 got released without that included :-/?!
 
-  Merge tag 'sunxi-fixes-for-3.10' of git://github.com/mripard/linux into fixes (2013-05-24 15:50:28 -0700)
-
-are available in the git repository at:
+https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.4.47
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+-- 
 
-for you to fetch changes up to da9d0fbf5e9aa47492a19588bd0efd18d6d172e0:
+Mit freundlichen Grüßen,
 
-  ARM: exynos: defconfig update (2013-05-28 17:21:41 -0700)
+Florian Wiessner
 
-----------------------------------------------------------------
-ARM: Exynos fixes for 3.10-rc
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
 
-Here's a shorter set of fixes for 3.10, all for Samsung Exynos platforms.
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
 
-It also includes a defconfig update so that exynos_defconfig provides
-a meaningful set of drivers to boot an unmodified kernel on the Samsung
-ARM-based Chromebooks.
-
-----------------------------------------------------------------
-Jungseok Lee (1):
-      ARM: EXYNOS: fix software reset logic for EXYNOS5440 SOC
-
-Olof Johansson (2):
-      Merge tag 'samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      ARM: exynos: defconfig update
-
-Tomasz Figa (2):
-      ARM: EXYNOS: Fix support of Exynos4210 rev0 SoC
-      ARM: SAMSUNG: Add names to fimd0 IRQ resources
-
-Vivek Gautam (1):
-      ARM: dts: Enabling samsung-usb2phy driver for exynos5250
-
- arch/arm/boot/dts/exynos5250.dtsi          | 15 +++++++++
- arch/arm/configs/exynos_defconfig          | 54 +++++++++++++++++++++++++-----
- arch/arm/mach-exynos/Kconfig               |  3 +-
- arch/arm/mach-exynos/common.c              | 39 +++++++++++++++++++--
- arch/arm/mach-exynos/common.h              |  2 ++
- arch/arm/mach-exynos/mach-universal_c210.c |  5 ++-
- arch/arm/plat-samsung/devs.c               |  6 ++--
- 7 files changed, 107 insertions(+), 17 deletions(-)
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
