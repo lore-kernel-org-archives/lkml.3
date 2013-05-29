@@ -1,130 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966277Ab3E2OgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:36:23 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:61442 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966063Ab3E2OgV (ORCPT
+	id S966243Ab3E2Ohv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:37:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36364 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966104Ab3E2Ohu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:36:21 -0400
-Message-ID: <51A61252.9040508@synopsys.com>
-Date: Wed, 29 May 2013 20:06:02 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 10:37:50 -0400
+Date: Wed, 29 May 2013 09:37:44 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Stephen Mell <sub.atomic.fusion@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morgan <morgan@kernel.org>
+Subject: Re: securebits: add exec_inherit flag to prevent changes to process
+ credentials during execve
+Message-ID: <20130529143744.GB15072@sergelap>
+References: <4537875.yLSqQy2YHM@pegasus>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
- runs out of slots
-References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com> <20130529140319.GK17767@MacBook-Pro.local> <51A60BE5.7010905@synopsys.com> <20130529142907.GM17767@MacBook-Pro.local>
-In-Reply-To: <20130529142907.GM17767@MacBook-Pro.local>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.232]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4537875.yLSqQy2YHM@pegasus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 07:59 PM, Catalin Marinas wrote:
-> On Wed, May 29, 2013 at 03:08:37PM +0100, Vineet Gupta wrote:
->> On 05/29/2013 07:33 PM, Catalin Marinas wrote:
->>> On Wed, May 29, 2013 at 01:56:13PM +0100, Vineet Gupta wrote:
->>>> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
->>>> batching slots, TLB entries needs to be flushed for @start to @interim,
->>>> NOT @interim to @end.
->>>>
->>>> Since ARC port doesn't use page free batching I can't test it myself but
->>>> this seems like the right thing to do.
->>>> Observed this when working on a fix for the issue at thread:
->>>> 	http://www.spinics.net/lists/linux-arch/msg21736.html
->>>>
->>>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->>>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>>> Cc: Mel Gorman <mgorman@suse.de>
->>>> Cc: Hugh Dickins <hughd@google.com>
->>>> Cc: Rik van Riel <riel@redhat.com>
->>>> Cc: David Rientjes <rientjes@google.com>
->>>> Cc: Peter Zijlstra <peterz@infradead.org>
->>>> Cc: linux-mm@kvack.org
->>>> Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
->>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>>> Cc: Max Filippov <jcmvbkbc@gmail.com>
->>>> ---
->>>>  mm/memory.c |    9 ++++++---
->>>>  1 file changed, 6 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/mm/memory.c b/mm/memory.c
->>>> index 6dc1882..d9d5fd9 100644
->>>> --- a/mm/memory.c
->>>> +++ b/mm/memory.c
->>>> @@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->>>>  	spinlock_t *ptl;
->>>>  	pte_t *start_pte;
->>>>  	pte_t *pte;
->>>> +	unsigned long range_start = addr;
->>>>  
->>>>  again:
->>>>  	init_rss_vec(rss);
->>>> @@ -1215,12 +1216,14 @@ again:
->>>>  		force_flush = 0;
->>>>  
->>>>  #ifdef HAVE_GENERIC_MMU_GATHER
->>>> -		tlb->start = addr;
->>>> -		tlb->end = end;
->>>> +		tlb->start = range_start;
->>>> +		tlb->end = addr;
->>>>  #endif
->>>>  		tlb_flush_mmu(tlb);
->>>> -		if (addr != end)
->>>> +		if (addr != end) {
->>>> +			range_start = addr;
->>>>  			goto again;
->>>> +		}
->>>>  	}
->>> Isn't this code only run if force_flush != 0? force_flush is set to
->>> !__tlb_remove_page() and this function always returns 1 on (generic TLB)
->>> UP since tlb_fast_mode() is 1. There is no batching on UP with the
->>> generic TLB code.
->> Correct ! That's why the changelog says I couldn't test it on ARC port itself :-)
->>
->> However based on the other discussion (Max's TLB/PTE inconsistency), as I started
->> writing code to reuse this block to flush the TLB even for non forced case, I
->> realized that what this is doing is incorrect and won't work for the general flushing.
-> An alternative would be to make sure the above block is always called
-> when tlb_fast_mode():
->
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 6dc1882..f8b1f30 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1211,7 +1211,7 @@ again:
->  	 * the PTE lock to avoid doing the potential expensive TLB invalidate
->  	 * and page-free while holding it.
->  	 */
-> -	if (force_flush) {
-> +	if (force_flush || tlb_fast_mode(tlb)) {
->  		force_flush = 0;
+Quoting Stephen Mell (sub.atomic.fusion@gmail.com):
+> From: Stephen Mell <sub.atomic.fusion@gmail.com>
+> 
+> Currently, it is nearly impossible to give a capability to a non-root
+> user that will stick around after the first execve.
 
-I agree with tlb_fast_mode() addition (to solve Max's issue). The problem however
-is that when we hit this at the end of loop - @addr is already pointing to @end so
-range flush gets start = end - not what we really intended.
+By design capabilities are re-calculated upon every execve.  The point
+here is that you're not just trusting $user with the capability, you're
+trusting the program with the capability as well.  Despite what we do
+for the root user, if you drop the idea that you're also trusting the
+binary, and say "$user can run anything with those capabilities", then
+it's no longer posix caps.
 
->> Ignoring all other threads, do we agree that the exiting code - if used in any
->> situations is incorrect semantically ?
-> It is incorrect unless there are requirements for
-> arch_leave_lazy_mmu_mode() to handle the TLB invalidation (it doesn't
-> look like it's widely implemented though).
+If you want to introduce a new LSM which does non-posix capabilities,
+that could be interesting.  But every little tweak will likely generate
+a heap of side effects that will take time to consider/discover.
 
-This patch is preparatory - independent of Max's issue. It is fixing just the
-forced flush case - whoever uses it right now (ofcourse UP + generic TLB doesn't).
+The libcap-ng way of addressing this would be to have the program run as
+root with a capability bounding set which only allows the capabilities
+you want the user to have.
 
-Thx,
--Vineet
+> This patch adds a
+> new securebit, exec_inherit, which causes all credential modification
+> logic to be skipped. This is already possible, in a hackish fashion,
+> if a program reads another program into memory and jumps into it. This
+> patch would allow this to be done in a more consistent and less hacky
+> manner. Moreover, the sendmail exploit of old would not happen again,
+> as setuid and capability bits on programs are disregarded when
+> exec_inherit is active.
+> Use cases include allowing non-root users to bind to low numbered ports and use chroot. The securebit could be set in a pam module.
+
+Non-root users can do that in a private user namespace.
+
+> Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
+> ---
+>  include/uapi/linux/securebits.h | 12 +++++++++++-
+>  security/commoncap.c            |  5 +++++
+>  2 files changed, 16 insertions(+), 1 deletion(-)
+> diff --git a/include/uapi/linux/securebits.h b/include/uapi/linux/securebits.h
+> index 985aac9..b779489 100644
+> --- a/include/uapi/linux/securebits.h
+> +++ b/include/uapi/linux/securebits.h
+> @@ -40,12 +40,22 @@
+>  #define SECURE_KEEP_CAPS		4
+>  #define SECURE_KEEP_CAPS_LOCKED		5  /* make bit-4 immutable */
+>  
+> +/* When set, a process retains its capabilities when performing an
+> +   execve(). No modifications, such as those from suid bits or file
+> +   capabilities, are made. */
+> +#define SECURE_EXEC_INHERIT		6
+> +#define SECURE_EXEC_INHERIT_LOCKED	7  /* make bit-6 immutable */
+> +
+> +#define SECBIT_EXEC_INHERIT	(issecure_mask(SECURE_EXEC_INHERIT))
+> +#define SECBIT_EXEC_INHERIT_LOCKED (issecure_mask(SECURE_EXEC_INHERIT_LOCKED))
+> +
+>  #define SECBIT_KEEP_CAPS	(issecure_mask(SECURE_KEEP_CAPS))
+>  #define SECBIT_KEEP_CAPS_LOCKED (issecure_mask(SECURE_KEEP_CAPS_LOCKED))
+>  
+>  #define SECURE_ALL_BITS		(issecure_mask(SECURE_NOROOT) | \
+>  				 issecure_mask(SECURE_NO_SETUID_FIXUP) | \
+> -				 issecure_mask(SECURE_KEEP_CAPS))
+> +				 issecure_mask(SECURE_KEEP_CAPS) | \
+> +				 issecure_mask(SECURE_EXEC_INHERIT))
+>  #define SECURE_ALL_LOCKS	(SECURE_ALL_BITS << 1)
+>  
+>  #endif /* _UAPI_LINUX_SECUREBITS_H */
+> diff --git a/security/commoncap.c b/security/commoncap.c
+> index c44b6fe..998ee6e 100644
+> --- a/security/commoncap.c
+> +++ b/security/commoncap.c
+> @@ -484,6 +484,11 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
+>  	int ret;
+>  	kuid_t root_uid;
+>  
+> +	if (issecure(SECURE_EXEC_INHERIT)) {
+> +		*new = *old;
+> +		return 0;
+> +	}
+> +
+>  	effective = false;
+>  	ret = get_file_caps(bprm, &effective, &has_cap);
+>  	if (ret < 0)
