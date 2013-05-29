@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759667Ab3E2PhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:37:19 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:44980 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756892Ab3E2PdW (ORCPT
+	id S1759592Ab3E2Piv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:38:51 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:62850 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab3E2Pit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:33:22 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH 02/11] phy: Add Vitesse 8211 phy ID
-Date: Wed, 29 May 2013 17:33:02 +0200
-Message-Id: <804de6a875a407fb0379a437f83915e7158f2f2a.1369841519.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
-References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
-In-Reply-To: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
-References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-27574-1369841599-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 29 May 2013 11:38:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1369412476-14245-10-git-send-email-james.hogan@imgtec.com>
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com>
+	<1369412476-14245-10-git-send-email-james.hogan@imgtec.com>
+Date: Wed, 29 May 2013 17:38:48 +0200
+Message-ID: <CACRpkdZ0Gav0TKDXyD9MwaUrdcenV=+JV9oWNN1+ifsbO3uJ1w@mail.gmail.com>
+Subject: Re: [PATCH v2 9/9] gpio-tz1090-pdc: add TZ1090 PDC gpio driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
 
---=_mimegpg-monstr-desktop-27574-1369841599-0001
+> Add a GPIO driver for the low-power Powerdown Controller GPIOs in the
+> TZ1090 SoC.
+(...)
+> +  Values for gpio specifier:
+> +  - GPIO number: a value in the range 0 to 6.
+> +  - GPIO flags: bit field of flags:
+> +      1: active low
 
-Phy is compatible with Vitesse 8221.
+Use #include <dt-bindings/gpio/gpio.h>
+for flags and symbolic names.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/net/phy/vitesse.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+> +Optional properties:
+> +- gpio-ranges: Mapping to pin controller pins
+> +
+> +- interrupts: Individual syswake interrupts (other GPIOs cannot interrupt)
+> +
+> +
+> +Example:
+> +
+> +       pdc_gpios: gpio-controller@02006500 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               compatible = "img,tz1090-pdc-gpio";
+> +               reg = <0x02006500 0x100>;
+> +
+> +               interrupt-parent = <&pdc>;
+> +               interrupts =    <1 0 0>,        /* Syswake 0 */
+> +                               <1 1 0>,        /* Syswake 1 */
+> +                               <1 2 0>;        /* Syswake 2 */
+> +       };
 
-diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
-index d6e988f..69b482b 100644
---- a/drivers/net/phy/vitesse.c
-+++ b/drivers/net/phy/vitesse.c
-@@ -56,6 +56,7 @@
+Interrupt flags seem to be undocumented here.
 
- #define PHY_ID_VSC8244			0x000fc6c0
- #define PHY_ID_VSC8221			0x000fc550
-+#define PHY_ID_VSC8211			0x000fc4b0
+Apart from this it's looking nice.
 
- MODULE_DESCRIPTION("Vitesse PHY driver");
- MODULE_AUTHOR("Kriston Carson");
-@@ -175,6 +176,19 @@ static struct phy_driver vsc82xx_driver[] = {
- 	.ack_interrupt	= &vsc824x_ack_interrupt,
- 	.config_intr	= &vsc82xx_config_intr,
- 	.driver		= { .owner = THIS_MODULE,},
-+}, {
-+	/* Vitesse 8211 */
-+	.phy_id		= PHY_ID_VSC8211,
-+	.phy_id_mask	= 0x000ffff0,
-+	.name		= "Vitesse VSC8211",
-+	.features	= PHY_GBIT_FEATURES,
-+	.flags		= PHY_HAS_INTERRUPT,
-+	.config_init	= &vsc8221_config_init,
-+	.config_aneg	= &genphy_config_aneg,
-+	.read_status	= &genphy_read_status,
-+	.ack_interrupt	= &vsc824x_ack_interrupt,
-+	.config_intr	= &vsc82xx_config_intr,
-+	.driver		= { .owner = THIS_MODULE,},
- } };
-
- static int __init vsc82xx_init(void)
-@@ -195,6 +209,7 @@ module_exit(vsc82xx_exit);
- static struct mdio_device_id __maybe_unused vitesse_tbl[] = {
- 	{ PHY_ID_VSC8244, 0x000fffc0 },
- 	{ PHY_ID_VSC8221, 0x000ffff0 },
-+	{ PHY_ID_VSC8211, 0x000ffff0 },
- 	{ }
- };
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-27574-1369841599-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGmH78ACgkQykllyylKDCHxkwCfWDDCVVSXyQdHXE9WItVDMAdZ
-a0gAn3UVsFV5PWtWUMWQxRToh+mVcf/a
-=lFQm
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-27574-1369841599-0001--
+Yours,
+Linus Walleij
