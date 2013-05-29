@@ -1,196 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966101Ab3E2TMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:12:23 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:5219 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759396Ab3E2TMQ (ORCPT
+	id S966106Ab3E2TN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:13:57 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:44048 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965810Ab3E2TNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:12:16 -0400
-From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt context
-To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 May 2013 13:03:26 -0600
-Message-ID: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
-User-Agent: StGIT/0.14.3
+	Wed, 29 May 2013 15:13:50 -0400
+Date: Wed, 29 May 2013 15:18:32 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <20130529074433.GB12193@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk> <20130523125218.GB23650@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu> <20130523152611.GE23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu> <20130528085548.GA12193@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu> <20130529074433.GB12193@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning was seen on 3.9 when a corrected PCIe error was being
-handled by the AER subsystem.
+On Wed, 29 May 2013, Peter Zijlstra wrote:
+> 
+> Hurm.. I don't suppose you have an easy reproducer handy eh? I'll go
+> stare at it. At least the current state is better than before, but
+> clearly we're not quite there yet.
 
-WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
+OK, below is an easy reproducer.  Just run it two or three times.
+It leaks 129 pages in user->locked_vm each time you run it.
 
-This occurred because a call to pci_get_domain_bus_and_slot() was added to
-cper_print_pcie() to setup for the call to cper_print_aer().  The warning
-showed up because cper_print_pcie() is called in an interrupt context and
-pci_get* functions are not supposed to be called in that context.
+It took me a while to bisect this down from 10,000 syscalls to just 3.
+I now have a tool that can generate valid perf test_cases from my fuzzer 
+traces, which should be useful.
 
-The solution is to move the cper_print_aer() call out of the interrupt
-context and into aer_recover_work_func() to avoid any warnings when calling
-pci_get* functions.
+Vince
 
-v2 - Re-worded header text.  Removed prefix arg from cper_print_aer().
-     Added TODO message in cper_print_aer().
-v3 - Changed type of u8* to struct aer_capability_regs* in the code
-     to avoid too much casting based on comment from Bjorn Helgaas.
+/* log_to_code output from bisect19.log */
+/* by Vince Weaver <vincent.weaver _at_ maine.edu */
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <linux/hw_breakpoint.h>
+#include <linux/perf_event.h>
 
- drivers/acpi/apei/cper.c               |   18 ------------------
- drivers/acpi/apei/ghes.c               |    4 +++-
- drivers/pci/pcie/aer/aerdrv_core.c     |    5 ++++-
- drivers/pci/pcie/aer/aerdrv_errprint.c |   10 ++++++++--
- include/linux/aer.h                    |    5 +++--
- 5 files changed, 18 insertions(+), 24 deletions(-)
+int fd[1024];
+struct perf_event_attr pe[1024];
+char *mmap_result[1024];
 
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index 1e5d8a4..8713229 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -250,10 +250,6 @@ static const char *cper_pcie_port_type_strs[] = {
- static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 			    const struct acpi_hest_generic_data *gdata)
- {
--#ifdef CONFIG_ACPI_APEI_PCIEAER
--	struct pci_dev *dev;
--#endif
--
- 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
- 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
- 		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
-@@ -285,20 +281,6 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 		printk(
- 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
--#ifdef CONFIG_ACPI_APEI_PCIEAER
--	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
--			pcie->device_id.bus, pcie->device_id.function);
--	if (!dev) {
--		pr_err("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
--			pcie->device_id.segment, pcie->device_id.bus,
--			pcie->device_id.slot, pcie->device_id.function);
--		return;
--	}
--	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
--		cper_print_aer(pfx, dev, gdata->error_severity,
--				(struct aer_capability_regs *) pcie->aer_info);
--	pci_dev_put(dev);
--#endif
- }
- 
- static const char *apei_estatus_section_flag_strs[] = {
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index d668a8a..403baf4 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -454,7 +454,9 @@ static void ghes_do_proc(struct ghes *ghes,
- 				aer_severity = cper_severity_to_aer(sev);
- 				aer_recover_queue(pcie_err->device_id.segment,
- 						  pcie_err->device_id.bus,
--						  devfn, aer_severity);
-+						  devfn, aer_severity,
-+						  (struct aer_capability_regs *)
-+						  pcie_err->aer_info);
- 			}
- 
- 		}
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 564d97f..120549a 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -582,6 +582,7 @@ struct aer_recover_entry
- 	u8	devfn;
- 	u16	domain;
- 	int	severity;
-+	struct aer_capability_regs *regs;
- };
- 
- static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
-@@ -595,7 +596,7 @@ static DEFINE_SPINLOCK(aer_recover_ring_lock);
- static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
- 
- void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
--		       int severity)
-+		       int severity, struct aer_capability_regs *aer_regs)
- {
- 	unsigned long flags;
- 	struct aer_recover_entry entry = {
-@@ -603,6 +604,7 @@ void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
- 		.devfn		= devfn,
- 		.domain		= domain,
- 		.severity	= severity,
-+		.regs		= aer_regs,
- 	};
- 
- 	spin_lock_irqsave(&aer_recover_ring_lock, flags);
-@@ -629,6 +631,7 @@ static void aer_recover_work_func(struct work_struct *work)
- 			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
- 			continue;
- 		}
-+		cper_print_aer(pdev, entry.severity, entry.regs);
- 		do_recovery(pdev, entry.severity);
- 		pci_dev_put(pdev);
- 	}
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index 5ab1425..f277dc3 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -220,13 +220,19 @@ int cper_severity_to_aer(int cper_severity)
- }
- EXPORT_SYMBOL_GPL(cper_severity_to_aer);
- 
--void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
-+void cper_print_aer(struct pci_dev *dev, int cper_severity,
- 		    struct aer_capability_regs *aer)
- {
- 	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
- 	u32 status, mask;
- 	const char **status_strs;
- 
-+	/*
-+	 * TODO: This function needs to be re-written so that it's output
-+	 * matches the output of aer_print_error().  Right now, the output
-+	 * is formatted very differently.
-+	 */
-+
- 	aer_severity = cper_severity_to_aer(cper_severity);
- 	if (aer_severity == AER_CORRECTABLE) {
- 		status = aer->cor_status;
-@@ -244,7 +250,7 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
- 	agent = AER_GET_AGENT(aer_severity, status);
- 	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
- 	       status, mask);
--	cper_print_bits(prefix, status, status_strs, status_strs_size);
-+	cper_print_bits("", status, status_strs, status_strs_size);
- 	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
- 	       aer_error_layer[layer], aer_agent_string[agent]);
- 	if (aer_severity != AER_CORRECTABLE)
-diff --git a/include/linux/aer.h b/include/linux/aer.h
-index ec10e1b..737f90a 100644
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -49,10 +49,11 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
- }
- #endif
- 
--extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
-+extern void cper_print_aer(struct pci_dev *dev,
- 			   int cper_severity, struct aer_capability_regs *aer);
- extern int cper_severity_to_aer(int cper_severity);
- extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
--			      int severity);
-+			      int severity,
-+			      struct aer_capability_regs *aer_regs);
- #endif //_AER_H_
- 
+int perf_event_open(struct perf_event_attr *hw_event_uptr,
+	pid_t pid, int cpu, int group_fd, unsigned long flags) {
 
+	return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+		group_fd, flags);
+}
+
+int main(int argc, char **argv) {
+
+	memset(&pe[7],0,sizeof(struct perf_event_attr));
+	pe[7].type=PERF_TYPE_BREAKPOINT;
+	pe[7].size=96;
+	pe[7].config=0x0;
+	pe[7].sample_type=0; /* 0 */
+	pe[7].read_format=PERF_FORMAT_ID; /* 4 */
+	pe[7].inherit=1;
+	pe[7].pinned=1;
+	pe[7].exclusive=1;
+	pe[7].exclude_idle=1;
+	pe[7].mmap=1;
+	pe[7].comm=1;
+	pe[7].task=1;
+	pe[7].precise_ip=3; /* must have zero skid */
+	pe[7].exclude_host=1;
+	pe[7].wakeup_events=1886953739;
+	pe[7].bp_type=HW_BREAKPOINT_R|HW_BREAKPOINT_W; /*3*/
+	pe[7].bp_addr=0x60ac86c7;
+	pe[7].bp_len=0x1;
+
+	fd[7]=perf_event_open(&pe[7],0,0,-1,0 /*0*/ );
+
+	mmap_result[7]=mmap(NULL, 129*4096,PROT_READ|PROT_WRITE, MAP_SHARED,fd[7], 0);
+	if (mmap_result[7]==MAP_FAILED) {
+		printf("MMAP FAILED!\n");
+		exit(1);
+	}
+
+	memset(&pe[8],0,sizeof(struct perf_event_attr));
+	pe[8].type=PERF_TYPE_HARDWARE;
+	pe[8].size=96;
+	pe[8].config=PERF_COUNT_HW_BUS_CYCLES;
+	pe[8].sample_type=0; /* 0 */
+	pe[8].read_format=PERF_FORMAT_ID; /* 4 */
+	pe[8].disabled=1;
+	pe[8].inherit=1;
+	pe[8].pinned=1;
+	pe[8].exclude_kernel=1;
+	pe[8].comm=1;
+	pe[8].watermark=1;
+	pe[8].precise_ip=0; /* arbitrary skid */
+	pe[8].sample_id_all=1;
+	pe[8].exclude_guest=1;
+	pe[8].wakeup_watermark=1153443849;
+	pe[8].bp_type=HW_BREAKPOINT_EMPTY;
+
+	fd[8]=perf_event_open(&pe[8],0,0,fd[7],PERF_FLAG_FD_NO_GROUP|PERF_FLAG_FD_OUTPUT /*3*/ );
+
+	/* Replayed 3 syscalls */
+	return 0;
+}
