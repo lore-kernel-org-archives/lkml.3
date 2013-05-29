@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966018Ab3E2TBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:01:50 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:60828 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759445Ab3E2TBo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:01:44 -0400
-Date: Wed, 29 May 2013 20:01:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 7/7] Documentation: Update binding for Nomadik and DBx5x
- based platforms
-Message-ID: <20130529190139.GH3012@gmail.com>
-References: <1369232581-18923-1-git-send-email-lee.jones@linaro.org>
- <1369232581-18923-8-git-send-email-lee.jones@linaro.org>
- <CACRpkdYyZZSy4VgFc+Uo=5iAF++EPmHM0U2pHcLdkDZc=Xb_sQ@mail.gmail.com>
- <20130528093815.GH22683@gmail.com>
- <CACRpkdYyZuReZEJCO6h8Ez3=7AmOm=JdT0_Gd+hDaGFnNJ8cGw@mail.gmail.com>
+	id S966066Ab3E2TCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:02:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33391 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759396Ab3E2TCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 15:02:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
+   d="scan'208";a="248307559"
+Message-ID: <51A650BC.7030604@intel.com>
+Date: Wed, 29 May 2013 21:02:20 +0200
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYyZuReZEJCO6h8Ez3=7AmOm=JdT0_Gd+hDaGFnNJ8cGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave.hansen@intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: possible_cpus broken in linux-next
+References: <51A6367E.1060400@intel.com>  <1369852557.16819.54.camel@misato.fc.hp.com> <1369853414.16819.56.camel@misato.fc.hp.com>
+In-Reply-To: <1369853414.16819.56.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="utf-8"; format="flowed"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4TJ2XXR012197
 
-On Wed, 29 May 2013, Linus Walleij wrote:
+On 5/29/2013 8:50 PM, Toshi Kani wrote:
+> On Wed, 2013-05-29 at 12:35 -0600, Toshi Kani wrote:
+>> On Wed, 2013-05-29 at 10:10 -0700, Dave Hansen wrote:
+>   :
+>
+>> Thanks for the report.  The following patch fixes the problem.
+>> -Toshi
+>>
+>> ====
+>> From: Toshi Kani <toshi.kani@hp.com>
+>> Subject: [PATCH] ACPI: Fix sysfs cpu/online of offlined cpus
+> Typo. The subject needs to be:
+>
+> Subject: [PATCH] cpu: Fix sysfs cpu/online of offlined cpus
+>
+> -Toshi
+>
+>> As reported by Dave Hansen, sysfs cpu/online shows 1 for
+>> offlined cpus at boot.
+>> https://lkml.org/lkml/2013/5/29/403
+>>
+>> Fix this problem by initializing dev.offline with cpu_online()
+>> when registering a cpu.
+>>
+>> Reported-by: Dave Hansen <dave.hansen@intel.com>
+>> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-> On Tue, May 28, 2013 at 11:38 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> >> >  Required properties:
-> >> > -- compatible: "stericsson,nmk-pinctrl", "stericsson,nmk-pinctrl-db8540",
-> >> > -              "stericsson,nmk-pinctrl-stn8815"
-> >> > +- compatible: "stericsson,db8500-pinctrl", "stericsson,db8540-pinctrl",
-> >> > +              "stericsson,stn8815-pinctrl"
-> >>
-> >> OK...
-> >>
-> >> >         pinctrl@80157000 {
-> >> > -               compatible = "stericsson,nmk-pinctrl";
-> >> > +               compatible = "stericsson,u8500-pinctrl";
-> >>
-> >> This does not look like a supported compatible string?
-> >
-> > Do you still think this, or did you change you mind?
-> 
-> Que? It is not among the listed compatible strings?
-> 
-> > If so, what makes you think it? How does it differ from:
-> >
-> > compatible = "arm,cortex-a9-twd-timer";
-> > compatible = "arm,rtc-pl031";
-> > compatible = "stericsson,db8500-gpio",
-> > compatible = "stericsson,db8500-musb",
-> > compatible = "stericsson,db8500-dma40",
-> > compatible = "stericsson,db8500-prcmu";
-> > compatible = "stericsson,db8500-prcmu-timer-4";
-> > compatible = "stericsson,db8500-thermal";
-> > compatible = "stericsson,db8500-prcmu-regulator";
-> 
-> It says u8500-pinctrl, not db8500-pinctrl.
-> 
-> Could it be that you're not actually seeing your own typo?
+Thanks Toshi!
 
-Yes, that's exactly what happened.
+Dave, can you please confirm that the problem is fixed by this patch?
 
-I thought you were mentioning the way it was laid out.
+Rafael
 
-I'll fixup.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> ---
+>>   drivers/base/cpu.c | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>> index 130ba0b..b9f0eec 100644
+>> --- a/drivers/base/cpu.c
+>> +++ b/drivers/base/cpu.c
+>> @@ -281,6 +281,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+>>   	cpu->dev.bus = &cpu_subsys;
+>>   	cpu->dev.release = cpu_device_release;
+>>   	cpu->dev.offline_disabled = !cpu->hotpluggable;
+>> +	cpu->dev.offline = !cpu_online(num);
+>>   #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+>>   	cpu->dev.bus->uevent = arch_cpu_uevent;
+>>   #endif
+>
+
+---------------------------------------------------------------------
+Intel Technology Poland sp. z o.o.
+z siedziba w Gdansku
+ul. Slowackiego 173
+80-298 Gdansk
+
+Sad Rejonowy Gdansk Polnoc w Gdansku, 
+VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
+numer KRS 101882
+
+NIP 957-07-52-316
+Kapital zakladowy 200.000 zl
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
