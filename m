@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965872Ab3E2L73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:59:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64595 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965722Ab3E2L72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:59:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roger Quadros <rogerq@ti.com>
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        kishon@ti.com, adrienverge@gmail.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] USB: PHY: Improve PHY selection logic
-Date: Wed, 29 May 2013 13:59:24 +0200
-Message-ID: <4843252.ptIdMxoBef@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1369827811-534-1-git-send-email-rogerq@ti.com>
-References: <1369827811-534-1-git-send-email-rogerq@ti.com>
+	id S965897Ab3E2MBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:01:25 -0400
+Received: from dotsec.net ([62.75.224.215]:42058 "EHLO styx.dotsec.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965418Ab3E2MBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 08:01:24 -0400
+X-Greylist: delayed 2374 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 08:01:24 EDT
+Date: Wed, 29 May 2013 13:21:37 +0200
+From: Thierry Reding <thierry@gilfi.de>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: thierry.reding@gmail.com, airlied@linux.ie, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, tbergstrom@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 3/7] gpu: host1x: Don't reset firewall between gathers
+Message-ID: <20130529112127.GA8079@manwe>
+References: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
+ <1369823168-5396-4-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DNyvBQYYW9adk2PdFfpIsGqID7T/IL2zzPWIPUbUaSr
- llc1u8fCVorEfXN4dXHe/CxLJNLb8D0QxjhPBnDafU3XMFTs2X
- 1pelJ6ej9eoANGMrikGxGGa7Ix8d6dLAhI/ixIo158D/+5dpnc
- 9x0WADWzSUQSIcbkSI2aK206OFajLxuq45XRYTMS9HnVhBtbS5
- atyUMV27IXsgEWAeFr0syYRbvsabaqfWEJ1dFc8DiU0HO2hIAk
- YNCI5T+dj95yexFjX9gjVQMDTL0WuaDN1RPTDLLJ5riU0Bfksm
- FLt5wWsfVawfwrLOGFyTcQMKvqtjk7BRs530vAo2rf+vse04E7
- 1GgF68OmtH7VfA+VrI48=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Disposition: inline
+In-Reply-To: <1369823168-5396-4-git-send-email-amerilainen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Score: -1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 May 2013 14:43:26 Roger Quadros wrote:
-> 
-> Improve Kconfig so that the relevant PHY driver can be explicitely
-> selected by the controller driver instead of relying on the user
-> to do so.
-> 
-> Detailed description in patch 1.
 
-I think you have to fold patches 3-5 into patch 1, otherwise you
-get a circular dependency between the Kconfig options during
-bisection.
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+* Arto Merilainen wrote:
+[...]
+> diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+[...]
+> @@ -553,7 +549,6 @@ int host1x_job_pin(struct host1x_job *job, struct dev=
+ice *dev)
+> =20
+>  		if (!err)
+>  			err =3D do_waitchks(job, host, g->bo);
+> -
+>  		if (err)
+>  			break;
+>  	}
+
+This is another unnecessary whitespace change, but since it was the only
+issue I saw with the series I fixed it up myself while applying.
+
+Thierry
+
+--tThc/1wpZn/ma/RB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRpeS3AAoJEN0jrNd/PrOh2eYQAIalDwI2qvEq7zcXb1KU33bC
+T/jID0lqj22WDMeiJEhGtaxUq8cRJcRvLd7CIFipVS3Dqt/uTuGSq4m21j55Cl3q
+RJhKmpaa9h3Kj/Fof6fQs4TWDVaf6qMT9KmuPC5fZhyDR6NpuYi8VkcYIL8U7azA
+FNnR3cO1DKcK3xnuRxNuv6ntMaJIPzfWmmSX8ikMd71aGzjN3XWwDktYFR7FwnLb
+UUTz+SUk+wefIdO3ZeQdRV0B0qlELVR1fYih7HhMfRdGmK0w8gb3iUHy228ThFcX
+I20BuCn/iNr7czqnPH0S8Mi5ryLOdswY5SshzzlnA6O5oLHvaWjFDhlrpJPMEXdU
+jT02xmvz1jqUseSjnsfdUa5QrsfTDuAXXhC7t/Pq6ChZQ0D/CN8/xXUiqymYPUlc
+4AiFGojlYE2YR2c//emlCq0osPhvRaQcV+P1KpCpBai2M3umjfCtP7wK/EwnU1nd
+n7qe4Nbrwb4rw4/7mRzS6YT7G40YsONqsVCjs/IvhIrAtQYtrqsDPkMafz63JYn7
+3A8ix6PK8u+KaaHJoLf5reC8DHl8KueqF2vSkj0D0qnG6LOyY36gIiBniTJE8Yip
+51uOHKf15IB0dz3X940VgoJlSSdPQVzk/nNbgy+lHW3VC7wuKzyen0tPv+ojor0K
+OTQ3FJTBQTPDgYC/Voci
+=yPnk
+-----END PGP SIGNATURE-----
+
+--tThc/1wpZn/ma/RB--
