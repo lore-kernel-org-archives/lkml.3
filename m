@@ -1,356 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965843Ab3E2LD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:56 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35866 "EHLO SMTP.CITRIX.COM"
+	id S965863Ab3E2LET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:04:19 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43503 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965804Ab3E2LDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:03:46 -0400
-X-IronPort-AV: E=Sophos;i="4.87,763,1363132800"; 
-   d="scan'208";a="27941724"
-Date: Wed, 29 May 2013 12:03:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <marc.zyngier@arm.com>,
-        <will.deacon@arm.com>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v4 1/4] xen: move xen_setup_runstate_info and
- get_runstate_snapshot to drivers/xen/time.c
-In-Reply-To: <20130528181515.GB27718@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com> <1369763672-12919-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130528181515.GB27718@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S965682Ab3E2LEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:04:15 -0400
+From: Glauber Costa <glommer@openvz.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
+        Glauber Costa <glommer@openvz.org>
+Subject: [PATCH v7 11/11] sched: introduce cgroup file stat_percpu
+Date: Wed, 29 May 2013 15:03:22 +0400
+Message-Id: <1369825402-31046-12-git-send-email-glommer@openvz.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013, Konrad Rzeszutek Wilk wrote:
-> On Tue, May 28, 2013 at 06:54:29PM +0100, Stefano Stabellini wrote:
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > CC: konrad.wilk@oracle.com
-> > 
-> > Changes in v2:
-> > - leave do_stolen_accounting in arch/x86/xen/time.c;
-> > - use the new common functions in arch/ia64/xen/time.c.
-> 
-> So you also modify the function.
+The file cpu.stat_percpu will show various scheduler related
+information, that are usually available to the top level through other
+files.
 
-do_stolen_accounting? Just enought to call the new common function
-xen_get_runstate_snapshot instead of the old x86 specific
-get_runstate_snapshot.
+For instance, most of the meaningful data in /proc/stat is presented
+here. Given this file, a container can easily construct a local copy of
+/proc/stat for internal consumption.
 
+The data we export is comprised of:
+* all the tick information, previously available only through cpuacct,
+  like user time, system time, etc.
 
-> > ---
-> >  arch/ia64/xen/time.c  |   48 +++----------------------
-> >  arch/x86/xen/time.c   |   76 +----------------------------------------
-> >  drivers/xen/Makefile  |    2 +-
-> >  drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/xen/xen-ops.h |    5 +++
-> >  5 files changed, 104 insertions(+), 118 deletions(-)
-> >  create mode 100644 drivers/xen/time.c
-> > 
-> > diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
-> > index 1f8244a..79a0b8c 100644
-> > --- a/arch/ia64/xen/time.c
-> > +++ b/arch/ia64/xen/time.c
-> > @@ -34,53 +34,17 @@
-> >  
-> >  #include "../kernel/fsyscall_gtod_data.h"
-> >  
-> > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> >  static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
-> >  static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
-> >  
-> >  /* taken from i386/kernel/time-xen.c */
-> >  static void xen_init_missing_ticks_accounting(int cpu)
-> >  {
-> > -	struct vcpu_register_runstate_memory_area area;
-> > -	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
-> > -	int rc;
-> > +	xen_setup_runstate_info(&runstate);
-> >  
-> > -	memset(runstate, 0, sizeof(*runstate));
-> > -
-> > -	area.addr.v = runstate;
-> > -	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
-> > -				&area);
-> > -	WARN_ON(rc && rc != -ENOSYS);
-> > -
-> > -	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
-> > -	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
-> > -					    + runstate->time[RUNSTATE_offline];
-> > -}
-> > -
-> > -/*
-> > - * Runstate accounting
-> > - */
-> > -/* stolen from arch/x86/xen/time.c */
-> > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > -{
-> > -	u64 state_time;
-> > -	struct vcpu_runstate_info *state;
-> > -
-> > -	BUG_ON(preemptible());
-> > -
-> > -	state = &__get_cpu_var(xen_runstate);
-> > -
-> > -	/*
-> > -	 * The runstate info is always updated by the hypervisor on
-> > -	 * the current CPU, so there's no need to use anything
-> > -	 * stronger than a compiler barrier when fetching it.
-> > -	 */
-> > -	do {
-> > -		state_time = state->state_entry_time;
-> > -		rmb();
-> > -		*res = *state;
-> > -		rmb();
-> > -	} while (state->state_entry_time != state_time);
-> > +	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
-> > +	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
-> > +					    + runstate.time[RUNSTATE_offline];
-> >  }
-> >  
-> >  #define NS_PER_TICK (1000000000LL/HZ)
-> > @@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
-> >  	struct vcpu_runstate_info runstate;
-> >  	struct task_struct *p = current;
-> >  
-> > -	get_runstate_snapshot(&runstate);
-> > +	xen_get_runstate_snapshot(&runstate);
-> >  
-> >  	/*
-> >  	 * Check for vcpu migration effect
-> > @@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
-> >  	 */
-> >  	now = ia64_native_sched_clock();
-> >  
-> > -	get_runstate_snapshot(&runstate);
-> > +	xen_get_runstate_snapshot(&runstate);
-> >  
-> >  	WARN_ON(runstate.state != RUNSTATE_running);
-> >  
-> > diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-> > index 3d88bfd..c0ca15e 100644
-> > --- a/arch/x86/xen/time.c
-> > +++ b/arch/x86/xen/time.c
-> > @@ -30,9 +30,6 @@
-> >  #define TIMER_SLOP	100000
-> >  #define NS_PER_TICK	(1000000000LL / HZ)
-> >  
-> > -/* runstate info updated by Xen */
-> > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> > -
-> >  /* snapshots of runstate info */
-> >  static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
-> >  
-> > @@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
-> >  static DEFINE_PER_CPU(u64, xen_residual_stolen);
-> >  static DEFINE_PER_CPU(u64, xen_residual_blocked);
-> >  
-> > -/* return an consistent snapshot of 64-bit time/counter value */
-> > -static u64 get64(const u64 *p)
-> > -{
-> > -	u64 ret;
-> > -
-> > -	if (BITS_PER_LONG < 64) {
-> > -		u32 *p32 = (u32 *)p;
-> > -		u32 h, l;
-> > -
-> > -		/*
-> > -		 * Read high then low, and then make sure high is
-> > -		 * still the same; this will only loop if low wraps
-> > -		 * and carries into high.
-> > -		 * XXX some clean way to make this endian-proof?
-> > -		 */
-> > -		do {
-> > -			h = p32[1];
-> > -			barrier();
-> > -			l = p32[0];
-> > -			barrier();
-> > -		} while (p32[1] != h);
-> > -
-> > -		ret = (((u64)h) << 32) | l;
-> > -	} else
-> > -		ret = *p;
-> > -
-> > -	return ret;
-> > -}
-> > -
-> > -/*
-> > - * Runstate accounting
-> > - */
-> > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > -{
-> > -	u64 state_time;
-> > -	struct vcpu_runstate_info *state;
-> > -
-> > -	BUG_ON(preemptible());
-> > -
-> > -	state = &__get_cpu_var(xen_runstate);
-> > -
-> > -	/*
-> > -	 * The runstate info is always updated by the hypervisor on
-> > -	 * the current CPU, so there's no need to use anything
-> > -	 * stronger than a compiler barrier when fetching it.
-> > -	 */
-> > -	do {
-> > -		state_time = get64(&state->state_entry_time);
-> > -		barrier();
-> > -		*res = *state;
-> > -		barrier();
-> > -	} while (get64(&state->state_entry_time) != state_time);
-> > -}
-> > -
-> > -/* return true when a vcpu could run but has no real cpu to run on */
-> > -bool xen_vcpu_stolen(int vcpu)
-> > -{
-> > -	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
-> > -}
-> > -
-> > -void xen_setup_runstate_info(int cpu)
-> > -{
-> > -	struct vcpu_register_runstate_memory_area area;
-> > -
-> > -	area.addr.v = &per_cpu(xen_runstate, cpu);
-> > -
-> > -	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
-> > -			       cpu, &area))
-> > -		BUG();
-> > -}
-> > -
-> >  static void do_stolen_accounting(void)
-> >  {
-> >  	struct vcpu_runstate_info state;
-> > @@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
-> >  	s64 blocked, runnable, offline, stolen;
-> >  	cputime_t ticks;
-> >  
-> > -	get_runstate_snapshot(&state);
-> > +	xen_get_runstate_snapshot(&state);
-> >  
-> >  	WARN_ON(state.state != RUNSTATE_running);
-> >  
-> > diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> > index eabd0ee..2bf461a 100644
-> > --- a/drivers/xen/Makefile
-> > +++ b/drivers/xen/Makefile
-> > @@ -3,7 +3,7 @@ obj-y	+= manage.o
-> >  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-> >  endif
-> >  obj-$(CONFIG_X86)			+= fallback.o
-> > -obj-y	+= grant-table.o features.o events.o balloon.o
-> > +obj-y	+= grant-table.o features.o events.o balloon.o time.o
-> >  obj-y	+= xenbus/
-> >  
-> >  nostackp := $(call cc-option, -fno-stack-protector)
-> > diff --git a/drivers/xen/time.c b/drivers/xen/time.c
-> > new file mode 100644
-> > index 0000000..c2e39d3
-> > --- /dev/null
-> > +++ b/drivers/xen/time.c
-> > @@ -0,0 +1,91 @@
-> > +/*
-> > + * Xen stolen ticks accounting.
-> > + */
-> > +#include <linux/kernel.h>
-> > +#include <linux/kernel_stat.h>
-> > +#include <linux/math64.h>
-> > +#include <linux/gfp.h>
-> > +
-> > +#include <asm/xen/hypervisor.h>
-> > +#include <asm/xen/hypercall.h>
-> > +
-> > +#include <xen/events.h>
-> > +#include <xen/features.h>
-> > +#include <xen/interface/xen.h>
-> > +#include <xen/interface/vcpu.h>
-> > +#include <xen/xen-ops.h>
-> > +
-> > +/* runstate info updated by Xen */
-> > +static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
-> > +
-> > +/* return an consistent snapshot of 64-bit time/counter value */
-> > +static u64 get64(const u64 *p)
-> > +{
-> > +	u64 ret;
-> > +
-> > +	if (BITS_PER_LONG < 64) {
-> > +		u32 *p32 = (u32 *)p;
-> > +		u32 h, l;
-> > +
-> > +		/*
-> > +		 * Read high then low, and then make sure high is
-> > +		 * still the same; this will only loop if low wraps
-> > +		 * and carries into high.
-> > +		 * XXX some clean way to make this endian-proof?
-> > +		 */
-> > +		do {
-> > +			h = p32[1];
-> > +			barrier();
-> > +			l = p32[0];
-> > +			barrier();
-> > +		} while (p32[1] != h);
-> > +
-> > +		ret = (((u64)h) << 32) | l;
-> > +	} else
-> > +		ret = *p;
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +/*
-> > + * Runstate accounting
-> > + */
-> > +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
-> > +{
-> > +	u64 state_time;
-> > +	struct vcpu_runstate_info *state;
-> > +
-> > +	BUG_ON(preemptible());
-> > +
-> > +	state = &__get_cpu_var(xen_runstate);
-> > +
-> > +	/*
-> > +	 * The runstate info is always updated by the hypervisor on
-> > +	 * the current CPU, so there's no need to use anything
-> > +	 * stronger than a compiler barrier when fetching it.
-> > +	 */
-> > +	do {
-> > +		state_time = get64(&state->state_entry_time);
-> > +		barrier();
-> > +		*res = *state;
-> > +		barrier();
-> > +	} while (get64(&state->state_entry_time) != state_time);
-> > +}
-> > +
-> > +/* return true when a vcpu could run but has no real cpu to run on */
-> > +bool xen_vcpu_stolen(int vcpu)
-> > +{
-> > +	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
-> > +}
-> > +
-> > +void xen_setup_runstate_info(int cpu)
-> > +{
-> > +	struct vcpu_register_runstate_memory_area area;
-> > +
-> > +	area.addr.v = &per_cpu(xen_runstate, cpu);
-> > +
-> > +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
-> > +			       cpu, &area))
-> > +		BUG();
-> 
-> The original code did:
-> 
-> -       rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
-> -                               &area);
-> -       WARN_ON(rc && rc != -ENOSYS);
-> -
-> Any reason not to do this?
+* wait time, which can be used to construct analogous information to
+  steal time in hypervisors,
 
-The original x86 code just BUGs out: I took that version over the ia64
-version.
+* nr_switches and nr_running, which are cgroup-local versions of
+  their global counterparts.
+
+The file format consists of a one-line header that describes the fields
+being listed.  No guarantee is given that the fields will be kept the
+same between kernel releases, and readers should always check the header
+in order to introspect it.
+
+Each of the following lines will show the respective field value for
+each of the possible cpus in the system. All values are show in
+nanoseconds.
+
+One example output for this file is:
+
+cpu user nice system irq softirq guest guest_nice wait nr_switches nr_running
+cpu0 471000000 0 15000000 0 0 0 0 1996534 7205 1
+cpu1 588000000 0 17000000 0 0 0 0 2848680 6510 1
+cpu2 505000000 0 14000000 0 0 0 0 2350771 6183 1
+cpu3 472000000 0 16000000 0 0 0 0 19766345 6277 2
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+---
+ Documentation/cgroups/cpu.txt |  18 +++++++
+ kernel/sched/core.c           | 109 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/fair.c           |  14 ++++++
+ kernel/sched/sched.h          |  10 +++-
+ 4 files changed, 150 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/cgroups/cpu.txt b/Documentation/cgroups/cpu.txt
+index 072fd58..d40e500 100644
+--- a/Documentation/cgroups/cpu.txt
++++ b/Documentation/cgroups/cpu.txt
+@@ -68,6 +68,24 @@ The CPU controller exposes the following files to the user:
+    can ever be run in this cgroup. For more information about rt tasks runtime
+    assignments, see scheduler/sched-rt-group.txt
+ 
++ - cpu.stat_percpu: Various scheduler statistics for the current group. The
++   information provided in this file is akin to the one displayed in /proc/stat,
++   except for the fact that it is cgroup-aware. The file format consists of a
++   one-line header that describes the fields being listed.  No guarantee is
++   given that the fields will be kept the same between kernel releases, and
++   readers should always check the header in order to introspect it.
++
++   Each of the following lines will show the respective field value for
++   each of the possible cpus in the system. All values are show in
++   nanoseconds. One example output for this file is:
++
++   cpu user nice system irq softirq guest guest_nice wait nr_switches nr_running
++   cpu0 471000000 0 15000000 0 0 0 0 1996534 7205 1
++   cpu1 588000000 0 17000000 0 0 0 0 2848680 6510 1
++   cpu2 505000000 0 14000000 0 0 0 0 2350771 6183 1
++   cpu3 472000000 0 16000000 0 0 0 0 19766345 6277 2
++
++
+  - cpuacct.usage: The aggregate CPU time, in nanoseconds, consumed by all tasks
+    in this group.
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 892c828..e2963ec 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7239,6 +7239,7 @@ static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
+ #else
+ static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
+ {
++	return 0;
+ }
+ 
+ static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
+@@ -7670,6 +7671,108 @@ static u64 cpu_rt_period_read_uint(struct cgroup *cgrp, struct cftype *cft)
+ }
+ #endif /* CONFIG_RT_GROUP_SCHED */
+ 
++#ifdef CONFIG_SCHEDSTATS
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++#define fair_rq(field, tg, i)  (tg)->cfs_rq[i]->field
++#else
++#define fair_rq(field, tg, i)  0
++#endif
++
++#ifdef CONFIG_RT_GROUP_SCHED
++#define rt_rq(field, tg, i)  (tg)->rt_rq[i]->field
++#else
++#define rt_rq(field, tg, i)  0
++#endif
++
++static u64 tg_nr_switches(struct task_group *tg, int cpu)
++{
++	/* nr_switches, which counts idle and stop task, is added to all tgs */
++	return cpu_rq(cpu)->nr_switches +
++		cfs_nr_switches(tg, cpu) + rt_nr_switches(tg, cpu);
++}
++
++static u64 tg_nr_running(struct task_group *tg, int cpu)
++{
++	/*
++	 * because of autogrouped groups in root_task_group, the
++	 * following does not hold.
++	 */
++	if (tg != &root_task_group)
++		return rt_rq(rt_nr_running, tg, cpu) + fair_rq(nr_running, tg, cpu);
++
++	return cpu_rq(cpu)->nr_running;
++}
++
++static u64 tg_wait(struct task_group *tg, int cpu)
++{
++	u64 val;
++
++	if (tg != &root_task_group)
++		val = cfs_read_wait(tg, cpu);
++	else
++		/*
++		 * There are many errors here that we are accumulating.
++		 * However, we only provide this in the interest of having
++		 * a consistent interface for all cgroups. Everybody
++		 * probing the root cgroup should be getting its figures
++		 * from system-wide files as /proc/stat. That would be faster
++		 * to begin with...
++		 */
++		val = kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL] * TICK_NSEC;
++
++	return val;
++}
++
++static inline void do_fill_seq(struct seq_file *m, struct task_group *tg,
++			       int cpu, int index)
++{
++	u64 val = 0;
++	struct kernel_cpustat *kcpustat;
++	kcpustat = per_cpu_ptr(tg->cpustat, cpu);
++	val = cputime64_to_clock_t(kcpustat->cpustat[index]) * TICK_NSEC;
++	seq_put_decimal_ull(m, ' ', val);
++}
++
++/*
++ * This will dislay per-cpu statistics about the running cgroup. The file
++ * format consists of a one-line header that describes the fields being listed.
++ * No guarantee is given that the fields will be kept the same between kernel
++ * releases, and readers should always check the header in order to introspect
++ * it. The first column, however, will always be in the form cpux, where
++ * x is the logical number of the cpu.
++ *
++ * Each of the following lines will show the respective field value for each of
++ * the possible cpus in the system. All values are show in nanoseconds.
++ */
++static int cpu_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
++				 struct seq_file *m)
++{
++	struct task_group *tg = cgroup_tg(cgrp);
++	int cpu;
++
++	seq_printf(m, "cpu user nice system irq softirq guest guest_nice ");
++	seq_printf(m, "wait nr_switches nr_running\n");
++
++	for_each_possible_cpu(cpu) {
++		seq_printf(m, "cpu%d", cpu);
++		do_fill_seq(m, tg, cpu, CPUTIME_USER);
++		do_fill_seq(m, tg, cpu, CPUTIME_NICE);
++		do_fill_seq(m, tg, cpu, CPUTIME_SYSTEM);
++		do_fill_seq(m, tg, cpu, CPUTIME_IRQ);
++		do_fill_seq(m, tg, cpu, CPUTIME_SOFTIRQ);
++		do_fill_seq(m, tg, cpu, CPUTIME_GUEST);
++		do_fill_seq(m, tg, cpu, CPUTIME_GUEST_NICE);
++		seq_put_decimal_ull(m, ' ', tg_wait(tg, cpu));
++		seq_put_decimal_ull(m, ' ', tg_nr_switches(tg, cpu));
++		seq_put_decimal_ull(m, ' ', tg_nr_running(tg, cpu));
++		seq_putc(m, '\n');
++	}
++
++	return 0;
++}
++#endif
++
+ static struct cftype cpu_files[] = {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	{
+@@ -7723,6 +7826,12 @@ static struct cftype cpu_files[] = {
+ 		.flags = CFTYPE_NO_PREFIX,
+ 		.read_map = cpucg_stats_show,
+ 	},
++#ifdef CONFIG_SCHEDSTATS
++	{
++		.name = "stat_percpu",
++		.read_seq_string = cpu_stats_percpu_show,
++	},
++#endif
+ 	{ }	/* terminate */
+ };
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b29e5dd..f718c28 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1123,6 +1123,20 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq)
+ 
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
++
++#ifdef CONFIG_SCHEDSTATS
++u64 cfs_read_wait(struct task_group *tg, int cpu)
++{
++	struct sched_entity *se = tg->se[cpu];
++	struct cfs_rq *cfs_rq = cfs_rq_of(se);
++	u64 value = se->statistics.wait_sum;
++
++	if (!se->statistics.wait_start)
++		return value;
++
++	return value + rq_of(cfs_rq)->clock - se->statistics.wait_start;
++}
++#endif
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ {
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 39d3284..742870e 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -242,8 +242,16 @@ extern void sched_move_task(struct task_struct *tsk);
+ extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
+ #endif
+ 
+-#else /* CONFIG_CGROUP_SCHED */
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
++extern u64 cfs_read_wait(struct task_group *tg, int cpu);
++#else
++static inline u64 cfs_read_wait(struct task_group *tg, int cpu)
++{
++	return 0;
++}
++#endif
++#else /* CONFIG_CGROUP_SCHED */
+ struct cfs_bandwidth { };
+ 
+ #endif	/* CONFIG_CGROUP_SCHED */
+-- 
+1.8.1.4
+
