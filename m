@@ -1,47 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967096Ab3E2VPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:15:35 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48937 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966939Ab3E2VPX (ORCPT
+	id S966723Ab3E2VQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:16:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50451 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933570Ab3E2VQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:15:23 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 2/2] USB: xhci: show firmware version for Renesas XHCI hosts if debug is enabled
-Date: Wed, 29 May 2013 23:14:33 +0200
-Message-Id: <1369862073-3685-2-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1369862073-3685-1-git-send-email-holler@ahsoftware.de>
-References: <1369862073-3685-1-git-send-email-holler@ahsoftware.de>
+	Wed, 29 May 2013 17:16:33 -0400
+Date: Wed, 29 May 2013 14:16:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 3/4] zswap: add to mm/
+Message-Id: <20130529141630.8f2d1aa9b16d05e60e4a7ada@linux-foundation.org>
+In-Reply-To: <20130529210820.GF428@cerebellum>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1369067168-12291-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	<20130528145918.acbd84df00313e527cf04d1b@linux-foundation.org>
+	<20130529145720.GA428@cerebellum>
+	<20130529112929.24005ae9cf1d9d636b2ea42f@linux-foundation.org>
+	<20130529195027.GC428@cerebellum>
+	<20130529125747.23a6a26cdcb013842bf31644@linux-foundation.org>
+	<20130529210820.GF428@cerebellum>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They support the same vendor specific command as former NEC hosts.
+On Wed, 29 May 2013 16:08:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- drivers/usb/host/xhci-pci.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> On Wed, May 29, 2013 at 12:57:47PM -0700, Andrew Morton wrote:
+> > On Wed, 29 May 2013 14:50:27 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> > 
+> > > On Wed, May 29, 2013 at 11:29:29AM -0700, Andrew Morton wrote:
+> > > > On Wed, 29 May 2013 09:57:20 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> > > > 
+> > > > > > > +/*********************************
+> > > > > > > +* helpers
+> > > > > > > +**********************************/
+> > > > > > > +static inline bool zswap_is_full(void)
+> > > > > > > +{
+> > > > > > > +	return (totalram_pages * zswap_max_pool_percent / 100 <
+> > > > > > > +		zswap_pool_pages);
+> > > > > > > +}
+> > > > > > 
+> > > > > > We have had issues in the past where percentage-based tunables were too
+> > > > > > coarse on very large machines.  For example, a terabyte machine where 0
+> > > > > > bytes is too small and 10GB is too large.
+> > > > > 
+> > > > > Yes, this is known limitation of the code right now and it is a high priority
+> > > > > to come up with something better.  It isn't clear what dynamic sizing policy
+> > > > > should be used so, until such time as that policy can be determined, this is a
+> > > > > simple stop-gap that works well enough for simple setups.
+> > > > 
+> > > > It's a module parameter and hence is part of the userspace interface. 
+> > > > It's undesirable that the interface be changed, and it would be rather
+> > > > dumb to merge it as-is when we *know* that it will be changed.
+> > > > 
+> > > > I don't think we can remove the parameter altogether (or can we?), so I
+> > > > suggest we finalise it ASAP.  Perhaps rename it to
+> > > > zswap_max_pool_ratio, with a range 1..999999.  Better ideas needed :(
+> > > 
+> > > zswap_max_pool_ratio is fine with me.  I'm not entirely clear on the change
+> > > though.  Would that just be a name change or a change in meaning?
+> > 
+> > It would be a change in behaviour.  The problem which I'm suggesting we
+> > address is that a 1% increment is too coarse.
+> 
+> Sorry, but I'm not getting this.  This zswap_max_pool_ratio is a ratio of what
+> to what?  Maybe if you wrote out the calculation of the max pool size using
+> this ratio I'll get it.
+> 
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index f47d3d2..9977cee 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -78,7 +78,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
- 
--	if (pdev->vendor == PCI_VENDOR_ID_NEC)
-+	if (pdev->vendor == PCI_VENDOR_ID_NEC ||
-+			pdev->vendor == PCI_VENDOR_ID_RENESAS)
- 		xhci->quirks |= XHCI_NEC_SHOW_FW;
- 
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && xhci->hci_version == 0x96)
--- 
-1.8.1.5
+This:
 
+	totalram_pages * zswap_max_pool_percent / 100
+
+means that we have are able to control the pool size in 10GB increments
+on a 1TB machine.  Past experience with other tunables tells us that
+this can be a problem.  Hence my (lame) suggestion that we replace it
+with
+
+	totalram_pages * zswap_max_pool_ratio / 1000000
+
+
+Another approach would be to stop using a ratio altogether, and make the
+tunable specify an absolute number of bytes.  That's how we approached
+this problem in the case of /proc/sys/vm/dirty_background_ratio.  See
+https://lkml.org/lkml/2008/11/23/160.
+
+(And it's "bytes", not "pages" because PAGE_SIZE can vary by a factor
+of 16, which is a lot). 
