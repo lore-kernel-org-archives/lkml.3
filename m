@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966750Ab3E2ULs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:11:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56767 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S966369Ab3E2ULl (ORCPT
+	id S966779Ab3E2UM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:12:57 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:56850 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965519Ab3E2UMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:11:41 -0400
-Date: Wed, 29 May 2013 16:11:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: Julius Werner <jwerner@chromium.org>,
-        Shawn Nematbakhsh <shawnn@chromium.org>, <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
- controllers.
-In-Reply-To: <20130529193828.GK32085@xanatos>
-Message-ID: <Pine.LNX.4.44L0.1305291558330.885-100000@iolanthe.rowland.org>
+	Wed, 29 May 2013 16:12:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130529122707.997236928e9f87dc6ba2eaa7@linux-foundation.org>
+References: <1369271045-17410-1-git-send-email-dbasehore@chromium.org>
+	<20130529122707.997236928e9f87dc6ba2eaa7@linux-foundation.org>
+Date: Wed, 29 May 2013 13:12:51 -0700
+X-Google-Sender-Auth: Sj6MJA5nyZxGtYwtsaKh3ksQ9NE
+Message-ID: <CAGAzgsrXzGHEmSo3U7Sbo9A=hDeCk2zKifszJXdmAUf5Tf66-w@mail.gmail.com>
+Subject: Re: [PATCH] rtc: cmos: Fix accidentally enabling rtc channel
+From: "dbasehore ." <dbasehore@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, rostedt@goodmis.org,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013, Sarah Sharp wrote:
+I'm still debugging all of the issues, but allowing the cmos interrupt
+handler to run before resuming caused some issues where the timer for
+the alarm was not removed. This would cause other, later timers to not
+be cleared, so utilities such as hwclock would time out when waiting
+for the update interrupt.
 
-> On Tue, May 28, 2013 at 02:41:18PM -0700, Julius Werner wrote:
-> > The policy we want to achieve is to disable runtime PM iff there is a
-> > device connected that doesn't have persist_enabled or a reset_resume()
-> > handler and whose parent/root hub resets on resume, right?
-> 
-> Makes sense.  However, not all distros may want that policy, so there
-> should be a way to change that policy via sysfs.  Some distros may
-> choose to take the power savings over having a particular USB device
-> work, especially in the server market.
-> 
-> Don, Oliver, what do you think of this patch:
-> http://marc.info/?l=linux-usb&m=136941922715772&w=2
-> 
-> Julius is proposing to limit the scope of the patch a bit, but the
-> impact will still be that TI hosts will be active more often than not.
+There's another patch needed that I am currently testing that works
+around an issue seen in coreboot (and probably other firmware) where
+the RTC_CONTROL register is cleared before we get to the kernel. This
+prevents the cmos interrupt handler from clearing an alarm.
 
-In many cases, the usual default of allowing the root hub to 
-autosuspend will be acceptable.  In cases where it isn't, I think we 
-will have to rely on userspace to tell us.  The simplest way is for 
-userspace to forbid autosuspend.
-
-That may not be flexible enough, but at this point there doesn't seem 
-to be any way for the kernel to include all the different policies that 
-userspace might want.  All we can do is make the information available.
-
-There already is a "quirks" attribute in sysfs, but it's probably not 
-good enough for this.  The contents are subject to change if we 
-renumber the QUIRK bits.  Maybe something more like the "avoid_reset" 
-attribute.
-
-A problem with registering sysfs attributes from within xhci-hcd is
-that they won't become visible until some time after the device is
-registered.  If a udev script runs too quickly, it won't see the
-attribute.
-
-> > So couldn't
-> > we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
-> > generic USB_QUIRK_RESET_RESUME on the root hub instead?  Then we could
-> > handle all of this in the USB core (during device initialization and
-> > when changing persist_enabled through sysfs) by just checking for
-> > udev->reset_resume on all parent hubs of the device in question (and
-> > use pm_runtime_get/put() on said device to prevent its parents from
-> > suspending as appropriate).
-> 
-> Alan, what happens if we set USB_QUIRK_RESET_RESUME on the roothub?
-> I don't think that currently translates into the host controller's Reset
-> register getting written, which is what I think Julius is proposing.
-
-Hmmm.  Now that I look more closely, setting the RESET_RESUME quirk on
-the root hub would prevent it from ever going into runtime suspend,
-which is not what we are after.  (The quirk disables autosuspend for
-devices whose drivers don't support reset-resume or require remote
-wakeup.)
-
-Oh, well.
-
-Alan Stern
-
+On Wed, May 29, 2013 at 12:27 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 22 May 2013 18:04:05 -0700 Derek Basehore <dbasehore@chromium.org> wrote:
+>
+>> During resume, we call hpet_rtc_timer_init after masking an irq bit in hpet.
+>> This will cause the call to hpet_disable_rtc_channel to be undone if RTC_AIE is
+>> the only bit not masked.
+>
+> What were the user-visible runtime effects of this bug?
