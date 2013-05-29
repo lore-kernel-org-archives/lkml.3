@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967115Ab3E2XKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:10:51 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51888 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966322Ab3E2XKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:10:40 -0400
-Message-ID: <51A68AE9.6070709@ozlabs.ru>
-Date: Thu, 30 May 2013 09:10:33 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: David Gibson <david@gibson.dropbear.id.au>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru> <1369784115.18630.27@snotra> <51A547F0.8090406@ozlabs.ru> <1369857949.18630.42@snotra>
-In-Reply-To: <1369857949.18630.42@snotra>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	id S967159Ab3E2XO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:14:58 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44308 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966668Ab3E2XOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:14:52 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH] mm: sparse: use __aligned() instead of manual padding in mem_section
+Date: Wed, 29 May 2013 16:14:39 -0700
+Message-Id: <1369869279-20155-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.3
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052923-5806-0000-0000-00002168671B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 06:05 AM, Scott Wood wrote:
-> On 05/28/2013 07:12:32 PM, Alexey Kardashevskiy wrote:
->> On 05/29/2013 09:35 AM, Scott Wood wrote:
->> > On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
->> >> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
->> >> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2, struct
->> >> >> >>> kvm_device_attr)
->> >> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3, struct
->> >> >> >>> kvm_device_attr)
->> >> >> >>>
->> >> >> >>> +/* ioctl for SPAPR TCE IOMMU */
->> >> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4, struct
->> >> >> >>> kvm_create_spapr_tce_iommu)
->> >> >> >>
->> >> >> >> Shouldn't this go under the vm ioctl section?
->> >> >>
->> >> >>
->> >> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for emulated
->> >> devices) is
->> >> >> in this section so I decided to keep them together. Wrong?
->> >> >
->> >> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
->> >> > KVM_CREATE_SPAPR_TCE_IOMMU?
->> >>
->> >> Yes.
->> >
->> > Sigh.  That's the same thing repeated.  There's only one IOCTL. 
->> Nothing is
->> > being "kept together".
->>
->> Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
-> 
-> But you didn't put it in the same section as KVM_CREATE_SPAPR_TCE.  0xe0
-> begins a different section.
+Instead of leaving a trap for the next person who comes along and wants
+to add something to mem_section, add an __aligned() and remove the
+manual padding added for MEMCG.
 
-It is not really obvious that there are sections as no comment defines
-those :) But yes, makes sense to move it up a bit and change the code to 0xad.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ include/linux/mmzone.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
+---
 
+Also, does anyone know what causes this alignment to be required here? I found
+this was breaking things in a patchset I'm working on (WARNs in sysfs code
+about duplicate filenames when initing mem_sections). Adding some documentation
+for the reason would be appreciated.
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 131989a..a8e8056 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1125,9 +1125,8 @@ struct mem_section {
+ 	 * section. (see memcontrol.h/page_cgroup.h about this.)
+ 	 */
+ 	struct page_cgroup *page_cgroup;
+-	unsigned long pad;
+ #endif
+-};
++} __aligned(2 * sizeof(unsigned long));
+ 
+ #ifdef CONFIG_SPARSEMEM_EXTREME
+ #define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
 -- 
-Alexey
+1.8.3
+
