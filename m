@@ -1,198 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab3E2Gk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 02:40:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9484 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935040Ab3E2GkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 02:40:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,763,1363158000"; 
-   d="scan'208";a="341780609"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v6 net-next 5/5] ixgbe: add extra stats for ndo_ll_poll
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 29 May 2013 09:40:06 +0300
-Message-ID: <20130529064006.27486.21362.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
+	id S935015Ab3E2GrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 02:47:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51918 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab3E2GrU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 02:47:20 -0400
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@nvidia.com>, Daniel Mack <zonque@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Marek Belisko <marek.belisko@streamunlimited.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <20130529064715.6058.43702@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 0/2] clk: add of_clk_provider stubs to enable clk-si5351 on non OF
+Date: Tue, 28 May 2013 23:47:15 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional statistics to the ixgbe driver for ndo_ll_poll
-Defined under LL_EXTENDED_STATS
+Quoting Sebastian Hesselbarth (2013-04-30 17:58:27)
+> Enabling drivers that provide clocks on DT on platforms that don't have
+> CONFIG_OF set fails due to compilation errors. This patch set first adds
+> some stubs for of_clk_provider functions if CONFIG_OF is not set. Second
+> it allows those platforms to build and use clk-si5351 i2c clock driver
+> by removing the dependency on CONFIG_OF.
+> 
+> The above approach has been suggested by Arnd Bergmann and replaces the
+> corresponding Kconfig patch for clk-si5351 posted earlier. It has been
+> compile tested with allmodconfig on x86_64 for post v3.9.
+> 
+> Sebastian Hesselbarth (2):
+>   clk: add non CONFIG_OF routines for clk-provider
+>   clk: si5351: Allow to build without CONFIG_OF
+> 
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+Both are taken into clk-next.
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
- 3 files changed, 60 insertions(+), 0 deletions(-)
+Thanks,
+Mike
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index 04fdbf6..9765772 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -54,6 +54,9 @@
- 
- #include <net/ll_poll.h>
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+#define LL_EXTENDED_STATS
-+#endif
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -184,6 +187,11 @@ struct ixgbe_rx_buffer {
- struct ixgbe_queue_stats {
- 	u64 packets;
- 	u64 bytes;
-+#ifdef LL_EXTENDED_STATS
-+	u64 yields;
-+	u64 misses;
-+	u64 cleaned;
-+#endif  /* LL_EXTENDED_STATS */
- };
- 
- struct ixgbe_tx_queue_stats {
-@@ -391,6 +399,9 @@ static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->tx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
-@@ -421,6 +432,9 @@ static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
- 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
- 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->rx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* preserve yield marks */
- 		q_vector->state |= IXGBE_QV_STATE_POLL;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index d375472..24e2e7a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
- 		ring = adapter->rx_ring[j];
-@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 
- 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
-@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "tx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "tx_q_%u_napi_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
- 			sprintf(p, "rx_queue_%u_packets", i);
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "rx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "rx_q_%u_ll_poll_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
- 			sprintf(p, "tx_pb_%u_pxon", i);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 9a7dc40..047ebaa 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2016,6 +2016,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
- 
- 	ixgbe_for_each_ring(ring, q_vector->rx) {
- 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+#ifdef LL_EXTENDED_STATS
-+		if (found)
-+			ring->stats.cleaned += found;
-+		else
-+			ring->stats.misses++;
-+#endif
- 		if (found)
- 			break;
- 	}
-
+>  drivers/clk/Kconfig          |    1 -
+>  include/linux/clk-provider.h |   47 +++++++++++++++++++++++++++++++++++-------
+>  2 files changed, 39 insertions(+), 9 deletions(-)
+> ---
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Daniel Mack <zonque@gmail.com>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Marek Belisko <marek.belisko@streamunlimited.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> -- 
+> 1.7.10.4
