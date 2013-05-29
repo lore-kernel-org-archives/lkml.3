@@ -1,94 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967194Ab3E2XSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:18:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42467 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S967185Ab3E2XRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:17:48 -0400
-Message-ID: <1369869467.22004.122.camel@joe-AO722>
-Subject: Re: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
-From: Joe Perches <joe@perches.com>
+	id S967246Ab3E2XSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:18:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48055 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967183Ab3E2XRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:17:47 -0400
+From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bart Van Assche <bart.vanassche@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 29 May 2013 16:17:47 -0700
-In-Reply-To: <20130529160150.f0a498d188dc790d018200e9@linux-foundation.org>
-References: <519BC066.5080600@acm.org>
-	 <20130529160150.f0a498d188dc790d018200e9@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 5/8] mm: vmscan: Move direct reclaim wait_iff_congested into shrink_list
+Date: Thu, 30 May 2013 00:17:34 +0100
+Message-Id: <1369869457-22570-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369869457-22570-1-git-send-email-mgorman@suse.de>
+References: <1369869457-22570-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 16:01 -0700, Andrew Morton wrote:
-> On Tue, 21 May 2013 20:43:50 +0200 Bart Van Assche <bart.vanassche@gmail.com> wrote:
-> 
-> > Make sure that the round_jiffies*() functions return a time that is
-> > in the future when the jiffies counter is about to wrap.
-> 
-> Actually "when the jiffies counter has recently wrapped".
-> 
-> I assume this was found by inspection?
-> 
-> > @@ -149,9 +149,7 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
-> >  	/* now that we have rounded, subtract the extra skew again */
-> >  	j -= cpu * 3;
-> > -	if (j <= jiffies) /* rounding ate our timeout entirely; */
-> 
-> This used to be a very common bug - we've weeded out many instances but
-> I'm sure more still remain.
+shrink_inactive_list makes decisions on whether to stall based on the
+number of dirty pages encountered. The wait_iff_congested() call in
+shrink_page_list does no such thing and it's arbitrary.
 
-This list probably isn't comprehensive.
+This patch moves the decision on whether to set ZONE_CONGESTED and the
+wait_iff_congested call into shrink_page_list. This keeps all the
+decisions on whether to stall or not in the one place.
 
-$ git grep -E "if\s*\((\s*jiffies\s*[\<\>]|.*[\<\>]=?\s*jiffies\b)"
-drivers/acpi/acpi_pad.c:                if (last_jiffies + round_robin_time * HZ < jiffies) {
-drivers/acpi/acpi_pad.c:                        if (jiffies > expire_time) {
-drivers/dma/ioat/dma_v2.c:      if (jiffies > chan->timer.expires && timer_pending(&chan->timer)) {
-drivers/infiniband/hw/ipath/ipath_sdma.c:               if (jiffies < dd->ipath_sdma_abort_intr_timeout)
-drivers/infiniband/hw/ipath/ipath_sdma.c:       if (jiffies > dd->ipath_sdma_abort_jiffies) {
-drivers/infiniband/ulp/ipoib/ipoib_cm.c:                if (p && time_after_eq(jiffies, p->jiffies + IPOIB_CM_RX_UPDATE
-drivers/infiniband/ulp/ipoib/ipoib_cm.c:                if (time_before_eq(jiffies, p->jiffies + IPOIB_CM_RX_TIMEOUT))
-drivers/input/misc/ati_remote2.c:               if (!time_after_eq(jiffies, ar2->jiffies))
-drivers/md/dm-log-userspace-base.c:     else if (jiffies < limit)
-drivers/misc/sgi-gru/grumain.c:                 if (gts->ts_steal_jiffies + GRU_STEAL_DELAY < jiffies)
-drivers/net/ethernet/intel/e1000/e1000_ethtool.c:               if (jiffies >= (time + 2)) {
-drivers/net/ethernet/intel/e1000e/ethtool.c:            if (jiffies >= (time + 20)) {
-drivers/net/ethernet/micrel/ksz884x.c:                  if (next_jiffies < jiffies)
-drivers/net/ethernet/micrel/ksz884x.c:          } else if (jiffies >= hw_priv->counter[i].time) {
-drivers/net/ethernet/micrel/ksz884x.c:          if (hw_priv->pme_wait <= jiffies) {
-drivers/net/ethernet/neterion/vxge/vxge-main.c: if (jiffies > fifo->jiffies + HZ / 100) {
-drivers/net/ethernet/neterion/vxge/vxge-main.c: if (jiffies > ring->jiffies + HZ / 100) {
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:                 if (jiffies > (QLCNIC_FILTER_AGE * HZ + time)) {
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:                 if (jiffies > (QLCNIC_FILTER_AGE * HZ + time)) {
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:                         if (jiffies > (QLCNIC_READD_AGE * HZ + time))
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:                 if (jiffies > (QLCNIC_READD_AGE * HZ + tmp_fil->ftime))
-drivers/scsi/lpfc/lpfc_scsi.c:  if ((phba->last_ramp_down_time + QUEUE_RAMP_DOWN_INTERVAL) > jiffies) {
-drivers/staging/bcm/InterfaceIdleMode.c:                if (timeout < jiffies )
-drivers/staging/lustre/include/linux/libcfs/linux/linux-prim.h:                 if (jiffies > expire) {           \
-drivers/staging/speakup/speakup_acntpc.c:               if (jiffies >= jiff_max && ch == SPACE) {
-drivers/staging/speakup/speakup_decext.c:                       if (jiffies >= jiff_max) {
-drivers/staging/speakup/speakup_decpc.c:                        if (jiffies >= jiff_max) {
-drivers/staging/speakup/speakup_dectlk.c:                       if (jiffies >= jiff_max) {
-kernel/timer.c: if (j <= jiffies) /* rounding ate our timeout entirely; */
-net/rds/ib_send.c:                      if (ic->i_ack_queued + HZ/2 < jiffies)
-net/rds/ib_send.c:                      if (send->s_queued + HZ/2 < jiffies)
-net/rds/iw_send.c:                      if (ic->i_ack_queued + HZ/2 < jiffies)
-net/rds/iw_send.c:                      if (send->s_queued + HZ/2 < jiffies)
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c | 62 ++++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 33 insertions(+), 29 deletions(-)
 
->   We could perhaps have a checkpatch rule
-> which looks for comparisons against jiffes (and any other
-> time-measuring variables we can detect)
-
-other variables like?
-
->  and tells people to use
-> time_after() and friends, or time_is_*_jiffies().
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 5f80d01..4898daf 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -695,7 +695,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 				      struct zone *zone,
+ 				      struct scan_control *sc,
+ 				      enum ttu_flags ttu_flags,
++				      unsigned long *ret_nr_dirty,
+ 				      unsigned long *ret_nr_unqueued_dirty,
++				      unsigned long *ret_nr_congested,
+ 				      unsigned long *ret_nr_writeback,
+ 				      unsigned long *ret_nr_immediate,
+ 				      bool force_reclaim)
+@@ -1017,20 +1019,13 @@ keep:
+ 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+ 	}
+ 
+-	/*
+-	 * Tag a zone as congested if all the dirty pages encountered were
+-	 * backed by a congested BDI. In this case, reclaimers should just
+-	 * back off and wait for congestion to clear because further reclaim
+-	 * will encounter the same problem
+-	 */
+-	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+-		zone_set_flag(zone, ZONE_CONGESTED);
+-
+ 	free_hot_cold_page_list(&free_pages, 1);
+ 
+ 	list_splice(&ret_pages, page_list);
+ 	count_vm_events(PGACTIVATE, pgactivate);
+ 	mem_cgroup_uncharge_end();
++	*ret_nr_dirty += nr_dirty;
++	*ret_nr_congested += nr_congested;
+ 	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
+ 	*ret_nr_writeback += nr_writeback;
+ 	*ret_nr_immediate += nr_immediate;
+@@ -1045,7 +1040,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 		.priority = DEF_PRIORITY,
+ 		.may_unmap = 1,
+ 	};
+-	unsigned long ret, dummy1, dummy2, dummy3;
++	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
+ 	struct page *page, *next;
+ 	LIST_HEAD(clean_pages);
+ 
+@@ -1057,8 +1052,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 	}
+ 
+ 	ret = shrink_page_list(&clean_pages, zone, &sc,
+-				TTU_UNMAP|TTU_IGNORE_ACCESS,
+-				&dummy1, &dummy2, &dummy3, true);
++			TTU_UNMAP|TTU_IGNORE_ACCESS,
++			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+ 	list_splice(&clean_pages, page_list);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+ 	return ret;
+@@ -1352,6 +1347,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	unsigned long nr_scanned;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_taken;
++	unsigned long nr_dirty = 0;
++	unsigned long nr_congested = 0;
+ 	unsigned long nr_unqueued_dirty = 0;
+ 	unsigned long nr_writeback = 0;
+ 	unsigned long nr_immediate = 0;
+@@ -1396,8 +1393,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		return 0;
+ 
+ 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+-			&nr_unqueued_dirty, &nr_writeback, &nr_immediate,
+-			false);
++				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
++				&nr_writeback, &nr_immediate,
++				false);
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1431,7 +1429,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	 * same way balance_dirty_pages() manages.
+ 	 *
+ 	 * This scales the number of dirty pages that must be under writeback
+-	 * before throttling depending on priority. It is a simple backoff
++	 * before a zone gets flagged ZONE_WRITEBACK. It is a simple backoff
+ 	 * function that has the most effect in the range DEF_PRIORITY to
+ 	 * DEF_PRIORITY-2 which is the priority reclaim is considered to be
+ 	 * in trouble and reclaim is considered to be in trouble.
+@@ -1442,12 +1440,14 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	 * ...
+ 	 * DEF_PRIORITY-6 For SWAP_CLUSTER_MAX isolated pages, throttle if any
+ 	 *                     isolated page is PageWriteback
++	 *
++	 * Once a zone is flagged ZONE_WRITEBACK, kswapd will count the number
++	 * of pages under pages flagged for immediate reclaim and stall if any
++	 * are encountered in the nr_immediate check below.
+ 	 */
+ 	if (nr_writeback && nr_writeback >=
+-			(nr_taken >> (DEF_PRIORITY - sc->priority))) {
++			(nr_taken >> (DEF_PRIORITY - sc->priority)))
+ 		zone_set_flag(zone, ZONE_WRITEBACK);
+-		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+-	}
+ 
+ 	/*
+ 	 * memcg will stall in page writeback so only consider forcibly
+@@ -1455,6 +1455,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	 */
+ 	if (global_reclaim(sc)) {
+ 		/*
++		 * Tag a zone as congested if all the dirty pages scanned were
++		 * backed by a congested BDI and wait_iff_congested will stall.
++		 */
++		if (nr_dirty && nr_dirty == nr_congested)
++			zone_set_flag(zone, ZONE_CONGESTED);
++
++		/*
+ 		 * If dirty pages are scanned that are not queued for IO, it
+ 		 * implies that flushers are not keeping up. In this case, flag
+ 		 * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
+@@ -1474,6 +1481,14 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 			congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 	}
+ 
++	/*
++	 * Stall direct reclaim for IO completions if underlying BDIs or zone
++	 * is congested. Allow kswapd to continue until it starts encountering
++	 * unqueued dirty pages or cycling through the LRU too quickly.
++	 */
++	if (!sc->hibernation_mode && !current_is_kswapd())
++		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
++
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
+ 		nr_scanned, nr_reclaimed,
+@@ -2374,17 +2389,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 						WB_REASON_TRY_TO_FREE_PAGES);
+ 			sc->may_writepage = 1;
+ 		}
+-
+-		/* Take a nap, wait for some writeback to complete */
+-		if (!sc->hibernation_mode && sc->nr_scanned &&
+-		    sc->priority < DEF_PRIORITY - 2) {
+-			struct zone *preferred_zone;
+-
+-			first_zones_zonelist(zonelist, gfp_zone(sc->gfp_mask),
+-						&cpuset_current_mems_allowed,
+-						&preferred_zone);
+-			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/10);
+-		}
+ 	} while (--sc->priority >= 0);
+ 
+ out:
+-- 
+1.8.1.4
 
