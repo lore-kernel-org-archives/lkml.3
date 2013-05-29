@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966897Ab3E2UVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:21:05 -0400
-Received: from gw01.mail.saunalahti.fi ([195.197.172.115]:58795 "EHLO
-	gw01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966874Ab3E2UUt (ORCPT
+	id S966847Ab3E2UXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:23:13 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:17250 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966427Ab3E2UXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:20:49 -0400
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 16:20:48 EDT
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH] HID: multitouch: prevent memleak with the allocated name
-Date: Wed, 29 May 2013 23:12:23 +0300
-Message-Id: <1369858343-681-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
+	Wed, 29 May 2013 16:23:10 -0400
+Message-ID: <51A663A6.90904@hp.com>
+Date: Wed, 29 May 2013 16:23:02 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com> <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com> <20130527020903.GR29466@dastard> <51A624E2.3000301@hp.com> <20130529161358.GJ6123@two.firstfloor.org>
+In-Reply-To: <20130529161358.GJ6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mt_free_input_name() was never called during .remove(): hid_hw_stop()
-removes the hid_input items in hdev->inputs, and so the list is
-therefore empty after the call. In the end, we never free the special
-names that has been allocated during .probe().
+On 05/29/2013 12:13 PM, Andi Kleen wrote:
+>> The d_path() is called by perf_event_mmap_event() which translates
+>> VMA to its file path for memory segments backed by files. As perf is
+>> not just for sampling data within the kernel, it can also be used
+>> for checking access pattern in the user space. As a result, it needs
+>> to map VMAs back to the backing files to access their symbols
+>> information. If d_path() is not the right function to call for this
+>> purpose, what other alternatives do we have?
+> In principle it should be only called for new file mappings
+> getting maped.  Do you really have that many new file mappings all
+> the time? Or is this related to program startup?
 
-We switch to devm_kzalloc that manages resources when driver is removed.
+The AIM7 benchmark that I used runs a large number of relatively short 
+jobs. I think each time a new job is spawned, the file mappngs have to 
+be redone again. It is probably not a big problem for long running 
+processes.
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Reported-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-multitouch.c |   37 +++++++++++++------------------------
- 1 files changed, 13 insertions(+), 24 deletions(-)
+>> My patch set consists of 2 different changes. The first one is to
+>> avoid taking the d_lock lock when updating the reference count in
+>> the dentries. This particular change also benefit some other
+>> workloads that are filesystem intensive. One particular example is
+>> the short workload in the AIM7 benchmark. One of the job type in the
+>> short workload is "misc_rtns_1" which calls security functions like
+>> getpwnam(), getpwuid(), getgrgid() a couple of times. These
+>> functions open the /etc/passwd or /etc/group files, read their
+>> content and close the files. It is the intensive open/read/close
+>> sequence from multiple threads that is causing 80%+ contention in
+>> the d_lock on a system with large number of cores. The MIT's
+>> MOSBench paper also outlined dentry reference counting as a
+> The paper was before Nick Piggin's RCU (and our) work on this.
+> Modern kernels do not have dcache problems with mosbench, unless
+> you run weird security modules like SMACK that effectively
+> disable dcache RCU.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index d99b959..1f5876e 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -261,14 +261,6 @@ static struct mt_class mt_classes[] = {
- 	{ }
- };
- 
--static void mt_free_input_name(struct hid_input *hi)
--{
--	struct hid_device *hdev = hi->report->device;
--
--	if (hi->input->name != hdev->name)
--		kfree(hi->input->name);
--}
--
- static ssize_t mt_show_quirks(struct device *dev,
- 			   struct device_attribute *attr,
- 			   char *buf)
-@@ -412,10 +404,12 @@ static void mt_pen_report(struct hid_device *hid, struct hid_report *report)
- static void mt_pen_input_configured(struct hid_device *hdev,
- 					struct hid_input *hi)
- {
--	char *name = kzalloc(strlen(hi->input->name) + 5, GFP_KERNEL);
--	if (name) {
--		sprintf(name, "%s Pen", hi->input->name);
--		mt_free_input_name(hi);
-+	char *name;
-+
-+	if (hdev->name) {
-+		name = devm_kzalloc(&hdev->dev, strlen(hdev->name) + 5,
-+							GFP_KERNEL);
-+		sprintf(name, "%s Pen", hdev->name);
- 		hi->input->name = name;
- 	}
- 
-@@ -925,16 +919,18 @@ static void mt_post_parse(struct mt_device *td)
- static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
--	char *name = kstrdup(hdev->name, GFP_KERNEL);
--
--	if (name)
--		hi->input->name = name;
- 
- 	if (hi->report->id == td->mt_report_id)
- 		mt_touch_input_configured(hdev, hi);
- 
- 	if (hi->report->id == td->pen_report_id)
- 		mt_pen_input_configured(hdev, hi);
-+
-+	if (!hi->input->name) {
-+		hi->input->name = devm_kzalloc(&hdev->dev,
-+					strlen(hdev->name) + 1, GFP_KERNEL);
-+		strcpy(hi->input->name, hdev->name);
-+	}
- }
- 
- static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
-@@ -993,7 +989,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 
- 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
- 	if (ret)
--		goto hid_fail;
-+		goto fail;
- 
- 	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
- 
-@@ -1005,9 +1001,6 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 
- 	return 0;
- 
--hid_fail:
--	list_for_each_entry(hi, &hdev->inputs, list)
--		mt_free_input_name(hi);
- fail:
- 	kfree(td->fields);
- 	kfree(td);
-@@ -1037,14 +1030,10 @@ static int mt_resume(struct hid_device *hdev)
- static void mt_remove(struct hid_device *hdev)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
--	struct hid_input *hi;
- 
- 	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
- 	hid_hw_stop(hdev);
- 
--	list_for_each_entry(hi, &hdev->inputs, list)
--		mt_free_input_name(hi);
--
- 	kfree(td);
- 	hid_set_drvdata(hdev, NULL);
- }
--- 
-1.7.7.6
+I had tried, but not yet able to run the MOSBench myself. Thank for 
+letting me know that the dcache problem wrt MOSBench was fixed.
 
+> BTW lock elision may fix these problems anyways, in a much
+> simpler way.
+
+I will certainly hope so. However, there will still be a lot of 
+computers out there running pre-Haswell Intel chips. For them, locking 
+is still a problem that need to be solved.
+
+Regards,
+Longman
