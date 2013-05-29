@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966251Ab3E2OTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:19:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59859 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966092Ab3E2OTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:19:52 -0400
-Date: Wed, 29 May 2013 16:19:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: Daniel Leung <daniel.leung@linux.intel.com>, srinivas.pandruvada@intel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
- raw_event
-In-Reply-To: <516588E2.4030901@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1305291619040.30576@pobox.suse.cz>
-References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>    <51507136.4020308@linux.intel.com>    <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>    <38514.10.7.197.74.1365440092.squirrel@linux.intel.com> <33544.10.7.197.74.1365551736.squirrel@linux.intel.com>
- <516588E2.4030901@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S966287Ab3E2OXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:23:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38937 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759576Ab3E2OXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 10:23:03 -0400
+Date: Wed, 29 May 2013 10:23:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Shawn Nematbakhsh <shawnn@google.com>, <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
+ controllers.
+In-Reply-To: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1305291015230.1473-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Apr 2013, Srinivas Pandruvada wrote:
+On Tue, 28 May 2013, Julius Werner wrote:
 
-> I don't know if this should be fixed in client drivers since other drivers may
-> have this issue.
+> The policy we want to achieve is to disable runtime PM iff there is a
+> device connected that doesn't have persist_enabled or a reset_resume()
+> handler and whose parent/root hub resets on resume, right? So couldn't
 
-Agreed.
+Probably just root hub, not parent.  A non-root hub that resets upon 
+resume wouldn't be a good idea.  Also, we know in advance that the hub 
+driver _does_ have a reset-resume handler.
 
-Srinivas, how about the patch below, could you please test it in your 
-scenario to see whether it actually fixes the issue?
+> we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
+> generic USB_QUIRK_RESET_RESUME on the root hub instead? Then we could
+> handle all of this in the USB core (during device initialization and
+> when changing persist_enabled through sysfs) by just checking for
+> udev->reset_resume on all parent hubs of the device in question (and
+> use pm_runtime_get/put() on said device to prevent its parents from
+> suspending as appropriate).
 
-Thanks.
+This sounds too intricate to me.  You might want to prevent resets even 
+if the device does support reset-resume, because they consume time.  Or 
+you might not care about resets even if persist isn't enabled (consider 
+a USB mouse, for example).
 
+I agree that setting the RESET_RESUME quirk on the root hub is a good
+way to represent the situation.  And perhaps the kernel could implement 
+a useful default policy -- but userspace should ultimately remain in 
+control.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 264f550..65879b9 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1293,7 +1293,7 @@ int hid_input_report(struct hid_device *hid, int type, u8 *data, int size, int i
- 
- 	if (hdrv && hdrv->raw_event && hid_match_report(hid, report)) {
- 		ret = hdrv->raw_event(hid, report, data, size);
--		if (ret != 0) {
-+		if (ret < 0) {
- 			ret = ret < 0 ? ret : 0;
- 			goto unlock;
- 		}
--- 
-Jiri Kosina
-SUSE Labs
+Alan Stern
+
