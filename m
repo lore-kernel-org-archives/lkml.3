@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935116Ab3E2Hbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:31:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41706 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935085Ab3E2Hbi (ORCPT
+	id S964889Ab3E2Hel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:34:41 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:46873 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935084Ab3E2Hej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:31:38 -0400
-Date: Wed, 29 May 2013 17:31:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Add a new platform tree for ib8315.
-Message-Id: <20130529173124.cf024a80cfcc67c07d428830@canb.auug.org.au>
-In-Reply-To: <1369657581-19869-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
-References: <1369657581-19869-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_May_2013_17_31_24_+1000_+/feZyxH.ssLQ.Fs"
+	Wed, 29 May 2013 03:34:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+Date: Wed, 29 May 2013 09:34:38 +0200
+Message-ID: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+Subject: Re: A bug about system call on ARM
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_May_2013_17_31_24_+1000_+/feZyxH.ssLQ.Fs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-Hi Sergey,
-
-On Mon, 27 May 2013 14:26:21 +0200 Sergey Gerasimov <Sergey.Gerasimov@astro=
-soft-development.com> wrote:
+On Wed, May 29, 2013 at 8:52 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+> Hi  all,
 >
->  arch/powerpc/configs/83xx/ib8315_defconfig | 2152 ++++++++++++++++++++++=
-++++++
+> I am a new comer to this mailing list ,
+> I am happy to join this community .
+>
+> I have a bug reported from our android phones which is caused by  the system call .
+> It seems like kernel bugs from my view .
 
-Please submit the result of "make savedefconfig" instead of this as it
-will be much smaller.
+Is this a unmodified Linux kernel from kernel.org? In other works, no
+(half broken) board support package
+from your hardware vendor?
+Did you try a more recent kernel? (At least 3.4.47).
+Maybe your problem is already known and fixed...
 
-Thanks.
+> Crash in  file  arch\arm\kernel\ entry-common.S
+>
+> /***************************************************************/
+>
+> ENTRY(vector_swi)
+>         sub     sp, sp, #S_FRAME_SIZE
+>         stmia   sp, {r0 - r12}                  @ Calling r0 - r12
+>  ARM(   add     r8, sp, #S_PC           )
+>  ARM(   stmdb   r8, {sp, lr}^           )       @ Calling sp, lr
+>  THUMB( mov     r8, sp                  )
+>  THUMB( store_user_sp_lr r8, r10, S_SP  )       @ calling sp, lr
+>         mrs     r8, spsr                        @ called from non-FIQ mode, so ok.
+>         str     lr, [sp, #S_PC]                 @ Save calling PC
+>         str     r8, [sp, #S_PSR]                @ Save CPSR
+>         str     r0, [sp, #S_OLD_R0]             @ Save OLD_R0
+>         zero_fp
+>
+>         /*
+>          * Get the system call number.
+>          */
+>
+> #if defined(CONFIG_OABI_COMPAT)
+>
+>         /*
+>          * If we have CONFIG_OABI_COMPAT then we need to look at the swi
+>          * value to determine if it is an EABI or an old ABI call.
+>          */
+> #ifdef CONFIG_ARM_THUMB
+>         tst     r8, #PSR_T_BIT
+>         movne   r10, #0                         @ no thumb OABI emulation
+>         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
+> #else
+>         ldr     r10, [lr, #-4]                  @ get SWI instruction
+>   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
+>   A710( teq     ip, #0x0f000000                                         )
+>   A710( bne     .Larm710bug                                             )
+> #endif
+> #ifdef CONFIG_CPU_ENDIAN_BE8
+>         rev     r10, r10                        @ little endian instruction
+> #endif
+>
+> /***************************************************************************************************/
+>
+> Then reason why it will crash when get SWI instruction is maybe
+> This page is clear to aged by kernel,
+> But this MMU fault happpened in kernel,
+> So the kernel do_page_fault function will not clear this page to young,
+> So that  will crash .
+>
+> It should poll this page to make it present or the fault should be handled by fixup section ,
+> Anyway, this place should not crash by kernel .
+>
+> The kernel version I used  is  3.4.0
+> I have add the kernel log and the call stack recovered  by trace32 tools
+> Pls have a look at it .
+>
+>
+> Thanks .
+>
+>
+>
+> Sony Mobile Communications
+> Tel: +86 10 5966 9819
+> Phone: 18610323092
+> Address: No.16 Guangshun South Street, Chaoyang, Beijing, P.R.C.
+>
+> sonymobile.com
+>
+>
+>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__29_May_2013_17_31_24_+1000_+/feZyxH.ssLQ.Fs
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRpa7QAAoJEECxmPOUX5FEjEYP/3yWukCbM906k1Xq3vGuBkjR
-BYSTtORlX75RhdygPNdXaFR61IDgev5bw7CBCmxD7NDPLlwsNA3HAteTjlygt8xV
-Q40tOVmQ9uboOC3GBA7IYxe5ELWh6hRMclffV0LxpWCr3hmO0uJyknS4tJJnp1u/
-YBX89lLMOXGt4IKSVtz0+tIyjwgCQlF5E9jnupu7I6BRxQkUWU4xoGhY8m+jkfKg
-drMZJQ/5k+PAHRR7gOBQNTApspFhCiVuDddsusvDVVXAf3sNigOOiFdNOg2uwAav
-gTNwQXO2MgcEshiDb/BEp3FBEZDJQ8eIg0/dsVKWjgFmGCxQla4sT8nefheII29K
-7N13VFab4brivhppRRRUHSQ3ZSOmgB+sXaw3WDgeaDDeGNVXz3/2rmB8KpHCG56P
-e00gelIpvrheCVdZxcdziY1goZILm8l5f1naH6r0NY19dnIEB1SwBY+cwBvFB0/W
-6B2bXbYTpDBD6vRfLi3NXCxCofP7lAEO1RfLEo6lp8JrjFPsA7NwpKOQR0QsKMRV
-Bk5sXIMuCj5sAN48R/ZL2wIPmzwCbBhOlpQsWd9cNN96MNBentHKYhq/VndAuebF
-YLc2wZMsJc6CkpH69k/qub0cf1eRIQ1Wl3lspt8Az21J+cKl6sWomlSc/y5XYlJp
-LNnZboOrDm5K3FD+130l
-=KyaI
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_May_2013_17_31_24_+1000_+/feZyxH.ssLQ.Fs--
+--
+Thanks,
+//richard
