@@ -1,196 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966711Ab3E2ODz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:03:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51702 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966606Ab3E2OAP (ORCPT
+	id S966735Ab3E2OEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:04:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46249 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966606Ab3E2OED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:00:15 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, sparclinux@vger.kernel.org
-Subject: [PATCH v6, part4 35/41] mm/SPARC: prepare for removing num_physpages and simplify mem_init()
-Date: Wed, 29 May 2013 21:57:53 +0800
-Message-Id: <1369835879-23553-36-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
-References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 29 May 2013 10:04:03 -0400
+Date: Wed, 29 May 2013 15:03:19 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
+ runs out of slots
+Message-ID: <20130529140319.GK17767@MacBook-Pro.local>
+References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+On Wed, May 29, 2013 at 01:56:13PM +0100, Vineet Gupta wrote:
+> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
+> batching slots, TLB entries needs to be flushed for @start to @interim,
+> NOT @interim to @end.
+> 
+> Since ARC port doesn't use page free batching I can't test it myself but
+> this seems like the right thing to do.
+> Observed this when working on a fix for the issue at thread:
+> 	http://www.spinics.net/lists/linux-arch/msg21736.html
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: linux-mm@kvack.org
+> Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+>  mm/memory.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 6dc1882..d9d5fd9 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
+>  	spinlock_t *ptl;
+>  	pte_t *start_pte;
+>  	pte_t *pte;
+> +	unsigned long range_start = addr;
+>  
+>  again:
+>  	init_rss_vec(rss);
+> @@ -1215,12 +1216,14 @@ again:
+>  		force_flush = 0;
+>  
+>  #ifdef HAVE_GENERIC_MMU_GATHER
+> -		tlb->start = addr;
+> -		tlb->end = end;
+> +		tlb->start = range_start;
+> +		tlb->end = addr;
+>  #endif
+>  		tlb_flush_mmu(tlb);
+> -		if (addr != end)
+> +		if (addr != end) {
+> +			range_start = addr;
+>  			goto again;
+> +		}
+>  	}
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: sparclinux@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/sparc/kernel/leon_smp.c |  3 ---
- arch/sparc/mm/init_32.c      | 34 ++++------------------------------
- arch/sparc/mm/init_64.c      | 24 +++---------------------
- 3 files changed, 7 insertions(+), 54 deletions(-)
+Isn't this code only run if force_flush != 0? force_flush is set to
+!__tlb_remove_page() and this function always returns 1 on (generic TLB)
+UP since tlb_fast_mode() is 1. There is no batching on UP with the
+generic TLB code.
 
-diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-index 6cfc1b0..d7aa524 100644
---- a/arch/sparc/kernel/leon_smp.c
-+++ b/arch/sparc/kernel/leon_smp.c
-@@ -254,15 +254,12 @@ void __init leon_smp_done(void)
- 	/* Free unneeded trap tables */
- 	if (!cpu_present(1)) {
- 		free_reserved_page(virt_to_page(&trapbase_cpu1));
--		num_physpages++;
- 	}
- 	if (!cpu_present(2)) {
- 		free_reserved_page(virt_to_page(&trapbase_cpu2));
--		num_physpages++;
- 	}
- 	if (!cpu_present(3)) {
- 		free_reserved_page(virt_to_page(&trapbase_cpu3));
--		num_physpages++;
- 	}
- 	/* Ok, they are spinning and ready to go. */
- 	smp_processors_ready = 1;
-diff --git a/arch/sparc/mm/init_32.c b/arch/sparc/mm/init_32.c
-index a438abb..db69870 100644
---- a/arch/sparc/mm/init_32.c
-+++ b/arch/sparc/mm/init_32.c
-@@ -288,10 +288,6 @@ static void map_high_region(unsigned long start_pfn, unsigned long end_pfn)
- 
- void __init mem_init(void)
- {
--	int codepages = 0;
--	int datapages = 0;
--	int initpages = 0; 
--	int reservedpages = 0;
- 	int i;
- 
- 	if (PKMAP_BASE+LAST_PKMAP*PAGE_SIZE >= FIXADDR_START) {
-@@ -329,8 +325,6 @@ void __init mem_init(void)
- 		unsigned long start_pfn = sp_banks[i].base_addr >> PAGE_SHIFT;
- 		unsigned long end_pfn = (sp_banks[i].base_addr + sp_banks[i].num_bytes) >> PAGE_SHIFT;
- 
--		num_physpages += sp_banks[i].num_bytes >> PAGE_SHIFT;
--
- 		if (end_pfn <= highstart_pfn)
- 			continue;
- 
-@@ -340,39 +334,19 @@ void __init mem_init(void)
- 		map_high_region(start_pfn, end_pfn);
- 	}
- 	
--	codepages = (((unsigned long) &_etext) - ((unsigned long)&_start));
--	codepages = PAGE_ALIGN(codepages) >> PAGE_SHIFT;
--	datapages = (((unsigned long) &_edata) - ((unsigned long)&_etext));
--	datapages = PAGE_ALIGN(datapages) >> PAGE_SHIFT;
--	initpages = (((unsigned long) &__init_end) - ((unsigned long) &__init_begin));
--	initpages = PAGE_ALIGN(initpages) >> PAGE_SHIFT;
--
--	/* Ignore memory holes for the purpose of counting reserved pages */
--	for (i=0; i < max_low_pfn; i++)
--		if (test_bit(i >> (20 - PAGE_SHIFT), sparc_valid_addr_bitmap)
--		    && PageReserved(pfn_to_page(i)))
--			reservedpages++;
--
--	printk(KERN_INFO "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, %dk init, %ldk highmem)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       num_physpages << (PAGE_SHIFT - 10),
--	       codepages << (PAGE_SHIFT-10),
--	       reservedpages << (PAGE_SHIFT - 10),
--	       datapages << (PAGE_SHIFT-10), 
--	       initpages << (PAGE_SHIFT-10),
--	       totalhigh_pages << (PAGE_SHIFT-10));
-+	mem_init_print_info(NULL);
- }
- 
- void free_initmem (void)
- {
--	num_physpages += free_initmem_default(POISON_FREE_INITMEM);
-+	free_initmem_default(POISON_FREE_INITMEM);
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	num_physpages += free_reserved_area((void *)start, (void *)end,
--					    POISON_FREE_INITMEM, "initrd");
-+	free_reserved_area((void *)start, (void *)end, POISON_FREE_INITMEM,
-+			   "initrd");
- }
- #endif
- 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index ee6deda..f140dca 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2038,7 +2038,6 @@ static void __init register_page_bootmem_info(void)
- }
- void __init mem_init(void)
- {
--	unsigned long codepages, datapages, initpages;
- 	unsigned long addr, last;
- 
- 	addr = PAGE_OFFSET + kern_base;
-@@ -2056,11 +2055,6 @@ void __init mem_init(void)
- 	register_page_bootmem_info();
- 	free_all_bootmem();
- 
--	/* We subtract one to account for the mem_map_zero page
--	 * allocated below.
--	 */
--	num_physpages = totalram_pages - 1;
--
- 	/*
- 	 * Set up the zero page, mark it reserved, so that page count
- 	 * is not manipulated when freeing the page from user ptes.
-@@ -2072,19 +2066,7 @@ void __init mem_init(void)
- 	}
- 	mark_page_reserved(mem_map_zero);
- 
--	codepages = (((unsigned long) _etext) - ((unsigned long) _start));
--	codepages = PAGE_ALIGN(codepages) >> PAGE_SHIFT;
--	datapages = (((unsigned long) _edata) - ((unsigned long) _etext));
--	datapages = PAGE_ALIGN(datapages) >> PAGE_SHIFT;
--	initpages = (((unsigned long) __init_end) - ((unsigned long) __init_begin));
--	initpages = PAGE_ALIGN(initpages) >> PAGE_SHIFT;
--
--	printk("Memory: %luk available (%ldk kernel code, %ldk data, %ldk init) [%016lx,%016lx]\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       codepages << (PAGE_SHIFT-10),
--	       datapages << (PAGE_SHIFT-10), 
--	       initpages << (PAGE_SHIFT-10), 
--	       PAGE_OFFSET, (last_valid_pfn << PAGE_SHIFT));
-+	mem_init_print_info(NULL);
- 
- 	if (tlb_type == cheetah || tlb_type == cheetah_plus)
- 		cheetah_ecache_flush_init();
-@@ -2124,8 +2106,8 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	num_physpages += free_reserved_area((void *)start, (void *)end,
--					    POISON_FREE_INITMEM, "initrd");
-+	free_reserved_area((void *)start, (void *)end, POISON_FREE_INITMEM,
-+			   "initrd");
- }
- #endif
- 
 -- 
-1.8.1.2
-
+Catalin
