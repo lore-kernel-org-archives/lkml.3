@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966737Ab3E2ThH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:37:07 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:44426 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966195Ab3E2TdK (ORCPT
+	id S966545Ab3E2ThR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:37:17 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:46306 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966222Ab3E2TdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 May 2013 15:33:10 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -15,9 +15,9 @@ Cc: David Miller <davem@davemloft.net>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 02/13] net: mv643xx_eth: use managed devm_ioremap for port registers
-Date: Wed, 29 May 2013 21:32:44 +0200
-Message-Id: <1369855975-21489-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v5 03/13] net: mv643xx_eth: add phy_node to platform_data struct
+Date: Wed, 29 May 2013 21:32:45 +0200
+Message-Id: <1369855975-21489-4-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -26,7 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of managed devm_ioremap and remove corresponding iounmap.
+This adds a struct device_node pointer for a phy passed by phandle
+to mv643xx_eth node.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -38,32 +39,31 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: netdev@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org       
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/mv643xx_eth.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 2480a2f..19964e9 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2470,7 +2470,7 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
- 	if (msp == NULL)
- 		return -ENOMEM;
+diff --git a/include/linux/mv643xx_eth.h b/include/linux/mv643xx_eth.h
+index 141d395..6e8215b 100644
+--- a/include/linux/mv643xx_eth.h
++++ b/include/linux/mv643xx_eth.h
+@@ -30,6 +30,7 @@ struct mv643xx_eth_shared_platform_data {
+ #define MV643XX_ETH_PHY_ADDR(x)		(0x80 | (x))
+ #define MV643XX_ETH_PHY_NONE		0xff
  
--	msp->base = ioremap(res->start, resource_size(res));
-+	msp->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
- 	if (msp->base == NULL)
- 		return -ENOMEM;
++struct device_node;
+ struct mv643xx_eth_platform_data {
+ 	/*
+ 	 * Pointer back to our parent instance, and our port number.
+@@ -41,6 +42,7 @@ struct mv643xx_eth_platform_data {
+ 	 * Whether a PHY is present, and if yes, at which address.
+ 	 */
+ 	int			phy_addr;
++	struct device_node	*phy_node;
  
-@@ -2498,7 +2498,6 @@ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
- {
- 	struct mv643xx_eth_shared_private *msp = platform_get_drvdata(pdev);
- 
--	iounmap(msp->base);
- 	if (!IS_ERR(msp->clk))
- 		clk_disable_unprepare(msp->clk);
- 
+ 	/*
+ 	 * Use this MAC address if it is valid, overriding the
 -- 
 1.7.10.4
 
