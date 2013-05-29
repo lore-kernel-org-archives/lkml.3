@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967066Ab3E2VKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 17:10:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20188 "EHLO
+	id S967084Ab3E2VKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 17:10:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20203 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966985Ab3E2VJ4 (ORCPT
+	with ESMTP id S967033Ab3E2VJ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 17:09:56 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2] x86: Fix adjust_range_size_mask calling position
-Date: Wed, 29 May 2013 14:09:29 -0700
-Message-Id: <1369861769-30687-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <CAE9FiQXr4S0P5P5JdegRyozSX4OCJ6+6MMybmAaMPCzfqe6yWg@mail.gmail.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 29 May 2013 17:09:59 -0400
+MIME-Version: 1.0
+Message-ID: <754ae8a0-23af-4c87-953f-d608cba84191@default>
+Date: Wed, 29 May 2013 14:09:02 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: RE: [PATCHv12 2/4] zbud: add to mm/
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
+ <20130529154500.GB428@cerebellum>
+ <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+ <20130529204236.GD428@cerebellum>
+ <20130529134835.58dd89774f47205da4a06202@linux-foundation.org>
+In-Reply-To: <20130529134835.58dd89774f47205da4a06202@linux-foundation.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8d57470d cause a kernel panic while setting mem=2G.
-     [mem 0x00000000-0x000fffff] page 4k
-     [mem 0x7fe00000-0x7fffffff] page 1G
-     [mem 0x7c000000-0x7fdfffff] page 1G
-     [mem 0x00100000-0x001fffff] page 4k
-     [mem 0x00200000-0x7bffffff] page 2M
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Subject: Re: [PATCHv12 2/4] zbud: add to mm/
+> 
+> On Wed, 29 May 2013 15:42:36 -0500 Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> 
+> > > > > I worry about any code which independently looks at the pageframe
+> > > > > tables and expects to find page struts there.  One example is probably
+> > > > > memory_failure() but there are probably others.
+> > >
+> > > ^^ this, please.  It could be kinda fatal.
+> >
+> > I'll look into this.
+> >
+> > The expected behavior is that memory_failure() should handle zbud pages in the
+> > same way that it handles in-use slub/slab/slob pages and return -EBUSY.
+> 
+> memory_failure() is merely an example of a general problem: code which
+> reads from the memmap[] array and expects its elements to be of type
+> `struct page'.  Other examples might be memory hotplugging, memory leak
+> checkers etc.  I have vague memories of out-of-tree patches
+> (bigphysarea?) doing this as well.
+> 
+> It's a general problem to which we need a general solution.
 
-for last entry is not what we want, we should have
-     [mem 0x00200000-0x3fffffff] page 2M
-     [mem 0x40000000-0x7bffffff] page 1G
+<Obi-tmem Kenobe slowly materializes... "use the force, Luke!">
 
-Actually we merge the continuous ranges with same page size too early.
-in this case, before merging we have
-     [mem 0x00200000-0x3fffffff] page 2M
-     [mem 0x40000000-0x7bffffff] page 2M
-after merging them, will get
-     [mem 0x00200000-0x7bffffff] page 2M
-even we can use 1G page to map
-     [mem 0x40000000-0x7bffffff]
+One could reasonably argue that any code that makes incorrect
+assumptions about the contents of a struct page structure is buggy
+and should be fixed.  Isn't the "general solution" already described
+in the following comment, excerpted from include/linux/mm.h, which
+implies that "scribbling on existing pageframes" [carefully], is fine?
+(And, if not, shouldn't that comment be fixed, or am I misreading
+it?)
 
-that will cause problem, because we already map
-     [mem 0x7fe00000-0x7fffffff] page 1G
-     [mem 0x7c000000-0x7fdfffff] page 1G
-with 1G page.
+<start excerpt>
+ * For the non-reserved pages, page_count(page) denotes a reference count.
+ *   page_count() == 0 means the page is free. page->lru is then used for
+ *   freelist management in the buddy allocator.
+ *   page_count() > 0  means the page has been allocated.
+ *
+ * Pages are allocated by the slab allocator in order to provide memory
+ * to kmalloc and kmem_cache_alloc. In this case, the management of the
+ * page, and the fields in 'struct page' are the responsibility of mm/slab.c
+ * unless a particular usage is carefully commented. (the responsibility of
+ * freeing the kmalloc memory is the caller's, of course).
+ *
+ * A page may be used by anyone else who does a __get_free_page().
+ * In this case, page_count still tracks the references, and should only
+ * be used through the normal accessor functions. The top bits of page->flags
+ * and page->virtual store page management information, but all other fields
+ * are unused and could be used privately, carefully. The management of this
+ * page is the responsibility of the one who allocated it, and those who have
+ * subsequently been given references to it.
+ *
+ * The other pages (we may call them "pagecache pages") are completely
+ * managed by the Linux memory manager: I/O, buffers, swapping etc.
+ * The following discussion applies only to them.
+<end excerpt>
 
-Fix that by calling adjust_range_size_mask before merging range
-with same page size.
-
-We need this one for v3.9 stable.
-
--v2: update change log.
-
-Bisected-by: "Xie, ChanglongX" <changlongx.xie@intel.com>
-Bisected-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Reported-and-tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/mm/init.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/init.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init.c
-+++ linux-2.6/arch/x86/mm/init.c
-@@ -277,6 +277,9 @@ static int __meminit split_mem_range(str
- 	end_pfn = limit_pfn;
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 
-+	if (!after_bootmem)
-+		adjust_range_page_size_mask(mr, nr_range);
-+
- 	/* try to merge same page size and continuous */
- 	for (i = 0; nr_range > 1 && i < nr_range - 1; i++) {
- 		unsigned long old_start;
-@@ -291,9 +294,6 @@ static int __meminit split_mem_range(str
- 		nr_range--;
- 	}
- 
--	if (!after_bootmem)
--		adjust_range_page_size_mask(mr, nr_range);
--
- 	for (i = 0; i < nr_range; i++)
- 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
- 				mr[i].start, mr[i].end - 1,
+<Obi-tmem Kenobe slowly dematerializes>
