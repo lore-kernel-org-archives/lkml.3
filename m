@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966486Ab3E2N7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:59:25 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33486 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966466Ab3E2N7T (ORCPT
+	id S966522Ab3E2N7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:59:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63118 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966483Ab3E2N7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:59:19 -0400
+	Wed, 29 May 2013 09:59:32 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v6, part4 19/41] mm/frv: prepare for removing num_physpages and simplify mem_init()
-Date: Wed, 29 May 2013 21:57:37 +0800
-Message-Id: <1369835879-23553-20-git-send-email-jiang.liu@huawei.com>
+        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org
+Subject: [PATCH v6, part4 23/41] mm/m32r: prepare for removing num_physpages and simplify mem_init()
+Date: Wed, 29 May 2013 21:57:41 +0800
+Message-Id: <1369835879-23553-24-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
 References: <1369835879-23553-1-git-send-email-jiang.liu@huawei.com>
@@ -35,142 +34,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-m32r@ml.linux-m32r.org
+Cc: linux-m32r-ja@ml.linux-m32r.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/frv/kernel/setup.c | 13 +++++++------
- arch/frv/mm/init.c      | 49 ++++++++++++++-----------------------------------
- 2 files changed, 21 insertions(+), 41 deletions(-)
+ arch/m32r/mm/discontig.c |  6 +-----
+ arch/m32r/mm/init.c      | 49 +++++-------------------------------------------
+ 2 files changed, 6 insertions(+), 49 deletions(-)
 
-diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
-index a513647..f78f8cb 100644
---- a/arch/frv/kernel/setup.c
-+++ b/arch/frv/kernel/setup.c
-@@ -876,6 +876,7 @@ late_initcall(setup_arch_serial);
- static void __init setup_linux_memory(void)
+diff --git a/arch/m32r/mm/discontig.c b/arch/m32r/mm/discontig.c
+index 2c468e8..2719630 100644
+--- a/arch/m32r/mm/discontig.c
++++ b/arch/m32r/mm/discontig.c
+@@ -129,11 +129,10 @@ unsigned long __init setup_memory(void)
+ #define START_PFN(nid)		(NODE_DATA(nid)->bdata->node_min_pfn)
+ #define MAX_LOW_PFN(nid)	(NODE_DATA(nid)->bdata->node_low_pfn)
+ 
+-unsigned long __init zone_sizes_init(void)
++void __init zone_sizes_init(void)
  {
- 	unsigned long bootmap_size, low_top_pfn, kstart, kend, high_mem;
-+	unsigned long physpages;
+ 	unsigned long zones_size[MAX_NR_ZONES], zholes_size[MAX_NR_ZONES];
+ 	unsigned long low, start_pfn;
+-	unsigned long holes = 0;
+ 	int nid, i;
+ 	mem_prof_t *mp;
  
- 	kstart	= (unsigned long) &__kernel_image_start - PAGE_OFFSET;
- 	kend	= (unsigned long) &__kernel_image_end - PAGE_OFFSET;
-@@ -893,19 +894,19 @@ static void __init setup_linux_memory(void)
- 					 );
+@@ -147,7 +146,6 @@ unsigned long __init zone_sizes_init(void)
+ 		low = MAX_LOW_PFN(nid);
+ 		zones_size[ZONE_DMA] = low - start_pfn;
+ 		zholes_size[ZONE_DMA] = mp->holes;
+-		holes += zholes_size[ZONE_DMA];
  
- 	/* pass the memory that the kernel can immediately use over to the bootmem allocator */
--	max_mapnr = num_physpages = (memory_end - memory_start) >> PAGE_SHIFT;
-+	max_mapnr = physpages = (memory_end - memory_start) >> PAGE_SHIFT;
- 	low_top_pfn = (KERNEL_LOWMEM_END - KERNEL_LOWMEM_START) >> PAGE_SHIFT;
- 	high_mem = 0;
- 
--	if (num_physpages > low_top_pfn) {
-+	if (physpages > low_top_pfn) {
- #ifdef CONFIG_HIGHMEM
--		high_mem = num_physpages - low_top_pfn;
-+		high_mem = physpages - low_top_pfn;
+ 		node_set_state(nid, N_NORMAL_MEMORY);
+ 		free_area_init_node(nid, zones_size, start_pfn, zholes_size);
+@@ -161,6 +159,4 @@ unsigned long __init zone_sizes_init(void)
+ 	NODE_DATA(1)->node_zones->watermark[WMARK_MIN] = 0;
+ 	NODE_DATA(1)->node_zones->watermark[WMARK_LOW] = 0;
+ 	NODE_DATA(1)->node_zones->watermark[WMARK_HIGH] = 0;
+-
+-	return holes;
+ }
+diff --git a/arch/m32r/mm/init.c b/arch/m32r/mm/init.c
+index a501838..a4f8d93 100644
+--- a/arch/m32r/mm/init.c
++++ b/arch/m32r/mm/init.c
+@@ -40,7 +40,6 @@ unsigned long mmu_context_cache_dat;
  #else
--		max_mapnr = num_physpages = low_top_pfn;
-+		max_mapnr = physpages = low_top_pfn;
+ unsigned long mmu_context_cache_dat[NR_CPUS];
  #endif
- 	}
- 	else {
--		low_top_pfn = num_physpages;
-+		low_top_pfn = physpages;
- 	}
+-static unsigned long hole_pages;
  
- 	min_low_pfn = memory_start >> PAGE_SHIFT;
-@@ -979,7 +980,7 @@ static void __init setup_uclinux_memory(void)
- 	free_bootmem(memory_start, memory_end - memory_start);
+ /*
+  * function prototype
+@@ -57,7 +56,7 @@ void free_initrd_mem(unsigned long, unsigned long);
+ #define MAX_LOW_PFN(nid)	(NODE_DATA(nid)->bdata->node_low_pfn)
  
- 	high_memory = (void *) (memory_end & PAGE_MASK);
--	max_mapnr = num_physpages = ((unsigned long) high_memory - PAGE_OFFSET) >> PAGE_SHIFT;
-+	max_mapnr = ((unsigned long) high_memory - PAGE_OFFSET) >> PAGE_SHIFT;
+ #ifndef CONFIG_DISCONTIGMEM
+-unsigned long __init zone_sizes_init(void)
++void __init zone_sizes_init(void)
+ {
+ 	unsigned long  zones_size[MAX_NR_ZONES] = {0, };
+ 	unsigned long  max_dma;
+@@ -83,11 +82,9 @@ unsigned long __init zone_sizes_init(void)
+ #endif /* CONFIG_MMU */
  
- 	min_low_pfn = memory_start >> PAGE_SHIFT;
- 	max_low_pfn = memory_end >> PAGE_SHIFT;
-diff --git a/arch/frv/mm/init.c b/arch/frv/mm/init.c
-index 3dcc888..88a1597 100644
---- a/arch/frv/mm/init.c
-+++ b/arch/frv/mm/init.c
-@@ -78,7 +78,7 @@ void __init paging_init(void)
- 	memset((void *) empty_zero_page, 0, PAGE_SIZE);
+ 	free_area_init_node(0, zones_size, start_pfn, 0);
+-
+-	return 0;
+ }
+ #else	/* CONFIG_DISCONTIGMEM */
+-extern unsigned long zone_sizes_init(void);
++extern void zone_sizes_init(void);
+ #endif	/* CONFIG_DISCONTIGMEM */
  
- #ifdef CONFIG_HIGHMEM
--	if (num_physpages - num_mappedpages) {
-+	if (get_num_physpages() - num_mappedpages) {
- 		pgd_t *pge;
- 		pud_t *pue;
- 		pmd_t *pme;
-@@ -96,7 +96,7 @@ void __init paging_init(void)
- 	 */
- 	zones_size[ZONE_NORMAL]  = max_low_pfn - min_low_pfn;
- #ifdef CONFIG_HIGHMEM
--	zones_size[ZONE_HIGHMEM] = num_physpages - num_mappedpages;
-+	zones_size[ZONE_HIGHMEM] = get_num_physpages() - num_mappedpages;
- #endif
+ /*======================================================================*
+@@ -105,24 +102,7 @@ void __init paging_init(void)
+ 	for (i = 0 ; i < USER_PTRS_PER_PGD * 2 ; i++)
+ 		pgd_val(pg_dir[i]) = 0;
+ #endif /* CONFIG_MMU */
+-	hole_pages = zone_sizes_init();
+-}
+-
+-int __init reservedpages_count(void)
+-{
+-	int reservedpages, nid, i;
+-
+-	reservedpages = 0;
+-	for_each_online_node(nid) {
+-		unsigned long flags;
+-		pgdat_resize_lock(NODE_DATA(nid), &flags);
+-		for (i = 0 ; i < MAX_LOW_PFN(nid) - START_PFN(nid) ; i++)
+-			if (PageReserved(nid_page_nr(nid, i)))
+-				reservedpages++;
+-		pgdat_resize_unlock(NODE_DATA(nid), &flags);
+-	}
+-
+-	return reservedpages;
++	zone_sizes_init();
+ }
  
- 	free_area_init(zones_size);
-@@ -114,45 +114,24 @@ void __init paging_init(void)
-  */
+ /*======================================================================*
+@@ -131,20 +111,13 @@ int __init reservedpages_count(void)
+  *======================================================================*/
  void __init mem_init(void)
  {
--	unsigned long npages = (memory_end - memory_start) >> PAGE_SHIFT;
--	unsigned long tmp;
--#ifdef CONFIG_MMU
--	unsigned long loop, pfn;
--	int datapages = 0;
--#endif
--	int codek = 0, datak = 0;
-+	unsigned long code_size = _etext - _stext;
- 
- 	/* this will put all low memory onto the freelists */
- 	free_all_bootmem();
-+#if defined(CONFIG_MMU) && defined(CONFIG_HIGHMEM)
-+	{
-+		unsigned long pfn;
- 
--#ifdef CONFIG_MMU
--	for (loop = 0 ; loop < npages ; loop++)
--		if (PageReserved(&mem_map[loop]))
--			datapages++;
--
--#ifdef CONFIG_HIGHMEM
--	for (pfn = num_physpages - 1; pfn >= num_mappedpages; pfn--)
--		free_highmem_page(&mem_map[pfn]);
--#endif
--
--	codek = ((unsigned long) &_etext - (unsigned long) &_stext) >> 10;
--	datak = datapages << (PAGE_SHIFT - 10);
--
--#else
--	codek = (_etext - _stext) >> 10;
--	datak = 0; //(__bss_stop - _sdata) >> 10;
-+		for (pfn = get_num_physpages() - 1;
-+		     pfn >= num_mappedpages; pfn--)
-+			free_highmem_page(&mem_map[pfn]);
-+	}
+-	int codesize, reservedpages, datasize, initsize;
+ 	int nid;
+ #ifndef CONFIG_MMU
+ 	extern unsigned long memory_end;
  #endif
  
--	tmp = nr_free_pages() << PAGE_SHIFT;
--	printk("Memory available: %luKiB/%luKiB RAM, %luKiB/%luKiB ROM (%dKiB kernel code, %dKiB data)\n",
--	       tmp >> 10,
--	       npages << (PAGE_SHIFT - 10),
--	       (rom_length > 0) ? ((rom_length >> 10) - codek) : 0,
--	       rom_length >> 10,
--	       codek,
--	       datak
--	       );
+-	num_physpages = 0;
+-	for_each_online_node(nid)
+-		num_physpages += MAX_LOW_PFN(nid) - START_PFN(nid) + 1;
 -
-+	mem_init_print_info(NULL);
-+	if (rom_length > 0 && rom_length >= code_size)
-+		printk("Memory available:  %luKiB/%luKiB ROM\n",
-+			(rom_length - code_size) >> 10, rom_length >> 10);
- } /* end mem_init() */
+-	num_physpages -= hole_pages;
+-
+ #ifndef CONFIG_DISCONTIGMEM
+-	max_mapnr = num_physpages;
++	max_mapnr = get_num_physpages();
+ #endif	/* CONFIG_DISCONTIGMEM */
  
- /*****************************************************************************/
+ #ifdef CONFIG_MMU
+@@ -160,19 +133,7 @@ void __init mem_init(void)
+ 	for_each_online_node(nid)
+ 		free_all_bootmem_node(NODE_DATA(nid));
+ 
+-	reservedpages = reservedpages_count() - hole_pages;
+-	codesize = (unsigned long) &_etext - (unsigned long)&_text;
+-	datasize = (unsigned long) &_edata - (unsigned long)&_etext;
+-	initsize = (unsigned long) &__init_end - (unsigned long)&__init_begin;
+-
+-	printk(KERN_INFO "Memory: %luk/%luk available (%dk kernel code, "
+-		"%dk reserved, %dk data, %dk init)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		num_physpages << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		initsize >> 10);
++	mem_init_print_info(NULL);
+ }
+ 
+ /*======================================================================*
 -- 
 1.8.1.2
 
