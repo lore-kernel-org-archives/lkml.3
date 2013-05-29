@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab3E2Af2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:35:28 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48675 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757444Ab3E2Ae5 (ORCPT
+	id S933423Ab3E2AiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:38:20 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:56821 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758214Ab3E2AiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:34:57 -0400
-Message-ID: <1369787693.3301.586.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roman Gushchin <klamm@yandex-team.ru>,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Tue, 28 May 2013 17:34:53 -0700
-In-Reply-To: <51A47496.6000100@yandex-team.ru>
-References: <519B8908.9080007@yandex-team.ru>
-	  <1369150693.3301.233.camel@edumazet-glaptop>
-	  <519BB90B.6080706@yandex-team.ru>
-	  <1369188080.3301.268.camel@edumazet-glaptop>
-	  <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru>
-	  <1369225837.3301.324.camel@edumazet-glaptop>
-	  <519CC2FB.2010006@yandex-team.ru>
-	  <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>
-	  <20130525113715.GA3795@linux.vnet.ibm.com>
-	  <51A39E11.5020405@yandex-team.ru>
-	 <1369699930.3301.494.camel@edumazet-glaptop>
-	 <51A47496.6000100@yandex-team.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 28 May 2013 20:38:18 -0400
+Date: Tue, 28 May 2013 17:38:15 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Duncan <1i5t5.duncan@cox.net>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: [RFC PATCH v1 0/5] BTRFS hot relocation support
+Message-ID: <20130529003815.GE2291@google.com>
+References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
+ <pan$d5913$460afe14$f9be182d$7f8dbe54@cox.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <pan$d5913$460afe14$f9be182d$7f8dbe54@cox.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 13:10 +0400, Roman Gushchin wrote:
-> On 28.05.2013 04:12, Eric Dumazet wrote:
-
-> > Adding a barrier() is probably what we want.
+On Tue, May 21, 2013 at 02:22:34AM +0000, Duncan wrote:
+> zwu.kernel posted on Mon, 20 May 2013 23:11:22 +0800 as excerpted:
 > 
-> I agree, inserting barrier() is also a correct and working fix.
+> > The patchset is trying to introduce hot relocation support
+> > for BTRFS. In hybrid storage environment, when the data in rotating disk
+> > get hot, it can be relocated to nonrotating disk by BTRFS hot relocation
+> > support automatically; also, if nonrotating disk ratio exceed its upper
+> > threshold, the data which get cold can be looked up and relocated to
+> > rotating disk to make more space in nonrotating disk at first, and then
+> > the data which get hot will be relocated to nonrotating disk
+> > automatically.
+> 
+> One advantage of a filesystem implementation, as opposed to bcache or 
+> dmcache, is arguably a corner-case, but it's /my/ corner-case, so...
+> 
+> I run an intr*-less (I guess technically, empty initramfs) monolithic-
+> kernel boot, using the kernel commandline root= and (formerly) md= and 
+> related logic to choose/assemble/mount root directly from the kernel 
+> command line via bootloader (grub2).  Thus, any user-space-required-to-
+> mount-root is out, since I don't have an initr* and thus no early 
+> userspace.  That means both lvm2 and dmcache (AFAIK) are out.  I'm not 
+> sure about bcache, but it has other negatives, particularly against btrfs-
+> raid-1 and I'd guess md/raid-1 as well.
+> 
+> Much like md before it, btrfs, while normally requiring the user-space-
+> required device-scan to properly handle multiple devices, has kernel-
+> command-line options that allow direct kernel multi-device assembly 
+> without the help of early-userspace/initr*.
 
-Yeah, but I can not find a clean way to put it inside the "for (;;)"
-
-for (barrier();;)  ->
-
-error: expected expression before ‘__asm__’
-
-No user currently does :
-
-if (condition)
-	hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)
-
-But who knows...
-
-
+I wouldn't be averse to adding such functionality to bcache, provided it
+could be done reasonably cleanly/sensibly. It's not high on my list but
+I'd accept patches :)
