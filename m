@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966193Ab3E2Nhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:37:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57442 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966078Ab3E2Nhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:37:37 -0400
-Date: Wed, 29 May 2013 15:37:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] pktcdvd: silence static checker warning
-In-Reply-To: <20130516081108.GC7494@elgon.mountain>
-Message-ID: <alpine.LNX.2.00.1305291537120.30576@pobox.suse.cz>
-References: <20130516081108.GC7494@elgon.mountain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S966204Ab3E2Nii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:38:38 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:35253 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966078Ab3E2Nig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 09:38:36 -0400
+Message-ID: <1369834714.5109.16.camel@edumazet-glaptop>
+Subject: Re: [PATCH v6 net-next 3/5] tcp: add TCP support for low latency
+ receive poll.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 29 May 2013 06:38:34 -0700
+In-Reply-To: <20130529063945.27486.61442.stgit@ladj378.jer.intel.com>
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+	 <20130529063945.27486.61442.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 May 2013, Dan Carpenter wrote:
-
-> Static checkers complain about widening the binary "not" operations here
-> because sectors are u64 and "(pd)->settings.size" is unsigned int.
-> It unintentionally clears the high 32 bits of the sector.  This means
-> that the driver won't work for devices with over 2TB of space.  Since
-> this is a DVD drive, we're unlikely to reach that limit, but we may as
-> well silence the warning.
+On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+> Adds busy-poll support for TCP.
+> Copy the napi_id from an incomming skb to the sk in tcp_v[46]_rcv().
+> when there is no data in the socket we busy-poll in tcp_recvmsg().
+> This is a good example of how to add busy-poll support to new protocols.
 > 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Tested-by: Willem de Bruijn <willemb@google.com>
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
 > 
-> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-> index 898fa74..09142c4 100644
-> --- a/drivers/block/pktcdvd.c
-> +++ b/drivers/block/pktcdvd.c
-> @@ -83,7 +83,8 @@
->  
->  #define MAX_SPEED 0xffff
->  
-> -#define ZONE(sector, pd) (((sector) + (pd)->offset) & ~((pd)->settings.size - 1))
-> +#define ZONE(sector, pd) (((sector) + (pd)->offset) & \
-> +			~(sector_t)((pd)->settings.size - 1))
->  
->  static DEFINE_MUTEX(pktcdvd_mutex);
->  static struct pktcdvd_device *pkt_devs[MAX_WRITERS];
+>  net/ipv4/tcp.c      |    5 +++++
+>  net/ipv4/tcp_ipv4.c |    2 ++
+>  net/ipv6/tcp_ipv6.c |    2 ++
+>  3 files changed, 9 insertions(+), 0 deletions(-)
 
-Makes sense. Applied, thanks Dan.
+Acked-by: Eric Dumazet <edumazet@google.com>
 
--- 
-Jiri Kosina
-SUSE Labs
+
