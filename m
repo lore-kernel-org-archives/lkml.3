@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966484Ab3E2TyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:54:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49874 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759631Ab3E2Tx6 (ORCPT
+	id S966643Ab3E2TyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:54:15 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48053 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758817Ab3E2Tx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 May 2013 15:53:58 -0400
-Date: Wed, 29 May 2013 12:53:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: vmscan: Take page buffers dirty and locked
- state into account
-Message-Id: <20130529125356.5018cb1ba28959664be67791@linux-foundation.org>
-In-Reply-To: <1369659778-6772-5-git-send-email-mgorman@suse.de>
-References: <1369659778-6772-1-git-send-email-mgorman@suse.de>
-	<1369659778-6772-5-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+In-Reply-To: <CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
+References: <CACG0VPV3-x5Ncp+_hci8wVNYUeqAUZ0KFm0MAuHMntXzaL9Nqw@mail.gmail.com>
+ <CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
+From: Joao Correia <joaomiguelcorreia@gmail.com>
+Date: Wed, 29 May 2013 20:53:16 +0100
+Message-ID: <CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com>
+Subject: Re: Network issue on 3.10 rcs, bisected
+To: Pravin Shelar <pshelar@nicira.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 May 2013 14:02:58 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Wed, May 29, 2013 at 7:59 PM, Pravin Shelar <pshelar@nicira.com> wrote:
+>
+> On Wed, May 29, 2013 at 4:37 AM, Joao Correia
+> <joaomiguelcorreia@gmail.com> wrote:
+> > Hello list
+> >
+> > While trying the rc's for 3.10, i've stumbled upon a problem where
+> > networking does not work at all. Iptables will show packet counts going up,
+> > but nothing actually reaches the programs.
+> >
+> > I'm running fedora under hyper-v 3 (a windows 2012 host). Only tested ipv4
+> > traffic, and everything times out (ping, telnet to open ports) on both
+> > directions. The networking devices come up apparently ok - has static ip
+> > set, and dmesg shows no errors (although i don't have many debugging options
+> > enabled).
+> >
+> > I bisected this, and git blames commit
+> > ec5f061564238892005257c83565a0b58ec79295 (net: ill link between CSUM and SG
+> > features.). I can't revert it cleanly on current rc's.
+> >
+> Can you also send network features set on the device?
+> ethtool -k <dev>
 
-> Page reclaim keeps track of dirty and under writeback pages and uses it to
-> determine if wait_iff_congested() should stall or if kswapd should begin
-> writing back pages. This fails to account for buffer pages that can be under
-> writeback but not PageWriteback which is the case for filesystems like ext3
-> ordered mode. Furthermore, PageDirty buffer pages can have all the buffers
-> clean and writepage does no IO so it should not be accounted as congested.
 
-iirc, the PageDirty-all-buffers-clean state is pretty rare.  It might
-not be worth bothering about?
+As requested:
+Features for eth0:
+rx-checksumming: off [fixed]
+tx-checksumming: off
+    tx-checksum-ipv4: off [fixed]
+    tx-checksum-ip-generic: off [fixed]
+    tx-checksum-ipv6: off [fixed]
+    tx-checksum-fcoe-crc: off [fixed]
+    tx-checksum-sctp: off [fixed]
+scatter-gather: on
+    tx-scatter-gather: on
+    tx-scatter-gather-fraglist: off [fixed]
+tcp-segmentation-offload: off
+    tx-tcp-segmentation: off [fixed]
+    tx-tcp-ecn-segmentation: off [fixed]
+    tx-tcp6-segmentation: off [fixed]
+udp-fragmentation-offload: off [fixed]
+generic-segmentation-offload: on
+generic-receive-offload: on
+large-receive-offload: off [fixed]
+rx-vlan-offload: off
+tx-vlan-offload: on
+ntuple-filters: off [fixed]
+receive-hashing: off [fixed]
+highdma: off [fixed]
+tx-vlan-ctag-hw-insert: on [fixed]
+rx-vlan-ctag-hw-parse: off [fixed]
+rx-vlan-ctag-filter: off [fixed]
+tx-vlan-stag-hw-insert: off [fixed]
+rx-vlan-stag-hw-parse: off [fixed]
+rx-vlan-stag-filter: off [fixed]
+vlan-challenged: off [fixed]
+tx-lockless: off [fixed]
+netns-local: off [fixed]
+tx-gso-robust: off [fixed]
+tx-fcoe-segmentation: off [fixed]
+tx-gre-segmentation: off [fixed]
+tx-udp_tnl-segmentation: off [fixed]
+fcoe-mtu: off [fixed]
+tx-nocache-copy: off
+loopback: off [fixed]
+rx-fcs: off [fixed]
+rx-all: off [fixed]
 
-> This patch adds an address_space operation that filesystems may
-> optionally use to check if a page is really dirty or really under
-> writeback.
+The output is similar on a working (3.9) and a bad (3.10) kernel.
+diff-ing both outputs shows:
+tx-vlan-stag-hw-insert: off [fixed]
+rx-vlan-stag-hw-parse: off [fixed]
+rx-vlan-stag-filter: off [fixed]
+as last on the broken kernels.
 
-address_space_operations methods are Documented in
-Documentation/filesystems/vfs.txt ;)
-
-> An implementation is provided for for buffer_heads is added
-> and used for block operations and ext3 in ordered mode. By default the
-> page flags are obeyed.
-> 
-> Credit goes to Jan Kara for identifying that the page flags alone are
-> not sufficient for ext3 and sanity checking a number of ideas on how
-> the problem could be addressed.
-
+Thank you for your time,
+Joao Correia
+CIUBI
+Universidade da Beira Interior
+Portugal
