@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966558Ab3E2Tgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:36:42 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36782 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966289Ab3E2TdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 15:33:12 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 04/13] net: mv643xx_eth: use of_phy_connect if phy_node present
-Date: Wed, 29 May 2013 21:32:46 +0200
-Message-Id: <1369855975-21489-5-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S966537Ab3E2Tin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:38:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64221 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966298Ab3E2Tid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 15:38:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
+   d="scan'208";a="321499521"
+Date: Wed, 29 May 2013 12:38:28 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Shawn Nematbakhsh <shawnn@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
+ controllers.
+Message-ID: <20130529193828.GK32085@xanatos>
+References: <20130524210503.GC15788@xanatos>
+ <Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
+ <CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
+ <20130528205842.GE32085@xanatos>
+ <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAODwPW8ynh3238T6gOVmneMqsbdR2m+wPnVLbS7c38mQxCpBSQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This connects to a phy node passed to the port device instead of probing
-the phy by phy_addr.
+On Tue, May 28, 2013 at 02:41:18PM -0700, Julius Werner wrote:
+> The policy we want to achieve is to disable runtime PM iff there is a
+> device connected that doesn't have persist_enabled or a reset_resume()
+> handler and whose parent/root hub resets on resume, right?
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: David Miller <davem@davemloft.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/marvell/mv643xx_eth.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+Makes sense.  However, not all distros may want that policy, so there
+should be a way to change that policy via sysfs.  Some distros may
+choose to take the power savings over having a particular USB device
+work, especially in the server market.
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 19964e9..fa8c84a 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -60,6 +60,7 @@
- #include <linux/types.h>
- #include <linux/slab.h>
- #include <linux/clk.h>
-+#include <linux/of_mdio.h>
- 
- static char mv643xx_eth_driver_name[] = "mv643xx_eth";
- static char mv643xx_eth_driver_version[] = "1.4";
-@@ -2715,17 +2716,27 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 	netif_set_real_num_tx_queues(dev, mp->txq_count);
- 	netif_set_real_num_rx_queues(dev, mp->rxq_count);
- 
--	if (pd->phy_addr != MV643XX_ETH_PHY_NONE) {
-+	err = 0;
-+	if (pd->phy_node) {
-+		mp->phy = of_phy_connect(mp->dev, pd->phy_node,
-+					 mv643xx_eth_adjust_link, 0,
-+					 PHY_INTERFACE_MODE_GMII);
-+		if (!mp->phy)
-+			err = -ENODEV;
-+	} else if (pd->phy_addr != MV643XX_ETH_PHY_NONE) {
- 		mp->phy = phy_scan(mp, pd->phy_addr);
- 
--		if (IS_ERR(mp->phy)) {
-+		if (IS_ERR(mp->phy))
- 			err = PTR_ERR(mp->phy);
--			if (err == -ENODEV)
--				err = -EPROBE_DEFER;
--			goto out;
--		}
--		phy_init(mp, pd->speed, pd->duplex);
-+		else
-+			phy_init(mp, pd->speed, pd->duplex);
- 	}
-+	if (err == -ENODEV) {
-+		err = -EPROBE_DEFER;
-+		goto out;
-+	}
-+	if (err)
-+		goto out;
- 
- 	SET_ETHTOOL_OPS(dev, &mv643xx_eth_ethtool_ops);
- 
--- 
-1.7.10.4
+Don, Oliver, what do you think of this patch:
+http://marc.info/?l=linux-usb&m=136941922715772&w=2
 
+Julius is proposing to limit the scope of the patch a bit, but the
+impact will still be that TI hosts will be active more often than not.
+
+> So couldn't
+> we remove the HCD-specific XHCI_RESET_ON_RESUME and set the (existing)
+> generic USB_QUIRK_RESET_RESUME on the root hub instead?  Then we could
+> handle all of this in the USB core (during device initialization and
+> when changing persist_enabled through sysfs) by just checking for
+> udev->reset_resume on all parent hubs of the device in question (and
+> use pm_runtime_get/put() on said device to prevent its parents from
+> suspending as appropriate).
+
+Alan, what happens if we set USB_QUIRK_RESET_RESUME on the roothub?
+I don't think that currently translates into the host controller's Reset
+register getting written, which is what I think Julius is proposing.
+
+Sarah Sharp
