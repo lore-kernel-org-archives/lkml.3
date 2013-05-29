@@ -1,181 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934490Ab3E2P4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:56:14 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:38386 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934117Ab3E2P4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:56:11 -0400
-Date: Wed, 29 May 2013 10:56:09 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH] x86/UV: GRU distributed mode mappings
-Message-ID: <20130529155609.GB22917@sgi.com>
-References: <20130523155013.GA16496@sgi.com>
- <20130528075912.GA29336@gmail.com>
- <20130528134106.GA5619@sgi.com>
- <20130529081539.GA25444@gmail.com>
+	id S935754Ab3E2P5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:57:05 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17765 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934551Ab3E2P42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:56:28 -0400
+Date: Wed, 29 May 2013 11:55:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
+        will.deacon@arm.com, Ian.Campbell@citrix.com
+Subject: Re: [PATCH v4 1/4] xen: move xen_setup_runstate_info and
+ get_runstate_snapshot to drivers/xen/time.c
+Message-ID: <20130529155544.GG23775@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1305281835080.4799@kaball.uk.xensource.com>
+ <1369763672-12919-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130528181515.GB27718@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130529081539.GA25444@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1305291159220.4799@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 10:15:39AM +0200, Ingo Molnar wrote:
+On Wed, May 29, 2013 at 12:03:26PM +0100, Stefano Stabellini wrote:
+> On Tue, 28 May 2013, Konrad Rzeszutek Wilk wrote:
+> > On Tue, May 28, 2013 at 06:54:29PM +0100, Stefano Stabellini wrote:
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > > CC: konrad.wilk@oracle.com
+> > > 
+> > > Changes in v2:
+> > > - leave do_stolen_accounting in arch/x86/xen/time.c;
+> > > - use the new common functions in arch/ia64/xen/time.c.
+> > 
+> > So you also modify the function.
 > 
-> So this looks like suitable v3.11 material - not an urgent fix needed for 
-> v3.10, right?
-
-Correct, v3.11 is fine.
-
+> do_stolen_accounting? Just enought to call the new common function
+> xen_get_runstate_snapshot instead of the old x86 specific
+> get_runstate_snapshot.
 > 
-> Noticed this detail:
 > 
-> > +	} else
-> > +		return start >= gru_start_paddr && end <= gru_end_paddr;
+> > > ---
+> > >  arch/ia64/xen/time.c  |   48 +++----------------------
+> > >  arch/x86/xen/time.c   |   76 +----------------------------------------
+> > >  drivers/xen/Makefile  |    2 +-
+> > >  drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  include/xen/xen-ops.h |    5 +++
+> > >  5 files changed, 104 insertions(+), 118 deletions(-)
+> > >  create mode 100644 drivers/xen/time.c
+> > > 
+> > > diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+> > > index 1f8244a..79a0b8c 100644
+> > > --- a/arch/ia64/xen/time.c
+> > > +++ b/arch/ia64/xen/time.c
+> > > @@ -34,53 +34,17 @@
+> > >  
+> > >  #include "../kernel/fsyscall_gtod_data.h"
+> > >  
+> > > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> > >  static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
+> > >  static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
+> > >  
+> > >  /* taken from i386/kernel/time-xen.c */
+> > >  static void xen_init_missing_ticks_accounting(int cpu)
+> > >  {
+> > > -	struct vcpu_register_runstate_memory_area area;
+> > > -	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
+> > > -	int rc;
+> > > +	xen_setup_runstate_info(&runstate);
+> > >  
+> > > -	memset(runstate, 0, sizeof(*runstate));
+> > > -
+> > > -	area.addr.v = runstate;
+> > > -	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> > > -				&area);
+> > > -	WARN_ON(rc && rc != -ENOSYS);
+> > > -
+> > > -	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
+> > > -	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
+> > > -					    + runstate->time[RUNSTATE_offline];
+> > > -}
+> > > -
+> > > -/*
+> > > - * Runstate accounting
+> > > - */
+> > > -/* stolen from arch/x86/xen/time.c */
+> > > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > > -{
+> > > -	u64 state_time;
+> > > -	struct vcpu_runstate_info *state;
+> > > -
+> > > -	BUG_ON(preemptible());
+> > > -
+> > > -	state = &__get_cpu_var(xen_runstate);
+> > > -
+> > > -	/*
+> > > -	 * The runstate info is always updated by the hypervisor on
+> > > -	 * the current CPU, so there's no need to use anything
+> > > -	 * stronger than a compiler barrier when fetching it.
+> > > -	 */
+> > > -	do {
+> > > -		state_time = state->state_entry_time;
+> > > -		rmb();
+> > > -		*res = *state;
+> > > -		rmb();
+> > > -	} while (state->state_entry_time != state_time);
+> > > +	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
+> > > +	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
+> > > +					    + runstate.time[RUNSTATE_offline];
+> > >  }
+> > >  
+> > >  #define NS_PER_TICK (1000000000LL/HZ)
+> > > @@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
+> > >  	struct vcpu_runstate_info runstate;
+> > >  	struct task_struct *p = current;
+> > >  
+> > > -	get_runstate_snapshot(&runstate);
+> > > +	xen_get_runstate_snapshot(&runstate);
+> > >  
+> > >  	/*
+> > >  	 * Check for vcpu migration effect
+> > > @@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
+> > >  	 */
+> > >  	now = ia64_native_sched_clock();
+> > >  
+> > > -	get_runstate_snapshot(&runstate);
+> > > +	xen_get_runstate_snapshot(&runstate);
+> > >  
+> > >  	WARN_ON(runstate.state != RUNSTATE_running);
+> > >  
+> > > diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> > > index 3d88bfd..c0ca15e 100644
+> > > --- a/arch/x86/xen/time.c
+> > > +++ b/arch/x86/xen/time.c
+> > > @@ -30,9 +30,6 @@
+> > >  #define TIMER_SLOP	100000
+> > >  #define NS_PER_TICK	(1000000000LL / HZ)
+> > >  
+> > > -/* runstate info updated by Xen */
+> > > -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> > > -
+> > >  /* snapshots of runstate info */
+> > >  static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+> > >  
+> > > @@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+> > >  static DEFINE_PER_CPU(u64, xen_residual_stolen);
+> > >  static DEFINE_PER_CPU(u64, xen_residual_blocked);
+> > >  
+> > > -/* return an consistent snapshot of 64-bit time/counter value */
+> > > -static u64 get64(const u64 *p)
+> > > -{
+> > > -	u64 ret;
+> > > -
+> > > -	if (BITS_PER_LONG < 64) {
+> > > -		u32 *p32 = (u32 *)p;
+> > > -		u32 h, l;
+> > > -
+> > > -		/*
+> > > -		 * Read high then low, and then make sure high is
+> > > -		 * still the same; this will only loop if low wraps
+> > > -		 * and carries into high.
+> > > -		 * XXX some clean way to make this endian-proof?
+> > > -		 */
+> > > -		do {
+> > > -			h = p32[1];
+> > > -			barrier();
+> > > -			l = p32[0];
+> > > -			barrier();
+> > > -		} while (p32[1] != h);
+> > > -
+> > > -		ret = (((u64)h) << 32) | l;
+> > > -	} else
+> > > -		ret = *p;
+> > > -
+> > > -	return ret;
+> > > -}
+> > > -
+> > > -/*
+> > > - * Runstate accounting
+> > > - */
+> > > -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > > -{
+> > > -	u64 state_time;
+> > > -	struct vcpu_runstate_info *state;
+> > > -
+> > > -	BUG_ON(preemptible());
+> > > -
+> > > -	state = &__get_cpu_var(xen_runstate);
+> > > -
+> > > -	/*
+> > > -	 * The runstate info is always updated by the hypervisor on
+> > > -	 * the current CPU, so there's no need to use anything
+> > > -	 * stronger than a compiler barrier when fetching it.
+> > > -	 */
+> > > -	do {
+> > > -		state_time = get64(&state->state_entry_time);
+> > > -		barrier();
+> > > -		*res = *state;
+> > > -		barrier();
+> > > -	} while (get64(&state->state_entry_time) != state_time);
+> > > -}
+> > > -
+> > > -/* return true when a vcpu could run but has no real cpu to run on */
+> > > -bool xen_vcpu_stolen(int vcpu)
+> > > -{
+> > > -	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> > > -}
+> > > -
+> > > -void xen_setup_runstate_info(int cpu)
+> > > -{
+> > > -	struct vcpu_register_runstate_memory_area area;
+> > > -
+> > > -	area.addr.v = &per_cpu(xen_runstate, cpu);
+> > > -
+> > > -	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> > > -			       cpu, &area))
+> > > -		BUG();
+> > > -}
+> > > -
+> > >  static void do_stolen_accounting(void)
+> > >  {
+> > >  	struct vcpu_runstate_info state;
+> > > @@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
+> > >  	s64 blocked, runnable, offline, stolen;
+> > >  	cputime_t ticks;
+> > >  
+> > > -	get_runstate_snapshot(&state);
+> > > +	xen_get_runstate_snapshot(&state);
+> > >  
+> > >  	WARN_ON(state.state != RUNSTATE_running);
+> > >  
+> > > diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> > > index eabd0ee..2bf461a 100644
+> > > --- a/drivers/xen/Makefile
+> > > +++ b/drivers/xen/Makefile
+> > > @@ -3,7 +3,7 @@ obj-y	+= manage.o
+> > >  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+> > >  endif
+> > >  obj-$(CONFIG_X86)			+= fallback.o
+> > > -obj-y	+= grant-table.o features.o events.o balloon.o
+> > > +obj-y	+= grant-table.o features.o events.o balloon.o time.o
+> > >  obj-y	+= xenbus/
+> > >  
+> > >  nostackp := $(call cc-option, -fno-stack-protector)
+> > > diff --git a/drivers/xen/time.c b/drivers/xen/time.c
+> > > new file mode 100644
+> > > index 0000000..c2e39d3
+> > > --- /dev/null
+> > > +++ b/drivers/xen/time.c
+> > > @@ -0,0 +1,91 @@
+> > > +/*
+> > > + * Xen stolen ticks accounting.
+> > > + */
+> > > +#include <linux/kernel.h>
+> > > +#include <linux/kernel_stat.h>
+> > > +#include <linux/math64.h>
+> > > +#include <linux/gfp.h>
+> > > +
+> > > +#include <asm/xen/hypervisor.h>
+> > > +#include <asm/xen/hypercall.h>
+> > > +
+> > > +#include <xen/events.h>
+> > > +#include <xen/features.h>
+> > > +#include <xen/interface/xen.h>
+> > > +#include <xen/interface/vcpu.h>
+> > > +#include <xen/xen-ops.h>
+> > > +
+> > > +/* runstate info updated by Xen */
+> > > +static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> > > +
+> > > +/* return an consistent snapshot of 64-bit time/counter value */
+> > > +static u64 get64(const u64 *p)
+> > > +{
+> > > +	u64 ret;
+> > > +
+> > > +	if (BITS_PER_LONG < 64) {
+> > > +		u32 *p32 = (u32 *)p;
+> > > +		u32 h, l;
+> > > +
+> > > +		/*
+> > > +		 * Read high then low, and then make sure high is
+> > > +		 * still the same; this will only loop if low wraps
+> > > +		 * and carries into high.
+> > > +		 * XXX some clean way to make this endian-proof?
+> > > +		 */
+> > > +		do {
+> > > +			h = p32[1];
+> > > +			barrier();
+> > > +			l = p32[0];
+> > > +			barrier();
+> > > +		} while (p32[1] != h);
+> > > +
+> > > +		ret = (((u64)h) << 32) | l;
+> > > +	} else
+> > > +		ret = *p;
+> > > +
+> > > +	return ret;
+> > > +}
+> > > +
+> > > +/*
+> > > + * Runstate accounting
+> > > + */
+> > > +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
+> > > +{
+> > > +	u64 state_time;
+> > > +	struct vcpu_runstate_info *state;
+> > > +
+> > > +	BUG_ON(preemptible());
+> > > +
+> > > +	state = &__get_cpu_var(xen_runstate);
+> > > +
+> > > +	/*
+> > > +	 * The runstate info is always updated by the hypervisor on
+> > > +	 * the current CPU, so there's no need to use anything
+> > > +	 * stronger than a compiler barrier when fetching it.
+> > > +	 */
+> > > +	do {
+> > > +		state_time = get64(&state->state_entry_time);
+> > > +		barrier();
+> > > +		*res = *state;
+> > > +		barrier();
+> > > +	} while (get64(&state->state_entry_time) != state_time);
+> > > +}
+> > > +
+> > > +/* return true when a vcpu could run but has no real cpu to run on */
+> > > +bool xen_vcpu_stolen(int vcpu)
+> > > +{
+> > > +	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> > > +}
+> > > +
+> > > +void xen_setup_runstate_info(int cpu)
+> > > +{
+> > > +	struct vcpu_register_runstate_memory_area area;
+> > > +
+> > > +	area.addr.v = &per_cpu(xen_runstate, cpu);
+> > > +
+> > > +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> > > +			       cpu, &area))
+> > > +		BUG();
+> > 
+> > The original code did:
+> > 
+> > -       rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> > -                               &area);
+> > -       WARN_ON(rc && rc != -ENOSYS);
+> > -
+> > Any reason not to do this?
 > 
-> in the kernel we generally try to balance curly braces - either all 
-> branches are curly or none.
+> The original x86 code just BUGs out: I took that version over the ia64
+> version.
 
-Fixed, see patch below.
-
-> 
-> > +	/* Save upper (63:M) bits of address only for is_GRU_range */
-> > +	gru_first_node_paddr &= gru_dist_umask;
-> > +	gru_last_node_paddr &= gru_dist_umask;
-> > +	pr_info("UV: Map GRU_DIST base 0x%016llx  0x%016llx - 0x%016llx\n",
-> > +		gru_dist_base, gru_first_node_paddr, gru_last_node_paddr);
-> 
-> I suspect this should be pr_debug()?
->
-
-I had set it to what was being used in map_high(), but pr_debug should be OK,
-so I changed both instances.
-
-
-
-GRU hardware will support an optional distributed mode that will allow 
-per-node address mapping of local GRU space, as opposed to mapping all GRU
-hardware to the same contiguous high space.
-
-If GRU distributed mode is selected, setup per-node page table mappings.
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- arch/x86/kernel/apic/x2apic_uv_x.c |   66 +++++++++++++++++++++++++++++----
- 1 file changed, 59 insertions(+), 7 deletions(-)
-
-Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -51,6 +51,8 @@ DEFINE_PER_CPU(int, x2apic_extra_bits);
- 
- static enum uv_system_type uv_system_type;
- static u64 gru_start_paddr, gru_end_paddr;
-+static u64 gru_dist_base, gru_first_node_paddr = -1LL, gru_last_node_paddr;
-+static u64 gru_dist_lmask, gru_dist_umask;
- static union uvh_apicid uvh_apicid;
- int uv_min_hub_revision_id;
- EXPORT_SYMBOL_GPL(uv_min_hub_revision_id);
-@@ -72,7 +74,20 @@ static unsigned long __init uv_early_rea
- 
- static inline bool is_GRU_range(u64 start, u64 end)
- {
--	return start >= gru_start_paddr && end <= gru_end_paddr;
-+	if (gru_dist_base) {
-+		u64 su = start & gru_dist_umask; /* upper (incl pnode) bits */
-+		u64 sl = start & gru_dist_lmask; /* base offset bits */
-+		u64 eu = end & gru_dist_umask;
-+		u64 el = end & gru_dist_lmask;
-+
-+		/* Must reside completely within a single GRU range */
-+		return (sl == gru_dist_base && el == gru_dist_base &&
-+			su >= gru_first_node_paddr &&
-+			su <= gru_last_node_paddr &&
-+			eu == su);
-+	} else {
-+		return start >= gru_start_paddr && end <= gru_end_paddr;
-+	}
- }
- 
- static bool uv_is_untracked_pat_range(u64 start, u64 end)
-@@ -463,26 +478,63 @@ static __init void map_high(char *id, un
- 		pr_info("UV: Map %s_HI base address NULL\n", id);
- 		return;
- 	}
--	pr_info("UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr, paddr + bytes);
-+	pr_debug("UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr, paddr + bytes);
- 	if (map_type == map_uc)
- 		init_extra_mapping_uc(paddr, bytes);
- 	else
- 		init_extra_mapping_wb(paddr, bytes);
- }
- 
-+static __init void map_gru_distributed(unsigned long c)
-+{
-+	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
-+	u64 paddr;
-+	unsigned long bytes;
-+	int nid;
-+
-+	gru.v = c;
-+	/* only base bits 42:28 relevant in dist mode */
-+	gru_dist_base = gru.v & 0x000007fff0000000UL;
-+	if (!gru_dist_base) {
-+		pr_info("UV: Map GRU_DIST base address NULL\n");
-+		return;
-+	}
-+	bytes = 1UL << UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
-+	gru_dist_lmask = ((1UL << uv_hub_info->m_val) - 1) & ~(bytes - 1);
-+	gru_dist_umask = ~((1UL << uv_hub_info->m_val) - 1);
-+	gru_dist_base &= gru_dist_lmask; /* Clear bits above M */
-+	for_each_online_node(nid) {
-+		paddr = ((u64)uv_node_to_pnode(nid) << uv_hub_info->m_val) |
-+				gru_dist_base;
-+		init_extra_mapping_wb(paddr, bytes);
-+		gru_first_node_paddr = min(paddr, gru_first_node_paddr);
-+		gru_last_node_paddr = max(paddr, gru_last_node_paddr);
-+	}
-+	/* Save upper (63:M) bits of address only for is_GRU_range */
-+	gru_first_node_paddr &= gru_dist_umask;
-+	gru_last_node_paddr &= gru_dist_umask;
-+	pr_debug("UV: Map GRU_DIST base 0x%016llx  0x%016llx - 0x%016llx\n",
-+		gru_dist_base, gru_first_node_paddr, gru_last_node_paddr);
-+}
-+
- static __init void map_gru_high(int max_pnode)
- {
- 	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
- 	int shift = UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
- 
- 	gru.v = uv_read_local_mmr(UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR);
--	if (gru.s.enable) {
--		map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
--		gru_start_paddr = ((u64)gru.s.base << shift);
--		gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
--	} else {
-+	if (!gru.s.enable) {
- 		pr_info("UV: GRU disabled\n");
-+		return;
-+	}
-+
-+	if (is_uv3_hub() && gru.s3.mode) {
-+		map_gru_distributed(gru.v);
-+		return;
- 	}
-+	map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
-+	gru_start_paddr = ((u64)gru.s.base << shift);
-+	gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
- }
- 
- static __init void map_mmr_high(int max_pnode)
+Ah, I see it now. OK, then this looks good to me.
