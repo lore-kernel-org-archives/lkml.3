@@ -1,895 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759510Ab3E2DLb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:11:31 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:56301 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759448Ab3E2DL3 (ORCPT
+	id S933221Ab3E2D3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:29:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41419 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759346Ab3E2D3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:11:29 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <haojian.zhuang@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Neil Zhang <zhangwm@marvell.com>, Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH] ARM: mmp: bring up pxa988 with device tree support
-Date: Wed, 29 May 2013 11:10:42 +0800
-Message-ID: <1369797042-22174-2-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369797042-22174-1-git-send-email-zhangwm@marvell.com>
-References: <1369797042-22174-1-git-send-email-zhangwm@marvell.com>
+	Tue, 28 May 2013 23:29:24 -0400
+Date: Tue, 28 May 2013 20:29:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [BUG] with rcu nocb, don't call wake up holding rnp->lock (was:
+ rcu_read_lock() used illegally while idle!)
+Message-ID: <20130529032914.GY6172@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130522093624.GZ3578@linux.vnet.ibm.com>
+ <1369226958.6828.175.camel@gandalf.local.home>
+ <20130523164004.GJ16419@redhat.com>
+ <1369403180.6828.223.camel@gandalf.local.home>
+ <20130524142338.GB3106@redhat.com>
+ <1369423420.6828.226.camel@gandalf.local.home>
+ <20130525135959.GA1784@redhat.com>
+ <1369506004.15552.5.camel@gandalf.local.home>
+ <20130528201329.GA24342@redhat.com>
+ <1369776773.15552.43.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369776773.15552.43.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052903-7606-0000-0000-00000BE5A90F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bring up pxa988 with device tree support.
+On Tue, May 28, 2013 at 05:32:53PM -0400, Steven Rostedt wrote:
+> Paul, this looks to be a nocb rcu bug.
 
-Change-Id: I6fc869b7d5ff8dc6e4eb0042a89429200f7a9fb1
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- arch/arm/boot/dts/pxa988-dkb.dts          |   36 ++++++
- arch/arm/boot/dts/pxa988.dtsi             |  189 +++++++++++++++++++++++++++++
- arch/arm/mach-mmp/Kconfig                 |   27 ++++
- arch/arm/mach-mmp/Makefile                |    2 +
- arch/arm/mach-mmp/common.c                |   11 ++-
- arch/arm/mach-mmp/common.h                |    2 +
- arch/arm/mach-mmp/headsmp.S               |  104 ++++++++++++++++
- arch/arm/mach-mmp/include/mach/addr-map.h |    6 +
- arch/arm/mach-mmp/mmpx-dt.c               |   74 +++++++++++
- arch/arm/mach-mmp/platsmp.c               |  163 +++++++++++++++++++++++++
- arch/arm/mach-mmp/reset.c                 |   66 ++++++++++
- arch/arm/mach-mmp/reset.h                 |   29 +++++
- drivers/clk/mmp/Makefile                  |    1 +
- 13 files changed, 709 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/pxa988-dkb.dts
- create mode 100644 arch/arm/boot/dts/pxa988.dtsi
- create mode 100644 arch/arm/mach-mmp/headsmp.S
- create mode 100644 arch/arm/mach-mmp/mmpx-dt.c
- create mode 100644 arch/arm/mach-mmp/platsmp.c
- create mode 100644 arch/arm/mach-mmp/reset.c
- create mode 100644 arch/arm/mach-mmp/reset.h
+Excellent work tracing this down!  I have queued your fix, and if it
+passes testing, I will push for 3.10.
 
-diff --git a/arch/arm/boot/dts/pxa988-dkb.dts b/arch/arm/boot/dts/pxa988-dkb.dts
-new file mode 100644
-index 0000000..2cee3ed
---- /dev/null
-+++ b/arch/arm/boot/dts/pxa988-dkb.dts
-@@ -0,0 +1,36 @@
-+/*
-+ *  Copyright (C) 2012 Marvell Technology Group Ltd.
-+ *  Author: Haojian Zhuang <haojian.zhuang@marvell.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  publishhed by the Free Software Foundation.
-+ */
-+
-+/dts-v1/;
-+/include/ "pxa988.dtsi"
-+
-+/ {
-+	model = "Marvell PXA988 DKB Development Board";
-+	compatible = "mrvl,pxa988-dkb", "mrvl,pxa988";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 root=/dev/nfs nfsroot=192.168.1.100:/nfsroot/ ip=192.168.1.101:192.168.1.100::255.255.255.0::eth0:on";
-+	};
-+
-+	memory {
-+		reg = <0x00000000 0x10000000>;
-+	};
-+
-+	soc {
-+		apb@d4000000 {
-+			uart1: uart@d4017000 {
-+				status = "okay";
-+			};
-+
-+			rtc: rtc@d4010000 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/pxa988.dtsi b/arch/arm/boot/dts/pxa988.dtsi
-new file mode 100644
-index 0000000..567d33d
---- /dev/null
-+++ b/arch/arm/boot/dts/pxa988.dtsi
-@@ -0,0 +1,189 @@
-+/*
-+ *  Copyright (C) 2013 Marvell Technology Group Ltd.
-+ *  Author: Chao Xie <chao.xie@marvell.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  publishhed by the Free Software Foundation.
-+ */
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	interrupt-parent = <&gic>;
-+
-+	aliases {
-+		serial0 = &uart1;
-+		serial1 = &uart2;
-+		serial2 = &uart3;
-+		i2c0 = &twsi1;
-+		i2c1 = &twsi2;
-+	};
-+
-+	cpus {
-+		cpu@0 {
-+			compatible = "arm,cortex-a9";
-+			next-level-cache = <&L2>;
-+		};
-+		cpu@1 {
-+			compatible = "arm,cortex-a9";
-+			next-level-cache = <&L2>;
-+		};
-+	};
-+
-+	gic: interrupt-controller@d1dfe100 {
-+		compatible = "arm,cortex-a9-gic";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0xd1dff000 0x1000>,
-+		      <0xd1dfe100 0x0100>;
-+	};
-+
-+	L2: l2-cache-controller@d1dfb000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0xd1dfb000 0x1000>;
-+		arm,data-latency = <2 1 1>;
-+		arm,tag-latency = <2 1 1>;
-+		arm,pwr-dynamic-clk-gating;
-+		arm,pwr-standby-mode;
-+		cache-unified;
-+		cache-level = <2>;
-+	};
-+
-+	local-timer@d1dfe600 {
-+		compatible = "arm,cortex-a9-twd-timer";
-+		reg = <0xd1dfe600 0x20>;
-+		interrupts = <1 13 0x304>;
-+	};
-+
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		interrupt-parent = <&gic>;
-+		ranges;
-+
-+		axi@d4200000 {	/* AXI */
-+			compatible = "mrvl,axi-bus", "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			reg = <0xd4200000 0x00200000>;
-+			ranges;
-+
-+			intc: wakeupgen@d4282000 {
-+				compatible = "mrvl,mmp-intc";
-+				reg = <0xd4282000 0x1000>;
-+				mrvl,intc-wakeup = <0x114 0x3
-+						    0x144 0x3>;
-+			};
-+
-+		};
-+
-+		apb@d4000000 {	/* APB */
-+			compatible = "mrvl,apb-bus", "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			reg = <0xd4000000 0x00200000>;
-+			ranges;
-+
-+			timer0: timer@d4014000 {
-+				compatible = "mrvl,mmp-timer";
-+				reg = <0xd4014000 0x100>;
-+				interrupts = <0 13 0x4>;
-+			};
-+
-+			uart1: uart@d4017000 {
-+				compatible = "mrvl,mmp-uart";
-+				reg = <0xd4017000 0x1000>;
-+				interrupts = <0 27 0x4>;
-+				status = "disabled";
-+			};
-+
-+			uart2: uart@d4018000 {
-+				compatible = "mrvl,mmp-uart";
-+				reg = <0xd4018000 0x1000>;
-+				interrupts = <0 28 0x4>;
-+				status = "disabled";
-+			};
-+
-+			uart3: uart@d4036000 {
-+				compatible = "mrvl,mmp-uart";
-+				reg = <0xd4036000 0x1000>;
-+				interrupts = <0 59 0x4>;
-+				status = "disabled";
-+			};
-+
-+			gpio@d4019000 {
-+				compatible = "marvell,mmp-gpio";
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+				reg = <0xd4019000 0x1000>;
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+				interrupts = <49>;
-+				interrupt-names = "gpio_mux";
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+				ranges;
-+
-+				gcb0: gpio@d4019000 {
-+					reg = <0xd4019000 0x4>;
-+				};
-+
-+				gcb1: gpio@d4019004 {
-+					reg = <0xd4019004 0x4>;
-+				};
-+
-+				gcb2: gpio@d4019008 {
-+					reg = <0xd4019008 0x4>;
-+				};
-+
-+				gcb3: gpio@d4019100 {
-+					reg = <0xd4019100 0x4>;
-+				};
-+			};
-+
-+			twsi1: i2c@d4011000 {
-+				compatible = "mrvl,mmp-twsi";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				reg = <0xd4011000 0x1000>;
-+				interrupts = <0 7 0x4>;
-+				mrvl,i2c-fast-mode;
-+				status = "disabled";
-+			};
-+
-+			twsi2: i2c@d4037000 {
-+				compatible = "mrvl,mmp-twsi";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				reg = <0xd4037000 0x1000>;
-+				interrupts = <0 54 0x4>;
-+				status = "disabled";
-+			};
-+
-+			rtc: rtc@d4010000 {
-+				compatible = "mrvl,mmp-rtc";
-+				reg = <0xd4010000 0x1000>;
-+				interrupts = <0 5 0x4>,<0 6 0x4>;
-+				interrupt-names = "rtc 1Hz", "rtc alarm";
-+				status = "disabled";
-+			};
-+			pmx: pinmux@d401e000 {
-+				compatible = "pinconf-single";
-+				reg = <0xd401e000 0x330>;
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+				#gpio-range-cells = <3>;
-+				ranges;
-+
-+				pinctrl-single,register-width = <32>;
-+				pinctrl-single,function-mask = <7>;
-+
-+				range: gpio-range {
-+					#pinctrl-single,gpio-range-cells = <3>;
-+				};
-+			};
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-index ebdda83..0955191 100644
---- a/arch/arm/mach-mmp/Kconfig
-+++ b/arch/arm/mach-mmp/Kconfig
-@@ -107,6 +107,16 @@ config MACH_MMP2_DT
- 	  Include support for Marvell MMP2 based platforms using
- 	  the device tree.
- 
-+config MACH_MMPX_DT
-+	bool "Support no-PJ/PJ4(ARMv7) platforms from device tree"
-+	depends on !CPU_MOHAWK && !CPU_PJ4
-+	select CPU_PXA988
-+	select USE_OF
-+	select PINCTRL
-+	select PINCTRL_SINGLE
-+	help
-+	  Include support for Marvell MMP2 based platforms using
-+	  the device tree.
- endmenu
- 
- config CPU_PXA168
-@@ -123,6 +133,23 @@ config CPU_PXA910
- 	help
- 	  Select code specific to PXA910
- 
-+config CPU_PXA988
-+	bool
-+	select CPU_V7
-+	select ARM_GIC
-+	select HAVE_SMP
-+	select HAVE_ARM_SCU
-+	select LOCAL_TIMERS
-+	select HAVE_ARM_TWD
-+	select COMMON_CLK
-+	select CLKSRC_OF
-+	select MIGHT_HAVE_CACHE_L2X0
-+	help
-+	  Say 'Y' here if you want to support the Marvell pxa988-base
-+	  platforms.
-+	  PXA988 is an SoC with dual-core Cotex-A9 and comunication
-+	  processor, code name "Emei".
-+
- config CPU_MMP2
- 	bool
- 	select COMMON_CLK
-diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-index 095c155..e572786 100644
---- a/arch/arm/mach-mmp/Makefile
-+++ b/arch/arm/mach-mmp/Makefile
-@@ -8,6 +8,7 @@ obj-y				+= common.o devices.o time.o irq.o
- obj-$(CONFIG_CPU_PXA168)	+= pxa168.o
- obj-$(CONFIG_CPU_PXA910)	+= pxa910.o
- obj-$(CONFIG_CPU_MMP2)		+= mmp2.o sram.o
-+obj-$(CONFIG_CPU_PXA988)        += platsmp.o headsmp.o reset.o
- 
- ifeq ($(CONFIG_COMMON_CLK), )
- obj-y				+= clock.o
-@@ -31,5 +32,6 @@ obj-$(CONFIG_MACH_FLINT)	+= flint.o
- obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
- obj-$(CONFIG_MACH_MMP_DT)	+= mmp-dt.o
- obj-$(CONFIG_MACH_MMP2_DT)	+= mmp2-dt.o
-+obj-$(CONFIG_MACH_MMPX_DT)	+= mmpx-dt.o
- obj-$(CONFIG_MACH_TETON_BGA)	+= teton_bga.o
- obj-$(CONFIG_MACH_GPLUGD)	+= gplugd.o
-diff --git a/arch/arm/mach-mmp/common.c b/arch/arm/mach-mmp/common.c
-index 9292b79..0c621bc 100644
---- a/arch/arm/mach-mmp/common.c
-+++ b/arch/arm/mach-mmp/common.c
-@@ -11,6 +11,10 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/of_address.h>
- 
- #include <asm/page.h>
- #include <asm/mach/map.h>
-@@ -36,7 +40,12 @@ static struct map_desc standard_io_desc[] __initdata = {
- 		.virtual	= (unsigned long)AXI_VIRT_BASE,
- 		.length		= AXI_PHYS_SIZE,
- 		.type		= MT_DEVICE,
--	},
-+	}, {
-+		.pfn		= __phys_to_pfn(MMP_CORE_PERIPH_PHYS_BASE),
-+		.virtual	= (unsigned long)MMP_CORE_PERIPH_VIRT_BASE,
-+		.length		= MMP_CORE_PERIPH_PHYS_SIZE,
-+		.type		= MT_DEVICE,
-+	}
- };
- 
- void __init mmp_map_io(void)
-diff --git a/arch/arm/mach-mmp/common.h b/arch/arm/mach-mmp/common.h
-index 0bdc50b..ea0225f 100644
---- a/arch/arm/mach-mmp/common.h
-+++ b/arch/arm/mach-mmp/common.h
-@@ -1,5 +1,7 @@
- #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
- 
-+extern struct smp_operations mmp_smp_ops;
-+
- extern void timer_init(int irq);
- 
- extern void __init icu_init_irq(void);
-diff --git a/arch/arm/mach-mmp/headsmp.S b/arch/arm/mach-mmp/headsmp.S
-new file mode 100644
-index 0000000..2b6177e
---- /dev/null
-+++ b/arch/arm/mach-mmp/headsmp.S
-@@ -0,0 +1,104 @@
-+/*
-+ * linux/arch/arm/mach-mmp/headsmp.S
-+ *
-+ * Copyright (C) 2012 Marvell, Inc.
-+ *
-+ * Author: Neil Zhang <zhangwm@marvell.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+#include <asm/memory.h>
-+#include <asm/cache.h>
-+#include <asm/assembler.h>
-+#include <mach/addr-map.h>
-+
-+	__CPUINIT
-+
-+/*
-+ * Marvell specific entry point for secondary CPUs.
-+ * The secondary kernel init calls v7_flush_dcache_all before it enables
-+ * the L1; however, the L1 comes out of reset in an undefined state, so
-+ * the clean + invalidate performed by v7_flush_dcache_all causes a bunch
-+ * of cache lines with uninitialized data and uninitialized tags to get
-+ * written out to memory, which does really unpleasant things to the main
-+ * processor.  We fix this by performing an invalidate, rather than a
-+ * clean + invalidate for secondary core, before jumping into the kernel.
-+ *
-+ * This funciton is cloned from arch/arm/mach-tegra/headsmp.S, and needs
-+ * to be called for both secondary cores startup and primary core resume
-+ * procedures.
-+ */
-+	.align L1_CACHE_SHIFT
-+
-+
-+/*
-+ * PXA specific entry point for secondary CPUs.  This provides
-+ * a "holding pen" into which all secondary cores are held until we're
-+ * ready for them to initialise.
-+ */
-+ENTRY(mmp_secondary_startup)
-+	mrc	p15, 0, r0, c0, c0, 5
-+	and	r0, r0, #15
-+	adr	r4, 1f
-+	ldmia	r4, {r5, r6}
-+	sub	r4, r4, r5
-+	add	r6, r6, r4
-+pen:	ldr	r7, [r6]
-+	cmp	r7, r0
-+	bne	pen
-+
-+	/*
-+	 * we've been released from the holding pen: secondary_stack
-+	 * should now contain the SVC stack for this core
-+	 */
-+	bl	v7_invalidate_l1
-+	b	secondary_startup
-+ENDPROC(mmp_secondary_startup)
-+
-+	.align	2
-+1:	.long	.
-+	.long	pen_release
-+
-+
-+/*
-+ * Note: The following code is located into the .data section. This is to
-+ *       allow sw_reset_flag and cpu_plugin_handler to be accessed with a
-+ *       relative load while we can't rely on any MMU translation.
-+ *       Reference from: arch/arm/kernel/sleep.S
-+ */
-+
-+	.data
-+	.align
-+
-+/*
-+ * ROM code jumps to this function while waking up from CPU
-+ * OFF or software reset state. Physical address of the function is
-+ * stored at CA9_WARM_RESET_VECTOR while system is bring up.
-+ */
-+ENTRY(mmp_cpu_reset_entry)
-+	adr	r1, mmp_entry_vectors
-+	mrc	p15, 0, r0, c0, c0, 5
-+	and	r0, r0, #15		@ fetch CPUID
-+1:
-+	ldr	r2, [r1, r0, lsl #2]    @ get the handler addr for this core
-+	cmp	r2, #0
-+	movne	pc, r2			@ jump to the handler
-+	beq	1b
-+ENDPROC(mmp_cpu_reset_entry)
-+
-+	/* Point to the address that save handlers for each core */
-+	.global mmp_entry_vectors
-+mmp_entry_vectors:
-+	.rept   CONFIG_NR_CPUS
-+        .long   0                               @ preserve stack phys ptr here
-+	.endr
-diff --git a/arch/arm/mach-mmp/include/mach/addr-map.h b/arch/arm/mach-mmp/include/mach/addr-map.h
-index f88a44c..092005b 100644
---- a/arch/arm/mach-mmp/include/mach/addr-map.h
-+++ b/arch/arm/mach-mmp/include/mach/addr-map.h
-@@ -25,6 +25,10 @@
- #define AXI_VIRT_BASE		IOMEM(0xfe200000)
- #define AXI_PHYS_SIZE		0x00200000
- 
-+#define MMP_CORE_PERIPH_PHYS_BASE	0xd1dfe000
-+#define MMP_CORE_PERIPH_VIRT_BASE	IOMEM(0xfe400000)
-+#define MMP_CORE_PERIPH_PHYS_SIZE	0x00002000
-+
- /* Static Memory Controller - Chip Select 0 and 1 */
- #define SMC_CS0_PHYS_BASE	0x80000000
- #define SMC_CS0_PHYS_SIZE	0x10000000
-@@ -43,4 +47,6 @@
- #define CIU_VIRT_BASE		(AXI_VIRT_BASE + 0x82c00)
- #define CIU_REG(x)		(CIU_VIRT_BASE + (x))
- 
-+#define SCU_VIRT_BASE		(MMP_CORE_PERIPH_VIRT_BASE)
-+
- #endif /* __ASM_MACH_ADDR_MAP_H */
-diff --git a/arch/arm/mach-mmp/mmpx-dt.c b/arch/arm/mach-mmp/mmpx-dt.c
-new file mode 100644
-index 0000000..2ebd057
---- /dev/null
-+++ b/arch/arm/mach-mmp/mmpx-dt.c
-@@ -0,0 +1,74 @@
-+/*
-+ *  linux/arch/arm/mach-mmp/mmpx-dt.c
-+ *
-+ *  Copyright (C) 2012 Marvell Technology Group Ltd.
-+ *  Author: Haojian Zhuang <haojian.zhuang@marvell.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  publishhed by the Free Software Foundation.
-+ */
-+
-+#include <linux/clocksource.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/irqchip.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <asm/smp_twd.h>
-+#include <asm/hardware/cache-l2x0.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/time.h>
-+#include <mach/irqs.h>
-+#include <mach/regs-apbc.h>
-+
-+#include "common.h"
-+
-+/* PXA988 */
-+static const struct of_dev_auxdata pxa988_auxdata_lookup[] __initconst = {
-+	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4036000, "pxa2xx-uart.2", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-gpio", 0xd4019000, "pxa-gpio", NULL),
-+	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
-+	{}
-+};
-+
-+void __init pxa988_dt_init_timer(void)
-+{
-+	extern void __init mmp_dt_init_timer(void);
-+	/*
-+	 * Is is a SOC timer, and will be used for broadcasting
-+	 * when local timers are disabled.
-+	 */
-+	mmp_dt_init_timer();
-+
-+	clocksource_of_init();
-+}
-+
-+static void __init pxa988_dt_init_machine(void)
-+{
-+	l2x0_of_init(0x30800000, 0xFE7FFFFF);
-+
-+	pxa910_clk_init();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     pxa988_auxdata_lookup, NULL);
-+}
-+
-+static const char *pxa988_dt_board_compat[] __initdata = {
-+	"mrvl,pxa988-dkb",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(PXA988_DT, "Marvell PXA988 (Device Tree Support)")
-+	.smp		= smp_ops(mmp_smp_ops),
-+	.map_io		= mmp_map_io,
-+	.init_irq	= irqchip_init,
-+	.init_time	= pxa988_dt_init_timer,
-+	.init_machine	= pxa988_dt_init_machine,
-+	.dt_compat	= pxa988_dt_board_compat,
-+MACHINE_END
-diff --git a/arch/arm/mach-mmp/platsmp.c b/arch/arm/mach-mmp/platsmp.c
-new file mode 100644
-index 0000000..5aafde9
---- /dev/null
-+++ b/arch/arm/mach-mmp/platsmp.c
-@@ -0,0 +1,163 @@
-+/*
-+ *  linux/arch/arm/mach-mmp/platsmp.c
-+ *
-+ *  Copyright (C) 2002 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/delay.h>
-+#include <linux/device.h>
-+#include <linux/jiffies.h>
-+#include <linux/smp.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+
-+#include <asm/cacheflush.h>
-+#include <mach/hardware.h>
-+#include <linux/irqchip/arm-gic.h>
-+#include <asm/mach-types.h>
-+#include <asm/localtimer.h>
-+#include <asm/smp_scu.h>
-+
-+#include <mach/irqs.h>
-+#include <mach/addr-map.h>
-+
-+#include "common.h"
-+#include "reset.h"
-+
-+/*
-+ * Write pen_release in a way that is guaranteed to be visible to all
-+ * observers, irrespective of whether they're taking part in coherency
-+ * or not.  This is necessary for the hotplug code to work reliably.
-+ */
-+static void __cpuinit write_pen_release(int val)
-+{
-+	pen_release = val;
-+	smp_wmb();
-+	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
-+	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
-+}
-+
-+#ifdef CONFIG_HAVE_ARM_SCU
-+static void __iomem *scu_get_base_addr(void)
-+{
-+	return SCU_VIRT_BASE;
-+}
-+#endif
-+
-+static inline unsigned int get_core_count(void)
-+{
-+	u32 ret = 1;
-+#ifdef CONFIG_HAVE_ARM_SCU
-+	ret = scu_get_core_count(scu_get_base_addr());
-+#endif
-+
-+	return ret;
-+}
-+
-+static DEFINE_SPINLOCK(boot_lock);
-+
-+static void __cpuinit mmp_secondary_init(unsigned int cpu)
-+{
-+	/*
-+	 * let the primary processor know we're out of the
-+	 * pen, then head off into the C entry point
-+	 */
-+	write_pen_release(-1);
-+
-+	/*
-+	 * Synchronise with the boot thread.
-+	 */
-+	spin_lock(&boot_lock);
-+	spin_unlock(&boot_lock);
-+}
-+
-+static int __cpuinit mmp_boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	unsigned long timeout;
-+
-+	/*
-+	 * Avoid timer calibration on slave cpus. Use the value calibrated
-+	 * on master cpu. Referenced from tegra3
-+	 */
-+	preset_lpj = loops_per_jiffy;
-+
-+	/*
-+	 * set synchronisation state between this boot processor
-+	 * and the secondary one
-+	 */
-+
-+	spin_lock(&boot_lock);
-+
-+	/*
-+	 * The secondary processor is waiting to be released from
-+	 * the holding pen - release it, then wait for it to flag
-+	 * that it has been released by resetting pen_release.
-+	 *
-+	 * Note that "pen_release" is the hardware CPU ID, whereas
-+	 * "cpu" is Linux's internal ID.
-+	 */
-+	write_pen_release(cpu);
-+
-+	/* reset the cpu, let it branch to the kernel entry */
-+	mmp_cpu_power_up(cpu);
-+
-+	timeout = jiffies + (1 * HZ);
-+	while (time_before(jiffies, timeout)) {
-+		smp_rmb();
-+		if (pen_release == -1)
-+			break;
-+
-+		udelay(10);
-+	}
-+
-+	/*
-+	 * now the secondary core is starting up let it run its
-+	 * calibrations, then wait for it to finish
-+	 */
-+	spin_unlock(&boot_lock);
-+
-+	return pen_release != -1 ? -ENOSYS : 0;
-+}
-+
-+/*
-+ * Initialise the CPU possible map early - this describes the CPUs
-+ * which may be present or become present in the system.
-+ */
-+static void __init mmp_smp_init_cpus(void)
-+{
-+	unsigned int i, ncores = get_core_count();
-+
-+	for (i = 0; i < ncores; i++)
-+		set_cpu_possible(i, true);
-+}
-+
-+static void __init mmp_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	int i;
-+
-+	/*
-+	 * Initialise the present map, which describes the set of CPUs
-+	 * actually populated at the present time.
-+	 */
-+	for (i = 0; i < max_cpus; i++)
-+		set_cpu_present(i, true);
-+
-+#ifdef CONFIG_HAVE_ARM_SCU
-+	scu_enable(scu_get_base_addr());
-+#endif
-+
-+	mmp_entry_vector_init();
-+}
-+
-+struct smp_operations mmp_smp_ops __initdata = {
-+	.smp_init_cpus		= mmp_smp_init_cpus,
-+	.smp_prepare_cpus	= mmp_smp_prepare_cpus,
-+	.smp_secondary_init	= mmp_secondary_init,
-+	.smp_boot_secondary	= mmp_boot_secondary,
-+};
-diff --git a/arch/arm/mach-mmp/reset.c b/arch/arm/mach-mmp/reset.c
-new file mode 100644
-index 0000000..b47e400
---- /dev/null
-+++ b/arch/arm/mach-mmp/reset.c
-@@ -0,0 +1,66 @@
-+/*
-+ * linux/arch/arm/mach-mmp/reset.c
-+ *
-+ * Author:	Neil Zhang <zhangwm@marvell.com>
-+ * Copyright:	(C) 2012 Marvell International Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/smp.h>
-+
-+#include <asm/io.h>
-+#include <asm/cacheflush.h>
-+#include <asm/mach/map.h>
-+
-+#include <mach/addr-map.h>
-+
-+#include "reset.h"
-+
-+#define PMU_CC2_AP			APMU_REG(0x0100)
-+#define CIU_CA9_WARM_RESET_VECTOR	CIU_REG(0x00d8)
-+
-+/*
-+ * This function is called from boot_secondary to bootup the secondary cpu.
-+ */
-+void mmp_cpu_power_up(u32 cpu)
-+{
-+	u32 tmp;
-+
-+	BUG_ON(cpu == 0);
-+
-+	tmp = readl(PMU_CC2_AP);
-+	if (tmp & CPU_CORE_RST(cpu)) {
-+		/* Release secondary core from reset */
-+		tmp &= ~(CPU_CORE_RST(cpu)
-+			| CPU_DBG_RST(cpu) | CPU_WDOG_RST(cpu));
-+		writel(tmp, PMU_CC2_AP);
-+	}
-+}
-+
-+void mmp_set_entry_vector(u32 cpu, u32 addr)
-+{
-+	BUG_ON(cpu >= CONFIG_NR_CPUS);
-+
-+	mmp_entry_vectors[cpu] = addr;
-+	smp_wmb();
-+	__cpuc_flush_dcache_area((void *)&mmp_entry_vectors[cpu],
-+				sizeof(mmp_entry_vectors[cpu]));
-+	outer_clean_range(__pa(&mmp_entry_vectors[cpu]),
-+				__pa(&mmp_entry_vectors[cpu + 1]));
-+}
-+
-+void __init mmp_entry_vector_init(void)
-+{
-+	int cpu;
-+
-+	/* We will reset from DDR directly by default */
-+	writel(__pa(mmp_cpu_reset_entry), CIU_CA9_WARM_RESET_VECTOR);
-+
-+	for (cpu = 1; cpu < CONFIG_NR_CPUS; cpu++)
-+		mmp_set_entry_vector(cpu, __pa(mmp_secondary_startup));
-+}
-diff --git a/arch/arm/mach-mmp/reset.h b/arch/arm/mach-mmp/reset.h
-new file mode 100644
-index 0000000..78d5486
---- /dev/null
-+++ b/arch/arm/mach-mmp/reset.h
-@@ -0,0 +1,29 @@
-+/*
-+ * linux/arch/arm/mach-mmp/include/mach/reset.h
-+ *
-+ * Author:	Neil Zhang <zhangwm@marvell.com>
-+ * Copyright:	(C) 2012 Marvell International Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __RESET_PXA988_H__
-+#define __RESET_PXA988_H__
-+
-+#define CPU_CORE_RST(n)	(1 << ((n) * 4 + 16))
-+#define CPU_DBG_RST(n)	(1 << ((n) * 4 + 18))
-+#define CPU_WDOG_RST(n)	(1 << ((n) * 4 + 19))
-+
-+extern u32 mmp_entry_vectors[CONFIG_NR_CPUS];
-+
-+void mmp_secondary_startup(void);
-+void mmp_cpu_reset_entry(void);
-+
-+void mmp_cpu_power_up(u32 cpu);
-+void mmp_set_entry_vector(u32 cpu, u32 addr);
-+void __init mmp_entry_vector_init(void);
-+
-+#endif /* __RESET_PXA988_H__ */
-diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 392d780..59a3f9f7 100644
---- a/drivers/clk/mmp/Makefile
-+++ b/drivers/clk/mmp/Makefile
-@@ -7,3 +7,4 @@ obj-y += clk-apbc.o clk-apmu.o clk-frac.o
- obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
- obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
- obj-$(CONFIG_CPU_MMP2) += clk-mmp2.o
-+obj-$(CONFIG_CPU_PXA988) += clk-pxa910.o
--- 
-1.7.4.1
+							Thanx, Paul
+
+> On Tue, 2013-05-28 at 16:13 -0400, Dave Jones wrote:
+> 
+> > [12572.705832] ======================================================
+> > [12572.750317] [ INFO: possible circular locking dependency detected ]
+> > [12572.796978] 3.10.0-rc3+ #39 Not tainted
+> > [12572.833381] -------------------------------------------------------
+> > [12572.862233] trinity-child17/31341 is trying to acquire lock:
+> > [12572.870390]  (rcu_node_0){..-.-.}, at: [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> > [12572.878859] 
+> > but task is already holding lock:
+> > [12572.894894]  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> > [12572.903381] 
+> > which lock already depends on the new lock.
+> > 
+> > [12572.927541] 
+> > the existing dependency chain (in reverse order) is:
+> > [12572.943736] 
+> > -> #4 (&ctx->lock){-.-...}:
+> > [12572.960032]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12572.968337]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> > [12572.976633]        [<ffffffff8113c987>] __perf_event_task_sched_out+0x2e7/0x5e0
+> > [12572.984969]        [<ffffffff81088953>] perf_event_task_sched_out+0x93/0xa0
+> > [12572.993326]        [<ffffffff816ea0bf>] __schedule+0x2cf/0x9c0
+> > [12573.001652]        [<ffffffff816eacfe>] schedule_user+0x2e/0x70
+> > [12573.009998]        [<ffffffff816ecd64>] retint_careful+0x12/0x2e
+> > [12573.018321] 
+> > -> #3 (&rq->lock){-.-.-.}:
+> > [12573.034628]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12573.042930]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> > [12573.051248]        [<ffffffff8108e6a7>] wake_up_new_task+0xb7/0x260
+> > [12573.059579]        [<ffffffff810492f5>] do_fork+0x105/0x470
+> > [12573.067880]        [<ffffffff81049686>] kernel_thread+0x26/0x30
+> > [12573.076202]        [<ffffffff816cee63>] rest_init+0x23/0x140
+> > [12573.084508]        [<ffffffff81ed8e1f>] start_kernel+0x3f1/0x3fe
+> > [12573.092852]        [<ffffffff81ed856f>] x86_64_start_reservations+0x2a/0x2c
+> > [12573.101233]        [<ffffffff81ed863d>] x86_64_start_kernel+0xcc/0xcf
+> > [12573.109528] 
+> > -> #2 (&p->pi_lock){-.-.-.}:
+> > [12573.125675]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12573.133829]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> > [12573.141964]        [<ffffffff8108e881>] try_to_wake_up+0x31/0x320
+> > [12573.150065]        [<ffffffff8108ebe2>] default_wake_function+0x12/0x20
+> > [12573.158151]        [<ffffffff8107bbf8>] autoremove_wake_function+0x18/0x40
+> > [12573.166195]        [<ffffffff81085398>] __wake_up_common+0x58/0x90
+> > [12573.174215]        [<ffffffff81086909>] __wake_up+0x39/0x50
+> > [12573.182146]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> > [12573.190119]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> > [12573.198023]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> > [12573.205860]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> > [12573.213656]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+> > [12573.221379] 
+> > -> #1 (&rsp->gp_wq){..-.-.}:
+> > [12573.236329]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12573.243783]        [<ffffffff816ebe9b>] _raw_spin_lock_irqsave+0x4b/0x90
+> > [12573.251178]        [<ffffffff810868f3>] __wake_up+0x23/0x50
+> > [12573.258505]        [<ffffffff810fc3da>] rcu_start_gp_advanced.isra.11+0x4a/0x50
+> > [12573.265891]        [<ffffffff810fdb09>] rcu_start_future_gp+0x1c9/0x1f0
+> > [12573.273248]        [<ffffffff810fe2c4>] rcu_nocb_kthread+0x114/0x930
+> > [12573.280564]        [<ffffffff8107a91d>] kthread+0xed/0x100
+> > [12573.287807]        [<ffffffff816f4b1c>] ret_from_fork+0x7c/0xb0
+> 
+> Notice the above call chain.
+> 
+> rcu_start_future_gp() is called with the rnp->lock held. Then it calls
+> rcu_start_gp_advance, which does a wakeup.
+> 
+> You can't do wakeups while holding the rnp->lock, as that would mean
+> that you could not do a rcu_read_unlock() while holding the rq lock, or
+> any lock that was taken while holding the rq lock. This is because...
+> (See below).
+> 
+> 
+> > [12573.295067] 
+> > -> #0 (rcu_node_0){..-.-.}:
+> > [12573.309293]        [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> > [12573.316568]        [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12573.323825]        [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> > [12573.331081]        [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> > [12573.338377]        [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> > [12573.345648]        [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> > [12573.352942]        [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> > [12573.360211]        [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> > [12573.367514]        [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> > [12573.374816]        [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+> 
+> Notice the above trace.
+> 
+> perf took its own ctx->lock, which can be taken while holding the rq
+> lock. While holding this lock, it did a rcu_read_unlock(). The
+> perf_lock_task_context() basically looks like:
+> 
+> rcu_read_lock();
+> raw_spin_lock(ctx->lock);
+> rcu_read_unlock();
+> 
+> Now, what looks to have happened, is that we scheduled after taking that
+> first rcu_read_lock() but before taking the spin lock. When we scheduled
+> back in and took the ctx->lock, the following rcu_read_unlock()
+> triggered the "special" code.
+> 
+> The rcu_read_unlock_special() takes the rnp->lock, which gives us a
+> possible deadlock scenario.
+> 
+> 	CPU0		CPU1		CPU2
+> 	----		----		----
+> 
+> 				     rcu_nocb_kthread()
+>     lock(rq->lock);
+> 		    lock(ctx->lock);
+> 				     lock(rnp->lock);
+> 
+> 				     wake_up();
+> 
+> 				     lock(rq->lock);
+> 
+> 		    rcu_read_unlock();
+> 
+> 		    rcu_read_unlock_special();
+> 
+> 		    lock(rnp->lock);
+>     lock(ctx->lock);
+> 
+> **** DEADLOCK ****
+> 
+> 
+> > [12573.382068] 
+> > other info that might help us debug this:
+> > 
+> > [12573.403229] Chain exists of:
+> >   rcu_node_0 --> &rq->lock --> &ctx->lock
+> > 
+> > [12573.424471]  Possible unsafe locking scenario:
+> > 
+> > [12573.438499]        CPU0                    CPU1
+> > [12573.445599]        ----                    ----
+> > [12573.452691]   lock(&ctx->lock);
+> > [12573.459799]                                lock(&rq->lock);
+> > [12573.467010]                                lock(&ctx->lock);
+> > [12573.474192]   lock(rcu_node_0);
+> > [12573.481262] 
+> >  *** DEADLOCK ***
+> > 
+> > [12573.501931] 1 lock held by trinity-child17/31341:
+> > [12573.508990]  #0:  (&ctx->lock){-.-...}, at: [<ffffffff811390ed>] perf_lock_task_context+0x7d/0x2d0
+> > [12573.516475] 
+> > stack backtrace:
+> > [12573.530395] CPU: 1 PID: 31341 Comm: trinity-child17 Not tainted 3.10.0-rc3+ #39
+> > [12573.545357]  ffffffff825b4f90 ffff880219f1dbc0 ffffffff816e375b ffff880219f1dc00
+> > [12573.552868]  ffffffff816dfa5d ffff880219f1dc50 ffff88023ce4d1f8 ffff88023ce4ca40
+> > [12573.560353]  0000000000000001 0000000000000001 ffff88023ce4d1f8 ffff880219f1dcc0
+> > [12573.567856] Call Trace:
+> > [12573.575011]  [<ffffffff816e375b>] dump_stack+0x19/0x1b
+> > [12573.582284]  [<ffffffff816dfa5d>] print_circular_bug+0x200/0x20f
+> > [12573.589637]  [<ffffffff810b8d36>] __lock_acquire+0x1786/0x1af0
+> > [12573.596982]  [<ffffffff810918f5>] ? sched_clock_cpu+0xb5/0x100
+> > [12573.604344]  [<ffffffff810b9851>] lock_acquire+0x91/0x1f0
+> > [12573.611652]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> > [12573.619030]  [<ffffffff816ebc90>] _raw_spin_lock+0x40/0x80
+> > [12573.626331]  [<ffffffff811054ff>] ? rcu_read_unlock_special+0x9f/0x4c0
+> > [12573.633671]  [<ffffffff811054ff>] rcu_read_unlock_special+0x9f/0x4c0
+> > [12573.640992]  [<ffffffff811390ed>] ? perf_lock_task_context+0x7d/0x2d0
+> > [12573.648330]  [<ffffffff810b429e>] ? put_lock_stats.isra.29+0xe/0x40
+> > [12573.655662]  [<ffffffff813095a0>] ? delay_tsc+0x90/0xe0
+> > [12573.662964]  [<ffffffff810760a6>] __rcu_read_unlock+0x96/0xa0
+> > [12573.670276]  [<ffffffff811391b3>] perf_lock_task_context+0x143/0x2d0
+> > [12573.677622]  [<ffffffff81139070>] ? __perf_event_enable+0x370/0x370
+> > [12573.684981]  [<ffffffff8113938e>] find_get_context+0x4e/0x1f0
+> > [12573.692358]  [<ffffffff811403f4>] SYSC_perf_event_open+0x514/0xbd0
+> > [12573.699753]  [<ffffffff8108cd9d>] ? get_parent_ip+0xd/0x50
+> > [12573.707135]  [<ffffffff810b71fd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> > [12573.714599]  [<ffffffff81140e49>] SyS_perf_event_open+0x9/0x10
+> > [12573.721996]  [<ffffffff816f4dd4>] tracesys+0xdd/0xe2
+> 
+> Here's one solution, to delay the wakeup via a irq_work: This is what
+> perf and ftrace use to perform wakeups in critical sections.
+> 
+> -- Steve
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Index: linux-trace.git/init/Kconfig
+> ===================================================================
+> --- linux-trace.git.orig/init/Kconfig
+> +++ linux-trace.git/init/Kconfig
+> @@ -431,6 +431,7 @@ choice
+>  config TREE_RCU
+>  	bool "Tree-based hierarchical RCU"
+>  	depends on !PREEMPT && SMP
+> +	select IRQ_WORK
+>  	help
+>  	  This option selects the RCU implementation that is
+>  	  designed for very large SMP system with hundreds or
+> Index: linux-trace.git/kernel/rcutree.c
+> ===================================================================
+> --- linux-trace.git.orig/kernel/rcutree.c
+> +++ linux-trace.git/kernel/rcutree.c
+> @@ -1613,6 +1613,14 @@ static int __noreturn rcu_gp_kthread(voi
+>  	}
+>  }
+> 
+> +static void rsp_wakeup(struct irq_work *work)
+> +{
+> +	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
+> +
+> +	/* Wake up rcu_gp_kthread() to start the grace period. */
+> +	wake_up(&rsp->gp_wq);
+> +}
+> +
+>  /*
+>   * Start a new RCU grace period if warranted, re-initializing the hierarchy
+>   * in preparation for detecting the next grace period.  The caller must hold
+> @@ -1637,8 +1645,12 @@ rcu_start_gp_advanced(struct rcu_state *
+>  	}
+>  	rsp->gp_flags = RCU_GP_FLAG_INIT;
+> 
+> -	/* Wake up rcu_gp_kthread() to start the grace period. */
+> -	wake_up(&rsp->gp_wq);
+> +	/*
+> +	 * We can't do wakeups while holding the rnp->lock, as that
+> +	 * could cause possible deadlocks with the rq->lock. Deter
+> +	 * the wakeup to interrupt context.
+> +	 */
+> +	irq_work_queue(&rsp->wakeup_work);
+>  }
+> 
+>  /*
+> @@ -3235,6 +3247,7 @@ static void __init rcu_init_one(struct r
+> 
+>  	rsp->rda = rda;
+>  	init_waitqueue_head(&rsp->gp_wq);
+> +	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
+>  	rnp = rsp->level[rcu_num_lvls - 1];
+>  	for_each_possible_cpu(i) {
+>  		while (i > rnp->grphi)
+> Index: linux-trace.git/kernel/rcutree.h
+> ===================================================================
+> --- linux-trace.git.orig/kernel/rcutree.h
+> +++ linux-trace.git/kernel/rcutree.h
+> @@ -27,6 +27,7 @@
+>  #include <linux/threads.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/seqlock.h>
+> +#include <linux/irq_work.h>
+> 
+>  /*
+>   * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
+> @@ -442,6 +443,7 @@ struct rcu_state {
+>  	char *name;				/* Name of structure. */
+>  	char abbr;				/* Abbreviated name. */
+>  	struct list_head flavors;		/* List of RCU flavors. */
+> +	struct irq_work wakeup_work;		/* Postponed wakeups */
+>  };
+> 
+>  /* Values for rcu_state structure's gp_flags field. */
+> 
+> 
 
