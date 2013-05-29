@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966323Ab3E2OkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:40:22 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56701 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966104Ab3E2OkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:40:21 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Simon Horman <horms@verge.net.au>, Axel Lin <axel.lin@ingics.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call in tpu_remove()
-Date: Wed, 29 May 2013 16:39:51 +0200
-Message-ID: <3139245.zTJ3azFhlR@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130526091824.GA12361@avionic-0098.adnet.avionic-design.de>
-References: <1369057541.11578.1.camel@phoenix> <4528298.O99iVSpig9@avalon> <20130526091824.GA12361@avionic-0098.adnet.avionic-design.de>
+	id S966331Ab3E2OnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:43:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11386 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966095Ab3E2OnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 10:43:23 -0400
+Date: Wed, 29 May 2013 16:39:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Michal Hocko <mhocko@suse.cz>,
+        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] don't use task->pid/tgid in
+	same_thread_group/has_group_leader_pid
+Message-ID: <20130529143938.GA22211@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1868329.yMO35QUxc7"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+task_struct->pid/tgid should go away.
 
---nextPart1868329.yMO35QUxc7
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+1. Change same_thread_group() to use task->signal for comparison.
 
-Hi Thierry,
+2. Change has_group_leader_pid(task) to compare task_pid(task) with
+   signal->leader_pid.
 
-On Sunday 26 May 2013 11:18:24 Thierry Reding wrote:
-> On Sat, May 25, 2013 at 03:42:42PM +0200, Laurent Pinchart wrote:
-> > On Thursday 23 May 2013 21:12:17 Thierry Reding wrote:
-> > > On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
-> > > > On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
-> > > > > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
-> > > > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > > > > 
-> > > > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > > > 
-> > > > Thanks. I have queued this up for v3.11 in the pinmux branch
-> > > > of my renesas tree on kernel.org.
-> > > 
-> > > I'd rather take this through the PWM tree along with the original driver
-> > > patch.
-> > 
-> > As I will need to submit a new version of the renesas-tpu patches should I
-> > fold this patch in ?
-> 
-> Yes, that's fine with me. It'd be nice to credit Axel, though.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/sched.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Sure. I'll add Axel's SoB line to the patch.
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..ce51dfd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2179,15 +2179,15 @@ static inline bool thread_group_leader(struct task_struct *p)
+  * all we care about is that we have a task with the appropriate
+  * pid, we don't actually care if we have the right task.
+  */
+-static inline int has_group_leader_pid(struct task_struct *p)
++static inline bool has_group_leader_pid(struct task_struct *p)
+ {
+-	return p->pid == p->tgid;
++	return task_pid(p) == p->signal->leader_pid;
+ }
+ 
+ static inline
+-int same_thread_group(struct task_struct *p1, struct task_struct *p2)
++bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
+ {
+-	return p1->tgid == p2->tgid;
++	return p1->signal == p2->signal;
+ }
+ 
+ static inline struct task_struct *next_thread(const struct task_struct *p)
 -- 
-Regards,
+1.5.5.1
 
-Laurent Pinchart
-
---nextPart1868329.yMO35QUxc7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABAgAGBQJRphM9AAoJEIkPb2GL7hl1FyoH/iDam1oxOC4Q+vSOkoB1QN4u
-OkJJ92apZwXx7vULqYtdUEl70vA9/XA5ecFO/IPvgKFw7oByrbmo5zJKyeuLXfTS
-tAIHVx+u3z28tznMV04Q0affzklSq2cJFmZ0UUDcrUaMXsTKt/suk2KJTf2rHkWU
-y8zetsecc6X7MagCycs8Hgt/KNOk3g5daYUgV+BFd1C6cu2Vc3VLbSH6+01lTW3Z
-dVWXkWNLaZ5LCe3r2YziQ+Yhm9JhDRLU9VdFGdqbARzvbi/yHfmOY8v+N052y5Rb
-FCTBouOkJVAIpe2jGPfiW2lxL5Ge0RKJokDRIG8pSdpwcwVBUhQowKmpXViut14=
-=g0Oy
------END PGP SIGNATURE-----
-
---nextPart1868329.yMO35QUxc7--
 
