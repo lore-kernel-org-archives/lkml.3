@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965605Ab3E2KrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:47:06 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55558 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965388Ab3E2KrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:47:04 -0400
-Message-ID: <1369824422.22004.101.camel@joe-AO722>
-Subject: Re: [PATCH] cpufreq: MAINTAINERS: Add git tree path for ARM
- specific updates
-From: Joe Perches <joe@perches.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 29 May 2013 03:47:02 -0700
-In-Reply-To: <aab5b5dc92b960e81e8fd1975eba81234a4ecac8.1369817795.git.viresh.kumar@linaro.org>
-References: <aab5b5dc92b960e81e8fd1975eba81234a4ecac8.1369817795.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S965630Ab3E2KwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:52:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:63790 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965467Ab3E2KwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 06:52:21 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A5DDB0.50504@asianux.com>
+Date: Wed, 29 May 2013 18:51:28 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: rth@twiddle.net, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, josh@joshtriplett.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: alpha: kernel: using memcpy() instead of strcpy()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 16:10 +0530, Viresh Kumar wrote:
-> ARM specific patches would be
-> Applied by me now. Rafael will pull in these changes from time to time (at
-> rc's).
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -2216,6 +2216,7 @@ L:	cpufreq@vger.kernel.org
-[]
->  T:	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
-> +T:	git://git.linaro.org/people/vireshk/linux.git (For ARM Updates)
 
-please prefix these with git
+When sending message in send_secondary_console_msg(), the length is not
+include the NUL byte, and also not copy NUL to 'ipc_buffer'.
 
-T:	git git://git.etc...
+When receive message in recv_secondary_console_msg(), the 'cnt' also
+excludes NUL.
 
-Every other T: git entry does.
+So when get string from ipc_buffer, it may not be NUL terminated.
 
+Then use memcpy() instead of strcpy(), and set last byte NUL.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/alpha/kernel/smp.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 7b60834..d3d2040 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -266,7 +266,8 @@ recv_secondary_console_msg(void)
+ 		else {
+ 			cp1 = (char *) &cpu->ipc_buffer[11];
+ 			cp2 = buf;
+-			strcpy(cp2, cp1);
++			memcpy(cp2, cp1, cnt);
++			cp2[cnt] = '\0';
+ 			
+ 			while ((cp2 = strchr(cp2, '\r')) != 0) {
+ 				*cp2 = ' ';
+-- 
+1.7.7.6
