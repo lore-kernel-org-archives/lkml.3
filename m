@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966818Ab3E2TfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 15:35:19 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:40944 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966391Ab3E2TdR (ORCPT
+	id S966804Ab3E2TfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 15:35:10 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:57316 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966402Ab3E2TdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 May 2013 15:33:17 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -15,9 +15,9 @@ Cc: David Miller <davem@davemloft.net>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 07/13] ARM: dove: add gigabit ethernet and mvmdio device tree nodes
-Date: Wed, 29 May 2013 21:32:49 +0200
-Message-Id: <1369855975-21489-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v5 09/13] ARM: orion5x: add gigabit ethernet and mvmdio device tree nodes
+Date: Wed, 29 May 2013 21:32:51 +0200
+Message-Id: <1369855975-21489-10-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -26,10 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds orion-eth and mvmdio device tree nodes for DT enabled
-Dove boards. As there is only one ethernet controller on Dove, a default
-phy node is also added with a note to set its reg property on a per-board
-basis.
+This patch adds mv643xx_eth and mvmdio device tree nodes for DT enabled
+Orion5x boards. Phy nodes are also added with reg property set on a
+per-board basis.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -47,35 +46,42 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/dove-cubox.dts |    7 +++++++
- arch/arm/boot/dts/dove.dtsi      |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+)
+ .../dts/orion5x-lacie-ethernet-disk-mini-v2.dts    |   17 ++++++++++++
+ arch/arm/boot/dts/orion5x.dtsi                     |   29 ++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
-index 7e3065a..02618fa 100644
---- a/arch/arm/boot/dts/dove-cubox.dts
-+++ b/arch/arm/boot/dts/dove-cubox.dts
-@@ -49,6 +49,13 @@
- &uart0 { status = "okay"; };
- &sata0 { status = "okay"; };
- &i2c0 { status = "okay"; };
-+&mdio { status = "okay"; };
-+&eth { status = "okay"; };
+diff --git a/arch/arm/boot/dts/orion5x-lacie-ethernet-disk-mini-v2.dts b/arch/arm/boot/dts/orion5x-lacie-ethernet-disk-mini-v2.dts
+index 0077fc8..c7e2efd 100644
+--- a/arch/arm/boot/dts/orion5x-lacie-ethernet-disk-mini-v2.dts
++++ b/arch/arm/boot/dts/orion5x-lacie-ethernet-disk-mini-v2.dts
+@@ -53,3 +53,20 @@
+ 		};
+ 	};
+ };
 +
-+&ethphy {
-+	compatible = "marvell,88e1310";
-+	reg = <1>;
++&mdio {
++	status = "okay";
++
++	&ethphy: ethernet-phy {
++		device-type = "ethernet-phy";
++		reg = <8>;
++	};
 +};
- 
- &sdio0 {
- 	status = "okay";
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index 6cab468..8612658 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -258,5 +258,40 @@
- 				dmacap,xor;
- 			};
++
++&eth {
++	status = "okay";
++
++	ethernet-port@0 {
++		phy-handle = <&ethphy>;
++	};
++};
+diff --git a/arch/arm/boot/dts/orion5x.dtsi b/arch/arm/boot/dts/orion5x.dtsi
+index 892c64e..6fe45d5 100644
+--- a/arch/arm/boot/dts/orion5x.dtsi
++++ b/arch/arm/boot/dts/orion5x.dtsi
+@@ -132,5 +132,34 @@
+ 			interrupts = <28>;
+ 			status = "okay";
  		};
 +
 +		mdio: mdio-bus@72004 {
@@ -83,14 +89,10 @@ index 6cab468..8612658 100644
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <0x72004 0x84>;
-+			interrupts = <30>;
-+			clocks = <&gate_clk 2>;
++			interrupts = <22>;
 +			status = "disabled";
 +
-+			ethphy: ethernet-phy {
-+				device-type = "ethernet-phy";
-+				/* set phy address in board file */
-+			};
++			/* add phy nodes in board file */
 +		};
 +
 +		eth: ethernet-controller@72000 {
@@ -98,7 +100,6 @@ index 6cab468..8612658 100644
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <0x72000 0x4000>;
-+			clocks = <&gate_clk 2>;
 +			marvell,tx-checksum-limit = <1600>;
 +			status = "disabled";
 +
@@ -106,10 +107,9 @@ index 6cab468..8612658 100644
 +				device_type = "network";
 +				compatible = "marvell,orion-eth-port";
 +				reg = <0>;
-+				interrupts = <29>;
 +				/* overwrite MAC address in bootloader */
 +				local-mac-address = [00 00 00 00 00 00];
-+				phy-handle = <&ethphy>;
++				/* set phy-handle property in board file */
 +			};
 +		};
  	};
