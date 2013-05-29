@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965276Ab3E2Iut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:50:49 -0400
-Received: from 13.mo4.mail-out.ovh.net ([178.33.251.8]:57344 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965254Ab3E2IuT (ORCPT
+	id S965291Ab3E2IvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:51:06 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:50853 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965230Ab3E2IvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:50:19 -0400
-From: <plagnioj@jcrosoft.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 1/1] MAINTAINERS: Framebuffer Layer maintainers update
-Date: Wed, 29 May 2013 10:46:02 +0200
-Message-Id: <1369817162-6362-1-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Ovh-Tracer-Id: 13939203796900752152
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -51
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenmhhishhsihhnghcuhfftqffouchfihgvlhguucdlgeelmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -51
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenmhhishhsihhnghcuhfftqffouchfihgvlhguucdlgeelmd
+	Wed, 29 May 2013 04:51:01 -0400
+Message-ID: <51A5C16D.20408@linaro.org>
+Date: Wed, 29 May 2013 14:20:53 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen
+ board
+References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org> <87sj1qzaov.fsf@linaro.org> <5191AA89.6010901@linaro.org> <20130528231740.GA28879@quad.lixom.net> <51A57D39.8030506@linaro.org> <CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
+In-Reply-To: <CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On 05/29/2013 11:01 AM, Olof Johansson wrote:
+> On Tue, May 28, 2013 at 8:59 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
+> 
+>> The patches are at [1].
+> 
+> FWIW, a cgit/gitweb link is easier to follow when you're reading an
+> email. Anyway, found the patches.
+> 
+>> There are a total of 6 patches on top of
+>> v3.10-rc3. 3 of them (a, b, d) are queued for 3.10-rc4 and another patch
+>> (c) is just a defconfig hack to get Arndale booting. Remaining 2 patches
+>> (e, f) are required to reset the hub during EHCI initialization.
+> 
+> Huh, I thought you said that (c) wasn't needed when I posted the
+> defconfig update. It'd be nice to see the code fixed to handle this
+> case instead of Linaro carrying a patch like this though. I.e. make it
+> able to deselect the uart, or make it tied to DEBUG_LL like on other
+> platforms instead of having a separate config for this.
+> 
 
-Tomi and I will now take care of the Framebuffer Layer
+It would be good to free up the dependency on the correct UART port for
+the board to boot. Without that, there would always be boards that don't
+boot with default mainline defconfig file even though all other
+components are in place.
 
-The git tree is now on kernel.org
+>> a. ARM: exynos: defconfig update
+>> b. ARM: EXYNOS: Update defconfig for Arndale and Origen board
+>> c. [TEMP] ARM: EXYNOS: Set low-level UART port to 2
+>> d. ARM: dts: Enabling samsung-usb2phy driver for exynos5250
+>> e. usb: ehci-s5p: add the HSIC port initialization
+>> f. ARM: dts: Add USB gpio entries for Arndale board
+>>
+>> I am not sure whether such kind of board-specific patches (e, f) are
+>> appreciated in the drivers. But that is all we need to get USB and
+>> Ethernet to work on v3.10-rc3 kernel.
+> 
+> I've come across a similar situation with wifi reset sequence on the
+> chromebook. On the product kernel we added some code to the board file
+> to deal with it, but if we keep doing that things will grow out of
+> hand.
+> 
+> I don't know if it'll be unpopular, but I think it's time to start a
+> drivers/platform/arm for these kind of things, and have those drivers
+> probe on the system compatible value, similar to how x86 does it (with
+> DMI tables). At least that's my plan for approaching the wifi
+> reset/power-on sequence on the Chromebook. I hope to have patches in
+> not all that long...
+> 
+> Likewise, the hub reset/enable code doesn't have to go with the USB
+> driver, right? I.e. if you cycle reset/enable on the hub after the
+> host and phy is configured, you'll still have a working setup?
+> 
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org
----
- MAINTAINERS |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Right, hub reset/enable code need not be tied up with USB driver. As per
+your suggestion regarding drivers/platform/arm, I implemented an Arndale
+specific driver [2] in drivers/platform/arm and verified USB and
+ethernet to be working.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fd3a495..7714c3c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3322,11 +3322,12 @@ F:	drivers/net/wan/dlci.c
- F:	drivers/net/wan/sdla.c
- 
- FRAMEBUFFER LAYER
--M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-+M:	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-+M:	Tomi Valkeinen <tomi.valkeinen@ti.com>
- L:	linux-fbdev@vger.kernel.org
- W:	http://linux-fbdev.sourceforge.net/
- Q:	http://patchwork.kernel.org/project/linux-fbdev/list/
--T:	git git://github.com/schandinat/linux-2.6.git fbdev-next
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git
- S:	Maintained
- F:	Documentation/fb/
- F:	Documentation/devicetree/bindings/fb/
+[2]
+https://git.linaro.org/gitweb?p=landing-teams/working/samsung/kernel.git;a=shortlog;h=refs/heads/upstream/arndale-usb-2
+
+> 
+> -Olof
+> 
+
+
 -- 
-1.7.10.4
-
+Tushar Behera
