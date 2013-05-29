@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966760Ab3E2PE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 11:04:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16347 "EHLO mga14.intel.com"
+	id S966768Ab3E2PFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 11:05:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48274 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966381Ab3E2PE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 11:04:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,764,1363158000"; 
-   d="scan'208";a="342001888"
-Message-ID: <51A618F3.7050407@linux.intel.com>
-Date: Wed, 29 May 2013 18:04:19 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S966289Ab3E2PFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 11:05:42 -0400
+Message-ID: <51A60F86.4090900@ti.com>
+Date: Wed, 29 May 2013 17:24:06 +0300
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>  <20130529063925.27486.46649.stgit@ladj378.jer.intel.com> <1369832201.5109.8.camel@edumazet-glaptop>
-In-Reply-To: <1369832201.5109.8.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Kevin Hilman <khilman@linaro.org>
+CC: J Keerthy <j-keerthy@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] PM / AVS: SmartReflex: disable errgen before vpbound
+ disable
+References: <1369652846-14412-1-git-send-email-andrii.tseglytskyi@ti.com> <1369652846-14412-2-git-send-email-andrii.tseglytskyi@ti.com> <87sj17aqq2.fsf@linaro.org> <51A5D148.8050203@ti.com>
+In-Reply-To: <51A5D148.8050203@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/2013 15:56, Eric Dumazet wrote:
-> On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
->> Adds a napi_id and a hashing mechanism to lookup a napi by id.
->> This will be used by subsequent patches to implement low latency
->> Ethernet device polling.
->> Based on a code sample by Eric Dumazet.
+On 05/29/2013 12:58 PM, Andrii Tseglytskyi wrote:
+> Hi Kevin,
+>
+> Thanks a lot for your comments.
+>
+> On 05/28/2013 09:45 PM, Kevin Hilman wrote:
+>> Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
 >>
->> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->> ---
+>>> From: Nishanth Menon <nm@ti.com>
+>>>
+>>> vpboundsintr_en is available inside the IP block as an re-sycned
+>>> version and one which is not. Due to this, there is an 1 sysclk
+>>> cycle window where interruptz could be asserted low for 1 cycle.
+>>                               ^^^
+>>
+>> Is that the way the cool kidz are spelling interrupts these days?  ;)
 >
-> OK this looks good enough for inclusion.
+> Oh! Shame on me. Thank you for catching this :)
+
+Shame on me again (((. Name "interruptz" is more less OK. This is the 
+name of signal between Voltage Processor and SmartReflex.
+In documentation it is referenced as "SR_SInterruptz". Anyway commit 
+message should be updated to make this more clear.
+
+
+[snip]
 >
-> If a v7 ever is submitted, please add a 'static' for
->
-> static DEFINE_SPINLOCK(napi_hash_lock);
-> static unsigned int napi_gen_id;
-> static DEFINE_HASHTABLE(napi_hash, 8);
 >
 
-I will post a v7 along with the changes you suggested to 2/5, I will 
-wait a bit to see if there are other things to fix.
+Regards,
+Andrii
 
-Thanks,
-Eliezer
