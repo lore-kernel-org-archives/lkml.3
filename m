@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab3E2AiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 20:38:20 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:56821 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758214Ab3E2AiS (ORCPT
+	id S934047Ab3E2Aik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 20:38:40 -0400
+Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:32845 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933378Ab3E2Aii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 20:38:18 -0400
-Date: Tue, 28 May 2013 17:38:15 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Duncan <1i5t5.duncan@cox.net>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [RFC PATCH v1 0/5] BTRFS hot relocation support
-Message-ID: <20130529003815.GE2291@google.com>
-References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
- <pan$d5913$460afe14$f9be182d$7f8dbe54@cox.net>
+	Tue, 28 May 2013 20:38:38 -0400
+Date: Wed, 29 May 2013 02:34:28 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Olof Johansson <olof@lixom.net>, linux-fbdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [RFC] Add co-maintainer for fbdev
+Message-ID: <20130529003428.GB23899@game.jcrosoft.org>
+References: <20130524153835.GF15839@game.jcrosoft.org>
+ <201305242056.42482.arnd@arndb.de>
+ <51A29DB9.7030505@gmx.de>
+ <201305282319.30311.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <pan$d5913$460afe14$f9be182d$7f8dbe54@cox.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201305282319.30311.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 5623588560505711364
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrudehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 02:22:34AM +0000, Duncan wrote:
-> zwu.kernel posted on Mon, 20 May 2013 23:11:22 +0800 as excerpted:
+On 23:19 Tue 28 May     , Arnd Bergmann wrote:
+> On Monday 27 May 2013, Florian Tobias Schandinat wrote:
+> > >> On Fri, May 24, 2013 at 8:38 AM, Jean-Christophe PLAGNIOL-VILLARD
+> > >> <plagnioj@jcrosoft.com> wrote:
+> > >>> Hi Florian,
+> > >>>
+> > >>>         As you seems very busy I'd like to propose the help you to handle the
+> > >>>         fbdev subsystem to easier the rich of the fbdev patch to Linus
+> > >>>
+> > >>>         As I'm working on fbdev on at91 and others and already Co-Maintain the
+> > >>>         at91 mach on ARM
+> > >>>
+> > >>>         And if you are not willing to continue I could take over
+> > 
+> > Yeah, it would be great if you could help, at the moment I get barely
+> > any sleep, let alone that I could keep up with the majority of mail I
+> > get. I'll let you decide whether you want to be sole maintainer or not.
 > 
-> > The patchset is trying to introduce hot relocation support
-> > for BTRFS. In hybrid storage environment, when the data in rotating disk
-> > get hot, it can be relocated to nonrotating disk by BTRFS hot relocation
-> > support automatically; also, if nonrotating disk ratio exceed its upper
-> > threshold, the data which get cold can be looked up and relocated to
-> > rotating disk to make more space in nonrotating disk at first, and then
-> > the data which get hot will be relocated to nonrotating disk
-> > automatically.
-> 
-> One advantage of a filesystem implementation, as opposed to bcache or 
-> dmcache, is arguably a corner-case, but it's /my/ corner-case, so...
-> 
-> I run an intr*-less (I guess technically, empty initramfs) monolithic-
-> kernel boot, using the kernel commandline root= and (formerly) md= and 
-> related logic to choose/assemble/mount root directly from the kernel 
-> command line via bootloader (grub2).  Thus, any user-space-required-to-
-> mount-root is out, since I don't have an initr* and thus no early 
-> userspace.  That means both lvm2 and dmcache (AFAIK) are out.  I'm not 
-> sure about bcache, but it has other negatives, particularly against btrfs-
-> raid-1 and I'd guess md/raid-1 as well.
-> 
-> Much like md before it, btrfs, while normally requiring the user-space-
-> required device-scan to properly handle multiple devices, has kernel-
-> command-line options that allow direct kernel multi-device assembly 
-> without the help of early-userspace/initr*.
+> For any bigger subsystems, it's good practice to have two maintainers,
+> even if one of them does all the work. I think it makes sense to have
+> Jean-Christophe as the primary maintainer and owner of the git tree,
+> but it may also be good to have you or Tomi listed as a second maintainer
+> for times when Jean-Christophe isn't available.
 
-I wouldn't be averse to adding such functionality to bcache, provided it
-could be done reasonably cleanly/sensibly. It's not high on my list but
-I'd accept patches :)
+I agree with Arnd
+
+As example I'll be mostly off first week of June.
+
+
+Tomi Florian what do you think
+
+I plan to send the patch + PULL to Linus end of this week before I work-off
+
+For the record the new git tree is here
+
+git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git
+
+Best Regrds,
+J.
