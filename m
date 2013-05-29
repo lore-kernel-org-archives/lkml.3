@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965071Ab3E2IHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 04:07:46 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:39191 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964806Ab3E2IHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 04:07:41 -0400
-Date: Wed, 29 May 2013 10:07:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130529080737.GB24933@gmail.com>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523125218.GB23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu>
- <20130523152611.GE23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
- <20130528085548.GA12193@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
+	id S1759543Ab3E2IIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 04:08:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33860 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814Ab3E2IIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 04:08:43 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Jon Hunter <jgchunter@gmail.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>
+Subject: RE: [PATCH v2 12/14] Documentation: dt: binding: omap: am43x counter
+Thread-Topic: [PATCH v2 12/14] Documentation: dt: binding: omap: am43x
+ counter
+Thread-Index: AQHOWufxj9F/2FX/ZkG7H4yrLrRhGpkal/+AgAE5JSA=
+Date: Wed, 29 May 2013 08:08:06 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAFB056@DBDE04.ent.ti.com>
+References: <cover.1369658705.git.afzal@ti.com>
+ <755964dc45ae4f023540c05e5739fca87d0ea70b.1369658705.git.afzal@ti.com>
+ <51A520ED.9070106@gmail.com>
+In-Reply-To: <51A520ED.9070106@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4T88qXi007467
 
+Hi Jon,
 
-* Vince Weaver <vincent.weaver@maine.edu> wrote:
+On Wed, May 29, 2013 at 02:56:05, Jon Hunter wrote:
 
-> On Tue, 28 May 2013, Peter Zijlstra wrote:
->  
-> > Take 2.. :-)
-> > 
-> > Leaving the locked vs pinned debacle for another time. The below patch
-> > survives many non-priv execution of the problem prog.
-> 
-> It looks like this is already in tip, [...]
+> Changelog should state why this is needed.
 
-Wanted to help out with testing it in parallel - even though it was not 
-yet clear whether it's the full fix.
+Please see my reply on 11/14 thread.
 
-Since you are still seeing a leak I will hold on to it until it's fully 
-fixed.
-
-Thanks,
-
-	Ingo
+Regards
+Afzal
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
