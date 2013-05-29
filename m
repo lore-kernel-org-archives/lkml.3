@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965616Ab3E2K14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 06:27:56 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13505 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965596Ab3E2K1x (ORCPT
+	id S965649Ab3E2K2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 06:28:04 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10721 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965596Ab3E2K2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 06:27:53 -0400
+	Wed, 29 May 2013 06:28:00 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 29 May 2013 03:27:40 -0700
+	by hqnvupgp08.nvidia.com on Wed, 29 May 2013 03:27:59 -0700
 From: Arto Merilainen <amerilainen@nvidia.com>
 To: <thierry.reding@gmail.com>, <airlied@linux.ie>,
         <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
 CC: <tbergstrom@nvidia.com>, <linux-kernel@vger.kernel.org>,
         Arto Merilainen <amerilainen@nvidia.com>
-Subject: [PATCHv2 3/7] gpu: host1x: Don't reset firewall between gathers
-Date: Wed, 29 May 2013 13:26:04 +0300
-Message-ID: <1369823168-5396-4-git-send-email-amerilainen@nvidia.com>
+Subject: [PATCHv2 6/7] gpu: host1x: Fix client_managed type
+Date: Wed, 29 May 2013 13:26:07 +0300
+Message-ID: <1369823168-5396-7-git-send-email-amerilainen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
 References: <1369823168-5396-1-git-send-email-amerilainen@nvidia.com>
@@ -27,166 +27,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Terje Bergstrom <tbergstrom@nvidia.com>
+client_managed field in syncpoint structure was defined as an
+integer. The field holds, however, only a boolean value. This patch
+modifies the type to boolean.
 
-The firewall was reinitialised for each gather. Because the filter
-was reinitialised, it did not track the class over gather boundaries.
-This allowed the user application to set host1x class to one class
-in one gather and use that class in another gather without firewall
-having knowledge about that.
-
-Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 ---
- drivers/gpu/host1x/job.c | 73 ++++++++++++++++++++++--------------------------
- 1 file changed, 34 insertions(+), 39 deletions(-)
+ drivers/gpu/host1x/drm/gr2d.c | 2 +-
+ drivers/gpu/host1x/syncpt.c   | 8 ++++----
+ drivers/gpu/host1x/syncpt.h   | 6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
-index 83804fd..028d2d4 100644
---- a/drivers/gpu/host1x/job.c
-+++ b/drivers/gpu/host1x/job.c
-@@ -376,69 +376,60 @@ static int check_nonincr(struct host1x_firewall *fw)
- 	return 0;
- }
- 
--static int validate(struct host1x_job *job, struct device *dev,
--		    struct host1x_job_gather *g)
-+static int validate(struct host1x_firewall *fw, struct host1x_job_gather *g)
- {
- 	u32 *cmdbuf_base;
- 	int err = 0;
--	struct host1x_firewall fw;
--
--	fw.job = job;
--	fw.dev = dev;
--	fw.reloc = job->relocarray;
--	fw.num_relocs = job->num_relocs;
--	fw.cmdbuf_id = g->bo;
--
--	fw.offset = 0;
--	fw.class = 0;
- 
--	if (!job->is_addr_reg)
-+	if (!fw->job->is_addr_reg)
- 		return 0;
- 
- 	cmdbuf_base = host1x_bo_mmap(g->bo);
- 	if (!cmdbuf_base)
+diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
+index 6a45ae0..6c3a27b 100644
+--- a/drivers/gpu/host1x/drm/gr2d.c
++++ b/drivers/gpu/host1x/drm/gr2d.c
+@@ -281,7 +281,7 @@ static int gr2d_probe(struct platform_device *pdev)
+ 	if (!gr2d->channel)
  		return -ENOMEM;
-+	fw->words = g->words;
-+	fw->cmdbuf_id = g->bo;
-+	fw->offset = 0;
  
--	fw.words = g->words;
--	while (fw.words && !err) {
--		u32 word = cmdbuf_base[fw.offset];
-+	while (fw->words && !err) {
-+		u32 word = cmdbuf_base[fw->offset];
- 		u32 opcode = (word & 0xf0000000) >> 28;
+-	*syncpts = host1x_syncpt_request(dev, 0);
++	*syncpts = host1x_syncpt_request(dev, false);
+ 	if (!(*syncpts)) {
+ 		host1x_channel_free(gr2d->channel);
+ 		return -ENOMEM;
+diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
+index 2b03f1b..27201b5 100644
+--- a/drivers/gpu/host1x/syncpt.c
++++ b/drivers/gpu/host1x/syncpt.c
+@@ -32,7 +32,7 @@
  
--		fw.mask = 0;
--		fw.reg = 0;
--		fw.count = 0;
--		fw.words--;
--		fw.offset++;
-+		fw->mask = 0;
-+		fw->reg = 0;
-+		fw->count = 0;
-+		fw->words--;
-+		fw->offset++;
+ static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
+ 						  struct device *dev,
+-						  int client_managed)
++						  bool client_managed)
+ {
+ 	int i;
+ 	struct host1x_syncpt *sp = host->syncpt;
+@@ -332,7 +332,7 @@ int host1x_syncpt_init(struct host1x *host)
+ 	host1x_syncpt_restore(host);
  
- 		switch (opcode) {
- 		case 0:
--			fw.class = word >> 6 & 0x3ff;
--			fw.mask = word & 0x3f;
--			fw.reg = word >> 16 & 0xfff;
--			err = check_mask(&fw);
-+			fw->class = word >> 6 & 0x3ff;
-+			fw->mask = word & 0x3f;
-+			fw->reg = word >> 16 & 0xfff;
-+			err = check_mask(fw);
- 			if (err)
- 				goto out;
- 			break;
- 		case 1:
--			fw.reg = word >> 16 & 0xfff;
--			fw.count = word & 0xffff;
--			err = check_incr(&fw);
-+			fw->reg = word >> 16 & 0xfff;
-+			fw->count = word & 0xffff;
-+			err = check_incr(fw);
- 			if (err)
- 				goto out;
- 			break;
+ 	/* Allocate sync point to use for clearing waits for expired fences */
+-	host->nop_sp = _host1x_syncpt_alloc(host, NULL, 0);
++	host->nop_sp = _host1x_syncpt_alloc(host, NULL, false);
+ 	if (!host->nop_sp)
+ 		return -ENOMEM;
  
- 		case 2:
--			fw.reg = word >> 16 & 0xfff;
--			fw.count = word & 0xffff;
--			err = check_nonincr(&fw);
-+			fw->reg = word >> 16 & 0xfff;
-+			fw->count = word & 0xffff;
-+			err = check_nonincr(fw);
- 			if (err)
- 				goto out;
- 			break;
- 
- 		case 3:
--			fw.mask = word & 0xffff;
--			fw.reg = word >> 16 & 0xfff;
--			err = check_mask(&fw);
-+			fw->mask = word & 0xffff;
-+			fw->reg = word >> 16 & 0xfff;
-+			err = check_mask(fw);
- 			if (err)
- 				goto out;
- 			break;
-@@ -453,12 +444,10 @@ static int validate(struct host1x_job *job, struct device *dev,
- 	}
- 
- 	/* No relocs should remain at this point */
--	if (fw.num_relocs)
-+	if (fw->num_relocs)
- 		err = -EINVAL;
- 
- out:
--	host1x_bo_munmap(g->bo, cmdbuf_base);
--
- 	return err;
+@@ -340,7 +340,7 @@ int host1x_syncpt_init(struct host1x *host)
  }
  
-@@ -508,8 +497,15 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
- 	int err;
- 	unsigned int i, j;
+ struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
+-					    int client_managed)
++					    bool client_managed)
+ {
  	struct host1x *host = dev_get_drvdata(dev->parent);
-+	struct host1x_firewall fw;
- 	DECLARE_BITMAP(waitchk_mask, host1x_syncpt_nb_pts(host));
+ 	return _host1x_syncpt_alloc(host, dev, client_managed);
+@@ -354,7 +354,7 @@ void host1x_syncpt_free(struct host1x_syncpt *sp)
+ 	kfree(sp->name);
+ 	sp->dev = NULL;
+ 	sp->name = NULL;
+-	sp->client_managed = 0;
++	sp->client_managed = false;
+ }
  
-+	fw.job = job;
-+	fw.dev = dev;
-+	fw.reloc = job->relocarray;
-+	fw.num_relocs = job->num_relocs;
-+	fw.class = 0;
-+
- 	bitmap_zero(waitchk_mask, host1x_syncpt_nb_pts(host));
- 	for (i = 0; i < job->num_waitchk; i++) {
- 		u32 syncpt_id = job->waitchk[i].syncpt_id;
-@@ -543,7 +539,7 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
- 		err = 0;
+ void host1x_syncpt_deinit(struct host1x *host)
+diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
+index c998061..d00e758 100644
+--- a/drivers/gpu/host1x/syncpt.h
++++ b/drivers/gpu/host1x/syncpt.h
+@@ -36,7 +36,7 @@ struct host1x_syncpt {
+ 	atomic_t max_val;
+ 	u32 base_val;
+ 	const char *name;
+-	int client_managed;
++	bool client_managed;
+ 	struct host1x *host;
+ 	struct device *dev;
  
- 		if (IS_ENABLED(CONFIG_TEGRA_HOST1X_FIREWALL))
--			err = validate(job, dev, g);
-+			err = validate(&fw, g);
+@@ -94,7 +94,7 @@ static inline bool host1x_syncpt_check_max(struct host1x_syncpt *sp, u32 real)
+ }
  
- 		if (err)
- 			dev_err(dev, "Job invalid (err=%d)\n", err);
-@@ -553,7 +549,6 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
+ /* Return true if sync point is client managed. */
+-static inline int host1x_syncpt_client_managed(struct host1x_syncpt *sp)
++static inline bool host1x_syncpt_client_managed(struct host1x_syncpt *sp)
+ {
+ 	return sp->client_managed;
+ }
+@@ -157,7 +157,7 @@ u32 host1x_syncpt_id(struct host1x_syncpt *sp);
  
- 		if (!err)
- 			err = do_waitchks(job, host, g->bo);
--
- 		if (err)
- 			break;
- 	}
+ /* Allocate a sync point for a device. */
+ struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
+-		int client_managed);
++					    bool client_managed);
+ 
+ /* Free a sync point. */
+ void host1x_syncpt_free(struct host1x_syncpt *sp);
 -- 
 1.8.1.5
 
