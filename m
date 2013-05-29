@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965610Ab3E2SYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 14:24:05 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:53972 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965430Ab3E2SX5 (ORCPT
+	id S965539Ab3E2S0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 14:26:39 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:53813 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965160Ab3E2S0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 14:23:57 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Tushar Behera <tushar.behera@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-	<87sj1qzaov.fsf@linaro.org> <5191AA89.6010901@linaro.org>
-	<20130528231740.GA28879@quad.lixom.net> <51A57D39.8030506@linaro.org>
-	<CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
-Date: Wed, 29 May 2013 11:23:52 -0700
-In-Reply-To: <CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
-	(Olof Johansson's message of "Tue, 28 May 2013 22:31:41 -0700")
-Message-ID: <87sj1563wn.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 29 May 2013 14:26:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130528211420.GG5065@oc6784271780.ibm.com>
+References: <20130528211420.GG5065@oc6784271780.ibm.com>
+Date: Wed, 29 May 2013 21:26:30 +0300
+Message-ID: <CAHp75Ve73bLosxtKNA71WDo10_pxXYj_rhFOd+A-VwO7bxduaA@mail.gmail.com>
+Subject: Re: [PATCH 7/8] rsxx: Adding EEH check inside cregs timeout.
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson <olof@lixom.net> writes:
-
-> On Tue, May 28, 2013 at 8:59 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
+On Wed, May 29, 2013 at 12:14 AM, Philip J. Kelleher
+<pjk1939@linux.vnet.ibm.com> wrote:
+> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 >
->> The patches are at [1].
+> Unfortunaly, our CPU register path does not do any kind of
+> EEH error checking. So to fix this issue, an ioread32 was
+> added to the CPU register timeout code. This way, the
+> driver can check to see if the timeout was caused by an EEH
+> error or not.
+
+
+> +++ linux-block/drivers/block/rsxx/cregs.c      2013-05-01 18:59:57.596197150 -0500
+> @@ -431,6 +431,15 @@ static int __issue_creg_rw(struct rsxx_c
+>         *hw_stat = completion.creg_status;
 >
-> FWIW, a cgit/gitweb link is easier to follow when you're reading an
-> email. Anyway, found the patches.
->
->> There are a total of 6 patches on top of
->> v3.10-rc3. 3 of them (a, b, d) are queued for 3.10-rc4 and another patch
->> (c) is just a defconfig hack to get Arndale booting. Remaining 2 patches
->> (e, f) are required to reset the hub during EHCI initialization.
->
-> Huh, I thought you said that (c) wasn't needed when I posted the
-> defconfig update. It'd be nice to see the code fixed to handle this
-> case instead of Linaro carrying a patch like this though. I.e. make it
-> able to deselect the uart, or make it tied to DEBUG_LL like on other
-> platforms instead of having a separate config for this.
+>         if (completion.st) {
+> +               /*
+> +                * This read is needed to verify that there has not been any
+> +                * extreme errors that might have occurred, i.e. EEH. The
+> +                * function iowrite32 will not detect EEH errors, so it is
+> +                * necessary that we recover if such an error is the reason
+> +                * for the timeout.
+> +                */
+> +               ioread32(card->regmap + SCRATCH);
 
-I agree, that defconfig hack is awful to have to carry.
+This is just a dummy read, right? Perhaps you may add this word to the
+explanation.
 
-I also noticed that correct setting of CONFIG_S3C_LOWLEVEL_UART_PORT is
-needed even without DEBUG_LL which seems broken.
-
-Kevin
-
+--
+With Best Regards,
+Andy Shevchenko
