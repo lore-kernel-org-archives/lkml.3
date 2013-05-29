@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759736Ab3E2RKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:10:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64546 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964845Ab3E2RKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:10:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
-   d="scan'208";a="345088670"
-Message-ID: <51A6367E.1060400@intel.com>
-Date: Wed, 29 May 2013 10:10:22 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S934370Ab3E2RMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 13:12:06 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55619 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933148Ab3E2RLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 13:11:50 -0400
+Message-ID: <51A636D4.3050200@cogentembedded.com>
+Date: Wed, 29 May 2013 21:11:48 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+To: Michal Simek <michal.simek@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Bill Pemberton <wfp5p@virginia.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: possible_cpus broken in linux-next
-Content-Type: text/plain; charset=ISO-8859-1
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 11/11] net: emaclite: Update driver header
+References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com> <c0a6ab3410dd6e6a9198a4605993164700d1b965.1369841519.git.michal.simek@xilinx.com>
+In-Reply-To: <c0a6ab3410dd6e6a9198a4605993164700d1b965.1369841519.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I boot with: maxcpus=2 possible_cpus=4, I get
+Hello.
 
-	# grep . /sys/devices/system/cpu/cpu[0-9]*/online'
-	/sys/devices/system/cpu/cpu1/online:1
-	/sys/devices/system/cpu/cpu2/online:1
-	/sys/devices/system/cpu/cpu3/online:1
+On 05/29/2013 07:33 PM, Michal Simek wrote:
 
-on bad kernels, and this on working ones:
+> Corrent email address and years.
 
-	/sys/devices/system/cpu/cpu1/online:1
-	/sys/devices/system/cpu/cpu2/online:0
-	/sys/devices/system/cpu/cpu3/online:0
+    s/Corrent/Correct/. Perhaps the committer can fix.
+
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+WBR, Sergei
 
 
-I also get -EINVAL if I try to re-offline them in this state.  2 and 3
-don't show up in /proc/cpuinfo, so sysfs just looks broken here.  This
-happens in a KVM guest, so it should be dirt-simple for anyone to reproduce.
-
-I bisected it down to:
-
-> commit 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date:   Fri May 3 00:25:49 2013 +0200
-> 
->     Driver core: Use generic offline/online for CPU offline/online
->     
->     Rework the CPU hotplug code in drivers/base/cpu.c to use the
->     generic offline/online support introduced previously instead of
->     its own CPU-specific code.
->     
->     For this purpose, modify cpu_subsys to provide offline and online
->     callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
->     the CPU-specific 'online' sysfs attribute.
->     
->     This modification is not supposed to change the user-observable
->     behavior of the kernel (i.e. the 'online' attribute will be present
->     in exactly the same place in sysfs and should trigger exactly the
->     same actions as before).
->     
->     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->     Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Reviewed-by: Toshi Kani <toshi.kani@hp.com>
