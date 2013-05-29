@@ -1,171 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965048Ab3E2Rp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:45:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19119 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933171Ab3E2RpR (ORCPT
+	id S935019Ab3E2RvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 13:51:07 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:31660 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934764Ab3E2Ru7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:45:17 -0400
-Date: Wed, 29 May 2013 13:42:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 1/4] debugfs: add get/set for atomic types
-Message-ID: <20130529174211.GD9443@phenom.dumpdata.com>
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1369067168-12291-2-git-send-email-sjenning@linux.vnet.ibm.com>
+	Wed, 29 May 2013 13:50:59 -0400
+X-IronPort-AV: E=Sophos;i="4.87,765,1363132800"; 
+   d="scan'208";a="26711375"
+Date: Wed, 29 May 2013 18:50:41 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
+ driver load first time
+In-Reply-To: <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com> <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com>
+ <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369067168-12291-2-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:26:05AM -0500, Seth Jennings wrote:
-> debugfs currently lack the ability to create attributes
-> that set/get atomic_t values.
+On Tue, 21 May 2013, Stefano Stabellini wrote:
+> On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > Looking at the hypervisor code I couldn't see anything obviously wrong.
+> > 
+> > I think the culprit is "physdev_unmap_pirq":
+> > 
+> >    if ( is_hvm_domain(d) )                                                     
+> >     {                                                                           
+> >         spin_lock(&d->event_lock);                                              
+> >         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
+> >             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
+> >             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
+> >             domain_pirq_to_irq(d, pirq));                                       
+> >                                                                                 
+> >         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
+> >             ret = unmap_domain_pirq_emuirq(d, pirq);                            
+> >         spin_unlock(&d->event_lock);                                            
+> >         if ( domid == DOMID_SELF || ret )                                       
+> >             goto free_domain;                                             
+> > 
+> > It always tells me unbound:
+> > 
+> > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+> > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+> > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+> > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+> > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+> > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > (a bit older debug code, so the 'unbound' does not show up here).
+> > 
+> > Which means that the call to unmap_domain_pirq_emuirq does not happen.
+> > The checks in unmap_domain_pirq_emuirq also look to be depend
+> > on the code being IRQ_UNBOUND.
+> > 
+> > In other words, all of that code looks to only clear things when
+> > they are !IRQ_UNBOUND.
+> > 
+> > But the other logic (IRQ_UNBOUND) looks to be missing a removal
+> > in the radix tree:
+> > 
+> >   if ( emuirq != IRQ_PT )                                                     
+> >         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
+> >                                                                         
+> > And I think that is what is causing the leak - the radix tree
+> > needs to be pruned? Or perhaps the allocate_pirq should check
+> > the radix tree for IRQ_UNBOUND ones and re-use them?
 > 
-> This patch adds support for this through a new
-> debugfs_create_atomic_t() function.
+> I think that you are looking in the wrong place.
+> The issue is that QEMU doesn't call pt_msi_disable in
+> pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
 > 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
+> The code above is correct as is because it is trying to handle emulated
+> IRQs and MSIs, not real passthrough MSIs. They latter are not added to
+> that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
 
-Let me join in the party:
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This patch fixes the issue, I have only tested MSI (MSI-X completely
+untested).
 
-> ---
->  fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/debugfs.h |  2 ++
->  lib/fault-inject.c      | 21 ---------------------
->  3 files changed, 44 insertions(+), 21 deletions(-)
-> 
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index c5ca6ae..ff64bcd 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -21,6 +21,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> +#include <linux/atomic.h>
->  
->  static ssize_t default_read_file(struct file *file, char __user *buf,
->  				 size_t count, loff_t *ppos)
-> @@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
->  }
->  EXPORT_SYMBOL_GPL(debugfs_create_size_t);
->  
-> +static int debugfs_atomic_t_set(void *data, u64 val)
-> +{
-> +	atomic_set((atomic_t *)data, val);
-> +	return 0;
-> +}
-> +static int debugfs_atomic_t_get(void *data, u64 *val)
-> +{
-> +	*val = atomic_read((atomic_t *)data);
-> +	return 0;
-> +}
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-> +			debugfs_atomic_t_set, "%lld\n");
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%lld\n");
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%lld\n");
-> +
-> +/**
-> + * debugfs_create_atomic_t - create a debugfs file that is used to read and
-> + * write an atomic_t value
-> + * @name: a pointer to a string containing the name of the file to create.
-> + * @mode: the permission that the file should have
-> + * @parent: a pointer to the parent dentry for this file.  This should be a
-> + *          directory dentry if set.  If this parameter is %NULL, then the
-> + *          file will be created in the root of the debugfs filesystem.
-> + * @value: a pointer to the variable that the file should read to and write
-> + *         from.
-> + */
-> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-> +				 struct dentry *parent, atomic_t *value)
-> +{
-> +	/* if there are no write bits set, make read only */
-> +	if (!(mode & S_IWUGO))
-> +		return debugfs_create_file(name, mode, parent, value,
-> +					&fops_atomic_t_ro);
-> +	/* if there are no read bits set, make write only */
-> +	if (!(mode & S_IRUGO))
-> +		return debugfs_create_file(name, mode, parent, value,
-> +					&fops_atomic_t_wo);
-> +
-> +	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-> +}
-> +EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
->  
->  static ssize_t read_file_bool(struct file *file, char __user *user_buf,
->  			      size_t count, loff_t *ppos)
-> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-> index 63f2465..d68b4ea 100644
-> --- a/include/linux/debugfs.h
-> +++ b/include/linux/debugfs.h
-> @@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
->  				  struct dentry *parent, u64 *value);
->  struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
->  				     struct dentry *parent, size_t *value);
-> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-> +				     struct dentry *parent, atomic_t *value);
->  struct dentry *debugfs_create_bool(const char *name, umode_t mode,
->  				  struct dentry *parent, u32 *value);
->  
-> diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-> index c5c7a76..d7d501e 100644
-> --- a/lib/fault-inject.c
-> +++ b/lib/fault-inject.c
-> @@ -182,27 +182,6 @@ static struct dentry *debugfs_create_stacktrace_depth(
->  
->  #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
->  
-> -static int debugfs_atomic_t_set(void *data, u64 val)
-> -{
-> -	atomic_set((atomic_t *)data, val);
-> -	return 0;
-> -}
-> -
-> -static int debugfs_atomic_t_get(void *data, u64 *val)
-> -{
-> -	*val = atomic_read((atomic_t *)data);
-> -	return 0;
-> -}
-> -
-> -DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-> -			debugfs_atomic_t_set, "%lld\n");
-> -
-> -static struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-> -				struct dentry *parent, atomic_t *value)
-> -{
-> -	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-> -}
-> -
->  struct dentry *fault_create_debugfs_attr(const char *name,
->  			struct dentry *parent, struct fault_attr *attr)
->  {
-> -- 
-> 1.8.2.3
-> 
+
+diff --git a/hw/pass-through.c b/hw/pass-through.c
+index 304c438..079e465 100644
+--- a/hw/pass-through.c
++++ b/hw/pass-through.c
+@@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct pt_dev *ptdev,
+         ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
+     }
+     else
+-        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
++    {
++        if (ptdev->msi->flags & PT_MSI_MAPPED) {
++            pt_msi_disable(ptdev);
++        }
++    }
+ 
+     /* pass through MSI_ENABLE bit when no MSI-INTx translation */
+     if (!ptdev->msi_trans_en) {
+@@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct pt_dev *ptdev,
+             pt_disable_msi_translate(ptdev);
+         }
+         pt_msix_update(ptdev);
++    } else if (!(*value & PCI_MSIX_ENABLE) && ptdev->msix->enabled) {
++        pt_msix_delete(ptdev);
+     }
+ 
+     ptdev->msix->enabled = !!(*value & PCI_MSIX_ENABLE);
+diff --git a/hw/pt-msi.c b/hw/pt-msi.c
+index b03b989..65fa7d6 100644
+--- a/hw/pt-msi.c
++++ b/hw/pt-msi.c
+@@ -213,7 +213,8 @@ void pt_msi_disable(struct pt_dev *dev)
+ 
+ out:
+     /* clear msi info */
+-    dev->msi->flags &= ~(MSI_FLAG_UNINIT | PT_MSI_MAPPED | PCI_MSI_FLAGS_ENABLE);
++    dev->msi->flags &= ~(PT_MSI_MAPPED | PCI_MSI_FLAGS_ENABLE);
++    dev->msi->flags |= MSI_FLAG_UNINIT;
+     dev->msi->pirq = -1;
+     dev->msi_trans_en = 0;
+ }
