@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab3E2Qs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:48:29 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:64481 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827Ab3E2QsX (ORCPT
+	id S1759579Ab3E2Q4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:56:14 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:36660 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755365Ab3E2Q4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:48:23 -0400
+	Wed, 29 May 2013 12:56:05 -0400
+Date: Wed, 29 May 2013 18:56:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Simo Sorce <simo@redhat.com>
+Cc: Waiman Long <waiman.long@hp.com>, Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130529165603.GL6123@two.firstfloor.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+ <1369844289.2769.146.camel@willson.li.ssimo.org>
 MIME-Version: 1.0
-In-Reply-To: <20130528100941.GK22683@gmail.com>
-References: <1369661455-17839-1-git-send-email-gabriel.fernandez.st@gmail.com>
-	<1369661455-17839-3-git-send-email-gabriel.fernandez.st@gmail.com>
-	<20130528100941.GK22683@gmail.com>
-Date: Wed, 29 May 2013 18:48:22 +0200
-Message-ID: <CACRpkdYUBn4sv2vtTa1dNsd6RnCVRvep168pmiCzhF1fYsRvCA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: u8540: Add Pinctrl Device Tree settings for
- uart0, uart2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olivier Clergeaud <olivier.clergeaud@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369844289.2769.146.camel@willson.li.ssimo.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 12:09 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 27 May 2013, Gabriel Fernandez wrote:
->> From: Gabriel Fernandez <gabriel.fernandez@st.com>
->>
->> This patch adds pinctrl device tree settings for uart0 and uart2
->> for ccu8540 board.
->>
->> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
->> ---
->>  arch/arm/boot/dts/ccu8540-pinctrl.dtsi     | 77 ++++++++++++++++++++++++
->>  arch/arm/boot/dts/ccu8540.dts              |  7 +++
->>  arch/arm/boot/dts/dbx5x0.dtsi              |  2 +-
->>  arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi | 95 ++++++++++++++++++++++++++++++
->
-> This is starting to get a bit confusing. How intrusive would it be to
-> place the ccu8540-pinctrl information inside ccu8540.dts instead of
-> breaking it out into different files and convoluting the issue?
->
-> Also, please correct me if I'm wrong, but isn't what we call the
-> Nomadik Pinctrl/GPIO really the same as DBX500 Pinctrl/GPIO? I wonder
-> if this would be a better naming convention?
->
-> Linus, what do you think?
+On Wed, May 29, 2013 at 12:18:09PM -0400, Simo Sorce wrote:
+> On Wed, 2013-05-29 at 11:55 -0400, Waiman Long wrote:
+> 
+> > My patch set consists of 2 different changes. The first one is to avoid 
+> > taking the d_lock lock when updating the reference count in the 
+> > dentries. This particular change also benefit some other workloads that 
+> > are filesystem intensive. One particular example is the short workload 
+> > in the AIM7 benchmark. One of the job type in the short workload is 
+> > "misc_rtns_1" which calls security functions like getpwnam(), 
+> > getpwuid(), getgrgid() a couple of times. These functions open the 
+> > /etc/passwd or /etc/group files, read their content and close the files. 
+> > It is the intensive open/read/close sequence from multiple threads that 
+> > is causing 80%+ contention in the d_lock on a system with large number 
+> > of cores.
+> 
+> To be honest a workload base on /etc/passwd or /etc/group is completely
+> artificial, in actual usage, if you really have  such access you use
+> nscd or sssd with their shared memory caches to completely remove most
+> of the file access.
 
-I think the definitions can live in their own file like this since it
-saves a lot of
-lines... And the use of <dt-bindings/*> is really nice.
+I don't fully agree at this point. A lot of things can be tuned away,
+but in practice we want things to perform well out of the box without
+needing all kinds of magic tuning that only 
 
-> Nodes look pretty good, except shouldn't 'ste' really be 'stericsson'?
+Also this is just normal file access, nothing special about it.
+It simply has to scale. For all kinds of workloads.
 
-I started to use ste-* on the Nomadik and U300 stuff to avoid all too
-long filenames.
+And it does, just d_path messes it up.
 
-I would actually like to rename all the ux500-related files ste-*
-so they get grouped together in the filelist, but I've heard that there
-was a plan to create per-vendor subdirs in arch/arm/boot/dts
-so maybe I should go for that instead?
+> I have no beef on the rest but repeated access to Nsswitch information
+> is not something you need to optimize at the file system layer and
+> should not be brought up as a point in favor.
 
-[Gabriel]
-> i missed
->           pinctrl {
->                        compatible = "stericsson,db8540-pinctrl";
+This is about repeated access to arbitrary files.
 
-Are you sending a v2?
-
-Yours,
-Linus Walleij
+-Andi
