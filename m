@@ -1,139 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3E2QHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:07:08 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:21129 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759224Ab3E2QHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:07:00 -0400
-Message-ID: <51A627A0.3000603@imgtec.com>
-Date: Wed, 29 May 2013 17:06:56 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755018Ab3E2QHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:07:53 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:37714 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab3E2QHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 12:07:45 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 7/9] gpio-tz1090: add TZ1090 gpio driver
-References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com> <1369412476-14245-8-git-send-email-james.hogan@imgtec.com> <CACRpkdb-JNbWxUiiJf=2Y8C0txcKBVoFjBCwkaMVq4my1nzHzQ@mail.gmail.com>
-In-Reply-To: <CACRpkdb-JNbWxUiiJf=2Y8C0txcKBVoFjBCwkaMVq4my1nzHzQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_05_29_17_06_57
+Date: Wed, 29 May 2013 18:07:45 +0200
+Message-ID: <CACRpkdYzh4ZzUw=2ByQB8qchTfh0jvhz0+iSFPJmYBuVQesDgQ@mail.gmail.com>
+Subject: [GIT PULL] pinctrl fixes for v3.10, take three
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Wei Yongjun <weiyj.lk@gmail.com>, Axel Lin <axel.lin@ingics.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/13 16:32, Linus Walleij wrote:
-> On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> 
->> Add a GPIO driver for the main GPIOs found in the TZ1090 (Comet) SoC.
->> This doesn't include low-power GPIOs as they're controlled separately
->> via the Powerdown Controller (PDC) registers.
->>
->> The driver is instantiated by device tree and supports interrupts for
->> all GPIOs.
-> 
-> (...)
-> 
-> This is looking much better.
-> 
-> However I have some more improvement comments, due to new
-> knowledge. I am sorry about the moving target but it's not my fault...
+Hi Linus,
 
-No worries :-)
+here are some more pinctrl fixes for the v3.10 series.
 
-> And it will look like:
-> interrupts = <13 IRQ_TYPE_LEVEL_HIGH>;
-> 
-> Which is way easier to understand and you no longer
-> need to insert comments to explain things.
+I don't exactly like the size of the Samsung/Exynos stuff, but I suspect
+a bit of it can be explained by some traction around this platform right now,
+leading to higher evolutional pace and some stir due to that. With the ARM
+Chromebook using it and all that.
 
-Very nice. I like this. Thanks.
+Please pull it in!
 
->> +/* REG_GPIO_IRQ_PLRT */
->> +#define GPIO_POLARITY_LOW      0
->> +#define GPIO_POLARITY_HIGH     1
->> +
->> +/* REG_GPIO_IRQ_TYPE */
->> +#define GPIO_LEVEL_TRIGGERED   0
->> +#define GPIO_EDGE_TRIGGERED    1
-> 
-> Why does the comment start with REG_* but not the actual
-> definition?
+Yours,
+Linus Walleij
 
-Legacy reasons (those constants were originally in that
-<asm/soc-tz1090/gpio.h> header). I'll clean up the naming.
 
-> 
-> (...)
->> +/* caller must hold LOCK2 */
->> +static inline void _tz1090_gpio_mod_bit(struct tz1090_gpio_bank *bank,
->> +                                       unsigned int reg_offs,
->> +                                       unsigned int offset,
->> +                                       int val)
->> +{
->> +       u32 value;
->> +
->> +       value = tz1090_gpio_read(bank, reg_offs);
->> +       value &= ~BIT(offset);
->> +       value |= !!val << offset;
-> 
-> I can't parse that last line, it is equivalent to writing:
-> 
-> if (val)
->     value |= BIT(offset);
-> 
-> Which I think is easier to understand.
+The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
 
-Apparently I was demonstrating how premature optimisation is the root of
-all evil (as disassembling it testifies) :-). I'll stop doing this.
+  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
 
-> 
-> 
->> +/* set polarity to trigger on next edge, whether rising or falling */
->> +static void tz1090_gpio_irq_next_edge(struct tz1090_gpio_bank *bank,
->> +                                     unsigned int offset)
->> +{
->> +       unsigned int value_p, value_i;
->> +       int lstat;
->> +
->> +       __global_lock2(lstat);
->> +       /* irq_polarity[offset] = !input[offset] */
-> 
-> This comments probably need to be a bit more verbose, like explain
-> to readers what is happening here.
+are available in the git repository at:
 
-Okay
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-fixes-v3.10-3
 
->> +postcore_initcall(tz1090_gpio_init);
-> 
-> Is it really necessary to have this so early?
+for you to fetch changes up to a386267a2ceea33d76fa2b7f1c2e72a858fcb68e:
 
-It was necessary when I wanted GPIO setup to precede platform code that
-hadn't been converted to DT yet but messed with GPIOs. For upstream I
-think I can change it to subsys_initcall to match the majority of other
-gpio drivers.
+  pinctrl: pinconf: take the right mutex (2013-05-27 15:53:32 +0200)
 
-(for the record, in drivers/gpio/*.c:
-      1 core_initcall
-      1 device_initcall
-      1 late_initcall
-      2 pure_initcall
-      3 arch_initcall
-     14 postcore_initcall
-     29 subsys_initcall)
+----------------------------------------------------------------
+Pin control fixes for v3.10:
+- Six patches fixing up the suspend/resume and wakeup
+  handling of the Samsung and Exynos drivers.
+- Errorpath fixes for four different drivers. All on
+  the probe() errorpath.
+- Make the debugfs code for pin config take the right
+  mutex.
 
-> Apart from these remarks it is looking very good.
+----------------------------------------------------------------
+Axel Lin (1):
+      pinctrl: Don't override the error code in probe error handling
 
-Thanks for reviewing.
+Doug Anderson (1):
+      pinctrl: samsung: fix suspend/resume functionality
 
-Cheers
-James
+Linus Walleij (1):
+      pinctrl: pinconf: take the right mutex
 
+Tomasz Figa (5):
+      pinctrl: exynos: Add support for set_irq_wake of wake-up EINTs
+      ARM: EXYNOS: Fix EINT wake-up mask configuration when pinctrl is used
+      pinctrl: samsung: Add support for SoC-specific suspend/resume callbacks
+      pinctrl: samsung: Allow per-bank SoC-specific private data
+      pinctrl: exynos: Handle suspend/resume of GPIO EINT registers
+
+Wei Yongjun (1):
+      pinctrl: sunxi: fix error return code in sunxi_pinctrl_probe()
+
+ arch/arm/mach-exynos/include/mach/pm-core.h |  14 ++-
+ drivers/pinctrl/pinconf.c                   |   4 +-
+ drivers/pinctrl/pinctrl-coh901.c            |   3 +-
+ drivers/pinctrl/pinctrl-exynos.c            | 139 ++++++++++++++++++++++++-
+ drivers/pinctrl/pinctrl-exynos.h            |   1 +
+ drivers/pinctrl/pinctrl-samsung.c           | 154 ++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-samsung.h           |   9 ++
+ drivers/pinctrl/pinctrl-sunxi.c             |   7 +-
+ drivers/pinctrl/vt8500/pinctrl-wmt.c        |   3 +-
+ 9 files changed, 323 insertions(+), 11 deletions(-)
