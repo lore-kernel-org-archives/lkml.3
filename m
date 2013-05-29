@@ -1,60 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965339Ab3E2JSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:18:04 -0400
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:60566 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965261Ab3E2JSA (ORCPT
+	id S965355Ab3E2JSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:18:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59683 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965261Ab3E2JSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:18:00 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51A5C7C0.5040304@yandex-team.ru>
-Date: Wed, 29 May 2013 13:17:52 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 29 May 2013 05:18:10 -0400
+Date: Wed, 29 May 2013 02:17:16 -0700
+From: tip-bot for Gerlando Falauto <tipbot@zytor.com>
+Message-ID: <tip-af80b0fed67261dcba2ce2406db1d553d07cbe75@git.kernel.org>
+Cc: mingo@kernel.org, moinejf@free.fr, jgunthorpe@obsidianresearch.com,
+        arnd@arndb.de, Holger.Brunck@keymile.com,
+        thomas.petazzoni@free-electrons.com, kernel@wantstofly.org,
+        linux@arm.linux.org.uk, simon@sequanux.org,
+        ezequiel.garcia@free-electrons.com, tglx@linutronix.de,
+        joravec@drewtech.com, maxime.ripard@free-electrons.com,
+        rob@landley.net, nico@fluxnic.net, linux-kernel@vger.kernel.org,
+        ben-linux@fluff.org, hpa@zytor.com, grant.likely@linaro.org,
+        jason@lakedaemon.net, gerlando.falauto@keymile.com,
+        gregory.clement@free-electrons.com, sebastian.hesselbarth@gmail.com,
+        rob.herring@calxeda.com, andrew@lunn.ch
+Reply-To: mingo@kernel.org, moinejf@free.fr, jgunthorpe@obsidianresearch.com,
+        arnd@arndb.de, Holger.Brunck@keymile.com,
+        thomas.petazzoni@free-electrons.com, kernel@wantstofly.org,
+        linux@arm.linux.org.uk, joravec@drewtech.com, tglx@linutronix.de,
+        ezequiel.garcia@free-electrons.com, simon@sequanux.org,
+        maxime.ripard@free-electrons.com, nico@fluxnic.net, rob@landley.net,
+        jason@lakedaemon.net, grant.likely@linaro.org, hpa@zytor.com,
+        ben-linux@fluff.org, linux-kernel@vger.kernel.org,
+        gerlando.falauto@keymile.com, rob.herring@calxeda.com,
+        sebastian.hesselbarth@gmail.com, gregory.clement@free-electrons.com,
+        andrew@lunn.ch
+In-Reply-To: <20130506142539.152569748@linutronix.de>
+References: <20130506142539.152569748@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Generic chip:
+  Handle separate mask registers
+Git-Commit-ID: af80b0fed67261dcba2ce2406db1d553d07cbe75
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jesper Dangaard Brouer <brouer@redhat.com>, paulmck@linux.vnet.ibm.com,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-References: <519B8908.9080007@yandex-team.ru>   <1369150693.3301.233.camel@edumazet-glaptop>   <519BB90B.6080706@yandex-team.ru>   <1369188080.3301.268.camel@edumazet-glaptop>   <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru>   <1369225837.3301.324.camel@edumazet-glaptop>   <519CC2FB.2010006@yandex-team.ru>   <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>   <20130525113715.GA3795@linux.vnet.ibm.com>   <51A39E11.5020405@yandex-team.ru>  <1369699930.3301.494.camel@edumazet-glaptop>  <51A47496.6000100@yandex-team.ru> <1369787693.3301.586.camel@edumazet-glaptop>
-In-Reply-To: <1369787693.3301.586.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.05.2013 04:34, Eric Dumazet wrote:
-> On Tue, 2013-05-28 at 13:10 +0400, Roman Gushchin wrote:
->> On 28.05.2013 04:12, Eric Dumazet wrote:
->
->>> Adding a barrier() is probably what we want.
->>
->> I agree, inserting barrier() is also a correct and working fix.
->
-> Yeah, but I can not find a clean way to put it inside the "for (;;)"
+Commit-ID:  af80b0fed67261dcba2ce2406db1d553d07cbe75
+Gitweb:     http://git.kernel.org/tip/af80b0fed67261dcba2ce2406db1d553d07cbe75
+Author:     Gerlando Falauto <gerlando.falauto@keymile.com>
+AuthorDate: Mon, 6 May 2013 14:30:21 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 29 May 2013 10:57:10 +0200
 
-diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-index 2ae1371..74d5065 100644
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -107,7 +107,7 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-   *
-   */
-  #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
--       for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
-+       for (({barrier();}), pos = rcu_dereference_raw(hlist_nulls_first_rcu(head)); \
-                 (!is_a_nulls(pos)) &&                                           \
-                 ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
-                 pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+genirq: Generic chip: Handle separate mask registers
 
+There are cases where all irq_chip_type instances have separate mask
+registers, making a shared mask register cache unsuitable for the
+purpose.
 
+Introduce a new flag IRQ_GC_MASK_CACHE_PER_TYPE. If set, point the per
+chip mask pointer to the per chip private mask cache instead.
 
+[ tglx: Simplified code, renamed flag and massaged changelog ]
+
+Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Joey Oravec <joravec@drewtech.com>
+Cc: Lennert Buytenhek <kernel@wantstofly.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Holger Brunck <Holger.Brunck@keymile.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Simon Guinot <simon@sequanux.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Rob Landley <rob@landley.net>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Link: http://lkml.kernel.org/r/20130506142539.152569748@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irq.h       |  2 ++
+ kernel/irq/generic-chip.c | 17 ++++++++++-------
+ 2 files changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 38709a3..7f1f015 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -704,10 +704,12 @@ struct irq_chip_generic {
+  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
+  *				irq chips which need to call irq_set_wake() on
+  *				the parent irq. Usually GPIO implementations
++ * @IRQ_GC_MASK_CACHE_PER_TYPE:	Mask cache is chip type private
+  */
+ enum irq_gc_flags {
+ 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
+ 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
++	IRQ_GC_MASK_CACHE_PER_TYPE	= 1 << 2,
+ };
+ 
+ /* Generic chip callback functions */
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 113d9eb..da2a941 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -241,18 +241,21 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ {
+ 	struct irq_chip_type *ct = gc->chip_types;
+ 	unsigned int i;
++	u32 *mskptr = &gc->mask_cache, mskreg = ct->regs.mask;
+ 
+ 	raw_spin_lock(&gc_lock);
+ 	list_add_tail(&gc->list, &gc_list);
+ 	raw_spin_unlock(&gc_lock);
+ 
+-	/* Init mask cache ? */
+-	if (flags & IRQ_GC_INIT_MASK_CACHE)
+-		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
+-
+-	/* Initialize mask cache pointer */
+-	for (i = 0; i < gc->num_ct; i++)
+-		ct[i].mask_cache = &gc->mask_cache;
++	for (i = 0; i < gc->num_ct; i++) {
++		if (flags & IRQ_GC_MASK_CACHE_PER_TYPE) {
++			mskptr = &ct[i].mask_cache_priv;
++			mskreg = ct[i].regs.mask;
++		}
++		ct[i].mask_cache = mskptr;
++		if (flags & IRQ_GC_INIT_MASK_CACHE)
++			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
++	}
+ 
+ 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
+ 		if (!(msk & 0x01))
