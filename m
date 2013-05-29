@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967156Ab3E2XP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:15:29 -0400
-Received: from [207.46.163.26] ([207.46.163.26]:32616 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S966668Ab3E2XPV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:15:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Date: Wed, 29 May 2013 18:14:32 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4] KVM: PPC: Add support for IOMMU in-kernel handling
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: David Gibson <david@gibson.dropbear.id.au>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-References: <1369763138.18630.3@snotra> <51A53E20.3020205@ozlabs.ru>
-	<1369784115.18630.27@snotra> <51A547F0.8090406@ozlabs.ru>
-	<1369857949.18630.42@snotra> <51A68AE9.6070709@ozlabs.ru>
-In-Reply-To: <51A68AE9.6070709@ozlabs.ru> (from aik@ozlabs.ru on Wed May 29
-	18:10:33 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1369869272.18630.47@snotra>
+	id S967177Ab3E2XRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:17:01 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43641 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965660Ab3E2XQy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:16:54 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Tony Prisk <linux@prisktech.co.nz>, Alexey Charkov <alchark@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <51973C1D.2080404@prisktech.co.nz>
+Cc: VT8500/WM8505 Linux Kernel 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1368825532-30917-1-git-send-email-linux@prisktech.co.nz>
+ <1368825532-30917-5-git-send-email-linux@prisktech.co.nz>
+ <CABjd4Yw2LbnaUbQFW_bd_6WRGTA34-Vp_tUC2b4Jczj-MM8x1w@mail.gmail.com>
+ <51973C1D.2080404@prisktech.co.nz>
+Message-ID: <20130529231649.6058.4589@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 4/4] MAINTAINERS: vt8500: Add clk-vt8500.c to MAINTAINERS file
+Date: Wed, 29 May 2013 16:16:49 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 06:10:33 PM, Alexey Kardashevskiy wrote:
-> On 05/30/2013 06:05 AM, Scott Wood wrote:
-> > On 05/28/2013 07:12:32 PM, Alexey Kardashevskiy wrote:
-> >> On 05/29/2013 09:35 AM, Scott Wood wrote:
-> >> > On 05/28/2013 06:30:40 PM, Alexey Kardashevskiy wrote:
-> >> >> >> >>> @@ -939,6 +940,9 @@ struct kvm_s390_ucas_mapping {
-> >> >> >> >>> #define KVM_GET_DEVICE_ATTR      _IOW(KVMIO,  0xe2,  
-> struct
-> >> >> >> >>> kvm_device_attr)
-> >> >> >> >>> #define KVM_HAS_DEVICE_ATTR      _IOW(KVMIO,  0xe3,  
-> struct
-> >> >> >> >>> kvm_device_attr)
-> >> >> >> >>>
-> >> >> >> >>> +/* ioctl for SPAPR TCE IOMMU */
-> >> >> >> >>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xe4,  
-> struct
-> >> >> >> >>> kvm_create_spapr_tce_iommu)
-> >> >> >> >>
-> >> >> >> >> Shouldn't this go under the vm ioctl section?
-> >> >> >>
-> >> >> >>
-> >> >> >> The KVM_CREATE_SPAPR_TCE_IOMMU ioctl (the version for  
-> emulated
-> >> >> devices) is
-> >> >> >> in this section so I decided to keep them together. Wrong?
-> >> >> >
-> >> >> > You decided to keep KVM_CREATE_SPAPR_TCE_IOMMU together with
-> >> >> > KVM_CREATE_SPAPR_TCE_IOMMU?
-> >> >>
-> >> >> Yes.
-> >> >
-> >> > Sigh.  That's the same thing repeated.  There's only one IOCTL.
-> >> Nothing is
-> >> > being "kept together".
+Quoting Tony Prisk (2013-05-18 01:30:21)
+> On 18/05/13 18:40, Alexey Charkov wrote:
+> > On 18 May 2013 01:18, "Tony Prisk" <linux@prisktech.co.nz> wrote:
+> >> This file has missed being added under ARM/VT8500 ARM ARCHITECTURE,
+> >> and is maintained along with the rest of the vt8500 arch code.
 > >>
-> >> Sorry, I meant this ioctl - KVM_CREATE_SPAPR_TCE.
+> >> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> >> ---
+> >>   MAINTAINERS |    1 +
+> >>   1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/MAINTAINERS b/MAINTAINERS
+> >> index 3d7782b..5ab8ccb 100644
+> >> --- a/MAINTAINERS
+> >> +++ b/MAINTAINERS
+> >> @@ -1283,6 +1283,7 @@ M:        Tony Prisk <linux@prisktech.co.nz>
+> >>   L:     linux-arm-kernel@lists.infradead.org (moderated for
+> > non-subscribers)
+> >>   S:     Maintained
+> >>   F:     arch/arm/mach-vt8500/
+> >> +F:     drivers/clk/vt8500-vt8500.c
+> > This looks like a typo (clk vs. vt8500).
 > >
-> > But you didn't put it in the same section as KVM_CREATE_SPAPR_TCE.   
-> 0xe0
-> > begins a different section.
+> > Best,
+> > Alexey
+> >
+> eeek - oops.
 > 
-> It is not really obvious that there are sections as no comment defines
-> those :)
+> Mike,
+> 
+> Disregard this patch - I will send a more complete one through arm-soc 
+> as there are other files missing as well.
+> 
 
-There is a comment /* ioctls for fds returned by KVM_CREATE_DEVICE */
+Hi Tony,
 
-Putting KVM_CREATE_DEVICE in there was mainly to avoid dealing with the  
-ioctl number conflict mess in the vm-ioctl section, but at least that  
-one is related to the device control API. :-)
+I've taken patch #1 into clk-fixes.  I took patches #2 & #3 into
+clk-next from your previous series posted on May 13, which appear
+identical to the ones in this series.  In the future could you put a
+"v2" in the patch subject since those patches were re-posted?  It would
+have helped me catch it.
 
-> But yes, makes sense to move it up a bit and change the code to 0xad.
+I have not taken patch #4.
 
-0xad is KVM_KVMCLOCK_CTRL
+Does this all sound correct to you?
 
--Scott
+Thanks,
+Mike
+
+> Regards
+> Tony P
