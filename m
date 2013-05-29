@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab3E2OOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:14:34 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:50617 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935150Ab3E2OOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:14:32 -0400
+	id S966251Ab3E2OTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:19:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966092Ab3E2OTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 10:19:52 -0400
+Date: Wed, 29 May 2013 16:19:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Daniel Leung <daniel.leung@linux.intel.com>, srinivas.pandruvada@intel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
+ raw_event
+In-Reply-To: <516588E2.4030901@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1305291619040.30576@pobox.suse.cz>
+References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>    <51507136.4020308@linux.intel.com>    <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>    <38514.10.7.197.74.1365440092.squirrel@linux.intel.com> <33544.10.7.197.74.1365551736.squirrel@linux.intel.com>
+ <516588E2.4030901@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-	<20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-Date: Wed, 29 May 2013 17:14:31 +0300
-Message-ID: <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
- socket polling
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Eric Dumazet <erdnetdev@gmail.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 9:39 AM, Eliezer Tamir
-<eliezer.tamir@linux.intel.com> wrote:
-> Adds a new ndo_ll_poll method and the code that supports and uses it.
-> This method can be used by low latency applications to busy poll Ethernet
-> device queues directly from the socket code. The value of sysctl_net_ll_poll
-> controls how many microseconds to poll. Set to zero to disable.
+On Wed, 10 Apr 2013, Srinivas Pandruvada wrote:
 
-Unlike with TCP sockets, UDP sockets may receive packets from multiple
-sources and hence the receiving context may be steered to be executed
-on different cores through RSS or other Flow-Steering HW mechanisms
-which could mean different napi contexts for the same socket, is that
-a problem here? what's the severity?
+> I don't know if this should be fixed in client drivers since other drivers may
+> have this issue.
 
-Or.
+Agreed.
+
+Srinivas, how about the patch below, could you please test it in your 
+scenario to see whether it actually fixes the issue?
+
+Thanks.
+
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 264f550..65879b9 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1293,7 +1293,7 @@ int hid_input_report(struct hid_device *hid, int type, u8 *data, int size, int i
+ 
+ 	if (hdrv && hdrv->raw_event && hid_match_report(hid, report)) {
+ 		ret = hdrv->raw_event(hid, report, data, size);
+-		if (ret != 0) {
++		if (ret < 0) {
+ 			ret = ret < 0 ? ret : 0;
+ 			goto unlock;
+ 		}
+-- 
+Jiri Kosina
+SUSE Labs
