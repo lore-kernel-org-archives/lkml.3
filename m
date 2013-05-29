@@ -1,161 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965829Ab3E2LDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:03:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:13784 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965805Ab3E2LDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:03:46 -0400
-From: Glauber Costa <glommer@openvz.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        Glauber Costa <glommer@openvz.org>
-Subject: [PATCH v7 09/11] sched: record per-cgroup number of context switches
-Date: Wed, 29 May 2013 15:03:20 +0400
-Message-Id: <1369825402-31046-10-git-send-email-glommer@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
-References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+	id S965815Ab3E2LFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:05:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:47604 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965542Ab3E2LFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:05:01 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A5E0A9.70605@asianux.com>
+Date: Wed, 29 May 2013 19:04:09 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: rth@twiddle.net, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, josh@joshtriplett.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: alpha: kernel: typo issue, using '1' instead of '11'
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Context switches are, to this moment, a property of the runqueue. When
-running containers, we would like to be able to present a separate
-figure for each container (or cgroup, in this context).
 
-The chosen way to accomplish this is to increment a per cfs_rq or
-rt_rq, depending on the task, for each of the sched entities involved,
-up to the parent. It is trivial to note that for the parent cgroup, we
-always add 1 by doing this. Also, we are not introducing any hierarchy
-walks in here. An already existent walk is reused.
-There are, however, two main issues:
+For sending message:
 
- 1. the traditional context switch code only increment nr_switches when
- a different task is being inserted in the rq. Eventually, albeit not
- likely, we will pick the same task as before. Since for cfq and rt we
- only now which task will be next after the walk, we need to do the walk
- again, decrementing 1. Since this is by far not likely, it seems a fair
- price to pay.
+        *(unsigned int *)&cpu->ipc_buffer[0] = len;
+        cp1 = (char *) &cpu->ipc_buffer[1];
 
- 2. Those figures do not include switches from and to the idle or stop
- task. Those need to be recorded separately, which will happen in a
- follow up patch.
+But for receive message:
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
+                cnt = cpu->ipc_buffer[0] >> 32;
+                ...
+                       cp1 = (char *) &cpu->ipc_buffer[11];
+
+They are not pairs, it is typo issue of the redundency '1'.
+
+So need use '1' instead of '11'.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/sched/fair.c  | 18 ++++++++++++++++++
- kernel/sched/rt.c    | 15 +++++++++++++--
- kernel/sched/sched.h |  3 +++
- 3 files changed, 34 insertions(+), 2 deletions(-)
+ arch/alpha/kernel/smp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 414cf1c..b29e5dd 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3642,6 +3642,8 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- 		prev->sched_class->put_prev_task(rq, prev);
- 
- 	do {
-+		if (likely(prev))
-+			cfs_rq->nr_switches++;
- 		se = pick_next_entity(cfs_rq);
- 		set_next_entity(cfs_rq, se);
- 		cfs_rq = group_cfs_rq(se);
-@@ -3651,6 +3653,22 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- 	if (hrtick_enabled(rq))
- 		hrtick_start_fair(rq, p);
- 
-+	/*
-+	 * This condition is extremely unlikely, and most of the time will just
-+	 * consist of this unlikely branch, which is extremely cheap. But we
-+	 * still need to have it, because when we first loop through cfs_rq's,
-+	 * we can't possibly know which task we will pick. The call to
-+	 * set_next_entity above is not meant to mess up the tree in this case,
-+	 * so this should give us the same chain, in the same order.
-+	 */
-+	if (unlikely(p == prev)) {
-+		se = &p->se;
-+		for_each_sched_entity(se) {
-+			cfs_rq = cfs_rq_of(se);
-+			cfs_rq->nr_switches--;
-+		}
-+	}
-+
- 	return p;
- }
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 6c41fa1..894fc0b 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1326,13 +1326,16 @@ static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
- 	return next;
- }
- 
--static struct task_struct *_pick_next_task_rt(struct rq *rq)
-+static struct task_struct *
-+_pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- {
- 	struct sched_rt_entity *rt_se;
- 	struct task_struct *p;
- 	struct rt_rq *rt_rq  = &rq->rt;
- 
- 	do {
-+		if (likely(prev))
-+			rt_rq->rt_nr_switches++;
- 		rt_se = pick_next_rt_entity(rq, rt_rq);
- 		BUG_ON(!rt_se);
- 		rt_rq = group_rt_rq(rt_se);
-@@ -1341,6 +1344,14 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
- 	p = rt_task_of(rt_se);
- 	p->se.exec_start = rq_clock_task(rq);
- 
-+	/* See fair.c for an explanation on this */
-+	if (unlikely(p == prev)) {
-+		for_each_sched_rt_entity(rt_se) {
-+			rt_rq = rt_rq_of_se(rt_se);
-+			rt_rq->rt_nr_switches--;
-+		}
-+	}
-+
- 	return p;
- }
- 
-@@ -1359,7 +1370,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 	if (prev)
- 		prev->sched_class->put_prev_task(rq, prev);
- 
--	p = _pick_next_task_rt(rq);
-+	p = _pick_next_task_rt(rq, prev);
- 
- 	/* The running task is never eligible for pushing */
- 	if (p)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index a39eb9b..39d3284 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -273,6 +273,7 @@ struct cfs_rq {
- 	unsigned int nr_spread_over;
- #endif
- 
-+	u64 nr_switches;
- #ifdef CONFIG_SMP
- /*
-  * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-@@ -342,6 +343,8 @@ static inline int rt_bandwidth_enabled(void)
- struct rt_rq {
- 	struct rt_prio_array active;
- 	unsigned int rt_nr_running;
-+	u64 rt_nr_switches;
-+
- #if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
- 	struct {
- 		int curr; /* highest queued rt task prio */
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 7b60834..8beb6b2 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -264,7 +264,7 @@ recv_secondary_console_msg(void)
+ 		if (cnt <= 0 || cnt >= 80)
+ 			strcpy(buf, "<<< BOGUS MSG >>>");
+ 		else {
+-			cp1 = (char *) &cpu->ipc_buffer[11];
++			cp1 = (char *) &cpu->ipc_buffer[1];
+ 			cp2 = buf;
+ 			strcpy(cp2, cp1);
+ 			
 -- 
-1.8.1.4
-
+1.7.7.6
