@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966025Ab3E2MbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:31:20 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:59883 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965855Ab3E2MbT convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 29 May 2013 08:31:19 -0400
-Message-Id: <51A6113302000078000D99A3@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 29 May 2013 13:31:15 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-pciback: more uses of cached MSI-X capability
- offset
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S966037Ab3E2MeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:34:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965855Ab3E2MeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 08:34:08 -0400
+Date: Wed, 29 May 2013 14:30:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] proc: first_tid: fix the potential use-after-free
+Message-ID: <20130529123009.GA5741@redhat.com>
+References: <20130527202816.GA19277@redhat.com> <877gii2zt3.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <877gii2zt3.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+On 05/28, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > proc_task_readdir() verifies that the result of get_proc_task()
+> > is pid_alive() and thus its ->group_leader is fine too. However
+> > this is not necessarily true after rcu_read_unlock(), we need
+> > to recheck this after first_tid() does rcu_read_lock() again.
+>
+> I agree with you but you are missing something critical from your
+> explanation.  If a process has been passed through __unhash_process
+> then task->thread_group.next (aka next_thread) returns a pointer to the
+> process that was it's next thread in the thread group.  Importantly
+> that pointer is only guaranteed to point to valid memory until the rcu
+> grace period expires.
 
----
- drivers/xen/xen-pciback/pci_stub.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I tried to explain this below, in 1-4 steps... But OK, agreed, this
+should be explained more clearly.
 
---- 3.10-rc3/drivers/xen/xen-pciback/pci_stub.c
-+++ 3.10-rc3-xen-pciback-MSI-X-cap/drivers/xen/xen-pciback/pci_stub.c
-@@ -106,7 +106,7 @@ static void pcistub_device_release(struc
- 	else
- 		pci_restore_state(dev);
- 
--	if (pci_find_capability(dev, PCI_CAP_ID_MSIX)) {
-+	if (dev->msix_cap) {
- 		struct physdev_pci_device ppdev = {
- 			.seg = pci_domain_nr(dev->bus),
- 			.bus = dev->bus->number,
-@@ -371,7 +371,7 @@ static int pcistub_init_device(struct pc
- 	if (err)
- 		goto config_release;
- 
--	if (pci_find_capability(dev, PCI_CAP_ID_MSIX)) {
-+	if (dev->msix_cap) {
- 		struct physdev_pci_device ppdev = {
- 			.seg = pci_domain_nr(dev->bus),
- 			.bus = dev->bus->number,
+I'll update the changelog.
 
+> > Note that we need 2. and 3. only because of get_nr_threads() check,
+> > and this check was supposed to be optimization only.
+>
+> An optimization and denial of service attack prevention.  It keeps us
+> spinning for nearly unbounded amounts of time in the rcu critical
+> section.
 
+I do not really think we need this check to prevent the DoS attacks.
+
+The main loop does while_each_thread(), so it will stop after
+nr_threads iterations. And a user can always do llseek to trigger
+the "full" scan.
+
+But this is off-topic, and
+
+> But I agree it should not be needed from this part of
+> correctness.
+
+Yes.
+
+> >
+> > -	/* If nr exceeds the number of threads there is nothing todo */
+> >  	pos = NULL;
+> > +	/* If nr exceeds the number of threads there is nothing todo */
+>
+> Moving the comment is just noise and makes for confusing reading of your
+> patch.
+
+Well, I think this makes the code look a bit better. Without this change
+the code will be
+
+        /* If nr exceeds the number of threads there is nothing todo */
+        pos = NULL;
+        if (nr && nr >= get_nr_threads(leader))
+                goto out;
+        /* It could be unhashed before we take rcu lock */
+        if (!pid_alive(leader))
+                goto out;
+
+and the comments explaining the checks are not "simmetrical". But I won't
+argue, I'll update the patch and remove it. 3/3 changes this code anyway.
+
+Oleg.
 
