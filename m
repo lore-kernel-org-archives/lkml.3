@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934574Ab3E2BC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 21:02:29 -0400
-Received: from mx02.smart-weblications.de ([188.65.144.37]:45208 "EHLO
-	mx02.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934257Ab3E2BCZ (ORCPT
+	id S934343Ab3E2BGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 21:06:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34890 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863Ab3E2BGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 21:02:25 -0400
-Message-ID: <51A55381.9080807@smart-weblications.de>
-Date: Wed, 29 May 2013 03:01:53 +0200
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 28 May 2013 21:06:53 -0400
+Date: Wed, 29 May 2013 10:07:16 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: System slow down from udev
+Message-ID: <20130529010716.GD1893@kroah.com>
+References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
+ <1826731.cQudjZKeXZ@vostro.rjw.lan>
+ <CAE9FiQVC6ByeBmYojctsQ4n2_QV=hw_5zO=87DOeWZBfLH8cug@mail.gmail.com>
+ <2013173.c6WKZTQWxj@vostro.rjw.lan>
 MIME-Version: 1.0
-To: "Matthew O'Connor" <matt@ecsorl.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        andy@greyhouse.net, fubar@us.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com,
-        liquidhorse@gmail.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de> <519D5206.8080701@gmail.com> <519DEE6E.7060700@smart-weblications.de> <519E0F97.1050102@ecsorl.com>
-In-Reply-To: <519E0F97.1050102@ecsorl.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2013173.c6WKZTQWxj@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.05.2013 14:46, schrieb Matthew O'Connor:
-> On 05/23/2013 06:24 AM, Smart Weblications GmbH - Florian Wiessner wrote:
->> node02:/ocfs2/usr/src/linux-3.4.46# cat drivers/net/bonding/bond_alb.c.rej
-> My most sincere apologies - one more time, from a different mail server
-> that hopefully won't go around changing my attachments.  If this doesn't
-> work I guess sendmail will be the next alternative.
+On Wed, May 29, 2013 at 02:30:12AM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, May 28, 2013 05:01:41 PM Yinghai Lu wrote:
+> > On Tue, May 28, 2013 at 4:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Tuesday, May 28, 2013 04:46:30 PM Yinghai Lu wrote:
+> > >> On Tue, May 28, 2013 at 4:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> > On Tuesday, May 28, 2013 04:39:37 PM Yinghai Lu wrote:
+> > >> >> Raphael:
+> > >> >>
+> > >> >> Found one commit in your linus-pm cause user space very slow...
+> > >> >> at least from udev start...
+> > >> >
+> > >> > I obviously can't reproduce it, so it would be great if you could give me
+> > >> > more details.
+> > >> >
+> > >> > Is there anything unusual about your test system?
+> > >>
+> > >> they are normal nehalem ex, westmere ex and ivybridge ex 8 sockets system.
+> > >
+> > > Do all of them have the same problem?
+> > 
+> > yes
+> > 
+> > >
+> > > What distro is running there?
+> > 
+> > Using rescue initrd/root disk from opensuse 11.4 (?) and boot from network.
+> > 
+> > udevd version is 128.
 > 
+> I'm successfully running kernels including that commit on two different boxes
+> (dual-core and quad-core, both Intel, the quad-core one is Sandy Bridge) with
+> OpenSUSE 12.2 and 12.3.
+> 
+> There's a machine with an older OpenSUSE on it somewhere here, but I won't be
+> able to get to it before tomorrow evening.
+> 
+> I have no idea what's wrong at the moment.
+> 
+> Please attach your .config for comparison and maybe Greg will have an idea about what's up with udev vs that commit (Greg, the
+> commit in question, unfortunately far from trivial, is http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=acpi-hotplug&id=ac212b6980d8d5eda705864fc5a8ecddc6d6eacc).
 
-3.4.47 got released without that included :-/?!
+I don't see how this would "slow down" the boot process.  Can someone
+run the bootchart tool on the machine to see where the delays are?
 
-https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.4.47
+thanks,
 
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
+greg k-h
