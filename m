@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966243Ab3E2Ohv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 10:37:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36364 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966104Ab3E2Ohu (ORCPT
+	id S966308Ab3E2OkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 10:40:05 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:47976 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966162Ab3E2OkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 10:37:50 -0400
-Date: Wed, 29 May 2013 09:37:44 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Stephen Mell <sub.atomic.fusion@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Andrew Morgan <morgan@kernel.org>
-Subject: Re: securebits: add exec_inherit flag to prevent changes to process
- credentials during execve
-Message-ID: <20130529143744.GB15072@sergelap>
-References: <4537875.yLSqQy2YHM@pegasus>
+	Wed, 29 May 2013 10:40:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4537875.yLSqQy2YHM@pegasus>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
+	<20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
+	<CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
+Date: Wed, 29 May 2013 17:40:02 +0300
+Message-ID: <CALuTh9EcKCgx3pktq7FXkojhDxKn580csJV-u3BBokhhY2SrSg@mail.gmail.com>
+Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
+ socket polling
+From: yaniv saar <yaniv.mellanox@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Mell (sub.atomic.fusion@gmail.com):
-> From: Stephen Mell <sub.atomic.fusion@gmail.com>
-> 
-> Currently, it is nearly impossible to give a capability to a non-root
-> user that will stick around after the first execve.
+Hi Eliezer,
 
-By design capabilities are re-calculated upon every execve.  The point
-here is that you're not just trusting $user with the capability, you're
-trusting the program with the capability as well.  Despite what we do
-for the root user, if you drop the idea that you're also trusting the
-binary, and say "$user can run anything with those capabilities", then
-it's no longer posix caps.
+(If I'm too late then a future note...)
+Why make polling a system-wide configuration?
+Wouldn't it make more sense to implement a sock option?
+An even better solution might be aggregation/combination of both types
+of configurations.
 
-If you want to introduce a new LSM which does non-posix capabilities,
-that could be interesting.  But every little tweak will likely generate
-a heap of side effects that will take time to consider/discover.
+-- Yaniv Sa'ar
 
-The libcap-ng way of addressing this would be to have the program run as
-root with a capability bounding set which only allows the capabilities
-you want the user to have.
 
-> This patch adds a
-> new securebit, exec_inherit, which causes all credential modification
-> logic to be skipped. This is already possible, in a hackish fashion,
-> if a program reads another program into memory and jumps into it. This
-> patch would allow this to be done in a more consistent and less hacky
-> manner. Moreover, the sendmail exploit of old would not happen again,
-> as setuid and capability bits on programs are disregarded when
-> exec_inherit is active.
-> Use cases include allowing non-root users to bind to low numbered ports and use chroot. The securebit could be set in a pam module.
-
-Non-root users can do that in a private user namespace.
-
-> Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
-> ---
->  include/uapi/linux/securebits.h | 12 +++++++++++-
->  security/commoncap.c            |  5 +++++
->  2 files changed, 16 insertions(+), 1 deletion(-)
-> diff --git a/include/uapi/linux/securebits.h b/include/uapi/linux/securebits.h
-> index 985aac9..b779489 100644
-> --- a/include/uapi/linux/securebits.h
-> +++ b/include/uapi/linux/securebits.h
-> @@ -40,12 +40,22 @@
->  #define SECURE_KEEP_CAPS		4
->  #define SECURE_KEEP_CAPS_LOCKED		5  /* make bit-4 immutable */
->  
-> +/* When set, a process retains its capabilities when performing an
-> +   execve(). No modifications, such as those from suid bits or file
-> +   capabilities, are made. */
-> +#define SECURE_EXEC_INHERIT		6
-> +#define SECURE_EXEC_INHERIT_LOCKED	7  /* make bit-6 immutable */
-> +
-> +#define SECBIT_EXEC_INHERIT	(issecure_mask(SECURE_EXEC_INHERIT))
-> +#define SECBIT_EXEC_INHERIT_LOCKED (issecure_mask(SECURE_EXEC_INHERIT_LOCKED))
-> +
->  #define SECBIT_KEEP_CAPS	(issecure_mask(SECURE_KEEP_CAPS))
->  #define SECBIT_KEEP_CAPS_LOCKED (issecure_mask(SECURE_KEEP_CAPS_LOCKED))
->  
->  #define SECURE_ALL_BITS		(issecure_mask(SECURE_NOROOT) | \
->  				 issecure_mask(SECURE_NO_SETUID_FIXUP) | \
-> -				 issecure_mask(SECURE_KEEP_CAPS))
-> +				 issecure_mask(SECURE_KEEP_CAPS) | \
-> +				 issecure_mask(SECURE_EXEC_INHERIT))
->  #define SECURE_ALL_LOCKS	(SECURE_ALL_BITS << 1)
->  
->  #endif /* _UAPI_LINUX_SECUREBITS_H */
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index c44b6fe..998ee6e 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -484,6 +484,11 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
->  	int ret;
->  	kuid_t root_uid;
->  
-> +	if (issecure(SECURE_EXEC_INHERIT)) {
-> +		*new = *old;
-> +		return 0;
-> +	}
-> +
->  	effective = false;
->  	ret = get_file_caps(bprm, &effective, &has_cap);
->  	if (ret < 0)
+On Wed, May 29, 2013 at 5:14 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
+> On Wed, May 29, 2013 at 9:39 AM, Eliezer Tamir
+> <eliezer.tamir@linux.intel.com> wrote:
+>> Adds a new ndo_ll_poll method and the code that supports and uses it.
+>> This method can be used by low latency applications to busy poll Ethernet
+>> device queues directly from the socket code. The value of sysctl_net_ll_poll
+>> controls how many microseconds to poll. Set to zero to disable.
+>
+> Unlike with TCP sockets, UDP sockets may receive packets from multiple
+> sources and hence the receiving context may be steered to be executed
+> on different cores through RSS or other Flow-Steering HW mechanisms
+> which could mean different napi contexts for the same socket, is that
+> a problem here? what's the severity?
+>
+> Or.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
