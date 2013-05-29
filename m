@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965987Ab3E2M4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:56:49 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:46640 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965690Ab3E2M4o (ORCPT
+	id S965955Ab3E2NES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:04:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53319 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934624Ab3E2NER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 08:56:44 -0400
-Message-ID: <1369832201.5109.8.camel@edumazet-glaptop>
-Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 29 May 2013 05:56:41 -0700
-In-Reply-To: <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-	 <20130529063925.27486.46649.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 29 May 2013 09:04:17 -0400
+Date: Wed, 29 May 2013 15:03:40 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: "Richard W.M. Jones" <rjones@redhat.com>
+Cc: Kent Overstreet <koverstreet@google.com>,
+        Calvin Owens <jcalvinowens@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        majianpeng@gmail.com
+Subject: Re: [PATCH] md: Partially revert 2f6db2a7, which broke raid5
+Message-ID: <20130529130340.GC22724@kernel.dk>
+References: <20130517213223.GA2530@gmail.com>
+ <20130518070515.GL19781@kernel.dk>
+ <20130519175145.GC19194@moria.home.lan>
+ <20130529124357.GA15210@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529124357.GA15210@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
-> Adds a napi_id and a hashing mechanism to lookup a napi by id.
-> This will be used by subsequent patches to implement low latency
-> Ethernet device polling.
-> Based on a code sample by Eric Dumazet.
+On Wed, May 29 2013, Richard W.M. Jones wrote:
 > 
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> ---
+> On Sun, May 19, 2013 at 10:51:45AM -0700, Kent Overstreet wrote:
+> > Sorry for the delay - been vacationing. Reproduced the original bug,
+> > here's a patch that fixes it:
+> > 
+> > 
+> > commit 402f5db3708b2062795a384a3d8397cf702e27bc
+> > Author: Kent Overstreet <koverstreet@google.com>
+> > Date:   Sun May 19 10:27:07 2013 -0700
+> > 
+> >     raid5: Initialize bi_vcnt
+> >     
+> >     The patch that converted raid5 to use bio_reset() forgot to initialize
+> >     bi_vcnt.
+> >     
+> >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> >     Cc: NeilBrown <neilb@suse.de>
+> >     Cc: Jens Axboe <axboe@kernel.dk>
+> >     Cc: linux-raid@vger.kernel.org
+> > 
+> > diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> > index 9359828..753f318 100644
+> > --- a/drivers/md/raid5.c
+> > +++ b/drivers/md/raid5.c
+> > @@ -664,6 +664,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+> >  				bi->bi_rw |= REQ_FLUSH;
+> >  
+> > +			bi->bi_vcnt = 1;
+> >  			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+> >  			bi->bi_io_vec[0].bv_offset = 0;
+> >  			bi->bi_size = STRIPE_SIZE;
+> > @@ -701,6 +702,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  			else
+> >  				rbi->bi_sector = (sh->sector
+> >  						  + rrdev->data_offset);
+> > +			rbi->bi_vcnt = 1;
+> >  			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+> >  			rbi->bi_io_vec[0].bv_offset = 0;
+> >  			rbi->bi_size = STRIPE_SIZE;
+> 
+> Ditto to the previous follow up.  We've been tracking this
+> bug for nearly a month:
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=962079
+> 
+> Please include this (or the other) patch to fix it.
 
-OK this looks good enough for inclusion.
+I'm assuming both Kent and I are waiting for Neil to pick it up. Neil, I
+can include this in my next round going upstream, just let me know. It
+should have been sent upstream a while back, sorry guys.
 
-If a v7 ever is submitted, please add a 'static' for
-
-static DEFINE_SPINLOCK(napi_hash_lock);
-static unsigned int napi_gen_id;
-static DEFINE_HASHTABLE(napi_hash, 8);
-
-If David chose to apply v6, I'll submit a patch for this.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-
-
+-- 
+Jens Axboe
 
