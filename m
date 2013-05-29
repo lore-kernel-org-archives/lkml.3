@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966876Ab3E2UUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 16:20:47 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:36693 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966780Ab3E2UUl (ORCPT
+	id S966897Ab3E2UVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 16:21:05 -0400
+Received: from gw01.mail.saunalahti.fi ([195.197.172.115]:58795 "EHLO
+	gw01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966874Ab3E2UUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 16:20:41 -0400
-Message-ID: <1369858835.1971.26.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
- socket polling
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, David Miller <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 29 May 2013 21:20:35 +0100
-In-Reply-To: <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-	 <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-	 <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19900.004
-X-TM-AS-Result: No--22.817600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Wed, 29 May 2013 16:20:49 -0400
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 May 2013 16:20:48 EDT
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH] HID: multitouch: prevent memleak with the allocated name
+Date: Wed, 29 May 2013 23:12:23 +0300
+Message-Id: <1369858343-681-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 17:14 +0300, Or Gerlitz wrote:
-> On Wed, May 29, 2013 at 9:39 AM, Eliezer Tamir
-> <eliezer.tamir@linux.intel.com> wrote:
-> > Adds a new ndo_ll_poll method and the code that supports and uses it.
-> > This method can be used by low latency applications to busy poll Ethernet
-> > device queues directly from the socket code. The value of sysctl_net_ll_poll
-> > controls how many microseconds to poll. Set to zero to disable.
-> 
-> Unlike with TCP sockets, UDP sockets may receive packets from multiple
-> sources and hence the receiving context may be steered to be executed
-> on different cores through RSS or other Flow-Steering HW mechanisms
-> which could mean different napi contexts for the same socket, is that
-> a problem here? what's the severity?
+mt_free_input_name() was never called during .remove(): hid_hw_stop()
+removes the hid_input items in hdev->inputs, and so the list is
+therefore empty after the call. In the end, we never free the special
+names that has been allocated during .probe().
 
-Maybe ARFS could be extended so the driver can tell whether a UDP socket
-it's steering for is connected or not.  Then for disconnected sockets
-the driver can use a filter that only matches destination address.
-(Though that's probably undesirable if the socket has SO_REUSEPORT set.)
+We switch to devm_kzalloc that manages resources when driver is removed.
 
-Ben.
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Reported-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-multitouch.c |   37 +++++++++++++------------------------
+ 1 files changed, 13 insertions(+), 24 deletions(-)
 
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index d99b959..1f5876e 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -261,14 +261,6 @@ static struct mt_class mt_classes[] = {
+ 	{ }
+ };
+ 
+-static void mt_free_input_name(struct hid_input *hi)
+-{
+-	struct hid_device *hdev = hi->report->device;
+-
+-	if (hi->input->name != hdev->name)
+-		kfree(hi->input->name);
+-}
+-
+ static ssize_t mt_show_quirks(struct device *dev,
+ 			   struct device_attribute *attr,
+ 			   char *buf)
+@@ -412,10 +404,12 @@ static void mt_pen_report(struct hid_device *hid, struct hid_report *report)
+ static void mt_pen_input_configured(struct hid_device *hdev,
+ 					struct hid_input *hi)
+ {
+-	char *name = kzalloc(strlen(hi->input->name) + 5, GFP_KERNEL);
+-	if (name) {
+-		sprintf(name, "%s Pen", hi->input->name);
+-		mt_free_input_name(hi);
++	char *name;
++
++	if (hdev->name) {
++		name = devm_kzalloc(&hdev->dev, strlen(hdev->name) + 5,
++							GFP_KERNEL);
++		sprintf(name, "%s Pen", hdev->name);
+ 		hi->input->name = name;
+ 	}
+ 
+@@ -925,16 +919,18 @@ static void mt_post_parse(struct mt_device *td)
+ static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
+ {
+ 	struct mt_device *td = hid_get_drvdata(hdev);
+-	char *name = kstrdup(hdev->name, GFP_KERNEL);
+-
+-	if (name)
+-		hi->input->name = name;
+ 
+ 	if (hi->report->id == td->mt_report_id)
+ 		mt_touch_input_configured(hdev, hi);
+ 
+ 	if (hi->report->id == td->pen_report_id)
+ 		mt_pen_input_configured(hdev, hi);
++
++	if (!hi->input->name) {
++		hi->input->name = devm_kzalloc(&hdev->dev,
++					strlen(hdev->name) + 1, GFP_KERNEL);
++		strcpy(hi->input->name, hdev->name);
++	}
+ }
+ 
+ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -993,7 +989,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret)
+-		goto hid_fail;
++		goto fail;
+ 
+ 	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
+ 
+@@ -1005,9 +1001,6 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 
+ 	return 0;
+ 
+-hid_fail:
+-	list_for_each_entry(hi, &hdev->inputs, list)
+-		mt_free_input_name(hi);
+ fail:
+ 	kfree(td->fields);
+ 	kfree(td);
+@@ -1037,14 +1030,10 @@ static int mt_resume(struct hid_device *hdev)
+ static void mt_remove(struct hid_device *hdev)
+ {
+ 	struct mt_device *td = hid_get_drvdata(hdev);
+-	struct hid_input *hi;
+ 
+ 	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
+ 	hid_hw_stop(hdev);
+ 
+-	list_for_each_entry(hi, &hdev->inputs, list)
+-		mt_free_input_name(hi);
+-
+ 	kfree(td);
+ 	hid_set_drvdata(hdev, NULL);
+ }
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.7.6
 
