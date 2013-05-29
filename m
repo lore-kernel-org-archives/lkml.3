@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab3E2DJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 May 2013 23:09:10 -0400
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:19789
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756241Ab3E2DJJ (ORCPT
+	id S1759497Ab3E2DLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 May 2013 23:11:11 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:56086 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759483Ab3E2DLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 May 2013 23:09:09 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 May 2013 23:09:09 EDT
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 29 May 2013 10:54:30 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Jingchang Lu <b35083@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <john.stultz@linaro.org>, <tglx@linutronix.de>,
-        <daniel.lezcano@linaro.org>, <s.hauer@pengutronix.de>
-Subject: Re: [PATCH v5] clocksource: add Freescale Vybrid pit timer support
-Message-ID: <20130529025428.GE370@S2101-09.ap.freescale.net>
-References: <1369732899-17142-1-git-send-email-b35083@freescale.com>
+	Tue, 28 May 2013 23:11:10 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <haojian.zhuang@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] bring up pxa988 with DT
+Date: Wed, 29 May 2013 11:10:41 +0800
+Message-ID: <1369797042-22174-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1369732899-17142-1-git-send-email-b35083@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 05:21:39PM +0800, Jingchang Lu wrote:
-> Add Freescale Vybrid Family period interrupt timer support.
-> 
-> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+This patch is supposed to bring up pxa988 SMP.
+will change to use CLOCKSOURCE later.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Neil Zhang (1):
+  ARM: mmp: bring up pxa988 with device tree support
+
+ arch/arm/boot/dts/pxa988-dkb.dts          |   36 ++++++
+ arch/arm/boot/dts/pxa988.dtsi             |  189 +++++++++++++++++++++++++++++
+ arch/arm/mach-mmp/Kconfig                 |   27 ++++
+ arch/arm/mach-mmp/Makefile                |    2 +
+ arch/arm/mach-mmp/common.c                |   11 ++-
+ arch/arm/mach-mmp/common.h                |    2 +
+ arch/arm/mach-mmp/headsmp.S               |  104 ++++++++++++++++
+ arch/arm/mach-mmp/include/mach/addr-map.h |    6 +
+ arch/arm/mach-mmp/mmpx-dt.c               |   74 +++++++++++
+ arch/arm/mach-mmp/platsmp.c               |  163 +++++++++++++++++++++++++
+ arch/arm/mach-mmp/reset.c                 |   66 ++++++++++
+ arch/arm/mach-mmp/reset.h                 |   29 +++++
+ drivers/clk/mmp/Makefile                  |    1 +
+ 13 files changed, 709 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/boot/dts/pxa988-dkb.dts
+ create mode 100644 arch/arm/boot/dts/pxa988.dtsi
+ create mode 100644 arch/arm/mach-mmp/headsmp.S
+ create mode 100644 arch/arm/mach-mmp/mmpx-dt.c
+ create mode 100644 arch/arm/mach-mmp/platsmp.c
+ create mode 100644 arch/arm/mach-mmp/reset.c
+ create mode 100644 arch/arm/mach-mmp/reset.h
+
+-- 
+1.7.4.1
 
