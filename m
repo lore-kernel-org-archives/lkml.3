@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966113Ab3E2NHp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:07:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47238 "EHLO bear.ext.ti.com"
+	id S966064Ab3E2NHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:07:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41929 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966072Ab3E2NHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:07:13 -0400
+	id S934837Ab3E2NHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 09:07:09 -0400
 From: Ravi Babu <ravibabu@ti.com>
 To: <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
         Ravi Babu <ravibabu@ti.com>
-Subject: [PATCH v1 2/3] usb: musb: core: added babble recovery func-ptr to musb->ops
-Date: Wed, 29 May 2013 18:37:03 +0530
-Message-ID: <1369832824-29071-3-git-send-email-ravibabu@ti.com>
+Subject: [PATCH v1 0/3] babble error workaround for am335x platform
+Date: Wed, 29 May 2013 18:37:01 +0530
+Message-ID: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
-References: <1369832824-29071-1-git-send-email-ravibabu@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding babble_recovery operation as part of musb->ops, used
-to recover from babble condition during babble interrupt.
+During the babble condition on usb bus, the musb controller removes the 
+session and stops host mode functionality. All the devices connected 
+to root port will be disconnected due to this babble event.
 
-Signed-off-by: Ravi Babu <ravibabu@ti.com>
----
- drivers/usb/musb/musb_core.c |    6 ++++++
- drivers/usb/musb/musb_core.h |    7 +++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+	As part of recovery of babble bus condition, restarting the
+controller is needed as all devices got disconnected. Just setting the 
+session bit would not be sufficient as the configured endpoint fifo
+register getting changed during this condition as confirmed by HW/IP
+owner of musb controller. 
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index ab6fa39..411c29d 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -857,6 +857,12 @@ b_host:
- 		}
- 	}
- 
-+	/* handle babble condition */
-+	if (int_usb & MUSB_INTR_BABBLE) {
-+		pr_info("babble: restarting the musb controller..");
-+		musb_babble_recovery(musb);
-+	}
-+
- #if 0
- /* REVISIT ... this would be for multiplexing periodic endpoints, or
-  * supporting transfer phasing to prevent exceeding ISO bandwidth
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index f96e899..bf37dc9 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -213,6 +213,8 @@ struct musb_platform_ops {
- 	int	(*adjust_channel_params)(struct dma_channel *channel,
- 				u16 packet_sz, u8 *mode,
- 				dma_addr_t *dma_addr, u32 *len);
-+
-+	void	(*babble_recovery)(struct musb *musb);
- };
- 
- /*
-@@ -590,4 +592,9 @@ static inline int musb_platform_exit(struct musb *musb)
- 	return musb->ops->exit(musb);
- }
- 
-+static inline void musb_babble_recovery(struct musb *musb)
-+{
-+	if (musb->ops->babble_recovery)
-+		musb->ops->babble_recovery(musb);
-+}
- #endif	/* __MUSB_CORE_H__ */
--- 
-1.7.0.4
+	This patch set series adds the support to handle the babble
+error recovery mechanism, this can be extended to other musb platforms.
+
+This patch has been verified on tree [1] and tested on am335x platforms.
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+
+Ravi Babu (3):
+  usb: musb: core: added musb_restart() API to handle babble condition
+  usb: musb: core: added babble recovery func-ptr to musb->ops
+  usb: musb: dsps: handle babble condition for dsps platform
+
+ drivers/usb/musb/musb_core.c |   30 ++++++++++++++++++++++++++++++
+ drivers/usb/musb/musb_core.h |    8 ++++++++
+ drivers/usb/musb/musb_dsps.c |   34 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 71 insertions(+), 1 deletions(-)
 
