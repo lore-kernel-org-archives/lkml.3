@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965014Ab3E2Hiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 03:38:54 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:60221 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948Ab3E2Hiw (ORCPT
+	id S965021Ab3E2Hjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 03:39:44 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:62581 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935099Ab3E2Hjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 03:38:52 -0400
-From: Nikolay Balandin <n.a.balandin@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Nikolay Balandin <nbalandin@dev.rtsoft.ru>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] drivers/misc: at25: convert to use devm_kzalloc
-Date: Tue, 28 May 2013 13:01:21 -0700
-Message-Id: <1369771281-5527-1-git-send-email-n.a.balandin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 29 May 2013 03:39:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130529090902.66c29c26@amdc308.digital.local>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+	<2272781.tC3OqoQmKI@vostro.rjw.lan>
+	<20130528152625.1b7833e5@amdc308.digital.local>
+	<76114024.UaPHgm94jK@vostro.rjw.lan>
+	<CAKohpon8CScv_GgXL4eTvKqPo1oC67TujMH4WdOQCit7jz+FeQ@mail.gmail.com>
+	<20130529090902.66c29c26@amdc308.digital.local>
+Date: Wed, 29 May 2013 13:09:41 +0530
+Message-ID: <CAKohpo=xuasNEaOBajze2nGVX48_8AE+3eWwbmhXcG9r7PG+EA@mail.gmail.com>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
+ governor - tests results
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+On 29 May 2013 12:39, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> I also agree. Moreover, I think that there should be only one set of
+> "boost" sysfs entries either it is supported by HW (Intel) or SW (ARM).
 
-Use devm_kzalloc to make cleanup paths simpler
+Yes, you need to change acpi-cpufreq driver too to use this common
+infrastructure.
 
-Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
----
- drivers/misc/eeprom/at25.c |   25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+> I can think of two "basic" one:
+> - max_turbo_freq (ro)
 
-diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
-index ad8fd8e..840b359 100644
---- a/drivers/misc/eeprom/at25.c
-+++ b/drivers/misc/eeprom/at25.c
-@@ -371,11 +371,10 @@ static int at25_probe(struct spi_device *spi)
- 		if (np) {
- 			err = at25_np_to_chip(&spi->dev, np, &chip);
- 			if (err)
--				goto fail;
-+				return err;
- 		} else {
- 			dev_err(&spi->dev, "Error: no chip description\n");
--			err = -ENODEV;
--			goto fail;
-+			return -ENODEV;
- 		}
- 	} else
- 		chip = *(struct spi_eeprom *)spi->dev.platform_data;
-@@ -389,8 +388,7 @@ static int at25_probe(struct spi_device *spi)
- 		addrlen = 3;
- 	else {
- 		dev_dbg(&spi->dev, "unsupported address type\n");
--		err = -EINVAL;
--		goto fail;
-+		return -EINVAL;
- 	}
- 
- 	/* Ping the chip ... the status register is pretty portable,
-@@ -400,14 +398,12 @@ static int at25_probe(struct spi_device *spi)
- 	sr = spi_w8r8(spi, AT25_RDSR);
- 	if (sr < 0 || sr & AT25_SR_nRDY) {
- 		dev_dbg(&spi->dev, "rdsr --> %d (%02x)\n", sr, sr);
--		err = -ENXIO;
--		goto fail;
-+		return -ENXIO;
- 	}
- 
--	if (!(at25 = kzalloc(sizeof *at25, GFP_KERNEL))) {
--		err = -ENOMEM;
--		goto fail;
--	}
-+	at25 = devm_kzalloc(&spi->dev, sizeof(struct at25_data), GFP_KERNEL);
-+	if (!at25)
-+		return -ENOMEM;
- 
- 	mutex_init(&at25->lock);
- 	at25->chip = chip;
-@@ -439,7 +435,7 @@ static int at25_probe(struct spi_device *spi)
- 
- 	err = sysfs_create_bin_file(&spi->dev.kobj, &at25->bin);
- 	if (err)
--		goto fail;
-+		return err;
- 
- 	if (chip.setup)
- 		chip.setup(&at25->mem, chip.context);
-@@ -453,10 +449,6 @@ static int at25_probe(struct spi_device *spi)
- 		(chip.flags & EE_READONLY) ? " (readonly)" : "",
- 		at25->chip.page_size);
- 	return 0;
--fail:
--	dev_dbg(&spi->dev, "probe err %d\n", err);
--	kfree(at25);
--	return err;
- }
- 
- static int at25_remove(struct spi_device *spi)
-@@ -465,7 +457,6 @@ static int at25_remove(struct spi_device *spi)
- 
- 	at25 = spi_get_drvdata(spi);
- 	sysfs_remove_bin_file(&spi->dev.kobj, &at25->bin);
--	kfree(at25);
- 	return 0;
- }
- 
--- 
-1.7.9.5
+This is surely per policy as two separate clusters can have separate values.
+And probably a better one would be scaling_boost_frequencies, that will
+list all boost frequencies.
 
+> - turbo_mode/boost (rw)
+
+I am confused with these two names: boost and turbo.. Probably we
+should use a single name everywhere. Because acpi-cpufreq is already
+using boost, we might shift to that.
+
+> - /sys/devices/system/cpu/cpufreq/boost
+
+Obviously this one.
+
+> On the other hand first option would be used with systems, where
+> per-core (or core sets) frequency setting is possible (b.L, Snapdragon
+> S4)
+
+For now this feature would be enabled on all clusters and controlled
+by cpu/cpufreq/boost.
+
+> To sum up - the idea is as follow:
+>
+> 1. cpufreq_driver exports turbo_mode=1 when it supports overclocking
+> (this support can be hardcoded or read from device tree)
+>
+> 2. Then proper entries are exported to sysfs.
+>
+> 3. User via sysfs (at [*]) can enable/disable the feature on demand
+
+Bingo!!
