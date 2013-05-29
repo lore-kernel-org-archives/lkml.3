@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966176Ab3E2Nhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 09:37:32 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:50496 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966078Ab3E2Nh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 09:37:29 -0400
-Message-ID: <1369834647.5109.15.camel@edumazet-glaptop>
-Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
- socket polling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 29 May 2013 06:37:27 -0700
-In-Reply-To: <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>
-	 <20130529063935.27486.18610.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S966193Ab3E2Nhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 09:37:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57442 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966078Ab3E2Nhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 09:37:37 -0400
+Date: Wed, 29 May 2013 15:37:35 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] pktcdvd: silence static checker warning
+In-Reply-To: <20130516081108.GC7494@elgon.mountain>
+Message-ID: <alpine.LNX.2.00.1305291537120.30576@pobox.suse.cz>
+References: <20130516081108.GC7494@elgon.mountain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+On Thu, 16 May 2013, Dan Carpenter wrote:
 
-> +/* we don't mind a ~2.5% imprecision */
-> +#define TSC_MHZ (tsc_khz >> 10)
-> +
-> +static inline unsigned long ll_end_time(void)
-> +{
-> +	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
-> +}static inline unsigned long ll_end_time(void)
->+{
->+	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
->+}
+> Static checkers complain about widening the binary "not" operations here
+> because sectors are u64 and "(pd)->settings.size" is unsigned int.
+> It unintentionally clears the high 32 bits of the sector.  This means
+> that the driver won't work for devices with over 2TB of space.  Since
+> this is a DVD drive, we're unlikely to reach that limit, but we may as
+> well silence the warning.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+> index 898fa74..09142c4 100644
+> --- a/drivers/block/pktcdvd.c
+> +++ b/drivers/block/pktcdvd.c
+> @@ -83,7 +83,8 @@
+>  
+>  #define MAX_SPEED 0xffff
+>  
+> -#define ZONE(sector, pd) (((sector) + (pd)->offset) & ~((pd)->settings.size - 1))
+> +#define ZONE(sector, pd) (((sector) + (pd)->offset) & \
+> +			~(sector_t)((pd)->settings.size - 1))
+>  
+>  static DEFINE_MUTEX(pktcdvd_mutex);
+>  static struct pktcdvd_device *pkt_devs[MAX_WRITERS];
 
-This can overflow.
+Makes sense. Applied, thanks Dan.
 
-Multiply is giving 32bits, as tsc_khz is an int, and sysctl_net_ll_poll
-is an int.
-
-unsigned long sysctl_net_ll_poll ?
-
-Also, if we want this to work on i386, the correct type to use for
-ll_end_time(void) would be cycles_t
-
-
-
+-- 
+Jiri Kosina
+SUSE Labs
