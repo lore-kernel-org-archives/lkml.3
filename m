@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966978Ab3E2WVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 18:21:00 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54374 "EHLO hydra.sisk.pl"
+	id S967060Ab3E2WXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 18:23:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965430Ab3E2WUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 18:20:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] cpufreq: ondemand: Increase frequency to any value proportional to load
-Date: Thu, 30 May 2013 00:29:49 +0200
-Message-ID: <3000308.Hi6zX8my0D@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51A61BAC.2050203@semaphore.gr>
-References: <51A3C6CF.6080104@semaphore.gr> <1567913.u8NiyqJmvF@vostro.rjw.lan> <51A61BAC.2050203@semaphore.gr>
+	id S966196Ab3E2WXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 18:23:16 -0400
+Date: Thu, 30 May 2013 00:22:13 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Russ Anderson <rja@sgi.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+In-Reply-To: <20130529210115.GC28027@sgi.com>
+Message-ID: <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
+References: <20130522162747.GA20816@sgi.com> <20130523115801.GJ14575@console-pimps.org> <20130523203234.GD20913@sgi.com> <20130524074331.GL14575@console-pimps.org> <20130529210115.GC28027@sgi.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 29, 2013 06:15:56 PM Stratos Karafotis wrote:
-> On 05/28/2013 11:54 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, May 28, 2013 08:03:19 PM Stratos Karafotis wrote:
-> >> I mean any value of freq table. Please let me know if you want me to rephrase
-> >> it in description.
+On Wed, 29 May 2013, Russ Anderson wrote:
+
+> > What appears to be happening is that your the EFI runtime services code
+> > is calling into the EFI boot services code, which is definitely a bug in
+> > your firmware because we're at runtime, but we've seen other machines
+> > that do similar things so we usually handle it just fine. However, what
+> > makes your case different, and the reason you see the above splat, is
+> > that it's using the physical address of the EFI boot services region,
+> > not the virtual one we setup with SetVirtualAddressMap(). Which is a
+> > second firmware bug. Again, we have seen other machines that access
+> > physical addresses after SetVirtualAddressMap(), but until now we
+> > haven't had any non-optional code that triggered them.
 > > 
-> > Yes, it would be nice to be more precise.
-> 
-> OK sure, I will add a more precise description.
-> 
-> 
-> > Which is equivalent to saying that __cpufreq_driver_getavg() is not useful and
-> > may be removed (but the patch doesn't do that and I wonder why?), but surely
-> > the developer who added it wouldn't agree.
+> > The only reason I can see that the offending commit would introduce this
+> > problem is because it calls QueryVariableInfo() at boot time. I notice
+> > that your machine is an SGI UV one, is there any chance you could get a
+> > firmware fix for this? If possible, it would be also good to confirm
+> > that it's this chunk of code in setup_efi_vars(),
 > > 
-> > So, please explain: why can we drop __cpufreq_driver_getavg()?
-> > 
+> > 	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+> > 				EFI_VARIABLE_NON_VOLATILE |
+> > 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> > 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
+> > 				&remaining_size, &var_size);
 > 
-> With the new proposed method the next frequency is not dependent from current
-> or average frequency. The next frequency is dependent only from load.
-> So, we don't need support for freq feedback from hardware anymore.
-
-OK, but that's a more significant change than the changelog suggests.
-The changelog should tell the whole story and explain the rationale. :-)
-
-So, please explain that in fact it is not necessary to use the current or
-average frequency to compute the target and why that is the case.
-
-Also the patch should remove __cpufreq_driver_getavg() and the callback used by
-it, since that code will be dead after applying it anyway.
-
-> Even if, due to underlying hardware coordination mechanism, CPU runs in different 
-> frequency than the actual, the calculation of load and of target frequency will
-> remain the unaffected, with this patch.
+> This does trigger the problem.  Note that the definition of
+> QueryVariableInfo() in the UEFI spec says:
 > 
-> With full respect to ondemand coauthor, and if the new method is acceptable,
-> I could send a patch to revert the original one about the IA32_APERF and
-> IA32_MPERF MSR support.
-
-I'm not sure what you mean by "revert", but please do as I said above.
-
-> >> Thus, in the comparison with up_threshold to increase frequency we actually
-> >> do this (in cases that getavg is not implemented):
-> >> if (load > up_theshold)
-> >> 	increase to max
-> >>
-> >> So, after the patch we keep the same comparison to decide about the max frequency.
-> >> I thought, that below up_threshold is 'fair' to decide about the next
-> >> frequency with formula that frequency is proportional to load.
-> >> For example in a CPU with min freq 100MHz and max 1000MHz with a
-> >> load 50 target frequency should be 500MHz.
-> > 
-> > Well, that sounds reasonable, but the patch actually does more than that.
+>   The returned MaximumVariableStorageSize, RemainingVariableStorageSize,
+>   MaximumVariableSize information may change immediately after the call
+>   based on other runtime activities including asynchronous error events.
+>   Also, these values associated with different attributes are not
+>   additive in nature.
 > 
-> I'm sorry, but I didn't understand your last point.
+> Note the values may be accurate at the point in time when returned,
+> but may not be after that.
+> 
+>   After the system has transitioned into runtime (after
+>   ExitBootServices() is called), an implementation may not be able to
+>   accurately return information about the Boot Services variable store.
+>   In such cases, EFI_INVALID_PARAMETER should be returned.
+> 
+> It is not clear to me exactly when ExitBootServices() is called.
+> Our bios is returning a failing indication on the call.
 
-Please see above.
+Yes, but this call is clearly happening way before ExitBootServices() -- 
+see the surrounding code, see for example this in efi_main():
 
-The changelog doesn't even mention that the code is being switched from using
-measured past frequencies to not using them, because you think that there's a
-better way of computing the target (which by the way I can agree with :-)).
+[ ... snip ... ]
+	setup_efi_vars(boot_params);
 
-Thanks,
-Rafael
+	setup_efi_pci(boot_params);
 
+	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+				EFI_LOADER_DATA, sizeof(*gdt),
+				(void **)&gdt);
+	if (status != EFI_SUCCESS) {
+		efi_printk("Failed to alloc mem for gdt structure\n");
+		goto fail;
+	}
+[ ... snip ... ]
+
+We are calling QueryVariableInfo() in setup_efi_vars(), and later on 
+AllocatePool is being called (through boot table). That'd inherently fail 
+if we were calling it after ExitBootServices() has happened, but I believe 
+that call is succeeding on your affected system as well.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jiri Kosina
+SUSE Labs
+
