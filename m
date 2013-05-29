@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965394Ab3E2JXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:23:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59799 "EHLO
+	id S965414Ab3E2JZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:25:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59820 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965201Ab3E2JXv (ORCPT
+	with ESMTP id S965389Ab3E2JZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:23:51 -0400
-Date: Wed, 29 May 2013 02:23:37 -0700
-From: tip-bot for Grant Likely <tipbot@zytor.com>
-Message-ID: <tip-e8bd834f73714378ef110a64287db1b77033c8da@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1369793454-19197-2-git-send-email-grant.likely@linaro.org>
-References: <1369793454-19197-2-git-send-email-grant.likely@linaro.org>
+	Wed, 29 May 2013 05:25:13 -0400
+Date: Wed, 29 May 2013 02:24:53 -0700
+From: tip-bot for Andreas Fenkart <tipbot@zytor.com>
+Message-ID: <tip-d671a605580d2caafc77f1a25bcf8435795df6fe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andreas.fenkart@streamunlimited.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.fenkart@streamunlimited.com, tglx@linutronix.de
+In-Reply-To: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
+References: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: irqchip:
-  Add mask to block out invalid irqs
-Git-Commit-ID: e8bd834f73714378ef110a64287db1b77033c8da
+Subject: [tip:irq/core] genirq: Add kerneldoc for irq_disable.
+Git-Commit-ID: d671a605580d2caafc77f1a25bcf8435795df6fe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,58 +31,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8bd834f73714378ef110a64287db1b77033c8da
-Gitweb:     http://git.kernel.org/tip/e8bd834f73714378ef110a64287db1b77033c8da
-Author:     Grant Likely <grant.likely@linaro.org>
-AuthorDate: Wed, 29 May 2013 03:10:52 +0100
+Commit-ID:  d671a605580d2caafc77f1a25bcf8435795df6fe
+Gitweb:     http://git.kernel.org/tip/d671a605580d2caafc77f1a25bcf8435795df6fe
+Author:     Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+AuthorDate: Fri, 10 May 2013 12:21:30 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 29 May 2013 10:57:11 +0200
+CommitDate: Wed, 29 May 2013 11:09:10 +0200
 
-genirq: irqchip: Add mask to block out invalid irqs
+genirq: Add kerneldoc for irq_disable.
 
-Some controllers have irqs that aren't wired up and must never be used.
-For the generic chip attached to an irq_domain this provides a mask that
-can be used to block out particular irqs so that they never get mapped.
+Document the lazy disable functionality. comment based on changelog of
+d209a699a0b975ad
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1369793454-19197-2-git-send-email-grant.likely@linaro.org
+Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Cc: balbi@ti.com
+Link: http://lkml.kernel.org/r/1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h       | 2 ++
- kernel/irq/generic-chip.c | 3 +++
- 2 files changed, 5 insertions(+)
+ kernel/irq/chip.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index af7052c..298a9b9 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -679,6 +679,7 @@ struct irq_chip_type {
-  * @num_ct:		Number of available irq_chip_type instances (usually 1)
-  * @private:		Private data for non generic chip callbacks
-  * @installed:		bitfield to denote installed interrupts
-+ * @unused:		bitfield to denote unused interrupts
-  * @domain:		irq domain pointer
-  * @list:		List head for keeping track of instances
-  * @chip_types:		Array of interrupt irq_chip_types
-@@ -702,6 +703,7 @@ struct irq_chip_generic {
- 	unsigned int		num_ct;
- 	void			*private;
- 	unsigned long		installed;
-+	unsigned long		unused;
- 	struct irq_domain	*domain;
- 	struct list_head	list;
- 	struct irq_chip_type	chip_types[0];
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 8743d62..95575d8 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -359,6 +359,9 @@ static int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index cbd97ce..a3bb14f 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -213,6 +213,19 @@ void irq_enable(struct irq_desc *desc)
+ 	irq_state_clr_masked(desc);
+ }
  
- 	idx = hw_irq % dgc->irqs_per_chip;
- 
-+	if (test_bit(idx, &gc->unused))
-+		return -ENOTSUPP;
-+
- 	if (test_bit(idx, &gc->installed))
- 		return -EBUSY;
- 
++/**
++ * irq_disable - Mark interupt disabled
++ * @desc:	irq descriptor which should be disabled
++ *
++ * If the chip does not implement the irq_disable callback, we
++ * use a lazy disable approach. That means we mark the interrupt
++ * disabled, but leave the hardware unmasked. That's an
++ * optimization because we avoid the hardware access for the
++ * common case where no interrupt happens after we marked it
++ * disabled. If an interrupt happens, then the interrupt flow
++ * handler masks the line at the hardware level and marks it
++ * pending.
++ */
+ void irq_disable(struct irq_desc *desc)
+ {
+ 	irq_state_set_disabled(desc);
