@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967253Ab3E2XSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 19:18:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48039 "EHLO mx2.suse.de"
+	id S935332Ab3E2XSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 19:18:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48091 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967176Ab3E2XRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 19:17:46 -0400
+	id S967193Ab3E2XRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 19:17:51 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -17,9 +17,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/8] mm: vmscan: Set zone flags before blocking
-Date: Thu, 30 May 2013 00:17:33 +0100
-Message-Id: <1369869457-22570-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 8/8] fs: nfs: Inform the VM about pages being committed or unstable
+Date: Thu, 30 May 2013 00:17:37 +0100
+Message-Id: <1369869457-22570-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369869457-22570-1-git-send-email-mgorman@suse.de>
 References: <1369869457-22570-1-git-send-email-mgorman@suse.de>
@@ -27,30 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In shrink_page_list a decision may be made to stall and flag a zone
-as ZONE_WRITEBACK so that if a large number of unqueued dirty pages are
-encountered later then the reclaimer will stall. Set ZONE_WRITEBACK before
-potentially going to sleep so it is noticed sooner.
+VM page reclaim uses dirty and writeback page states to determine if
+flushers are cleaning pages too slowly and that page reclaim should
+stall waiting on flushers to catch up. Page state in NFS is a bit
+more complex and a clean page can be unreclaimable due to being
+unstable which is effectively "dirty" from the perspective of the
+VM from reclaim context. Similarly, if the inode is currently being
+committed then it's similar to being under writeback.
+
+This patch adds a is_dirty_writeback() handled for NFS that checks
+if a pages backing inode is being committed and should be accounted as
+writeback and if a page has private state indicating that it is
+effectively dirty.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/file.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5b1a79c..5f80d01 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1445,8 +1445,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 */
- 	if (nr_writeback && nr_writeback >=
- 			(nr_taken >> (DEF_PRIORITY - sc->priority))) {
--		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
- 		zone_set_flag(zone, ZONE_WRITEBACK);
-+		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
- 	}
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index a87a44f..a4250a4 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -493,6 +493,35 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
+ 	return nfs_fscache_release_page(page, gfp);
+ }
  
- 	/*
++static void nfs_check_dirty_writeback(struct page *page,
++				bool *dirty, bool *writeback)
++{
++	struct nfs_inode *nfsi;
++	struct address_space *mapping = page_file_mapping(page);
++
++	if (!mapping || PageSwapCache(page))
++		return;
++
++	/*
++	 * Check if an unstable page is currently being committed and
++	 * if so, have the VM treat it as if the page is under writeback
++	 * so it will not block due to pages that will shortly be freeable.
++	 */
++	nfsi = NFS_I(mapping->host);
++	if (test_bit(NFS_INO_COMMIT, &nfsi->flags)) {
++		*writeback = true;
++		return;
++	}
++
++	/*
++	 * If PagePrivate() is set, then the page is not freeable and as the
++	 * inode is not being committed, it's not going to be cleaned in the
++	 * near future so treat it as dirty
++	 */
++	if (PagePrivate(page))
++		*dirty = true;
++}
++
+ /*
+  * Attempt to clear the private state associated with a page when an error
+  * occurs that requires the cached contents of an inode to be written back or
+@@ -540,6 +569,7 @@ const struct address_space_operations nfs_file_aops = {
+ 	.direct_IO = nfs_direct_IO,
+ 	.migratepage = nfs_migrate_page,
+ 	.launder_page = nfs_launder_page,
++	.is_dirty_writeback = nfs_check_dirty_writeback,
+ 	.error_remove_page = generic_error_remove_page,
+ #ifdef CONFIG_NFS_SWAP
+ 	.swap_activate = nfs_swap_activate,
 -- 
 1.8.1.4
 
