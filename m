@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965808Ab3E2LIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 07:08:19 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41622 "EHLO relay.sw.ru"
+	id S965785Ab3E2LIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 07:08:18 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39590 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965643Ab3E2LIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 07:08:15 -0400
+	id S965678Ab3E2LIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 07:08:16 -0400
 From: Glauber Costa <glommer@openvz.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
         Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Glauber Costa <glommer@openvz.org>
-Subject: [PATCH v7 02/11] cgroup: implement CFTYPE_NO_PREFIX
-Date: Wed, 29 May 2013 15:03:13 +0400
-Message-Id: <1369825402-31046-3-git-send-email-glommer@openvz.org>
+        Glauber Costa <glommer@openvz.org>,
+        Peter Zijlstra <peterz@infradead.org>, Michal Hocko <mhocko@suse.cz>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH v7 05/11] cpuacct: don't actually do anything.
+Date: Wed, 29 May 2013 15:03:16 +0400
+Message-Id: <1369825402-31046-6-git-send-email-glommer@openvz.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
 References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
@@ -23,49 +26,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+All the information we have that is needed for cpuusage (and
+cpuusage_percpu) is present in schedstats. It is already recorded
+in a sane hierarchical way.
 
-When cgroup files are created, cgroup core automatically prepends the
-name of the subsystem as prefix.  This patch adds CFTYPE_NO_PREFIX
-which disables the automatic prefix.
+If we have CONFIG_SCHEDSTATS, we don't really need to do any extra
+work. All former functions become empty inlines.
 
-This will be used to deprecate cpuacct which will make cpu create and
-serve the cpuacct files.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Glauber Costa <glommer@openvz.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Paul Turner <pjt@google.com>
 ---
- include/linux/cgroup.h | 1 +
- kernel/cgroup.c        | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ kernel/sched/core.c  | 102 ++++++++++++++++++++++++++++++++++++++++++---------
+ kernel/sched/sched.h |  10 +++--
+ 2 files changed, 90 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 5047355..5a8a093 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -397,6 +397,7 @@ struct cgroup_map_cb {
- #define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
- #define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create on root cg */
- #define CFTYPE_INSANE		(1U << 2)	/* don't create if sane_behavior */
-+#define CFTYPE_NO_PREFIX	(1U << 3)	/* skip subsys prefix */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5ae1adf..0fa0f87 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6787,6 +6787,7 @@ void sched_move_task(struct task_struct *tsk)
+ 	task_rq_unlock(rq, tsk, &flags);
+ }
  
- #define MAX_CFTYPE_NAME		64
++#ifndef CONFIG_SCHEDSTATS
+ void task_group_charge(struct task_struct *tsk, u64 cputime)
+ {
+ 	struct task_group *tg;
+@@ -6804,6 +6805,7 @@ void task_group_charge(struct task_struct *tsk, u64 cputime)
  
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2a99262..8bbeb4d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2681,7 +2681,8 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 	umode_t mode;
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+ 	rcu_read_unlock();
+ }
++#endif
+ #endif /* CONFIG_CGROUP_SCHED */
  
--	if (subsys && !(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
-+	if (subsys && !(cft->flags & CFTYPE_NO_PREFIX) &&
-+		!(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
- 	}
+ #if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
+@@ -7199,22 +7201,92 @@ cpu_cgroup_exit(struct cgroup *cgrp, struct cgroup *old_cgrp,
+ 	sched_move_task(task);
+ }
+ 
+-static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
++/*
++ * Take rq->lock to make 64-bit write safe on 32-bit platforms.
++ */
++static inline void lock_rq_dword(int cpu)
+ {
+-	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
+-	u64 data;
+-
+ #ifndef CONFIG_64BIT
+-	/*
+-	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
+-	 */
+ 	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+-	data = *cpuusage;
++#endif
++}
++
++static inline void unlock_rq_dword(int cpu)
++{
++#ifndef CONFIG_64BIT
+ 	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
++#endif
++}
++
++#ifdef CONFIG_SCHEDSTATS
++#ifdef CONFIG_FAIR_GROUP_SCHED
++static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
++{
++	return tg->cfs_rq[cpu]->exec_clock - tg->cfs_rq[cpu]->prev_exec_clock;
++}
++
++static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
++{
++	tg->cfs_rq[cpu]->prev_exec_clock = tg->cfs_rq[cpu]->exec_clock;
++}
+ #else
+-	data = *cpuusage;
++static inline u64 cfs_exec_clock(struct task_group *tg, int cpu)
++{
++}
++
++static inline void cfs_exec_clock_reset(struct task_group *tg, int cpu)
++{
++}
++#endif
++#ifdef CONFIG_RT_GROUP_SCHED
++static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
++{
++	return tg->rt_rq[cpu]->exec_clock - tg->rt_rq[cpu]->prev_exec_clock;
++}
++
++static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
++{
++	tg->rt_rq[cpu]->prev_exec_clock = tg->rt_rq[cpu]->exec_clock;
++}
++#else
++static inline u64 rt_exec_clock(struct task_group *tg, int cpu)
++{
++	return 0;
++}
++
++static inline void rt_exec_clock_reset(struct task_group *tg, int cpu)
++{
++}
+ #endif
+ 
++static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
++{
++	u64 ret = 0;
++
++	lock_rq_dword(cpu);
++	ret = cfs_exec_clock(tg, cpu) + rt_exec_clock(tg, cpu);
++	unlock_rq_dword(cpu);
++
++	return ret;
++}
++
++static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
++{
++	lock_rq_dword(cpu);
++	cfs_exec_clock_reset(tg, cpu);
++	rt_exec_clock_reset(tg, cpu);
++	unlock_rq_dword(cpu);
++}
++#else
++static u64 task_group_cpuusage_read(struct task_group *tg, int cpu)
++{
++	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
++	u64 data;
++
++	lock_rq_dword(cpu);
++	data = *cpuusage;
++	unlock_rq_dword(cpu);
++
+ 	return data;
+ }
+ 
+@@ -7222,17 +7294,11 @@ static void task_group_cpuusage_write(struct task_group *tg, int cpu, u64 val)
+ {
+ 	u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
+ 
+-#ifndef CONFIG_64BIT
+-	/*
+-	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
+-	 */
+-	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
++	lock_rq_dword(cpu);
+ 	*cpuusage = val;
+-	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+-#else
+-	*cpuusage = val;
+-#endif
++	unlock_rq_dword(cpu);
+ }
++#endif
+ 
+ /* return total cpu usage (in nanoseconds) of a group */
+ static u64 cpucg_cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b05dd84..0e5e795 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -710,8 +710,6 @@ static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+ #endif
+ }
+ 
+-extern void task_group_charge(struct task_struct *tsk, u64 cputime);
+-
+ #else /* CONFIG_CGROUP_SCHED */
+ 
+ static inline void set_task_rq(struct task_struct *p, unsigned int cpu) { }
+@@ -719,10 +717,14 @@ static inline struct task_group *task_group(struct task_struct *p)
+ {
+ 	return NULL;
+ }
+-static inline void task_group_charge(struct task_struct *tsk, u64 cputime) { }
+-
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
++#if defined(CONFIG_CGROUP_SCHED) && !defined(CONFIG_SCHEDSTATS)
++extern void task_group_charge(struct task_struct *tsk, u64 cputime);
++#else
++static inline void task_group_charge(struct task_struct *tsk, u64 cputime) {}
++#endif
++
+ static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
+ {
+ 	set_task_rq(p, cpu);
 -- 
 1.8.1.4
 
