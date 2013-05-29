@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594Ab3E2RCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 13:02:23 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:29387 "EHLO multi.imgtec.com"
+	id S1759446Ab3E2RDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 13:03:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30310 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab3E2RCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 13:02:16 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mips@linux-mips.org>, James Hogan <james.hogan@imgtec.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Kees Cook" <keescook@chromium.org>
-Subject: [RFC PATCH] kernel/signal.c: avoid BUG_ON with SIG128 (MIPS)
-Date: Wed, 29 May 2013 18:01:56 +0100
-Message-ID: <1369846916-13202-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_05_29_18_02_11
+	id S1755417Ab3E2RDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 13:03:37 -0400
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+From: Simo Sorce <simo@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Waiman Long <waiman.long@hp.com>, Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+In-Reply-To: <20130529165603.GL6123@two.firstfloor.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+	 <20130523094201.GA24543@dastard> <519E8B5F.3080905@hp.com>
+	 <20130527020903.GR29466@dastard> <51A624E2.3000301@hp.com>
+	 <1369844289.2769.146.camel@willson.li.ssimo.org>
+	 <20130529165603.GL6123@two.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat, Inc.
+Date: Wed, 29 May 2013 13:03:12 -0400
+Message-ID: <1369846992.2769.149.camel@willson.li.ssimo.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIPS has 128 signals, the highest of which has the number 128. The
-following command causes get_signal_to_deliver() to pass this signal
-number straight through to do_group_exit() as the exit code:
+On Wed, 2013-05-29 at 18:56 +0200, Andi Kleen wrote:
+> On Wed, May 29, 2013 at 12:18:09PM -0400, Simo Sorce wrote:
+> > On Wed, 2013-05-29 at 11:55 -0400, Waiman Long wrote:
+> > 
+> > > My patch set consists of 2 different changes. The first one is to avoid 
+> > > taking the d_lock lock when updating the reference count in the 
+> > > dentries. This particular change also benefit some other workloads that 
+> > > are filesystem intensive. One particular example is the short workload 
+> > > in the AIM7 benchmark. One of the job type in the short workload is 
+> > > "misc_rtns_1" which calls security functions like getpwnam(), 
+> > > getpwuid(), getgrgid() a couple of times. These functions open the 
+> > > /etc/passwd or /etc/group files, read their content and close the files. 
+> > > It is the intensive open/read/close sequence from multiple threads that 
+> > > is causing 80%+ contention in the d_lock on a system with large number 
+> > > of cores.
+> > 
+> > To be honest a workload base on /etc/passwd or /etc/group is completely
+> > artificial, in actual usage, if you really have  such access you use
+> > nscd or sssd with their shared memory caches to completely remove most
+> > of the file access.
+> 
+> I don't fully agree at this point. A lot of things can be tuned away,
+> but in practice we want things to perform well out of the box without
+> needing all kinds of magic tuning that only 
 
-  strace sleep 10 & sleep 1 && kill -128 `pidof sleep`
+Phrase seem cut mid-sentence ?
 
-However do_group_exit() checks for the core dump bit (0x80) in the exit
-code which matches in this particular case and the kernel panics:
+> Also this is just normal file access, nothing special about it.
+> It simply has to scale. For all kinds of workloads.
+> 
+> And it does, just d_path messes it up.
 
-  BUG_ON(exit_code & 0x80); /* core dumps don't get here */
+Well there are reasonable workloads and artificial ones, I am just
+warning not to use 'that' specific test as a good indicator, if you have
+other reasonable workloads that show a similar flow feel free to bring
+it up.
 
-This is worked around by changing get_signal_to_deliver() to pass
-min(info->si_signo, 127) instead of info->si_signo, so that this highest
-of signal numbers get rounded down to 127. This makes the exit code
-technically incorrect, but it's better than killing the whole kernel.
+> > I have no beef on the rest but repeated access to Nsswitch information
+> > is not something you need to optimize at the file system layer and
+> > should not be brought up as a point in favor.
+> 
+> This is about repeated access to arbitrary files.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
----
+Ok. I do not want to start a discussion on this, I just pointed out the
+specific point was not really a good example hopefully there are others
+that justify the patchset.
 
-This is based on v3.10-rc3.
+Simo.
 
-It's a little hacky, but aside from reducing the number of signals to
-127 to avoid this case (which isn't backwards compatible) I'm not sure
-what else can be done. Any comments?
-
- kernel/signal.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 113411b..69bc00f 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2366,8 +2366,12 @@ relock:
- 
- 		/*
- 		 * Death signals, no core dump.
-+		 *
-+		 * MIPS has a signal number 128 which clashes with the core dump
-+		 * bit. If this was the signal we still want to report a valid
-+		 * exit code, so round it down to 127.
- 		 */
--		do_group_exit(info->si_signo);
-+		do_group_exit(min(info->si_signo, 127));
- 		/* NOTREACHED */
- 	}
- 	spin_unlock_irq(&sighand->siglock);
 -- 
-1.8.1.2
-
+Simo Sorce * Red Hat, Inc * New York
 
