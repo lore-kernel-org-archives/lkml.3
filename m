@@ -1,168 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966012Ab3E2MoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 08:44:00 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:36073 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965690Ab3E2Mn6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 29 May 2013 08:43:58 -0400
-Message-Id: <51A6142A02000078000D99D8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 29 May 2013 13:43:54 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <herbert@gondor.hengli.com.au>, <ying.huang@intel.com>,
-        <linux-kernel@vger.kernel.org>, <alexander_boyko@xyratex.com>
-Subject: [PATCH] x86/crc32-pclmul: fix build with older binutils
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S966000Ab3E2Moy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 08:44:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965690Ab3E2Mox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 08:44:53 -0400
+Date: Wed, 29 May 2013 13:43:57 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Calvin Owens <jcalvinowens@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        NeilBrown <neilb@suse.de>, majianpeng@gmail.com
+Subject: Re: [PATCH] md: Partially revert 2f6db2a7, which broke raid5
+Message-ID: <20130529124357.GA15210@redhat.com>
+References: <20130517213223.GA2530@gmail.com>
+ <20130518070515.GL19781@kernel.dk>
+ <20130519175145.GC19194@moria.home.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130519175145.GC19194@moria.home.lan>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-binutils prior to 2.18 (e.g. the ones found on SLE10) don't support
-assembling PEXTRD, so a macro based approach like the one for PCLMULQDQ
-in the same file should be used.
 
-This requires making the helper macros capable of recognizing 32-bit
-general purpose register operands.
+On Sun, May 19, 2013 at 10:51:45AM -0700, Kent Overstreet wrote:
+> Sorry for the delay - been vacationing. Reproduced the original bug,
+> here's a patch that fixes it:
+> 
+> 
+> commit 402f5db3708b2062795a384a3d8397cf702e27bc
+> Author: Kent Overstreet <koverstreet@google.com>
+> Date:   Sun May 19 10:27:07 2013 -0700
+> 
+>     raid5: Initialize bi_vcnt
+>     
+>     The patch that converted raid5 to use bio_reset() forgot to initialize
+>     bi_vcnt.
+>     
+>     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+>     Cc: NeilBrown <neilb@suse.de>
+>     Cc: Jens Axboe <axboe@kernel.dk>
+>     Cc: linux-raid@vger.kernel.org
+> 
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index 9359828..753f318 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -664,6 +664,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+>  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+>  				bi->bi_rw |= REQ_FLUSH;
+>  
+> +			bi->bi_vcnt = 1;
+>  			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+>  			bi->bi_io_vec[0].bv_offset = 0;
+>  			bi->bi_size = STRIPE_SIZE;
+> @@ -701,6 +702,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+>  			else
+>  				rbi->bi_sector = (sh->sector
+>  						  + rrdev->data_offset);
+> +			rbi->bi_vcnt = 1;
+>  			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+>  			rbi->bi_io_vec[0].bv_offset = 0;
+>  			rbi->bi_size = STRIPE_SIZE;
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Alexander Boyko <alexander_boyko@xyratex.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Huang Ying <ying.huang@intel.com>
+Ditto to the previous follow up.  We've been tracking this
+bug for nearly a month:
 
----
- arch/x86/crypto/crc32-pclmul_asm.S |    2 +-
- arch/x86/include/asm/inst.h        |   74 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 73 insertions(+), 3 deletions(-)
+https://bugzilla.redhat.com/show_bug.cgi?id=962079
 
---- 3.10-rc3/arch/x86/crypto/crc32-pclmul_asm.S
-+++ 3.10-rc3-x86-pextrd/arch/x86/crypto/crc32-pclmul_asm.S
-@@ -240,7 +240,7 @@ fold_64:
- 	pand    %xmm3, %xmm1
- 	PCLMULQDQ 0x00, CONSTANT, %xmm1
- 	pxor    %xmm2, %xmm1
--	pextrd  $0x01, %xmm1, %eax
-+	PEXTRD  0x01, %xmm1, %eax
- 
- 	ret
- ENDPROC(crc32_pclmul_le_16)
---- 3.10-rc3/arch/x86/include/asm/inst.h
-+++ 3.10-rc3-x86-pextrd/arch/x86/include/asm/inst.h
-@@ -9,12 +9,68 @@
- 
- #define REG_NUM_INVALID		100
- 
--#define REG_TYPE_R64		0
--#define REG_TYPE_XMM		1
-+#define REG_TYPE_R32		0
-+#define REG_TYPE_R64		1
-+#define REG_TYPE_XMM		2
- #define REG_TYPE_INVALID	100
- 
-+	.macro R32_NUM opd r32
-+	\opd = REG_NUM_INVALID
-+	.ifc \r32,%eax
-+	\opd = 0
-+	.endif
-+	.ifc \r32,%ecx
-+	\opd = 1
-+	.endif
-+	.ifc \r32,%edx
-+	\opd = 2
-+	.endif
-+	.ifc \r32,%ebx
-+	\opd = 3
-+	.endif
-+	.ifc \r32,%esp
-+	\opd = 4
-+	.endif
-+	.ifc \r32,%ebp
-+	\opd = 5
-+	.endif
-+	.ifc \r32,%esi
-+	\opd = 6
-+	.endif
-+	.ifc \r32,%edi
-+	\opd = 7
-+	.endif
-+#ifdef CONFIG_X86_64
-+	.ifc \r32,%r8d
-+	\opd = 8
-+	.endif
-+	.ifc \r32,%r9d
-+	\opd = 9
-+	.endif
-+	.ifc \r32,%r10d
-+	\opd = 10
-+	.endif
-+	.ifc \r32,%r11d
-+	\opd = 11
-+	.endif
-+	.ifc \r32,%r12d
-+	\opd = 12
-+	.endif
-+	.ifc \r32,%r13d
-+	\opd = 13
-+	.endif
-+	.ifc \r32,%r14d
-+	\opd = 14
-+	.endif
-+	.ifc \r32,%r15d
-+	\opd = 15
-+	.endif
-+#endif
-+	.endm
-+
- 	.macro R64_NUM opd r64
- 	\opd = REG_NUM_INVALID
-+#ifdef CONFIG_X86_64
- 	.ifc \r64,%rax
- 	\opd = 0
- 	.endif
-@@ -63,6 +119,7 @@
- 	.ifc \r64,%r15
- 	\opd = 15
- 	.endif
-+#endif
- 	.endm
- 
- 	.macro XMM_NUM opd xmm
-@@ -118,10 +175,13 @@
- 	.endm
- 
- 	.macro REG_TYPE type reg
-+	R32_NUM reg_type_r32 \reg
- 	R64_NUM reg_type_r64 \reg
- 	XMM_NUM reg_type_xmm \reg
- 	.if reg_type_r64 <> REG_NUM_INVALID
- 	\type = REG_TYPE_R64
-+	.elseif reg_type_r32 <> REG_NUM_INVALID
-+	\type = REG_TYPE_R32
- 	.elseif reg_type_xmm <> REG_NUM_INVALID
- 	\type = REG_TYPE_XMM
- 	.else
-@@ -162,6 +222,16 @@
- 	.byte \imm8
- 	.endm
- 
-+	.macro PEXTRD imm8 xmm gpr
-+	R32_NUM extrd_opd1 \gpr
-+	XMM_NUM extrd_opd2 \xmm
-+	PFX_OPD_SIZE
-+	PFX_REX extrd_opd1 extrd_opd2
-+	.byte 0x0f, 0x3a, 0x16
-+	MODRM 0xc0 extrd_opd1 extrd_opd2
-+	.byte \imm8
-+	.endm
-+
- 	.macro AESKEYGENASSIST rcon xmm1 xmm2
- 	XMM_NUM aeskeygen_opd1 \xmm1
- 	XMM_NUM aeskeygen_opd2 \xmm2
+Please include this (or the other) patch to fix it.
 
+Rich.
 
-
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+virt-top is 'top' for virtual machines.  Tiny program with many
+powerful monitoring features, net stats, disk stats, logging, etc.
+http://people.redhat.com/~rjones/virt-top
