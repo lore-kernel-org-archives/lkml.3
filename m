@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965501Ab3E2Jso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 05:48:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:44087 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948Ab3E2Jsn (ORCPT
+	id S965516Ab3E2JtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 05:49:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40369 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964948Ab3E2Js7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 05:48:43 -0400
-X-IronPort-AV: E=Sophos;i="4.87,763,1363132800"; 
-   d="scan'208";a="26601047"
-Message-ID: <51A5CEF9.3050802@citrix.com>
-Date: Wed, 29 May 2013 10:48:41 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	Wed, 29 May 2013 05:48:59 -0400
+Date: Wed, 29 May 2013 10:48:27 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: A bug about system call on ARM
+Message-ID: <20130529094826.GD13095@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+ <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: John Stultz <john.stultz@linaro.org>, <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/2] x86/xen: sync the wallclock when the
- system time changes
-References: <1369765368-10823-1-git-send-email-david.vrabel@citrix.com> <1369765368-10823-3-git-send-email-david.vrabel@citrix.com> <51A5CCDB02000078000D9798@nat28.tlf.novell.com>
-In-Reply-To: <51A5CCDB02000078000D9798@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/13 08:39, Jan Beulich wrote:
->>>> On 28.05.13 at 20:22, David Vrabel <david.vrabel@citrix.com> wrote:
->> +static int xen_pvclock_gtod_notify(struct notifier_block *nb, unsigned long unused,
->> +				   void *priv)
->> +{
->> +	static struct timespec last, next;
->> +	struct timespec now;
->> +	struct timekeeper *tk = priv;
->> +	struct xen_platform_op op;
->> +	int ret;
->> +
->> +	/*
->> +	 * Set the Xen wallclock from Linux system time.
->> +	 *
->> +	 * dom0 hasn't historically maintained a very accurate
->> +	 * wallclock so guests don't expect it. We can therefore
->> +	 * reduce the number of expensive hypercalls by only updating
->> +	 * the wallclock every 0.5 s.
->> +	 */
->> +
->> +	now.tv_sec = tk->xtime_sec;
->> +	now.tv_nsec = tk->xtime_nsec >> tk->shift;
->> +
->> +	if (timespec_compare(&now, &last) > 0
->> +	    && timespec_compare(&now, &next) < 0)
+Hello,
+
+On Wed, May 29, 2013 at 09:46:42AM +0100, richard -rw- weinberger wrote:
+> On Wed, May 29, 2013 at 10:24 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+> > I have download the latest linux kernel code  3.9.4
+> > And Compare with  3.4.0 kernel .
+> >
+> > It seems there is no change for this part ,
+> > So it will still happen .
+> > Does anyone know who is responsible for  arm arch part kernel code ?
 > 
-> Is this really working the first time through (when both last and
-> next are still all zeros)?
+> See MAINTAINERS file.
+> CC'ing linux-arm-kernel@lists.infradead.org
 
-Yes. The first time through we want to set the wallclock and this test
-is always false when last == next.
+Cheers for adding us to CC.
 
-David
+> >> #ifdef CONFIG_ARM_THUMB
+> >>         tst     r8, #PSR_T_BIT
+> >>         movne   r10, #0                         @ no thumb OABI emulation
+> >>         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
+
+Do you have the panic log please? Also, which SoC are you using and how are
+you reproducing this?
+
+> >>         ldr     r10, [lr, #-4]                  @ get SWI instruction
+> >>   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
+> >>   A710( teq     ip, #0x0f000000                                         )
+> >>   A710( bne     .Larm710bug                                             )
+> >> #endif
+> >> #ifdef CONFIG_CPU_ENDIAN_BE8
+> >>         rev     r10, r10                        @ little endian instruction
+> >> #endif
+> >>
+> >> /*********************************************************************
+> >> ******************************/
+> >>
+> >> Then reason why it will crash when get SWI instruction is maybe This
+> >> page is clear to aged by kernel, But this MMU fault happpened in
+> >> kernel, So the kernel do_page_fault function will not clear this page
+> >> to young, So that  will crash .
+
+Sounds like we might need some USER annotations around the instruction
+loads, but we should also rework the code so that we re-enable interrupts
+first.
+
+Will
