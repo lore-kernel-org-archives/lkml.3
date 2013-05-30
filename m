@@ -1,112 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759155Ab3E3WFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 18:05:46 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59343 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3E3WFj (ORCPT
+	id S1758968Ab3E3WIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 18:08:22 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:48982 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751005Ab3E3WIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 18:05:39 -0400
-Date: Thu, 30 May 2013 16:36:51 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
-Subject: [PATCH] target: don't corrupt bh_count in
- iscsit_stop_time2retain_timer()
-Message-ID: <20130530203651.GB13756@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Thu, 30 May 2013 18:08:13 -0400
+Date: Fri, 31 May 2013 00:08:12 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Guenter Roeck <linux@roeck-us.net>, LKML <linux-kernel@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 3/3] watchdog: xilinx: Add WDIOC_SETTIMEOUT ioctl function
+Message-ID: <20130530220812.GN14258@spo001.leaseweb.com>
+References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com> <595eb49b34909318959fe6825c209a7d635ed849.1369916757.git.michal.simek@xilinx.com> <20130530140754.GB28232@roeck-us.net> <51A75F11.7000001@monstr.eu> <20130530142145.GA28856@roeck-us.net> <51A7635A.8070300@monstr.eu> <20130530150306.GA29508@roeck-us.net> <51A76C58.5060107@monstr.eu> <20130530152545.GA29874@roeck-us.net> <CAHTX3dJ9fDJ6ggMGcF5v1vdcruMqnV4fv_6eP3U3DgOUfm8r+w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAHTX3dJ9fDJ6ggMGcF5v1vdcruMqnV4fv_6eP3U3DgOUfm8r+w@mail.gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick,
+Hi All,
 
-I just started noticing this one.  Patch is completely untested so
-far, so don't merge it just yet.  I just wanted early review,
-considering how scary this looks.
+> > On Thu, May 30, 2013 at 05:12:24PM +0200, Michal Simek wrote:
+> > > On 05/30/2013 05:03 PM, Guenter Roeck wrote:
+> > > > On Thu, May 30, 2013 at 04:34:02PM +0200, Michal Simek wrote:
+> > > >> On 05/30/2013 04:21 PM, Guenter Roeck wrote:
+> > > >>> On Thu, May 30, 2013 at 04:15:45PM +0200, Michal Simek wrote:
+> > > >>>> On 05/30/2013 04:07 PM, Guenter Roeck wrote:
+> > > >>>>> On Thu, May 30, 2013 at 02:26:04PM +0200, Michal Simek wrote:
+> > > >>>>>> Standard watchdog programs try to setup timeout
+> > > >>>>>> via ioctl and this functionality should be implemented.
+> > > >>>>>> Timeout value is hardcoded in the hardware but
+> > > >>>>>> based on Documentation/watchdog/watchdog-api.txt
+> > > >>>>>> can return the real timeout used in the same variable.
+> > > >>>>>>
+> > > >>>>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> > > >>>>>> ---
+> > > >>>>>>  drivers/watchdog/of_xilinx_wdt.c | 1 +
+> > > >>>>>>  1 file changed, 1 insertion(+)
+> > > >>>>>>
+> > > >>>>>> diff --git a/drivers/watchdog/of_xilinx_wdt.c
+> > b/drivers/watchdog/of_xilinx_wdt.c
+> > > >>>>>> index 79f358c..a3bbe72 100644
+> > > >>>>>> --- a/drivers/watchdog/of_xilinx_wdt.c
+> > > >>>>>> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> > > >>>>>> @@ -253,6 +253,7 @@ static long xwdt_ioctl(struct file *file,
+> > unsigned int cmd, unsigned long arg)
+> > > >>>>>>                xwdt_keepalive();
+> > > >>>>>>                return 0;
+> > > >>>>>>
+> > > >>>>>> +      case WDIOC_SETTIMEOUT:
+> > > >>>>>>        case WDIOC_GETTIMEOUT:
+> > > >>>>>>                if (no_timeout)
+> > > >>>>>>                        return -ENOTTY;
+> > > >>>>>
+> > > >>>>> Watchdog programs should check ident.options before trying to set
+> > the timeout.
+> > > >>>>> If they don't, there is an application bug. I don't think it is a
+> > good idea
+> > > >>>>> to start hacking the kernel to work around application bugs.
+> > > >>>>
+> > > >>>> Based on Documentation/watchdog/watchdog-api.txt
+> > > >>>>
+> > > >>>> "For some drivers it is possible to modify the watchdog timeout on
+> > the
+> > > >>>> fly with the SETTIMEOUT ioctl, those drivers have the
+> > WDIOF_SETTIMEOUT
+> > > >>>> flag set in their option field.  The argument is an integer
+> > > >>>
+> > > >>> Yes, but WDIOF_SETTIMEOUT is not set in the driver's option field.
+> > > >>
+> > > >> ok. It means I should probably enable it.
+> > > >>
+> > > > I am missing your point. Applications should not try to write the
+> > timeout
+> > > > since WDIOF_SETTIMEOUT is not set. Any application doing it anyway is
+> > buggy
+> > > > and should be fixed.
+> > >
+> > > I fully understand your points and 100% agree with you
+> > > 1. the application is broken and should be fixed
+> > > 2. also the kernel shouldn't fix any problem with stupid application
+> > >
+> > > But based on documentation the driver can support setup timeout
+> > > and based on description "the driver returns the real timeout used
+> > > in the same variable and this timeout might differ from the requested one
+> > > due to limitation of the hardware"
+> > > Based on this I still think that the driver can support set timeout
+> > > feature and if the driver supports this option then WDIOF_SETTIMEOUT
+> > > should be set in driver's option field. And I would add this to v2.
+> > >
+> > > Can you see my point now?
+> >
+> > No. The driver doesn't support setting the timeout. You just want it
+> > to falsely claim that it does to work around an application problem.
+> > With your logic, _every_ watchdog driver would "support" setting
+> > the timeout.
+> >
+> 
+> I don't want to falsely claim anything.
+> I am just saying this is written in the documentation and
+> it is my understanding that this can be implemented it this way
+> for this xilinx device and behaviour of the driver will be correct
+> according to documentation which I copied to this thread.
+> 
+> If Wim says that if device doesn't support setting timeout in HW
+> then this ioctl can't be implemented in this way I am definitely OK with
+> it.
+> And I will remove this patch and will also remove this change
+> from our xilinx repo.
+> The main purpose for me is to cleanup our repo and push all changes
+> to the mainline. Of course if this change goes against watchdog
+> logic and it is broken I will the first who will revert it in our repo
+> and will have proper description based on our discussion.
+> 
+> I really appreciate your inputs for this discussion and both
+> resolution ACK/NACK are OK because I will know what's the correct
+> way and I can fix it in mainline or our repo and both will be in sync.
 
-Jörn
+Logic is: if device supports setting timeout values, then and only then
+you indicate this by setting the WDIOF_SETTIMEOUT flag and adding the code
+for it. And then you can do minor adjustments if needed and report this back.
+But that's only to make sure that some roundings (like a timer in minutes 
+gives back 60 or 120 seconds if you would set a new timeout of 70 seconds).
 
---
-Do not stop an army on its way home.
--- Sun Tzu
+So in this case: the HW doesn't support setting timeout values,
+so we don't add the WDIOF_SETTIMEOUT flag and thus we don't add the ioctl
+call neither. So NACK on this patch.
 
-Here is a fun one.  Bug seems to have been introduced by 140854cb,
-almost two years ago.  I have no idea why we only started seeing it now,
-but we did.
-
-Rough callgraph:
-core_tpg_set_initiator_node_queue_depth()
-`-> spin_lock_irqsave(&tpg->session_lock, flags);
-`-> lio_tpg_shutdown_session()
-    `-> iscsit_stop_time2retain_timer()
-        `-> spin_unlock_bh(&se_tpg->session_lock);
-        `-> spin_lock_bh(&se_tpg->session_lock);
-`-> spin_unlock_irqrestore(&tpg->session_lock, flags);
-
-core_tpg_set_initiator_node_queue_depth() used to call spin_lock_bh(),
-but 140854cb changed that to spin_lock_irqsave().  However,
-lio_tpg_shutdown_session() still claims to be called with spin_lock_bh()
-held, as does iscsit_stop_time2retain_timer():
- *      Called with spin_lock_bh(&struct se_portal_group->session_lock) held
-
-Stale documentation is mostly annoying, but in this case the dropping
-the lock with the _bh variant is plain wrong.  It is also wrong to drop
-locks two functions below the lock-holder, but I will ignore that bit
-for now.
-
-After some more locking and unlocking we eventually hit this backtrace:
-------------[ cut here ]------------
-WARNING: at kernel/softirq.c:159 local_bh_enable_ip+0xe8/0x100()
-Pid: 24645, comm: lio_helper.py Tainted: G           O 3.6.11+
-Call Trace:
- [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
- [<ffffffffa040ae37>] ? iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff810472f8>] local_bh_enable_ip+0xe8/0x100
- [<ffffffff815b8365>] _raw_spin_unlock_bh+0x15/0x20
- [<ffffffffa040ae37>] iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
- [<ffffffffa041149a>] iscsit_stop_session+0xfa/0x1c0 [iscsi_target_mod]
- [<ffffffffa0417fab>] lio_tpg_shutdown_session+0x7b/0x90 [iscsi_target_mod]
- [<ffffffffa033ede4>] core_tpg_set_initiator_node_queue_depth+0xe4/0x290 [target_core_mod]
- [<ffffffffa0409032>] iscsit_tpg_set_initiator_node_queue_depth+0x12/0x20 [iscsi_target_mod]
- [<ffffffffa0415c29>] lio_target_nacl_store_cmdsn_depth+0xa9/0x180 [iscsi_target_mod]
- [<ffffffffa0331b49>] target_fabric_nacl_base_attr_store+0x39/0x40 [target_core_mod]
- [<ffffffff811b857d>] configfs_write_file+0xbd/0x120
- [<ffffffff81148f36>] vfs_write+0xc6/0x180
- [<ffffffff81149251>] sys_write+0x51/0x90
- [<ffffffff815c0969>] system_call_fastpath+0x16/0x1b
----[ end trace 3747632b9b164652 ]---
-
-As a pure band-aid, this patch drops the _bh.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/target/iscsi/iscsi_target_erl0.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/target/iscsi/iscsi_target_erl0.c b/drivers/target/iscsi/iscsi_target_erl0.c
-index 9a577ff..9bd27f2 100644
---- a/drivers/target/iscsi/iscsi_target_erl0.c
-+++ b/drivers/target/iscsi/iscsi_target_erl0.c
-@@ -834,11 +834,11 @@ extern int iscsit_stop_time2retain_timer(struct iscsi_session *sess)
- 		return 0;
- 
- 	sess->time2retain_timer_flags |= ISCSI_TF_STOP;
--	spin_unlock_bh(&se_tpg->session_lock);
-+	spin_unlock(&se_tpg->session_lock);
- 
- 	del_timer_sync(&sess->time2retain_timer);
- 
--	spin_lock_bh(&se_tpg->session_lock);
-+	spin_lock(&se_tpg->session_lock);
- 	sess->time2retain_timer_flags &= ~ISCSI_TF_RUNNING;
- 	pr_debug("Stopped Time2Retain Timer for SID: %u\n",
- 			sess->sid);
--- 
-1.7.10.4
+Kind regards,
+Wim.
 
