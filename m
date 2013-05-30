@@ -1,92 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab3E3UlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:41:08 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:28373 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab3E3UlA convert rfc822-to-8bit (ORCPT
+	id S1758233Ab3E3Ul0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 16:41:26 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:40989 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758170Ab3E3UlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:41:00 -0400
-X-IronPort-AV: E=Sophos;i="4.87,773,1363158000"; 
-   d="scan'208";a="59729487"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-CC: Jim Schutt <jaschut@sandia.gov>,
-        "Adamson, Dros" <Weston.Adamson@netapp.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10-rc3 NFSv3 mount issues
-Thread-Topic: 3.10-rc3 NFSv3 mount issues
-Thread-Index: AQHOXXMCC7xQJNns+Ee71+jt/NLdS5keokwAgAAEH4A=
-Date: Thu, 30 May 2013 20:40:58 +0000
-Message-ID: <1369946457.3111.17.camel@leira.trondhjem.org>
-References: <51A7B442.9010108@sandia.gov>
-	 <D74C8145-AD4D-4CFE-963C-643B8D7DBA10@oracle.com>
-In-Reply-To: <D74C8145-AD4D-4CFE-963C-643B8D7DBA10@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <3496EDB0A3C6764D9190D7953DF05194@hq.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Thu, 30 May 2013 16:41:21 -0400
+X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 16:41:20 EDT
+Date: Thu, 30 May 2013 22:33:10 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Kris Rusocki <kszysiu@braxis.org>
+Cc: linux-doc@vger.kernel.org, andi@lisas.de, rob@landley.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: cover CONFIG_BINFMT_SCRIPT in init.txt
+Message-ID: <20130530203310.GA5097@rhlx01.hs-esslingen.de>
+References: <CAN3tLtJruJKYOmyg_XQqRW+fXQegXfxpBLg4HL1dx9e2jvjmqA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN3tLtJruJKYOmyg_XQqRW+fXQegXfxpBLg4HL1dx9e2jvjmqA@mail.gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-30 at 16:26 -0400, Chuck Lever wrote:
-> On May 30, 2013, at 4:19 PM, Jim Schutt <jaschut@sandia.gov> wrote:
+On Thu, May 30, 2013 at 01:24:15PM -0600, Kris Rusocki wrote:
+> From: Kris Rusocki <kszysiu@braxis.org>
 > 
-> > Hi,
-> > 
-> > I've been trying to test 3.10-rc3 on some diskless clients, and found
-> > that I can no longer mount my root file system via NFSv3.
-> > 
-> > I poked around looking at NFS changes for 3.10, and found these two
-> > commits:
-> > 
-> > d497ab9751 "NFSv3: match sec= flavor against server list"
-> > 4580a92d44 "NFS: Use server-recommended security flavor by default (NFSv3)"
-> > 
-> > If I revert both of these commits from 3.10-rc3, then my diskless
-> > client can mount its root file system.
-> > 
-> > The busybox mount command fails like this, when using 3.10-rc3:
-> > 
-> > / # mount  -t nfs -o ro,nolock,vers=3,proto=tcp 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
-> > mount: mounting 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x on /mnt failed: Invalid argument
-> > 
-> > The commit messages for both these commits seem to say that mounting
-> > with the "sys=sec" option should work, but unfortunately, my busybox doesn't
-> > seem to understand the "sec=" mount option:
-> > 
-> > / # mount  -t nfs -o ro,nolock,vers=3,proto=tcp,sec=sys 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
-> > mount: invalid number 'sys'
-> > 
-> > My NFS server is based on RHEL6, and is not using any "sec=" option
-> > in its export for this file system.  I did try exporting with "sec=sys",
-> > but it didn't seem to make any difference either.
-> > 
-> > So far, this seems like a regression to me ....
-> > Any ideas what I might be doing wrong?  How can I
-> > help make this work again?
-> 
-> 3.10-rc3 appears to be missing the fix for this.  See:
-> 
->   http://marc.info/?l=linux-nfs&m=136855668104598&w=2
-> 
-> Trond, can we get this applied?
-> 
+> Now that binfmt_script is configurable, explain yet another possible
+> cause of boot failure (a script w/CONFIG_BINFMT_SCRIPT != y).
 
-For some reason it got lost in the mail heap. I've applied it now to the
-'bugfixes' branch. Will push upstream in the next few days...
+Nice catch, and thanks for your effort!
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+It's somewhat sad to see that that file remained at only one initial commit
+since 2010, thus thumbs up for your help!
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Docs in general seem to be a wee bit too unmaintained.
+
+Acked-by: Andreas Mohr <andi@lisas.de>
