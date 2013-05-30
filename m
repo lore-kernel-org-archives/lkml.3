@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967907Ab3E3IWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 04:22:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:32634 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967723Ab3E3IW3 (ORCPT
+	id S967917Ab3E3IZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 04:25:45 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:48287 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967723Ab3E3IZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 04:22:29 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A70C10.6000408@asianux.com>
-Date: Thu, 30 May 2013 16:21:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 30 May 2013 04:25:35 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51A70CF4.1020807@yandex-team.ru>
+Date: Thu, 30 May 2013 12:25:24 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v2] arch: m68k: math-emu: unsigned issue, 'unsigned long'
- will never be less than zero
-References: <51A6F0C6.9050806@asianux.com> <m2a9ndndu5.fsf@linux-m68k.org>
-In-Reply-To: <m2a9ndndu5.fsf@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        David Laight <David.Laight@ACULAB.COM>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+References: <519CB2D8.103@yandex-team.ru>   <1369225837.3301.324.camel@edumazet-glaptop>   <519CC2FB.2010006@yandex-team.ru>   <20130522174532.GC3431@linux.vnet.ibm.com> <519D19DA.50400@yandex-team.ru>   <20130525113715.GA3795@linux.vnet.ibm.com>   <51A39E11.5020405@yandex-team.ru>   <1369699930.3301.494.camel@edumazet-glaptop>   <51A47496.6000100@yandex-team.ru>   <1369787693.3301.586.camel@edumazet-glaptop>   <20130529013111.GS6172@linux.vnet.ibm.com>  <1369804097.3301.615.camel@edumazet-glaptop>  <51A5D3D9.1000106@yandex-team.ru> <1369854387.5109.77.camel@edumazet-glaptop>
+In-Reply-To: <1369854387.5109.77.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29.05.2013 23:06, Eric Dumazet wrote:
+> On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
+>
+> True, these lookup functions are usually structured the same around the
+> hlist_nulls_for_each_entry_rcu() loop.
+>
+> A barrier() right before the loop seems to be a benefit, the size of
+> assembly code is reduced by 48 bytes.
+>
+> And its one of the documented way to handle this kind of problems
+> (Documentation/atomic_ops.txt line 114)
+>
+> I guess we should amend this documentation, eventually.
+>
+> Thanks, please add you "Signed-off-by" if you agree with the patch.
+>
 
-'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
-author wanted to check the highest bit whether set.
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
 
-So need make the bit test explicit (which is better than type cast form
-'unsigned long' to 'long').
+Many thanks to you, Paul E. McKenney and David Laight for your
+patches, help and participation in this discussion.
 
-The related warning: (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
-  arch/m68k/math-emu/fp_arith.c:522:4: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+>
+> [PATCH] net: force a reload of first item in hlist_nulls_for_each_entry_rcu
+>
+> Roman Gushchin discovered that udp4_lib_lookup2() was not reloading
+> first item in the rcu protected list, in case the loop was restarted.
+>
+> This produced soft lockups as in https://lkml.org/lkml/2013/4/16/37
+>
+> rcu_dereference(X)/ACCESS_ONCE(X) seem to not work as intended if X is
+> ptr->field :
+>
+> In some cases, gcc caches the value or ptr->field in a register.
+>
+> Use a barrier() to disallow such caching, as documented in
+> Documentation/atomic_ops.txt line 114
+>
+> Thanks a lot to Roman for providing analysis and numerous patches.
+>
+> Diagnosed-by: Roman Gushchin <klamm@yandex-team.ru>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+> ---
+>   include/linux/rculist_nulls.h |    7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+> index 2ae1371..c7557fa 100644
+> --- a/include/linux/rculist_nulls.h
+> +++ b/include/linux/rculist_nulls.h
+> @@ -105,9 +105,14 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
+>    * @head:	the head for your list.
+>    * @member:	the name of the hlist_nulls_node within the struct.
+>    *
+> + * The barrier() is needed to make sure compiler doesn't cache first element [1],
+> + * as this loop can be restarted [2]
+> + * [1] Documentation/atomic_ops.txt around line 114
+> + * [2] Documentation/RCU/rculist_nulls.txt around line 146
+>    */
+>   #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
+> -	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
+> +	for (({barrier();}),							\
+> +	     pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
+>   		(!is_a_nulls(pos)) &&						\
+>   		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+>   		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+>
+>
 
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/m68k/math-emu/fp_arith.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/m68k/math-emu/fp_arith.c b/arch/m68k/math-emu/fp_arith.c
-index 08f286d..239eb19 100644
---- a/arch/m68k/math-emu/fp_arith.c
-+++ b/arch/m68k/math-emu/fp_arith.c
-@@ -519,7 +519,7 @@ static void fp_roundint(struct fp_ext *dest, int mode)
- 				return;
- 			break;
- 		case 0x401e:
--			if (!(oldmant.m32[1] >= 0))
-+			if (oldmant.m32[1] & 0x80000000)
- 				return;
- 			if (oldmant.m32[0] & 1)
- 				break;
--- 
-1.7.7.6
