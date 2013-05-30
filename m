@@ -1,106 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965786Ab3E3RmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:42:18 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:52504 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965710Ab3E3RmK (ORCPT
+	id S965850Ab3E3RoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:44:00 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46686 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965724Ab3E3Rny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:42:10 -0400
+	Thu, 30 May 2013 13:43:54 -0400
+Date: Thu, 30 May 2013 12:43:44 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 2/4] zbud: add to mm/
+Message-ID: <20130530174344.GA15837@medulla>
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org>
+ <20130529154500.GB428@cerebellum>
+ <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org>
+ <20130529204236.GD428@cerebellum>
+ <20130529134835.58dd89774f47205da4a06202@linux-foundation.org>
+ <754ae8a0-23af-4c87-953f-d608cba84191@default>
+ <20130529142904.ace2a29b90a9076d0ee251fd@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4462684.QmYxzGRhx8@vostro.rjw.lan>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
-	<3463581.AQ3EkyvJ7g@vostro.rjw.lan>
-	<5738208.7rKb57pu5j@vostro.rjw.lan>
-	<4462684.QmYxzGRhx8@vostro.rjw.lan>
-Date: Thu, 30 May 2013 10:42:09 -0700
-X-Google-Sender-Auth: _qhJSRHGPec1Ll1Oy4j4e1bWMkQ
-Message-ID: <CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
-Subject: Re: System slow down from udev
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529142904.ace2a29b90a9076d0ee251fd@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13053017-3620-0000-0000-000002CE28E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 9:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, May 30, 2013 04:45:35 PM Rafael J. Wysocki wrote:
->> On Thursday, May 30, 2013 04:34:51 PM Rafael J. Wysocki wrote:
-> [...]
->> >
->> > I'll try to dig deeper locally in the meantime.
->>
->> Actually, I think I know what the problem is, but I need some more time to
->> debug it.  Fortunately, I'm able to see some symptoms. :-)
->
-> OK, one fix is appended, but there still is one more bug I need to investigate.
->
-> Please check if this one helps, though.
+On Wed, May 29, 2013 at 02:29:04PM -0700, Andrew Morton wrote:
+> On Wed, 29 May 2013 14:09:02 -0700 (PDT) Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> 
+> > > memory_failure() is merely an example of a general problem: code which
+> > > reads from the memmap[] array and expects its elements to be of type
+> > > `struct page'.  Other examples might be memory hotplugging, memory leak
+> > > checkers etc.  I have vague memories of out-of-tree patches
+> > > (bigphysarea?) doing this as well.
+> > > 
+> > > It's a general problem to which we need a general solution.
+> > 
+> > <Obi-tmem Kenobe slowly materializes... "use the force, Luke!">
+> > 
+> > One could reasonably argue that any code that makes incorrect
+> > assumptions about the contents of a struct page structure is buggy
+> > and should be fixed.
+> 
+> Well it has type "struct page" and all code has a right to expect the
+> contents to match that type.
+> 
+> >  Isn't the "general solution" already described
+> > in the following comment, excerpted from include/linux/mm.h, which
+> > implies that "scribbling on existing pageframes" [carefully], is fine?
+> > (And, if not, shouldn't that comment be fixed, or am I misreading
+> > it?)
+> > 
+> > <start excerpt>
+> >  * For the non-reserved pages, page_count(page) denotes a reference count.
+> >  *   page_count() == 0 means the page is free. page->lru is then used for
+> >  *   freelist management in the buddy allocator.
+> >  *   page_count() > 0  means the page has been allocated.
+> 
+> Well kinda maybe.  How all the random memmap-peekers handle this I do
+> not know.  Setting PageReserved is a big hammer which should keep other
+> little paws out of there, although I guess it's abusive of whatever
+> PageReserved is supposed to mean.
+> 
+> It's what we used to call a variant record.  The tag is page.flags and
+> the protocol is, umm,
+> 
+> PageReserved: doesn't refer to a page at all - don't touch
+> PageSlab: belongs to slab or slub
+> !PageSlab: regular kernel/user/pagecache page
 
-yes, that fix the problem.
+In the !PageSlab case, the page _count has to be considered to determine if the
+page is a free page or if it is an allocated non-slab page.
 
+So looking at the fields that need to remained untouched in the struct page for
+the memmap-peekers, they are
+- page->flags
+- page->_count
 
->
-> Thanks,
-> Rafael
->
->
-> ---
->  drivers/acpi/acpi_processor.c   |    5 +++++
->  drivers/acpi/processor_driver.c |    3 ---
->  2 files changed, 5 insertions(+), 3 deletions(-)
->
-> Index: linux-pm/drivers/acpi/processor_driver.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/processor_driver.c
-> +++ linux-pm/drivers/acpi/processor_driver.c
-> @@ -78,9 +78,6 @@ static struct device_driver acpi_process
->         .remove = acpi_processor_stop,
->  };
->
-> -DEFINE_PER_CPU(struct acpi_processor *, processors);
-> -EXPORT_PER_CPU_SYMBOL(processors);
-> -
->  static void acpi_processor_notify(acpi_handle handle, u32 event, void *data)
->  {
->         struct acpi_device *device = data;
-> Index: linux-pm/drivers/acpi/acpi_processor.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/acpi_processor.c
-> +++ linux-pm/drivers/acpi/acpi_processor.c
-> @@ -29,6 +29,9 @@
->
->  ACPI_MODULE_NAME("processor");
->
-> +DEFINE_PER_CPU(struct acpi_processor *, processors);
-> +EXPORT_PER_CPU_SYMBOL(processors);
-> +
->  /* --------------------------------------------------------------------------
->                                  Errata Handling
->     -------------------------------------------------------------------------- */
-> @@ -387,6 +390,7 @@ static int __cpuinit acpi_processor_add(
->          * checks.
->          */
->         per_cpu(processor_device_array, pr->id) = device;
-> +       per_cpu(processors, pr->id) = pr;
->
->         dev = get_cpu_device(pr->id);
->         result = acpi_bind_one(dev, pr->handle);
-> @@ -406,6 +410,7 @@ static int __cpuinit acpi_processor_add(
->   err:
->         free_cpumask_var(pr->throttling.shared_cpu_map);
->         device->driver_data = NULL;
-> +       per_cpu(processors, pr->id) = NULL;
->   err_free_pr:
->         kfree(pr);
->         return result;
->
+Is this correct?
 
-do you need to remove
-    per_cpu(processors, pr->id) = NULL;
-from processor_driver.c::acpi_processor_stop ?
+> 
+> Are there any more?
+> 
+> So what to do here?  How about
+> 
+> - Position the zbud fields within struct page via the preferred
+>   means: editing its definition.
+> 
+> - Decide upon and document the means by which the zbud variant is tagged
+
+I'm not sure if there is going to be a way to tag zbud pages in particular
+without using a page flag.  However, if we can tag it as a non-slab allocated
+kernel page with no userspace mappings, that could be sufficient.  I think this
+can be done with:
+
+!PageSlab(p) && page_count(p) > 0 && page_mapcount(p) <= 0
+
+An alternative is to set PG_slab for zbud pages then we get all the same
+treatment as slab pages, which is basically what we want. Setting PG_slab
+also conveys that no assumption can be made about the contents of _mapcount.
+
+However, a memmap-peeker could call slab functions on the page which obviously
+won't be under the control of the slab allocator. Afaict though, it doesn't
+seem that any of them do this since there aren't any functions in the slab
+allocator API that take raw struct pages.  The worst I've seen is calling
+shrink_slab in an effort to get the slab allocator to free up the page.
+
+In summary, I think that maintaining a positive page->_count and setting
+PG_slab on zbud pages should provide safety against existing memmap-peekers.
+
+Do you agree?
+
+Seth
+
+> 
+> - Demonstrate how this is safe against existing memmap-peekers
+> 
+> - Do all this without consuming another page flag :)
+> 
+
