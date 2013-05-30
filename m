@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967702Ab3E3HDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:03:05 -0400
+	id S967716Ab3E3HDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:03:10 -0400
 Received: from mga02.intel.com ([134.134.136.20]:55254 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967563Ab3E3HC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:02:57 -0400
+	id S967695Ab3E3HDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 03:03:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,769,1363158000"; 
-   d="scan'208";a="345550288"
+   d="scan'208";a="345550316"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
@@ -18,82 +18,138 @@ Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
         alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
         wangyun@linux.vnet.ibm.com, Jason Low <jason.low2@hp.com>,
         Changlong Xie <changlongx.xie@intel.com>
-Subject: [patch v7 0/8] sched: using runnable load avg in balance
-Date: Thu, 30 May 2013 15:01:56 +0800
-Message-Id: <1369897324-16646-1-git-send-email-alex.shi@intel.com>
+Subject: [patch v7 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED dependency for load-tracking"
+Date: Thu, 30 May 2013 15:01:57 +0800
+Message-Id: <1369897324-16646-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1369897324-16646-1-git-send-email-alex.shi@intel.com>
+References: <1369897324-16646-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks comments from Peter, Paul, Morten, Michael and Preeti.
+Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
+we can use runnable load variables.
 
-The most important change of this version is rebasing on latest
-tip/sched/core tree.
-
-I tested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
-benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf
-loopback etc. 
-
-On SNB EP 4 sockets machine, the hackbench increased about 50%, and
-result become stable. on other machines, hackbench increased about
-2~10%. oltp increased about 30% in NHM EX box. netperf loopback also
-increased on SNB EP 4 sockets box. no clear changes on other
-benchmarks.
-
-Michael Wang gotten better performance on pgbench on his box with this
-patchset. https://lkml.org/lkml/2013/5/16/82
-
-And Morten tested previous version with better power consumption.
-http://comments.gmane.org/gmane.linux.kernel/1463371
-
-Changlong found ltp cgroup stress testing get faster on SNB EP
-machine.  https://lkml.org/lkml/2013/5/23/65
+Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
-3.10-rc1          patch1-7         patch1-8
-duration=764   duration=754   duration=750
-duration=764   duration=754   duration=751
-duration=763   duration=755   duration=751
+ include/linux/sched.h |  7 +------
+ kernel/sched/core.c   |  7 +------
+ kernel/sched/fair.c   | 13 ++-----------
+ kernel/sched/sched.h  | 10 ++--------
+ 4 files changed, 6 insertions(+), 31 deletions(-)
 
-duration means the seconds of testing cost.
----
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..0019bef 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -994,12 +994,7 @@ struct sched_entity {
+ 	struct cfs_rq		*my_q;
+ #endif
+ 
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	/* Per-entity load-tracking */
+ 	struct sched_avg	avg;
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 36f85be..b9e7036 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1598,12 +1598,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->se.vruntime			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	p->se.avg.runnable_avg_period = 0;
+ 	p->se.avg.runnable_avg_sum = 0;
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3ee1c2e..f404468 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1128,8 +1128,7 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ /*
+  * We choose a half-life close to 1 scheduling period.
+  * Note: The tables below are dependent on this value.
+@@ -3436,12 +3435,6 @@ unlock:
+ }
+ 
+ /*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-/*
+  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
+  * cfs_rq_of(p) references at time of call are still valid and identify the
+  * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
+@@ -3464,7 +3457,6 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ 		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
+ 	}
+ }
+-#endif
+ #endif /* CONFIG_SMP */
+ 
+ static unsigned long
+@@ -6167,9 +6159,8 @@ const struct sched_class fair_sched_class = {
+ 
+ #ifdef CONFIG_SMP
+ 	.select_task_rq		= select_task_rq_fair,
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.migrate_task_rq	= migrate_task_rq_fair,
+-#endif
++
+ 	.rq_online		= rq_online_fair,
+ 	.rq_offline		= rq_offline_fair,
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 74ff659..d892a9f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -269,12 +269,6 @@ struct cfs_rq {
+ #endif
+ 
+ #ifdef CONFIG_SMP
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/*
+ 	 * CFS Load tracking
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+@@ -284,9 +278,9 @@ struct cfs_rq {
+ 	u64 runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
+-#endif /* CONFIG_FAIR_GROUP_SCHED */
+-/* These always depend on CONFIG_FAIR_GROUP_SCHED */
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++	/* Required to track per-cpu representation of a task_group */
+ 	u32 tg_runnable_contrib;
+ 	u64 tg_load_contrib;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+-- 
+1.7.12
 
-Jason also found java server load benefited on his 8 sockets machine:
-https://lkml.org/lkml/2013/5/29/673
----
-When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-improvement in performance of the workload compared to when using the
-vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-kernel with just patches 1-7, the performance improvement of the
-workload over the vanilla 3.10-rc2 tip kernel was about 25%.
----
-
-We also tried to include blocked load avg in balance. but find many
-benchmark performance drop a lot! So, seems accumulating current
-blocked_load_avg into cpu load isn't a good idea.  
-The blocked_load_avg is decayed same as runnable load, sometime is far
-bigger than runnable load, that drive tasks to other idle or slight
-load cpu, than cause both performance and power issue. But if the
-blocked load is decayed too fast, it lose its effect. 
-Another issue of blocked load is that when waking up task, we can not 
-know blocked load proportion of the task on cpu. So, the blocked load is
-meaningless in wake affine decision.  
-
-According to above problem, I can not figure out some way to use 
-blocked_load_avg in balance now.
-
-Anyway, since using runnable load avg in balance brings much benefit on
-performance and power. and this patch was reviewed for long time. 
-So maybe it's time to let it clobbered in some sub-maintain tree, like tip 
-or linux-next.  Any comments?
-
-Regards
-Alex
-[patch v7 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
-[patch v7 2/8] sched: move few runnable tg variables into CONFIG_SMP
-[patch v7 3/8] sched: set initial value of runnable avg for new
-[patch v7 4/8] sched: fix slept time double counting in enqueue
-[patch v7 5/8] sched: update cpu load after task_tick.
-[patch v7 6/8] sched: compute runnable load avg in cpu_load and
-[patch v7 7/8] sched: consider runnable load average in move_tasks
-[patch v7 8/8] sched: remove blocked_load_avg in tg
