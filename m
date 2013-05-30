@@ -1,128 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967435Ab3E3DWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 23:22:07 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:60390 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967340Ab3E3DWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 23:22:01 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH RFC v2] media: OF: add sync-on-green endpoint property
-Date: Thu, 30 May 2013 05:21:57 +0200
-Message-ID: <44193648.yaA827Trlv@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51A0C6A8.5090302@gmail.com>
-References: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8tMQnjh=8qaRoNhwkdrcoTCK2zofTkCOd79hAMoz5qK2A@mail.gmail.com> <51A0C6A8.5090302@gmail.com>
+	id S967433Ab3E3D2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 23:28:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40846 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S967232Ab3E3D2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 23:28:08 -0400
+X-IronPort-AV: E=Sophos;i="4.87,768,1363104000"; 
+   d="scan'208";a="7408360"
+Message-ID: <51A6C6B1.4060206@cn.fujitsu.com>
+Date: Thu, 30 May 2013 11:25:37 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Linux-Scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: Introduce a help function local_time_seconds()
+ to simplify the getting time stamp operation
+References: <51A5CB83.6070704@cn.fujitsu.com> <51A6C0DE.5020001@huawei.com>
+In-Reply-To: <51A6C0DE.5020001@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 11:26:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 11:26:34,
+	Serialize complete at 2013/05/30 11:26:34
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+On 05/30/2013 11:00 AM, Libo Chen wrote:
 
-On Saturday 25 May 2013 16:11:52 Sylwester Nawrocki wrote:
-> On 05/25/2013 11:17 AM, Prabhakar Lad wrote:
-> >> > From looking at Figure 8 "TVP7002 Application Example" in the TVP7002's
-> >> > datasheet ([2], p. 52) and your initial TVP7002 patches it looks like
-> >> > what you want is to specify polarity of the SOGOUT signal, so the
-> >> > processor that receives this signal can properly interpret it, is it
-> >> > correct ?
-> > 
-> > Yes
-> > 
-> >> >  If so then wouldn't it be more appropriate to define e.g. 'sog-active'
-> >> >  property and media bus flags:
-> >> >           V4L2_MBUS_SYNC_ON_GREEN_ACTIVE_LOW
-> >> >           V4L2_MBUS_SYNC_ON_GREEN_ACTIVE_HIGH
-> >> >  
-> >> >  ?
-> > 
-> > Agreed I'll add these flags.
-> > 
-> >> >  And for synchronisation method on the analog part we could perhaps
-> >> >  define 'component-sync' or similar property that would enumerate all
-> >> >  possible synchronisation methods. We might as well use separate
-> >> >  boolean properties, but I'm a bit concerned about the increasing
-> >> >  number of properties that need to be parsed for each parallel video
-> >> >  bus "endpoint".
-> > 
-> > I am not clear on it can please elaborate more on this.
+> On 2013/5/29 17:33, Gu Zheng wrote:
+>> >From 4d4caa16f3886ae910ad6dfe13353fc836f546cc Mon Sep 17 00:00:00 2001
+>> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Date: Wed, 29 May 2013 17:34:22 +0900
+>> Subject: [PATCH] driver/scsi: Introduce a help function local_time_seconds() to simplify the getting time stamp operation
+>>
+> hi gu,
 > 
-> I thought about two possible options:
-> 
-> 1. single property 'component-sync' or 'video-sync' that would have values:
-> 
-> #define VIDEO_SEPARATE_SYNC	0x01
-> #define VIDEO_COMPOSITE_SYNC	0x02
-> #define VIDEO_SYNC_ON_COMPOSITE	0x04
-> #define VIDEO_SYNC_ON_GREEN	0x08
-> #define VIDEO_SYNC_ON_LUMINANCE	0x10
-> 
-> And we could put these definitions into a separate header, e.g.
-> <dt-bindings/video-interfaces.h>
-> 
-> Then in a device tree source file one could have, e.g.
-> 
-> video-sync = <VIDEO_SYNC_ON_GREEN>;
-> 
-> 
-> 2. Separate boolean property for each video sync type, e.g.
-> 
-> 	"video-composite-sync"
-> 	"video-sync-on-composite"
-> 	"video-sync-on-green"
-> 	"video-sync-on-luminance"
-> 
-> Separate sync, with separate VSYNC, HSYNC lines, would be the default, when
-> none of the above is specified and 'vsync-active', 'hsync-active' properties
-> are present.
+> next time, you can remove above info.
 
-I prefer 1. over 2.
+Ah~, I forgot to clean up the unnecessary title infos, thanks for your reminder.
 
-> However, I suppose the better would be to deduce the video synchronisation
-> method from the sync signal polarity flags. Then, for instance, when an
-> endpoint node contains "composite-sync-active" property the parser would
-> determine the "composite sync" synchronisation type is used.
-> 
-> Thus it might make sense to have only following integer properties (added
-> as needed):
-> 
-> composite-sync-active
-> sync-on-green-active
-> sync-on-comp-active
-> sync-on-luma-active
-> 
-> This would allow to specify polarity of each signal and at the same time
-> the parsing code could derive synchronisation type. A new field could be
-> added to struct v4l2_of_parallel_bus, e.g. sync_type and it would be filled
-> within v4l2_of_parse_endpoint().
-> 
-> What do you think ?
-
-My gut feeling is that we should have separate properties for the video sync 
-type and the synchronization signals polarities. We could have a chip that 
-supports sync-on-green on the analog (input) side and outputs separate hsync 
-and vsync signals only on the digital (output) side. There would be no sync-
-on-green polarity in that case.
-
--- 
 Regards,
+Gu
 
-Laurent Pinchart
+> 
+> 
+> thanks,
+> 
+> Libo
+> 
+> 
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  drivers/scsi/3w-9xxx.c |   14 ++------------
+>>  drivers/scsi/3w-sas.c  |   14 ++------------
+>>  include/scsi/scsi.h    |    9 +++++++++
+>>  3 files changed, 13 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+>> index 5e1e12c..44b3ea8 100644
+>> --- a/drivers/scsi/3w-9xxx.c
+>> +++ b/drivers/scsi/3w-9xxx.c
+>> @@ -374,8 +374,6 @@ out:
+>>  /* This function will queue an event */
+>>  static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
+>>  {
+>> -	u32 local_time;
+>> -	struct timeval time;
+>>  	TW_Event *event;
+>>  	unsigned short aen;
+>>  	char host[16];
+>> @@ -398,9 +396,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
+>>  	memset(event, 0, sizeof(TW_Event));
+>>  
+>>  	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
+>> -	do_gettimeofday(&time);
+>> -	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+>> -	event->time_stamp_sec = local_time;
+>> +	event->time_stamp_sec = local_time_seconds();
+>>  	event->aen_code = aen;
+>>  	event->retrieved = TW_AEN_NOT_RETRIEVED;
+>>  	event->sequence_id = tw_dev->error_sequence_id;
+>> @@ -479,11 +475,9 @@ out:
+>>  static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+>>  {
+>>  	u32 schedulertime;
+>> -	struct timeval utc;
+>>  	TW_Command_Full *full_command_packet;
+>>  	TW_Command *command_packet;
+>>  	TW_Param_Apache *param;
+>> -	u32 local_time;
+>>  
+>>  	/* Fill out the command packet */
+>>  	full_command_packet = tw_dev->command_packet_virt[request_id];
+>> @@ -503,11 +497,7 @@ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+>>  	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
+>>  	param->parameter_size_bytes = cpu_to_le16(4);
+>>  
+>> -	/* Convert system time in UTC to local time seconds since last 
+>> -           Sunday 12:00AM */
+>> -	do_gettimeofday(&utc);
+>> -	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
+>> -	schedulertime = local_time - (3 * 86400);
+>> +	schedulertime = local_time_seconds() - (3 * 86400);
+>>  	schedulertime = cpu_to_le32(schedulertime % 604800);
+>>  
+>>  	memcpy(param->data, &schedulertime, sizeof(u32));
+>> diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
+>> index c845bdb..69f1d8a 100644
+>> --- a/drivers/scsi/3w-sas.c
+>> +++ b/drivers/scsi/3w-sas.c
+>> @@ -236,8 +236,6 @@ out:
+>>  /* This function will queue an event */
+>>  static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
+>>  {
+>> -	u32 local_time;
+>> -	struct timeval time;
+>>  	TW_Event *event;
+>>  	unsigned short aen;
+>>  	char host[16];
+>> @@ -256,9 +254,7 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
+>>  	memset(event, 0, sizeof(TW_Event));
+>>  
+>>  	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
+>> -	do_gettimeofday(&time);
+>> -	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+>> -	event->time_stamp_sec = local_time;
+>> +	event->time_stamp_sec = local_time_seconds();
+>>  	event->aen_code = aen;
+>>  	event->retrieved = TW_AEN_NOT_RETRIEVED;
+>>  	event->sequence_id = tw_dev->error_sequence_id;
+>> @@ -444,11 +440,9 @@ out:
+>>  static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+>>  {
+>>  	u32 schedulertime;
+>> -	struct timeval utc;
+>>  	TW_Command_Full *full_command_packet;
+>>  	TW_Command *command_packet;
+>>  	TW_Param_Apache *param;
+>> -	u32 local_time;
+>>  
+>>  	/* Fill out the command packet */
+>>  	full_command_packet = tw_dev->command_packet_virt[request_id];
+>> @@ -468,11 +462,7 @@ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
+>>  	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
+>>  	param->parameter_size_bytes = cpu_to_le16(4);
+>>  
+>> -	/* Convert system time in UTC to local time seconds since last 
+>> -           Sunday 12:00AM */
+>> -	do_gettimeofday(&utc);
+>> -	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
+>> -	schedulertime = local_time - (3 * 86400);
+>> +	schedulertime = local_time_seconds() - (3 * 86400);
+>>  	schedulertime = cpu_to_le32(schedulertime % 604800);
+>>  
+>>  	memcpy(param->data, &schedulertime, sizeof(u32));
+>> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+>> index 66216c1..f3377ca 100644
+>> --- a/include/scsi/scsi.h
+>> +++ b/include/scsi/scsi.h
+>> @@ -574,4 +574,13 @@ static inline __u32 scsi_to_u32(__u8 *ptr)
+>>  	return (ptr[0]<<24) + (ptr[1]<<16) + (ptr[2]<<8) + ptr[3];
+>>  }
+>>  
+>> +/*
+>> + * Convert system time in UTC to local time seconds.
+>> + */
+>> +static inline u32 local_time_seconds(void)
+>> +{
+>> +	struct timeval utc;
+>> +	do_gettimeofday(&utc);
+>> +	return (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
+>> +}
+>>  #endif /* _SCSI_SCSI_H */
+>>
+> 
+> 
+> 
+
 
