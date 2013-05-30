@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967650Ab3E3Gsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:48:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:44866 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab3E3Gsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:48:35 -0400
-X-IronPort-AV: E=Sophos;i="4.87,769,1363104000"; 
-   d="scan'208";a="7410202"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH] powerpc/smp: use '==' instead of '<' for  system_state
-Date: Thu, 30 May 2013 14:47:53 +0800
-Message-Id: <1369896473-23588-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 14:46:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 14:47:02,
-	Serialize complete at 2013/05/30 14:47:02
+	id S967675Ab3E3Gv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:51:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22182 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967574Ab3E3GvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 02:51:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,769,1363158000"; 
+   d="scan'208";a="309915173"
+Message-ID: <51A6F6E1.3040309@linux.intel.com>
+Date: Thu, 30 May 2013 09:51:13 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
+References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>  <20130529063925.27486.46649.stgit@ladj378.jer.intel.com> <1369858192.1971.21.camel@bwh-desktop.uk.level5networks.com>
+In-Reply-To: <1369858192.1971.21.camel@bwh-desktop.uk.level5networks.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'system_state < SYSTEM_RUNNING' will have same effect
-with 'system_state == SYSTEM_BOOTING', but the later
-one is more clearer.
+On 29/05/2013 23:09, Ben Hutchings wrote:
+> On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
+>> +void napi_hash_add(struct napi_struct *napi)
+>> +{
+>> +	if (!test_and_set_bit(NAPI_STATE_HASHED, &napi->state)) {
+>> +
+>> +		spin_lock(&napi_hash_lock);
+>> +
+>> +		/* 0 is not a valid id */
+>> +		napi->napi_id = 0;
+>> +		while (!napi->napi_id)
+>> +			napi->napi_id = ++napi_gen_id;
+>
+> Suppose we're loading/unloading one driver repeatedly while another one
+> remains loaded the whole time.  Then once napi_gen_id wraps around, the
+> same ID can be assigned to multiple contexts.
+>
+> So far as I can see, assigning the same ID twice will just make polling
+> stop working for one of the NAPI contexts; I don't think it causes a
+> crash.  And it is exceedingly unlikely to happen in production.  But if
+> you're going to the trouble of handling wrap-around at all, you'd better
+> handle this.
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- arch/powerpc/platforms/cell/smp.c    |    2 +-
- arch/powerpc/platforms/powernv/smp.c |    2 +-
- arch/powerpc/platforms/pseries/smp.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+OK
 
-diff --git a/arch/powerpc/platforms/cell/smp.c b/arch/powerpc/platforms/cell/smp.c
-index d35dbbc..f75f6fc 100644
---- a/arch/powerpc/platforms/cell/smp.c
-+++ b/arch/powerpc/platforms/cell/smp.c
-@@ -142,7 +142,7 @@ static int smp_cell_cpu_bootable(unsigned int nr)
- 	 * during boot if the user requests it.  Odd-numbered
- 	 * cpus are assumed to be secondary threads.
- 	 */
--	if (system_state < SYSTEM_RUNNING &&
-+	if (system_state == SYSTEM_BOOTING &&
- 	    cpu_has_feature(CPU_FTR_SMT) &&
- 	    !smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
- 		return 0;
-diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-index 88c9459..77784ae 100644
---- a/arch/powerpc/platforms/powernv/smp.c
-+++ b/arch/powerpc/platforms/powernv/smp.c
-@@ -51,7 +51,7 @@ static int pnv_smp_cpu_bootable(unsigned int nr)
- 	/* Special case - we inhibit secondary thread startup
- 	 * during boot if the user requests it.
- 	 */
--	if (system_state < SYSTEM_RUNNING && cpu_has_feature(CPU_FTR_SMT)) {
-+	if (system_state == SYSTEM_BOOTING && cpu_has_feature(CPU_FTR_SMT)) {
- 		if (!smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
- 			return 0;
- 		if (smt_enabled_at_boot
-diff --git a/arch/powerpc/platforms/pseries/smp.c b/arch/powerpc/platforms/pseries/smp.c
-index 12bc8c3..306643c 100644
---- a/arch/powerpc/platforms/pseries/smp.c
-+++ b/arch/powerpc/platforms/pseries/smp.c
-@@ -192,7 +192,7 @@ static int smp_pSeries_cpu_bootable(unsigned int nr)
- 	/* Special case - we inhibit secondary thread startup
- 	 * during boot if the user requests it.
- 	 */
--	if (system_state < SYSTEM_RUNNING && cpu_has_feature(CPU_FTR_SMT)) {
-+	if (system_state == SYSTEM_BOOTING && cpu_has_feature(CPU_FTR_SMT)) {
- 		if (!smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
- 			return 0;
- 		if (smt_enabled_at_boot
--- 
-1.7.2.5
 
+> [...]
+>> +/* must be called under rcu_read_lock(), as we dont take a reference */
+>> +struct napi_struct *napi_by_id(int napi_id)
+>> +{
+>> +	unsigned int hash = napi_id % HASH_SIZE(napi_hash);
+> [...]
+>
+> napi_id should be declared unsigned int here, as elsewhere.  The
+> division can't actually yield a negative result because HASH_SIZE() has
+> type size_t and napi_id is promoted to match, but I had to go and look
+> at hashtable.h to check that.
+
+Good catch,
+
+Thanks,
+Eliezer
