@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab3E3OkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:40:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33736 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932733Ab3E3Ojx (ORCPT
+	id S933166Ab3E3Oks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:40:48 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:49757 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932733Ab3E3Okp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:39:53 -0400
-Date: Thu, 30 May 2013 16:39:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Bohac <jbohac@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] nohz: Prevent broadcast source from stealing full dynticks
- timekeeping duty
-In-Reply-To: <20130530142200.GA23384@somewhere>
-Message-ID: <alpine.LFD.2.02.1305301638470.2905@ionos>
-References: <1369845580-15273-1-git-send-email-fweisbec@gmail.com> <1369845580-15273-2-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1305301554100.2905@ionos> <20130530142200.GA23384@somewhere>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 30 May 2013 10:40:45 -0400
+Date: Thu, 30 May 2013 15:40:28 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: majianpeng <majianpeng@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mm/kmemleak.c: Use list_for_each_entry_safe to
+ reconstruct function scan_gray_list
+Message-ID: <20130530144028.GF23631@arm.com>
+References: <519224D8.5090704@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519224D8.5090704@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013, Frederic Weisbecker wrote:
-
-> On Thu, May 30, 2013 at 03:57:17PM +0200, Thomas Gleixner wrote:
-> > On Wed, 29 May 2013, Frederic Weisbecker wrote:
-> > 
-> > > The timekeeping duty is currently assigned to the CPU that
-> > > handles the tick broadcast clock device by the time it is set in
-> > > one shot mode.
-> > > 
-> > > The reason for this is not entirely clear as outlined by Jiri
-> > > Bohac: https://patchwork.kernel.org/patch/2302951/
-> > > 
-> > > One could speculate though that it makes sure only one CPU
-> > > is woken up to fixup the timekeeping max deferment. But the
-> > > timekeeper can change anytime after the broadcast CPU becomes
-> > > idle. So probably we can remove this as in Jiri's patch, but
-> > > not late in the -rc's.
-> > 
-> > Looking at commit 7300711e (clockevents: broadcast fixup possible
-> > waiters) which introduced that takeover, I really can't see a reason
-> > why we must do that. It's safe to remove it completely even now.
+On Tue, May 14, 2013 at 12:49:44PM +0100, majianpeng wrote:
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+>  mm/kmemleak.c | 8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
 > 
-> Yeah it seems so, if you're ok I can commit https://patchwork.kernel.org/patch/2302951/
-> with your ack and send another pull request.
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index b1525db..f0ece93 100644
+> --- a/mm/kmemleak.c
+> +++ b/mm/kmemleak.c
+> @@ -1225,22 +1225,16 @@ static void scan_gray_list(void)
+>  	 * from inside the loop. The kmemleak objects cannot be freed from
+>  	 * outside the loop because their use_count was incremented.
+>  	 */
+> -	object = list_entry(gray_list.next, typeof(*object), gray_list);
+> -	while (&object->gray_list != &gray_list) {
+> +	list_for_each_entry_safe(object, tmp, &gray_list, gray_list) {
+>  		cond_resched();
+>  
+>  		/* may add new objects to the list */
+>  		if (!scan_should_stop())
+>  			scan_object(object);
+>  
+> -		tmp = list_entry(object->gray_list.next, typeof(*object),
+> -				 gray_list);
+> -
+>  		/* remove the object from the list and release it */
+>  		list_del(&object->gray_list);
+>  		put_object(object);
+> -
+> -		object = tmp;
+>  	}
+>  	WARN_ON(!list_empty(&gray_list));
 
-Yup.
+I tried this patch for a few days and I hit the WARN_ON after the loop.
+During scanning, new entries may be added at the end of the loop but we
+need to loop until all the entries have been removed. I probably had a
+reason why I had the 'while' loop.
+
+The key difference is that list_for_each_entry_safe() gets the next
+entry (n or tmp above) before scan_object() and it may hit the end of
+the list. However, scan_object() may do a list_add_tail(&gray_list)
+hence we need to get the next entry after this function.
+
+Basically list_for_each_entry_safe() is not safe with tail additions.
+I'll revert this patch (hasn't reached mainline anyway).
+
+Thanks.
+
+-- 
+Catalin
