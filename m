@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3E3NVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:21:05 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50207 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab3E3NU5 convert rfc822-to-8bit (ORCPT
+	id S1755485Ab3E3NVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:21:15 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:64650 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab3E3NVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:20:57 -0400
+	Thu, 30 May 2013 09:21:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130529155018.GE3012@gmail.com>
-References: <1369834407-30762-1-git-send-email-gabriel.fernandez.st@gmail.com>
-	<1369834407-30762-2-git-send-email-gabriel.fernandez.st@gmail.com>
-	<20130529155018.GE3012@gmail.com>
-Date: Thu, 30 May 2013 15:20:55 +0200
-Message-ID: <CAGo1xzDB-uGsMANghtqX-rX6GuhmHKo1Z=ywtC=TXfx6eM_ALQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ARM: ux540: Add ccu8540-uib-v3 Device Tree Machine
-From: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Olivier Clergeaud <olivier.clergeaud@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
+In-Reply-To: <CAHp75VcpdQqd+evBNhwMGHvXwCoVdaXYdBqQeSDGwt25dLkpGQ@mail.gmail.com>
+References: <1369817109-4277-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CAHp75VcpdQqd+evBNhwMGHvXwCoVdaXYdBqQeSDGwt25dLkpGQ@mail.gmail.com>
+Date: Thu, 30 May 2013 15:21:02 +0200
+Message-ID: <CAN+gG=ESjWJDfHN4KmMAnLUko-wCa8r0VzQmFYqDme5Jg+FszA@mail.gmail.com>
+Subject: Re: [PATCH] HID: multitouch: prevent memleak with the allocated name
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 May 2013 17:50, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 29 May 2013, Gabriel Fernandez wrote:
->
->> From: Gabriel Fernandez <gabriel.fernandez@st.com>
+Hi Andy,
+
+On Wed, May 29, 2013 at 10:12 PM, Andy Shevchenko
+<andy.shevchenko@gmail.com> wrote:
+> On Wed, May 29, 2013 at 11:45 AM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> mt_free_input_name() was never called during .remove():
+>> hid_hw_stop() removes the hid_input items in hdev->inputs, and so the
+>> list is therefore empty after the call. In the end, we never free the
+>> special names that has been allocated during .probe().
 >>
->> This board includes the U8540 platform and specifies only the
->> ST-Ericsson UIB version 3.
->
-> I'm confused by this.
->
-> Is it a new board, or just a UIB?
-
-For me it's a new board.
-
-ccu8540.dts is a board without uib.
-You can can plug on this board some different uibs.
-That's why, i created a ccu8540-uib-v3.dts board in which i included a
-common board ccu8540.dts
-
-Another solution is to create one *.dtsi file with all uibs for
-ccu8540 and makes a dynamique detection.
-Linus, Lee  what do you think about that ?
-
->
->> ---
->>  arch/arm/boot/dts/Makefile           |  1 +
->>  arch/arm/boot/dts/ccu8540-uib-v3.dts | 16 ++++++++++++++++
->>  2 files changed, 17 insertions(+)
->>  create mode 100644 arch/arm/boot/dts/ccu8540-uib-v3.dts
+>> Restore the original name before freeing it to avoid acessing already
+>> freed pointer.
 >>
->> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
->> index 1995988..29cb5db 100644
->> --- a/arch/arm/boot/dts/Makefile
->> +++ b/arch/arm/boot/dts/Makefile
->> @@ -159,6 +159,7 @@ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
->>       hrefprev60.dtb \
->>       hrefv60plus.dtb \
->>       ccu8540.dtb \
->> +     ccu8540-uib-v3.dtb      \
->>       ccu9540.dtb
->>  dtb-$(CONFIG_ARCH_SHMOBILE) += emev2-kzm9d.dtb \
->>       r8a7740-armadillo800eva.dtb \
->> diff --git a/arch/arm/boot/dts/ccu8540-uib-v3.dts b/arch/arm/boot/dts/ccu8540-uib-v3.dts
->> new file mode 100644
->> index 0000000..4b4982e
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/ccu8540-uib-v3.dts
 >
-> If this is a UIB, it should be an include file (*.dtsi).
+>> I just spotted this one yesterday... My guess is that this way is safe (without
+>> a locking mechanism to prevent accessing hi->input->name), but I'm not 100% sure.
 >
->> @@ -0,0 +1,16 @@
->> +/*
->> + * Copyright 2012 ST-Ericsson AB
->> + *
->> + * The code contained herein is licensed under the GNU General Public
->> + * License. You may obtain a copy of the GNU General Public License
->> + * Version 2 or later at the following locations:
->> + *
->> + * http://www.opensource.org/licenses/gpl-license.html
->> + * http://www.gnu.org/copyleft/gpl.html
->> + */
->> +
->> +#include "ccu8540.dts"
+> Hi Jiri, Benjamin.
 >
-> No, the other way round.
+> What do you think about patch I just sent?
+
+Thanks for looking at this. My very first concern is that none of the
+HID part has been devm-ized (this is on my todo-if-I-have-some-time
+list). The input susbsystem has been devm-ized quite recently, so this
+should be possible now.
+So, basically, I honestly don't know if using part of devm mallocs in
+hid-multitouch is safe and if it will work as expected. Maybe Jiri
+will have a better idea.
+
+I have a few comments on your patch if Jiri wants to include it.
+
 >
-> ccu8540.dts should include this one.
->
->> +/ {
->> +     model = "ST-Ericsson U8540 platform with device tree UIB v3";
->> +};
->
-> This patch doesn't actually do anything.
->
-> Fix it up, so it at least as some functionality.
->
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> P.S. Benjamin, I re-used your commit message, I think you have no objections.
+
+No objections :)
+
+Cheers,
+Benjamin
