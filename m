@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968085Ab3E3KGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:06:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34221 "EHLO mx2.suse.de"
+	id S968118Ab3E3KIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:08:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38902 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968041Ab3E3KFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:05:55 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/2] documentation: Document the is_dirty_writeback aops callback
-Date: Thu, 30 May 2013 11:05:48 +0100
-Message-Id: <1369908348-7943-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369908348-7943-1-git-send-email-mgorman@suse.de>
-References: <1369908348-7943-1-git-send-email-mgorman@suse.de>
+	id S968064Ab3E3KIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:08:38 -0400
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+To: <khilman@linaro.org>, <j-keerthy@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: [PATCH v2 0/3] PM / AVS: SmartReflex: driver misc fixes
+Date: Thu, 30 May 2013 13:08:33 +0300
+Message-ID: <1369908516-26573-1-git-send-email-andrii.tseglytskyi@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject says it all.
+The following patch series contain several misc fixes to SmartReflex driver:
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- Documentation/filesystems/vfs.txt | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+1. disable errgen before vpbound disable. Critical fix, needed for
+proper work of AVS-VP communicaton protocol.
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index a173cb7..6b26c75 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -577,6 +577,7 @@ struct address_space_operations {
- 	int (*launder_page) (struct page *);
- 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
- 					unsigned long);
-+	void (*is_dirty_writeback) (struct page *, bool *, bool *);
- 	int (*error_remove_page) (struct mapping *mapping, struct page *page);
- 	int (*swap_activate)(struct file *);
- 	int (*swap_deactivate)(struct file *);
-@@ -741,6 +742,15 @@ struct address_space_operations {
- 	block is up to date then the read can complete without needing the IO
- 	to bring the whole page up to date.
- 
-+  is_dirty_writeback: Called by the VM when attempting to reclaim a page.
-+	The VM uses dirty and writeback information to determine if it needs
-+	to stall to allow flushers a chance to complete some IO. Ordinarily
-+	it can use PageDirty and PageWriteback but some filesystems have
-+	more complex state (unstable pages in NFS prevent reclaim) or
-+	do not set those flags due to locking problems (jbd). This callback
-+	allows a filesystem to indicate to the VM if a page should be
-+	treated as dirty or writeback for the purposes of stalling.
-+
-   error_remove_page: normally set to generic_error_remove_page if truncation
- 	is ok for this address space. Used for memory failure handling.
- 	Setting this implies you deal with pages going away under you,
+2. disable runtime PM on driver remove. Trivial - runtime PM cleanup.
+
+3. fix driver name. Trivial - proper DRIVER_NAME was not defined
+since SmartReflex driver was introduced with initial commit.
+
+Patches are based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+tag: v3.10-rc3
+
+Verified on OMAP4430. Boot - OK. SmartReflex registers debug dump - OK
+
+Changes in v2:
+- rebased to v3.10-rc3
+- minor comment update in "disable errgen before vpbound disable" patch
+
+Andrii Tseglytskyi (2):
+  PM / AVS: SmartReflex: disable runtime PM on driver remove
+  PM / AVS: SmartReflex: fix driver name
+
+Nishanth Menon (1):
+  PM / AVS: SmartReflex: disable errgen before vpbound disable
+
+ drivers/power/avs/smartreflex.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
 -- 
-1.8.1.4
+1.7.9.5
 
