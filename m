@@ -1,156 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966011Ab3E3RtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:49:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18354 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965904Ab3E3RtB (ORCPT
+	id S965935Ab3E3Rt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:49:27 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41638 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965953Ab3E3RtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:49:01 -0400
-Date: Thu, 30 May 2013 13:48:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Feng Jin <joe.jin@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Yuval Shaia <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
- driver load first time
-Message-ID: <20130530174839.GA11686@phenom.dumpdata.com>
-References: <20130514142013.GA10173@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>
- <5195944A.3050608@oracle.com>
- <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
- <20130520175706.GA27973@phenom.dumpdata.com>
- <20130520203855.GA30616@phenom.dumpdata.com>
- <519B474E.4000202@citrix.com>
- <20130521134059.GE492@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com>
+	Thu, 30 May 2013 13:49:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
+References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
+	<3463581.AQ3EkyvJ7g@vostro.rjw.lan>
+	<5738208.7rKb57pu5j@vostro.rjw.lan>
+	<4462684.QmYxzGRhx8@vostro.rjw.lan>
+	<CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
+Date: Thu, 30 May 2013 10:49:07 -0700
+X-Google-Sender-Auth: 6Wld8oKuZ3tnTUeHmlVGN1m_Xxk
+Message-ID: <CAE9FiQX2tPe5EkdFBMtNwo73MqnVePKPxWCDktpa9BoJyRW5nQ@mail.gmail.com>
+Subject: Re: System slow down from udev
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 06:50:41PM +0100, Stefano Stabellini wrote:
-> On Tue, 21 May 2013, Stefano Stabellini wrote:
-> > On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > Looking at the hypervisor code I couldn't see anything obviously wrong.
-> > > 
-> > > I think the culprit is "physdev_unmap_pirq":
-> > > 
-> > >    if ( is_hvm_domain(d) )                                                     
-> > >     {                                                                           
-> > >         spin_lock(&d->event_lock);                                              
-> > >         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
-> > >             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
-> > >             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
-> > >             domain_pirq_to_irq(d, pirq));                                       
-> > >                                                                                 
-> > >         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
-> > >             ret = unmap_domain_pirq_emuirq(d, pirq);                            
-> > >         spin_unlock(&d->event_lock);                                            
-> > >         if ( domid == DOMID_SELF || ret )                                       
-> > >             goto free_domain;                                             
-> > > 
-> > > It always tells me unbound:
-> > > 
-> > > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (a bit older debug code, so the 'unbound' does not show up here).
-> > > 
-> > > Which means that the call to unmap_domain_pirq_emuirq does not happen.
-> > > The checks in unmap_domain_pirq_emuirq also look to be depend
-> > > on the code being IRQ_UNBOUND.
-> > > 
-> > > In other words, all of that code looks to only clear things when
-> > > they are !IRQ_UNBOUND.
-> > > 
-> > > But the other logic (IRQ_UNBOUND) looks to be missing a removal
-> > > in the radix tree:
-> > > 
-> > >   if ( emuirq != IRQ_PT )                                                     
-> > >         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
-> > >                                                                         
-> > > And I think that is what is causing the leak - the radix tree
-> > > needs to be pruned? Or perhaps the allocate_pirq should check
-> > > the radix tree for IRQ_UNBOUND ones and re-use them?
-> > 
-> > I think that you are looking in the wrong place.
-> > The issue is that QEMU doesn't call pt_msi_disable in
-> > pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
-> > 
-> > The code above is correct as is because it is trying to handle emulated
-> > IRQs and MSIs, not real passthrough MSIs. They latter are not added to
-> > that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
-> 
-> 
-> This patch fixes the issue, I have only tested MSI (MSI-X completely
-> untested).
+On Thu, May 30, 2013 at 10:42 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, May 30, 2013 at 9:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Thursday, May 30, 2013 04:45:35 PM Rafael J. Wysocki wrote:
+>>> On Thursday, May 30, 2013 04:34:51 PM Rafael J. Wysocki wrote:
+>> [...]
+>>> >
+>>> > I'll try to dig deeper locally in the meantime.
+>>>
+>>> Actually, I think I know what the problem is, but I need some more time to
+>>> debug it.  Fortunately, I'm able to see some symptoms. :-)
+>>
+>> OK, one fix is appended, but there still is one more bug I need to investigate.
+>>
+>> Please check if this one helps, though.
+>
+> yes, that fix the problem.
+>
+>
+>>
+>> Thanks,
+>> Rafael
+>>
+>>
+>> ---
+>>  drivers/acpi/acpi_processor.c   |    5 +++++
+>>  drivers/acpi/processor_driver.c |    3 ---
+>>  2 files changed, 5 insertions(+), 3 deletions(-)
+>>
+>> Index: linux-pm/drivers/acpi/processor_driver.c
+>> ===================================================================
+>> --- linux-pm.orig/drivers/acpi/processor_driver.c
+>> +++ linux-pm/drivers/acpi/processor_driver.c
+>> @@ -78,9 +78,6 @@ static struct device_driver acpi_process
+>>         .remove = acpi_processor_stop,
+>>  };
+>>
+>> -DEFINE_PER_CPU(struct acpi_processor *, processors);
+>> -EXPORT_PER_CPU_SYMBOL(processors);
+>> -
+>>  static void acpi_processor_notify(acpi_handle handle, u32 event, void *data)
+>>  {
+>>         struct acpi_device *device = data;
+>> Index: linux-pm/drivers/acpi/acpi_processor.c
+>> ===================================================================
+>> --- linux-pm.orig/drivers/acpi/acpi_processor.c
+>> +++ linux-pm/drivers/acpi/acpi_processor.c
+>> @@ -29,6 +29,9 @@
+>>
+>>  ACPI_MODULE_NAME("processor");
+>>
+>> +DEFINE_PER_CPU(struct acpi_processor *, processors);
+>> +EXPORT_PER_CPU_SYMBOL(processors);
+>> +
+>>  /* --------------------------------------------------------------------------
+>>                                  Errata Handling
+>>     -------------------------------------------------------------------------- */
+>> @@ -387,6 +390,7 @@ static int __cpuinit acpi_processor_add(
+>>          * checks.
+>>          */
+>>         per_cpu(processor_device_array, pr->id) = device;
+>> +       per_cpu(processors, pr->id) = pr;
+>>
+>>         dev = get_cpu_device(pr->id);
+>>         result = acpi_bind_one(dev, pr->handle);
+>> @@ -406,6 +410,7 @@ static int __cpuinit acpi_processor_add(
+>>   err:
+>>         free_cpumask_var(pr->throttling.shared_cpu_map);
+>>         device->driver_data = NULL;
+>> +       per_cpu(processors, pr->id) = NULL;
+>>   err_free_pr:
+>>         kfree(pr);
+>>         return result;
+>>
+>
+> do you need to remove
+>     per_cpu(processors, pr->id) = NULL;
+> from processor_driver.c::acpi_processor_stop ?
 
-I tested it on my NIC which has MSI and it worked nicely. The other box
-with MSI-X is giving me a bit of trouble so will have to wait.
+also can you kill per_cpu processors ?
 
-Duan,
-
-Could you - when you get a moment - also try this with the PCI device
-that was having issues please?
-> 
-> 
-> diff --git a/hw/pass-through.c b/hw/pass-through.c
-> index 304c438..079e465 100644
-> --- a/hw/pass-through.c
-> +++ b/hw/pass-through.c
-> @@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct pt_dev *ptdev,
->          ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
->      }
->      else
-> -        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
-> +    {
-> +        if (ptdev->msi->flags & PT_MSI_MAPPED) {
-> +            pt_msi_disable(ptdev);
-> +        }
-> +    }
->  
->      /* pass through MSI_ENABLE bit when no MSI-INTx translation */
->      if (!ptdev->msi_trans_en) {
-> @@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct pt_dev *ptdev,
->              pt_disable_msi_translate(ptdev);
->          }
->          pt_msix_update(ptdev);
-> +    } else if (!(*value & PCI_MSIX_ENABLE) && ptdev->msix->enabled) {
-> +        pt_msix_delete(ptdev);
->      }
->  
->      ptdev->msix->enabled = !!(*value & PCI_MSIX_ENABLE);
-> diff --git a/hw/pt-msi.c b/hw/pt-msi.c
-> index b03b989..65fa7d6 100644
-> --- a/hw/pt-msi.c
-> +++ b/hw/pt-msi.c
-> @@ -213,7 +213,8 @@ void pt_msi_disable(struct pt_dev *dev)
->  
->  out:
->      /* clear msi info */
-> -    dev->msi->flags &= ~(MSI_FLAG_UNINIT | PT_MSI_MAPPED | PCI_MSI_FLAGS_ENABLE);
-> +    dev->msi->flags &= ~(PT_MSI_MAPPED | PCI_MSI_FLAGS_ENABLE);
-> +    dev->msi->flags |= MSI_FLAG_UNINIT;
->      dev->msi->pirq = -1;
->      dev->msi_trans_en = 0;
->  }
+You should always get it from
+acpi_device from per_cpu(processor_device_array, cpu)
+then driver_data from it.
