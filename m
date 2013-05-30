@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966141Ab3E3RvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:51:05 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46089 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966031Ab3E3Rup (ORCPT
+	id S935599Ab3E3Rx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:53:57 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34126 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935568Ab3E3Rxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:50:45 -0400
+	Thu, 30 May 2013 13:53:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130530081129.GF9799@lukather>
-References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
- <CACQ1gAgp6o8HqQcv=4cWoAZze3wtXHMX+g+7KvV-pnC2W5=iyg@mail.gmail.com> <20130530081129.GF9799@lukather>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Thu, 30 May 2013 19:50:24 +0200
-Message-ID: <CACQ1gAhu0P0BvfNkhsSgdzeU7Pf+CxesVJ87ok2FMpfBmaRMXA@mail.gmail.com>
-Subject: Re: [PATCHv3 RESEND 0/6] ARM: sunxi: Add support for A10 Ethernet controller
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: davem@davemloft.net, Emilio Lopez <emilio@elopez.com.ar>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1369161163-6448-2-git-send-email-rvaswani@codeaurora.org>
+References: <1369161163-6448-1-git-send-email-rvaswani@codeaurora.org>
+	<1369161163-6448-2-git-send-email-rvaswani@codeaurora.org>
+Date: Thu, 30 May 2013 19:53:51 +0200
+Message-ID: <CACRpkdYqiri8-VPM+uR2HrXUdFWFbanTip-v3sG98MNjxYDN8w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove gpiomux-v2 and re-organize
+ MSM_GPIOMUX configs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/30 Maxime Ripard <maxime.ripard@free-electrons.com>:
+On Tue, May 21, 2013 at 8:32 PM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
+
+> Remove gpiomux-v2 as it's not being used and make way for future improvements.
 >
-> Did you look at the load while iperf was running? I guess we can expect
-> it to be pretty high since it runs without DMA.
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 
-I just did the test.
-cpu is at 55%-60%
+OK less problems in my world -> good.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-root@debian:~# date ; iperf -c 192.168.1.10 -t 300 ; cat /proc/loadavg
-Thu May 30 17:43:13 UTC 2013
-------------------------------------------------------------
-Client connecting to 192.168.1.10, TCP port 5001
-TCP window size: 20.0 KByte (default)
-------------------------------------------------------------
-[  3] local 192.168.1.235 port 45459 connected with 192.168.1.10 port 5001
-[ ID] Interval       Transfer     Bandwidth
-[  3]  0.0-300.0 sec  3.28 GBytes  94.0 Mbits/sec
-0.83 0.71 0.43 1/46 1770
+I hope "future improvements" mean "we're switching to pin control".
 
-loadavg over a 5min at 0.71, yeah, that's pretty high...
-
-Richard.
+Yours,
+Linus Walleij
