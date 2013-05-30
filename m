@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030589Ab3E3LDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:03:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44771 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030459Ab3E3LDA (ORCPT
+	id S968207Ab3E3LIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:08:45 -0400
+Received: from canardo.mork.no ([148.122.252.1]:55335 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968169Ab3E3LIh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:03:00 -0400
-Date: Thu, 30 May 2013 13:02:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf: Enable wakeup_events logic for all events
-Message-ID: <20130530110239.GN12193@twins.programming.kicks-ass.net>
-References: <1369907587-8963-1-git-send-email-jolsa@redhat.com>
- <1369907587-8963-2-git-send-email-jolsa@redhat.com>
+	Thu, 30 May 2013 07:08:37 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: skbuff: use _RET_IP_
+Organization: m
+References: <1369861743.4188.33.camel@buesod1.americas.hpqcorp.net>
+	<51A6768B.5050603@cogentembedded.com>
+Date: Thu, 30 May 2013 13:08:10 +0200
+In-Reply-To: <51A6768B.5050603@cogentembedded.com> (Sergei Shtylyov's message
+	of "Thu, 30 May 2013 01:43:39 +0400")
+Message-ID: <87obbsohd1.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369907587-8963-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 11:53:06AM +0200, Jiri Olsa wrote:
-> Currently the perf_events_attr::wakeup_events logic is
-> checked only for regular samples.
-> 
-> If we have an event that produce only auxiliary events
-> (MMAP|COMM|EXIT|FORK), the poll call does not follow
-> the perf_events_attr wakeup_events setup and reports
-> no data.
-> 
-> Fixing this by moving the perf_events_attr::wakeup_events
-> checking logic into the function and calling it from
-> perf_output_end. This way any output event is checked
-> properly.
-> 
+Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> writes:
 
-So something like this came up before and ISTR doing a patch similar to
-what you propose but ended up not going with it because... uhm...
+>     Why not "text:%#lx" as already used in this string? It's
+> equivalent to "0x%lx".
 
-I have vague memories about people (possibly me) wanting wake_events to
-mean samples. Like get me a wakeup every 20 samples. With your patch the
-side-band events now also count towards 'events'.
+Well, I don't know the reasoning in this case, but I'd like to note that
+those are not strictly equivalent.  Personally I find the formatting of 0
+annoying enough to avoid %#x for any value which may be 0.  It's
+especially bad if you try to line up things by adding leading zeros.
 
-I think the most common use of wake_events is people setting it to 1 and
-have perf generate a SIGfoo for every sample so they can do magic in
-their userspace signal handler. This is popular for interpreters.
+I would expect these to produce the same result, but they don't:
 
-It would be unfortunate to get SIGfoos for side-band chatter.
+	printf("0x%02hhx\n", 0);
+	printf("%#04hhx\n", 0);
+
+Ending up with a 4 digit output when you expect 2 is very confusing.  It
+doesn't matter that 0 is 0 in any case.  Why doesn't the same happen to
+1 then?  This is just inconsistent behaviour, and I see no valid excuse
+for it.
+
+IMHO the single format character saved isn't worth this at all.  I'll
+continue using 0x%x
 
 
-Makes sense?
+Bjørn
