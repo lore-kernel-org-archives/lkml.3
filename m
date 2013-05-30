@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967817Ab3E3Hlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:41:45 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:24972 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967621Ab3E3Hli (ORCPT
+	id S967834Ab3E3Hl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:41:56 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:63870 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967689Ab3E3Hli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 03:41:38 -0400
-Message-ID: <51A702AD.7000507@atmel.com>
-Date: Thu, 30 May 2013 09:41:33 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Robert Nelson <Robert.Nelson@digikey.com>
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com> <1369298335-24597-1-git-send-email-jhovold@gmail.com>
-In-Reply-To: <1369298335-24597-1-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+References: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+Date: Thu, 30 May 2013 09:41:38 +0200
+Message-ID: <CACRpkdYBfvr0kA7bd-6Ns78UH7JtBCFDzFxyHLgtReB32O4D+w@mail.gmail.com>
+Subject: Re: [PATCH -next v2] dmaengine: ste_dma40: fix error return code in d40_probe()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/2013 10:38, Johan Hovold :
-> This is an update of the shadow-interrupt-mask series against v3.10-rc2.
->
-> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
-> affected. If not, then some probing mechanism as the one Doug suggested
-> could be implemented on top of (a subset of) these patches. What do you
-> say, Nicolas?
+On Thu, May 30, 2013 at 6:32 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
 
-No probing mechanism is needed: only sam9x5 are affected.
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> In many of the error handling case, the return value 'ret' not set
+> and 0 will be return from d40_probe() even if error, but we should
+> return a negative error code instead in those error handling case.
+> This patch fixed them, and also removed useless variable 'err'.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+> v1 -> v2: rebased on linux-next.git
 
-> Note that the first patch (adding a missing OF compile guard) could be
-> applied straight away.
->
-> Thanks,
-> Johan
->
->
-> v3:
->   - rebase against v3.10-rc2
->   - remove some comments
+I've tentatively applied this to my dma40 branch, waiting for Vinod
+to ACK it.
 
-Thanks for rebasing this series.
-
-Best regards,
-
-> v2:
->   - rebase on top of DT-support patch by Joachim Eastwood
->   - add missing brace in DT-id table
->
->
-> Johan Hovold (5):
->    rtc-at91rm9200: add match-table compile guard
->    rtc-at91rm9200: add configuration support
->    rtc-at91rm9200: refactor interrupt-register handling
->    rtc-at91rm9200: add shadow interrupt mask
->    rtc-at91rm9200: use shadow IMR on at91sam9x5
->
->   .../bindings/rtc/atmel,at91rm9200-rtc.txt          |   2 +-
->   arch/arm/boot/dts/at91sam9x5.dtsi                  |   2 +-
->   drivers/rtc/rtc-at91rm9200.c                       | 131 +++++++++++++++++----
->   3 files changed, 113 insertions(+), 22 deletions(-)
->
-
-
--- 
-Nicolas Ferre
+Yours,
+Linus Walleij
