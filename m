@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030315Ab3E3KbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:31:08 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62663 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968083Ab3E3Ka7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:30:59 -0400
+	id S1030532Ab3E3KoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:44:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44014 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030424Ab3E3Kn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:43:59 -0400
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+To: <khilman@linaro.org>, <j-keerthy@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: [PATCH v1 0/2] PM / AVS: SmartReflex: optimization series
+Date: Thu, 30 May 2013 13:43:55 +0300
+Message-ID: <1369910637-19100-1-git-send-email-andrii.tseglytskyi@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <51A6B7D8.8090600@huawei.com>
-References: <51A6B7D8.8090600@huawei.com>
-Date: Thu, 30 May 2013 13:30:57 +0300
-Message-ID: <CAHp75Vc9mYmUM4pmeKLBzxNFsx-xiSez6oxC1F5+Hh-hPXto5A@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/2] mtd: bcm47: convert to module_platform_driver
- instead of init/exit
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        artem.bityutskiy@linux.intel.com, Bill Pemberton <wfp5p@virginia.edu>,
-        hauke@hauke-m.de, linux-mtd@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 5:22 AM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
->
-> convert to module_platform_driver instead of init/exit
+The following patch series introduces a few optimizations for SmartReflex driver.
 
-I give another thought about it. We have to be sure that the flash
-device will be online when it's really needed.
-module_init initcall is quite far in the boot process. Is it what we want?
+1. devm_* API usage for SmartReflex. This allows us to have brilliant resources
+handling - allocation/auto free, map/auto unmap. Another benefit - lot of error checks
+can be dropped.
 
-> --- a/drivers/mtd/devices/bcm47xxsflash.c
-> +++ b/drivers/mtd/devices/bcm47xxsflash.c
-> @@ -108,22 +108,4 @@ static struct platform_driver bcma_sflash_driver = {
->   * Init
->   **************************************************/
->
-> -static int __init bcm47xxsflash_init(void)
-> -{
-> -       int err;
-> -
-> -       err = platform_driver_register(&bcma_sflash_driver);
-> -       if (err)
-> -               pr_err("Failed to register BCMA serial flash driver: %d\n",
-> -                      err);
-> -
-> -       return err;
-> -}
-> -
-> -static void __exit bcm47xxsflash_exit(void)
-> -{
-> -       platform_driver_unregister(&bcma_sflash_driver);
-> -}
-> -
-> -module_init(bcm47xxsflash_init);
-> -module_exit(bcm47xxsflash_exit);
-> +module_platform_driver(bcma_sflash_driver);
-> --
-> 1.7.1
->
->
+2. Another small optimization resolves order of initialization between SmartReflex driver
+and SmartReflex class. Class is initialized before driver.
 
+Patches are based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+tag: v3.10-rc3
 
+Verified on OMAP4430. Boot - OK. SmartReflex registers debug dump - OK
 
---
-With Best Regards,
-Andy Shevchenko
+Available on GitHub:
+https://github.com/andriit/linux-omap-k3.8/commits/avs_sr_driver_optimization_v02
+
+Andrii Tseglytskyi (2):
+  PM / AVS: SmartReflex: use devm_* API to initialize SmartReflex
+  PM / AVS: SmartReflex/class3: Fix order of initialization of SR class
+    and SR driver
+
+ arch/arm/mach-omap2/smartreflex-class3.c |    2 +-
+ drivers/power/avs/smartreflex.c          |   86 ++++++++----------------------
+ 2 files changed, 23 insertions(+), 65 deletions(-)
+
+-- 
+1.7.9.5
+
