@@ -1,172 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967362Ab3E3DBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 23:01:41 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36557 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3E3DBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 23:01:32 -0400
-Message-ID: <51A6C0DE.5020001@huawei.com>
-Date: Thu, 30 May 2013 11:00:46 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: Introduce a help function local_time_seconds()
- to simplify the getting time stamp operation
-References: <51A5CB83.6070704@cn.fujitsu.com>
-In-Reply-To: <51A5CB83.6070704@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+	id S967373Ab3E3DDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 23:03:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16462 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756978Ab3E3DDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 23:03:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,768,1363158000"; 
+   d="scan'208";a="342312620"
+From: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
+To: x86@kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, mark.gross@intel.com,
+        len.brown@intel.com, david.a.cohen@intel.com, fei.yang@intel.com,
+        sathyanarayanan.kuppuswamy@intel.com
+Subject: [PATCH v1 01/13] mrst: Fixed printk/pr_* related issues
+Date: Wed, 29 May 2013 19:45:11 -0700
+Message-Id: <1369881923-27067-2-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1369881923-27067-1-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
+References: <1369881923-27067-1-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/29 17:33, Gu Zheng wrote:
->>From 4d4caa16f3886ae910ad6dfe13353fc836f546cc Mon Sep 17 00:00:00 2001
-> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Date: Wed, 29 May 2013 17:34:22 +0900
-> Subject: [PATCH] driver/scsi: Introduce a help function local_time_seconds() to simplify the getting time stamp operation
-> 
-hi gu,
+Fixed printk and pr_* related issues in mrst related files.
 
-next time, you can remove above info.
+Change-Id: I7dafe04f1cd6a0ee2c97672b98441ade5b2000a7
+Signed-off-by: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
+---
+ arch/x86/pci/mrst.c                        |    2 +-
+ arch/x86/platform/mrst/early_printk_mrst.c |    2 +-
+ arch/x86/platform/mrst/mrst.c              |    2 +-
+ arch/x86/platform/mrst/vrtc.c              |    5 ++---
+ 4 files changed, 5 insertions(+), 6 deletions(-)
 
-
-thanks,
-
-Libo
-
-
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  drivers/scsi/3w-9xxx.c |   14 ++------------
->  drivers/scsi/3w-sas.c  |   14 ++------------
->  include/scsi/scsi.h    |    9 +++++++++
->  3 files changed, 13 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-> index 5e1e12c..44b3ea8 100644
-> --- a/drivers/scsi/3w-9xxx.c
-> +++ b/drivers/scsi/3w-9xxx.c
-> @@ -374,8 +374,6 @@ out:
->  /* This function will queue an event */
->  static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
->  {
-> -	u32 local_time;
-> -	struct timeval time;
->  	TW_Event *event;
->  	unsigned short aen;
->  	char host[16];
-> @@ -398,9 +396,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
->  	memset(event, 0, sizeof(TW_Event));
->  
->  	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
-> -	do_gettimeofday(&time);
-> -	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
-> -	event->time_stamp_sec = local_time;
-> +	event->time_stamp_sec = local_time_seconds();
->  	event->aen_code = aen;
->  	event->retrieved = TW_AEN_NOT_RETRIEVED;
->  	event->sequence_id = tw_dev->error_sequence_id;
-> @@ -479,11 +475,9 @@ out:
->  static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
->  {
->  	u32 schedulertime;
-> -	struct timeval utc;
->  	TW_Command_Full *full_command_packet;
->  	TW_Command *command_packet;
->  	TW_Param_Apache *param;
-> -	u32 local_time;
->  
->  	/* Fill out the command packet */
->  	full_command_packet = tw_dev->command_packet_virt[request_id];
-> @@ -503,11 +497,7 @@ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
->  	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
->  	param->parameter_size_bytes = cpu_to_le16(4);
->  
-> -	/* Convert system time in UTC to local time seconds since last 
-> -           Sunday 12:00AM */
-> -	do_gettimeofday(&utc);
-> -	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
-> -	schedulertime = local_time - (3 * 86400);
-> +	schedulertime = local_time_seconds() - (3 * 86400);
->  	schedulertime = cpu_to_le32(schedulertime % 604800);
->  
->  	memcpy(param->data, &schedulertime, sizeof(u32));
-> diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
-> index c845bdb..69f1d8a 100644
-> --- a/drivers/scsi/3w-sas.c
-> +++ b/drivers/scsi/3w-sas.c
-> @@ -236,8 +236,6 @@ out:
->  /* This function will queue an event */
->  static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
->  {
-> -	u32 local_time;
-> -	struct timeval time;
->  	TW_Event *event;
->  	unsigned short aen;
->  	char host[16];
-> @@ -256,9 +254,7 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
->  	memset(event, 0, sizeof(TW_Event));
->  
->  	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
-> -	do_gettimeofday(&time);
-> -	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
-> -	event->time_stamp_sec = local_time;
-> +	event->time_stamp_sec = local_time_seconds();
->  	event->aen_code = aen;
->  	event->retrieved = TW_AEN_NOT_RETRIEVED;
->  	event->sequence_id = tw_dev->error_sequence_id;
-> @@ -444,11 +440,9 @@ out:
->  static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
->  {
->  	u32 schedulertime;
-> -	struct timeval utc;
->  	TW_Command_Full *full_command_packet;
->  	TW_Command *command_packet;
->  	TW_Param_Apache *param;
-> -	u32 local_time;
->  
->  	/* Fill out the command packet */
->  	full_command_packet = tw_dev->command_packet_virt[request_id];
-> @@ -468,11 +462,7 @@ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
->  	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
->  	param->parameter_size_bytes = cpu_to_le16(4);
->  
-> -	/* Convert system time in UTC to local time seconds since last 
-> -           Sunday 12:00AM */
-> -	do_gettimeofday(&utc);
-> -	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
-> -	schedulertime = local_time - (3 * 86400);
-> +	schedulertime = local_time_seconds() - (3 * 86400);
->  	schedulertime = cpu_to_le32(schedulertime % 604800);
->  
->  	memcpy(param->data, &schedulertime, sizeof(u32));
-> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-> index 66216c1..f3377ca 100644
-> --- a/include/scsi/scsi.h
-> +++ b/include/scsi/scsi.h
-> @@ -574,4 +574,13 @@ static inline __u32 scsi_to_u32(__u8 *ptr)
->  	return (ptr[0]<<24) + (ptr[1]<<16) + (ptr[2]<<8) + ptr[3];
->  }
->  
-> +/*
-> + * Convert system time in UTC to local time seconds.
-> + */
-> +static inline u32 local_time_seconds(void)
-> +{
-> +	struct timeval utc;
-> +	do_gettimeofday(&utc);
-> +	return (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
-> +}
->  #endif /* _SCSI_SCSI_H */
-> 
-
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 6eb18c4..a08cf1b 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -235,7 +235,7 @@ struct pci_ops pci_mrst_ops = {
+  */
+ int __init pci_mrst_init(void)
+ {
+-	printk(KERN_INFO "Intel MID platform detected, using MID PCI ops\n");
++	pr_info("Intel MID platform detected, using MID PCI ops\n");
+ 	pci_mmcfg_late_init();
+ 	pcibios_enable_irq = mrst_pci_irq_enable;
+ 	pci_root_ops = pci_mrst_ops;
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+index 028454f..95880f7 100644
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
++++ b/arch/x86/platform/mrst/early_printk_mrst.c
+@@ -213,7 +213,7 @@ static void early_mrst_spi_putc(char c)
+ 	}
+ 
+ 	if (!timeout)
+-		pr_warning("MRST earlycon: timed out\n");
++		pr_warn("MRST earlycon: timed out\n");
+ 	else
+ 		max3110_write_data(c);
+ }
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index a0a0a43..fbfbe36 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -328,7 +328,7 @@ static inline int __init setup_x86_mrst_timer(char *arg)
+ 	else if (strcmp("lapic_and_apbt", arg) == 0)
+ 		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
+ 	else {
+-		pr_warning("X86 MRST timer option %s not recognised"
++		pr_warn("X86 MRST timer option %s not recognised"
+ 			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
+ 			   arg);
+ 		return -EINVAL;
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+index d62b0a3..d735deb 100644
+--- a/arch/x86/platform/mrst/vrtc.c
++++ b/arch/x86/platform/mrst/vrtc.c
+@@ -79,7 +79,7 @@ unsigned long vrtc_get_time(void)
+ 	/* vRTC YEAR reg contains the offset to 1972 */
+ 	year += 1972;
+ 
+-	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
++	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
+ 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
+ 
+ 	return mktime(year, mon, mday, hour, min, sec);
+@@ -108,8 +108,7 @@ int vrtc_set_mmss(unsigned long nowtime)
+ 		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
+ 		spin_unlock_irqrestore(&rtc_lock, flags);
+ 	} else {
+-		printk(KERN_ERR
+-		       "%s: Invalid vRTC value: write of %lx to vRTC failed\n",
++		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
+ 			__FUNCTION__, nowtime);
+ 		retval = -EINVAL;
+ 	}
+-- 
+1.7.9.5
 
