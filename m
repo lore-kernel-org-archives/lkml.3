@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968196Ab3E3K1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:27:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38994 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968055Ab3E3K1i (ORCPT
+	id S968210Ab3E3K2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:28:19 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:40180 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968055Ab3E3K2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:27:38 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Grant Grundler <grundler@parisc-linux.org>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 7/7] tulip: remove redundant D0 power state set
-Date: Thu, 30 May 2013 18:27:06 +0800
-Message-ID: <1369909626-37832-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Thu, 30 May 2013 06:28:12 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        renner@efe-gmbh.de, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: [PATCH v2 0/6] Emaclite patches
+Date: Thu, 30 May 2013 12:28:02 +0200
+Message-Id: <cover.1369909618.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-5423-1369909688-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci_enable_device() will set device power state to D0,
-so it's no need to do it again in tulip_init_one().
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/net/ethernet/dec/tulip/tulip_core.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+--=_mimegpg-monstr-desktop-5423-1369909688-0001
 
-diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
-index 1e9443d..c94152f 100644
---- a/drivers/net/ethernet/dec/tulip/tulip_core.c
-+++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
-@@ -1410,12 +1410,6 @@ static int tulip_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		return i;
- 	}
- 
--	/* The chip will fail to enter a low-power state later unless
--	 * first explicitly commanded into D0 */
--	if (pci_set_power_state(pdev, PCI_D0)) {
--		pr_notice("Failed to set power state to D0\n");
--	}
--
- 	irq = pdev->irq;
- 
- 	/* alloc_etherdev ensures aligned and zeroed private structures */
--- 
-1.7.1
+I have separated these emaclite patches from
+phy patches because it is easier for creating
+new versions.
+
+Thanks,
+Michal
+
+Changes in v2:
+- Fix __raw_iowrite() to pass correct parameters
+- s/Corrent/Correct/ in patch description
+
+Michal Simek (6):
+  net: emaclite: Report failures in mdio setup
+  net: emaclite: Support multiple phys connected to one MDIO bus
+  net: emaclite: Let's make xemaclite_adjust_link static
+  net: emaclite: Do not use microblaze and ppc IO functions
+  net: emaclite: Enable emaclite for Xilinx Arm Zynq platform
+  net: emaclite: Update driver header
+
+ drivers/net/ethernet/xilinx/Kconfig           |   4 +-
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 169 ++++++++++++++------------
+ 2 files changed, 95 insertions(+), 78 deletions(-)
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-5423-1369909688-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGnKbgACgkQykllyylKDCFeSQCePtMXUJXtRD3gkQ/7MWQh91mm
+zEsAn3cORIkhACwH15sfqNDY4zkWvC+Y
+=XPdB
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-5423-1369909688-0001--
