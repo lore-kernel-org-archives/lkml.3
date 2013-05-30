@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935465Ab3E3QMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:12:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50967 "EHLO
+	id S935478Ab3E3QMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:12:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50964 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934585Ab3E3QCP (ORCPT
+	with ESMTP id S934563Ab3E3QCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:02:15 -0400
+	Thu, 30 May 2013 12:02:14 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/66] perf sort: Introduce sort__mode variable
-Date: Thu, 30 May 2013 19:00:38 +0300
-Message-Id: <1369929699-8724-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/66] perf sort: Consolidate sort_entry__setup_elide()
+Date: Thu, 30 May 2013 19:00:41 +0300
+Message-Id: <1369929699-8724-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -30,8 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's used for determining current sort mode which can be one of
-NORMAL, BRANCH and new MEMORY.
+The same code was duplicate to places, factor them out to common
+sort__setup_elide().
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -41,169 +41,156 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1364816125-12212-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1364991979-3008-11-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c    | 23 +++++++++++++----------
- tools/perf/ui/browsers/hists.c |  4 ++--
- tools/perf/util/sort.c         |  4 ++--
- tools/perf/util/sort.h         |  8 +++++++-
- 4 files changed, 24 insertions(+), 15 deletions(-)
+ tools/perf/builtin-diff.c   |  4 +---
+ tools/perf/builtin-report.c | 20 +-------------------
+ tools/perf/builtin-top.c    |  4 +---
+ tools/perf/util/sort.c      | 45 +++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/sort.h      |  3 +--
+ 5 files changed, 47 insertions(+), 29 deletions(-)
 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 2d0462d..cabbea5 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -611,9 +611,7 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	setup_pager();
+ 
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", NULL);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", NULL);
++	sort__setup_elide(NULL);
+ 
+ 	return __cmd_diff();
+ }
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d9f2de3..c877982 100644
+index 669405c..d45bf9b 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -311,7 +311,7 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
- 		return 0;
- 
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (perf_report__add_branch_hist_entry(tool, &al, sample,
- 						       evsel, machine)) {
- 			pr_debug("problem adding lbr entry, skipping event\n");
-@@ -387,7 +387,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
- 			}
+@@ -937,25 +937,7 @@ repeat:
+ 		report.symbol_filter_str = argv[0];
  	}
  
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (!self->fd_pipe &&
- 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
- 			ui__error("Selected -b but no branch data. "
-@@ -694,7 +694,9 @@ static int
- parse_branch_mode(const struct option *opt __maybe_unused,
- 		  const char *str __maybe_unused, int unset)
- {
--	sort__branch_mode = !unset;
-+	int *branch_mode = opt->value;
-+
-+	*branch_mode = !unset;
- 	return 0;
- }
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
+-		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
+-		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
+-		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
+-	} else {
+-		if (report.mem_mode) {
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
+-		}
+-		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
+-	}
++	sort__setup_elide(stdout);
  
-@@ -703,6 +705,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_session *session;
- 	struct stat st;
- 	bool has_br_stack = false;
-+	int branch_mode = -1;
- 	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
-@@ -799,7 +802,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show a column with the sum of periods"),
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
--	OPT_CALLBACK_NOOPT('b', "branch-stack", &sort__branch_mode, "",
-+	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-@@ -849,11 +852,11 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
+ 	ret = __cmd_report(&report);
+ 	if (ret == K_SWITCH_INPUT_DATA) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 67bdb9f..2eb272d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1200,9 +1200,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
  
--	if (sort__branch_mode == -1 && has_br_stack)
--		sort__branch_mode = 1;
-+	if (branch_mode == -1 && has_br_stack)
-+		sort__mode = SORT_MODE__BRANCH;
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
++	sort__setup_elide(stdout);
  
--	/* sort__branch_mode could be 0 if --no-branch-stack */
--	if (sort__branch_mode == 1) {
-+	/* sort__mode could be NORMAL if --no-branch-stack */
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		/*
- 		 * if no sort_order is provided, then specify
- 		 * branch-mode specific order
-@@ -864,7 +867,7 @@ repeat:
- 
- 	}
- 	if (report.mem_mode) {
--		if (sort__branch_mode == 1) {
-+		if (sort__mode == SORT_MODE__BRANCH) {
- 			fprintf(stderr, "branch and mem mode incompatible\n");
- 			goto error;
- 		}
-@@ -934,7 +937,7 @@ repeat:
- 
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
- 		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
- 		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index d88a2d0..cad8e37 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1155,7 +1155,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		browser->b.refresh = hist_browser__refresh;
- 		browser->b.seek = ui_browser__hists_seek;
- 		browser->b.use_navkeypressed = true;
--		if (sort__branch_mode == 1)
-+		if (sort__mode == SORT_MODE__BRANCH)
- 			browser->has_symbols = sort_sym_from.list.next != NULL;
- 		else
- 			browser->has_symbols = sort_sym.list.next != NULL;
-@@ -1488,7 +1488,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		if (!browser->has_symbols)
- 			goto add_exit_option;
- 
--		if (sort__branch_mode == 1) {
-+		if (sort__mode == SORT_MODE__BRANCH) {
- 			bi = browser->he_selection->branch_info;
- 			if (browser->selection != NULL &&
- 			    bi &&
+ 	/*
+ 	 * Avoid annotation data structures overhead when symbols aren't on the
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 16d5e38..a6ddad4 100644
+index 1dbf169..701ab1d 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -9,7 +9,7 @@ const char	*sort_order = default_sort_order;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
- int		sort__has_sym = 0;
--int		sort__branch_mode = -1; /* -1 = means not set */
-+enum sort_mode	sort__mode = SORT_MODE__NORMAL;
+@@ -1,5 +1,6 @@
+ #include "sort.h"
+ #include "hist.h"
++#include "symbol.h"
  
- enum sort_type	sort__first_dimension;
- 
-@@ -943,7 +943,7 @@ int sort_dimension__add(const char *tok)
- 		if (strncasecmp(tok, sd->name, strlen(tok)))
- 			continue;
- 
--		if (sort__branch_mode != 1)
-+		if (sort__mode != SORT_MODE__BRANCH)
- 			return -EINVAL;
- 
- 		if (sd->entry == &sort_sym_from || sd->entry == &sort_sym_to)
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index f24bdf6..39ff4b8 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -32,7 +32,7 @@ extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
- extern int sort__has_sym;
--extern int sort__branch_mode;
-+extern enum sort_mode sort__mode;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
- extern struct sort_entry sort_sym;
-@@ -123,6 +123,12 @@ static inline void hist_entry__add_pair(struct hist_entry *he,
- 	list_add_tail(&he->pairs.head, &pair->pairs.node);
+ regex_t		parent_regex;
+ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+@@ -1009,8 +1010,9 @@ int setup_sorting(void)
+ 	return ret;
  }
  
-+enum sort_mode {
-+	SORT_MODE__NORMAL,
-+	SORT_MODE__BRANCH,
-+	SORT_MODE__MEMORY,
-+};
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp)
++static void sort_entry__setup_elide(struct sort_entry *self,
++				    struct strlist *list,
++				    const char *list_name, FILE *fp)
+ {
+ 	if (list && strlist__nr_entries(list) == 1) {
+ 		if (fp != NULL)
+@@ -1019,3 +1021,42 @@ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+ 		self->elide = true;
+ 	}
+ }
 +
- enum sort_type {
- 	/* common sort keys */
- 	SORT_PID,
++void sort__setup_elide(FILE *output)
++{
++	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++				"dso", output);
++	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
++				"comm", output);
++	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
++				"symbol", output);
++
++	if (sort__mode == SORT_MODE__BRANCH) {
++		sort_entry__setup_elide(&sort_dso_from,
++					symbol_conf.dso_from_list,
++					"dso_from", output);
++		sort_entry__setup_elide(&sort_dso_to,
++					symbol_conf.dso_to_list,
++					"dso_to", output);
++		sort_entry__setup_elide(&sort_sym_from,
++					symbol_conf.sym_from_list,
++					"sym_from", output);
++		sort_entry__setup_elide(&sort_sym_to,
++					symbol_conf.sym_to_list,
++					"sym_to", output);
++	} else if (sort__mode == SORT_MODE__MEMORY) {
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"symbol_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"dso_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"mem", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"local_weight", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"tlb", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"snoop", output);
++	}
++
++}
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 0232d47..51f1b5a 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -181,7 +181,6 @@ extern struct list_head hist_entry__sort_list;
+ 
+ int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp);
++void sort__setup_elide(FILE *fp);
+ 
+ #endif	/* __PERF_SORT_H */
 -- 
 1.8.1.4
 
