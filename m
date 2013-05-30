@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967336Ab3E3Cdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 22:33:40 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15584 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965859Ab3E3Cdb (ORCPT
+	id S967341Ab3E3Cgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 22:36:32 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:39783 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965859Ab3E3CgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 22:33:31 -0400
-Message-ID: <51A6BA5B.4090008@huawei.com>
-Date: Thu, 30 May 2013 10:32:59 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 29 May 2013 22:36:25 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A6BAF6.4010901@asianux.com>
+Date: Thu, 30 May 2013 10:35:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Tomas Henzl <thenzl@redhat.com>
-CC: <megaraidlinux@lsi.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <kashyap.desai@lsi.com>, <aradford@gmail.com>,
-        Li Zefan <lizefan@huawei.com>, Santosh Y <santoshsy@gmail.com>
-Subject: Re: [PATCH RESEND] scsi: megaraid: check kzalloc
-References: <519ECEF1.9060804@huawei.com> <519F3592.4090207@huawei.com> <51A618A4.2000302@redhat.com> <51A6AD92.2030903@huawei.com>
-In-Reply-To: <51A6AD92.2030903@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: tony.luck@intel.com, fenghua.yu@intel.com
+CC: linux-ia64@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: ia64: hp: sim: sprintf() memory overflow, need really
+ use the default value just as it has already said.
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/30 9:38, Libo Chen wrote:
-> On 2013/5/29 23:03, Tomas Henzl wrote:
->> On 05/24/2013 11:40 AM, Libo Chen wrote:
->>> we should check kzalloc, avoid to hit oops
->>>
->>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
->>> ---
->>>  drivers/scsi/megaraid.c |    4 ++++
->>>  1 files changed, 4 insertions(+), 0 deletions(-)
->>>
->>> instead of checking scmd->device, sdev is more appropriate.
->>>
->>> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
->>> index 846f475..6b623cb 100644
->>> --- a/drivers/scsi/megaraid.c
->>> +++ b/drivers/scsi/megaraid.c
->>> @@ -4161,6 +4161,10 @@ mega_internal_command(adapter_t *adapter, megacmd_t *mc, mega_passthru *pthru)
->>>  	memset(scb, 0, sizeof(scb_t));
->>>
->>>  	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
->>> +	if (sdev) {
->>> +		scsi_free_command(GFP_KERNEL, scmd);
->>
->> I think, that a mutex_unlock(&adapter->int_mtx); is also needed
->> Maybe just setting a rval = -ENOMEM and a jump to to some point below?
->>
->> tomash
-> 
-> thanks for catching this.
-> 
-> when kzalloc broken, fist unlock and then return.  I will update later.
-> 
 
-I think we can put kzalloc outside of mutex_lock(&adapter->int_mtx) ?
-phase:
+When "strlen(s) > MAX_ROOT_LEN", it has already said to use the default
+value, but in fact, it still use the input value.
 
-   mutex_lock	   kzalloc
-   kzalloc     ->  mutex_lock
-   	
-
-> 
-> Libo
-> 
->>
->>> +		return -ENOMEM;
->>> +	}
->>>  	scmd->device = sdev;
->>>
->>>  	memset(adapter->int_cdb, 0, sizeof(adapter->int_cdb));
->>
->>
->> .
->>
-> 
+If happens, next sprintf() for 'fname' in simscsi_queuecommand_lck()
+may be memory overflow.
 
 
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/ia64/hp/sim/simscsi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/ia64/hp/sim/simscsi.c b/arch/ia64/hp/sim/simscsi.c
+index 331de72..3a428f1 100644
+--- a/arch/ia64/hp/sim/simscsi.c
++++ b/arch/ia64/hp/sim/simscsi.c
+@@ -88,8 +88,8 @@ simscsi_setup (char *s)
+ 	if (strlen(s) > MAX_ROOT_LEN) {
+ 		printk(KERN_ERR "simscsi_setup: prefix too long---using default %s\n",
+ 		       simscsi_root);
+-	}
+-	simscsi_root = s;
++	} else
++		simscsi_root = s;
+ 	return 1;
+ }
+ 
+-- 
+1.7.7.6
