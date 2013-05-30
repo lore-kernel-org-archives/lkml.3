@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab3E3U1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:27:30 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:62185 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3E3U1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:27:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
-References: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
-	<CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
-Date: Thu, 30 May 2013 13:27:20 -0700
-X-Google-Sender-Auth: o703GEzPRQ88pLS8Bq0OJtoBNkY
-Message-ID: <CAE9FiQWfSW7yT4cZrDoh==H=v_qmvR=9WF54jggSKGq8S_xqug@mail.gmail.com>
-Subject: Re: [PATCH] PCI: set correct value for iov device before device
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xudong Hao <xudong.hao@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754978Ab3E3UaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 16:30:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53991 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750811Ab3E3UaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 16:30:15 -0400
+Message-ID: <1369945814.22004.153.camel@joe-AO722>
+Subject: Re: [alsa-devel] Improving or replacing snd_printk()
+From: Joe Perches <joe@perches.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Thu, 30 May 2013 13:30:14 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1305301540500.887-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1305301540500.887-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 11:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, May 29, 2013 at 10:45 PM, Xudong Hao <xudong.hao@intel.com> wrote:
->> Since device registering is put into pci_device_add(), it must set value of
->> Virtual Function device's member before the pci_dev is put to device tree. Or
->> some relevant subsystem of driver model such as xen will report a incorrect
->> IOV device to Xen hypervior.
->>
->> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
->> ---
->>  drivers/pci/iov.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
->> index c93071d..43d3de9 100644
->> --- a/drivers/pci/iov.c
->> +++ b/drivers/pci/iov.c
->> @@ -110,12 +110,12 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
->>         if (reset)
->>                 __pci_reset_function(virtfn);
->>
->> -       pci_device_add(virtfn, virtfn->bus);
->> -       mutex_unlock(&iov->dev->sriov->lock);
->> -
->>         virtfn->physfn = pci_dev_get(dev);
->>         virtfn->is_virtfn = 1;
->>
->> +       pci_device_add(virtfn, virtfn->bus);
->> +       mutex_unlock(&iov->dev->sriov->lock);
->> +
->>         rc = pci_bus_add_device(virtfn);
->>         sprintf(buf, "virtfn%u", id);
->>         rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
->
-> I have similar patch at
-> https://patchwork.kernel.org/patch/2562551/
->    [5/7] PCI, ACPI: Don't glue ACPI dev with pci VFs
->
-> and Jiang has another one
-> https://patchwork.kernel.org/patch/2613481/
->    [v3,part1,10/10] PCI, IOV: hide remove and rescan sysfs interfaces
-> for SR-IOV virtual functions
+On Thu, 2013-05-30 at 15:43 -0400, Alan Stern wrote:
+> On Thu, 30 May 2013, Jaroslav Kysela wrote:
+> 
+> > Date 30.5.2013 20:14, Alan Stern wrote:
+> > > On Wed, 29 May 2013, Joe Perches wrote:
+> > > 
+> > >> On Wed, 2013-05-29 at 15:27 -0400, Alan Stern wrote:
+> > >>> Has there been any thought of improving snd_printk(), or even better,
+> > >>> changing the call sites to use the dev_*() routines instead?
+> > >>
+> > >> Perhaps better would be to add and use some combination of
+> > >> type specific logging message functions/macros like:
+> > >>
+> > >> void snd_<level>(const struct snd_device *dev, const char *fmt, ...)
+> > >> void snd_card_<level>(const struct snd_card *card, const char *fmt, ...)
+> > >> void snd_ac97_<level>(const struct snd_ac97 *ac97, const char *fmt, ...)
+> > >>
+> > >> allowing NULL as the type pointer when necessary/appropriate.
+> > > 
+> > > Almost anything would be better than the current situation.  The only 
+> > > enhancement provided by CONFIG_SND_VERBOSE_PRINTK is to print the 
+> > > filename and line number, which is relatively unhelpful (unless there 
+> > > are multiple copies of the same message in several places).
+> > 
+> > I don't think that it's useless to see the origin of the source message
+> > from the first glance. It may be improved, of course, but adding more
+> > and more functions with minor benefits is another step to another hell.
+> 
+> Maybe so.  However, including the device and driver names in the log 
+> messages is a major benefit, not a minor one.
+> 
+> I'd be happy to have just a snd_<level> family of functions, with 
+> snd_printk and snd_printd deprecated.  Does anybody object?
 
-Bjorn,
+Not me.
 
-I double check this one, we should split the patch from me or Jiang.
-and the one about set virtfn=1 should be -stable material.
+I think the benefit of the consolidated family of
+macros/functions is avoiding the visual clutter of:
 
-That will address another problem that is caused by
-moving device_add from pci_bus_add_device to pci_device_add.
+	dev_<level>(&pointer->deref->deref->dev,
+		    fmt, ...)
 
-Yinghai
+and potential uses of
+
+	if (pointer->deref && pointer->deref->deref)
+		dev_<level>(etc...)
+	else
+		pr_<level>("unregistered dev: " fmt, ...)
+
+
