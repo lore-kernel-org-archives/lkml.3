@@ -1,128 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758918Ab3E3VPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 17:15:05 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:61536 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758484Ab3E3VO4 (ORCPT
+	id S1758917Ab3E3VP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 17:15:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56479 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757581Ab3E3VPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 17:14:56 -0400
+	Thu, 30 May 2013 17:15:48 -0400
+X-Greylist: delayed 528 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 17:15:48 EDT
+Date: Thu, 30 May 2013 14:06:58 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Chen Gang <gang.chen@asianux.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Changes pulled into MSM tree
+Message-ID: <20130530210658.GA13171@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <CALnjE+q-dbK0bha_J848mb7sdmLi7a5-BMjKng+wQ8KaDFL=LQ@mail.gmail.com>
-References: <CACG0VPV3-x5Ncp+_hci8wVNYUeqAUZ0KFm0MAuHMntXzaL9Nqw@mail.gmail.com>
- <CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
- <CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com> <CALnjE+q-dbK0bha_J848mb7sdmLi7a5-BMjKng+wQ8KaDFL=LQ@mail.gmail.com>
-From: Joao Correia <joaomiguelcorreia@gmail.com>
-Date: Thu, 30 May 2013 22:14:14 +0100
-Message-ID: <CACG0VPXWoD=33rSv9S_C2t7XSHny9vHwKysoiTdwWueQM7MLsA@mail.gmail.com>
-Subject: Re: Network issue on 3.10 rcs, bisected
-To: Pravin Shelar <pshelar@nicira.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 5:48 PM, Pravin Shelar <pshelar@nicira.com> wrote:
-> On Wed, May 29, 2013 at 12:53 PM, Joao Correia
-> <joaomiguelcorreia@gmail.com> wrote:
->> On Wed, May 29, 2013 at 7:59 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->>>
->>> On Wed, May 29, 2013 at 4:37 AM, Joao Correia
->>> <joaomiguelcorreia@gmail.com> wrote:
->>> > Hello list
->>> >
->>> > While trying the rc's for 3.10, i've stumbled upon a problem where
->>> > networking does not work at all. Iptables will show packet counts going up,
->>> > but nothing actually reaches the programs.
->>> >
->>> > I'm running fedora under hyper-v 3 (a windows 2012 host). Only tested ipv4
->>> > traffic, and everything times out (ping, telnet to open ports) on both
->>> > directions. The networking devices come up apparently ok - has static ip
->>> > set, and dmesg shows no errors (although i don't have many debugging options
->>> > enabled).
->>> >
->>> > I bisected this, and git blames commit
->>> > ec5f061564238892005257c83565a0b58ec79295 (net: ill link between CSUM and SG
->>> > features.). I can't revert it cleanly on current rc's.
->>> >
->>> Can you also send network features set on the device?
->>> ethtool -k <dev>
->>
->>
->> As requested:
->> Features for eth0:
->> rx-checksumming: off [fixed]
->> tx-checksumming: off
->>     tx-checksum-ipv4: off [fixed]
->>     tx-checksum-ip-generic: off [fixed]
->>     tx-checksum-ipv6: off [fixed]
->>     tx-checksum-fcoe-crc: off [fixed]
->>     tx-checksum-sctp: off [fixed]
->> scatter-gather: on
->>     tx-scatter-gather: on
->>     tx-scatter-gather-fraglist: off [fixed]
->> tcp-segmentation-offload: off
->>     tx-tcp-segmentation: off [fixed]
->>     tx-tcp-ecn-segmentation: off [fixed]
->>     tx-tcp6-segmentation: off [fixed]
->> udp-fragmentation-offload: off [fixed]
->> generic-segmentation-offload: on
->> generic-receive-offload: on
->> large-receive-offload: off [fixed]
->> rx-vlan-offload: off
->> tx-vlan-offload: on
->> ntuple-filters: off [fixed]
->> receive-hashing: off [fixed]
->> highdma: off [fixed]
->> tx-vlan-ctag-hw-insert: on [fixed]
->> rx-vlan-ctag-hw-parse: off [fixed]
->> rx-vlan-ctag-filter: off [fixed]
->> tx-vlan-stag-hw-insert: off [fixed]
->> rx-vlan-stag-hw-parse: off [fixed]
->> rx-vlan-stag-filter: off [fixed]
->> vlan-challenged: off [fixed]
->> tx-lockless: off [fixed]
->> netns-local: off [fixed]
->> tx-gso-robust: off [fixed]
->> tx-fcoe-segmentation: off [fixed]
->> tx-gre-segmentation: off [fixed]
->> tx-udp_tnl-segmentation: off [fixed]
->> fcoe-mtu: off [fixed]
->> tx-nocache-copy: off
->> loopback: off [fixed]
->> rx-fcs: off [fixed]
->> rx-all: off [fixed]
->>
->> The output is similar on a working (3.9) and a bad (3.10) kernel.
->> diff-ing both outputs shows:
->> tx-vlan-stag-hw-insert: off [fixed]
->> rx-vlan-stag-hw-parse: off [fixed]
->> rx-vlan-stag-filter: off [fixed]
->> as last on the broken kernels.
->>
->
-> I could not reproduce it, I will try it on VM. Meanwhile can you turn
-> off feature "sg" and try same test ?
+The following changes have been pulled into the msm tree for my next
+pull request.  I expect to send the pull request after these sit in
+next for a few days.  The changes can be seen at:
 
-Hello
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git for-next
 
-Your hint was spot-on. With sg off, i can't reproduce the problem and
-networking seems fine. It works fine either way on 3.9, so this is a
-regression for 3.10.
+Chen Gang (1):
+      arch: arm: mach-msm: using strlcpy instead of strncpy
 
-Thank you very much for your assistance.
-Joao Correia
-CIUBI
-Universidade da Beira Interior
-Portugal
+Maxime Ripard (1):
+      ARM: msm: Remove init_irq declaration in machine description
 
->
-> Thanks.
->
->> Thank you for your time,
->> Joao Correia
->> CIUBI
->> Universidade da Beira Interior
->> Portugal
+Rohit Vaswani (3):
+      ARM: msm: Remove gpiomux-v2 and re-organize MSM_GPIOMUX configs
+      ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
+      gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+
+Stephen Boyd (1):
+      ARM: dts: msm: Fix bad register addresses
+
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
