@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934994Ab3E3Llu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:41:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20166 "EHLO mga01.intel.com"
+	id S934793Ab3E3Llg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:41:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16031 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934732Ab3E3Lli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:41:38 -0400
+	id S932801Ab3E3Ll3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 07:41:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,770,1363158000"; 
-   d="scan'208";a="345620839"
+   d="scan'208";a="310020388"
 From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v7 net-next 4/5] ixgbe: Add support for ndo_ll_poll
+Subject: [PATCH v7 net-next 3/5] tcp: add TCP support for low latency receive
+ poll.
 To: David Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -23,8 +24,8 @@ Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Eilon Greenstien <eilong@broadcom.com>,
         Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
         Eliezer Tamir <eliezer@tamir.org.il>
-Date: Thu, 30 May 2013 14:41:32 +0300
-Message-ID: <20130530114132.12653.19059.stgit@ladj378.jer.intel.com>
+Date: Thu, 30 May 2013 14:41:22 +0300
+Message-ID: <20130530114122.12653.61928.stgit@ladj378.jer.intel.com>
 In-Reply-To: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
 References: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
 User-Agent: StGIT/0.14.3
@@ -35,9 +36,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ixgbe driver code implementing ndo_ll_poll.
-Adds ndo_ll_poll method and locking between it and the napi poll.
-When receiving a packet we use skb_mark_ll to record the napi it came from.
+Adds busy-poll support for TCP.
+Copy the napi_id from an incomming skb to the sk in tcp_v[46]_rcv().
+when there is no data in the socket we busy-poll in tcp_recvmsg().
+This is a good example of how to add busy-poll support to new protocols.
 
 Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
@@ -45,305 +47,72 @@ Tested-by: Willem de Bruijn <willemb@google.com>
 Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h      |  120 +++++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c  |    2 
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   63 +++++++++++--
- 3 files changed, 177 insertions(+), 8 deletions(-)
+ net/ipv4/tcp.c      |    5 +++++
+ net/ipv4/tcp_ipv4.c |    2 ++
+ net/ipv6/tcp_ipv6.c |    2 ++
+ 3 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index ca93238..04fdbf6 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -52,6 +52,8 @@
- #include <linux/dca.h>
- #endif
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 1f58594..685a3ea 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -279,6 +279,7 @@
  
+ #include <asm/uaccess.h>
+ #include <asm/ioctls.h>
 +#include <net/ll_poll.h>
-+
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -356,9 +358,127 @@ struct ixgbe_q_vector {
- 	struct rcu_head rcu;	/* to avoid race with update stats on free */
- 	char name[IFNAMSIZ + 9];
  
-+#ifdef CONFIG_NET_LL_RX_POLL
-+	unsigned int state;
-+#define IXGBE_QV_STATE_IDLE        0
-+#define IXGBE_QV_STATE_NAPI	   1    /* NAPI owns this QV */
-+#define IXGBE_QV_STATE_POLL	   2    /* poll owns this QV */
-+#define IXGBE_QV_LOCKED (IXGBE_QV_STATE_NAPI | IXGBE_QV_STATE_POLL)
-+#define IXGBE_QV_STATE_NAPI_YIELD  4    /* NAPI yielded this QV */
-+#define IXGBE_QV_STATE_POLL_YIELD  8    /* poll yielded this QV */
-+#define IXGBE_QV_YIELD (IXGBE_QV_STATE_NAPI_YIELD | IXGBE_QV_STATE_POLL_YIELD)
-+#define IXGBE_QV_USER_PEND (IXGBE_QV_STATE_POLL | IXGBE_QV_STATE_POLL_YIELD)
-+	spinlock_t lock;
-+#endif  /* CONFIG_NET_LL_RX_POLL */
-+
- 	/* for dynamic allocation of rings associated with this q_vector */
- 	struct ixgbe_ring ring[0] ____cacheline_internodealigned_in_smp;
- };
-+#ifdef CONFIG_NET_LL_RX_POLL
-+static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
-+{
-+
-+	spin_lock_init(&q_vector->lock);
-+	q_vector->state = IXGBE_QV_STATE_IDLE;
-+}
-+
-+/* called from the device poll rutine to get ownership of a q_vector */
-+static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
-+{
-+	int rc = true;
-+	spin_lock(&q_vector->lock);
-+	if (q_vector->state & IXGBE_QV_LOCKED) {
-+		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
-+		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
-+		rc = false;
-+	} else
-+		/* we don't care if someone yielded */
-+		q_vector->state = IXGBE_QV_STATE_NAPI;
-+	spin_unlock(&q_vector->lock);
-+	return rc;
-+}
-+
-+/* returns true is someone tried to get the qv while napi had it */
-+static inline int ixgbe_qv_unlock_napi(struct ixgbe_q_vector *q_vector)
-+{
-+	int rc = false;
-+	spin_lock(&q_vector->lock);
-+	WARN_ON(q_vector->state & (IXGBE_QV_STATE_POLL |
-+			       IXGBE_QV_STATE_NAPI_YIELD));
-+
-+	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
-+		rc = true;
-+	q_vector->state = IXGBE_QV_STATE_IDLE;
-+	spin_unlock(&q_vector->lock);
-+	return rc;
-+}
-+
-+/* called from ixgbe_low_latency_poll() */
-+static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
-+{
-+	int rc = true;
-+	spin_lock_bh(&q_vector->lock);
-+	if ((q_vector->state & IXGBE_QV_LOCKED)) {
-+		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
-+		rc = false;
-+	} else
-+		/* preserve yield marks */
-+		q_vector->state |= IXGBE_QV_STATE_POLL;
-+	spin_unlock_bh(&q_vector->lock);
-+	return rc;
-+}
-+
-+/* returns true if someone tried to get the qv while it was locked */
-+static inline int ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
-+{
-+	int rc = false;
-+	spin_lock_bh(&q_vector->lock);
-+	WARN_ON(q_vector->state & (IXGBE_QV_STATE_NAPI));
-+
-+	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
-+		rc = true;
-+	q_vector->state = IXGBE_QV_STATE_IDLE;
-+	spin_unlock_bh(&q_vector->lock);
-+	return rc;
-+}
-+
-+/* true if a socket is polling, even if it did not get the lock */
-+static inline int ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
-+{
-+	WARN_ON(!(q_vector->state & IXGBE_QV_LOCKED));
-+	return q_vector->state & IXGBE_QV_USER_PEND;
-+}
-+#else /* CONFIG_NET_LL_RX_POLL */
-+static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
-+{
-+}
-+
-+static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
-+{
-+	return true;
-+}
-+
-+static inline int ixgbe_qv_unlock_napi(struct ixgbe_q_vector *q_vector)
-+{
-+	return false;
-+}
-+
-+static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
-+{
-+	return false;
-+}
-+
-+static inline int ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
-+{
-+	return false;
-+}
-+
-+static inline int ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_NET_LL_RX_POLL */
-+
- #ifdef CONFIG_IXGBE_HWMON
+ int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
  
- #define IXGBE_HWMON_TYPE_LOC		0
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-index ef5f7a6..90b4e10 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-@@ -811,6 +811,7 @@ static int ixgbe_alloc_q_vector(struct ixgbe_adapter *adapter,
- 	/* initialize NAPI */
- 	netif_napi_add(adapter->netdev, &q_vector->napi,
- 		       ixgbe_poll, 64);
-+	napi_hash_add(&q_vector->napi);
+@@ -1551,6 +1552,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	struct sk_buff *skb;
+ 	u32 urg_hole = 0;
  
- 	/* tie q_vector and adapter together */
- 	adapter->q_vector[v_idx] = q_vector;
-@@ -931,6 +932,7 @@ static void ixgbe_free_q_vector(struct ixgbe_adapter *adapter, int v_idx)
- 		adapter->rx_ring[ring->queue_index] = NULL;
- 
- 	adapter->q_vector[v_idx] = NULL;
-+	napi_hash_del(&q_vector->napi);
- 	netif_napi_del(&q_vector->napi);
- 
- 	/*
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index d30fbdd..9a7dc40 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -1504,7 +1504,9 @@ static void ixgbe_rx_skb(struct ixgbe_q_vector *q_vector,
- {
- 	struct ixgbe_adapter *adapter = q_vector->adapter;
- 
--	if (!(adapter->flags & IXGBE_FLAG_IN_NETPOLL))
-+	if (ixgbe_qv_ll_polling(q_vector))
-+		netif_receive_skb(skb);
-+	else if (!(adapter->flags & IXGBE_FLAG_IN_NETPOLL))
- 		napi_gro_receive(&q_vector->napi, skb);
- 	else
- 		netif_rx(skb);
-@@ -1892,9 +1894,9 @@ dma_sync:
-  * expensive overhead for IOMMU access this provides a means of avoiding
-  * it by maintaining the mapping of the page to the syste.
-  *
-- * Returns true if all work is completed without reaching budget
-+ * Returns amount of work completed
-  **/
--static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
-+static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 			       struct ixgbe_ring *rx_ring,
- 			       const int budget)
- {
-@@ -1976,6 +1978,7 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 		}
- 
- #endif /* IXGBE_FCOE */
-+		skb_mark_ll(skb, &q_vector->napi);
- 		ixgbe_rx_skb(q_vector, skb);
- 
- 		/* update budget accounting */
-@@ -1992,9 +1995,37 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 	if (cleaned_count)
- 		ixgbe_alloc_rx_buffers(rx_ring, cleaned_count);
- 
--	return (total_rx_packets < budget);
-+	return total_rx_packets;
- }
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+/* must be called with local_bh_disable()d */
-+static int ixgbe_low_latency_recv(struct napi_struct *napi)
-+{
-+	struct ixgbe_q_vector *q_vector =
-+			container_of(napi, struct ixgbe_q_vector, napi);
-+	struct ixgbe_adapter *adapter = q_vector->adapter;
-+	struct ixgbe_ring  *ring;
-+	int found = 0;
++	if (sk_valid_ll(sk) && skb_queue_empty(&sk->sk_receive_queue)
++	    && (sk->sk_state == TCP_ESTABLISHED))
++		sk_poll_ll(sk, nonblock);
 +
-+	if (test_bit(__IXGBE_DOWN, &adapter->state))
-+		return LL_FLUSH_FAILED;
-+
-+	if (!ixgbe_qv_lock_poll(q_vector))
-+		return LL_FLUSH_BUSY;
-+
-+	ixgbe_for_each_ring(ring, q_vector->rx) {
-+		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+		if (found)
-+			break;
-+	}
-+
-+	ixgbe_qv_unlock_poll(q_vector);
-+
-+	return found;
-+}
-+#endif	/* CONFIG_NET_LL_RX_POLL */
-+
- /**
-  * ixgbe_configure_msix - Configure MSI-X hardware
-  * @adapter: board private structure
-@@ -2550,6 +2581,9 @@ int ixgbe_poll(struct napi_struct *napi, int budget)
- 	ixgbe_for_each_ring(ring, q_vector->tx)
- 		clean_complete &= !!ixgbe_clean_tx_irq(q_vector, ring);
+ 	lock_sock(sk);
  
-+	if (!ixgbe_qv_lock_napi(q_vector))
-+		return budget;
-+
- 	/* attempt to distribute budget to each queue fairly, but don't allow
- 	 * the budget to go below 1 because we'll exit polling */
- 	if (q_vector->rx.count > 1)
-@@ -2558,9 +2592,10 @@ int ixgbe_poll(struct napi_struct *napi, int budget)
- 		per_ring_budget = budget;
+ 	err = -ENOTCONN;
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index d20ede0..35fd8bc 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -75,6 +75,7 @@
+ #include <net/netdma.h>
+ #include <net/secure_seq.h>
+ #include <net/tcp_memcontrol.h>
++#include <net/ll_poll.h>
  
- 	ixgbe_for_each_ring(ring, q_vector->rx)
--		clean_complete &= ixgbe_clean_rx_irq(q_vector, ring,
--						     per_ring_budget);
-+		clean_complete &= (ixgbe_clean_rx_irq(q_vector, ring,
-+				   per_ring_budget) < per_ring_budget);
+ #include <linux/inet.h>
+ #include <linux/ipv6.h>
+@@ -2011,6 +2012,7 @@ process:
+ 	if (sk_filter(sk, skb))
+ 		goto discard_and_relse;
  
-+	ixgbe_qv_unlock_napi(q_vector);
- 	/* If all work not completed, return budget and keep polling */
- 	if (!clean_complete)
- 		return budget;
-@@ -3747,16 +3782,25 @@ static void ixgbe_napi_enable_all(struct ixgbe_adapter *adapter)
- {
- 	int q_idx;
++	sk_mark_ll(sk, skb);
+ 	skb->dev = NULL;
  
--	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++)
-+	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++) {
-+		ixgbe_qv_init_lock(adapter->q_vector[q_idx]);
- 		napi_enable(&adapter->q_vector[q_idx]->napi);
-+	}
- }
+ 	bh_lock_sock_nested(sk);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 0a17ed9..5cffa5c 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -63,6 +63,7 @@
+ #include <net/inet_common.h>
+ #include <net/secure_seq.h>
+ #include <net/tcp_memcontrol.h>
++#include <net/ll_poll.h>
  
- static void ixgbe_napi_disable_all(struct ixgbe_adapter *adapter)
- {
- 	int q_idx;
+ #include <asm/uaccess.h>
  
--	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++)
-+	local_bh_disable(); /* for ixgbe_qv_lock_napi() */
-+	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++) {
- 		napi_disable(&adapter->q_vector[q_idx]->napi);
-+		while (!ixgbe_qv_lock_napi(adapter->q_vector[q_idx])) {
-+			pr_info("QV %d locked\n", q_idx);
-+			mdelay(1);
-+		}
-+	}
-+	local_bh_enable();
- }
+@@ -1498,6 +1499,7 @@ process:
+ 	if (sk_filter(sk, skb))
+ 		goto discard_and_relse;
  
- #ifdef CONFIG_IXGBE_DCB
-@@ -7177,6 +7221,9 @@ static const struct net_device_ops ixgbe_netdev_ops = {
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller	= ixgbe_netpoll,
- #endif
-+#ifdef CONFIG_NET_LL_RX_POLL
-+	.ndo_ll_poll		= ixgbe_low_latency_recv,
-+#endif
- #ifdef IXGBE_FCOE
- 	.ndo_fcoe_ddp_setup = ixgbe_fcoe_ddp_get,
- 	.ndo_fcoe_ddp_target = ixgbe_fcoe_ddp_target,
++	sk_mark_ll(sk, skb);
+ 	skb->dev = NULL;
+ 
+ 	bh_lock_sock_nested(sk);
 
