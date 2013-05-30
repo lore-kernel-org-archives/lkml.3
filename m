@@ -1,116 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967893Ab3E3IS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 04:18:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20759 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967813Ab3E3ISy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 04:18:54 -0400
-Message-ID: <51A70B6A.8060306@atmel.com>
-Date: Thu, 30 May 2013 10:18:50 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S967901Ab3E3IUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 04:20:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59441 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967723Ab3E3IUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 04:20:37 -0400
+Date: Thu, 30 May 2013 10:20:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] mm/memory-hotplug: fix lowmem count overflow when
+ offline pages
+Message-ID: <20130530082034.GA8596@dhcp22.suse.cz>
+References: <1369214970-1526-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130522104937.GC19989@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: <dgilbert@interlog.com>
-CC: Robert Nelson <robertcnelson@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johan Hovold <jhovold@gmail.com>,
-        Robert Nelson <Robert.Nelson@digikey.com>,
-        <linux-kernel@vger.kernel.org>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com> <1369298335-24597-1-git-send-email-jhovold@gmail.com> <20130529133354.dd181c845ee4e96527483345@linux-foundation.org> <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com> <51A68DC8.3090703@interlog.com>
-In-Reply-To: <51A68DC8.3090703@interlog.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522104937.GC19989@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/05/2013 01:22, Douglas Gilbert :
-> On 13-05-29 04:41 PM, Robert Nelson wrote:
->> On Wed, May 29, 2013 at 3:33 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>> On Thu, 23 May 2013 10:38:50 +0200 Johan Hovold <jhovold@gmail.com>
->>> wrote:
->>>
->>>> This is an update of the shadow-interrupt-mask series against
->>>> v3.10-rc2.
->>>>
->>>> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
->>>> affected. If not, then some probing mechanism as the one Doug suggested
->>>> could be implemented on top of (a subset of) these patches. What do you
->>>> say, Nicolas?
->>>>
->>>> Note that the first patch (adding a missing OF compile guard) could be
->>>> applied straight away.
->>>
->>> At this stage it is unclear to me how to proceed with patches 2-5.
->>
->> fyi:
->>
->> A version of these patches had been applied once before:
->> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0ef1594c017521ea89278e80fe3f80dafb17abde
->>
->>
->> But due to a few issues it was later reverted:
->> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e24b0bfa2f0446ffaad2661040be23668133aef8
->>
->
-> Strange life of a patch. Mine was the original, Johan Hovold
-> objected and had it reverted. Johan then presented his first
-> patch then v2. They got lost in the weeds.
+On Wed 22-05-13 12:49:37, Michal Hocko wrote:
+> On Wed 22-05-13 17:29:27, Wanpeng Li wrote:
+> > Logic memory-remove code fails to correctly account the Total High Memory 
+> > when a memory block which contains High Memory is offlined as shown in the
+> > example below. The following patch fixes it.
+> > 
+> > cat /proc/meminfo 
+> > MemTotal:        7079452 kB
+> > MemFree:         5805976 kB
+> > Buffers:           94372 kB
+> > Cached:           872000 kB
+> > SwapCached:            0 kB
+> > Active:           626936 kB
+> > Inactive:         519236 kB
+> > Active(anon):     180780 kB
+> > Inactive(anon):   222944 kB
+> > Active(file):     446156 kB
+> > Inactive(file):   296292 kB
+> > Unevictable:           0 kB
+> > Mlocked:               0 kB
+> > HighTotal:       7294672 kB
+> > HighFree:        5181024 kB
+> > LowTotal:       4294752076 kB
+> > LowFree:          624952 kB
+> 
+> Ok, so the HighTotal is higher than MemTotal but it would have been more
+> straightforward to show number of HighTotal before hotremove, show how
+> much memory has been removed and the number after.
+> 
+> It is not clear which stable kernels need this fix as well.
+> 
+> > 
+> > Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> 
+> Anyway
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> with a nit pick bellow
+> 
+> > ---
+> >  mm/page_alloc.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 98cbdf6..80474b2 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -6140,6 +6140,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+> >  		list_del(&page->lru);
+> >  		rmv_page_order(page);
+> >  		zone->free_area[order].nr_free--;
+> > +#ifdef CONFIG_HIGHMEM
+> > +		if (PageHighMem(page))
+> > +			totalhigh_pages -= 1 << order;
+> > +#endif
 
-No, they were not lost. No patch is ever lost and this thread is the proof.
+Hmm, it seems that my old gcc (4.3.4) doesn't like this.
+mm/page_alloc.c:6202: error: lvalue required as left operand of assignment
 
-> My hardware was still broken and this bug caused collateral
-> damage. My original patch no longer applied to lk 3.10.0-rc1
-> so I rewrote it, borrowing some of Johan's ideas and doing a
-> probe time check for the broken RTC_IMR. That patch was
-> presented about a week ago:
->    http://marc.info/?l=linux-arm-kernel&m=136917492531478&w=2
-> The top of that post gives some more background.
->
-> That prompted Johan to produce v3 of his patch which is the
-> subject of this thread. I was hoping that Nicolas Ferre would
-> comment or ack one of these patches. Still waiting.
+I am not sure this is a compiler bug because PAGEFLAG_FALSE is clearly
+returning 0 which should make the whole if a no-op... But maybe we
+shouldn't be more clever than compiler.
 
-Sure that all this did not progressed at the speed you expected. I 
-understand that. But even if I did not answered in a timely manner, that 
-does not mean that I didn't considered it and marked it as "things to be 
-done before next merge window"...
+Andrew, could you fold this follow up fix for
+mm-memory-hotplug-fix-lowmem-count-overflow-when-offline-pages.patch
 
-So, today, too late, I gave my "Acked-by". Sorry for the delay. Let's 
-still monitor the progress of this series upstream.
+Sorr about the confusion I brought to this.
+---
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 717286e..c164e5f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6198,8 +6198,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++#ifdef CONFIG_HIGHMEM
+ 		if (PageHighMem(page))
+ 			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 
-> I have a copy of the original, publicly released manual for
-> the at91sam9g25 (a member of the at91sam9x5 family) marked
-> "11032A–ATARM–27-Jul-11". It contains the following:
->    Errata
->    49.3.1
->      RTC: Interrupt Mask Register cannot be used
->           Interrupt Mask Register reading always returns 0.
->
-> Both Rev B and Rev C of that manual drop that particular
-> erratum. My g25 SoC-based subsystems come from an Atmel
-> partner and still have the RTC IMR bug.
-
-We already talked about this Douglas. Why are you saying this again. So, 
-to summarize:
-
-1/ each and every at91sam9x5 family SoC have and will probably always 
-have this IMR bug (including 9g25 which is part of the family).
-
-2/ you kindly reported the errata disappearing in the documentation. It 
-is an error with document appearance which you probably noted. I have 
-made the necessary actions to correct this. But here again, you have to 
-be patient waiting for the datasheet's next revision.
-
-Best regards,
 -- 
-Nicolas Ferre
+Michal Hocko
+SUSE Labs
