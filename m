@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967944Ab3E3Ib7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 04:31:59 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:34280 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967930Ab3E3Ib1 (ORCPT
+	id S967939Ab3E3Ich (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 04:32:37 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:60011 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967878Ab3E3Ica (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 04:31:27 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: Reduce PRCMU reg-names to shorter form for u8540 DT
-Date: Thu, 30 May 2013 09:31:15 +0100
-Message-Id: <1369902675-5170-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 30 May 2013 04:32:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368611522-9984-23-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-23-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 May 2013 10:32:29 +0200
+Message-ID: <CACRpkdZo_ymcubrvm1k9+VKJq6ED-xOSv7V_Sry8ffhFB3RqyA@mail.gmail.com>
+Subject: Re: [PATCH 22/39] usb: musb: ux500: take the dma_mask from coherent_dma_mask
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After some discussion and deliberation we have decided to only use the
-short form of the PRCMU register names i.e. not mention the peripheral
-in which the registers reside.
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/ccu8540.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> The dma_mask will always be the same as the coherent_dma_mask, so let's
+> cut down on the platform_data burden and set it as such in the driver.
+> This also saves us from supporting it separately when we come to enable
+> this driver for Device Tree.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: linux-usb@vger.kernel.org
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-index af4487f..12f0bc2 100644
---- a/arch/arm/boot/dts/ccu8540.dts
-+++ b/arch/arm/boot/dts/ccu8540.dts
-@@ -23,7 +23,7 @@
- 	soc {
- 		prcmu@80157000 {
- 			reg = <0x80157000 0x2000>, <0x801b0000 0x8000>, <0x801b8000 0x3000>;
--			reg-names = "prcmu", "prcmu-tcpm-per4", "prcmu-tcdm-per4";
-+			reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm";
- 		};
- 
- 		uart@80120000 {
--- 
-1.7.10.4
+Tentatively applied with Felipe's ACK.
 
+Yours,
+Linus Walleij
