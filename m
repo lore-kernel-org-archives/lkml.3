@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968138Ab3E3KVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:21:20 -0400
-Received: from mail.skitlab.ru ([217.65.220.135]:39589 "EHLO mail.skitlab.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030289Ab3E3KVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:21:08 -0400
-From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
-To: linux-omap@vger.kernel.org
-Cc: tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: OMAP2: TI81XX: id: Add cpu id for TI816x ES2.0 and ES2.1
-Date: Thu, 30 May 2013 14:21:01 +0400
-Message-Id: <1369909261-23750-1-git-send-email-aida.mynzhasova@skitlab.ru>
-X-Mailer: git-send-email 1.7.10.4
+	id S1030388Ab3E3KVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:21:54 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11209 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030344Ab3E3KVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:21:46 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <liuj97@gmail.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3/7] net, ipw2x00: remove redundant D0 power state set
+Date: Thu, 30 May 2013 18:21:29 +0800
+Message-ID: <1369909289-35752-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently omap3xxx_check_revision() detects ES1.0 and ES1.1 only,
-this patch extends it by adding ES2.0 and ES2.1 versions support.
+Pci_enable_device() will set device power state to D0,
+so it's no need to do it again in ipw2100_pci_init_one().
 
-Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/arm/mach-omap2/id.c  |   11 +++++++++--
- arch/arm/mach-omap2/soc.h |    2 ++
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ipw2x00/ipw2100.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index 1272c41..8b762a3 100644
---- a/arch/arm/mach-omap2/id.c
-+++ b/arch/arm/mach-omap2/id.c
-@@ -405,11 +405,18 @@ void __init omap3xxx_check_revision(void)
- 			cpu_rev = "1.0";
- 			break;
- 		case 1:
--		/* FALLTHROUGH */
--		default:
- 			omap_revision = TI8168_REV_ES1_1;
- 			cpu_rev = "1.1";
- 			break;
-+		case 2:
-+			omap_revision = TI8168_REV_ES2_0;
-+			cpu_rev = "2.0";
-+			break;
-+		case 3:
-+			/* FALLTHROUGH */
-+		default:
-+			omap_revision = TI8168_REV_ES2_1;
-+			cpu_rev = "2.1";
- 		}
- 		break;
- 	case 0xb944:
-diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
-index 197cc16..8e00226 100644
---- a/arch/arm/mach-omap2/soc.h
-+++ b/arch/arm/mach-omap2/soc.h
-@@ -383,6 +383,8 @@ IS_OMAP_TYPE(3430, 0x3430)
- #define TI816X_CLASS		0x81600034
- #define TI8168_REV_ES1_0	TI816X_CLASS
- #define TI8168_REV_ES1_1	(TI816X_CLASS | (0x1 << 8))
-+#define TI8168_REV_ES2_0	(TI816X_CLASS | (0x2 << 8))
-+#define TI8168_REV_ES2_1	(TI816X_CLASS | (0x3 << 8))
+diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
+index 15920aa..f8ab193 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2100.c
++++ b/drivers/net/wireless/ipw2x00/ipw2100.c
+@@ -6242,8 +6242,6 @@ static int ipw2100_pci_init_one(struct pci_dev *pci_dev,
+ 	if ((val & 0x0000ff00) != 0)
+ 		pci_write_config_dword(pci_dev, 0x40, val & 0xffff00ff);
  
- #define TI814X_CLASS		0x81400034
- #define TI8148_REV_ES1_0	TI814X_CLASS
+-	pci_set_power_state(pci_dev, PCI_D0);
+-
+ 	if (!ipw2100_hw_is_adapter_in_system(dev)) {
+ 		printk(KERN_WARNING DRV_NAME
+ 		       "Device not found via register read.\n");
 -- 
-1.7.10.4
+1.7.1
+
 
