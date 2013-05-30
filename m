@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab3E3SHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:07:48 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46057 "EHLO zene.cmpxchg.org"
+	id S1757462Ab3E3SH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:07:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46059 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756814Ab3E3SFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:05:19 -0400
+	id S1756845Ab3E3SFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 14:05:20 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: linux-mm@kvack.org
 Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
@@ -20,9 +20,9 @@ Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Roman Gushchin <klamm@yandex-team.ru>, metin d <metdos@yahoo.com>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [patch 06/10] mm + fs: store shadow entries in page cache
-Date: Thu, 30 May 2013 14:04:02 -0400
-Message-Id: <1369937046-27666-7-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 04/10] mm: filemap: move radix tree hole searching here
+Date: Thu, 30 May 2013 14:04:00 -0400
+Message-Id: <1369937046-27666-5-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1369937046-27666-1-git-send-email-hannes@cmpxchg.org>
 References: <1369937046-27666-1-git-send-email-hannes@cmpxchg.org>
@@ -30,218 +30,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reclaim will be leaving shadow entries in the page cache radix tree
-upon evicting the real page.  As those pages are found from the LRU,
-an iput() can lead to the inode being freed concurrently.  At this
-point, reclaim must no longer install shadow pages because the inode
-freeing code needs to ensure the page tree is really empty.
+The radix tree hole searching code is only used for page cache, for
+example the readahead code trying to get a a picture of the area
+surrounding a fault.
 
-Add an address_space flag, AS_EXITING, that the inode freeing code
-sets under the tree lock before doing the final truncate.  Reclaim
-will check for this flag before installing shadow pages.
+It sufficed to rely on the radix tree definition of holes, which is
+"empty tree slot".  But this is about to change, though, as shadow
+page descriptors will be stored in the page cache after the actual
+pages get evicted from memory.
+
+Move the functions over to mm/filemap.c and make them native page
+cache operations, where they can later be adapted to handle the new
+definition of "page cache hole".
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/inode.c              |  7 ++++++-
- fs/nilfs2/inode.c       |  4 ++--
- include/linux/fs.h      |  1 +
- include/linux/pagemap.h | 13 ++++++++++++-
- mm/filemap.c            | 16 ++++++++++++----
- mm/truncate.c           |  5 +++--
- mm/vmscan.c             |  2 +-
- 7 files changed, 37 insertions(+), 11 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c |  2 +-
+ include/linux/pagemap.h          |  5 +++
+ include/linux/radix-tree.h       |  4 ---
+ lib/radix-tree.c                 | 75 ---------------------------------------
+ mm/filemap.c                     | 76 ++++++++++++++++++++++++++++++++++++++++
+ mm/readahead.c                   |  4 +--
+ 6 files changed, 84 insertions(+), 82 deletions(-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index a898b3d..3bd7916 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -509,6 +509,7 @@ void clear_inode(struct inode *inode)
- 	 */
- 	spin_lock_irq(&inode->i_data.tree_lock);
- 	BUG_ON(inode->i_data.nrpages);
-+	BUG_ON(inode->i_data.nrshadows);
- 	spin_unlock_irq(&inode->i_data.tree_lock);
- 	BUG_ON(!list_empty(&inode->i_data.private_list));
- 	BUG_ON(!(inode->i_state & I_FREEING));
-@@ -551,10 +552,14 @@ static void evict(struct inode *inode)
- 	 */
- 	inode_wait_for_writeback(inode);
- 
-+	spin_lock_irq(&inode->i_data.tree_lock);
-+	mapping_set_exiting(&inode->i_data);
-+	spin_unlock_irq(&inode->i_data.tree_lock);
-+
- 	if (op->evict_inode) {
- 		op->evict_inode(inode);
- 	} else {
--		if (inode->i_data.nrpages)
-+		if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 			truncate_inode_pages(&inode->i_data, 0);
- 		clear_inode(inode);
+diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+index 434b93e..821d5cb 100644
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -1219,7 +1219,7 @@ static u64 pnfs_num_cont_bytes(struct inode *inode, pgoff_t idx)
+ 	end = DIV_ROUND_UP(i_size_read(inode), PAGE_CACHE_SIZE);
+ 	if (end != NFS_I(inode)->npages) {
+ 		rcu_read_lock();
+-		end = radix_tree_next_hole(&mapping->page_tree, idx + 1, ULONG_MAX);
++		end = page_cache_next_hole(mapping, idx + 1, ULONG_MAX);
+ 		rcu_read_unlock();
  	}
-diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
-index 6b49f14..fbc3f00 100644
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -747,7 +747,7 @@ void nilfs_evict_inode(struct inode *inode)
- 	int ret;
  
- 	if (inode->i_nlink || !ii->i_root || unlikely(is_bad_inode(inode))) {
--		if (inode->i_data.nrpages)
-+		if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 			truncate_inode_pages(&inode->i_data, 0);
- 		clear_inode(inode);
- 		nilfs_clear_inode(inode);
-@@ -755,7 +755,7 @@ void nilfs_evict_inode(struct inode *inode)
- 	}
- 	nilfs_transaction_begin(sb, &ti, 0); /* never fails */
- 
--	if (inode->i_data.nrpages)
-+	if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 		truncate_inode_pages(&inode->i_data, 0);
- 
- 	/* TODO: some of the following operations may fail.  */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 2c28271..5bf1d99 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -413,6 +413,7 @@ struct address_space {
- 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
- 	/* Protected by tree_lock together with the radix tree */
- 	unsigned long		nrpages;	/* number of total pages */
-+	unsigned long		nrshadows;	/* number of shadow entries */
- 	pgoff_t			writeback_index;/* writeback starts here */
- 	const struct address_space_operations *a_ops;	/* methods */
- 	unsigned long		flags;		/* error bits/gfp mask */
 diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index a972341..258eb38 100644
+index 0e38e13..206ae96 100644
 --- a/include/linux/pagemap.h
 +++ b/include/linux/pagemap.h
-@@ -25,6 +25,7 @@ enum mapping_flags {
- 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
- 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
- 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-+	AS_EXITING	= __GFP_BITS_SHIFT + 5, /* inode is being evicted */
- };
+@@ -243,6 +243,11 @@ static inline struct page *page_cache_alloc_readahead(struct address_space *x)
  
- static inline void mapping_set_error(struct address_space *mapping, int error)
-@@ -69,6 +70,16 @@ static inline int mapping_balloon(struct address_space *mapping)
- 	return mapping && test_bit(AS_BALLOON_MAP, &mapping->flags);
+ typedef int filler_t(void *, struct page *);
+ 
++pgoff_t page_cache_next_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan);
++pgoff_t page_cache_prev_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan);
++
+ extern struct page * find_get_page(struct address_space *mapping,
+ 				pgoff_t index);
+ extern struct page * find_lock_page(struct address_space *mapping,
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 622b8d4..91de5c2 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -227,10 +227,6 @@ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
+ unsigned int radix_tree_gang_lookup_slot(struct radix_tree_root *root,
+ 			void ***results, unsigned long *indices,
+ 			unsigned long first_index, unsigned int max_items);
+-unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan);
+-unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan);
+ int radix_tree_preload(gfp_t gfp_mask);
+ void radix_tree_init(void);
+ void *radix_tree_tag_set(struct radix_tree_root *root,
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 2c1c994..6428f04 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -909,81 +909,6 @@ next:
  }
+ EXPORT_SYMBOL(radix_tree_range_tag_if_tagged);
  
-+static inline void mapping_set_exiting(struct address_space *mapping)
-+{
-+	set_bit(AS_EXITING, &mapping->flags);
-+}
-+
-+static inline int mapping_exiting(struct address_space *mapping)
-+{
-+	return test_bit(AS_EXITING, &mapping->flags);
-+}
-+
- static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
- {
- 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
-@@ -547,7 +558,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- extern void delete_from_page_cache(struct page *page);
--extern void __delete_from_page_cache(struct page *page);
-+extern void __delete_from_page_cache(struct page *page, void *shadow);
- int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
- 
- /*
+-
+-/**
+- *	radix_tree_next_hole    -    find the next hole (not-present entry)
+- *	@root:		tree root
+- *	@index:		index key
+- *	@max_scan:	maximum range to search
+- *
+- *	Search the set [index, min(index+max_scan-1, MAX_INDEX)] for the lowest
+- *	indexed hole.
+- *
+- *	Returns: the index of the hole if found, otherwise returns an index
+- *	outside of the set specified (in which case 'return - index >= max_scan'
+- *	will be true). In rare cases of index wrap-around, 0 will be returned.
+- *
+- *	radix_tree_next_hole may be called under rcu_read_lock. However, like
+- *	radix_tree_gang_lookup, this will not atomically search a snapshot of
+- *	the tree at a single point in time. For example, if a hole is created
+- *	at index 5, then subsequently a hole is created at index 10,
+- *	radix_tree_next_hole covering both indexes may return 10 if called
+- *	under rcu_read_lock.
+- */
+-unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < max_scan; i++) {
+-		if (!radix_tree_lookup(root, index))
+-			break;
+-		index++;
+-		if (index == 0)
+-			break;
+-	}
+-
+-	return index;
+-}
+-EXPORT_SYMBOL(radix_tree_next_hole);
+-
+-/**
+- *	radix_tree_prev_hole    -    find the prev hole (not-present entry)
+- *	@root:		tree root
+- *	@index:		index key
+- *	@max_scan:	maximum range to search
+- *
+- *	Search backwards in the range [max(index-max_scan+1, 0), index]
+- *	for the first hole.
+- *
+- *	Returns: the index of the hole if found, otherwise returns an index
+- *	outside of the set specified (in which case 'index - return >= max_scan'
+- *	will be true). In rare cases of wrap-around, ULONG_MAX will be returned.
+- *
+- *	radix_tree_next_hole may be called under rcu_read_lock. However, like
+- *	radix_tree_gang_lookup, this will not atomically search a snapshot of
+- *	the tree at a single point in time. For example, if a hole is created
+- *	at index 10, then subsequently a hole is created at index 5,
+- *	radix_tree_prev_hole covering both indexes may return 5 if called under
+- *	rcu_read_lock.
+- */
+-unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+-				   unsigned long index, unsigned long max_scan)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < max_scan; i++) {
+-		if (!radix_tree_lookup(root, index))
+-			break;
+-		index--;
+-		if (index == ULONG_MAX)
+-			break;
+-	}
+-
+-	return index;
+-}
+-EXPORT_SYMBOL(radix_tree_prev_hole);
+-
+ /**
+  *	radix_tree_gang_lookup - perform multiple lookup on a radix tree
+  *	@root:		radix tree root
 diff --git a/mm/filemap.c b/mm/filemap.c
-index df9a1db..dd0835e 100644
+index e1979fd..ccd5af8 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -109,7 +109,7 @@
-  * sure the page is locked and that nobody else uses it - or that usage
-  * is safe.  The caller must hold the mapping's tree_lock.
-  */
--void __delete_from_page_cache(struct page *page)
-+void __delete_from_page_cache(struct page *page, void *shadow)
- {
- 	struct address_space *mapping = page->mapping;
- 
-@@ -123,7 +123,14 @@ void __delete_from_page_cache(struct page *page)
- 	else
- 		cleancache_invalidate_page(mapping, page);
- 
--	radix_tree_delete(&mapping->page_tree, page->index);
-+	if (shadow) {
-+		void **slot;
-+
-+		slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
-+		radix_tree_replace_slot(slot, shadow);
-+		mapping->nrshadows++;
-+	} else
-+		radix_tree_delete(&mapping->page_tree, page->index);
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation lookup relies upon it */
- 	mapping->nrpages--;
-@@ -162,7 +169,7 @@ void delete_from_page_cache(struct page *page)
- 
- 	freepage = mapping->a_ops->freepage;
- 	spin_lock_irq(&mapping->tree_lock);
--	__delete_from_page_cache(page);
-+	__delete_from_page_cache(page, NULL);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
- 
-@@ -409,7 +416,7 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 		new->index = offset;
- 
- 		spin_lock_irq(&mapping->tree_lock);
--		__delete_from_page_cache(old);
-+		__delete_from_page_cache(old, NULL);
- 		error = radix_tree_insert(&mapping->page_tree, offset, new);
- 		BUG_ON(error);
- 		mapping->nrpages++;
-@@ -442,6 +449,7 @@ static int page_cache_insert(struct address_space *mapping, pgoff_t offset,
- 		if (!radix_tree_exceptional_entry(p))
- 			return -EEXIST;
- 		radix_tree_replace_slot(slot, page);
-+		mapping->nrshadows--;
- 		return 0;
- 	}
- 	return radix_tree_insert(&mapping->page_tree, offset, page);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index d6ec30c..c1a5147 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -35,7 +35,8 @@ static void clear_exceptional_entry(struct address_space *mapping,
- 	 * without the tree itself locked.  These unlocked entries
- 	 * need verification under the tree lock.
- 	 */
--	radix_tree_delete_item(&mapping->page_tree, index, page);
-+	if (radix_tree_delete_item(&mapping->page_tree, index, page) == page)
-+		mapping->nrshadows--;
- 	spin_unlock_irq(&mapping->tree_lock);
+@@ -666,6 +666,82 @@ int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
  }
  
-@@ -434,7 +435,7 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 		goto failed;
+ /**
++ * page_cache_next_hole - find the next hole (not-present entry)
++ * @mapping: mapping
++ * @index: index
++ * @max_scan: maximum range to search
++ *
++ * Search the set [index, min(index+max_scan-1, MAX_INDEX)] for the
++ * lowest indexed hole.
++ *
++ * Returns: the index of the hole if found, otherwise returns an index
++ * outside of the set specified (in which case 'return - index >=
++ * max_scan' will be true). In rare cases of index wrap-around, 0 will
++ * be returned.
++ *
++ * page_cache_next_hole may be called under rcu_read_lock. However,
++ * like radix_tree_gang_lookup, this will not atomically search a
++ * snapshot of the tree at a single point in time. For example, if a
++ * hole is created at index 5, then subsequently a hole is created at
++ * index 10, page_cache_next_hole covering both indexes may return 10
++ * if called under rcu_read_lock.
++ */
++pgoff_t page_cache_next_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan)
++{
++	unsigned long i;
++
++	for (i = 0; i < max_scan; i++) {
++		if (!radix_tree_lookup(&mapping->page_tree, index))
++			break;
++		index++;
++		if (index == 0)
++			break;
++	}
++
++	return index;
++}
++EXPORT_SYMBOL(page_cache_next_hole);
++
++/**
++ * page_cache_prev_hole - find the prev hole (not-present entry)
++ * @mapping: mapping
++ * @index: index
++ * @max_scan: maximum range to search
++ *
++ * Search backwards in the range [max(index-max_scan+1, 0), index] for
++ * the first hole.
++ *
++ * Returns: the index of the hole if found, otherwise returns an index
++ * outside of the set specified (in which case 'index - return >=
++ * max_scan' will be true). In rare cases of wrap-around, ULONG_MAX
++ * will be returned.
++ *
++ * page_cache_prev_hole may be called under rcu_read_lock. However,
++ * like radix_tree_gang_lookup, this will not atomically search a
++ * snapshot of the tree at a single point in time. For example, if a
++ * hole is created at index 10, then subsequently a hole is created at
++ * index 5, page_cache_prev_hole covering both indexes may return 5 if
++ * called under rcu_read_lock.
++ */
++pgoff_t page_cache_prev_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan)
++{
++	unsigned long i;
++
++	for (i = 0; i < max_scan; i++) {
++		if (!radix_tree_lookup(&mapping->page_tree, index))
++			break;
++		index--;
++		if (index == ULONG_MAX)
++			break;
++	}
++
++	return index;
++}
++EXPORT_SYMBOL(page_cache_prev_hole);
++
++/**
+  * find_get_page - find and get a page reference
+  * @mapping: the address_space to search
+  * @offset: the page index
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 7963f23..187cbea 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -351,7 +351,7 @@ static pgoff_t count_history_pages(struct address_space *mapping,
+ 	pgoff_t head;
  
- 	BUG_ON(page_has_private(page));
--	__delete_from_page_cache(page);
-+	__delete_from_page_cache(page, NULL);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
+ 	rcu_read_lock();
+-	head = radix_tree_prev_hole(&mapping->page_tree, offset - 1, max);
++	head = page_cache_prev_hole(mapping, offset - 1, max);
+ 	rcu_read_unlock();
  
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 669fba3..ff0d92f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -498,7 +498,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 	return offset - 1 - head;
+@@ -430,7 +430,7 @@ ondemand_readahead(struct address_space *mapping,
+ 		pgoff_t start;
  
- 		freepage = mapping->a_ops->freepage;
+ 		rcu_read_lock();
+-		start = radix_tree_next_hole(&mapping->page_tree, offset+1,max);
++		start = page_cache_next_hole(mapping, offset + 1, max);
+ 		rcu_read_unlock();
  
--		__delete_from_page_cache(page);
-+		__delete_from_page_cache(page, NULL);
- 		spin_unlock_irq(&mapping->tree_lock);
- 		mem_cgroup_uncharge_cache_page(page);
- 
+ 		if (!start || start - offset > max)
 -- 
 1.8.3
 
