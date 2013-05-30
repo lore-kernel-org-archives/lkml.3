@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab3E3FCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 01:02:36 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:38046 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab3E3FC2 (ORCPT
+	id S1751492Ab3E3FOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 01:14:47 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:65187 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3E3FOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 01:02:28 -0400
-Message-ID: <51A6DD52.406@synopsys.com>
-Date: Thu, 30 May 2013 10:32:10 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 30 May 2013 01:14:45 -0400
+Message-ID: <51A6E03C.2040407@monstr.eu>
+Date: Thu, 30 May 2013 07:14:36 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
- runs out of slots
-References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 11/11] net: emaclite: Update driver header
+References: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369841519.git.michal.simek@xilinx.com> <c0a6ab3410dd6e6a9198a4605993164700d1b965.1369841519.git.michal.simek@xilinx.com> <51A636D4.3050200@cogentembedded.com>
+In-Reply-To: <51A636D4.3050200@cogentembedded.com>
 X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.154]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2NGUKMHBCKKCIABUDXPOH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+alex.shi@intel.com]
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2NGUKMHBCKKCIABUDXPOH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On 05/29/2013 06:26 PM, Vineet Gupta wrote:
-> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
-> batching slots, TLB entries needs to be flushed for @start to @interim,
-> NOT @interim to @end.
-> 
-> Since ARC port doesn't use page free batching I can't test it myself but
-> this seems like the right thing to do.
-> Observed this when working on a fix for the issue at thread:
-> 	http://www.spinics.net/lists/linux-arch/msg21736.html
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: linux-mm@kvack.org
-> Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
-> ---
->  mm/memory.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 6dc1882..d9d5fd9 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1110,6 +1110,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->  	spinlock_t *ptl;
->  	pte_t *start_pte;
->  	pte_t *pte;
-> +	unsigned long range_start = addr;
->  
->  again:
->  	init_rss_vec(rss);
-> @@ -1215,12 +1216,14 @@ again:
->  		force_flush = 0;
->  
->  #ifdef HAVE_GENERIC_MMU_GATHER
-> -		tlb->start = addr;
-> -		tlb->end = end;
-> +		tlb->start = range_start;
-> +		tlb->end = addr;
->  #endif
->  		tlb_flush_mmu(tlb);
-> -		if (addr != end)
-> +		if (addr != end) {
-> +			range_start = addr;
->  			goto again;
-> +		}
->  	}
->  
->  	return addr;
-> 
+On 05/29/2013 07:11 PM, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 05/29/2013 07:33 PM, Michal Simek wrote:
+>=20
+>> Corrent email address and years.
+>=20
+>    s/Corrent/Correct/. Perhaps the committer can fix.
 
+I will fix it in v2, one patch is broken anyway.
+
+Thanks,
+Michal
+
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2NGUKMHBCKKCIABUDXPOH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGm4DwACgkQykllyylKDCH0HACcCPQD0X+gjsrb6CoUeCTuUqZn
+fMkAnjTzzCjWEomC6BomRJadC9Esi7Zd
+=dATH
+-----END PGP SIGNATURE-----
+
+------enig2NGUKMHBCKKCIABUDXPOH--
