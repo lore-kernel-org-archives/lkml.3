@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab3E3UT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:19:56 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:55809 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3E3UTh (ORCPT
+	id S1755138Ab3E3UVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 16:21:31 -0400
+Received: from 18.mo5.mail-out.ovh.net ([178.33.45.10]:34767 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750921Ab3E3UVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:19:37 -0400
-X-WSS-ID: 0MNMOGM-0B-186-02
-X-M-MSG: 
-X-Server-Uuid: AF72F651-81B1-4134-BA8C-A8E1A4E620FF
-Message-ID: <51A7B442.9010108@sandia.gov>
-Date: Thu, 30 May 2013 14:19:14 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514
- Thunderbird/17.0.6
+	Thu, 30 May 2013 16:21:23 -0400
+X-Greylist: delayed 32843 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 16:21:23 EDT
+Date: Thu, 30 May 2013 22:17:14 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH] of: Export of_irq_count for using in modules
+Message-ID: <20130530201714.GE19834@game.jcrosoft.org>
+References: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-To: "Weston Andros Adamson" <dros@netapp.com>,
-        "Chuck Lever" <chuck.lever@oracle.com>,
-        "Trond Myklebust" <Trond.Myklebust@netapp.com>
-cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: 3.10-rc3 NFSv3 mount issues
-X-TMWD-Spam-Summary: TS=20130530201915; ID=1; SEV=2.3.1;
- DFV=B2013022509; IFV=NA; AIF=B2013022509; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230352E35314137423434342E303034303A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAAAAAAAAAAAAAAAAAAAAAAAfQ==
-X-MMS-Spam-Filter-ID: B2013022509_5.03.0010
-X-WSS-ID: 7DB96BC92IW3327949-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13024691598917741471
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 15:49 Thu 30 May     , Michal Simek wrote:
+> Export of_irq_count for modules.
 
-I've been trying to test 3.10-rc3 on some diskless clients, and found
-that I can no longer mount my root file system via NFSv3.
+can you explain why do you need to call of_irq_count
 
-I poked around looking at NFS changes for 3.10, and found these two
-commits:
+Best Regards,
+J.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+> We are using this function in remoteproc module drivers.
+> There is also drivers/gpio/gpio-mvebu.c in the tree
+> which use this function but this driver can't be compiled
+> as module. This could be also the reason why is not this driver as module.
+> ---
+>  drivers/of/irq.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index a3c1c5a..c918dde 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -374,6 +374,7 @@ int of_irq_count(struct device_node *dev)
+> 
+>  	return nr;
+>  }
+> +EXPORT_SYMBOL_GPL(of_irq_count);
+> 
+>  /**
+>   * of_irq_to_resource_table - Fill in resource table with node's IRQ info
+> --
+> 1.8.2.3
+> 
 
- d497ab9751 "NFSv3: match sec= flavor against server list"
- 4580a92d44 "NFS: Use server-recommended security flavor by default (NFSv3)"
 
-If I revert both of these commits from 3.10-rc3, then my diskless
-client can mount its root file system.
 
-The busybox mount command fails like this, when using 3.10-rc3:
-
-/ # mount  -t nfs -o ro,nolock,vers=3,proto=tcp 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
-mount: mounting 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x on /mnt failed: Invalid argument
-
-The commit messages for both these commits seem to say that mounting
-with the "sys=sec" option should work, but unfortunately, my busybox doesn't
-seem to understand the "sec=" mount option:
-
-/ # mount  -t nfs -o ro,nolock,vers=3,proto=tcp,sec=sys 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
-mount: invalid number 'sys'
-
-My NFS server is based on RHEL6, and is not using any "sec=" option
-in its export for this file system.  I did try exporting with "sec=sys",
-but it didn't seem to make any difference either.
-
-So far, this seems like a regression to me ....
-Any ideas what I might be doing wrong?  How can I
-help make this work again?
-
-Thanks -- Jim
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
 
