@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968100Ab3E3JmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:42:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45032 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968041Ab3E3JmF (ORCPT
+	id S1030479Ab3E3Jm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:42:28 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39514 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968088Ab3E3JlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:42:05 -0400
-Date: Thu, 30 May 2013 02:42:01 -0700 (PDT)
-Message-Id: <20130530.024201.1913984663902628192.davem@davemloft.net>
-To: alexandre.belloni@free-electrons.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        shawn.guo@linaro.org, kernel@pengutronix.de
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51A5BA86.3070609@free-electrons.com>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com>
-	<20130528.130920.1604291112518863799.davem@davemloft.net>
-	<51A5BA86.3070609@free-electrons.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 05:41:15 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH v2 3/3] video: xilinxfb: Use driver for Xilinx ARM Zynq
+Date: Thu, 30 May 2013 11:41:02 +0200
+Message-Id: <2ec6211297b805a6423898e13751add9a931c686.1369906849.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com>
+References: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com>
+In-Reply-To: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com>
+References: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-15087-1369906871-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Date: Wed, 29 May 2013 10:21:26 +0200
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> On 28/05/2013 22:09, David Miller wrote:
->>
->> This is the wrong way to go about this.
->>
->> If the arch code absolutely requires CONFIG_PHYLIB=y then express that
->> dependency in the arch Kconfig.  The arch code in question should not
->> be compiled at all if CONFIG_PHYLIB has an incompatible setting.
-> But that is making it impossible to compile a kernel without any network
-> stack for those platforms or we are going back to either enclosing the
-> calls to phy_register_fixup{,_for_uid,_for_id} with #ifdef CONFIG_PHYLIB
-> or if(IS_BUILTIN(CONFIG_PHYLIB)). And as you can see, it is quite error
-> prone and is done only done for 2 platforms on a total of 6. I believe
-> fixing that in phy.h is more foolproof.
+--=_mimegpg-monstr-desktop-15087-1369906871-0001
 
-Or you properly segregate the networking bits of the platform code so
-that it can be built only when the necessary networking portions are
-enabled.
+From: Michal Simek <monstr@monstr.eu>
 
-Sometimes having dummy stubs makes sense, but not in this situation.
+Enable this driver for all Xilinx platforms.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Changes in v2: None
+
+ drivers/video/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 2e937bd..2c301f8 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2188,7 +2188,7 @@ config FB_PS3_DEFAULT_SIZE_M
+
+ config FB_XILINX
+ 	tristate "Xilinx frame buffer support"
+-	depends on FB && (XILINX_VIRTEX || MICROBLAZE)
++	depends on FB && (XILINX_VIRTEX || MICROBLAZE || ARCH_ZYNQ)
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-15087-1369906871-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGnHrcACgkQykllyylKDCH38QCfWLbGygE650nSvIrMW9NFhZA/
+g3EAoJPi6W/IKJo3hza+2A8EdOTZ5GZq
+=I870
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-15087-1369906871-0001--
