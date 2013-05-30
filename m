@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab3E3NvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:51:18 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39062 "EHLO
+	id S932642Ab3E3Nv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:51:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:39051 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826Ab3E3Nto (ORCPT
+	with ESMTP id S1755861Ab3E3Ntm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:49:44 -0400
+	Thu, 30 May 2013 09:49:42 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: davem@davemloft.net
 Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv4 4/6] ARM: sunxi: Add EMAC controller node to sun4i DTSI
-Date: Thu, 30 May 2013 15:49:23 +0200
-Message-Id: <1369921765-3367-5-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv4 3/6] ARM: sun4i: Add muxing options for the ethernet controller
+Date: Thu, 30 May 2013 15:49:22 +0200
+Message-Id: <1369921765-3367-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,39 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The EMAC only has one pinset available for muxing, so hopefully, we
+cover all cases.
+
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Tested-by: Richard Genoud <richard.genoud@gmail.com>
 ---
- arch/arm/boot/dts/sun4i-a10.dtsi | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/arm/boot/dts/sun4i-a10.dtsi | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index ff1f41f..983da33 100644
+index e7ef619..ff1f41f 100644
 --- a/arch/arm/boot/dts/sun4i-a10.dtsi
 +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -163,6 +163,22 @@
- 		reg = <0x01c20000 0x300000>;
- 		ranges;
+@@ -199,6 +199,17 @@
+ 				allwinner,drive = <0>;
+ 				allwinner,pull = <0>;
+ 			};
++
++			emac_pins_a: emac0@0 {
++				allwinner,pins = "PA0", "PA1", "PA2",
++						"PA3", "PA4", "PA5", "PA6",
++						"PA7", "PA8", "PA9", "PA10",
++						"PA11", "PA12", "PA13", "PA14",
++						"PA15", "PA16";
++				allwinner,function = "emac";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
+ 		};
  
-+		emac: ethernet@01c0b000 {
-+			compatible = "allwinner,sun4i-emac";
-+			reg = <0x01c0b000 0x1000>;
-+			interrupts = <55>;
-+			clocks = <&ahb_gates 17>;
-+			status = "disabled";
-+		};
-+
-+		mdio@01c0b080 {
-+			compatible = "allwinner,sun4i-mdio";
-+			reg = <0x01c0b080 0x14>;
-+			status = "disabled";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+		};
-+
- 		intc: interrupt-controller@01c20400 {
- 			compatible = "allwinner,sun4i-ic";
- 			reg = <0x01c20400 0x400>;
+ 		timer@01c20c00 {
 -- 
 1.8.2.3
 
