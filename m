@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab3E3SPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:15:03 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58251 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756886Ab3E3SO5 (ORCPT
+	id S1757269Ab3E3SPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:15:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53770 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab3E3SP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:14:57 -0400
-Date: Thu, 30 May 2013 14:14:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Joe Perches <joe@perches.com>
-cc: Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Improving or replacing snd_printk()
-In-Reply-To: <1369857112.22004.119.camel@joe-AO722>
-Message-ID: <Pine.LNX.4.44L0.1305301411370.1137-100000@iolanthe.rowland.org>
+	Thu, 30 May 2013 14:15:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1369206634-6778-6-git-send-email-avinashphilip@ti.com>
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
+	<1369206634-6778-6-git-send-email-avinashphilip@ti.com>
+Date: Thu, 30 May 2013 20:15:28 +0200
+Message-ID: <CACRpkdavLhkJ2Osa-SHp_ekxGu-gtJ7AKTXuOHHZr1Z4BUEawQ@mail.gmail.com>
+Subject: Re: [PATCH 05/11] ARM: davinci: creation of gpio platform device for
+ dm platforms
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Philip Avinash <avinashphilip@ti.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013, Joe Perches wrote:
+On Wed, May 22, 2013 at 9:10 AM, Philip Avinash <avinashphilip@ti.com> wrote:
 
-> On Wed, 2013-05-29 at 15:27 -0400, Alan Stern wrote:
-> > Has there been any thought of improving snd_printk(), or even better,
-> > changing the call sites to use the dev_*() routines instead?
-> 
-> Perhaps better would be to add and use some combination of
-> type specific logging message functions/macros like:
-> 
-> void snd_<level>(const struct snd_device *dev, const char *fmt, ...)
-> void snd_card_<level>(const struct snd_card *card, const char *fmt, ...)
-> void snd_ac97_<level>(const struct snd_ac97 *ac97, const char *fmt, ...)
-> 
-> allowing NULL as the type pointer when necessary/appropriate.
+> gpio controller resource information being associated with
+> davinci_soc_info structure and not created any device. Hence davinci
+> gpio didn't fall under proper device model. This patch creates gpio
+> davinci as a platform device for dm platforms.
+> Also add daivinci_register_gpio API to create platform device for dm*
+> platforms.
+>
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 
-Almost anything would be better than the current situation.  The only 
-enhancement provided by CONFIG_SND_VERBOSE_PRINTK is to print the 
-filename and line number, which is relatively unhelpful (unless there 
-are multiple copies of the same message in several places).
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Alan Stern
-
+Yours,
+Linus Walleij
