@@ -1,112 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759837Ab3E3Tel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:34:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60329 "EHLO mx1.redhat.com"
+	id S1759905Ab3E3Tfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25649 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759603Ab3E3Tee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:34:34 -0400
-Message-ID: <51A7A912.1040601@redhat.com>
-Date: Thu, 30 May 2013 15:31:30 -0400
-From: Brian Foster <bfoster@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1759645Ab3E3Tfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 15:35:40 -0400
+Message-ID: <51A7AA09.7020901@redhat.com>
+Date: Thu, 30 May 2013 15:35:37 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
 MIME-Version: 1.0
-To: Maxim Patlasov <mpatlasov@parallels.com>
-CC: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] fuse: fix alignment in short read optimization for async_dio
-References: <20130530123858.16486.94636.stgit@maximpc.sw.ru>
-In-Reply-To: <20130530123858.16486.94636.stgit@maximpc.sw.ru>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci: Fix flaw in pci_acs_enabled()
+References: <20130530183638.14466.74855.stgit@bling.home>
+In-Reply-To: <20130530183638.14466.74855.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 08:41 AM, Maxim Patlasov wrote:
-> The bug was introduced with async_dio feature: trying to optimize short reads,
-> we cut number-of-bytes-to-read to i_size boundary. Hence the following example:
-> 
-> 	truncate --size=300 /mnt/file
-> 	dd if=/mnt/file of=/dev/null iflag=direct
-> 
-> led to FUSE_READ request of 300 bytes size. This turned out to be problem
-> for userspace fuse implementations who rely on assumption that kernel fuse
-> does not change alignment of request from client FS.
-> 
-> The patch turns off the optimization if async_dio is disabled. And, if it's
-> enabled, the patch fixes adjustment of number-of-bytes-to-read to preserve
-> alignment.
-> 
-> Note, that we cannot throw out short read optimization entirely because
-> otherwise a direct read of a huge size issued on a tiny file would generate
-> a huge amount of fuse requests and most of them would be ACKed by userspace
-> with zero bytes read.
-> 
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+On 05/30/2013 02:37 PM, Alex Williamson wrote:
+> Downstream ports support for all ACS flags supercedes multifunction
+> exclusion of some flags.  The PCIe spec also fully specifies which
+> PCIe types are subject to the multifunction rules and excludes event
+> collectors and PCIe-to-PCI bridges entirely.  Document each rule to
+> the section of the PCIe spec.
+>
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
 > ---
-
-Looks good and passes my tests. Thanks for cooking this up Maxim!
-
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-
->  fs/fuse/file.c |   14 ++++++++++----
->  1 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index d1c9b85..9026572 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -2365,6 +2365,11 @@ static void fuse_do_truncate(struct file *file)
->  	fuse_do_setattr(inode, &attr, file);
->  }
->  
-> +static inline loff_t fuse_round_up(loff_t off)
+>   drivers/pci/pci.c |   59 ++++++++++++++++++++++++++++++++++++++++-------------
+>   1 file changed, 45 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index b099e00..457ae51 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -2354,6 +2354,19 @@ void pci_enable_acs(struct pci_dev *dev)
+>   	pci_write_config_word(dev, pos + PCI_ACS_CTRL, ctrl);
+>   }
+>
+> +static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
 > +{
-> +	return round_up(off, FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT);
+> +	int pos;
+> +	u16 ctrl;
+> +
+> +	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+> +	if (!pos)
+> +		return false;
+> +
+> +	pci_read_config_word(pdev, pos + PCI_ACS_CTRL,&ctrl);
+> +	return (ctrl&  acs_flags) == acs_flags;
 > +}
 > +
->  static ssize_t
->  fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs)
-> @@ -2372,6 +2377,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  	ssize_t ret = 0;
->  	struct file *file = iocb->ki_filp;
->  	struct fuse_file *ff = file->private_data;
-> +	bool async_dio = ff->fc->async_dio;
->  	loff_t pos = 0;
->  	struct inode *inode;
->  	loff_t i_size;
-> @@ -2383,10 +2389,10 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  	i_size = i_size_read(inode);
->  
->  	/* optimization for short read */
-> -	if (rw != WRITE && offset + count > i_size) {
-> +	if (async_dio && rw != WRITE && offset + count > i_size) {
->  		if (offset >= i_size)
->  			return 0;
-> -		count = i_size - offset;
-> +		count = min_t(loff_t, count, fuse_round_up(i_size - offset));
->  	}
->  
->  	io = kmalloc(sizeof(struct fuse_io_priv), GFP_KERNEL);
-> @@ -2404,7 +2410,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  	 * By default, we want to optimize all I/Os with async request
->  	 * submission to the client filesystem if supported.
->  	 */
-> -	io->async = ff->fc->async_dio;
-> +	io->async = async_dio;
->  	io->iocb = iocb;
->  
->  	/*
-> @@ -2412,7 +2418,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  	 * to wait on real async I/O requests, so we must submit this request
->  	 * synchronously.
->  	 */
-> -	if (!is_sync_kiocb(iocb) && (offset + count > i_size))
-> +	if (!is_sync_kiocb(iocb) && (offset + count > i_size) && rw == WRITE)
->  		io->async = false;
->  
->  	if (rw == WRITE)
-> 
+>   /**
+>    * pci_acs_enabled - test ACS against required flags for a given device
+>    * @pdev: device to test
+> @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
+>    */
+>   bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+>   {
+> -	int pos, ret;
+> -	u16 ctrl;
+> +	int ret;
+>
+>   	ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
+>   	if (ret>= 0)
+> @@ -2374,23 +2386,42 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
+>   	if (!pci_is_pcie(pdev))
+>   		return false;
+>
+> -	/* Filter out flags not applicable to multifunction */
+> -	if (pdev->multifunction)
+> +	switch (pci_pcie_type(pdev)) {
+> +	/*
+> +	 * PCIe 3.0, 6.12.1 excludes ACS on these devices.  "Not applicable"
+> +	 */
+> +	case PCI_EXP_TYPE_PCI_BRIDGE:
+> +	case PCI_EXP_TYPE_RC_EC:
+> +		break;
+> +	/*
+> +	 * PCIe 3.0, 6.12.1.1 specifies full ACS capabilities on downstream
+> +	 * ports, regardless of them being multifunction devices.
+> +	 */
+> +	case PCI_EXP_TYPE_DOWNSTREAM:
+> +	case PCI_EXP_TYPE_ROOT_PORT:
+> +		return pci_acs_flags_enabled(pdev, acs_flags);
+> +	/*
+> +	 * PCIe 3.0, 6.12.1.2 specifies unimplemented ACS capabilities on
+> +	 * multifunction devices.  6.12 footnote identifies specifically
+> +	 * which devices types this applies to.
+> +	 */
+> +	case PCI_EXP_TYPE_ENDPOINT:
+> +	case PCI_EXP_TYPE_UPSTREAM:
+> +	case PCI_EXP_TYPE_LEG_END:
+> +	case PCI_EXP_TYPE_RC_END:
+> +		if (!pdev->multifunction)
+> +			break;
+> +
+
+
+>   		acs_flags&= (PCI_ACS_RR | PCI_ACS_CR |
+>   			      PCI_ACS_EC | PCI_ACS_DT);
+>
+> -	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM ||
+> -	    pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT ||
+> -	    pdev->multifunction) {
+> -		pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
+> -		if (!pos)
+> -			return false;
+> -
+> -		pci_read_config_word(pdev, pos + PCI_ACS_CTRL,&ctrl);
+> -		if ((ctrl&  acs_flags) != acs_flags)
+> -			return false;
+> +		return pci_acs_flags_enabled(pdev, acs_flags);
+As I read 6.12.1.2, *if* a multifunction device supports peer-to-peer
+traffic with another function(s), then certain ACS subfunctions
+must be implemented.
+So, I conclude from that statement (3rd bullet under this section),
+if a MFD does not support peer-to-peer traffic, it doesn't have to provide
+an ACS cap ... which is what I'm seeing in a number of MFD NICs (with sriov devices).
+IOW, an MFD w/o an ACS cap == single function device w/o ACS cap.
+
+If that spec interpretation, and more importantly, hw implementation, is
+correct, then won't above code return 'false' for an MFD with no ACS cap,
+and shouldn't it return true in that case b/c it's optional/only-req'd
+if MFD has peer-to-peer btwn functions?
+
+>   	}
+>
+> +	/*
+> +	 * PCIe 3.0, 6.12.1.3 specifies no ACS capabilties are applicable
+> +	 * to single function devices with the exception of downstream ports.
+> +	 */
+>   	return true;
+>   }
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
