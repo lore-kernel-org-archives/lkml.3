@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3E3NhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:37:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9979 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab3E3NhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:37:12 -0400
-X-Authority-Analysis: v=2.0 cv=MNbiabll c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UyY1rksVWFoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=dy2dsGysKfcA:10 a=kXRgH0KGbQJbFpd9bFgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369921028.26799.4.camel@gandalf.local.home>
-Subject: Re: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
- context
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Ortiz, Lance E" <lance.oritz@hp.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 30 May 2013 09:37:08 -0400
-In-Reply-To: <20130530072849.GA20793@pd.tnic>
-References: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
-	 <30463843.EmBn1xaq3I@vostro.rjw.lan>
-	 <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
-	 <A961433CDFF2F640A2866803152E61F95D13A6F2@G9W0715.americas.hpqcorp.net>
-	 <20130530072849.GA20793@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756580Ab3E3Npd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:45:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54891 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756076Ab3E3Np2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 09:45:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Pavel Machek <pavel@ucw.cz>, Jingoo Han <jg1.han@samsung.com>,
+        linux-pm@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
+Date: Thu, 30 May 2013 15:54:20 +0200
+Message-ID: <4119506.fLP8mVnrTk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130530105644.GA3595@katana>
+References: <000201ce453f$5ce4fc90$16aef5b0$@samsung.com> <20130503092311.GA13832@amd.pavel.ucw.cz> <20130530105644.GA3595@katana>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-30 at 09:28 +0200, Borislav Petkov wrote:
-> On Thu, May 30, 2013 at 04:55:20AM +0000, Ortiz, Lance E wrote:
-> > This TODO is a note for future clean-up and is not directly related to
-> >the bug being fixed with this patch. Which lends to the argument of why
-> >put the TODO in this patch? Opportunistic. I don’t think we want to
-> >create a separate patch just for a TODO note.
+On Thursday, May 30, 2013 12:56:45 PM Wolfram Sang wrote:
+> On Fri, May 03, 2013 at 11:23:11AM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > > Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
+> > > > to be assigned without having an #define xxx NULL for the case that PM is
+> > > > not enabled.
+> > > > 
+> > > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > > 
+> > > I've queued this up as v3.11 material.
+> > 
+> > > > --- a/drivers/i2c/busses/i2c-s3c2410.c
+> > > > +++ b/drivers/i2c/busses/i2c-s3c2410.c
+> > > > @@ -1218,7 +1218,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
+> > > >  }
+> > > >  #endif
+> > > >  
+> > > > -#ifdef CONFIG_PM
+> > > >  static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+> > > >  #ifdef CONFIG_PM_SLEEP
+> > > >  	.suspend_noirq = s3c24xx_i2c_suspend_noirq,
+> > > > @@ -1226,11 +1225,6 @@ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+> > > >  #endif
+> > > >  };
+> > > >  
+> > > > -#define S3C24XX_DEV_PM_OPS (&s3c24xx_i2c_dev_pm_ops)
+> > > > -#else
+> > > > -#define S3C24XX_DEV_PM_OPS NULL
+> > > > -#endif
+> > > > -
+> > > >  /* device driver for platform bus bits */
+> > 
+> > Will not this enlarge .data by sizeof(struct dev_pm_ops)?
 > 
-> Sounds to me, this TODO item should be on your TODO list - not in kernel
-> sources :-)
-> 
+> Same question here. Is it the preferred way now to use this new macro
+> although having the cost of having an empty dev_pm_ops?
 
-Also, that TODO sounds like there's output to userspace that can be
-parsed by a userspace tool. If a tool expects the current format, it may
-not be acceptable to change it later.
+No, it isn't, but if someone wants to use it, I don't really care that much.
 
-If the contents of this patch has nothing to do with the TODO, then
-leave it out. It just confuses things.
-
--- Steve
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
