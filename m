@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968075Ab3E3Ji6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:38:58 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48086 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab3E3Jiu (ORCPT
+	id S968078Ab3E3JkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:40:22 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:56837 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab3E3JkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:38:50 -0400
-Date: Thu, 30 May 2013 11:38:38 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What is listed in /sys/module?
-Message-ID: <20130530113838.32ff2632@endymion.delvare>
-In-Reply-To: <CAK7N6vo+2F98CfibfTUn9fbkxEXjBVQi1cxpvK0L7XCSq8xaDQ@mail.gmail.com>
-References: <20130529102735.3ce72ecc@endymion.delvare>
-	<878v2xmgmw.fsf@rustcorp.com.au>
-	<CAK7N6vpv6JpsXEdjLOUd-+7+y=DB9Q-zcMdj12iZWu=bGkAieQ@mail.gmail.com>
-	<20130530103444.40888460@endymion.delvare>
-	<CAK7N6vo+2F98CfibfTUn9fbkxEXjBVQi1cxpvK0L7XCSq8xaDQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 30 May 2013 05:40:15 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A71E49.1000707@asianux.com>
+Date: Thu, 30 May 2013 17:39:21 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>, gerg@uclinux.org,
+        schmitz@debian.org, Sam Ravnborg <sam@ravnborg.org>
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-m68k@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: m68k: include: asm: the 3rd parameter of 'insl' and
+ 'outsl' need '<< 2'
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anish,
 
-On Thu, 30 May 2013 14:56:43 +0530, anish singh wrote:
-> On Thu, May 30, 2013 at 2:04 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> > My question was motivated by work I'm doing on the sensors-detect
-> > script. The purpose of that script is to tell the user which modules
-> > he/she should load to get hardware monitoring running on his/her
-> > system. The script has to load some modules for the detection itself
-> > (e.g. cpuid, i2c-dev, SMBus controller drivers) and outputs a list of
-> > drivers which should be loaded by the user (but the script itself does
-> > not load them.)
-> >
-> > Each of the drivers in question can be completely missing, or built-in,
-> > or built as a module but not loaded, or built as a module and loaded.
-> > In order to make the script as user-friendly as possible, we have to
-> > handle each case properly. If the driver is missing, we want to tell
-> > the user that we can't do the detection completely (if the driver was
-> > needed for probing) or he/she won't be able to make full use of the
-> > hardware (if the driver was needed for run-time.) If the driver is
-> > built-in or already loaded module, then all is fine, we don't have to
-> > load it (for probing) nor to tell the user to do it (for run-time.) If
-> > the driver is modular, we have to load and then unload it (for probing)
-> > or tell the user to do so (for run-time.) So we have 4 cases to handle:
-> >
-> > 1* Driver missing
-> > 2* Driver built-in
-> > 3* Module not loaded
-> > 4* Module loaded
-> >
-> > Case 4 is the easy one, we just look at /proc/modules. But having no
-> > way to tell if a given driver is built-in, makes it impossible to
-> 
->  modprobe -l doesn't work?
+According to the original implementation in 2009, 'insl' and 'outsl'
+need '<< 2'.
 
-I am reluctant to use an option which is described as "is provided for
-backwards compatibility and may go away in future" in the manual page.
-Leaving that aside for the sake of the discussion, I can't see how it
-solves my problem anyway, as modprobe -l will return nothing in both
-case 1 (driver missing) and case 2 (driver built-in) so it won't let me
-distinguish between the two.
+Also add '#ifdef' to avoid multiple defination, and beautify code to
+pass "./scripts/checkpatch.pl"
 
-So I'm going to use modules.builtin.
+The related git number:
+  for parport.h: "4914802 m68k,m68knommu: merge header files" in 2009
+  for io_mm.h: "84b16b7 m68k/atari: ROM port ISA adapter support" in Apr 6 2013
 
+The related warning (make EXTRA_CFLAG=-W ARCH=m68k allmodconfig):
+  arch/m68k/include/asm/parport.h:14:0: warning: "insl" redefined [enabled by default]
+  arch/m68k/include/asm/io_mm.h:403:0: note: this is the location of the previous definition
+  arch/m68k/include/asm/parport.h:15:0: warning: "outsl" redefined [enabled by default]
+  arch/m68k/include/asm/io_mm.h:406:0: note: this is the location of the previous definition
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/m68k/include/asm/io_mm.h   |    5 +++--
+ arch/m68k/include/asm/parport.h |    9 +++++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/arch/m68k/include/asm/io_mm.h b/arch/m68k/include/asm/io_mm.h
+index ffdf54f4..66be3b2 100644
+--- a/arch/m68k/include/asm/io_mm.h
++++ b/arch/m68k/include/asm/io_mm.h
+@@ -400,10 +400,11 @@ static inline void isa_delay(void)
+ 
+ #define insb(port, buf, nr)	((port) < 1024 ? isa_rom_insb((port), (buf), (nr)) : isa_insb((port), (buf), (nr)))
+ #define insw(port, buf, nr)	((port) < 1024 ? isa_rom_insw((port), (buf), (nr)) : isa_insw((port), (buf), (nr)))
+-#define insl			isa_insl
++#define insl(port, buf, len)	isa_insb((port), (buf), (len) << 2)
++
+ #define outsb(port, buf, nr)	((port) < 1024 ? isa_rom_outsb((port), (buf), (nr)) : isa_outsb((port), (buf), (nr)))
+ #define outsw(port, buf, nr)	((port) < 1024 ? isa_rom_outsw((port), (buf), (nr)) : isa_outsw((port), (buf), (nr)))
+-#define outsl			isa_outsl
++#define outsl(port, buf, len)	isa_outsb((port), (buf), (len) << 2)
+ 
+ #define readb(addr)		in_8(addr)
+ #define writeb(val, addr)	out_8((addr), (val))
+diff --git a/arch/m68k/include/asm/parport.h b/arch/m68k/include/asm/parport.h
+index 5ea75e6..e8e4a2a 100644
+--- a/arch/m68k/include/asm/parport.h
++++ b/arch/m68k/include/asm/parport.h
+@@ -11,8 +11,13 @@
+ #ifndef _ASM_M68K_PARPORT_H
+ #define _ASM_M68K_PARPORT_H 1
+ 
+-#define insl(port,buf,len)   isa_insb(port,buf,(len)<<2)
+-#define outsl(port,buf,len)  isa_outsb(port,buf,(len)<<2)
++#ifndef insl
++#define insl(port, buf, len)   isa_insb((port), (buf), (len) << 2)
++#endif
++
++#ifndef outsl
++#define outsl(port, buf, len)  isa_outsb((port), (buf), (len) << 2)
++#endif
+ 
+ /* no dma, or IRQ autoprobing */
+ static int parport_pc_find_isa_ports (int autoirq, int autodma);
 -- 
-Jean Delvare
+1.7.7.6
