@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab3E3V6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 17:58:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757599Ab3E3V6r (ORCPT
+	id S1758988Ab3E3V7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 17:59:35 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:48977 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758219Ab3E3V7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 17:58:47 -0400
-Date: Thu, 30 May 2013 14:58:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v8, part3 06/14] mm, acornfb: use free_reserved_area()
- to simplify code
-Message-Id: <20130530145844.902b3a947c1f7430c1c2ecf5@linux-foundation.org>
-In-Reply-To: <1369575522-26405-7-git-send-email-jiang.liu@huawei.com>
-References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com>
-	<1369575522-26405-7-git-send-email-jiang.liu@huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 30 May 2013 17:59:30 -0400
+Date: Thu, 30 May 2013 23:59:28 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130530215928.GL14258@spo001.leaseweb.com>
+References: <20130527090756.GA14258@spo001.leaseweb.com> <1369678434-13515-1-git-send-email-johannes.thumshirn@men.de> <20130527182554.GB14258@spo001.leaseweb.com> <20130528081053.GC818@jtlinux> <20130528162218.GA22351@roeck-us.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528162218.GA22351@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 May 2013 21:38:34 +0800 Jiang Liu <liuj97@gmail.com> wrote:
+Hi Guenter,
 
-> Use common help function free_reserved_area() to simplify code.
+> On Tue, May 28, 2013 at 10:10:53AM +0200, Johannes Thumshirn wrote:
+> > On Mon, May 27, 2013 at 08:25:54PM +0200, Wim Van Sebroeck wrote:
+> > [...]
+> > > > +	watchdog_set_drvdata(&a21_wdt, drv);
+> > >
+> > > I am missing the initialisation of the watchdog's timeout value here...
+> > 
+> > This watchdog only knows two timeout values, 1s and 30s with the constraint
+> > that you can't go back to 30s once your in a 1s timeout without a reset of the
+> > CPLD. I could initially set it to 30s but that would be redundant.
+> > 
+> I wonder - why bother with supporting one-second timeouts ?
+> 
+> Is this realistic, ie can you guarantee that the watchdog will be pinged fast
+> enough to keep the system alive under all load conditions ? As far as I know
+> you can not even configure the watchdog application for less than 1 second
+> ping intervals.
 
-http://ozlabs.org/~akpm/mmots/broken-out/drivers-video-acornfbc-remove-dead-code.patch
-removes all the code which your patch alters.
+that's why certain drivers use a timer to keep kicking the watchdog at
+a rate of 0.5s (do a grep on HZ/2) untill userspace times out.
+(example: drivers/watchdog/pika_wdt.c or drivers/watchdog/pcwd.c).
+
+Kind regards,
+Wim.
+
