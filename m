@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964836Ab3E3QMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:12:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50985 "EHLO
+	id S964887Ab3E3QMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:12:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50975 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934591Ab3E3QCQ (ORCPT
+	with ESMTP id S934587Ab3E3QCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:02:16 -0400
+	Thu, 30 May 2013 12:02:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 56/66] perf: Power7 Update testing ABI to list CPI-stack events
-Date: Thu, 30 May 2013 19:01:29 +0300
-Message-Id: <1369929699-8724-57-git-send-email-acme@infradead.org>
+Subject: [PATCH 55/66] perf: Power7: Make CPI stack events available in sysfs
+Date: Thu, 30 May 2013 19:01:28 +0300
+Message-Id: <1369929699-8724-56-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -28,66 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Following patch added several Power7 events into /sys/devices/cpu/events.
-Document those events in the testing ABI.
+A set of Power7 events are often used for Cycles Per Instruction (CPI) stack
+analysis. Make these events available in sysfs (/sys/devices/cpu/events/) so
+they can be identified using their symbolic names:
 
-	https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-April/105167.html
+	perf stat -e 'cpu/PM_CMPLU_STALL_DCACHE_MISS/' /bin/ls
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Paul Mackerras <paulus@samba.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130406170623.GA900@us.ibm.com
+Link: http://lkml.kernel.org/r/20130406164803.GA408@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../testing/sysfs-bus-event_source-devices-events  | 32 ++++++++++++++++++----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+ arch/powerpc/perf/power7-pmu.c | 73 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 0adeb52..8b25ffb 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -27,14 +27,36 @@ Description:	Generic performance monitoring events
- 		"basename".
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index 3c475d6..13c3f0e 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -62,6 +62,29 @@
+ #define	PME_PM_BRU_FIN			0x10068
+ #define	PME_PM_BRU_MPRED		0x400f6
  
++#define PME_PM_CMPLU_STALL_FXU			0x20014
++#define PME_PM_CMPLU_STALL_DIV			0x40014
++#define PME_PM_CMPLU_STALL_SCALAR		0x40012
++#define PME_PM_CMPLU_STALL_SCALAR_LONG		0x20018
++#define PME_PM_CMPLU_STALL_VECTOR		0x2001c
++#define PME_PM_CMPLU_STALL_VECTOR_LONG		0x4004a
++#define PME_PM_CMPLU_STALL_LSU			0x20012
++#define PME_PM_CMPLU_STALL_REJECT		0x40016
++#define PME_PM_CMPLU_STALL_ERAT_MISS		0x40018
++#define PME_PM_CMPLU_STALL_DCACHE_MISS		0x20016
++#define PME_PM_CMPLU_STALL_STORE		0x2004a
++#define PME_PM_CMPLU_STALL_THRD			0x1001c
++#define PME_PM_CMPLU_STALL_IFU			0x4004c
++#define PME_PM_CMPLU_STALL_BRU			0x4004e
++#define PME_PM_GCT_NOSLOT_IC_MISS		0x2001a
++#define PME_PM_GCT_NOSLOT_BR_MPRED		0x4001a
++#define PME_PM_GCT_NOSLOT_BR_MPRED_IC_MISS	0x4001c
++#define PME_PM_GRP_CMPL				0x30004
++#define PME_PM_1PLUS_PPC_CMPL			0x100f2
++#define PME_PM_CMPLU_STALL_DFU			0x2003c
++#define PME_PM_RUN_CYC				0x200f4
++#define PME_PM_RUN_INST_CMPL			0x400fa
++
+ /*
+  * Layout of constraint bits:
+  * 6666555555555544444444443333333333222222222211111111110000000000
+@@ -393,6 +416,31 @@ POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
+ POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
+ POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
  
--What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
--		/sys/devices/cpu/events/PM_LD_REF_L1
--		/sys/devices/cpu/events/PM_CYC
-+What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
- 		/sys/devices/cpu/events/PM_BRU_FIN
--		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
- 		/sys/devices/cpu/events/PM_BRU_MPRED
--		/sys/devices/cpu/events/PM_INST_CMPL
- 		/sys/devices/cpu/events/PM_CMPLU_STALL
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_BRU
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_DCACHE_MISS
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_DFU
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_DIV
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_ERAT_MISS
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_FXU
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_IFU
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_LSU
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_REJECT
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_SCALAR
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_SCALAR_LONG
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_STORE
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_THRD
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_VECTOR
-+		/sys/devices/cpu/events/PM_CMPLU_STALL_VECTOR_LONG
-+		/sys/devices/cpu/events/PM_CYC
-+		/sys/devices/cpu/events/PM_GCT_NOSLOT_BR_MPRED
-+		/sys/devices/cpu/events/PM_GCT_NOSLOT_BR_MPRED_IC_MISS
-+		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
-+		/sys/devices/cpu/events/PM_GCT_NOSLOT_IC_MISS
-+		/sys/devices/cpu/events/PM_GRP_CMPL
-+		/sys/devices/cpu/events/PM_INST_CMPL
-+		/sys/devices/cpu/events/PM_LD_MISS_L1
-+		/sys/devices/cpu/events/PM_LD_REF_L1
-+		/sys/devices/cpu/events/PM_RUN_CYC
-+		/sys/devices/cpu/events/PM_RUN_INST_CMPL
- 
- Date:		2013/01/08
++POWER_EVENT_ATTR(CMPLU_STALL_FXU,		CMPLU_STALL_FXU);
++POWER_EVENT_ATTR(CMPLU_STALL_DIV,		CMPLU_STALL_DIV);
++POWER_EVENT_ATTR(CMPLU_STALL_SCALAR,		CMPLU_STALL_SCALAR);
++POWER_EVENT_ATTR(CMPLU_STALL_SCALAR_LONG,	CMPLU_STALL_SCALAR_LONG);
++POWER_EVENT_ATTR(CMPLU_STALL_VECTOR,		CMPLU_STALL_VECTOR);
++POWER_EVENT_ATTR(CMPLU_STALL_VECTOR_LONG,	CMPLU_STALL_VECTOR_LONG);
++POWER_EVENT_ATTR(CMPLU_STALL_LSU,		CMPLU_STALL_LSU);
++POWER_EVENT_ATTR(CMPLU_STALL_REJECT,		CMPLU_STALL_REJECT);
++
++POWER_EVENT_ATTR(CMPLU_STALL_ERAT_MISS,		CMPLU_STALL_ERAT_MISS);
++POWER_EVENT_ATTR(CMPLU_STALL_DCACHE_MISS,	CMPLU_STALL_DCACHE_MISS);
++POWER_EVENT_ATTR(CMPLU_STALL_STORE,		CMPLU_STALL_STORE);
++POWER_EVENT_ATTR(CMPLU_STALL_THRD,		CMPLU_STALL_THRD);
++POWER_EVENT_ATTR(CMPLU_STALL_IFU,		CMPLU_STALL_IFU);
++POWER_EVENT_ATTR(CMPLU_STALL_BRU,		CMPLU_STALL_BRU);
++POWER_EVENT_ATTR(GCT_NOSLOT_IC_MISS,		GCT_NOSLOT_IC_MISS);
++
++POWER_EVENT_ATTR(GCT_NOSLOT_BR_MPRED,		GCT_NOSLOT_BR_MPRED);
++POWER_EVENT_ATTR(GCT_NOSLOT_BR_MPRED_IC_MISS,	GCT_NOSLOT_BR_MPRED_IC_MISS);
++POWER_EVENT_ATTR(GRP_CMPL,			GRP_CMPL);
++POWER_EVENT_ATTR(1PLUS_PPC_CMPL,		1PLUS_PPC_CMPL);
++POWER_EVENT_ATTR(CMPLU_STALL_DFU,		CMPLU_STALL_DFU);
++POWER_EVENT_ATTR(RUN_CYC,			RUN_CYC);
++POWER_EVENT_ATTR(RUN_INST_CMPL,			RUN_INST_CMPL);
++
+ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(CYC),
+ 	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
+@@ -411,6 +459,31 @@ static struct attribute *power7_events_attr[] = {
+ 	POWER_EVENT_PTR(LD_MISS_L1),
+ 	POWER_EVENT_PTR(BRU_FIN),
+ 	POWER_EVENT_PTR(BRU_MPRED),
++
++	POWER_EVENT_PTR(CMPLU_STALL_FXU),
++	POWER_EVENT_PTR(CMPLU_STALL_DIV),
++	POWER_EVENT_PTR(CMPLU_STALL_SCALAR),
++	POWER_EVENT_PTR(CMPLU_STALL_SCALAR_LONG),
++	POWER_EVENT_PTR(CMPLU_STALL_VECTOR),
++	POWER_EVENT_PTR(CMPLU_STALL_VECTOR_LONG),
++	POWER_EVENT_PTR(CMPLU_STALL_LSU),
++	POWER_EVENT_PTR(CMPLU_STALL_REJECT),
++
++	POWER_EVENT_PTR(CMPLU_STALL_ERAT_MISS),
++	POWER_EVENT_PTR(CMPLU_STALL_DCACHE_MISS),
++	POWER_EVENT_PTR(CMPLU_STALL_STORE),
++	POWER_EVENT_PTR(CMPLU_STALL_THRD),
++	POWER_EVENT_PTR(CMPLU_STALL_IFU),
++	POWER_EVENT_PTR(CMPLU_STALL_BRU),
++	POWER_EVENT_PTR(GCT_NOSLOT_IC_MISS),
++	POWER_EVENT_PTR(GCT_NOSLOT_BR_MPRED),
++
++	POWER_EVENT_PTR(GCT_NOSLOT_BR_MPRED_IC_MISS),
++	POWER_EVENT_PTR(GRP_CMPL),
++	POWER_EVENT_PTR(1PLUS_PPC_CMPL),
++	POWER_EVENT_PTR(CMPLU_STALL_DFU),
++	POWER_EVENT_PTR(RUN_CYC),
++	POWER_EVENT_PTR(RUN_INST_CMPL),
+ 	NULL
+ };
  
 -- 
 1.8.1.4
