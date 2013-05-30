@@ -1,114 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356Ab3E3Qsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:48:30 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:46429 "HELO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S965072Ab3E3QsU (ORCPT
+	id S965391Ab3E3Qsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:48:41 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:38931 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965319Ab3E3QsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:48:20 -0400
+	Thu, 30 May 2013 12:48:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com>
-References: <CACG0VPV3-x5Ncp+_hci8wVNYUeqAUZ0KFm0MAuHMntXzaL9Nqw@mail.gmail.com>
-	<CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
-	<CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com>
-Date: Thu, 30 May 2013 09:48:18 -0700
-Message-ID: <CALnjE+q-dbK0bha_J848mb7sdmLi7a5-BMjKng+wQ8KaDFL=LQ@mail.gmail.com>
-Subject: Re: Network issue on 3.10 rcs, bisected
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joao Correia <joaomiguelcorreia@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        netdev@vger.kernel.org
+In-Reply-To: <001d01ce4a0a$f2e02fb0$d8a08f10$@samsung.com>
+References: <001d01ce4a0a$f2e02fb0$d8a08f10$@samsung.com>
+Date: Thu, 30 May 2013 18:48:24 +0200
+Message-ID: <CACRpkdY-=_yKvZdCvpMuei2koDfk_kj1J=cV=x9uxYEW7whqKQ@mail.gmail.com>
+Subject: Re: [PATCH 7/7] gpio: vx855: remove unnecessary platform_set_drvdata()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 12:53 PM, Joao Correia
-<joaomiguelcorreia@gmail.com> wrote:
-> On Wed, May 29, 2013 at 7:59 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->>
->> On Wed, May 29, 2013 at 4:37 AM, Joao Correia
->> <joaomiguelcorreia@gmail.com> wrote:
->> > Hello list
->> >
->> > While trying the rc's for 3.10, i've stumbled upon a problem where
->> > networking does not work at all. Iptables will show packet counts going up,
->> > but nothing actually reaches the programs.
->> >
->> > I'm running fedora under hyper-v 3 (a windows 2012 host). Only tested ipv4
->> > traffic, and everything times out (ping, telnet to open ports) on both
->> > directions. The networking devices come up apparently ok - has static ip
->> > set, and dmesg shows no errors (although i don't have many debugging options
->> > enabled).
->> >
->> > I bisected this, and git blames commit
->> > ec5f061564238892005257c83565a0b58ec79295 (net: ill link between CSUM and SG
->> > features.). I can't revert it cleanly on current rc's.
->> >
->> Can you also send network features set on the device?
->> ethtool -k <dev>
->
->
-> As requested:
-> Features for eth0:
-> rx-checksumming: off [fixed]
-> tx-checksumming: off
->     tx-checksum-ipv4: off [fixed]
->     tx-checksum-ip-generic: off [fixed]
->     tx-checksum-ipv6: off [fixed]
->     tx-checksum-fcoe-crc: off [fixed]
->     tx-checksum-sctp: off [fixed]
-> scatter-gather: on
->     tx-scatter-gather: on
->     tx-scatter-gather-fraglist: off [fixed]
-> tcp-segmentation-offload: off
->     tx-tcp-segmentation: off [fixed]
->     tx-tcp-ecn-segmentation: off [fixed]
->     tx-tcp6-segmentation: off [fixed]
-> udp-fragmentation-offload: off [fixed]
-> generic-segmentation-offload: on
-> generic-receive-offload: on
-> large-receive-offload: off [fixed]
-> rx-vlan-offload: off
-> tx-vlan-offload: on
-> ntuple-filters: off [fixed]
-> receive-hashing: off [fixed]
-> highdma: off [fixed]
-> tx-vlan-ctag-hw-insert: on [fixed]
-> rx-vlan-ctag-hw-parse: off [fixed]
-> rx-vlan-ctag-filter: off [fixed]
-> tx-vlan-stag-hw-insert: off [fixed]
-> rx-vlan-stag-hw-parse: off [fixed]
-> rx-vlan-stag-filter: off [fixed]
-> vlan-challenged: off [fixed]
-> tx-lockless: off [fixed]
-> netns-local: off [fixed]
-> tx-gso-robust: off [fixed]
-> tx-fcoe-segmentation: off [fixed]
-> tx-gre-segmentation: off [fixed]
-> tx-udp_tnl-segmentation: off [fixed]
-> fcoe-mtu: off [fixed]
-> tx-nocache-copy: off
-> loopback: off [fixed]
-> rx-fcs: off [fixed]
-> rx-all: off [fixed]
->
-> The output is similar on a working (3.9) and a bad (3.10) kernel.
-> diff-ing both outputs shows:
-> tx-vlan-stag-hw-insert: off [fixed]
-> rx-vlan-stag-hw-parse: off [fixed]
-> rx-vlan-stag-filter: off [fixed]
-> as last on the broken kernels.
->
+On Mon, May 6, 2013 at 5:36 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-I could not reproduce it, I will try it on VM. Meanwhile can you turn
-off feature "sg" and try same test ?
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Thanks.
+Patch applied.
 
-> Thank you for your time,
-> Joao Correia
-> CIUBI
-> Universidade da Beira Interior
-> Portugal
+Yours,
+Linus Walleij
