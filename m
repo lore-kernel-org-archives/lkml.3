@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab3E3NvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:51:11 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39067 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab3E3Ntp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:49:45 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: davem@davemloft.net
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Roese <sr@denx.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv4 5/6] ARM: cubieboard: Enable ethernet (EMAC) support in dts
-Date: Thu, 30 May 2013 15:49:24 +0200
-Message-Id: <1369921765-3367-6-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1756896Ab3E3Nwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:52:32 -0400
+Received: from smtp4.epfl.ch ([128.178.224.219]:37874 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756440Ab3E3NwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 09:52:25 -0400
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rob Landley <rob@landley.net>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tero Kristo <t-kristo@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: [PATCH 0/3] mfd: twl4030-power: Start DT conversion
+Date: Thu, 30 May 2013 15:51:53 +0200
+Message-Id: <1369921916-7435-1-git-send-email-florian.vaussard@epfl.ch>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Roese <sr@denx.de>
+Hello,
 
-Signed-off-by: Stefan Roese <sr@denx.de>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Tested-by: Richard Genoud <richard.genoud@gmail.com>
----
- arch/arm/boot/dts/sun4i-a10-cubieboard.dts | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+This series enables a partial DT support for twl4030-power. The
+missing part is the power management scripts, as the required
+binding should be defined first. It however enables the complete
+shutdown of the processor at poweroff when booting with DT,
+dropping the power consumption from around 350 mA on Overo+Tobi
+to about 40 mA.
 
-diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-index b70fe0d..e752b57 100644
---- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-+++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-@@ -27,6 +27,21 @@
- 	};
- 
- 	soc@01c20000 {
-+		emac: ethernet@01c0b000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&emac_pins_a>;
-+			phy = <&phy1>;
-+			status = "okay";
-+		};
-+
-+		mdio@01c0b080 {
-+			status = "okay";
-+
-+			phy1: ethernet-phy@1 {
-+				reg = <1>;
-+			};
-+		};
-+
- 		pinctrl@01c20800 {
- 			led_pins_cubieboard: led_pins@0 {
- 				allwinner,pins = "PH20", "PH21";
+The poweroff callback was tested with both DT and non-DT boots.
+
+Best regards,
+
+Florian
+
+Florian Vaussard (3):
+  mfd: twl4030-power: Split from twl-core into a dedicated module
+  mfd: twl4030-power: Start transition to DT
+  mfd: twl4030-power: Simplify error path
+
+ .../devicetree/bindings/mfd/twl4030-power.txt      |   28 ++++
+ drivers/mfd/twl-core.c                             |   12 +-
+ drivers/mfd/twl4030-power.c                        |  149 +++++++++++++++-----
+ include/linux/i2c/twl.h                            |    1 -
+ 4 files changed, 148 insertions(+), 42 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl4030-power.txt
+
 -- 
-1.8.2.3
+1.7.5.4
 
