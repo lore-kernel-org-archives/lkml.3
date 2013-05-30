@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3E3Oxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:53:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41075 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757518Ab3E3Oxa (ORCPT
+	id S1757818Ab3E3Oxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:53:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33806 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757579Ab3E3Oxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:53:30 -0400
-Date: Thu, 30 May 2013 15:53:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] Various DT fixes related to ux500 ASoC driver
-Message-ID: <20130530145323.GB1915@gmail.com>
-References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+	Thu, 30 May 2013 10:53:34 -0400
+Date: Thu, 30 May 2013 16:53:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add TI-Nspire irqchip support
+In-Reply-To: <89D06030-E27E-445D-BBB8-45A47CA6C892@gmail.com>
+Message-ID: <alpine.LFD.2.02.1305301639560.2905@ionos>
+References: <89D06030-E27E-445D-BBB8-45A47CA6C892@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013, Fabio Baltieri wrote:
-
-> Hi Linus, Lee,
+On Thu, 30 May 2013, Daniel Tang wrote:
+ 
+> Hi,
 > 
-> these are various fixes I found while testing the ux500 ASoC driver on HREF
-> with device-tree.
+> This patch adds a driver for the interrupt controller found in the TI-Nspire calculator series.
 > 
-> First two patches are typos in DT files, while the others are
-> specifically to support ux500 ASoC driver with DT enabled.
-> 
-> The last patch can go in the mfd tree, while the others may safely go
-> through arm-soc, as there are no build dependencies or regression issues
-> in general.
-> 
-> Thanks,
-> Fabio
-> 
-> 
-> Fabio Baltieri (5):
->   ARM: ux500: Fix trivial typo in v-anamic1 comment
->   ARM: ux500: Correct anamic2 typo in DT files
->   ARM: ux500: Add DT regulators for ab8500-codec
->   ARM: ux500: Provide auxdata to ux500 ASoC driver
->   mfd: ab8500-core: Add of_compatible property for ab8500-codec
-> 
->  arch/arm/boot/dts/dbx5x0.dtsi     | 11 ++++++++---
->  arch/arm/boot/dts/href.dtsi       |  2 +-
->  arch/arm/boot/dts/hrefv60plus.dts |  2 +-
->  arch/arm/boot/dts/snowball.dts    |  2 +-
->  arch/arm/mach-ux500/cpu-db8500.c  |  2 ++
->  drivers/mfd/ab8500-core.c         |  1 +
->  drivers/regulator/ab8500.c        |  8 ++++----
->  7 files changed, 18 insertions(+), 10 deletions(-)
+> Cheers,
+> Daniel Tang
 
-All look good to me.
+This is NOT a proper changelog.
+ 
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 
-For patches 1-4:
+Also please read through this mail thread:
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+     https://lkml.org/lkml/2013/5/2/406
 
-For patch 5:
+and rework your patches against:
 
-Applied thanks.
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> +static void __iomem *irq_io_base;
+> +static struct irq_domain *zevio_irq_domain;
+> +
+> +static void zevio_irq_ack(struct irq_data *irqd)
+> +{
+> +	void __iomem *base = irq_io_base;
+> +
+> +	if (irqd->hwirq < FIQ_START)
+> +		base += IO_IRQ_BASE;
+> +	else
+> +		base += IO_FIQ_BASE;
+
+This is horrible. If you redo this against the generic irq chip then
+provide a separate base with the proper offsets to each chip. So you
+can avoid this clumsy conditionals completely.
+
+> +	readl(base + IO_RESET);
+> +}
+> +
+> +static void zevio_irq_unmask(struct irq_data *irqd)
+> +{
+> +	void __iomem *base = irq_io_base;
+> +	int irqnr = irqd->hwirq;
+> +
+> +	if (irqnr < FIQ_START) {
+> +		base += IO_IRQ_BASE;
+> +	} else {
+> +		irqnr -= MAX_INTRS;
+> +		base += IO_FIQ_BASE;
+> +	}
+> +
+> +	writel((1<<irqnr), base + IO_ENABLE);
+
+Replace with the generic function
+
+> +}
+> +
+> +static void zevio_irq_mask(struct irq_data *irqd)
+> +{
+> +	void __iomem *base = irq_io_base;
+> +	int irqnr = irqd->hwirq;
+> +
+> +	if (irqnr < FIQ_START) {
+> +		base += IO_IRQ_BASE;
+> +	} else {
+> +		irqnr -= FIQ_START;
+> +		base += IO_FIQ_BASE;
+> +	}
+> +
+> +	writel((1<<irqnr), base + IO_DISABLE);
+
+Replace with the generic function
+
+> +static int process_base(void __iomem *base, struct pt_regs *regs)
+> +{
+> +	int irqnr;
+> +
+> +
+> +	if (!readl(base + IO_STATUS))
+> +		return 0;
+> +
+> +	irqnr = readl(base + IO_CURRENT);
+> +	irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
+> +	handle_IRQ(irqnr, regs);
+> +
+> +	return 1;
+> +}
+> +
+> +asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
+> +{
+> +	while (process_base(irq_io_base + IO_FIQ_BASE, regs))
+> +		;
+
+Wheee. That's ugly as hell. Why don't you move the while loop into process_base() ?
+
+Thanks,
+
+	tglx
