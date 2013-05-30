@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab3E3XNa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 19:13:30 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:50212 "HELO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750802Ab3E3XNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 19:13:25 -0400
+	id S1751222Ab3E3XSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 19:18:14 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:34862 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab3E3XSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 19:18:06 -0400
+Message-ID: <51A7DE20.5080603@interlog.com>
+Date: Thu, 30 May 2013 19:17:52 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CACG0VPXWoD=33rSv9S_C2t7XSHny9vHwKysoiTdwWueQM7MLsA@mail.gmail.com>
-References: <CACG0VPV3-x5Ncp+_hci8wVNYUeqAUZ0KFm0MAuHMntXzaL9Nqw@mail.gmail.com>
-	<CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
-	<CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com>
-	<CALnjE+q-dbK0bha_J848mb7sdmLi7a5-BMjKng+wQ8KaDFL=LQ@mail.gmail.com>
-	<CACG0VPXWoD=33rSv9S_C2t7XSHny9vHwKysoiTdwWueQM7MLsA@mail.gmail.com>
-Date: Thu, 30 May 2013 16:13:24 -0700
-Message-ID: <CALnjE+qTqQDfrBxEogo6UJm63=USX7rgO=d4fasF1Cc-S3nQ1g@mail.gmail.com>
-Subject: Re: Network issue on 3.10 rcs, bisected
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joao Correia <joaomiguelcorreia@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Robert Nelson <robertcnelson@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Robert Nelson <Robert.Nelson@digikey.com>,
+        linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
+References: <1364983415-20298-1-git-send-email-jhovold@gmail.com> <1369298335-24597-1-git-send-email-jhovold@gmail.com> <20130529133354.dd181c845ee4e96527483345@linux-foundation.org> <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com> <51A704C3.6010109@atmel.com> <20130530123609.6e2966a66dd7b131961ed052@linux-foundation.org>
+In-Reply-To: <20130530123609.6e2966a66dd7b131961ed052@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 2:14 PM, Joao Correia
-<joaomiguelcorreia@gmail.com> wrote:
-> On Thu, May 30, 2013 at 5:48 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->> On Wed, May 29, 2013 at 12:53 PM, Joao Correia
->> <joaomiguelcorreia@gmail.com> wrote:
->>> On Wed, May 29, 2013 at 7:59 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->>>>
->>>> On Wed, May 29, 2013 at 4:37 AM, Joao Correia
->>>> <joaomiguelcorreia@gmail.com> wrote:
->>>> > Hello list
->>>> >
->>>> > While trying the rc's for 3.10, i've stumbled upon a problem where
->>>> > networking does not work at all. Iptables will show packet counts going up,
->>>> > but nothing actually reaches the programs.
->>>> >
->>>> > I'm running fedora under hyper-v 3 (a windows 2012 host). Only tested ipv4
->>>> > traffic, and everything times out (ping, telnet to open ports) on both
->>>> > directions. The networking devices come up apparently ok - has static ip
->>>> > set, and dmesg shows no errors (although i don't have many debugging options
->>>> > enabled).
->>>> >
->>>> > I bisected this, and git blames commit
->>>> > ec5f061564238892005257c83565a0b58ec79295 (net: ill link between CSUM and SG
->>>> > features.). I can't revert it cleanly on current rc's.
->>>> >
->>>> Can you also send network features set on the device?
->>>> ethtool -k <dev>
->>>
->>>
->>> As requested:
->>> Features for eth0:
->>> rx-checksumming: off [fixed]
->>> tx-checksumming: off
->>>     tx-checksum-ipv4: off [fixed]
->>>     tx-checksum-ip-generic: off [fixed]
->>>     tx-checksum-ipv6: off [fixed]
->>>     tx-checksum-fcoe-crc: off [fixed]
->>>     tx-checksum-sctp: off [fixed]
->>> scatter-gather: on
->>>     tx-scatter-gather: on
->>>     tx-scatter-gather-fraglist: off [fixed]
->>> tcp-segmentation-offload: off
->>>     tx-tcp-segmentation: off [fixed]
->>>     tx-tcp-ecn-segmentation: off [fixed]
->>>     tx-tcp6-segmentation: off [fixed]
->>> udp-fragmentation-offload: off [fixed]
->>> generic-segmentation-offload: on
->>> generic-receive-offload: on
->>> large-receive-offload: off [fixed]
->>> rx-vlan-offload: off
->>> tx-vlan-offload: on
->>> ntuple-filters: off [fixed]
->>> receive-hashing: off [fixed]
->>> highdma: off [fixed]
->>> tx-vlan-ctag-hw-insert: on [fixed]
->>> rx-vlan-ctag-hw-parse: off [fixed]
->>> rx-vlan-ctag-filter: off [fixed]
->>> tx-vlan-stag-hw-insert: off [fixed]
->>> rx-vlan-stag-hw-parse: off [fixed]
->>> rx-vlan-stag-filter: off [fixed]
->>> vlan-challenged: off [fixed]
->>> tx-lockless: off [fixed]
->>> netns-local: off [fixed]
->>> tx-gso-robust: off [fixed]
->>> tx-fcoe-segmentation: off [fixed]
->>> tx-gre-segmentation: off [fixed]
->>> tx-udp_tnl-segmentation: off [fixed]
->>> fcoe-mtu: off [fixed]
->>> tx-nocache-copy: off
->>> loopback: off [fixed]
->>> rx-fcs: off [fixed]
->>> rx-all: off [fixed]
->>>
->>> The output is similar on a working (3.9) and a bad (3.10) kernel.
->>> diff-ing both outputs shows:
->>> tx-vlan-stag-hw-insert: off [fixed]
->>> rx-vlan-stag-hw-parse: off [fixed]
->>> rx-vlan-stag-filter: off [fixed]
->>> as last on the broken kernels.
->>>
+On 13-05-30 03:36 PM, Andrew Morton wrote:
+> On Thu, 30 May 2013 09:50:27 +0200 Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>
+>> The review of this patch series was in my TODO list for some time...
 >>
->> I could not reproduce it, I will try it on VM. Meanwhile can you turn
->> off feature "sg" and try same test ?
+>> Today, I magically took time to review it ;-)
+>> The patch series is good and I (even if it is too late) here is my:
+>>
+>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>
+>> I do not know if the series can be stacked for inclusion in 3.10-rc but
+>> the resolution of this bug can help a lot (as Douglas is saying in
+>> subsequent email...).
 >
-> Hello
+> We can do that, but looking through the discussion and changelogs I
+> can't seem to find a usable description of what impact the bug (and its
+> fix) have upon end-users.
 >
-> Your hint was spot-on. With sg off, i can't reproduce the problem and
-> networking seems fine. It works fine either way on 3.9, so this is a
-> regression for 3.10.
->
-Nice.
-but still this does not look right. Can you tell me driver for the nic?
-`ethtool -i <dev>`
+> A nicely packaged description of that impact would help grease the
+> wheels, please.
 
-Thanks,
-Pravin.
+How about this:
+
+The members of Atmel's at91sam9x5 family (9x5) have
+a broken RTC interrupt mask register (AT91_RTC_IMR).
+It does not reflect enabled interrupts but instead
+always returns zero.
+
+The kernel's rtc-at91rm9200 driver handles the RTC
+for the 9x5 family. Currently when the date/time is
+set, an interrupt is generated and this driver neglects
+to handle the interrupt. The kernel complains about the
+un-handled interrupt and disables it henceforth. This
+not only breaks the RTC function, but since that
+interrupt is shared (Atmel's SYS interrupt) then other
+things break as well (e.g. the debug port no longer
+accepts characters).
+
+Tested on the at91sam9g25. Bug confirmed by Atmel.
+
+Edit as you please.
+
+Doug Gilbert
+
