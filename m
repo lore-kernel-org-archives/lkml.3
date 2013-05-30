@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967675Ab3E3Gv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:51:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22182 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967574Ab3E3GvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:51:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,769,1363158000"; 
-   d="scan'208";a="309915173"
-Message-ID: <51A6F6E1.3040309@linux.intel.com>
-Date: Thu, 30 May 2013 09:51:13 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S967677Ab3E3Gwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:52:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18799 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967616Ab3E3Gwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 02:52:36 -0400
+Date: Thu, 30 May 2013 09:52:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] minix: bug widening a binary "not" operation
+Message-ID: <20130530065225.GL23987@mwanda>
+References: <20130516075148.GA7494@elgon.mountain>
+ <20130529152826.043e95791122bbd39fc9d005@linux-foundation.org>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v6 net-next 1/5] net: add napi_id and hash
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com>  <20130529063925.27486.46649.stgit@ladj378.jer.intel.com> <1369858192.1971.21.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1369858192.1971.21.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529152826.043e95791122bbd39fc9d005@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/2013 23:09, Ben Hutchings wrote:
-> On Wed, 2013-05-29 at 09:39 +0300, Eliezer Tamir wrote:
->> +void napi_hash_add(struct napi_struct *napi)
->> +{
->> +	if (!test_and_set_bit(NAPI_STATE_HASHED, &napi->state)) {
->> +
->> +		spin_lock(&napi_hash_lock);
->> +
->> +		/* 0 is not a valid id */
->> +		napi->napi_id = 0;
->> +		while (!napi->napi_id)
->> +			napi->napi_id = ++napi_gen_id;
->
-> Suppose we're loading/unloading one driver repeatedly while another one
-> remains loaded the whole time.  Then once napi_gen_id wraps around, the
-> same ID can be assigned to multiple contexts.
->
-> So far as I can see, assigning the same ID twice will just make polling
-> stop working for one of the NAPI contexts; I don't think it causes a
-> crash.  And it is exceedingly unlikely to happen in production.  But if
-> you're going to the trouble of handling wrap-around at all, you'd better
-> handle this.
+On Wed, May 29, 2013 at 03:28:26PM -0700, Andrew Morton wrote:
 
-OK
+> But we should fix it to set a good example, and to quieten
+> whatever-tool-i-suspect-you-were-using(?).
 
+Linus wrote some Sparse patches that check for this but they haven't
+been merged yet.
 
-> [...]
->> +/* must be called under rcu_read_lock(), as we dont take a reference */
->> +struct napi_struct *napi_by_id(int napi_id)
->> +{
->> +	unsigned int hash = napi_id % HASH_SIZE(napi_hash);
-> [...]
->
-> napi_id should be declared unsigned int here, as elsewhere.  The
-> division can't actually yield a negative result because HASH_SIZE() has
-> type size_t and napi_id is promoted to match, but I had to go and look
-> at hashtable.h to check that.
-
-Good catch,
-
-Thanks,
-Eliezer
+regards,
+dan carpenter
