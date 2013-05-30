@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3E3N31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:29:27 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:53799 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab3E3N2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:28:16 -0400
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 2/5] ARM: ux500: Correct anamic2 typo in DT files
-Date: Thu, 30 May 2013 15:27:42 +0200
-Message-Id: <1369920465-13905-3-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+	id S1755768Ab3E3NeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:34:14 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58205 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab3E3NeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 09:34:01 -0400
+X-IronPort-AV: E=Sophos;i="4.87,770,1363132800"; 
+   d="scan'208";a="28236905"
+Date: Thu, 30 May 2013 14:33:42 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, <arnd@arndb.de>
+Subject: [PATCH v5 0/4] xen/arm: CONFIG_PARAVIRT and stolen ticks
+ accounting
+Message-ID: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix typo of VAMIC2 LDO regulator name in some DT-related files.  This
-patch replaces all occurrences with the right name.
+Hi all,
+this patch series introduces stolen ticks accounting for Xen on ARM.
+Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
+typically because Linux is running in a virtual machine and the vcpu has
+been descheduled.
+To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
+so that we can make use of:
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi     | 4 ++--
- arch/arm/boot/dts/href.dtsi       | 2 +-
- arch/arm/boot/dts/hrefv60plus.dts | 2 +-
- arch/arm/boot/dts/snowball.dts    | 2 +-
- drivers/regulator/ab8500.c        | 8 ++++----
- 5 files changed, 9 insertions(+), 9 deletions(-)
+kernel/sched/cputime.c:steal_account_process_tick
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index e6ea7ba..d0b6e32 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -466,8 +466,8 @@
- 					};
- 
- 					// supply for v-amic2; VAMIC2 LDO; reuse constants for AMIC1
--					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
--						regulator-compatible = "ab8500_ldo_amamic2";
-+					ab8500_ldo_anamic2_reg: ab8500_ldo_anamic2 {
-+						regulator-compatible = "ab8500_ldo_anamic2";
- 					};
- 
- 					// supply for v-dmic; VDMIC LDO
-diff --git a/arch/arm/boot/dts/href.dtsi b/arch/arm/boot/dts/href.dtsi
-index c0bc426..4a53c48 100644
---- a/arch/arm/boot/dts/href.dtsi
-+++ b/arch/arm/boot/dts/href.dtsi
-@@ -256,7 +256,7 @@
- 						regulator-name = "V-AMIC1";
- 					};
- 
--					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
-+					ab8500_ldo_anamic2_reg: ab8500_ldo_anamic2 {
- 						regulator-name = "V-AMIC2";
- 					};
- 
-diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-index 2b587a7..4f04af8 100644
---- a/arch/arm/boot/dts/hrefv60plus.dts
-+++ b/arch/arm/boot/dts/hrefv60plus.dts
-@@ -192,7 +192,7 @@
- 						regulator-name = "V-AMIC1";
- 					};
- 
--					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
-+					ab8500_ldo_anamic2_reg: ab8500_ldo_anamic2 {
- 						regulator-name = "V-AMIC2";
- 					};
- 
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index db5db24..557d75e 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -336,7 +336,7 @@
- 						regulator-name = "V-AMIC1";
- 					};
- 
--					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
-+					ab8500_ldo_anamic2_reg: ab8500_ldo_anamic2 {
- 						regulator-name = "V-AMIC2";
- 					};
- 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index f6656b8..a19045e 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -2901,7 +2901,7 @@ static struct of_regulator_match ab8500_regulator_match[] = {
- 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8500_LDO_TVOUT, },
- 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8500_LDO_AUDIO, },
- 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
--	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
-+	{ .name	= "ab8500_ldo_anamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
- 	{ .name	= "ab8500_ldo_dmic",    .driver_data = (void *) AB8500_LDO_DMIC, },
- 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB8500_LDO_ANA, },
- };
-@@ -2917,7 +2917,7 @@ static struct of_regulator_match ab8505_regulator_match[] = {
- 	{ .name	= "ab8500_ldo_adc",	.driver_data = (void *) AB8505_LDO_ADC, },
- 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8505_LDO_AUDIO, },
- 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8505_LDO_ANAMIC1, },
--	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8505_LDO_ANAMIC2, },
-+	{ .name	= "ab8500_ldo_anamic2", .driver_data = (void *) AB8505_LDO_ANAMIC2, },
- 	{ .name	= "ab8500_ldo_aux8",    .driver_data = (void *) AB8505_LDO_AUX8, },
- 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB8505_LDO_ANA, },
- };
-@@ -2933,7 +2933,7 @@ static struct of_regulator_match ab8540_regulator_match[] = {
- 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8540_LDO_TVOUT, },
- 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8540_LDO_AUDIO, },
- 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8540_LDO_ANAMIC1, },
--	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8540_LDO_ANAMIC2, },
-+	{ .name	= "ab8500_ldo_anamic2", .driver_data = (void *) AB8540_LDO_ANAMIC2, },
- 	{ .name	= "ab8500_ldo_dmic",    .driver_data = (void *) AB8540_LDO_DMIC, },
- 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB8540_LDO_ANA, },
- 	{ .name = "ab8500_ldo_sdio",    .driver_data = (void *) AB8540_LDO_SDIO, },
-@@ -2948,7 +2948,7 @@ static struct of_regulator_match ab9540_regulator_match[] = {
- 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB9540_LDO_TVOUT, },
- 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB9540_LDO_AUDIO, },
- 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB9540_LDO_ANAMIC1, },
--	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB9540_LDO_ANAMIC2, },
-+	{ .name	= "ab8500_ldo_anamic2", .driver_data = (void *) AB9540_LDO_ANAMIC2, },
- 	{ .name	= "ab8500_ldo_dmic",    .driver_data = (void *) AB9540_LDO_DMIC, },
- 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB9540_LDO_ANA, },
- };
--- 
-1.8.2
 
+I am starting to be pretty confident about this patch series.
+
+Please advice on what tree I should use to get this stuff upstream: most
+of the changes are Xen specific, but it also contains few generic ARM
+changes (the introduction of CONFIG_PARAVIRT and paravirt.c on ARM) and
+a couple of lines in kernel/sched/cputime.c (a missing include).
+
+
+
+Stefano Stabellini (4):
+      xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+      kernel: missing include in cputime.c
+      arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+      xen/arm: account for stolen ticks
+
+ arch/arm/Kconfig                |   20 +++++++++
+ arch/arm/include/asm/paravirt.h |   19 ++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/paravirt.c      |   25 +++++++++++
+ arch/arm/xen/enlighten.c        |   21 +++++++++
+ arch/ia64/xen/time.c            |   48 +++------------------
+ arch/x86/xen/time.c             |   76 +--------------------------------
+ drivers/xen/Makefile            |    2 +-
+ drivers/xen/time.c              |   91 +++++++++++++++++++++++++++++++++++++++
+ include/xen/xen-ops.h           |    5 ++
+ kernel/sched/cputime.c          |    4 +-
+ 11 files changed, 193 insertions(+), 119 deletions(-)
+ create mode 100644 arch/arm/include/asm/paravirt.h
+ create mode 100644 arch/arm/kernel/paravirt.c
+ create mode 100644 drivers/xen/time.c
+
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_5
+
+Cheers,
+
+Stefano
