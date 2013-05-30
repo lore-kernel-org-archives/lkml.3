@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3E2QHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 12:07:53 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:37714 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab3E2QHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 12:07:45 -0400
-MIME-Version: 1.0
-Date: Wed, 29 May 2013 18:07:45 +0200
-Message-ID: <CACRpkdYzh4ZzUw=2ByQB8qchTfh0jvhz0+iSFPJmYBuVQesDgQ@mail.gmail.com>
-Subject: [GIT PULL] pinctrl fixes for v3.10, take three
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Wei Yongjun <weiyj.lk@gmail.com>, Axel Lin <axel.lin@ingics.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754521Ab3E2QKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 12:10:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47075 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752355Ab3E2QKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 12:10:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,765,1363158000"; 
+   d="scan'208";a="345174361"
+From: Youquan Song <youquan.song@intel.com>
+To: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH] core: Fix maxcpus boot option broken
+Date: Thu, 30 May 2013 00:00:06 -0400
+Message-Id: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+maxcpus boot option to limit maximum number of CPUs on system, but this option
+is broken at recent kernel. Though we use maxcpus to limit CPUs number, but
+current kernel will register all of present CPUs in sysfs.
+udev will enumerate all registered cpu at sysfs, and it will bring up the CPU
+if the CPU is offline. So the maxcpus option is broken.
 
-here are some more pinctrl fixes for the v3.10 series.
+This patch will only register the CPU which is not over limitation of maxcpus 
+option in sysfs. So it will keep the maxcpus limitation when udev enumeration
+or other intention of bring up CPUs over the limitation by method like  
+echo 1 > /sys/devices/system/cpu/online 
 
-I don't exactly like the size of the Samsung/Exynos stuff, but I suspect
-a bit of it can be explained by some traction around this platform right now,
-leading to higher evolutional pace and some stir due to that. With the ARM
-Chromebook using it and all that.
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+---
+ drivers/base/cpu.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Please pull it in!
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 3d48fc8..c7d603a 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -272,6 +272,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ {
+ 	int error;
+ 
++	/* return when cpu number greater than maximum number of CPUs */
++	if (num >= setup_max_cpus)
++		return 0;
++
+ 	cpu->node_id = cpu_to_node(num);
+ 	memset(&cpu->dev, 0x00, sizeof(struct device));
+ 	cpu->dev.id = num;
+-- 
+1.7.7.4
 
-Yours,
-Linus Walleij
-
-
-The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
-
-  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-fixes-v3.10-3
-
-for you to fetch changes up to a386267a2ceea33d76fa2b7f1c2e72a858fcb68e:
-
-  pinctrl: pinconf: take the right mutex (2013-05-27 15:53:32 +0200)
-
-----------------------------------------------------------------
-Pin control fixes for v3.10:
-- Six patches fixing up the suspend/resume and wakeup
-  handling of the Samsung and Exynos drivers.
-- Errorpath fixes for four different drivers. All on
-  the probe() errorpath.
-- Make the debugfs code for pin config take the right
-  mutex.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      pinctrl: Don't override the error code in probe error handling
-
-Doug Anderson (1):
-      pinctrl: samsung: fix suspend/resume functionality
-
-Linus Walleij (1):
-      pinctrl: pinconf: take the right mutex
-
-Tomasz Figa (5):
-      pinctrl: exynos: Add support for set_irq_wake of wake-up EINTs
-      ARM: EXYNOS: Fix EINT wake-up mask configuration when pinctrl is used
-      pinctrl: samsung: Add support for SoC-specific suspend/resume callbacks
-      pinctrl: samsung: Allow per-bank SoC-specific private data
-      pinctrl: exynos: Handle suspend/resume of GPIO EINT registers
-
-Wei Yongjun (1):
-      pinctrl: sunxi: fix error return code in sunxi_pinctrl_probe()
-
- arch/arm/mach-exynos/include/mach/pm-core.h |  14 ++-
- drivers/pinctrl/pinconf.c                   |   4 +-
- drivers/pinctrl/pinctrl-coh901.c            |   3 +-
- drivers/pinctrl/pinctrl-exynos.c            | 139 ++++++++++++++++++++++++-
- drivers/pinctrl/pinctrl-exynos.h            |   1 +
- drivers/pinctrl/pinctrl-samsung.c           | 154 ++++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-samsung.h           |   9 ++
- drivers/pinctrl/pinctrl-sunxi.c             |   7 +-
- drivers/pinctrl/vt8500/pinctrl-wmt.c        |   3 +-
- 9 files changed, 323 insertions(+), 11 deletions(-)
