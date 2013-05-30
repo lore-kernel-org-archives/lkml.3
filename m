@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917Ab3E3WuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 18:50:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab3E3WuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 18:50:06 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, hughd@google.com,
-        shli@kernel.org, riel@redhat.com, lwoodman@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: [PATCH v2] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
-Date: Thu, 30 May 2013 19:49:34 -0300
-Message-Id: <c217bcf6114e2af059488dc93d06b472077c5d74.1369953156.git.aquini@redhat.com>
-In-Reply-To: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
-References: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
+	id S1750988Ab3E3Wwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 18:52:47 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:45042 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3E3Wwj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 18:52:39 -0400
+Date: Thu, 30 May 2013 19:52:32 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2013-05-30
+Message-ID: <20130530225232.GB14083@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read_swap_cache_async() can race against get_swap_page(), and stumble across
-a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought into the
-swapcache yet. This transient swap_map state is expected to be transitory,
-but the actual placement of discard at scan_swap_map() inserts a wait for
-I/O completion thus making the thread at read_swap_cache_async() to loop
-around its -EEXIST case, while the other end at get_swap_page()
-is scheduled away at scan_swap_map(). This can leave the system deadlocked
-if the I/O completion happens to be waiting on the CPU waitqueue where
-read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
 
-This patch introduces a cond_resched() call to make the aforementioned
-read_swap_cache_async() busy loop condition to bail out when necessary,
-thus avoiding the subtle race window.
+--ZPt4rx8FFjLCG7dd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org
+Hi John,
+
+The following patches are important bug fixes for 3.10, plus the support for a
+new device. We do have three fixes from Johan. The first one is a fix to avoid
+LE-only devices to rely on the (inexistent) extended features data. The second
+patch fixes length checks on incoming L2CAP signalling PDUs so we can discard
+PDU whose size doesn't match the one reported in the header.
+The last one fixes the handling of power on failures, we now report proper
+errors to mgmt when hci_dev_open().
+
+Please pull or let me know of any issues! Thanks.
+
+	Gustavo
+
 ---
-Changelog:
-* fixed typos in commit message;			(hannes)
-* enhanced the commentary on the deadlock scenario;	(hannes)
-* include the received ACKs and Cc: stable
 
- mm/swap_state.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+The following changes since commit f942d116b80feb3ae618a0d8ce2df6e853526d3c:
 
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index b3d40dc..f24ab0d 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -336,8 +336,24 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 		 * Swap entry may have been freed since our caller observed it.
- 		 */
- 		err = swapcache_prepare(entry);
--		if (err == -EEXIST) {	/* seems racy */
-+		if (err == -EEXIST) {
- 			radix_tree_preload_end();
-+			/*
-+			 * We might race against get_swap_page() and stumble
-+			 * across a SWAP_HAS_CACHE swap_map entry whose page
-+			 * has not been brought into the swapcache yet, while
-+			 * the other end is scheduled away waiting on discard
-+			 * I/O completion at scan_swap_map().
-+			 *
-+			 * In order to avoid turning this transitory state
-+			 * into a permanent loop around this -EEXIST case
-+			 * if !CONFIG_PREEMPT and the I/O completion happens
-+			 * to be waiting on the CPU waitqueue where we are now
-+			 * busy looping, we just conditionally invoke the
-+			 * scheduler here, if there are some more important
-+			 * tasks to run.
-+			 */
-+			cond_resched();
- 			continue;
- 		}
- 		if (err) {		/* swp entry is obsolete ? */
--- 
-1.8.1.4
+  brcmsmac: fix regression observed in 3.10-rc1 (2013-05-29 14:46:51 -0400)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to 0f9e216b0e12971af8a1d39c98c353c76533283b:
+
+  Bluetooth: Fix mgmt handling of power on failures (2013-05-30 18:36:08 -0300)
+
+----------------------------------------------------------------
+Bing Zhao (1):
+      Bluetooth: btmrvl: support Marvell Bluetooth device SD8897
+
+Johan Hedberg (3):
+      Bluetooth: Fix checks for LE support on LE-only controllers
+      Bluetooth: Fix missing length checks for L2CAP signalling PDUs
+      Bluetooth: Fix mgmt handling of power on failures
+
+ drivers/bluetooth/Kconfig        |  4 +--
+ drivers/bluetooth/btmrvl_sdio.c  | 28 ++++++++++++++++++
+ include/net/bluetooth/hci_core.h |  1 +
+ include/net/bluetooth/mgmt.h     |  1 +
+ net/bluetooth/hci_core.c         |  6 +++-
+ net/bluetooth/l2cap_core.c       | 70 ++++++++++++++++++++++++++++++++------------
+ net/bluetooth/mgmt.c             | 23 ++++++++++++++-
+ net/bluetooth/smp.c              |  4 +--
+ 8 files changed, 113 insertions(+), 24 deletions(-)
+
+
+--ZPt4rx8FFjLCG7dd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRp9gwAAoJEPs3PUX4s20ozpEP/0rBewYThcZk/uSEA2lu1011
+eOaj7LXxiMKVKesNGrpbmDyPiVwy5MiQUthPt3DOGt9TSwHOO3zndlt9mCJtuqeg
+/yyhT2ApNyLN58sGfsg2mFYuq4TAlKjLOgjJxGdq0zLQo5Ip+T4dagFmdeYaMEgG
+agH+aIbmrBqU5/rz3YsTvDFbK4ww0roLuHtthVP7W4iFd5JwETSGn/u2xGbH3z7p
+X1p/3JvrGmen/fuTIhS1kfCeigKob9c/tXjTyjpS4pFzBZq4BIYxRYJmhnlri0Hv
++8JKvfDA6cxyZ7Hsnr9W/ZkKPQmQw5xmqL7b+Ui2jnxf0HKnDYxd6aY62r1kELFZ
+cJfO6VicQXNcUbwuCnR/28DRJ2giKa7pZOzY9dq2r1OH0DJYn65+b4XetUBAD1Kk
+8gUFxks5/rYKNRt2tTEa6ZPFzcm0JqMEoZTpI1d2UDRvMKQoQiuytfLqGSW+5mAB
+wAArBED1kv6qxkpXUq1KPeWbQ3r4TpUZk38NhDqAn00BOWb4FMvNRwcqoPoq/iVS
+n2+CZw7tDqi192nWCrqSELkLRkP+03eh07XMzahDThk7lr32KFkJlJlJO1YbLa7z
+Zf/72A4BfKfUV4hJT2nppD42Ju6WVSkRvnI7ygGafinUIEVS8X079VOeuDUrAQSY
+xsSGZBcu3YAkwt/PHMso
+=hu5I
+-----END PGP SIGNATURE-----
+
+--ZPt4rx8FFjLCG7dd--
