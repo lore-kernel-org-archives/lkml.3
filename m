@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967607Ab3E3G0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:26:11 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:2319 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966921Ab3E3G0C (ORCPT
+	id S967611Ab3E3G1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:27:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63405 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966921Ab3E3G1D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:26:02 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A6F0C6.9050806@asianux.com>
-Date: Thu, 30 May 2013 14:25:10 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 30 May 2013 02:27:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,769,1363158000"; 
+   d="scan'208";a="342373831"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>, Yijing Wang <wangyijing@huawei.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] PCI: set correct value for iov device before device
+Thread-Topic: [PATCH] PCI: set correct value for iov device before device
+Thread-Index: AQHOXPj93z4//Pk0rk6Egvj8nMkloJkctyqAgACJ2XA=
+Date: Thu, 30 May 2013 06:26:55 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D3010E40DB8@SHSMSX152.ccr.corp.intel.com>
+References: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
+ <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: m68k: math-emu: unsigned issue, 'unsigned long' will
- never be less than zero.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Okay, I saw patch in PCI tree two days ago by Jiang Liu.
 
-'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
-author wanted to check the highest bit whether set.
-
-So need type cast form 'unsigned long' to 'long'.
-
-The related warning: (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
-  arch/m68k/math-emu/fp_arith.c:522:4: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+Thanks,
+-Xudong
 
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/m68k/math-emu/fp_arith.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/m68k/math-emu/fp_arith.c b/arch/m68k/math-emu/fp_arith.c
-index 08f286d..ef013c5 100644
---- a/arch/m68k/math-emu/fp_arith.c
-+++ b/arch/m68k/math-emu/fp_arith.c
-@@ -519,7 +519,7 @@ static void fp_roundint(struct fp_ext *dest, int mode)
- 				return;
- 			break;
- 		case 0x401e:
--			if (!(oldmant.m32[1] >= 0))
-+			if (!((long)oldmant.m32[1] >= 0))
- 				return;
- 			if (oldmant.m32[0] & 1)
- 				break;
--- 
-1.7.7.6
+> -----Original Message-----
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> Sent: Thursday, May 30, 2013 2:05 PM
+> To: Hao, Xudong
+> Cc: Bjorn Helgaas; linux-pci@vger.kernel.org; Linux Kernel Mailing List
+> Subject: Re: [PATCH] PCI: set correct value for iov device before device
+> 
+> On Wed, May 29, 2013 at 10:45 PM, Xudong Hao <xudong.hao@intel.com>
+> wrote:
+> > Since device registering is put into pci_device_add(), it must set value of
+> > Virtual Function device's member before the pci_dev is put to device tree. Or
+> > some relevant subsystem of driver model such as xen will report a incorrect
+> > IOV device to Xen hypervior.
+> >
+> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> > ---
+> >  drivers/pci/iov.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> > index c93071d..43d3de9 100644
+> > --- a/drivers/pci/iov.c
+> > +++ b/drivers/pci/iov.c
+> > @@ -110,12 +110,12 @@ static int virtfn_add(struct pci_dev *dev, int id, int
+> reset)
+> >         if (reset)
+> >                 __pci_reset_function(virtfn);
+> >
+> > -       pci_device_add(virtfn, virtfn->bus);
+> > -       mutex_unlock(&iov->dev->sriov->lock);
+> > -
+> >         virtfn->physfn = pci_dev_get(dev);
+> >         virtfn->is_virtfn = 1;
+> >
+> > +       pci_device_add(virtfn, virtfn->bus);
+> > +       mutex_unlock(&iov->dev->sriov->lock);
+> > +
+> >         rc = pci_bus_add_device(virtfn);
+> >         sprintf(buf, "virtfn%u", id);
+> >         rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
+> 
+> I have similar patch at
+> https://patchwork.kernel.org/patch/2562551/
+>    [5/7] PCI, ACPI: Don't glue ACPI dev with pci VFs
+> 
+> and Jiang has another one
+> https://patchwork.kernel.org/patch/2613481/
+>    [v3,part1,10/10] PCI, IOV: hide remove and rescan sysfs interfaces
+> for SR-IOV virtual functions
+> 
+> Thanks
+> 
+> Yinghai
