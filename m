@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935420Ab3E3QKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:10:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51078 "EHLO
+	id S935442Ab3E3QKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:10:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51073 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934699Ab3E3QC0 (ORCPT
+	with ESMTP id S934671Ab3E3QC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 12:02:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sam Ravnborg <sam@ravnborg.org>, Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 48/66] perf tools: Move paths config into config/Makefile
-Date: Thu, 30 May 2013 19:01:21 +0300
-Message-Id: <1369929699-8724-49-git-send-email-acme@infradead.org>
+Subject: [PATCH 33/66] perf tools: Add automated make test suite
+Date: Thu, 30 May 2013 19:01:06 +0300
+Message-Id: <1369929699-8724-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Moving paths config into config/Makefile.
+Adding automated test for testing the build process.
+
+To run it you need to be in perf directory or specify one with PERF
+variable. It's also possible to specify optional Makefile to test via MK
+variable.
+
+Whole suite is executed twice, the second time with O=/tmp/xxx option
+added.
+
+To run the whole suite:
+  $ make -f tests/make
+  - make_pure: cd . && make -f Makefile
+    test: test -x ./perf
+  - make_clean_all: cd . && make -f Makefile clean all
+    test: test -x ./perf
+  - make_python_perf_so: cd . && make -f Makefile python/perf.so
+    test: test -f ./python/perf.so
+  - make_debug: cd . && make -f Makefile DEBUG=1
+    test: test -x ./perf
+  - make_no_libperl: cd . && make -f Makefile NO_LIBPERL=1
+    test: test -x ./perf
+
+You see command line for 'make_pure' test right away, and the output is
+stored into 'make_pure' file.
+
+To run simple test:
+  $ make -f tests/make make_debug
+  - make_debug: cd . && make -f Makefile DEBUG=1
+    test: test -x ./perf
+
+At this moment tests checks for successfull build and for existence of
+several built files. Additional after-build checks could be added.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Borislav Petkov <bp@alien8.de>
@@ -43,163 +74,157 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-17-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1369398928-9809-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile        | 58 ----------------------------------------------
- tools/perf/config/Makefile | 52 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+), 58 deletions(-)
+ tools/perf/tests/make | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
+ create mode 100644 tools/perf/tests/make
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 11525ac..240bf88 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -99,39 +99,6 @@ ifeq ($(config),1)
- include config/Makefile
- endif
- 
--# Among the variables below, these:
--#   perfexecdir
--#   template_dir
--#   mandir
--#   infodir
--#   htmldir
--#   ETC_PERFCONFIG (but not sysconfdir)
--# can be specified as a relative path some/where/else;
--# this is interpreted as relative to $(prefix) and "perf" at
--# runtime figures out where they are based on the path to the executable.
--# This can help installing the suite in a relocatable way.
--
--# Make the path relative to DESTDIR, not to prefix
--ifndef DESTDIR
--prefix = $(HOME)
--endif
--bindir_relative = bin
--bindir = $(prefix)/$(bindir_relative)
--mandir = share/man
--infodir = share/info
--perfexecdir = libexec/perf-core
--sharedir = $(prefix)/share
--template_dir = share/perf-core/templates
--htmldir = share/doc/perf-doc
--ifeq ($(prefix),/usr)
--sysconfdir = /etc
--ETC_PERFCONFIG = $(sysconfdir)/perfconfig
--else
--sysconfdir = $(prefix)/etc
--ETC_PERFCONFIG = etc/perfconfig
--endif
--lib = lib
--
- export prefix bindir sharedir sysconfdir
- 
- # sparse is architecture-neutral, which means that we need to tell it
-@@ -555,23 +522,6 @@ endif
- endif # MAKECMDGOALS != tags
- endif # MAKECMDGOALS != clean
- 
--# Shell quote (do not use $(call) to accommodate ancient setups);
--
--ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
--
--DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
--bindir_SQ = $(subst ','\'',$(bindir))
--bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
--mandir_SQ = $(subst ','\'',$(mandir))
--infodir_SQ = $(subst ','\'',$(infodir))
--perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
--template_dir_SQ = $(subst ','\'',$(template_dir))
--htmldir_SQ = $(subst ','\'',$(htmldir))
--prefix_SQ = $(subst ','\'',$(prefix))
--sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
--
--SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
--
- LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
- 
- ALL_CFLAGS += $(BASIC_CFLAGS)
-@@ -580,7 +530,6 @@ ALL_LDFLAGS += $(BASIC_LDFLAGS)
- 
- export INSTALL SHELL_PATH
- 
--
- ### Build rules
- 
- SHELL = $(SHELL_PATH)
-@@ -822,13 +771,6 @@ check: $(OUTPUT)common-cmds.h
- 
- ### Installation rules
- 
--ifneq ($(filter /%,$(firstword $(perfexecdir))),)
--perfexec_instdir = $(perfexecdir)
--else
--perfexec_instdir = $(prefix)/$(perfexecdir)
--endif
--perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
--
- install-bin: all
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 124c344..506c479 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -390,3 +390,55 @@ ifndef NO_LIBNUMA
- 		EXTLIBS += -lnuma
- 	endif
- endif
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+new file mode 100644
+index 0000000..c441a28
+--- /dev/null
++++ b/tools/perf/tests/make
+@@ -0,0 +1,138 @@
++PERF := .
++MK   := Makefile
 +
-+# Among the variables below, these:
-+#   perfexecdir
-+#   template_dir
-+#   mandir
-+#   infodir
-+#   htmldir
-+#   ETC_PERFCONFIG (but not sysconfdir)
-+# can be specified as a relative path some/where/else;
-+# this is interpreted as relative to $(prefix) and "perf" at
-+# runtime figures out where they are based on the path to the executable.
-+# This can help installing the suite in a relocatable way.
++# standard single make variable specified
++make_clean_all      := clean all
++make_python_perf_so := python/perf.so
++make_debug          := DEBUG=1
++make_no_libperl     := NO_LIBPERL=1
++make_no_libpython   := NO_LIBPYTHON=1
++make_no_scripts     := NO_LIBPYTHON=1 NO_LIBPERL=1
++make_no_newt        := NO_NEWT=1
++make_no_slang       := NO_SLANG=1
++make_no_gtk2        := NO_GTK2=1
++make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
++make_no_demangle    := NO_DEMANGLE=1
++make_no_libelf      := NO_LIBELF=1
++make_no_libunwind   := NO_LIBUNWIND=1
++make_no_backtrace   := NO_BACKTRACE=1
++make_no_libnuma     := NO_LIBNUMA=1
++make_no_libaudit    := NO_LIBAUDIT=1
++make_no_libbionic   := NO_LIBBIONIC=1
++make_tags           := tags
++make_cscope         := cscope
++make_help           := help
++make_doc            := doc
++make_perf_o         := perf.o
++make_util_map_o     := util/map.o
 +
-+# Make the path relative to DESTDIR, not to prefix
-+ifndef DESTDIR
-+prefix = $(HOME)
++# all the NO_* variable combined
++make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
++make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
++make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
++
++# $(run) contains all available tests
++run := make_pure
++run += make_clean_all
++run += make_python_perf_so
++run += make_debug
++run += make_no_libperl
++run += make_no_libpython
++run += make_no_scripts
++run += make_no_newt
++run += make_no_slang
++run += make_no_gtk2
++run += make_no_ui
++run += make_no_demangle
++run += make_no_libelf
++run += make_no_libunwind
++run += make_no_backtrace
++run += make_no_libnuma
++run += make_no_libaudit
++run += make_no_libbionic
++run += make_tags
++run += make_cscope
++run += make_help
++run += make_doc
++run += make_perf_o
++run += make_util_map_o
++run += make_minimal
++
++# $(run_O) contains same portion of $(run) tests with '_O' attached
++# to distinguish O=... tests
++run_O := $(addsuffix _O,$(run))
++
++# disable some tests for O=...
++run_O := $(filter-out make_python_perf_so_O,$(run_O))
++
++# define test for each compile as 'test_NAME' variable
++# with the test itself as a value
++test_make_tags   = test -f tags
++test_make_cscope = test -f cscope.out
++
++test_make_tags_O   := $(test_make_tags)
++test_make_cscope_O := $(test_make_cscope)
++
++test_ok          := true
++test_make_help   := $(test_ok)
++test_make_doc    := $(test_ok)
++test_make_help_O := $(test_ok)
++test_make_doc_O  := $(test_ok)
++
++test_make_python_perf_so := test -f $(PERF)/python/perf.so
++
++test_make_perf_o     := test -f $(PERF)/perf.o
++test_make_util_map_o := test -f $(PERF)/util/map.o
++
++# Kbuild tests only
++#test_make_python_perf_so_O := test -f $$TMP/tools/perf/python/perf.so
++#test_make_perf_o_O         := test -f $$TMP/tools/perf/perf.o
++#test_make_util_map_o_O     := test -f $$TMP/tools/perf/util/map.o
++
++test_make_perf_o_O     := true
++test_make_util_map_o_O := true
++
++test_default = test -x $(PERF)/perf
++test = $(if $(test_$1),$(test_$1),$(test_default))
++
++test_default_O = test -x $$TMP/perf
++test_O = $(if $(test_$1),$(test_$1),$(test_default_O))
++
++all:
++
++ifdef DEBUG
++d := $(info run   $(run))
++d := $(info run_O $(run_O))
 +endif
-+bindir_relative = bin
-+bindir = $(prefix)/$(bindir_relative)
-+mandir = share/man
-+infodir = share/info
-+perfexecdir = libexec/perf-core
-+sharedir = $(prefix)/share
-+template_dir = share/perf-core/templates
-+htmldir = share/doc/perf-doc
-+ifeq ($(prefix),/usr)
-+sysconfdir = /etc
-+ETC_PERFCONFIG = $(sysconfdir)/perfconfig
-+else
-+sysconfdir = $(prefix)/etc
-+ETC_PERFCONFIG = etc/perfconfig
-+endif
-+lib = lib
 +
-+# Shell quote (do not use $(call) to accommodate ancient setups);
-+ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
-+DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
-+bindir_SQ = $(subst ','\'',$(bindir))
-+mandir_SQ = $(subst ','\'',$(mandir))
-+infodir_SQ = $(subst ','\'',$(infodir))
-+perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
-+template_dir_SQ = $(subst ','\'',$(template_dir))
-+htmldir_SQ = $(subst ','\'',$(htmldir))
-+prefix_SQ = $(subst ','\'',$(prefix))
-+sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++MAKEFLAGS := --no-print-directory
 +
-+ifneq ($(filter /%,$(firstword $(perfexecdir))),)
-+perfexec_instdir = $(perfexecdir)
-+else
-+perfexec_instdir = $(prefix)/$(perfexecdir)
-+endif
-+perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
++clean := @(cd $(PERF); make -s -f $(MK) clean >/dev/null)
++
++$(run):
++	$(call clean)
++	@cmd="cd $(PERF) && make -f $(MK) $($@)"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1; \
++	echo "  test: $(call test,$@)"; \
++	$(call test,$@) && \
++	rm -f $@
++
++$(run_O):
++	$(call clean)
++	@TMP=$$(mktemp -d); \
++	cmd="cd $(PERF) && make -f $(MK) $($(patsubst %_O,%,$@)) O=$$TMP"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1 && \
++	echo "  test: $(call test_O,$@)"; \
++	$(call test_O,$@) && \
++	rm -f $@ && \
++	rm -rf $$TMP
++
++all: $(run) $(run_O)
++	@echo OK
++
++out: $(run_O)
++	@echo OK
++
++.PHONY: all $(run) $(run_O) clean
 -- 
 1.8.1.4
 
