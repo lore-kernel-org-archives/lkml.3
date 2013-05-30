@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab3E3SpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:45:06 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:65249 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756817Ab3E3So5 (ORCPT
+	id S1759000Ab3E3Sra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:47:30 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:36251 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab3E3SrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:44:57 -0400
-Message-ID: <51A79EE3.4040403@metafoo.de>
-Date: Thu, 30 May 2013 20:48:03 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 30 May 2013 14:47:21 -0400
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH v2 6/6] MIPS: jz4740: Remove custom DMA API
-References: <1369931105-28065-1-git-send-email-lars@metafoo.de> <1369931105-28065-7-git-send-email-lars@metafoo.de> <20130530172050.GB3767@intel.com>
-In-Reply-To: <20130530172050.GB3767@intel.com>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <1369394486-26225-1-git-send-email-nbalandin@dev.rtsoft.ru>
+References: <1369394486-26225-1-git-send-email-nbalandin@dev.rtsoft.ru>
+Date: Thu, 30 May 2013 20:47:21 +0200
+Message-ID: <CACRpkdZFj4LXB6NDFerVTNYJvdt04VvD0cYiz=1dL+LSXLWg=A@mail.gmail.com>
+Subject: Re: [PATCH] gpio: sx150x: use devm_kzalloc()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nikolay Balandin <n.a.balandin@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 07:20 PM, Vinod Koul wrote:
-> On Thu, May 30, 2013 at 06:25:05PM +0200, Lars-Peter Clausen wrote:
->> Now that all users of the custom jz4740 DMA API have been converted to use
->> the dmaengine API instead we can remove the custom API and move all the code
->> talking to the hardware to the dmaengine driver.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> Acked-by: Ralf Baechle <ralf@linux-mips.org>
->> ---
->> No changes since v1
->> ---
->>  arch/mips/include/asm/mach-jz4740/dma.h |  56 ------
->>  arch/mips/jz4740/Makefile               |   2 +-
->>  arch/mips/jz4740/dma.c                  | 307 --------------------------------
->>  drivers/dma/dma-jz4740.c                | 258 +++++++++++++++++++++++----
->>  4 files changed, 222 insertions(+), 401 deletions(-)
->>  delete mode 100644 arch/mips/jz4740/dma.c
-> only dma.c, you should remove the dma.h or relocate it to linux/
+On Fri, May 24, 2013 at 1:21 PM, Nikolay Balandin
+<n.a.balandin@gmail.com> wrote:
 
-As I said the header only contains the slave ids at this point and the
-dmaengine driver doesn't need it anymore. So I should remove the #include from
-the driver as well.
+> Use devm_kzalloc() to make cleanup paths simpler.
+>
+> Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-> 
-> 
-> rest of the series looks fine, and once we have acks from repsective subsystem
-> mainatiners, we should be good to merge
+You forgot to remove the kfree(chip); in sx150x_remove().
 
-We already have acks from the maintainers.
-
-- Lars
-
+Yours,
+Linus Walleij
