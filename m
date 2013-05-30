@@ -1,128 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3E3LmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:42:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36528 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934974Ab3E3Llt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:41:49 -0400
-Date: Thu, 30 May 2013 12:41:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-Message-ID: <20130530114112.GH7483@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
- <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
+	id S935206Ab3E3Lmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:42:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46031 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848Ab3E3Lls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 07:41:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,770,1363158000"; 
+   d="scan'208";a="345620942"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v7 net-next 5/5] ixgbe: add extra stats for ndo_ll_poll
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Thu, 30 May 2013 14:41:42 +0300
+Message-ID: <20130530114142.12653.83963.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
+References: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130530090949.GC7483@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
-> On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
-> > If you have some patch for this issue,
-> > I can do the test for it .
-> 
-> I'll have a look at cooking something which uses an exception table entry
-> to rewind the PC and retry the system call. That's simpler than directly
-> injecting a user page fault from the system call path.
+Add additional statistics to the ixgbe driver for ndo_ll_poll
+Defined under LL_EXTENDED_STATS
 
-Ok, please can you try the following?
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Tested-by: Willem de Bruijn <willemb@google.com>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
-Will
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
+ 3 files changed, 60 insertions(+), 0 deletions(-)
 
---->8
-
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index bc5bc0a..855926e 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -361,6 +361,15 @@ ENTRY(vector_swi)
- 	str	r8, [sp, #S_PSR]		@ Save CPSR
- 	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
- 	zero_fp
-+	enable_irq
-+	ct_user_exit
-+
-+#ifdef CONFIG_ALIGNMENT_TRAP
-+	ldr	ip, __cr_alignment
-+	ldr	ip, [ip]
-+	mcr	p15, 0, ip, c1, c0		@ update control register
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+index 04fdbf6..9765772 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+@@ -54,6 +54,9 @@
+ 
+ #include <net/ll_poll.h>
+ 
++#ifdef CONFIG_NET_LL_RX_POLL
++#define LL_EXTENDED_STATS
 +#endif
-+	get_thread_info tsk
+ /* common prefix used by pr_<> macros */
+ #undef pr_fmt
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+@@ -184,6 +187,11 @@ struct ixgbe_rx_buffer {
+ struct ixgbe_queue_stats {
+ 	u64 packets;
+ 	u64 bytes;
++#ifdef LL_EXTENDED_STATS
++	u64 yields;
++	u64 misses;
++	u64 cleaned;
++#endif  /* LL_EXTENDED_STATS */
+ };
  
- 	/*
- 	 * Get the system call number.
-@@ -375,9 +384,9 @@ ENTRY(vector_swi)
- #ifdef CONFIG_ARM_THUMB
- 	tst	r8, #PSR_T_BIT
- 	movne	r10, #0				@ no thumb OABI emulation
--	ldreq	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldreq	r10, [lr, #-4]		)	@ get SWI instruction
- #else
--	ldr	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldr	r10, [lr, #-4]		)	@ get SWI instruction
- #endif
- #ifdef CONFIG_CPU_ENDIAN_BE8
- 	rev	r10, r10			@ little endian instruction
-@@ -392,22 +401,13 @@ ENTRY(vector_swi)
- 	/* Legacy ABI only, possibly thumb mode. */
- 	tst	r8, #PSR_T_BIT			@ this is SPSR from save_user_regs
- 	addne	scno, r7, #__NR_SYSCALL_BASE	@ put OS number in
--	ldreq	scno, [lr, #-4]
-+ USER(	ldreq	scno, [lr, #-4]		)
- 
- #else
- 	/* Legacy ABI only. */
--	ldr	scno, [lr, #-4]			@ get SWI instruction
--#endif
--
--#ifdef CONFIG_ALIGNMENT_TRAP
--	ldr	ip, __cr_alignment
--	ldr	ip, [ip]
--	mcr	p15, 0, ip, c1, c0		@ update control register
-+ USER(	ldr	scno, [lr, #-4]		)	@ get SWI instruction
- #endif
--	enable_irq
--	ct_user_exit
- 
--	get_thread_info tsk
- 	adr	tbl, sys_call_table		@ load syscall table pointer
- 
- #if defined(CONFIG_OABI_COMPAT)
-@@ -442,6 +442,18 @@ local_restart:
- 	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
- 	bcs	arm_syscall	
- 	b	sys_ni_syscall			@ not private func
-+
-+#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
-+	/*
-+	 * We may have faulted trying to load the SWI instruction due to
-+	 * concurrent page aging on another CPU. In this case, return
-+	 * back to the swi instruction and fault the page back.
-+	 */
-+9001:
-+	sub	lr, lr, #4
-+	str	lr, [sp, #S_PC]
-+	b	ret_fast_syscall
+ struct ixgbe_tx_queue_stats {
+@@ -391,6 +399,9 @@ static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
+ 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
+ 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
+ 		rc = false;
++#ifdef LL_EXTENDED_STATS
++		q_vector->tx.ring->stats.yields++;
 +#endif
- ENDPROC(vector_swi)
+ 	} else
+ 		/* we don't care if someone yielded */
+ 		q_vector->state = IXGBE_QV_STATE_NAPI;
+@@ -421,6 +432,9 @@ static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
+ 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
+ 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
+ 		rc = false;
++#ifdef LL_EXTENDED_STATS
++		q_vector->rx.ring->stats.yields++;
++#endif
+ 	} else
+ 		/* preserve yield marks */
+ 		q_vector->state |= IXGBE_QV_STATE_POLL;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+index d375472..24e2e7a 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
+ 			data[i] = 0;
+ 			data[i+1] = 0;
+ 			i += 2;
++#ifdef LL_EXTENDED_STATS
++			data[i] = 0;
++			data[i+1] = 0;
++			data[i+2] = 0;
++			i += 3;
++#endif
+ 			continue;
+ 		}
  
- 	/*
+@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
+ 			data[i+1] = ring->stats.bytes;
+ 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
+ 		i += 2;
++#ifdef LL_EXTENDED_STATS
++		data[i] = ring->stats.yields;
++		data[i+1] = ring->stats.misses;
++		data[i+2] = ring->stats.cleaned;
++		i += 3;
++#endif
+ 	}
+ 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
+ 		ring = adapter->rx_ring[j];
+@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
+ 			data[i] = 0;
+ 			data[i+1] = 0;
+ 			i += 2;
++#ifdef LL_EXTENDED_STATS
++			data[i] = 0;
++			data[i+1] = 0;
++			data[i+2] = 0;
++			i += 3;
++#endif
+ 			continue;
+ 		}
+ 
+@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
+ 			data[i+1] = ring->stats.bytes;
+ 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
+ 		i += 2;
++#ifdef LL_EXTENDED_STATS
++		data[i] = ring->stats.yields;
++		data[i+1] = ring->stats.misses;
++		data[i+2] = ring->stats.cleaned;
++		i += 3;
++#endif
+ 	}
+ 
+ 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
+@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
+ 			p += ETH_GSTRING_LEN;
+ 			sprintf(p, "tx_queue_%u_bytes", i);
+ 			p += ETH_GSTRING_LEN;
++#ifdef LL_EXTENDED_STATS
++			sprintf(p, "tx_q_%u_napi_yield", i);
++			p += ETH_GSTRING_LEN;
++			sprintf(p, "tx_q_%u_misses", i);
++			p += ETH_GSTRING_LEN;
++			sprintf(p, "tx_q_%u_cleaned", i);
++			p += ETH_GSTRING_LEN;
++#endif /* LL_EXTENDED_STATS */
+ 		}
+ 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
+ 			sprintf(p, "rx_queue_%u_packets", i);
+ 			p += ETH_GSTRING_LEN;
+ 			sprintf(p, "rx_queue_%u_bytes", i);
+ 			p += ETH_GSTRING_LEN;
++#ifdef LL_EXTENDED_STATS
++			sprintf(p, "rx_q_%u_ll_poll_yield", i);
++			p += ETH_GSTRING_LEN;
++			sprintf(p, "rx_q_%u_misses", i);
++			p += ETH_GSTRING_LEN;
++			sprintf(p, "rx_q_%u_cleaned", i);
++			p += ETH_GSTRING_LEN;
++#endif /* LL_EXTENDED_STATS */
+ 		}
+ 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
+ 			sprintf(p, "tx_pb_%u_pxon", i);
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 9a7dc40..047ebaa 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2016,6 +2016,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
+ 
+ 	ixgbe_for_each_ring(ring, q_vector->rx) {
+ 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
++#ifdef LL_EXTENDED_STATS
++		if (found)
++			ring->stats.cleaned += found;
++		else
++			ring->stats.misses++;
++#endif
+ 		if (found)
+ 			break;
+ 	}
+
