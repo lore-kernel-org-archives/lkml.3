@@ -1,100 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935364Ab3E3QFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:05:17 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:43606 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934049Ab3E3QEx (ORCPT
+	id S935245Ab3E3QFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:05:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51181 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935183Ab3E3QDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:04:53 -0400
-Message-ID: <1369929888.16480.5.camel@host5.omatika.ru>
-Subject: [PATCH] rtc-ds1302: handle write protection
-From: Sergey Yanovich <ynvich@gmail.com>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Date: Thu, 30 May 2013 20:04:48 +0400
-In-Reply-To: <53f44a9ec4c8391288d6c132fd5689da@localhost>
-References: <1369092090-5384-1-git-send-email-ynvich@gmail.com>
-	 <20130529155311.9e35e847968f3923bc83f4cd@linux-foundation.org>
-	 <1369908882.17429.13.camel@host5.omatika.ru>
-	 <53f44a9ec4c8391288d6c132fd5689da@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 12:03:22 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sam Ravnborg <sam@ravnborg.org>, Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 44/66] perf tools: Move libpython check config into config/Makefile
+Date: Thu, 30 May 2013 19:01:17 +0300
+Message-Id: <1369929699-8724-45-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
+References: <1369929699-8724-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f1cd048a066b249082752a96abce7d33a0cd4ea3 Mon Sep 17 00:00:00 2001
-From: Sergey Yanovich <ynvich@gmail.com>
-Date: Tue, 21 May 2013 03:06:31 +0400
-Subject: [PATCH] rtc-ds1302: handle write protection
+From: Jiri Olsa <jolsa@redhat.com>
 
-This chip has a control register and can prevent altering saved clock.
-Without this patch we could have:
-----8<----
-(arm)root@pac14:~# date
-Tue May 21 03:08:27 MSK 2013
-(arm)root@pac14:~# /etc/init.d/hwclock.sh show
-Tue May 21 11:13:58 2013  -0.067322 seconds
-(arm)root@pac14:~# /etc/init.d/hwclock.sh stop
-[info] Saving the system clock.
-[info] Hardware Clock updated to Tue May 21 03:09:01 MSK 2013.
-(arm)root@pac14:~# /etc/init.d/hwclock.sh show
-Tue May 21 11:14:15 2013  -0.624272 seconds
-----8<----
+Moving libpython check config into config/Makefile.
 
-The patch enables write access to rtc before the driver tries to write time
-and re-disables when time data is written.
-
-Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
-
- # Changes to be committed:
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1369398928-9809-13-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-changes for v2:
- - do enable/disable around set_time() instead of in probe()/remove()
+ tools/perf/Makefile        | 68 ++--------------------------------------------
+ tools/perf/config/Makefile | 63 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 66 insertions(+), 65 deletions(-)
 
- drivers/rtc/rtc-ds1302.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/rtc/rtc-ds1302.c b/drivers/rtc/rtc-ds1302.c
-index 7533b72..07e8d79 100644
---- a/drivers/rtc/rtc-ds1302.c
-+++ b/drivers/rtc/rtc-ds1302.c
-@@ -23,8 +23,12 @@
- #define	RTC_CMD_READ	0x81		/* Read command */
- #define	RTC_CMD_WRITE	0x80		/* Write command */
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f856bb5..061de65 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -196,8 +196,6 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ #
+ PROGRAMS += $(OUTPUT)perf
  
-+#define	RTC_CMD_WRITE_ENABLE	0x00		/* Write enable */
-+#define	RTC_CMD_WRITE_DISABLE	0x80		/* Write disable */
+-LANG_BINDINGS =
+-
+ # what 'all' will build and 'install' will install, in perfexecdir
+ ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
+ 
+@@ -535,69 +533,9 @@ ifndef NO_LIBPERL
+ 	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+ endif
+ 
+-disable-python = $(eval $(disable-python_code))
+-define disable-python_code
+-  BASIC_CFLAGS += -DNO_LIBPYTHON
+-  $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support will not be built)
+-endef
+-
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
+-
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
+-else
+-
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+-
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
+-  else
+-
+-    override PYTHON_CONFIG := \
+-      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
+-
+-    ifndef PYTHON_CONFIG
+-      $(call disable-python,python-config tool)
+-    else
+-
+-      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
+-
+-      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
+-      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+-      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+-
+-      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
+-        $(call disable-python,Python.h (for Python 2.x))
+-      else
+-
+-        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
+-          $(warning Python 3 is not yet supported; please set)
+-          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
+-          $(warning If you also have Python 2 installed, then)
+-          $(warning try something like:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make PYTHON=python2)
+-          $(warning $(and ,))
+-          $(warning Otherwise, disable Python support entirely:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make NO_LIBPYTHON=1)
+-          $(warning $(and ,))
+-          $(error   $(and ,))
+-        else
+-          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+-          EXTLIBS += $(PYTHON_EMBED_LIBADD)
+-          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-          LANG_BINDINGS += $(OUTPUT)python/perf.so
+-        endif
+-
+-      endif
+-    endif
+-  endif
++ifndef NO_LIBPYTHON
++	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
++	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+ endif
+ 
+ ifdef NO_DEMANGLE
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index a42c7b8..b9b1465 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -261,3 +261,66 @@ else
+ 		EXTLIBS += $(PERL_EMBED_LIBADD)
+ 	endif
+ endif
 +
- #define RTC_ADDR_RAM0	0x20		/* Address of RAM0 */
- #define RTC_ADDR_TCR	0x08		/* Address of trickle charge register */
-+#define	RTC_ADDR_CTRL	0x07		/* Address of control register */
- #define	RTC_ADDR_YEAR	0x06		/* Address of year register */
- #define	RTC_ADDR_DAY	0x05		/* Address of day of week register */
- #define	RTC_ADDR_MON	0x04		/* Address of month register */
-@@ -161,6 +165,7 @@ static int ds1302_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 
- static int ds1302_rtc_set_time(struct device *dev, struct rtc_time *tm)
- {
-+	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_ENABLE);
- 	/* Stop RTC */
- 	ds1302_writebyte(RTC_ADDR_SEC, ds1302_readbyte(RTC_ADDR_SEC) | 0x80);
- 
-@@ -175,6 +180,8 @@ static int ds1302_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	/* Start RTC */
- 	ds1302_writebyte(RTC_ADDR_SEC, ds1302_readbyte(RTC_ADDR_SEC) & ~0x80);
- 
-+	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_DISABLE);
++disable-python = $(eval $(disable-python_code))
++define disable-python_code
++  BASIC_CFLAGS += -DNO_LIBPYTHON
++  $(if $(1),$(warning No $(1) was found))
++  $(warning Python support will not be built)
++  NO_LIBPYTHON := 1
++endef
 +
- 	return 0;
- }
- 
++override PYTHON := \
++  $(call get-executable-or-default,PYTHON,python)
++
++ifndef PYTHON
++  $(call disable-python,python interpreter)
++else
++
++  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
++
++  ifdef NO_LIBPYTHON
++    $(call disable-python)
++  else
++
++    override PYTHON_CONFIG := \
++      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++
++    ifndef PYTHON_CONFIG
++      $(call disable-python,python-config tool)
++    else
++
++      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
++
++      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
++      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
++      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++
++      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
++        $(call disable-python,Python.h (for Python 2.x))
++      else
++
++        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
++          $(warning Python 3 is not yet supported; please set)
++          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
++          $(warning If you also have Python 2 installed, then)
++          $(warning try something like:)
++          $(warning $(and ,))
++          $(warning $(and ,)  make PYTHON=python2)
++          $(warning $(and ,))
++          $(warning Otherwise, disable Python support entirely:)
++          $(warning $(and ,))
++          $(warning $(and ,)  make NO_LIBPYTHON=1)
++          $(warning $(and ,))
++          $(error   $(and ,))
++        else
++          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
++          EXTLIBS += $(PYTHON_EMBED_LIBADD)
++          LANG_BINDINGS += $(OUTPUT)python/perf.so
++        endif
++      endif
++    endif
++  endif
++endif
 -- 
-1.7.10.4
+1.8.1.4
 
