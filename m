@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030450Ab3E3K3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:29:44 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:51825 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968055Ab3E3K2X (ORCPT
+	id S1030355Ab3E3K3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:29:53 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33640 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968214Ab3E3K2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:28:23 -0400
+	Thu, 30 May 2013 06:28:22 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        renner@efe-gmbh.de, "David S. Miller" <davem@davemloft.net>,
+        renner@efe-gmbh.de, Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         netdev@vger.kernel.org
-Subject: [PATCH v2 5/6] net: emaclite: Enable emaclite for Xilinx Arm Zynq platform
-Date: Thu, 30 May 2013 12:28:07 +0200
-Message-Id: <ca2770c39bc119d754854d978fada9931c48719f.1369909618.git.michal.simek@xilinx.com>
+Subject: [PATCH v2 4/6] net: emaclite: Do not use microblaze and ppc IO functions
+Date: Thu, 30 May 2013 12:28:06 +0200
+Message-Id: <f05f284653ddf7d812ba0a6bd0e271736e910a37.1369909618.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
 References: <cover.1369909618.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
 References: <cover.1369909618.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-5499-1369909700-0001";
+    boundary="=_mimegpg-monstr-desktop-5484-1369909698-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,53 +34,358 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-5499-1369909700-0001
+--=_mimegpg-monstr-desktop-5484-1369909698-0001
 
-Enable emaclite for Xilinx ARM Zynq platform.
+Emaclite can be used on ARM zynq where in_be32/out_be32 IO
+functions are not present. Use standard __raw_readl/__raw_writel
+IO functions instead.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
-Changes in v2: None
+Changes in v2:
+- Fix __raw_iowrite() to pass correct parameters
 
- drivers/net/ethernet/xilinx/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 138 +++++++++++++-------------
+ 1 file changed, 69 insertions(+), 69 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/Kconfig b/drivers/net/ethernet/xilinx/Kconfig
-index 122d60c..7b90a5e 100644
---- a/drivers/net/ethernet/xilinx/Kconfig
-+++ b/drivers/net/ethernet/xilinx/Kconfig
-@@ -5,7 +5,7 @@
- config NET_VENDOR_XILINX
- 	bool "Xilinx devices"
- 	default y
--	depends on PPC || PPC32 || MICROBLAZE
-+	depends on PPC || PPC32 || MICROBLAZE || ARCH_ZYNQ
- 	---help---
- 	  If you have a network (Ethernet) card belonging to this class, say Y
- 	  and read the Ethernet-HOWTO, available from
-@@ -20,7 +20,7 @@ if NET_VENDOR_XILINX
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 93bb14e..9227ed7 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -159,34 +159,32 @@ static void xemaclite_enable_interrupts(struct net_local *drvdata)
+ 	u32 reg_data;
 
- config XILINX_EMACLITE
- 	tristate "Xilinx 10/100 Ethernet Lite support"
--	depends on (PPC32 || MICROBLAZE)
-+	depends on (PPC32 || MICROBLAZE || ARCH_ZYNQ)
- 	select PHYLIB
- 	---help---
- 	  This driver supports the 10/100 Ethernet Lite from Xilinx.
+ 	/* Enable the Tx interrupts for the first Buffer */
+-	reg_data = in_be32(drvdata->base_addr + XEL_TSR_OFFSET);
+-	out_be32(drvdata->base_addr + XEL_TSR_OFFSET,
+-		 reg_data | XEL_TSR_XMIT_IE_MASK);
++	reg_data = __raw_readl(drvdata->base_addr + XEL_TSR_OFFSET);
++	__raw_writel(reg_data | XEL_TSR_XMIT_IE_MASK,
++		     drvdata->base_addr + XEL_TSR_OFFSET);
+
+ 	/* Enable the Tx interrupts for the second Buffer if
+ 	 * configured in HW */
+ 	if (drvdata->tx_ping_pong != 0) {
+-		reg_data = in_be32(drvdata->base_addr +
++		reg_data = __raw_readl(drvdata->base_addr +
+ 				   XEL_BUFFER_OFFSET + XEL_TSR_OFFSET);
+-		out_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
+-			 XEL_TSR_OFFSET,
+-			 reg_data | XEL_TSR_XMIT_IE_MASK);
++		__raw_writel(reg_data | XEL_TSR_XMIT_IE_MASK,
++			     drvdata->base_addr + XEL_BUFFER_OFFSET +
++			     XEL_TSR_OFFSET);
+ 	}
+
+ 	/* Enable the Rx interrupts for the first buffer */
+-	out_be32(drvdata->base_addr + XEL_RSR_OFFSET,
+-		 XEL_RSR_RECV_IE_MASK);
++	__raw_writel(XEL_RSR_RECV_IE_MASK, drvdata->base_addr + XEL_RSR_OFFSET);
+
+ 	/* Enable the Rx interrupts for the second Buffer if
+ 	 * configured in HW */
+ 	if (drvdata->rx_ping_pong != 0) {
+-		out_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
+-			 XEL_RSR_OFFSET,
+-			 XEL_RSR_RECV_IE_MASK);
++		__raw_writel(XEL_RSR_RECV_IE_MASK, drvdata->base_addr +
++			     XEL_BUFFER_OFFSET + XEL_RSR_OFFSET);
+ 	}
+
+ 	/* Enable the Global Interrupt Enable */
+-	out_be32(drvdata->base_addr + XEL_GIER_OFFSET, XEL_GIER_GIE_MASK);
++	__raw_writel(XEL_GIER_GIE_MASK, drvdata->base_addr + XEL_GIER_OFFSET);
+ }
+
+ /**
+@@ -201,37 +199,37 @@ static void xemaclite_disable_interrupts(struct net_local *drvdata)
+ 	u32 reg_data;
+
+ 	/* Disable the Global Interrupt Enable */
+-	out_be32(drvdata->base_addr + XEL_GIER_OFFSET, XEL_GIER_GIE_MASK);
++	__raw_writel(XEL_GIER_GIE_MASK, drvdata->base_addr + XEL_GIER_OFFSET);
+
+ 	/* Disable the Tx interrupts for the first buffer */
+-	reg_data = in_be32(drvdata->base_addr + XEL_TSR_OFFSET);
+-	out_be32(drvdata->base_addr + XEL_TSR_OFFSET,
+-		 reg_data & (~XEL_TSR_XMIT_IE_MASK));
++	reg_data = __raw_readl(drvdata->base_addr + XEL_TSR_OFFSET);
++	__raw_writel(reg_data & (~XEL_TSR_XMIT_IE_MASK),
++		     drvdata->base_addr + XEL_TSR_OFFSET);
+
+ 	/* Disable the Tx interrupts for the second Buffer
+ 	 * if configured in HW */
+ 	if (drvdata->tx_ping_pong != 0) {
+-		reg_data = in_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
++		reg_data = __raw_readl(drvdata->base_addr + XEL_BUFFER_OFFSET +
+ 				   XEL_TSR_OFFSET);
+-		out_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
+-			 XEL_TSR_OFFSET,
+-			 reg_data & (~XEL_TSR_XMIT_IE_MASK));
++		__raw_writel(reg_data & (~XEL_TSR_XMIT_IE_MASK),
++			     drvdata->base_addr + XEL_BUFFER_OFFSET +
++			     XEL_TSR_OFFSET);
+ 	}
+
+ 	/* Disable the Rx interrupts for the first buffer */
+-	reg_data = in_be32(drvdata->base_addr + XEL_RSR_OFFSET);
+-	out_be32(drvdata->base_addr + XEL_RSR_OFFSET,
+-		 reg_data & (~XEL_RSR_RECV_IE_MASK));
++	reg_data = __raw_readl(drvdata->base_addr + XEL_RSR_OFFSET);
++	__raw_writel(reg_data & (~XEL_RSR_RECV_IE_MASK),
++		     drvdata->base_addr + XEL_RSR_OFFSET);
+
+ 	/* Disable the Rx interrupts for the second buffer
+ 	 * if configured in HW */
+ 	if (drvdata->rx_ping_pong != 0) {
+
+-		reg_data = in_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
++		reg_data = __raw_readl(drvdata->base_addr + XEL_BUFFER_OFFSET +
+ 				   XEL_RSR_OFFSET);
+-		out_be32(drvdata->base_addr + XEL_BUFFER_OFFSET +
+-			 XEL_RSR_OFFSET,
+-			 reg_data & (~XEL_RSR_RECV_IE_MASK));
++		__raw_writel(reg_data & (~XEL_RSR_RECV_IE_MASK),
++			     drvdata->base_addr + XEL_BUFFER_OFFSET +
++			     XEL_RSR_OFFSET);
+ 	}
+ }
+
+@@ -351,7 +349,7 @@ static int xemaclite_send_data(struct net_local *drvdata, u8 *data,
+ 		byte_count = ETH_FRAME_LEN;
+
+ 	/* Check if the expected buffer is available */
+-	reg_data = in_be32(addr + XEL_TSR_OFFSET);
++	reg_data = __raw_readl(addr + XEL_TSR_OFFSET);
+ 	if ((reg_data & (XEL_TSR_XMIT_BUSY_MASK |
+ 	     XEL_TSR_XMIT_ACTIVE_MASK)) == 0) {
+
+@@ -364,7 +362,7 @@ static int xemaclite_send_data(struct net_local *drvdata, u8 *data,
+
+ 		addr = (void __iomem __force *)((u32 __force)addr ^
+ 						 XEL_BUFFER_OFFSET);
+-		reg_data = in_be32(addr + XEL_TSR_OFFSET);
++		reg_data = __raw_readl(addr + XEL_TSR_OFFSET);
+
+ 		if ((reg_data & (XEL_TSR_XMIT_BUSY_MASK |
+ 		     XEL_TSR_XMIT_ACTIVE_MASK)) != 0)
+@@ -375,15 +373,16 @@ static int xemaclite_send_data(struct net_local *drvdata, u8 *data,
+ 	/* Write the frame to the buffer */
+ 	xemaclite_aligned_write(data, (u32 __force *) addr, byte_count);
+
+-	out_be32(addr + XEL_TPLR_OFFSET, (byte_count & XEL_TPLR_LENGTH_MASK));
++	__raw_writel((byte_count & XEL_TPLR_LENGTH_MASK),
++		     addr + XEL_TPLR_OFFSET);
+
+ 	/* Update the Tx Status Register to indicate that there is a
+ 	 * frame to send. Set the XEL_TSR_XMIT_ACTIVE_MASK flag which
+ 	 * is used by the interrupt handler to check whether a frame
+ 	 * has been transmitted */
+-	reg_data = in_be32(addr + XEL_TSR_OFFSET);
++	reg_data = __raw_readl(addr + XEL_TSR_OFFSET);
+ 	reg_data |= (XEL_TSR_XMIT_BUSY_MASK | XEL_TSR_XMIT_ACTIVE_MASK);
+-	out_be32(addr + XEL_TSR_OFFSET, reg_data);
++	__raw_writel(reg_data, addr + XEL_TSR_OFFSET);
+
+ 	return 0;
+ }
+@@ -408,7 +407,7 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+ 	addr = (drvdata->base_addr + drvdata->next_rx_buf_to_use);
+
+ 	/* Verify which buffer has valid data */
+-	reg_data = in_be32(addr + XEL_RSR_OFFSET);
++	reg_data = __raw_readl(addr + XEL_RSR_OFFSET);
+
+ 	if ((reg_data & XEL_RSR_RECV_DONE_MASK) == XEL_RSR_RECV_DONE_MASK) {
+ 		if (drvdata->rx_ping_pong != 0)
+@@ -425,14 +424,14 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+ 			return 0;	/* No data was available */
+
+ 		/* Verify that buffer has valid data */
+-		reg_data = in_be32(addr + XEL_RSR_OFFSET);
++		reg_data = __raw_readl(addr + XEL_RSR_OFFSET);
+ 		if ((reg_data & XEL_RSR_RECV_DONE_MASK) !=
+ 		     XEL_RSR_RECV_DONE_MASK)
+ 			return 0;	/* No data was available */
+ 	}
+
+ 	/* Get the protocol type of the ethernet frame that arrived */
+-	proto_type = ((ntohl(in_be32(addr + XEL_HEADER_OFFSET +
++	proto_type = ((ntohl(__raw_readl(addr + XEL_HEADER_OFFSET +
+ 			XEL_RXBUFF_OFFSET)) >> XEL_HEADER_SHIFT) &
+ 			XEL_RPLR_LENGTH_MASK);
+
+@@ -441,7 +440,7 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+ 	if (proto_type > (ETH_FRAME_LEN + ETH_FCS_LEN)) {
+
+ 		if (proto_type == ETH_P_IP) {
+-			length = ((ntohl(in_be32(addr +
++			length = ((ntohl(__raw_readl(addr +
+ 					XEL_HEADER_IP_LENGTH_OFFSET +
+ 					XEL_RXBUFF_OFFSET)) >>
+ 					XEL_HEADER_SHIFT) &
+@@ -463,9 +462,9 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+ 				data, length);
+
+ 	/* Acknowledge the frame */
+-	reg_data = in_be32(addr + XEL_RSR_OFFSET);
++	reg_data = __raw_readl(addr + XEL_RSR_OFFSET);
+ 	reg_data &= ~XEL_RSR_RECV_DONE_MASK;
+-	out_be32(addr + XEL_RSR_OFFSET, reg_data);
++	__raw_writel(reg_data, addr + XEL_RSR_OFFSET);
+
+ 	return length;
+ }
+@@ -492,14 +491,14 @@ static void xemaclite_update_address(struct net_local *drvdata,
+
+ 	xemaclite_aligned_write(address_ptr, (u32 __force *) addr, ETH_ALEN);
+
+-	out_be32(addr + XEL_TPLR_OFFSET, ETH_ALEN);
++	__raw_writel(ETH_ALEN, addr + XEL_TPLR_OFFSET);
+
+ 	/* Update the MAC address in the EmacLite */
+-	reg_data = in_be32(addr + XEL_TSR_OFFSET);
+-	out_be32(addr + XEL_TSR_OFFSET, reg_data | XEL_TSR_PROG_MAC_ADDR);
++	reg_data = __raw_readl(addr + XEL_TSR_OFFSET);
++	__raw_writel(reg_data | XEL_TSR_PROG_MAC_ADDR, addr + XEL_TSR_OFFSET);
+
+ 	/* Wait for EmacLite to finish with the MAC address update */
+-	while ((in_be32(addr + XEL_TSR_OFFSET) &
++	while ((__raw_readl(addr + XEL_TSR_OFFSET) &
+ 		XEL_TSR_PROG_MAC_ADDR) != 0)
+ 		;
+ }
+@@ -669,31 +668,32 @@ static irqreturn_t xemaclite_interrupt(int irq, void *dev_id)
+ 	u32 tx_status;
+
+ 	/* Check if there is Rx Data available */
+-	if ((in_be32(base_addr + XEL_RSR_OFFSET) & XEL_RSR_RECV_DONE_MASK) ||
+-			(in_be32(base_addr + XEL_BUFFER_OFFSET + XEL_RSR_OFFSET)
++	if ((__raw_readl(base_addr + XEL_RSR_OFFSET) &
++			 XEL_RSR_RECV_DONE_MASK) ||
++	    (__raw_readl(base_addr + XEL_BUFFER_OFFSET + XEL_RSR_OFFSET)
+ 			 & XEL_RSR_RECV_DONE_MASK))
+
+ 		xemaclite_rx_handler(dev);
+
+ 	/* Check if the Transmission for the first buffer is completed */
+-	tx_status = in_be32(base_addr + XEL_TSR_OFFSET);
++	tx_status = __raw_readl(base_addr + XEL_TSR_OFFSET);
+ 	if (((tx_status & XEL_TSR_XMIT_BUSY_MASK) == 0) &&
+ 		(tx_status & XEL_TSR_XMIT_ACTIVE_MASK) != 0) {
+
+ 		tx_status &= ~XEL_TSR_XMIT_ACTIVE_MASK;
+-		out_be32(base_addr + XEL_TSR_OFFSET, tx_status);
++		__raw_writel(tx_status, base_addr + XEL_TSR_OFFSET);
+
+ 		tx_complete = true;
+ 	}
+
+ 	/* Check if the Transmission for the second buffer is completed */
+-	tx_status = in_be32(base_addr + XEL_BUFFER_OFFSET + XEL_TSR_OFFSET);
++	tx_status = __raw_readl(base_addr + XEL_BUFFER_OFFSET + XEL_TSR_OFFSET);
+ 	if (((tx_status & XEL_TSR_XMIT_BUSY_MASK) == 0) &&
+ 		(tx_status & XEL_TSR_XMIT_ACTIVE_MASK) != 0) {
+
+ 		tx_status &= ~XEL_TSR_XMIT_ACTIVE_MASK;
+-		out_be32(base_addr + XEL_BUFFER_OFFSET + XEL_TSR_OFFSET,
+-			 tx_status);
++		__raw_writel(tx_status, base_addr + XEL_BUFFER_OFFSET +
++			     XEL_TSR_OFFSET);
+
+ 		tx_complete = true;
+ 	}
+@@ -726,7 +726,7 @@ static int xemaclite_mdio_wait(struct net_local *lp)
+ 	/* wait for the MDIO interface to not be busy or timeout
+ 	   after some time.
+ 	*/
+-	while (in_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET) &
++	while (__raw_readl(lp->base_addr + XEL_MDIOCTRL_OFFSET) &
+ 			XEL_MDIOCTRL_MDIOSTS_MASK) {
+ 		if (end - jiffies <= 0) {
+ 			WARN_ON(1);
+@@ -762,17 +762,17 @@ static int xemaclite_mdio_read(struct mii_bus *bus, int phy_id, int reg)
+ 	 * MDIO Address register. Set the Status bit in the MDIO Control
+ 	 * register to start a MDIO read transaction.
+ 	 */
+-	ctrl_reg = in_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET);
+-	out_be32(lp->base_addr + XEL_MDIOADDR_OFFSET,
+-		 XEL_MDIOADDR_OP_MASK |
+-		 ((phy_id << XEL_MDIOADDR_PHYADR_SHIFT) | reg));
+-	out_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET,
+-		 ctrl_reg | XEL_MDIOCTRL_MDIOSTS_MASK);
++	ctrl_reg = __raw_readl(lp->base_addr + XEL_MDIOCTRL_OFFSET);
++	__raw_writel(XEL_MDIOADDR_OP_MASK |
++		     ((phy_id << XEL_MDIOADDR_PHYADR_SHIFT) | reg),
++		     lp->base_addr + XEL_MDIOADDR_OFFSET);
++	__raw_writel(ctrl_reg | XEL_MDIOCTRL_MDIOSTS_MASK,
++		     lp->base_addr + XEL_MDIOCTRL_OFFSET);
+
+ 	if (xemaclite_mdio_wait(lp))
+ 		return -ETIMEDOUT;
+
+-	rc = in_be32(lp->base_addr + XEL_MDIORD_OFFSET);
++	rc = __raw_readl(lp->base_addr + XEL_MDIORD_OFFSET);
+
+ 	dev_dbg(&lp->ndev->dev,
+ 		"xemaclite_mdio_read(phy_id=%i, reg=%x) == %x\n",
+@@ -809,13 +809,13 @@ static int xemaclite_mdio_write(struct mii_bus *bus, int phy_id, int reg,
+ 	 * Data register. Finally, set the Status bit in the MDIO Control
+ 	 * register to start a MDIO write transaction.
+ 	 */
+-	ctrl_reg = in_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET);
+-	out_be32(lp->base_addr + XEL_MDIOADDR_OFFSET,
+-		 ~XEL_MDIOADDR_OP_MASK &
+-		 ((phy_id << XEL_MDIOADDR_PHYADR_SHIFT) | reg));
+-	out_be32(lp->base_addr + XEL_MDIOWR_OFFSET, val);
+-	out_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET,
+-		 ctrl_reg | XEL_MDIOCTRL_MDIOSTS_MASK);
++	ctrl_reg = __raw_readl(lp->base_addr + XEL_MDIOCTRL_OFFSET);
++	__raw_writel(~XEL_MDIOADDR_OP_MASK &
++		     ((phy_id << XEL_MDIOADDR_PHYADR_SHIFT) | reg),
++		     lp->base_addr + XEL_MDIOADDR_OFFSET);
++	__raw_writel(val, lp->base_addr + XEL_MDIOWR_OFFSET);
++	__raw_writel(ctrl_reg | XEL_MDIOCTRL_MDIOSTS_MASK,
++		     lp->base_addr + XEL_MDIOCTRL_OFFSET);
+
+ 	return 0;
+ }
+@@ -872,8 +872,8 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 	/* Enable the MDIO bus by asserting the enable bit in MDIO Control
+ 	 * register.
+ 	 */
+-	out_be32(lp->base_addr + XEL_MDIOCTRL_OFFSET,
+-		 XEL_MDIOCTRL_MDIOEN_MASK);
++	__raw_writel(XEL_MDIOCTRL_MDIOEN_MASK,
++		     lp->base_addr + XEL_MDIOCTRL_OFFSET);
+
+ 	bus = mdiobus_alloc();
+ 	if (!bus) {
+@@ -1197,8 +1197,8 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+ 		dev_warn(dev, "No MAC address found\n");
+
+ 	/* Clear the Tx CSR's in case this is a restart */
+-	out_be32(lp->base_addr + XEL_TSR_OFFSET, 0);
+-	out_be32(lp->base_addr + XEL_BUFFER_OFFSET + XEL_TSR_OFFSET, 0);
++	__raw_writel(0, lp->base_addr + XEL_TSR_OFFSET);
++	__raw_writel(0, lp->base_addr + XEL_BUFFER_OFFSET + XEL_TSR_OFFSET);
+
+ 	/* Set the MAC address in the EmacLite device */
+ 	xemaclite_update_address(lp, ndev->dev_addr);
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-5499-1369909700-0001
+--=_mimegpg-monstr-desktop-5484-1369909698-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGnKcQACgkQykllyylKDCEt5gCcCw6SFy6Jz1BJwoGJFpoGhh//
-HzkAnjq3JIpOGx84laWrprYKjjvibGFq
-=kCAu
+iEYEABECAAYFAlGnKcIACgkQykllyylKDCGApgCghcH/j8yHtTpBrJq2kWJoPOTJ
+EFoAn1A6jTvmMJROI2nwW1ysFzmSYNUN
+=DFdZ
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-5499-1369909700-0001--
+--=_mimegpg-monstr-desktop-5484-1369909698-0001--
