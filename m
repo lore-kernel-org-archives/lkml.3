@@ -1,407 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab3E3U6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:58:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51025 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757840Ab3E3U6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:58:18 -0400
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] pktcdvd: Consolidate DPRINTK and VPRINTK macros
-Date: Thu, 30 May 2013 13:57:51 -0700
-Message-Id: <893a0f1c44ef4b35c96a68f4b99368cda85db88b.1369947186.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1369947186.git.joe@perches.com>
-References: <alpine.LNX.2.00.1305291537120.30576@pobox.suse.cz> <cover.1369947186.git.joe@perches.com>
+	id S1758475Ab3E3VAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 17:00:40 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64508 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3E3VAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 17:00:34 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gWBwi1oPRbN4Xc8yFFU6N
+Date: Thu, 30 May 2013 14:00:26 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: linux@arm.linux.org.uk, balbi@ti.com, shc_work@mail.ru,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP2+: omap-usb-host: Fix memory leaks
+Message-ID: <20130530210025.GE6467@atomide.com>
+References: <1369400818-31625-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369400818-31625-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the more common pkt_dbg(level, fmt, ...) form.
+Hi Roger,
 
-These messages are emitted at KERN_NOTICE.
+* Roger Quadros <rogerq@ti.com> [130524 06:12]:
+> Fix memory leaks in the error path.
+> Also, use platform_device_register_full() to allocate
+> the platform devices and set platform data.
 
-Always emit function name with pkt_dbg(2, ...) uses and
-remove the sometimes abbreviated embedded function name.
+If you need this for the v3.10-rc, you should describe why this patch
+is needed and ideally have some oops or regression causing commit
+listed. Care to update the description for that?
 
-This form always verifies the format and arguments.
+Regards,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/block/pktcdvd.c | 107 ++++++++++++++++++++++++------------------------
- 1 file changed, 53 insertions(+), 54 deletions(-)
-
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ff08de1..0281210 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -71,17 +71,13 @@
+Tony
  
- #define DRIVER_NAME	"pktcdvd"
- 
--#if PACKET_DEBUG
--#define DPRINTK(fmt, args...) printk(KERN_NOTICE fmt, ##args)
--#else
--#define DPRINTK(fmt, args...)
--#endif
--
--#if PACKET_DEBUG > 1
--#define VPRINTK(fmt, args...) printk(KERN_NOTICE fmt, ##args)
--#else
--#define VPRINTK(fmt, args...)
--#endif
-+#define pkt_dbg(level, fmt, ...)				\
-+do {								\
-+	if (level == 2 && PACKET_DEBUG >= 2)			\
-+		pr_notice("%s: " fmt, __func__, ##__VA_ARGS__);	\
-+	else if (level == 1 && PACKET_DEBUG >= 1)		\
-+		pr_notice(fmt, ##__VA_ARGS__);			\
-+} while (0)
- 
- #define MAX_SPEED 0xffff
- 
-@@ -519,7 +515,7 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
- {
- 	BUG_ON(atomic_read(&pd->cdrw.pending_bios) <= 0);
- 	if (atomic_dec_and_test(&pd->cdrw.pending_bios)) {
--		VPRINTK(DRIVER_NAME": queue empty\n");
-+		pkt_dbg(2, "queue empty\n");
- 		atomic_set(&pd->iosched.attention, 1);
- 		wake_up(&pd->wqueue);
- 	}
-@@ -875,7 +871,7 @@ static void pkt_iosched_process_queue(struct pktcdvd_device *pd)
- 				need_write_seek = 0;
- 			if (need_write_seek && reads_queued) {
- 				if (atomic_read(&pd->cdrw.pending_bios) > 0) {
--					VPRINTK(DRIVER_NAME": write, waiting\n");
-+					pkt_dbg(2, "write, waiting\n");
- 					break;
- 				}
- 				pkt_flush_cache(pd);
-@@ -884,7 +880,7 @@ static void pkt_iosched_process_queue(struct pktcdvd_device *pd)
- 		} else {
- 			if (!reads_queued && writes_queued) {
- 				if (atomic_read(&pd->cdrw.pending_bios) > 0) {
--					VPRINTK(DRIVER_NAME": read, waiting\n");
-+					pkt_dbg(2, "read, waiting\n");
- 					break;
- 				}
- 				pd->iosched.writing = 1;
-@@ -991,8 +987,9 @@ static void pkt_end_io_read(struct bio *bio, int err,
- 	struct pktcdvd_device *pd = pkt->pd;
- 	BUG_ON(!pd);
- 
--	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
--		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
-+	pkt_dbg(2, "bio=%p sec0=%llx sec=%llx err=%d\n",
-+		bio, (unsigned long long)pkt->sector,
-+		(unsigned long long)bio->bi_sector, err);
- 
- 	if (err)
- 		atomic_inc(&pkt->io_errors);
-@@ -1010,7 +1007,7 @@ static void pkt_end_io_packet_write(struct bio *bio, int err,
- 	struct pktcdvd_device *pd = pkt->pd;
- 	BUG_ON(!pd);
- 
--	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
-+	pkt_dbg(2, "id=%d, err=%d\n", pkt->id, err);
- 
- 	pd->stats.pkt_ended++;
- 
-@@ -1052,7 +1049,7 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	spin_unlock(&pkt->lock);
- 
- 	if (pkt->cache_valid) {
--		VPRINTK("pkt_gather_data: zone %llx cached\n",
-+		pkt_dbg(2, "zone %llx cached\n",
- 			(unsigned long long)pkt->sector);
- 		goto out_account;
- 	}
-@@ -1075,7 +1072,7 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 
- 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
- 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
--		VPRINTK("pkt_gather_data: Adding frame %d, page:%p offs:%d\n",
-+		pkt_dbg(2, "Adding frame %d, page:%p offs:%d\n",
- 			f, pkt->pages[p], offset);
- 		if (!bio_add_page(bio, pkt->pages[p], CD_FRAMESIZE, offset))
- 			BUG();
-@@ -1087,7 +1084,7 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	}
- 
- out_account:
--	VPRINTK("pkt_gather_data: need %d frames for zone %llx\n",
-+	pkt_dbg(2, "need %d frames for zone %llx\n",
- 		frames_read, (unsigned long long)pkt->sector);
- 	pd->stats.pkt_started++;
- 	pd->stats.secs_rg += frames_read * (CD_FRAMESIZE >> 9);
-@@ -1188,7 +1185,8 @@ static inline void pkt_set_state(struct packet_data *pkt, enum packet_data_state
- 		"IDLE", "WAITING", "READ_WAIT", "WRITE_WAIT", "RECOVERY", "FINISHED"
- 	};
- 	enum packet_data_state old_state = pkt->state;
--	VPRINTK("pkt %2d : s=%6llx %s -> %s\n", pkt->id, (unsigned long long)pkt->sector,
-+	pkt_dbg(2, "pkt %2d : s=%6llx %s -> %s\n",
-+		pkt->id, (unsigned long long)pkt->sector,
- 		state_name[old_state], state_name[state]);
- #endif
- 	pkt->state = state;
-@@ -1207,12 +1205,12 @@ static int pkt_handle_queue(struct pktcdvd_device *pd)
- 	struct rb_node *n;
- 	int wakeup;
- 
--	VPRINTK("handle_queue\n");
-+	pkt_dbg(2, "\n");
- 
- 	atomic_set(&pd->scan_queue, 0);
- 
- 	if (list_empty(&pd->cdrw.pkt_free_list)) {
--		VPRINTK("handle_queue: no pkt\n");
-+		pkt_dbg(2, "no pkt\n");
- 		return 0;
- 	}
- 
-@@ -1249,7 +1247,7 @@ try_next_bio:
- 	}
- 	spin_unlock(&pd->lock);
- 	if (!bio) {
--		VPRINTK("handle_queue: no bio\n");
-+		pkt_dbg(2, "no bio\n");
- 		return 0;
- 	}
- 
-@@ -1265,10 +1263,10 @@ try_next_bio:
- 	 * to this packet.
- 	 */
- 	spin_lock(&pd->lock);
--	VPRINTK("pkt_handle_queue: looking for zone %llx\n", (unsigned long long)zone);
-+	pkt_dbg(2, "looking for zone %llx\n", (unsigned long long)zone);
- 	while ((node = pkt_rbtree_find(pd, zone)) != NULL) {
- 		bio = node->bio;
--		VPRINTK("pkt_handle_queue: found zone=%llx\n",
-+		pkt_dbg(2, "found zone=%llx\n",
- 			(unsigned long long)get_zone(bio->bi_sector, pd));
- 		if (get_zone(bio->bi_sector, pd) != zone)
- 			break;
-@@ -1321,7 +1319,7 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
- 			BUG();
- 	}
--	VPRINTK(DRIVER_NAME": vcnt=%d\n", pkt->w_bio->bi_vcnt);
-+	pkt_dbg(2, "vcnt=%d\n", pkt->w_bio->bi_vcnt);
- 
- 	/*
- 	 * Fill-in bvec with data from orig_bios.
-@@ -1332,7 +1330,7 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	pkt_set_state(pkt, PACKET_WRITE_WAIT_STATE);
- 	spin_unlock(&pkt->lock);
- 
--	VPRINTK("pkt_start_write: Writing %d frames for zone %llx\n",
-+	pkt_dbg(2, "Writing %d frames for zone %llx\n",
- 		pkt->write_size, (unsigned long long)pkt->sector);
- 
- 	if (test_bit(PACKET_MERGE_SEGS, &pd->flags) || (pkt->write_size < pkt->frames)) {
-@@ -1364,7 +1362,7 @@ static void pkt_run_state_machine(struct pktcdvd_device *pd, struct packet_data
- {
- 	int uptodate;
- 
--	VPRINTK("run_state_machine: pkt %d\n", pkt->id);
-+	pkt_dbg(2, "pkt %d\n", pkt->id);
- 
- 	for (;;) {
- 		switch (pkt->state) {
-@@ -1403,7 +1401,7 @@ static void pkt_run_state_machine(struct pktcdvd_device *pd, struct packet_data
- 			if (pkt_start_recovery(pkt)) {
- 				pkt_start_write(pd, pkt);
- 			} else {
--				VPRINTK("No recovery possible\n");
-+				pkt_dbg(2, "No recovery possible\n");
- 				pkt_set_state(pkt, PACKET_FINISHED_STATE);
- 			}
- 			break;
-@@ -1424,7 +1422,7 @@ static void pkt_handle_packets(struct pktcdvd_device *pd)
- {
- 	struct packet_data *pkt, *next;
- 
--	VPRINTK("pkt_handle_packets\n");
-+	pkt_dbg(2, "\n");
- 
- 	/*
- 	 * Run state machine for active packets
-@@ -1507,9 +1505,9 @@ static int kcdrwd(void *foobar)
- 			if (PACKET_DEBUG > 1) {
- 				int states[PACKET_NUM_STATES];
- 				pkt_count_states(pd, states);
--				VPRINTK("kcdrwd: i:%d ow:%d rw:%d ww:%d rec:%d fin:%d\n",
--					states[0], states[1], states[2], states[3],
--					states[4], states[5]);
-+				pkt_dbg(2, "i:%d ow:%d rw:%d ww:%d rec:%d fin:%d\n",
-+					states[0], states[1], states[2],
-+					states[3], states[4], states[5]);
- 			}
- 
- 			min_sleep_time = MAX_SCHEDULE_TIMEOUT;
-@@ -1518,9 +1516,9 @@ static int kcdrwd(void *foobar)
- 					min_sleep_time = pkt->sleep_time;
- 			}
- 
--			VPRINTK("kcdrwd: sleeping\n");
-+			pkt_dbg(2, "sleeping\n");
- 			residue = schedule_timeout(min_sleep_time);
--			VPRINTK("kcdrwd: wake up\n");
-+			pkt_dbg(2, "wake up\n");
- 
- 			/* make swsusp happy with our thread */
- 			try_to_freeze();
-@@ -1817,7 +1815,8 @@ static int pkt_writable_disc(struct pktcdvd_device *pd, disc_information *di)
- 		case 0x12: /* DVD-RAM */
- 			return 1;
- 		default:
--			VPRINTK(DRIVER_NAME": Wrong disc profile (%x)\n", pd->mmc3_profile);
-+			pkt_dbg(2, "Wrong disc profile (%x)\n",
-+				pd->mmc3_profile);
- 			return 0;
- 	}
- 
-@@ -2132,7 +2131,7 @@ static noinline_for_stack int pkt_perform_opc(struct pktcdvd_device *pd)
- 	struct request_sense sense;
- 	int ret;
- 
--	VPRINTK(DRIVER_NAME": Performing OPC\n");
-+	pkt_dbg(2, "Performing OPC\n");
- 
- 	init_cdrom_command(&cgc, NULL, 0, CGC_DATA_NONE);
- 	cgc.sense = &sense;
-@@ -2150,12 +2149,12 @@ static int pkt_open_write(struct pktcdvd_device *pd)
- 	unsigned int write_speed, media_write_speed, read_speed;
- 
- 	if ((ret = pkt_probe_settings(pd))) {
--		VPRINTK(DRIVER_NAME": %s failed probe\n", pd->name);
-+		pkt_dbg(2, "%s failed probe\n", pd->name);
- 		return ret;
- 	}
- 
- 	if ((ret = pkt_set_write_settings(pd))) {
--		DPRINTK(DRIVER_NAME": %s failed saving write settings\n", pd->name);
-+		pkt_dbg(1, "%s failed saving write settings\n", pd->name);
- 		return -EIO;
- 	}
- 
-@@ -2167,26 +2166,26 @@ static int pkt_open_write(struct pktcdvd_device *pd)
- 		case 0x13: /* DVD-RW */
- 		case 0x1a: /* DVD+RW */
- 		case 0x12: /* DVD-RAM */
--			DPRINTK(DRIVER_NAME": write speed %ukB/s\n", write_speed);
-+			pkt_dbg(1, "write speed %ukB/s\n", write_speed);
- 			break;
- 		default:
- 			if ((ret = pkt_media_speed(pd, &media_write_speed)))
- 				media_write_speed = 16;
- 			write_speed = min(write_speed, media_write_speed * 177);
--			DPRINTK(DRIVER_NAME": write speed %ux\n", write_speed / 176);
-+			pkt_dbg(1, "write speed %ux\n", write_speed / 176);
- 			break;
- 	}
- 	read_speed = write_speed;
- 
- 	if ((ret = pkt_set_speed(pd, write_speed, read_speed))) {
--		DPRINTK(DRIVER_NAME": %s couldn't set write speed\n", pd->name);
-+		pkt_dbg(1, "%s couldn't set write speed\n", pd->name);
- 		return -EIO;
- 	}
- 	pd->write_speed = write_speed;
- 	pd->read_speed = read_speed;
- 
- 	if ((ret = pkt_perform_opc(pd))) {
--		DPRINTK(DRIVER_NAME": %s Optimum Power Calibration failed\n", pd->name);
-+		pkt_dbg(1, "%s Optimum Power Calibration failed\n", pd->name);
- 	}
- 
- 	return 0;
-@@ -2263,7 +2262,7 @@ out:
- static void pkt_release_dev(struct pktcdvd_device *pd, int flush)
- {
- 	if (flush && pkt_flush_cache(pd))
--		DPRINTK(DRIVER_NAME": %s not flushing cache\n", pd->name);
-+		pkt_dbg(1, "%s not flushing cache\n", pd->name);
- 
- 	pkt_lock_door(pd, 0);
- 
-@@ -2285,7 +2284,7 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
- 	struct pktcdvd_device *pd = NULL;
- 	int ret;
- 
--	VPRINTK(DRIVER_NAME": entering open\n");
-+	pkt_dbg(2, "entering\n");
- 
- 	mutex_lock(&pktcdvd_mutex);
- 	mutex_lock(&ctl_mutex);
-@@ -2321,7 +2320,7 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
- out_dec:
- 	pd->refcnt--;
- out:
--	VPRINTK(DRIVER_NAME": failed open (%d)\n", ret);
-+	pkt_dbg(2, "failed (%d)\n", ret);
- 	mutex_unlock(&ctl_mutex);
- 	mutex_unlock(&pktcdvd_mutex);
- 	return ret;
-@@ -2403,7 +2402,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 	blk_queue_bounce(q, &bio);
- 
- 	zone = get_zone(bio->bi_sector, pd);
--	VPRINTK("pkt_make_request: start = %6llx stop = %6llx\n",
-+	pkt_dbg(2, "start = %6llx stop = %6llx\n",
- 		(unsigned long long)bio->bi_sector,
- 		(unsigned long long)bio_end_sector(bio));
- 
-@@ -2658,7 +2657,7 @@ static int pkt_new_dev(struct pktcdvd_device *pd, dev_t dev)
- 	}
- 
- 	proc_create_data(pd->name, 0, pkt_proc, &pkt_proc_fops, pd);
--	DPRINTK(DRIVER_NAME": writer %s mapped to %s\n", pd->name, bdevname(bdev, b));
-+	pkt_dbg(1, "writer %s mapped to %s\n", pd->name, bdevname(bdev, b));
- 	return 0;
- 
- out_mem:
-@@ -2673,8 +2672,8 @@ static int pkt_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
- 	struct pktcdvd_device *pd = bdev->bd_disk->private_data;
- 	int ret;
- 
--	VPRINTK("pkt_ioctl: cmd %x, dev %d:%d\n", cmd,
--		MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev));
-+	pkt_dbg(2, "cmd %x, dev %d:%d\n",
-+		cmd, MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev));
- 
- 	mutex_lock(&pktcdvd_mutex);
- 	switch (cmd) {
-@@ -2698,7 +2697,7 @@ static int pkt_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
- 		break;
- 
- 	default:
--		VPRINTK(DRIVER_NAME": Unknown ioctl for %s (%x)\n", pd->name, cmd);
-+		pkt_dbg(2, "Unknown ioctl for %s (%x)\n", pd->name, cmd);
- 		ret = -ENOTTY;
- 	}
- 	mutex_unlock(&pktcdvd_mutex);
-@@ -2847,7 +2846,7 @@ static int pkt_remove_dev(dev_t pkt_dev)
- 			break;
- 	}
- 	if (idx == MAX_WRITERS) {
--		DPRINTK(DRIVER_NAME": dev not setup\n");
-+		pkt_dbg(1, "dev not setup\n");
- 		ret = -ENXIO;
- 		goto out;
- 	}
-@@ -2867,7 +2866,7 @@ static int pkt_remove_dev(dev_t pkt_dev)
- 	blkdev_put(pd->bdev, FMODE_READ | FMODE_NDELAY);
- 
- 	remove_proc_entry(pd->name, pkt_proc);
--	DPRINTK(DRIVER_NAME": writer %s unmapped\n", pd->name);
-+	pkt_dbg(1, "writer %s unmapped\n", pd->name);
- 
- 	del_gendisk(pd->disk);
- 	blk_cleanup_queue(pd->disk->queue);
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/mach-omap2/usb-host.c |  106 +++++++++++++++++++++-------------------
+>  1 files changed, 56 insertions(+), 50 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+> index aa27d7f..609b330 100644
+> --- a/arch/arm/mach-omap2/usb-host.c
+> +++ b/arch/arm/mach-omap2/usb-host.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/io.h>
+>  #include <linux/gpio.h>
+>  #include <linux/usb/phy.h>
+> +#include <linux/usb/nop-usb-xceiv.h>
+>  
+>  #include "soc.h"
+>  #include "omap_device.h"
+> @@ -560,7 +561,8 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>  	struct regulator_init_data *reg_data;
+>  	struct fixed_voltage_config *config;
+>  	struct platform_device *pdev;
+> -	int ret;
+> +	struct platform_device_info pdevinfo;
+> +	int ret = -ENOMEM;
+>  
+>  	supplies = kzalloc(sizeof(*supplies), GFP_KERNEL);
+>  	if (!supplies)
+> @@ -571,7 +573,7 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>  
+>  	reg_data = kzalloc(sizeof(*reg_data), GFP_KERNEL);
+>  	if (!reg_data)
+> -		return -ENOMEM;
+> +		goto err_data;
+>  
+>  	reg_data->constraints.valid_ops_mask = REGULATOR_CHANGE_STATUS;
+>  	reg_data->consumer_supplies = supplies;
+> @@ -580,39 +582,53 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>  	config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
+>  			GFP_KERNEL);
+>  	if (!config)
+> -		return -ENOMEM;
+> +		goto err_config;
+> +
+> +	config->supply_name = kstrdup(name, GFP_KERNEL);
+> +	if (!config->supply_name)
+> +		goto err_supplyname;
+>  
+> -	config->supply_name = name;
+>  	config->gpio = gpio;
+>  	config->enable_high = polarity;
+>  	config->init_data = reg_data;
+>  
+>  	/* create a regulator device */
+> -	pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+> -	if (!pdev)
+> -		return -ENOMEM;
+> +	memset(&pdevinfo, 0, sizeof(pdevinfo));
+> +	pdevinfo.name = reg_name;
+> +	pdevinfo.id = PLATFORM_DEVID_AUTO;
+> +	pdevinfo.data = config;
+> +	pdevinfo.size_data = sizeof(*config);
+>  
+> -	pdev->id = PLATFORM_DEVID_AUTO;
+> -	pdev->name = reg_name;
+> -	pdev->dev.platform_data = config;
+> +	pdev = platform_device_register_full(&pdevinfo);
+> +	if (IS_ERR(pdev)) {
+> +		ret = PTR_ERR(pdev);
+> +		pr_err("%s: Failed registering regulator %s for %s : %d\n",
+> +				__func__, name, dev_id, ret);
+> +		goto err_register;
+> +	}
+>  
+> -	ret = platform_device_register(pdev);
+> -	if (ret)
+> -		pr_err("%s: Failed registering regulator %s for %s\n",
+> -				__func__, name, dev_id);
+> +	return 0;
+>  
+> +err_register:
+> +	kfree(config->supply_name);
+> +err_supplyname:
+> +	kfree(config);
+> +err_config:
+> +	kfree(reg_data);
+> +err_data:
+> +	kfree(supplies);
+>  	return ret;
+>  }
+>  
+> +#define MAX_STR 20
+> +
+>  int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>  {
+> -	char *rail_name;
+> -	int i, len;
+> +	char rail_name[MAX_STR];
+> +	int i;
+>  	struct platform_device *pdev;
+>  	char *phy_id;
+> -
+> -	/* the phy_id will be something like "nop_usb_xceiv.1" */
+> -	len = strlen(nop_name) + 3; /* 3 -> ".1" and NULL terminator */
+> +	struct platform_device_info pdevinfo;
+>  
+>  	for (i = 0; i < num_phys; i++) {
+>  
+> @@ -627,25 +643,26 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>  			!gpio_is_valid(phy->vcc_gpio))
+>  			continue;
+>  
+> -		/* create a NOP PHY device */
+> -		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+> -		if (!pdev)
+> -			return -ENOMEM;
+> -
+> -		pdev->id = phy->port;
+> -		pdev->name = nop_name;
+> -		pdev->dev.platform_data = phy->platform_data;
+> -
+> -		phy_id = kmalloc(len, GFP_KERNEL);
+> -		if (!phy_id)
+> +		phy_id = kmalloc(MAX_STR, GFP_KERNEL);
+> +		if (!phy_id) {
+> +			pr_err("%s: kmalloc() failed\n", __func__);
+>  			return -ENOMEM;
+> +		}
+>  
+> -		scnprintf(phy_id, len, "nop_usb_xceiv.%d\n",
+> -					pdev->id);
+> -
+> -		if (platform_device_register(pdev)) {
+> -			pr_err("%s: Failed to register device %s\n",
+> -				__func__,  phy_id);
+> +		/* create a NOP PHY device */
+> +		memset(&pdevinfo, 0, sizeof(pdevinfo));
+> +		pdevinfo.name = nop_name;
+> +		pdevinfo.id = phy->port;
+> +		pdevinfo.data = phy->platform_data;
+> +		pdevinfo.size_data = sizeof(struct nop_usb_xceiv_platform_data);
+> +
+> +		scnprintf(phy_id, MAX_STR, "nop_usb_xceiv.%d",
+> +					phy->port);
+> +		pdev = platform_device_register_full(&pdevinfo);
+> +		if (IS_ERR(pdev)) {
+> +			pr_err("%s: Failed to register device %s : %ld\n",
+> +				__func__,  phy_id, PTR_ERR(pdev));
+> +			kfree(phy_id);
+>  			continue;
+>  		}
+>  
+> @@ -653,26 +670,15 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>  
+>  		/* Do we need RESET regulator ? */
+>  		if (gpio_is_valid(phy->reset_gpio)) {
+> -
+> -			rail_name = kmalloc(13, GFP_KERNEL);
+> -			if (!rail_name)
+> -				return -ENOMEM;
+> -
+> -			scnprintf(rail_name, 13, "hsusb%d_reset", phy->port);
+> -
+> +			scnprintf(rail_name, MAX_STR,
+> +					"hsusb%d_reset", phy->port);
+>  			usbhs_add_regulator(rail_name, phy_id, "reset",
+>  						phy->reset_gpio, 1);
+>  		}
+>  
+>  		/* Do we need VCC regulator ? */
+>  		if (gpio_is_valid(phy->vcc_gpio)) {
+> -
+> -			rail_name = kmalloc(13, GFP_KERNEL);
+> -			if (!rail_name)
+> -				return -ENOMEM;
+> -
+> -			scnprintf(rail_name, 13, "hsusb%d_vcc", phy->port);
+> -
+> +			scnprintf(rail_name, MAX_STR, "hsusb%d_vcc", phy->port);
+>  			usbhs_add_regulator(rail_name, phy_id, "vcc",
+>  					phy->vcc_gpio, phy->vcc_polarity);
+>  		}
+> -- 
+> 1.7.4.1
+> 
