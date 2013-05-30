@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935388Ab3E3QKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:10:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51059 "EHLO
+	id S935454Ab3E3QKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:10:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51064 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934650Ab3E3QC0 (ORCPT
+	with ESMTP id S934656Ab3E3QC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 12:02:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sam Ravnborg <sam@ravnborg.org>, Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 43/66] perf tools: Move libperl check config into config/Makefile
-Date: Thu, 30 May 2013 19:01:16 +0300
-Message-Id: <1369929699-8724-44-git-send-email-acme@infradead.org>
+Subject: [PATCH 42/66] perf tools: Move gtk2 check config into config/Makefile
+Date: Thu, 30 May 2013 19:01:15 +0300
+Message-Id: <1369929699-8724-43-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Moving libperl check config into config/Makefile.
+Moving gtk2 check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Borislav Petkov <bp@alien8.de>
@@ -43,71 +43,70 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-12-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1369398928-9809-11-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile        | 20 +++-----------------
- tools/perf/config/Makefile | 21 +++++++++++++++++++++
- 2 files changed, 24 insertions(+), 17 deletions(-)
+ tools/perf/Makefile        | 25 +++++++------------------
+ tools/perf/config/Makefile | 15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8e59a4d..f856bb5 100644
+index f0c23ce..8e59a4d 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -530,23 +530,9 @@ ifndef NO_GTK2
- 	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+@@ -521,24 +521,13 @@ ifndef NO_SLANG
  endif
  
--ifdef NO_LIBPERL
--	BASIC_CFLAGS += -DNO_LIBPERL
--else
--       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
--       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
--       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
--	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
--	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
--
--	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
--		BASIC_CFLAGS += -DNO_LIBPERL
+ ifndef NO_GTK2
+-	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+-	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+-		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
 -	else
--               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
--               EXTLIBS += $(PERL_EMBED_LIBADD)
--		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
--		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
+-		endif
+-		BASIC_CFLAGS += -DGTK2_SUPPORT
+-		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+-		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
 -	endif
-+ifndef NO_LIBPERL
-+	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
-+	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/util.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
  endif
  
- disable-python = $(eval $(disable-python_code))
+ ifdef NO_LIBPERL
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 8cf0958..a42c7b8 100644
+index 06634be..8cf0958 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -240,3 +240,24 @@ ifndef NO_GTK2
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+@@ -225,3 +225,18 @@ ifndef NO_SLANG
+ 		EXTLIBS += -lslang
  	endif
  endif
 +
-+grep-libs  = $(filter -l%,$(1))
-+strip-libs = $(filter-out -l%,$(1))
-+
-+ifdef NO_LIBPERL
-+	BASIC_CFLAGS += -DNO_LIBPERL
-+else
-+	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
-+	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
-+	PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
-+	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
-+	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
-+
-+	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
-+		BASIC_CFLAGS += -DNO_LIBPERL
-+		NO_LIBPERL := 1
++ifndef NO_GTK2
++	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
++		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
++		NO_GTK2 := 1
 +	else
-+		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
-+		EXTLIBS += $(PERL_EMBED_LIBADD)
++		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
++			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
++		endif
++		BASIC_CFLAGS += -DGTK2_SUPPORT
++		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
 +	endif
 +endif
 -- 
