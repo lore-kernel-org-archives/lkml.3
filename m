@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935080Ab3E3LmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:42:01 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40983 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933964Ab3E3Llb (ORCPT
+	id S1752473Ab3E3LmP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:42:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36528 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934974Ab3E3Llt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:41:31 -0400
-Date: Thu, 30 May 2013 13:41:27 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Lars Poeschel <poeschel@lemonage.de>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Ryan Mallon <rmallon@gmail.com>,
-        "mcrapet@gmail.com" <mcrapet@gmail.com>
-Subject: Re: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion to
- PWM framework
-Message-ID: <20130530114126.GC20194@mithrandir>
-References: <201305241619.52328.hartleys@visionengravers.com>
- <201305271912.08882.arnd@arndb.de>
- <20130528110011.GC11547@mithrandir>
- <201305281342.05530.poeschel@lemonage.de>
- <ADE657CA350FB648AAC2C43247A983F0021DA657044E@AUSP01VMBX24.collaborationhost.net>
+	Thu, 30 May 2013 07:41:49 -0400
+Date: Thu, 30 May 2013 12:41:12 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: A bug about system call on ARM
+Message-ID: <20130530114112.GH7483@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+ <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0021DA657044E@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <20130530090949.GC7483@mudshark.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
+> On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
+> > If you have some patch for this issue,
+> > I can do the test for it .
+> 
+> I'll have a look at cooking something which uses an exception table entry
+> to rewind the PC and retry the system call. That's simpler than directly
+> injecting a user page fault from the system call path.
 
---lCAWRPmW1mITcIfM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, please can you try the following?
 
-On Wed, May 29, 2013 at 04:33:21PM -0500, H Hartley Sweeten wrote:
-> On Tuesday, May 28, 2013 4:42 AM, Lars Poeschel wrote:
-> > On Tuesday 28 May 2013 at 13:00:12, Thierry Reding wrote:
-> >> I've added Lars Poeschel on Cc, who's done some work on a sysfs
-> >> interface for the PWM subsystem already. It's undergone some review
-> >> already[0] and I think he's working on a v2 now.
-> >>=20
-> >> Thierry
-> >>=20
-> >> [0]: http://marc.info/?l=3Dlinux-kernel&m=3D136499756101273&w=3D2
-> >
-> > I currently do not have the time to work on a v2 of the pwm sysfs patch=
- but=20
-> > I will do it as soon as possible - if not someone else will do.=20
-> > Unfortunately my current involvements in other project will not allow m=
-e to=20
-> > do so for at least next two months.
-> > I received some off-list reactions to my patches from users asking for =
-pwm=20
-> > sysfs, so there is definitely a need for it!
-> > If you decide to take attempt 2) (which is preferable) I recommend you =
-to=20
-> > take a look at what I have done and Thierrys review comments. I took th=
-e=20
-> > gpiolib way and the result got rejected for very good reasons.
->=20
-> I just posted a PWM sysfs interface patch based on the previous work by
-> Lars. Hopefully I addressed all of Thierrys review comments.
+Will
 
-I can't find it anywhere. Maybe you used my @avionic-design.de email
-address? Could you please repost using the @gmail.com address, as I have
-only unreliable access to the other one ATM. And please also Cc the all
-new linux-pwm@vger.kernel.org mailing list.
+--->8
 
-Thanks,
-Thierry
-
---lCAWRPmW1mITcIfM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRpzrmAAoJEN0jrNd/PrOhNNAQAJQMN0XpxwLg4qZMiT4S5UD8
-veS9124qhdQ/vYxa6EKkDyCwOXlvB6iSXLtRGTA6wWYz9Se1bMxMHE3EwsKSPHMx
-CbQHUcRxq+jehjOoEmPaa9pPYttXJZQ5XIsgZmmL1Q4O+1TaLYDNHVg47GD3o1yH
-PiGoQm7IYl98ijnLTtUfs4DPa4LRccSWTPjdXmR0Aqx/KLC0pf5egB5hAZhnnnae
-XPy9PjG7neVwWYOrAAqyJNFXqZYA7Cn5y8H9LZcI/YocCO2qoDcLrNMjg/la9WDo
-R6hSaGa5bw+3P5QJKr0E5DrQc95nV/lcW4zq0giXxe05su1TAEBuJcUuOGC476nJ
-HoiyNZQPQyVM2tA/SRrcZfxae6F9oK5Uo8LYstqQWPT3IuhgLYY/OCMYqtwUvy8b
-fbBsp1Fmv895C6OhVilzU3KGIOj0m86nyHmU54jjwWxyHsi9y+r1OQRRqGSBPZpH
-n/kHH4+djG23uxgfgiCyf3dcTQhK5jVv/7NwnbhGT0RKVjYjCsZ139GoiztjDurR
-ISfCs2diznjtOGOMrsKOah5SaqVCT8ubKd5RyKFBHUgj7xW1x5jUWCj+CE3wqTD3
-40Qp5prKnnIO53kGjsCjUn2/m6sSfPJ4lb29A+u0Uewm/kfdCYttUoVYsXNUPGxZ
-BLw+Wj3rpbNm13TGsJ6u
-=H3n+
------END PGP SIGNATURE-----
-
---lCAWRPmW1mITcIfM--
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index bc5bc0a..855926e 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -361,6 +361,15 @@ ENTRY(vector_swi)
+ 	str	r8, [sp, #S_PSR]		@ Save CPSR
+ 	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
+ 	zero_fp
++	enable_irq
++	ct_user_exit
++
++#ifdef CONFIG_ALIGNMENT_TRAP
++	ldr	ip, __cr_alignment
++	ldr	ip, [ip]
++	mcr	p15, 0, ip, c1, c0		@ update control register
++#endif
++	get_thread_info tsk
+ 
+ 	/*
+ 	 * Get the system call number.
+@@ -375,9 +384,9 @@ ENTRY(vector_swi)
+ #ifdef CONFIG_ARM_THUMB
+ 	tst	r8, #PSR_T_BIT
+ 	movne	r10, #0				@ no thumb OABI emulation
+-	ldreq	r10, [lr, #-4]			@ get SWI instruction
++ USER(	ldreq	r10, [lr, #-4]		)	@ get SWI instruction
+ #else
+-	ldr	r10, [lr, #-4]			@ get SWI instruction
++ USER(	ldr	r10, [lr, #-4]		)	@ get SWI instruction
+ #endif
+ #ifdef CONFIG_CPU_ENDIAN_BE8
+ 	rev	r10, r10			@ little endian instruction
+@@ -392,22 +401,13 @@ ENTRY(vector_swi)
+ 	/* Legacy ABI only, possibly thumb mode. */
+ 	tst	r8, #PSR_T_BIT			@ this is SPSR from save_user_regs
+ 	addne	scno, r7, #__NR_SYSCALL_BASE	@ put OS number in
+-	ldreq	scno, [lr, #-4]
++ USER(	ldreq	scno, [lr, #-4]		)
+ 
+ #else
+ 	/* Legacy ABI only. */
+-	ldr	scno, [lr, #-4]			@ get SWI instruction
+-#endif
+-
+-#ifdef CONFIG_ALIGNMENT_TRAP
+-	ldr	ip, __cr_alignment
+-	ldr	ip, [ip]
+-	mcr	p15, 0, ip, c1, c0		@ update control register
++ USER(	ldr	scno, [lr, #-4]		)	@ get SWI instruction
+ #endif
+-	enable_irq
+-	ct_user_exit
+ 
+-	get_thread_info tsk
+ 	adr	tbl, sys_call_table		@ load syscall table pointer
+ 
+ #if defined(CONFIG_OABI_COMPAT)
+@@ -442,6 +442,18 @@ local_restart:
+ 	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
+ 	bcs	arm_syscall	
+ 	b	sys_ni_syscall			@ not private func
++
++#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
++	/*
++	 * We may have faulted trying to load the SWI instruction due to
++	 * concurrent page aging on another CPU. In this case, return
++	 * back to the swi instruction and fault the page back.
++	 */
++9001:
++	sub	lr, lr, #4
++	str	lr, [sp, #S_PC]
++	b	ret_fast_syscall
++#endif
+ ENDPROC(vector_swi)
+ 
+ 	/*
