@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380Ab3E3PHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:07:55 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:60665 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab3E3PHq (ORCPT
+	id S933510Ab3E3PJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:09:35 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:45635 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933425Ab3E3PJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:07:46 -0400
-Date: Thu, 30 May 2013 17:07:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130530150539.GA18155@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
+	Thu, 30 May 2013 11:09:27 -0400
+Message-ID: <51A76B2F.8010904@mellanox.com>
+Date: Thu, 30 May 2013 18:07:27 +0300
+From: Amir Vadai <amirv@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        <e1000-devel@lists.sourceforge.net>,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v7 net-next 2/5] net: implement support for low latency
+ socket polling
+References: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com> <20130530114111.12653.25023.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130530114111.12653.25023.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-05-13 18:18:10, David Rientjes wrote:
-> Completely disabling the oom killer for a memcg is problematic if
-> userspace is unable to address the condition itself, usually because it
-> is unresponsive. 
+On 30/05/2013 14:41, Eliezer Tamir wrote:
+> diff --git a/fs/select.c b/fs/select.c
+> index 8c1c96c..f116bf0 100644
+> --- a/fs/select.c
+> +++ b/fs/select.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/rcupdate.h>
+>  #include <linux/hrtimer.h>
+>  #include <linux/sched/rt.h>
+> +#include <net/ll_poll.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -400,6 +401,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+>  	poll_table *wait;
+>  	int retval, i, timed_out = 0;
+>  	unsigned long slack = 0;
+> +	cycles_t ll_time = ll_end_time();
+>  
+>  	rcu_read_lock();
+>  	retval = max_select_fd(n, fds);
+> @@ -486,6 +488,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+>  			break;
+>  		}
+>  
+> +		if (can_poll_ll(ll_time))
+> +			continue;
+I don't see here discrimination between sockets that you want to poll
+and other sockets.
+So it means that select will busy poll every type of file descriptor
+instead of going to sleep.
+Should have a condition with something like sk_valid_ll()
 
-Isn't this a bug in the userspace oom handler? Why is it unresponsive? It
-shouldn't allocated any memory so nothing should prevent it from running (if
-other tasks are preempting it permanently then the priority of the handler
-should be increased).
+>  		/*
+>  		 * If this is the first loop and we have a timeout
+>  		 * given, then we convert to ktime_t and set the to
 
-> This scenario creates a memcg deadlock: tasks are
-> sitting in TASK_KILLABLE waiting for the limit to be increased, a task to
-> exit or move, or the oom killer reenabled and userspace is unable to do
-> so.
->
-> An additional possible use case is to defer oom killing within a memcg
-> for a set period of time, probably to prevent unnecessary kills due to
-> temporary memory spikes, before allowing the kernel to handle the
-> condition.
 
-I am not sure I like the idea. How does an admin decide what is the right value
-of the timeout? And why he cannot use userspace oom handler to do the same
-thing?
+...
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+> +{
+> +}
+> +
+> +static inline bool can_poll_ll(unsigned long end_time)
+should use here cycles_t too.
+
+> +{
+> +	return false;
+> +}
+> +
+> +#endif /* CONFIG_NET_LL_RX_POLL */
+> +#endif /* _LINUX_NET_LL_POLL_H */
+
+
+Also, something general about this patch. I think you should split out
+to separate patches all the users of the feature, like you did for TCP.
+I would suggest small patches for UDP, select and poll.
+
+Thanks,
+Amir
