@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967725Ab3E3HIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:08:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:25445 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S967670Ab3E3HIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:08:10 -0400
-X-IronPort-AV: E=Sophos;i="4.87,769,1363104000"; 
-   d="scan'208";a="7410466"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH] powerpc/pseries: use 'true' instead of '1' for orderly_poweroff
-Date: Thu, 30 May 2013 15:07:31 +0800
-Message-Id: <1369897651-23770-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 15:06:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 15:06:37,
-	Serialize complete at 2013/05/30 15:06:37
+	id S967746Ab3E3HJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:09:58 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:34751 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967694Ab3E3HJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 03:09:48 -0400
+X-Auth-Info: OZKifq6bWXZneJBlKahCLeULRV3zEuHK17vesllbCFA=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: m68k: math-emu: unsigned issue, 'unsigned long' will never be less than zero.
+References: <51A6F0C6.9050806@asianux.com>
+X-Yow: Is it clean in other dimensions?
+Date: Thu, 30 May 2013 09:09:38 +0200
+In-Reply-To: <51A6F0C6.9050806@asianux.com> (Chen Gang's message of "Thu, 30
+	May 2013 14:25:10 +0800")
+Message-ID: <m2a9ndndu5.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-orderly_poweroff is expecting a bool parameter, so
-use 'ture' instead '1'
+Chen Gang <gang.chen@asianux.com> writes:
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- arch/powerpc/platforms/pseries/ras.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> 'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
+> author wanted to check the highest bit whether set.
+>
+> So need type cast form 'unsigned long' to 'long'.
 
-diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
-index c4dfccd..79b9502 100644
---- a/arch/powerpc/platforms/pseries/ras.c
-+++ b/arch/powerpc/platforms/pseries/ras.c
-@@ -83,7 +83,7 @@ static void handle_system_shutdown(char event_modifier)
- 	switch (event_modifier) {
- 	case EPOW_SHUTDOWN_NORMAL:
- 		pr_emerg("Firmware initiated power off");
--		orderly_poweroff(1);
-+		orderly_poweroff(true);
- 		break;
- 
- 	case EPOW_SHUTDOWN_ON_UPS:
-@@ -95,13 +95,13 @@ static void handle_system_shutdown(char event_modifier)
- 		pr_emerg("Loss of system critical functions reported by "
- 			"firmware");
- 		pr_emerg("Check RTAS error log for details");
--		orderly_poweroff(1);
-+		orderly_poweroff(true);
- 		break;
- 
- 	case EPOW_SHUTDOWN_AMBIENT_TEMPERATURE_TOO_HIGH:
- 		pr_emerg("Ambient temperature too high reported by firmware");
- 		pr_emerg("Check RTAS error log for details");
--		orderly_poweroff(1);
-+		orderly_poweroff(true);
- 		break;
- 
- 	default:
-@@ -162,7 +162,7 @@ void rtas_parse_epow_errlog(struct rtas_error_log *log)
- 
- 	case EPOW_SYSTEM_HALT:
- 		pr_emerg("Firmware initiated power off");
--		orderly_poweroff(1);
-+		orderly_poweroff(ture);
- 		break;
- 
- 	case EPOW_MAIN_ENCLOSURE:
+Better to make the bit test explicit, since it is not a sign bit.
+
+> diff --git a/arch/m68k/math-emu/fp_arith.c b/arch/m68k/math-emu/fp_arith.c
+> index 08f286d..ef013c5 100644
+> --- a/arch/m68k/math-emu/fp_arith.c
+> +++ b/arch/m68k/math-emu/fp_arith.c
+> @@ -519,7 +519,7 @@ static void fp_roundint(struct fp_ext *dest, int mode)
+>  				return;
+>  			break;
+>  		case 0x401e:
+> -			if (!(oldmant.m32[1] >= 0))
+> +			if (!((long)oldmant.m32[1] >= 0))
+
+			if (oldmant.m32[1] & 0x80000000)
+
+Andreas.
+
 -- 
-1.7.2.5
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
