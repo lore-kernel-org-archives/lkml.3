@@ -1,216 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab3E3OJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:09:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43081 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab3E3OI6 (ORCPT
+	id S932497Ab3E3ON3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:13:29 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:42909 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab3E3ONZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:08:58 -0400
-Message-ID: <51A75D76.5090700@canonical.com>
-Date: Thu, 30 May 2013 16:08:54 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 30 May 2013 10:13:25 -0400
+To: alsa-devel@alsa-project.org
+Subject: [PATCH] [resend] snd-es1968: Add radio support for MediaForte M56VAP
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Thu, 30 May 2013 16:13:09 +0200
 MIME-Version: 1.0
-To: Inki Dae <inki.dae@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, peterz@infradead.org, x86@kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        robclark@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v4 2/4] mutex: add support for wound/wait style locks,
- v5
-References: <20130528144420.4538.70725.stgit@patser> <20130528144839.4538.39821.stgit@patser> <CAAQKjZMPw7Lnn7VFYVkN_ViJgTzREy_uSTFXKHRnEEzo+_=yRg@mail.gmail.com>
-In-Reply-To: <CAAQKjZMPw7Lnn7VFYVkN_ViJgTzREy_uSTFXKHRnEEzo+_=yRg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305301613.09234.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 29-05-13 12:33, Inki Dae schreef:
-> Hi,
->
-> Just minor comments
->
-> +Usage
->> +-----
->> +
->> +Three different ways to acquire locks within the same w/w class. Common
->> +definitions for methods #1 and #2:
->> +
->> +static DEFINE_WW_CLASS(ww_class);
->> +
->> +struct obj {
->> +       struct ww_mutex lock;
->> +       /* obj data */
->> +};
->> +
->> +struct obj_entry {
->> +       struct list_head *list;
->> +       struct obj *obj;
->> +};
->> +
->> +Method 1, using a list in execbuf->buffers that's not allowed to be
->> reordered.
->> +This is useful if a list of required objects is already tracked somewhere.
->> +Furthermore the lock helper can use propagate the -EALREADY return code
->> back to
->> +the caller as a signal that an object is twice on the list. This is
->> useful if
->> +the list is constructed from userspace input and the ABI requires
->> userspace to
->> +not have duplicate entries (e.g. for a gpu commandbuffer submission
->> ioctl).
->> +
->> +int lock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
->> +{
->> +       struct obj *res_obj = NULL;
->> +       struct obj_entry *contended_entry = NULL;
->> +       struct obj_entry *entry;
->> +
->> +       ww_acquire_init(ctx, &ww_class);
->> +
->> +retry:
->> +       list_for_each_entry (list, entry) {
->> +               if (entry == res_obj) {
->>
-Indeed, documentation was wrong. With the below diff it should almost compile now.
-I really don't want to know if it really does, it's meant to be documentation!
+Add support for TEA5757 tuner on MediaForte M56VAP sound+modem+radio card.
+The GPIO connection type is automatically detected (like snd-fm801 driver).
 
-diff --git a/Documentation/ww-mutex-design.txt b/Documentation/ww-mutex-design.txt
-index 8bd1761..379739c 100644
---- a/Documentation/ww-mutex-design.txt
-+++ b/Documentation/ww-mutex-design.txt
-@@ -100,7 +100,7 @@ struct obj {
+Also add a safety subsystem vendor check to skip radio detection if vendor
+differs from ESS (so we don't touch GPIOs on laptops).
+
+Tested with SF64-PCE2 and M56VAP cards.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ sound/pci/es1968.c |   73 +++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 50 insertions(+), 23 deletions(-)
+
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index a1f32b5..db08641 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -564,6 +564,7 @@ struct es1968 {
+ #ifdef CONFIG_SND_ES1968_RADIO
+ 	struct v4l2_device v4l2_dev;
+ 	struct snd_tea575x tea;
++	unsigned int tea575x_tuner;
+ #endif
  };
  
- struct obj_entry {
--	struct list_head *list;
-+	struct list_head head;
- 	struct obj *obj;
- };
+@@ -2557,37 +2558,47 @@ static int snd_es1968_input_register(struct es1968 *chip)
+ 				bits 1=unmask write to given bit */
+ #define IO_DIR		8      /* direction register offset from GPIO_DATA
+ 				bits 0/1=read/write direction */
+-/* mask bits for GPIO lines */
+-#define STR_DATA	0x0040 /* GPIO6 */
+-#define STR_CLK		0x0080 /* GPIO7 */
+-#define STR_WREN	0x0100 /* GPIO8 */
+-#define STR_MOST	0x0200 /* GPIO9 */
++
++/* GPIO to TEA575x maps */
++struct snd_es1968_tea575x_gpio {
++	u8 data, clk, wren, most;
++	char *name;
++};
++
++static struct snd_es1968_tea575x_gpio snd_es1968_tea575x_gpios[] = {
++	{ .data = 6, .clk = 7, .wren = 8, .most = 9, .name = "SF64-PCE2" },
++	{ .data = 7, .clk = 8, .wren = 6, .most = 10, .name = "M56VAP" },
++};
++
++#define get_tea575x_gpio(chip) \
++	(&snd_es1968_tea575x_gpios[(chip)->tea575x_tuner])
++
  
-@@ -120,14 +120,14 @@ int lock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
- 	ww_acquire_init(ctx, &ww_class);
- 
- retry:
--	list_for_each_entry (list, entry) {
--		if (entry == res_obj) {
-+	list_for_each_entry (entry, list, head) {
-+		if (entry->obj == res_obj) {
- 			res_obj = NULL;
- 			continue;
- 		}
- 		ret = ww_mutex_lock(&entry->obj->lock, ctx);
- 		if (ret < 0) {
--			contended_obj = entry;
-+			contended_entry = entry;
- 			goto err;
- 		}
- 	}
-@@ -136,7 +136,7 @@ retry:
- 	return 0;
- 
- err:
--	list_for_each_entry_continue_reverse (list, contended_entry, entry)
-+	list_for_each_entry_continue_reverse (entry, list, head)
- 		ww_mutex_unlock(&entry->obj->lock);
- 
- 	if (res_obj)
-@@ -163,13 +163,13 @@ int lock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
- 
- 	ww_acquire_init(ctx, &ww_class);
- 
--	list_for_each_entry (list, entry) {
-+	list_for_each_entry (entry, list, head) {
- 		ret = ww_mutex_lock(&entry->obj->lock, ctx);
- 		if (ret < 0) {
- 			entry2 = entry;
- 
--			list_for_each_entry_continue_reverse (list, entry2)
--				ww_mutex_unlock(&entry->obj->lock);
-+			list_for_each_entry_continue_reverse (entry2, list, head)
-+				ww_mutex_unlock(&entry2->obj->lock);
- 
- 			if (ret != -EDEADLK) {
- 				ww_acquire_fini(ctx);
-@@ -184,8 +184,8 @@ int lock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
- 			 * buf->next to the first unlocked entry,
- 			 * restarting the for loop.
- 			 */
--			list_del(&entry->list);
--			list_add(&entry->list, list);
-+			list_del(&entry->head);
-+			list_add(&entry->head, list);
- 		}
- 	}
- 
-@@ -199,7 +199,7 @@ void unlock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
+ static void snd_es1968_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
  {
- 	struct obj_entry *entry;
+ 	struct es1968 *chip = tea->private_data;
+-	unsigned long io = chip->io_port + GPIO_DATA;
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
+ 	u16 val = 0;
  
--	list_for_each_entry (list, entry)
-+	list_for_each_entry (entry, list, head)
- 		ww_mutex_unlock(&entry->obj->lock);
+-	val |= (pins & TEA575X_DATA) ? STR_DATA : 0;
+-	val |= (pins & TEA575X_CLK)  ? STR_CLK  : 0;
+-	val |= (pins & TEA575X_WREN) ? STR_WREN : 0;
++	val |= (pins & TEA575X_DATA) ? (1 << gpio.data) : 0;
++	val |= (pins & TEA575X_CLK)  ? (1 << gpio.clk)  : 0;
++	val |= (pins & TEA575X_WREN) ? (1 << gpio.wren) : 0;
  
- 	ww_acquire_fini(ctx);
-@@ -244,22 +244,21 @@ struct obj {
+-	outw(val, io);
++	outw(val, chip->io_port + GPIO_DATA);
+ }
  
- static DEFINE_WW_CLASS(ww_class);
- 
--void __unlock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
-+void __unlock_objs(struct list_head *list)
+ static u8 snd_es1968_tea575x_get_pins(struct snd_tea575x *tea)
  {
--	struct obj entry;
-+	struct obj *entry, *temp;
+ 	struct es1968 *chip = tea->private_data;
+-	unsigned long io = chip->io_port + GPIO_DATA;
+-	u16 val = inw(io);
+-	u8 ret;
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
++	u16 val = inw(chip->io_port + GPIO_DATA);
++	u8 ret = 0;
  
--	for_each_safe (list, entry) {
-+	list_for_each_entry_safe (entry, temp, list, locked_list) {
- 		/* need to do that before unlocking, since only the current lock holder is
- 		allowed to use object */
--		list_del(entry->locked_list);
-+		list_del(&entry->locked_list);
- 		ww_mutex_unlock(entry->ww_mutex)
+-	ret = 0;
+-	if (val & STR_DATA)
++	if (val & (1 << gpio.data))
+ 		ret |= TEA575X_DATA;
+-	if (val & STR_MOST)
++	if (val & (1 << gpio.most))
+ 		ret |= TEA575X_MOST;
++
+ 	return ret;
+ }
+ 
+@@ -2596,13 +2607,18 @@ static void snd_es1968_tea575x_set_direction(struct snd_tea575x *tea, bool outpu
+ 	struct es1968 *chip = tea->private_data;
+ 	unsigned long io = chip->io_port + GPIO_DATA;
+ 	u16 odir = inw(io + IO_DIR);
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
+ 
+ 	if (output) {
+-		outw(~(STR_DATA | STR_CLK | STR_WREN), io + IO_MASK);
+-		outw(odir | STR_DATA | STR_CLK | STR_WREN, io + IO_DIR);
++		outw(~((1 << gpio.data) | (1 << gpio.clk) | (1 << gpio.wren)),
++			io + IO_MASK);
++		outw(odir | (1 << gpio.data) | (1 << gpio.clk) | (1 << gpio.wren),
++			io + IO_DIR);
+ 	} else {
+-		outw(~(STR_CLK | STR_WREN | STR_DATA | STR_MOST), io + IO_MASK);
+-		outw((odir & ~(STR_DATA | STR_MOST)) | STR_CLK | STR_WREN, io + IO_DIR);
++		outw(~((1 << gpio.clk) | (1 << gpio.wren) | (1 << gpio.data) | (1 << gpio.most)),
++			io + IO_MASK);
++		outw((odir & ~((1 << gpio.data) | (1 << gpio.most)))
++			| (1 << gpio.clk) | (1 << gpio.wren), io + IO_DIR);
  	}
  }
  
- void lock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
- {
--	struct list_head locked_buffers;
--	struct obj obj = NULL, entry;
-+	struct obj *obj;
+@@ -2772,6 +2788,9 @@ static int snd_es1968_create(struct snd_card *card,
+ 	snd_card_set_dev(card, &pci->dev);
  
- 	ww_acquire_init(ctx, &ww_class);
+ #ifdef CONFIG_SND_ES1968_RADIO
++	/* don't play with GPIOs on laptops */
++	if (chip->pci->subsystem_vendor != 0x125d)
++		goto no_radio;
+ 	err = v4l2_device_register(&pci->dev, &chip->v4l2_dev);
+ 	if (err < 0) {
+ 		snd_es1968_free(chip);
+@@ -2781,10 +2800,18 @@ static int snd_es1968_create(struct snd_card *card,
+ 	chip->tea.private_data = chip;
+ 	chip->tea.radio_nr = radio_nr;
+ 	chip->tea.ops = &snd_es1968_tea_ops;
+-	strlcpy(chip->tea.card, "SF64-PCE2", sizeof(chip->tea.card));
+ 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
+-	if (!snd_tea575x_init(&chip->tea, THIS_MODULE))
+-		printk(KERN_INFO "es1968: detected TEA575x radio\n");
++	for (i = 0; i < ARRAY_SIZE(snd_es1968_tea575x_gpios); i++) {
++		chip->tea575x_tuner = i;
++		if (!snd_tea575x_init(&chip->tea, THIS_MODULE)) {
++			snd_printk(KERN_INFO "es1968: detected TEA575x radio type %s\n",
++				   get_tea575x_gpio(chip)->name);
++			strlcpy(chip->tea.card, get_tea575x_gpio(chip)->name,
++				sizeof(chip->tea.card));
++			break;
++		}
++	}
++no_radio:
+ #endif
  
-@@ -275,15 +274,15 @@ retry:
- 			continue;
- 		}
- 		if (ret == -EDEADLK) {
--			__unlock_objs(list, ctx);
-+			__unlock_objs(list);
- 
- 			ww_mutex_lock_slow(obj, ctx);
--			list_add(locked_buffers, entry->locked_list);
-+			list_add(&entry->locked_list, list);
- 			goto retry;
- 		}
- 
- 		/* locked a new object, add it to the list */
--		list_add(locked_buffers, entry->locked_list);
-+		list_add_tail(&entry->locked_list, list);
- 	}
- 
- 	ww_acquire_done(ctx);
-@@ -292,7 +291,7 @@ retry:
- 
- void unlock_objs(struct list_head *list, struct ww_acquire_ctx *ctx)
- {
--	__unlock_objs(list, ctx);
-+	__unlock_objs(list);
- 	ww_acquire_fini(ctx);
- }
- 
-
+ 	*chip_ret = chip;
+-- 
+Ondrej Zary
