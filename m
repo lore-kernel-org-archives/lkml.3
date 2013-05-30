@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967508Ab3E3GE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:04:58 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:45947 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967530Ab3E3GEl (ORCPT
+	id S967576Ab3E3GFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:05:07 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57658 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967561Ab3E3GE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:04:41 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A6EBC5.7040601@asianux.com>
-Date: Thu, 30 May 2013 14:03:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 30 May 2013 02:04:58 -0400
 MIME-Version: 1.0
-To: edumazet@google.com, Pravin Shelar <pshelar@nicira.com>, mgorman@suse.de
-CC: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: [PATCH] include/linux/skbuff.h: using '0xffff' instead of '~0U'
+In-Reply-To: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
+References: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
+Date: Wed, 29 May 2013 23:04:57 -0700
+X-Google-Sender-Auth: -dZMQqgTfAwYcnFGGOctpBzsizM
+Message-ID: <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI: set correct value for iov device before device
+From: Yinghai Lu <yinghai@kernel.org>
+To: Xudong Hao <xudong.hao@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 29, 2013 at 10:45 PM, Xudong Hao <xudong.hao@intel.com> wrote:
+> Since device registering is put into pci_device_add(), it must set value of
+> Virtual Function device's member before the pci_dev is put to device tree. Or
+> some relevant subsystem of driver model such as xen will report a incorrect
+> IOV device to Xen hypervior.
+>
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> ---
+>  drivers/pci/iov.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index c93071d..43d3de9 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -110,12 +110,12 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+>         if (reset)
+>                 __pci_reset_function(virtfn);
+>
+> -       pci_device_add(virtfn, virtfn->bus);
+> -       mutex_unlock(&iov->dev->sriov->lock);
+> -
+>         virtfn->physfn = pci_dev_get(dev);
+>         virtfn->is_virtfn = 1;
+>
+> +       pci_device_add(virtfn, virtfn->bus);
+> +       mutex_unlock(&iov->dev->sriov->lock);
+> +
+>         rc = pci_bus_add_device(virtfn);
+>         sprintf(buf, "virtfn%u", id);
+>         rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
 
-Both 'transport_header' and 'mac_header' are u16, which are never equal
-to '~0U'.
+I have similar patch at
+https://patchwork.kernel.org/patch/2562551/
+   [5/7] PCI, ACPI: Don't glue ACPI dev with pci VFs
 
-So need use '0xffff' instead of '~0U'.
+and Jiang has another one
+https://patchwork.kernel.org/patch/2613481/
+   [v3,part1,10/10] PCI, IOV: hide remove and rescan sysfs interfaces
+for SR-IOV virtual functions
 
-The related warning (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
-  include/linux/skbuff.h:1587:2: warning: comparison is always true due to limited range of data type [-Wtype-limits]
-  ...
+Thanks
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/linux/skbuff.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 2e0ced1..03ba058 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1581,7 +1581,7 @@ static inline void skb_set_inner_mac_header(struct sk_buff *skb,
- }
- static inline bool skb_transport_header_was_set(const struct sk_buff *skb)
- {
--	return skb->transport_header != ~0U;
-+	return skb->transport_header != 0xffff;
- }
- 
- static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
-@@ -1624,7 +1624,7 @@ static inline unsigned char *skb_mac_header(const struct sk_buff *skb)
- 
- static inline int skb_mac_header_was_set(const struct sk_buff *skb)
- {
--	return skb->mac_header != ~0U;
-+	return skb->mac_header != 0xffff;
- }
- 
- static inline void skb_reset_mac_header(struct sk_buff *skb)
--- 
-1.7.7.6
+Yinghai
