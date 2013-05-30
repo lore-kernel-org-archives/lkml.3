@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967807Ab3E3HZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:25:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40428 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967687Ab3E3HZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:25:55 -0400
-Date: Thu, 30 May 2013 09:25:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130530072532.GF4341@laptop>
-References: <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523125218.GB23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu>
- <20130523152611.GE23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
- <20130528085548.GA12193@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu>
- <20130529074433.GB12193@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu>
+	id S967787Ab3E3H3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:29:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45183 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488Ab3E3H24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 03:28:56 -0400
+Date: Thu, 30 May 2013 09:28:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Ortiz, Lance E" <lance.oritz@hp.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
+ context
+Message-ID: <20130530072849.GA20793@pd.tnic>
+References: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
+ <30463843.EmBn1xaq3I@vostro.rjw.lan>
+ <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
+ <A961433CDFF2F640A2866803152E61F95D13A6F2@G9W0715.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <A961433CDFF2F640A2866803152E61F95D13A6F2@G9W0715.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:18:32PM -0400, Vince Weaver wrote:
-> On Wed, 29 May 2013, Peter Zijlstra wrote:
-> > 
-> > Hurm.. I don't suppose you have an easy reproducer handy eh? I'll go
-> > stare at it. At least the current state is better than before, but
-> > clearly we're not quite there yet.
-> 
-> OK, below is an easy reproducer.  Just run it two or three times.
-> It leaks 129 pages in user->locked_vm each time you run it.
-> 
-> It took me a while to bisect this down from 10,000 syscalls to just 3.
-> I now have a tool that can generate valid perf test_cases from my fuzzer 
-> traces, which should be useful.
+On Thu, May 30, 2013 at 04:55:20AM +0000, Ortiz, Lance E wrote:
+> This TODO is a note for future clean-up and is not directly related to
+>the bug being fixed with this patch. Which lends to the argument of why
+>put the TODO in this patch? Opportunistic. I don’t think we want to
+>create a separate patch just for a TODO note.
 
-Awesome! How specific is it to perf? I mean, would that tool work
-equally well for other tinity report?
+Sounds to me, this TODO item should be on your TODO list - not in kernel
+sources :-)
 
-I'll go prod, thanks again!
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
