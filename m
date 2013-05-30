@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3E3Nfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:35:42 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:24752 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab3E3Nf1 (ORCPT
+	id S1755944Ab3E3Nfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:35:53 -0400
+Received: from mta.cujae.edu.cu ([200.55.139.24]:51877 "EHLO
+	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755983Ab3E3Nff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:35:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,770,1363132800"; 
-   d="scan'208";a="26892961"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
-        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
-        <arnd@arndb.de>, Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 4/4] xen/arm: account for stolen ticks
-Date: Thu, 30 May 2013 14:35:02 +0100
-Message-ID: <1369920902-3546-4-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com>
+	Thu, 30 May 2013 09:35:35 -0400
+X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 09:35:34 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Processed: udio.cujae.edu.cu, Thu, 30 May 2013 09:24:13 -0400
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
+X-MDRemoteIP: 10.9.3.110
+X-Return-Path: acabrera@udio.cujae.edu.cu
+X-Envelope-From: acabrera@udio.cujae.edu.cu
+Message-ID: <51A76199.5010004@udio.cujae.edu.cu>
+Date: Thu, 30 May 2013 09:26:33 -0500
+From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
+	rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: monstr@monstr.eu
+CC: Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 1/3] watchdog: xilinx: Fix driver header
+References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
+	<D958900912E20642BCBC71664EFECE3E6E51FD29A4@BGMAIL02.nvidia.com>
+	<51A746F3.5030503@monstr.eu>
+In-Reply-To: <51A746F3.5030503@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the runstate_memory_area with the hypervisor.
-Use pv_time_ops.steal_clock to account for stolen ticks.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
-Changes in v4:
-- don't use paravirt_steal_rq_enabled: we do not support retrieving
-stolen ticks for vcpus other than one we are running on.
+On 30/5/2013 7:32 AM, Michal Simek wrote:
+> On 05/30/2013 02:30 PM, Venu Byravarasu wrote:
+>>> -----Original Message-----
+>>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+>>> owner@vger.kernel.org] On Behalf Of Michal Simek
+>>> Sent: Thursday, May 30, 2013 5:56 PM
+>>> To: linux-kernel@vger.kernel.org
+>>> Cc: Michal Simek; Michal Simek; Wim Van Sebroeck; linux-
+>>> watchdog@vger.kernel.org
+>>> Subject: [PATCH 1/3] watchdog: xilinx: Fix driver header
+>>>
+>>> * PGP Signed by an unknown key
+>>>
+>>> - Remove reference for IP version
+>>> - Fix header coding style
+>>> - Remove notes which are visible from the code
+>>> - Fix driver license according to header
+>>>
+>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
+>>> ---
+>>>   drivers/watchdog/of_xilinx_wdt.c | 30 ++++++++++--------------------
+>>>   1 file changed, 10 insertions(+), 20 deletions(-)
+>>>
+>>> diff --git a/drivers/watchdog/of_xilinx_wdt.c
+>>> b/drivers/watchdog/of_xilinx_wdt.c
+>>> index 2761ddb..d4a35ab 100644
+>>> --- a/drivers/watchdog/of_xilinx_wdt.c
+>>> +++ b/drivers/watchdog/of_xilinx_wdt.c
+>>> @@ -1,23 +1,13 @@
+>>>   /*
+>>> -*   of_xilinx_wdt.c  1.01  A Watchdog Device Driver for Xilinx
+>>> xps_timebase_wdt
+>>> -*
+>>> -*   (C) Copyright 2011 (Alejandro Cabrera<aldaya@gmail.com>)
+>>> -*
+>>> -*       -----------------------
+>>> -*/
+>>> + * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
+>>> + *
+>>> + * (C) Copyright 2011 (Alejandro Cabrera<aldaya@gmail.com>)
+>> Should year not be updated?
+> This is just header fixup.
+> I think he is not working/maintaining this driver for a long time.
+Indeed :(.
+Since this driver was upstream the new watchdog subsystem was under 
+development and I want to port it to the new core, but unfortunately I 
+haven't enough time :(.
+> I would write there Xilinx copyright but I really don't care.
+>
+> Thanks,
+> Michal
+Thanks, you,
+Alejandro
 
-Changes in v3:
-- use BUG_ON and smp_processor_id.
----
- arch/arm/xen/enlighten.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 13609e0..49839d8 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -14,7 +14,10 @@
- #include <xen/xen-ops.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/arch_timer.h>
- #include <asm/system_misc.h>
-+#include <asm/paravirt.h>
-+#include <linux/jump_label.h>
- #include <linux/interrupt.h>
- #include <linux/irqreturn.h>
- #include <linux/module.h>
-@@ -152,6 +155,19 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
-+unsigned long long xen_stolen_accounting(int cpu)
-+{
-+	struct vcpu_runstate_info state;
-+
-+	BUG_ON(cpu != smp_processor_id());
-+
-+	xen_get_runstate_snapshot(&state);
-+
-+	WARN_ON(state.state != RUNSTATE_running);
-+
-+	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
-+}
-+
- static void __init xen_percpu_init(void *unused)
- {
- 	struct vcpu_register_vcpu_info info;
-@@ -169,6 +185,8 @@ static void __init xen_percpu_init(void *unused)
- 	BUG_ON(err);
- 	per_cpu(xen_vcpu, cpu) = vcpup;
- 
-+	xen_setup_runstate_info(cpu);
-+
- 	enable_percpu_irq(xen_events_irq, 0);
- }
- 
-@@ -300,6 +318,9 @@ static int __init xen_init_events(void)
- 
- 	on_each_cpu(xen_percpu_init, NULL, 0);
- 
-+	pv_time_ops.steal_clock = xen_stolen_accounting;
-+	static_key_slow_inc(&paravirt_steal_enabled);
-+
- 	return 0;
- }
- postcore_initcall(xen_init_events);
--- 
-1.7.2.5
 
+
+48 Aniversario de la Cujae, Una obra de la Revolucion Cubana | 2 de diciembre de 1964 | http://cujae.edu.cu
+
+Consulte la enciclopedia colaborativa cubana. http://www.ecured.cu
