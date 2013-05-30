@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967430Ab3E3DFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 23:05:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53778 "EHLO mga03.intel.com"
+	id S967440Ab3E3DFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 23:05:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16462 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967374Ab3E3DDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 23:03:51 -0400
+	id S967372Ab3E3DDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 23:03:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,768,1363158000"; 
-   d="scan'208";a="342312634"
+   d="scan'208";a="342312631"
 From: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
 To: x86@kernel.org
 Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
         linux-kernel@vger.kernel.org, mark.gross@intel.com,
         len.brown@intel.com, david.a.cohen@intel.com, fei.yang@intel.com,
         sathyanarayanan.kuppuswamy@intel.com
-Subject: [PATCH v1 05/13] intel_mid: Renamed *mrst* to *intel_mid*
-Date: Wed, 29 May 2013 19:45:15 -0700
-Message-Id: <1369881923-27067-6-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
+Subject: [PATCH v1 04/13] intel_mid: Renamed *mrst* to *intel_mid*
+Date: Wed, 29 May 2013 19:45:14 -0700
+Message-Id: <1369881923-27067-5-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369881923-27067-1-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
 References: <1369881923-27067-1-git-send-email-sathyanarayanan.kuppuswamy@intel.com>
@@ -25,668 +25,363 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mrst is used as common name to represent all intel_mid type
-soc's. But moorsetwon is just one of the intel_mid soc. So
-renamed them to use intel_mid.
+Following files contains code that is common to all intel mid
+soc's. So renamed them as below.
 
-This patch mainly renames the variables and related
-functions that uses *mrst* prefix with *intel_mid*.
+mrst/mrst.c              -> intel-mid/intel-mid.c
+mrst/vrtc.c              -> intel-mid/intel_mid_vrtc.c
+mrst/early_printk_mrst.c -> intel-mid/intel_mid_vrtc.c
+pci/mrst.c               -> pci/intel_mid_pci.c
+
+Also, renamed the corresponding header files and made changes
+to the driver files that included these header files.
 
 To ensure that there are no functional changes, I have compared
-the objdump of related files before and after rename and found
-the only difference is symbol and name changes.
+the objdump of renamed files before and after rename and found
+that the only difference is file name change.
 
-Change-Id: I86729b45c653def052d8275edd50cdae76edb18d
+Change-Id: I33f23d7d662eda6e33ecead26fb3fe453ab66345
 Signed-off-by: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
 ---
- Documentation/kernel-parameters.txt                |    6 +-
- arch/x86/include/asm/intel-mid.h                   |   26 ++---
- arch/x86/include/asm/setup.h                       |    4 +-
- arch/x86/include/uapi/asm/bootparam.h              |    2 +-
- arch/x86/kernel/apb_timer.c                        |    8 +-
- arch/x86/kernel/head32.c                           |    4 +-
+ arch/x86/include/asm/{mrst.h => intel-mid.h}       |    8 ++++----
+ .../include/asm/{mrst-vrtc.h => intel_mid_vrtc.h}  |    4 ++--
+ arch/x86/kernel/apb_timer.c                        |    2 +-
+ arch/x86/kernel/early_printk.c                     |    2 +-
  arch/x86/kernel/rtc.c                              |    2 +-
- arch/x86/pci/intel_mid_pci.c                       |   12 +--
- .../platform/intel-mid/early_printk_intel_mid.c    |    2 +-
- arch/x86/platform/intel-mid/intel-mid.c            |  109 ++++++++++----------
- arch/x86/platform/intel-mid/intel_mid_vrtc.c       |    8 +-
+ arch/x86/pci/Makefile                              |    2 +-
+ arch/x86/pci/{mrst.c => intel_mid_pci.c}           |    2 +-
+ arch/x86/platform/Makefile                         |    2 +-
+ arch/x86/platform/intel-mid/Makefile               |    3 +++
+ .../early_printk_intel_mid.c}                      |    4 ++--
+ .../{mrst/mrst.c => intel-mid/intel-mid.c}         |   11 ++++++-----
+ .../{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c}    |    6 +++---
+ arch/x86/platform/mrst/Makefile                    |    3 ---
+ drivers/gpu/drm/gma500/mdfld_dsi_output.h          |    2 +-
+ drivers/gpu/drm/gma500/oaktrail_device.c           |    2 +-
+ drivers/gpu/drm/gma500/oaktrail_lvds.c             |    2 +-
  drivers/platform/x86/intel_scu_ipc.c               |    2 +-
+ drivers/rtc/rtc-mrst.c                             |    4 ++--
  drivers/watchdog/intel_scu_watchdog.c              |    2 +-
- 13 files changed, 93 insertions(+), 94 deletions(-)
+ 19 files changed, 33 insertions(+), 32 deletions(-)
+ rename arch/x86/include/asm/{mrst.h => intel-mid.h} (93%)
+ rename arch/x86/include/asm/{mrst-vrtc.h => intel_mid_vrtc.h} (81%)
+ rename arch/x86/pci/{mrst.c => intel_mid_pci.c} (99%)
+ create mode 100644 arch/x86/platform/intel-mid/Makefile
+ rename arch/x86/platform/{mrst/early_printk_mrst.c => intel-mid/early_printk_intel_mid.c} (98%)
+ rename arch/x86/platform/{mrst/mrst.c => intel-mid/intel-mid.c} (99%)
+ rename arch/x86/platform/{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c} (96%)
+ delete mode 100644 arch/x86/platform/mrst/Makefile
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6e3b18a..667408b 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3345,11 +3345,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			default x2apic cluster mode on platforms
- 			supporting x2apic.
- 
--	x86_mrst_timer= [X86-32,APBT]
--			Choose timer option for x86 Moorestown MID platform.
-+	x86_intel_mid_timer= [X86-32,APBT]
-+			Choose timer option for x86 Intel MID platform.
- 			Two valid options are apbt timer only and lapic timer
- 			plus one apbt timer for broadcast timer.
--			x86_mrst_timer=apbt_only | lapic_and_apbt
-+			x86_intel_mid_timer=apbt_only | lapic_and_apbt
- 
- 	xd=		[HW,XT] Original XT pre-IDE (RLL encoded) disks.
- 	xd_geo=		See header of drivers/block/xd.c.
-diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index cc79a4f..beb7a5f 100644
---- a/arch/x86/include/asm/intel-mid.h
+diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/intel-mid.h
+similarity index 93%
+rename from arch/x86/include/asm/mrst.h
+rename to arch/x86/include/asm/intel-mid.h
+index fc18bf3..cc79a4f 100644
+--- a/arch/x86/include/asm/mrst.h
 +++ b/arch/x86/include/asm/intel-mid.h
-@@ -13,7 +13,7 @@
+@@ -1,5 +1,5 @@
+ /*
+- * mrst.h: Intel Moorestown platform specific setup code
++ * intel-mid.h: Intel MID specific setup code
+  *
+  * (C) Copyright 2009 Intel Corporation
+  *
+@@ -8,8 +8,8 @@
+  * as published by the Free Software Foundation; version 2
+  * of the License.
+  */
+-#ifndef _ASM_X86_MRST_H
+-#define _ASM_X86_MRST_H
++#ifndef _ASM_X86_INTEL_MID_H
++#define _ASM_X86_INTEL_MID_H
  
  #include <linux/sfi.h>
  
--extern int pci_mrst_init(void);
-+extern int intel_mid_pci_init(void);
- extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
- extern int sfi_mrtc_num;
- extern struct sfi_rtc_table_entry sfi_mrtc_array[];
-@@ -25,33 +25,33 @@ extern struct sfi_rtc_table_entry sfi_mrtc_array[];
-  * we treat Medfield/Penwell as a variant of Moorestown. Penwell can be
-  * identified via MSRs.
-  */
--enum mrst_cpu_type {
-+enum intel_mid_cpu_type {
- 	/* 1 was Moorestown */
--	MRST_CPU_CHIP_PENWELL = 2,
-+	INTEL_MID_CPU_CHIP_PENWELL = 2,
- };
+@@ -78,4 +78,4 @@ extern void intel_scu_devices_destroy(void);
  
--extern enum mrst_cpu_type __mrst_cpu_chip;
-+extern enum intel_mid_cpu_type __intel_mid_cpu_chip;
+ extern void mrst_rtc_init(void);
  
- #ifdef CONFIG_X86_INTEL_MID
+-#endif /* _ASM_X86_MRST_H */
++#endif /* _ASM_X86_INTEL_MID_H */
+diff --git a/arch/x86/include/asm/mrst-vrtc.h b/arch/x86/include/asm/intel_mid_vrtc.h
+similarity index 81%
+rename from arch/x86/include/asm/mrst-vrtc.h
+rename to arch/x86/include/asm/intel_mid_vrtc.h
+index 73668ab..11ababf 100644
+--- a/arch/x86/include/asm/mrst-vrtc.h
++++ b/arch/x86/include/asm/intel_mid_vrtc.h
+@@ -1,5 +1,5 @@
+-#ifndef _MRST_VRTC_H
+-#define _MRST_VRTC_H
++#ifndef _INTEL_MID_VRTC_H
++#define _INTEL_MID_VRTC_H
  
--static inline enum mrst_cpu_type mrst_identify_cpu(void)
-+static inline enum intel_mid_cpu_type intel_mid_identify_cpu(void)
- {
--	return __mrst_cpu_chip;
-+	return __intel_mid_cpu_chip;
- }
- 
- #else /* !CONFIG_X86_INTEL_MID */
- 
--#define mrst_identify_cpu()    (0)
-+#define intel_mid_identify_cpu()    (0)
- 
- #endif /* !CONFIG_X86_INTEL_MID */
- 
--enum mrst_timer_options {
--	MRST_TIMER_DEFAULT,
--	MRST_TIMER_APBT_ONLY,
--	MRST_TIMER_LAPIC_APBT,
-+enum intel_mid_timer_options {
-+	INTEL_MID_TIMER_DEFAULT,
-+	INTEL_MID_TIMER_APBT_ONLY,
-+	INTEL_MID_TIMER_LAPIC_APBT,
- };
- 
--extern enum mrst_timer_options mrst_timer_options;
-+extern enum intel_mid_timer_options intel_mid_timer_options;
- 
- /*
-  * Penwell uses spread spectrum clock, so the freq number is not exactly
-@@ -76,6 +76,6 @@ extern void intel_scu_devices_destroy(void);
- #define MRST_VRTC_MAP_SZ	(1024)
- /*#define MRST_VRTC_PGOFFSET	(0xc00) */
- 
--extern void mrst_rtc_init(void);
-+extern void intel_mid_rtc_init(void);
- 
- #endif /* _ASM_X86_INTEL_MID_H */
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index b7bf350..cafa665 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -49,9 +49,9 @@ extern void i386_reserve_resources(void);
- extern void setup_default_timer_irq(void);
- 
- #ifdef CONFIG_X86_INTEL_MID
--extern void x86_mrst_early_setup(void);
-+extern void x86_intel_mid_early_setup(void);
- #else
--static inline void x86_mrst_early_setup(void) { }
-+static inline void x86_intel_mid_early_setup(void) { }
- #endif
- 
- #ifdef CONFIG_X86_INTEL_CE
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index 0874424..f7e0070 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -159,7 +159,7 @@ enum {
- 	X86_SUBARCH_PC = 0,
- 	X86_SUBARCH_LGUEST,
- 	X86_SUBARCH_XEN,
--	X86_SUBARCH_MRST,
-+	X86_SUBARCH_INTEL_MID,
- 	X86_SUBARCH_CE4100,
- 	X86_NR_SUBARCHS,
- };
+ extern unsigned char vrtc_cmos_read(unsigned char reg);
+ extern void vrtc_cmos_write(unsigned char val, unsigned char reg);
 diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 9154836..af5b08a 100644
+index c9876ef..9154836 100644
 --- a/arch/x86/kernel/apb_timer.c
 +++ b/arch/x86/kernel/apb_timer.c
-@@ -157,13 +157,13 @@ static int __init apbt_clockevent_register(void)
+@@ -40,7 +40,7 @@
  
- 	adev->num = smp_processor_id();
- 	adev->timer = dw_apb_clockevent_init(smp_processor_id(), "apbt0",
--		mrst_timer_options == MRST_TIMER_LAPIC_APBT ?
-+		intel_mid_timer_options == INTEL_MID_TIMER_LAPIC_APBT ?
- 		APBT_CLOCKEVENT_RATING - 100 : APBT_CLOCKEVENT_RATING,
- 		adev_virt_addr(adev), 0, apbt_freq);
- 	/* Firmware does EOI handling for us. */
- 	adev->timer->eoi = NULL;
+ #include <asm/fixmap.h>
+ #include <asm/apb_timer.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/time.h>
  
--	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
-+	if (intel_mid_timer_options == INTEL_MID_TIMER_LAPIC_APBT) {
- 		global_clock_event = &adev->timer->ced;
- 		printk(KERN_DEBUG "%s clockevent registered as global\n",
- 		       global_clock_event->name);
-@@ -253,7 +253,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
+ #define APBT_CLOCKEVENT_RATING		110
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index d15f575..38ca398 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -14,7 +14,7 @@
+ #include <xen/hvc-console.h>
+ #include <asm/pci-direct.h>
+ #include <asm/fixmap.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/pgtable.h>
+ #include <linux/usb/ehci_def.h>
  
- static __init int apbt_late_init(void)
- {
--	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT ||
-+	if (intel_mid_timer_options == INTEL_MID_TIMER_LAPIC_APBT ||
- 		!apb_timer_block_enabled)
- 		return 0;
- 	/* This notifier should be called after workqueue is ready */
-@@ -340,7 +340,7 @@ void __init apbt_time_init(void)
- 	}
- #ifdef CONFIG_SMP
- 	/* kernel cmdline disable apb timer, so we will use lapic timers */
--	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
-+	if (intel_mid_timer_options == INTEL_MID_TIMER_LAPIC_APBT) {
- 		printk(KERN_INFO "apbt: disabled per cpu timer\n");
- 		return;
- 	}
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 138463a..8f344e7 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -35,8 +35,8 @@ void __init i386_start_kernel(void)
- 
- 	/* Call the subarch specific early setup function */
- 	switch (boot_params.hdr.hardware_subarch) {
--	case X86_SUBARCH_MRST:
--		x86_mrst_early_setup();
-+	case X86_SUBARCH_INTEL_MID:
-+		x86_intel_mid_early_setup();
- 		break;
- 	case X86_SUBARCH_CE4100:
- 		x86_ce4100_early_setup();
 diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-index 7a9ed8f..9651d5e 100644
+index 198eb20..7a9ed8f 100644
 --- a/arch/x86/kernel/rtc.c
 +++ b/arch/x86/kernel/rtc.c
-@@ -192,7 +192,7 @@ static __init int add_rtc_cmos(void)
- 		return 0;
+@@ -12,7 +12,7 @@
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+ #include <asm/time.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/rtc.h>
  
- 	/* Intel MID platforms don't have ioport rtc */
--	if (mrst_identify_cpu())
-+	if (intel_mid_identify_cpu())
- 		return -ENODEV;
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+index ee0af58..e063eed 100644
+--- a/arch/x86/pci/Makefile
++++ b/arch/x86/pci/Makefile
+@@ -18,7 +18,7 @@ obj-$(CONFIG_X86_VISWS)		+= visws.o
+ obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
+ obj-$(CONFIG_X86_NUMACHIP)	+= numachip.o
  
- 	platform_device_register(&rtc_device);
-diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
-index 5001003..caeda96 100644
---- a/arch/x86/pci/intel_mid_pci.c
+-obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
++obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_pci.o
+ 
+ obj-y				+= common.o early.o
+ obj-y				+= bus_numa.o
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/intel_mid_pci.c
+similarity index 99%
+rename from arch/x86/pci/mrst.c
+rename to arch/x86/pci/intel_mid_pci.c
+index d5d222e..5001003 100644
+--- a/arch/x86/pci/mrst.c
 +++ b/arch/x86/pci/intel_mid_pci.c
-@@ -203,7 +203,7 @@ static int pci_write(struct pci_bus *bus, unsigned int devfn, int where,
- 			       where, size, value);
- }
- 
--static int mrst_pci_irq_enable(struct pci_dev *dev)
-+static int intel_mid_pci_irq_enable(struct pci_dev *dev)
- {
- 	u8 pin;
- 	struct io_apic_irq_attr irq_attr;
-@@ -222,23 +222,23 @@ static int mrst_pci_irq_enable(struct pci_dev *dev)
- 	return 0;
- }
- 
--struct pci_ops pci_mrst_ops = {
-+struct pci_ops intel_mid_pci_ops = {
- 	.read = pci_read,
- 	.write = pci_write,
- };
- 
- /**
-- * pci_mrst_init - installs pci_mrst_ops
-+ * intel_mid_pci_init - installs intel_mid_pci_ops
+@@ -1,5 +1,5 @@
+ /*
+- * Moorestown PCI support
++ * Intel MID PCI support
+  *   Copyright (c) 2008 Intel Corporation
+  *     Jesse Barnes <jesse.barnes@intel.com>
   *
-  * Moorestown has an interesting PCI implementation (see above).
-  * Called when the early platform detection installs it.
-  */
--int __init pci_mrst_init(void)
-+int __init intel_mid_pci_init(void)
- {
- 	pr_info("Intel MID platform detected, using MID PCI ops\n");
- 	pci_mmcfg_late_init();
--	pcibios_enable_irq = mrst_pci_irq_enable;
--	pci_root_ops = pci_mrst_ops;
-+	pcibios_enable_irq = intel_mid_pci_irq_enable;
-+	pci_root_ops = intel_mid_pci_ops;
- 	pci_soc_mode = 1;
- 	/* Continue with standard init */
- 	return 1;
-diff --git a/arch/x86/platform/intel-mid/early_printk_intel_mid.c b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-index 7c56e70..4f702f5 100644
---- a/arch/x86/platform/intel-mid/early_printk_intel_mid.c
+diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
+index 01e0231..20342d4 100644
+--- a/arch/x86/platform/Makefile
++++ b/arch/x86/platform/Makefile
+@@ -4,7 +4,7 @@ obj-y	+= efi/
+ obj-y	+= geode/
+ obj-y	+= goldfish/
+ obj-y	+= iris/
+-obj-y	+= mrst/
++obj-y	+= intel-mid/
+ obj-y	+= olpc/
+ obj-y	+= scx200/
+ obj-y	+= sfi/
+diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
+new file mode 100644
+index 0000000..de29635
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
++obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
++obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
+similarity index 98%
+rename from arch/x86/platform/mrst/early_printk_mrst.c
+rename to arch/x86/platform/intel-mid/early_printk_intel_mid.c
+index 39ecc27..7c56e70 100644
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
 +++ b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-@@ -152,7 +152,7 @@ void mrst_early_console_init(void)
- 	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
- 	freq = 100000000 / (spi0_cdiv + 1);
+@@ -1,5 +1,5 @@
+ /*
+- * early_printk_mrst.c - early consoles for Intel MID platforms
++ * early_printk_intel_mid.c - early consoles for Intel MID platforms
+  *
+  * Copyright (c) 2008-2010, Intel Corporation
+  *
+@@ -27,7 +27,7 @@
  
--	if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL)
-+	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL)
- 		mrst_spi_paddr = MRST_REGBASE_SPI1;
+ #include <asm/fixmap.h>
+ #include <asm/pgtable.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
  
- 	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index ef1d6c1..38071c1 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
+ #define MRST_SPI_TIMEOUT		0x200000
+ #define MRST_REGBASE_SPI0		0xff128000
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/intel-mid/intel-mid.c
+similarity index 99%
+rename from arch/x86/platform/mrst/mrst.c
+rename to arch/x86/platform/intel-mid/intel-mid.c
+index 4784c33..ef1d6c1 100644
+--- a/arch/x86/platform/mrst/mrst.c
 +++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -11,7 +11,7 @@
-  * of the License.
-  */
- 
--#define pr_fmt(fmt) "mrst: " fmt
-+#define pr_fmt(fmt) "intel_mid: " fmt
- 
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -47,7 +47,7 @@
- 
+@@ -1,8 +1,9 @@
  /*
-  * the clockevent devices on Moorestown/Medfield can be APBT or LAPIC clock,
-- * cmdline option x86_mrst_timer can be used to override the configuration
-+ * cmdline option x86_intel_mid_timer can be used to override the configuration
-  * to prefer one or the other.
-  * at runtime, there are basically three timer configurations:
-  * 1. per cpu apbt clock only
-@@ -66,12 +66,12 @@
-  * lapic (always-on,ARAT) ------ 150
-  */
+- * mrst.c: Intel Moorestown platform specific setup code
++ * intel-mid.c: Intel MID platform setup code
+  *
+- * (C) Copyright 2008 Intel Corporation
++ * (C) Copyright 2008, 2012 Intel Corporation
+  * Author: Jacob Pan (jacob.jun.pan@intel.com)
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -36,8 +37,8 @@
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
+ #include <asm/io.h>
+ #include <asm/i8259.h>
+ #include <asm/intel_scu_ipc.h>
+@@ -219,7 +220,7 @@ static unsigned long __init mrst_calibrate_tsc(void)
+ 	lapic_timer_frequency = fsb * 1000 / HZ;
+ 	/* mark tsc clocksource as reliable */
+ 	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
+-	
++
+ 	if (fast_calibrate)
+ 		return fast_calibrate;
  
--__cpuinitdata enum mrst_timer_options mrst_timer_options;
-+__cpuinitdata enum intel_mid_timer_options intel_mid_timer_options;
- 
- static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
- static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
--enum mrst_cpu_type __mrst_cpu_chip;
--EXPORT_SYMBOL_GPL(__mrst_cpu_chip);
-+enum intel_mid_cpu_type __intel_mid_cpu_chip;
-+EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
- 
- int sfi_mtimer_num;
- 
-@@ -79,11 +79,11 @@ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
- EXPORT_SYMBOL_GPL(sfi_mrtc_array);
- int sfi_mrtc_num;
- 
--static void mrst_power_off(void)
-+static void intel_mid_power_off(void)
- {
- }
- 
--static void mrst_reboot(void)
-+static void intel_mid_reboot(void)
- {
- 	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
- }
-@@ -196,7 +196,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
- 	return 0;
- }
- 
--static unsigned long __init mrst_calibrate_tsc(void)
-+static unsigned long __init intel_mid_calibrate_tsc(void)
- {
- 	unsigned long fast_calibrate;
- 	u32 lo, hi, ratio, fsb;
-@@ -227,13 +227,13 @@ static unsigned long __init mrst_calibrate_tsc(void)
- 	return 0;
- }
- 
--static void __init mrst_time_init(void)
-+static void __init intel_mid_time_init(void)
- {
- 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
--	switch (mrst_timer_options) {
--	case MRST_TIMER_APBT_ONLY:
-+	switch (intel_mid_timer_options) {
-+	case INTEL_MID_TIMER_APBT_ONLY:
- 		break;
--	case MRST_TIMER_LAPIC_APBT:
-+	case INTEL_MID_TIMER_LAPIC_APBT:
- 		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
- 		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
- 		break;
-@@ -249,19 +249,19 @@ static void __init mrst_time_init(void)
- 	apbt_time_init();
- }
- 
--static void __cpuinit mrst_arch_setup(void)
-+static void __cpuinit intel_mid_arch_setup(void)
- {
- 	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
--		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
-+		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
- 	else {
- 		pr_err("Unknown Intel MID CPU (%d:%d), default to Penwell\n",
- 			boot_cpu_data.x86, boot_cpu_data.x86_model);
--		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
-+		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
- 	}
- }
- 
- /* MID systems don't have i8042 controller */
--static int mrst_i8042_detect(void)
-+static int intel_mid_i8042_detect(void)
- {
- 	return 0;
- }
-@@ -272,7 +272,7 @@ static int mrst_i8042_detect(void)
-  * watchdog or lock debug. Reading io port 0x61 results in 0xff which
-  * misled NMI handler.
-  */
--static unsigned char mrst_get_nmi_reason(void)
-+static unsigned char intel_mid_get_nmi_reason(void)
- {
- 	return 0;
- }
-@@ -281,33 +281,32 @@ static unsigned char mrst_get_nmi_reason(void)
-  * Moorestown specific x86_init function overrides and early setup
-  * calls.
-  */
--void __init x86_mrst_early_setup(void)
-+void __init x86_intel_mid_early_setup(void)
- {
- 	x86_init.resources.probe_roms = x86_init_noop;
- 	x86_init.resources.reserve_resources = x86_init_noop;
- 
--	x86_init.timers.timer_init = mrst_time_init;
-+	x86_init.timers.timer_init = intel_mid_time_init;
- 	x86_init.timers.setup_percpu_clockev = x86_init_noop;
- 
- 	x86_init.irqs.pre_vector_init = x86_init_noop;
- 
--	x86_init.oem.arch_setup = mrst_arch_setup;
-+	x86_init.oem.arch_setup = intel_mid_arch_setup;
- 
- 	x86_cpuinit.setup_percpu_clockev = apbt_setup_secondary_clock;
- 
--	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
--	x86_platform.i8042_detect = mrst_i8042_detect;
--	x86_init.timers.wallclock_init = mrst_rtc_init;
--	x86_platform.get_nmi_reason = mrst_get_nmi_reason;
-+	x86_platform.calibrate_tsc = intel_mid_calibrate_tsc;
-+	x86_platform.i8042_detect = intel_mid_i8042_detect;
-+	x86_init.timers.wallclock_init = intel_mid_rtc_init;
-+	x86_platform.get_nmi_reason = intel_mid_get_nmi_reason;
- 
--	x86_init.pci.init = pci_mrst_init;
-+	x86_init.pci.init = intel_mid_pci_init;
- 	x86_init.pci.fixup_irqs = x86_init_noop;
- 
- 	legacy_pic = &null_legacy_pic;
- 
--	/* Moorestown specific power_off/restart method */
--	pm_power_off = mrst_power_off;
--	machine_ops.emergency_restart  = mrst_reboot;
-+	pm_power_off = intel_mid_power_off;
-+	machine_ops.emergency_restart  = intel_mid_reboot;
- 
- 	/* Avoid searching for BIOS MP tables */
- 	x86_init.mpparse.find_smp_config = x86_init_noop;
-@@ -319,24 +318,24 @@ void __init x86_mrst_early_setup(void)
-  * if user does not want to use per CPU apb timer, just give it a lower rating
-  * than local apic timer and skip the late per cpu timer init.
-  */
--static inline int __init setup_x86_mrst_timer(char *arg)
-+static inline int __init setup_x86_intel_mid_timer(char *arg)
- {
- 	if (!arg)
- 		return -EINVAL;
- 
- 	if (strcmp("apbt_only", arg) == 0)
--		mrst_timer_options = MRST_TIMER_APBT_ONLY;
-+		intel_mid_timer_options = INTEL_MID_TIMER_APBT_ONLY;
- 	else if (strcmp("lapic_and_apbt", arg) == 0)
--		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
-+		intel_mid_timer_options = INTEL_MID_TIMER_LAPIC_APBT;
- 	else {
--		pr_warn("X86 MRST timer option %s not recognised"
--			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
-+		pr_warn("X86 INTEL_MID timer option %s not recognised"
-+			   " use x86_intel_mid_timer=apbt_only or lapic_and_apbt\n",
- 			   arg);
- 		return -EINVAL;
- 	}
- 	return 0;
- }
--__setup("x86_mrst_timer=", setup_x86_mrst_timer);
-+__setup("x86_intel_mid_timer=", setup_x86_intel_mid_timer);
- 
- /*
-  * Parsing GPIO table first, since the DEVS table will need this table
-@@ -400,7 +399,7 @@ struct devs_id {
- };
- 
- /* the offset for the mapping of global gpio pin to irq */
--#define MRST_IRQ_OFFSET 0x100
-+#define INTEL_MID_IRQ_OFFSET 0x100
- 
- static void __init *pmic_gpio_platform_data(void *info)
- {
-@@ -410,7 +409,7 @@ static void __init *pmic_gpio_platform_data(void *info)
- 	if (gpio_base == -1)
- 		gpio_base = 64;
- 	pmic_gpio_pdata.gpio_base = gpio_base;
--	pmic_gpio_pdata.irq_base = gpio_base + MRST_IRQ_OFFSET;
-+	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
- 	pmic_gpio_pdata.gpiointr = 0xffffeff8;
- 
- 	return &pmic_gpio_pdata;
-@@ -424,7 +423,7 @@ static void __init *max3111_platform_data(void *info)
- 	spi_info->mode = SPI_MODE_0;
- 	if (intr == -1)
- 		return NULL;
--	spi_info->irq = intr + MRST_IRQ_OFFSET;
-+	spi_info->irq = intr + INTEL_MID_IRQ_OFFSET;
- 	return NULL;
- }
- 
-@@ -464,8 +463,8 @@ static void __init *max7315_platform_data(void *info)
- 		return NULL;
- 	max7315->gpio_base = gpio_base;
- 	if (intr != -1) {
--		i2c_info->irq = intr + MRST_IRQ_OFFSET;
--		max7315->irq_base = gpio_base + MRST_IRQ_OFFSET;
-+		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+		max7315->irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
- 	} else {
- 		i2c_info->irq = -1;
- 		max7315->irq_base = -1;
-@@ -492,8 +491,8 @@ static void *tca6416_platform_data(void *info)
- 		return NULL;
- 	tca6416.gpio_base = gpio_base;
- 	if (intr != -1) {
--		i2c_info->irq = intr + MRST_IRQ_OFFSET;
--		tca6416.irq_base = gpio_base + MRST_IRQ_OFFSET;
-+		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
- 	} else {
- 		i2c_info->irq = -1;
- 		tca6416.irq_base = -1;
-@@ -509,7 +508,7 @@ static void *mpu3050_platform_data(void *info)
- 	if (intr == -1)
- 		return NULL;
- 
--	i2c_info->irq = intr + MRST_IRQ_OFFSET;
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
- 	return NULL;
- }
- 
-@@ -523,8 +522,8 @@ static void __init *emc1403_platform_data(void *info)
- 	if (intr == -1 || intr2nd == -1)
- 		return NULL;
- 
--	i2c_info->irq = intr + MRST_IRQ_OFFSET;
--	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
- 
- 	return &intr2nd_pdata;
- }
-@@ -539,8 +538,8 @@ static void __init *lis331dl_platform_data(void *info)
- 	if (intr == -1 || intr2nd == -1)
- 		return NULL;
- 
--	i2c_info->irq = intr + MRST_IRQ_OFFSET;
--	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
- 
- 	return &intr2nd_pdata;
- }
-@@ -570,9 +569,9 @@ static struct platform_device msic_device = {
- 	.resource	= msic_resources,
- };
- 
--static inline bool mrst_has_msic(void)
-+static inline bool intel_mid_has_msic(void)
- {
--	return mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL;
-+	return intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL;
- }
- 
- static int msic_scu_status_change(struct notifier_block *nb,
-@@ -596,7 +595,7 @@ static int __init msic_init(void)
- 	 * We need to be sure that the SCU IPC is ready before MSIC device
- 	 * can be registered.
- 	 */
--	if (mrst_has_msic())
-+	if (intel_mid_has_msic())
- 		intel_scu_notifier_add(&msic_scu_notifier);
- 
- 	return 0;
-@@ -851,7 +850,7 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
- 	 * On Medfield the platform device creation is handled by the MSIC
- 	 * MFD driver so we don't need to do it here.
- 	 */
--	if (mrst_has_msic())
-+	if (intel_mid_has_msic())
- 		return;
- 
- 	pdev = platform_device_alloc(entry->name, 0);
-@@ -984,13 +983,13 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 	return 0;
- }
- 
--static int __init mrst_platform_init(void)
-+static int __init intel_mid_platform_init(void)
- {
- 	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
- 	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
- 	return 0;
- }
--arch_initcall(mrst_platform_init);
-+arch_initcall(intel_mid_platform_init);
- 
- /*
-  * we will search these buttons in SFI GPIO table (by name)
-@@ -1010,7 +1009,7 @@ static struct gpio_keys_button gpio_button[] = {
- 	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
- };
- 
--static struct gpio_keys_platform_data mrst_gpio_keys = {
-+static struct gpio_keys_platform_data intel_mid_gpio_keys = {
- 	.buttons	= gpio_button,
- 	.rep		= 1,
- 	.nbuttons	= -1, /* will fill it after search */
-@@ -1020,7 +1019,7 @@ static struct platform_device pb_device = {
- 	.name		= "gpio-keys",
- 	.id		= -1,
- 	.dev		= {
--		.platform_data	= &mrst_gpio_keys,
-+		.platform_data	= &intel_mid_gpio_keys,
- 	},
- };
- 
-@@ -1047,7 +1046,7 @@ static int __init pb_keys_init(void)
- 	}
- 
- 	if (good) {
--		mrst_gpio_keys.nbuttons = good;
-+		intel_mid_gpio_keys.nbuttons = good;
- 		return platform_device_register(&pb_device);
- 	}
- 	return 0;
-diff --git a/arch/x86/platform/intel-mid/intel_mid_vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-index c2a5f48..e13a89b 100644
---- a/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+similarity index 96%
+rename from arch/x86/platform/mrst/vrtc.c
+rename to arch/x86/platform/intel-mid/intel_mid_vrtc.c
+index 05191dc..c2a5f48 100644
+--- a/arch/x86/platform/mrst/vrtc.c
 +++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-@@ -115,7 +115,7 @@ int vrtc_set_mmss(unsigned long nowtime)
- 	return retval;
- }
+@@ -1,5 +1,5 @@
+ /*
+- * vrtc.c: Driver for virtual RTC device on Intel MID platform
++ * intel_mid_vrtc.c: Driver for virtual RTC device on Intel MID platform
+  *
+  * (C) Copyright 2009 Intel Corporation
+  *
+@@ -23,8 +23,8 @@
+ #include <linux/sfi.h>
+ #include <linux/platform_device.h>
  
--void __init mrst_rtc_init(void)
-+void __init intel_mid_rtc_init(void)
- {
- 	unsigned long vrtc_paddr;
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
+ #include <asm/time.h>
+ #include <asm/fixmap.h>
  
-@@ -153,10 +153,10 @@ static struct platform_device vrtc_device = {
- };
+diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
+deleted file mode 100644
+index af1da7e..0000000
+--- a/arch/x86/platform/mrst/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
+-obj-$(CONFIG_X86_INTEL_MID)	+= vrtc.o
+-obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_mrst.o
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.h b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
+index 36eb074..61cea74 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_output.h
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
+@@ -39,7 +39,7 @@
+ #include "psb_intel_reg.h"
+ #include "mdfld_output.h"
  
- /* Register the RTC device if appropriate */
--static int __init mrst_device_create(void)
-+static int __init intel_mid_device_create(void)
- {
- 	/* No Moorestown, no device */
--	if (!mrst_identify_cpu())
-+	if (!intel_mid_identify_cpu())
- 		return -ENODEV;
- 	/* No timer, no device */
- 	if (!sfi_mrtc_num)
-@@ -173,4 +173,4 @@ static int __init mrst_device_create(void)
- 	return platform_device_register(&vrtc_device);
- }
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
  
--module_init(mrst_device_create);
-+module_init(intel_mid_device_create);
+ #define FLD_MASK(start, end)	(((1 << ((start) - (end) + 1)) - 1) << (end))
+ #define FLD_VAL(val, start, end) (((val) << (end)) & FLD_MASK(start, end))
+diff --git a/drivers/gpu/drm/gma500/oaktrail_device.c b/drivers/gpu/drm/gma500/oaktrail_device.c
+index 08747fd..7a9ce00 100644
+--- a/drivers/gpu/drm/gma500/oaktrail_device.c
++++ b/drivers/gpu/drm/gma500/oaktrail_device.c
+@@ -26,7 +26,7 @@
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+ #include "psb_intel_reg.h"
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/intel_scu_ipc.h>
+ #include "mid_bios.h"
+ #include "intel_bios.h"
+diff --git a/drivers/gpu/drm/gma500/oaktrail_lvds.c b/drivers/gpu/drm/gma500/oaktrail_lvds.c
+index 325013a..d011e91 100644
+--- a/drivers/gpu/drm/gma500/oaktrail_lvds.c
++++ b/drivers/gpu/drm/gma500/oaktrail_lvds.c
+@@ -22,7 +22,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <drm/drmP.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ 
+ #include "intel_bios.h"
+ #include "psb_drv.h"
 diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 5f8f6c9..d654f83 100644
+index 9215ed7..5f8f6c9 100644
 --- a/drivers/platform/x86/intel_scu_ipc.c
 +++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -579,7 +579,7 @@ static struct pci_driver ipc_driver = {
+@@ -25,7 +25,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/sfi.h>
+ #include <linux/module.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/intel_scu_ipc.h>
  
- static int __init intel_scu_ipc_init(void)
- {
--	platform = mrst_identify_cpu();
-+	platform = intel_mid_identify_cpu();
- 	if (platform == 0)
- 		return -ENODEV;
- 	return  pci_register_driver(&ipc_driver);
+ /* IPC defines the following message types */
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index 578baf9..315209d9 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -38,8 +38,8 @@
+ 
+ #include <asm-generic/rtc.h>
+ #include <asm/intel_scu_ipc.h>
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
+ 
+ struct mrst_rtc {
+ 	struct rtc_device	*rtc;
 diff --git a/drivers/watchdog/intel_scu_watchdog.c b/drivers/watchdog/intel_scu_watchdog.c
-index 07964d8..8ced256 100644
+index 9dda2d0..07964d8 100644
 --- a/drivers/watchdog/intel_scu_watchdog.c
 +++ b/drivers/watchdog/intel_scu_watchdog.c
-@@ -445,7 +445,7 @@ static int __init intel_scu_watchdog_init(void)
- 	 *
- 	 * If it isn't an intel MID device then it doesn't have this watchdog
- 	 */
--	if (!mrst_identify_cpu())
-+	if (!intel_mid_identify_cpu())
- 		return -ENODEV;
+@@ -48,7 +48,7 @@
+ #include <linux/atomic.h>
+ #include <asm/intel_scu_ipc.h>
+ #include <asm/apb_timer.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
  
- 	/* Check boot parameters to verify that their initial values */
+ #include "intel_scu_watchdog.h"
+ 
 -- 
 1.7.9.5
 
