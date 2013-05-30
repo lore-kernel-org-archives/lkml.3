@@ -1,118 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934793Ab3E3Llg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:41:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16031 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932801Ab3E3Ll3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:41:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,770,1363158000"; 
-   d="scan'208";a="310020388"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v7 net-next 3/5] tcp: add TCP support for low latency receive
- poll.
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Thu, 30 May 2013 14:41:22 +0300
-Message-ID: <20130530114122.12653.61928.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
-References: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S935080Ab3E3LmB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:42:01 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40983 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933964Ab3E3Llb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 07:41:31 -0400
+Date: Thu, 30 May 2013 13:41:27 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Lars Poeschel <poeschel@lemonage.de>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        "mcrapet@gmail.com" <mcrapet@gmail.com>
+Subject: Re: [PATCH 00/14] misc/ep93xx_pwm: cleanup driver for conversion to
+ PWM framework
+Message-ID: <20130530114126.GC20194@mithrandir>
+References: <201305241619.52328.hartleys@visionengravers.com>
+ <201305271912.08882.arnd@arndb.de>
+ <20130528110011.GC11547@mithrandir>
+ <201305281342.05530.poeschel@lemonage.de>
+ <ADE657CA350FB648AAC2C43247A983F0021DA657044E@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0021DA657044E@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds busy-poll support for TCP.
-Copy the napi_id from an incomming skb to the sk in tcp_v[46]_rcv().
-when there is no data in the socket we busy-poll in tcp_recvmsg().
-This is a good example of how to add busy-poll support to new protocols.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+--lCAWRPmW1mITcIfM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- net/ipv4/tcp.c      |    5 +++++
- net/ipv4/tcp_ipv4.c |    2 ++
- net/ipv6/tcp_ipv6.c |    2 ++
- 3 files changed, 9 insertions(+), 0 deletions(-)
+On Wed, May 29, 2013 at 04:33:21PM -0500, H Hartley Sweeten wrote:
+> On Tuesday, May 28, 2013 4:42 AM, Lars Poeschel wrote:
+> > On Tuesday 28 May 2013 at 13:00:12, Thierry Reding wrote:
+> >> I've added Lars Poeschel on Cc, who's done some work on a sysfs
+> >> interface for the PWM subsystem already. It's undergone some review
+> >> already[0] and I think he's working on a v2 now.
+> >>=20
+> >> Thierry
+> >>=20
+> >> [0]: http://marc.info/?l=3Dlinux-kernel&m=3D136499756101273&w=3D2
+> >
+> > I currently do not have the time to work on a v2 of the pwm sysfs patch=
+ but=20
+> > I will do it as soon as possible - if not someone else will do.=20
+> > Unfortunately my current involvements in other project will not allow m=
+e to=20
+> > do so for at least next two months.
+> > I received some off-list reactions to my patches from users asking for =
+pwm=20
+> > sysfs, so there is definitely a need for it!
+> > If you decide to take attempt 2) (which is preferable) I recommend you =
+to=20
+> > take a look at what I have done and Thierrys review comments. I took th=
+e=20
+> > gpiolib way and the result got rejected for very good reasons.
+>=20
+> I just posted a PWM sysfs interface patch based on the previous work by
+> Lars. Hopefully I addressed all of Thierrys review comments.
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 1f58594..685a3ea 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -279,6 +279,7 @@
- 
- #include <asm/uaccess.h>
- #include <asm/ioctls.h>
-+#include <net/ll_poll.h>
- 
- int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
- 
-@@ -1551,6 +1552,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	struct sk_buff *skb;
- 	u32 urg_hole = 0;
- 
-+	if (sk_valid_ll(sk) && skb_queue_empty(&sk->sk_receive_queue)
-+	    && (sk->sk_state == TCP_ESTABLISHED))
-+		sk_poll_ll(sk, nonblock);
-+
- 	lock_sock(sk);
- 
- 	err = -ENOTCONN;
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index d20ede0..35fd8bc 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -75,6 +75,7 @@
- #include <net/netdma.h>
- #include <net/secure_seq.h>
- #include <net/tcp_memcontrol.h>
-+#include <net/ll_poll.h>
- 
- #include <linux/inet.h>
- #include <linux/ipv6.h>
-@@ -2011,6 +2012,7 @@ process:
- 	if (sk_filter(sk, skb))
- 		goto discard_and_relse;
- 
-+	sk_mark_ll(sk, skb);
- 	skb->dev = NULL;
- 
- 	bh_lock_sock_nested(sk);
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 0a17ed9..5cffa5c 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -63,6 +63,7 @@
- #include <net/inet_common.h>
- #include <net/secure_seq.h>
- #include <net/tcp_memcontrol.h>
-+#include <net/ll_poll.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -1498,6 +1499,7 @@ process:
- 	if (sk_filter(sk, skb))
- 		goto discard_and_relse;
- 
-+	sk_mark_ll(sk, skb);
- 	skb->dev = NULL;
- 
- 	bh_lock_sock_nested(sk);
+I can't find it anywhere. Maybe you used my @avionic-design.de email
+address? Could you please repost using the @gmail.com address, as I have
+only unreliable access to the other one ATM. And please also Cc the all
+new linux-pwm@vger.kernel.org mailing list.
 
+Thanks,
+Thierry
+
+--lCAWRPmW1mITcIfM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRpzrmAAoJEN0jrNd/PrOhNNAQAJQMN0XpxwLg4qZMiT4S5UD8
+veS9124qhdQ/vYxa6EKkDyCwOXlvB6iSXLtRGTA6wWYz9Se1bMxMHE3EwsKSPHMx
+CbQHUcRxq+jehjOoEmPaa9pPYttXJZQ5XIsgZmmL1Q4O+1TaLYDNHVg47GD3o1yH
+PiGoQm7IYl98ijnLTtUfs4DPa4LRccSWTPjdXmR0Aqx/KLC0pf5egB5hAZhnnnae
+XPy9PjG7neVwWYOrAAqyJNFXqZYA7Cn5y8H9LZcI/YocCO2qoDcLrNMjg/la9WDo
+R6hSaGa5bw+3P5QJKr0E5DrQc95nV/lcW4zq0giXxe05su1TAEBuJcUuOGC476nJ
+HoiyNZQPQyVM2tA/SRrcZfxae6F9oK5Uo8LYstqQWPT3IuhgLYY/OCMYqtwUvy8b
+fbBsp1Fmv895C6OhVilzU3KGIOj0m86nyHmU54jjwWxyHsi9y+r1OQRRqGSBPZpH
+n/kHH4+djG23uxgfgiCyf3dcTQhK5jVv/7NwnbhGT0RKVjYjCsZ139GoiztjDurR
+ISfCs2diznjtOGOMrsKOah5SaqVCT8ubKd5RyKFBHUgj7xW1x5jUWCj+CE3wqTD3
+40Qp5prKnnIO53kGjsCjUn2/m6sSfPJ4lb29A+u0Uewm/kfdCYttUoVYsXNUPGxZ
+BLw+Wj3rpbNm13TGsJ6u
+=H3n+
+-----END PGP SIGNATURE-----
+
+--lCAWRPmW1mITcIfM--
