@@ -1,93 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759851Ab3E3BjF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 21:39:05 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:43819 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759819Ab3E3Biw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 21:38:52 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-9e-51a6ada60eb8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH V2] rtc: rtc-mpc5121: use platform_{get,set}_drvdata()
-Date: Thu, 30 May 2013 10:38:45 +0900
-Message-id: <002201ce5cd6$6cd46a60$467d3f20$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5c1mQfwiqEdSiURqixsvdx5ITquA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ91la5cFGkx6wWax5OJVdos569ew
-	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAaxSXTUpqTmZZ
-	apG+XQJXxuaWRtaCN5wVc5vXMDUwLuHoYuTkkBAwkXi/ZgoThC0mceHeerYuRi4OIYFljBL7
-	194ESnCAFR1dFAoRX8QosfJEEzuE84tR4s+0bhaQbjYBNYkvXw6zgzSICOhLtLVogNQwC3Qz
-	SjxqnssMUiMs4CYx89wmdhCbRUBV4lXvXDYQm1fAUuJow0EWCFtQ4sfke2A2s4CWxPqdx5kg
-	bHmJzWveMkNcqiCx4+xrRhBbREBP4viLK1D1IhL7XrxjBFksIXCMXeL8zBOsEMsEJL5NPsQC
-	8Y2sxKYDUHMkJQ6uuMEygVFsFpLVs5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtYrTswtLs1L
-	10vOz93ECIm9/h2Mdw9YH2JMBlo/kVlKNDkfGLt5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgH
-	CgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBsME9bxrW9d++duR1Op7at5u786eRjsUpJvS3t
-	RK7i7SMx/KvX//6Qk180+Yik2v1+7riiozN+33XapOFoOCW3e+fHJWHM2XMkwufsn3z93KEN
-	z64HdO+QaHKd9uAJs3BdUPGesrV1G3VszhbvEvgeEpH19sv0DYxnutkqDGZdn7FsZ2LInGx+
-	JZbijERDLeai4kQADPyR1dMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd1la5cFGlydwWyx5OJVdos569ew
-	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAa1QDo01GamJK
-	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
-	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bmlkbWgjecFXOb1zA1MC7h6GLk4JAQMJE4
-	uii0i5ETyBSTuHBvPVsXIxeHkMAiRomVJ5rYIZxfjBJ/pnWzgFSxCahJfPlymB2kWURAX6Kt
-	RQOkhlmgm1HiUfNcZpAaYQE3iZnnNrGD2CwCqhKveueygdi8ApYSRxsOskDYghI/Jt8Ds5kF
-	tCTW7zzOBGHLS2xe85YZ4iIFiR1nXzOC2CICehLHX1yBqheR2PfiHeMERoFZSEbNQjJqFpJR
-	s5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHNnPpHYwrmywOMQowMGoxMO7QWtZ
-	oBBrYllxZe4hRgkOZiUR3jXaQCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OByadvJJ4Q2MT
-	MyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgDDkW+jCkNZ4vcqtKWd2l
-	Sz0n2FPl2MuUlPQVthYeFe2Z67hBaM8S/uc/ixK1HnIv/WPIf27fiv67K4XlE4odbZ5ma/1R
-	9MkreiOo1RI/5dC/tralnJflDb/us+Z+HCwuNCdrR4Hxkoz/5aZ2sStuecT/drSf18nO+369
-	/Mm8/poHCWZTZjoosRRnJBpqMRcVJwIA6lJ7RTADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1759864Ab3E3Bl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 21:41:56 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:11343 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759787Ab3E3Blr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 21:41:47 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'Will Deacon'" <will.deacon@arm.com>,
+        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>
+CC: "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 30 May 2013 09:41:42 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5cUcBEOcplY4MiTAaUd2fm1B5t7AAAByAQACEm8AA=
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+ <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the wrapper functions for getting and setting the driver data using
-platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
-so we can directly pass a struct platform_device.
+Hi  Will,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-Changes since v1:
-- fixed conflicts with rtc-rtc-mpc5121-use-devm_-functions.patch
+Have you received the log files?
 
- drivers/rtc/rtc-mpc5121.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+And is there someone looking at this issue now ?
+This issue happened on Qcom Scorpoin CPUs,
+And  it just happened in our stability test occasionally .
 
-diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
-index 4c02497..9c8f609 100644
---- a/drivers/rtc/rtc-mpc5121.c
-+++ b/drivers/rtc/rtc-mpc5121.c
-@@ -324,7 +324,7 @@ static int mpc5121_rtc_probe(struct platform_device *op)
- 
- 	device_init_wakeup(&op->dev, 1);
- 
--	dev_set_drvdata(&op->dev, rtc);
-+	platform_set_drvdata(op, rtc);
- 
- 	rtc->irq = irq_of_parse_and_map(op->dev.of_node, 1);
- 	err = request_irq(rtc->irq, mpc5121_rtc_handler, 0,
-@@ -382,7 +382,7 @@ out_dispose:
- 
- static int mpc5121_rtc_remove(struct platform_device *op)
- {
--	struct mpc5121_rtc_data *rtc = dev_get_drvdata(&op->dev);
-+	struct mpc5121_rtc_data *rtc = platform_get_drvdata(op);
- 	struct mpc5121_rtc_regs __iomem *regs = rtc->regs;
- 
- 	/* disable interrupt, so there are no nasty surprises */
--- 
-1.7.10.4
+If you have some patch for this issue,
+I can do the test for it .
 
+Thanks for your help very much !
 
+-----Original Message-----
+From: Wang, Yalin 
+Sent: Wednesday, May 29, 2013 5:51 PM
+To: 'Will Deacon'; richard -rw- weinberger
+Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+Subject: RE: A bug about system call on ARM
+
+Hi 
+
+This is kernel.log  and  the stack which is recovered by Trace32 tools.
+Please have a look at it .
+
+Thanks 
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com]
+Sent: Wednesday, May 29, 2013 5:48 PM
+To: richard -rw- weinberger
+Cc: Wang, Yalin; linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+Subject: Re: A bug about system call on ARM
+
+Hello,
+
+On Wed, May 29, 2013 at 09:46:42AM +0100, richard -rw- weinberger wrote:
+> On Wed, May 29, 2013 at 10:24 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+> > I have download the latest linux kernel code  3.9.4 And Compare with
+> > 3.4.0 kernel .
+> >
+> > It seems there is no change for this part , So it will still happen 
+> > .
+> > Does anyone know who is responsible for  arm arch part kernel code ?
+> 
+> See MAINTAINERS file.
+> CC'ing linux-arm-kernel@lists.infradead.org
+
+Cheers for adding us to CC.
+
+> >> #ifdef CONFIG_ARM_THUMB
+> >>         tst     r8, #PSR_T_BIT
+> >>         movne   r10, #0                         @ no thumb OABI emulation
+> >>         ldreq   r10, [lr, #-4]                  @ get SWI instruction          // crash at this instruction, when get SWI instruction
+
+Do you have the panic log please? Also, which SoC are you using and how are you reproducing this?
+
+> >>         ldr     r10, [lr, #-4]                  @ get SWI instruction
+> >>   A710( and     ip, r10, #0x0f000000            @ check for SWI         )
+> >>   A710( teq     ip, #0x0f000000                                         )
+> >>   A710( bne     .Larm710bug                                             )
+> >> #endif
+> >> #ifdef CONFIG_CPU_ENDIAN_BE8
+> >>         rev     r10, r10                        @ little endian instruction
+> >> #endif
+> >>
+> >> /******************************************************************
+> >> ***
+> >> ******************************/
+> >>
+> >> Then reason why it will crash when get SWI instruction is maybe 
+> >> This page is clear to aged by kernel, But this MMU fault happpened 
+> >> in kernel, So the kernel do_page_fault function will not clear this 
+> >> page to young, So that  will crash .
+
+Sounds like we might need some USER annotations around the instruction loads, but we should also rework the code so that we re-enable interrupts first.
+
+Will
