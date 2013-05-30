@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030296Ab3E3JN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:13:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48824 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030209Ab3E3JNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:13:49 -0400
-Message-ID: <51A71832.70305@ti.com>
-Date: Thu, 30 May 2013 12:13:22 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1030268Ab3E3JPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:15:32 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:48535 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967983Ab3E3JPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 05:15:21 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP2+: omap-usb-host: clean up pin mux setup code
-References: <1366624673-2684-1-git-send-email-rogerq@ti.com> <20130508235232.GW32546@atomide.com>
-In-Reply-To: <20130508235232.GW32546@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1368611522-9984-39-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-39-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 May 2013 11:15:20 +0200
+Message-ID: <CACRpkdbKwU=gwPYPYgMoj1mRVgnw9zA9RpzmZStFAXVHrkFNRQ@mail.gmail.com>
+Subject: Re: [PATCH 38/39] dmaengine: ste_dma40: Fetch the number of physical
+ channels from DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 02:52 AM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [130422 03:02]:
->> The USB host pins are named quite differently between OMAP3 and
->> OMAP4+ SoCs. To make this managable in code, we create a pin mapping
->> table (pin_names) that maps pin function to pin name.
->>
->> This pin mapping table is populated at runtime based on a pin
->> name template. Templates are provided for OMAP3 and 4 SoCs.
->>
->> The setup_io_mux() function uses the pin mapping table to
->> setup the pin mux.
->>
->> The resulting code is a lot more clean, manageable and scalable.
-> 
-> I'm planning to drop all the omap4 pdata soonish. Will post some
-> patches after -rc1 to do that. Do you still need this patch
-> considering that?
-> 
+On Wed, May 15, 2013 at 11:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-In that case we don't need this.
+> Some platforms insist on obscure physical channel availability. This
+> information is currently passed though platform data in internal BSP
+> kernels. Once those platforms land, they'll need to configure them
+> appropriately, so we may as well add the infrastructure.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-cheers,
--roger
+Patch applied with Vinod's ACK.
+
+Yours,
+Linus Walleij
