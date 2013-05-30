@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab3E3Btg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 21:49:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45002 "EHLO mga11.intel.com"
+	id S1759816Ab3E3Bvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 21:51:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9907 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759793Ab3E3Bta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 21:49:30 -0400
+	id S1759777Ab3E3Bv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 21:51:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,767,1363158000"; 
-   d="scan'208";a="345416799"
-Message-ID: <51A6B00A.90903@intel.com>
-Date: Thu, 30 May 2013 09:48:58 +0800
+   d="scan'208";a="345417516"
+Message-ID: <51A6B07C.4060108@intel.com>
+Date: Thu, 30 May 2013 09:50:52 +0800
 From: Alex Shi <alex.shi@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -21,10 +21,10 @@ CC: Linux PM list <linux-pm@vger.kernel.org>,
         Myungjoo Ham <myungjoo.ham@samsung.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] sched: Use do_div() for 64 bit division at power
- utilization calculation (putil)
-References: <1369298064-14998-1-git-send-email-l.majewski@samsung.com>
-In-Reply-To: <1369298064-14998-1-git-send-email-l.majewski@samsung.com>
+Subject: Re: [PATCH 2/2] sched:fix: Signed overflow prevention for vacancy
+ calculation
+References: <1369298064-14998-1-git-send-email-l.majewski@samsung.com> <1369298064-14998-2-git-send-email-l.majewski@samsung.com>
+In-Reply-To: <1369298064-14998-2-git-send-email-l.majewski@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,80 +32,60 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/23/2013 04:34 PM, Lukasz Majewski wrote:
-> Now explicit casting is done when power usage variable (putil) is calculated
+> Nasty bug with vacancy calculation has been fixed.
+> In the if statement the FULL_UTIL is a large constant, max_cfs_util()
+> returns unsigned and putil is also defined as unsigned. The outcome
+> is that this condition is always true.
+> 
+> As observed, this was the reason for frequent jumps of processes between
+> CPUs.
 > 
 > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> This patch was developed on top of the following Alex's repository:
-> https://github.com/alexshi/power-scheduling/commits/power-scheduling
-> ---
->  kernel/sched/fair.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
 
+Thanks for the catching!
+I do a little change, would you like to keep the authorship?
 
-Thanks for catch this issue. seems use div_u64 is better, and there are 2 same bugs.
-so, could I rewrite the patch like following?
 ---
 
->From 9f72c25607351981898d99822f5a66e0ca67a3da Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Wed, 29 May 2013 11:09:39 +0800
-Subject: [PATCH 1/2] sched: fix cast on power utilization calculation and use
- div_u64
+>From 4f7f2d091b7210e0be689d3e063d3cc82da1b1af Mon Sep 17 00:00:00 2001
+From: Lukasz Majewski <l.majewski@samsung.com>
+Date: Thu, 30 May 2013 09:21:46 +0800
+Subject: [PATCH 2/2] sched:fix: Signed overflow prevention for vacancy
+ calculation
 
-Now explicit casting is done when power usage variable (putil) is
-calculated.
-div_u64 is optimized on u32.
+Nasty bug with vacancy calculation has been fixed.
+In the if statement the FULL_UTIL is a large constant, max_cfs_util()
+returns unsigned and putil is also defined as unsigned. The outcome
+is that this condition is always true.
+
+As observed, this was the reason for frequent jumps of processes between
+CPUs.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 09ae48a..3a4917c 100644
+index 3a4917c..56a9d16 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1504,8 +1504,8 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
- 
- 	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
--	rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
--				/ period;
-+	rq->util = div_u64(((u64)rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT),
-+				period);
- }
- 
- /* Add the load generated by se into cfs_rq's child load-average */
-@@ -3407,8 +3407,8 @@ static int is_sd_full(struct sched_domain *sd,
- 		/* p maybe a new forked task */
- 		putil = FULL_UTIL;
- 	else
--		putil = (u64)(p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT)
--				/ (p->se.avg.runnable_avg_period + 1);
-+		putil = div_u64(((u64)p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT),
-+				p->se.avg.runnable_avg_period + 1);
- 
- 	/* Try to collect the domain's utilization */
- 	group = sd->groups;
-@@ -3463,9 +3463,11 @@ find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu,
- 	int vacancy, min_vacancy = INT_MAX;
- 	int leader_cpu = -1;
- 	int i;
-+
- 	/* percentage of the task's util */
--	unsigned putil = (u64)(p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT)
--				/ (p->se.avg.runnable_avg_period + 1);
-+	unsigned putil;
-+	putil = div_u64(((u64)p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT),
-+				p->se.avg.runnable_avg_period + 1);
+@@ -3468,10 +3468,10 @@ find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu,
+ 	unsigned putil;
+ 	putil = div_u64(((u64)p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT),
+ 				p->se.avg.runnable_avg_period + 1);
++	vacancy = FULL_UTIL - max_cfs_util(this_cpu, wakeup) - (putil << 2);
  
  	/* bias toward local cpu */
- 	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
+-	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
+-		FULL_UTIL - max_cfs_util(this_cpu, wakeup) - (putil << 2) > 0)
++	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) && vacancy > 0)
+ 		return this_cpu;
+ 
+ 	/* Traverse only the allowed CPUs */
 -- 
 1.7.12
 
