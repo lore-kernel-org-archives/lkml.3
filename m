@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab3E3Euw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 00:50:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52461 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3E3Euq (ORCPT
+	id S1751259Ab3E3Eyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 00:54:39 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42645 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3E3Eyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 00:50:46 -0400
-Date: Wed, 29 May 2013 21:50:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Bart Van Assche <bart.vanassche@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
-Message-Id: <20130529215005.c91c75de.akpm@linux-foundation.org>
-In-Reply-To: <1369872829.22004.129.camel@joe-AO722>
-References: <519BC066.5080600@acm.org>
-	<20130529160150.f0a498d188dc790d018200e9@linux-foundation.org>
-	<1369869467.22004.122.camel@joe-AO722>
-	<20130529163813.5f637f04.akpm@linux-foundation.org>
-	<1369872829.22004.129.camel@joe-AO722>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 00:54:31 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: arnd@arndb.de, patches@linaro.org, kgene.kim@samsung.com, olof@lixom.net
+Subject: [PATCH] ARM: EXYNOS: Consolidate multiple low-level UART port definitions
+Date: Thu, 30 May 2013 10:10:27 +0530
+Message-Id: <1369888827-9427-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 May 2013 17:13:49 -0700 Joe Perches <joe@perches.com> wrote:
+There are two definitions for low-level UART ports for Exynos platform.
+CONFIG_S3C_LOWLEVEL_UART_PORT is used for printing "Uncompressing
+Linux... done, booting the kernel." and CONFIG_S3C_UART for other
+low-level messages.
 
-> On Wed, 2013-05-29 at 16:38 -0700, Andrew Morton wrote:
-> > On Wed, 29 May 2013 16:17:47 -0700 Joe Perches <joe@perches.com> wrote:
-> > 
-> > > >   We could perhaps have a checkpatch rule
-> > > > which looks for comparisons against jiffes (and any other
-> > > > time-measuring variables we can detect)
-> > > 
-> > > other variables like?
-> > 
-> > Grepping for time_after finds a bunch.  There's no real pattern to it though.
-> 
-> get_jiffies_64() should probably be added as
-> another test too.
-> 
-> Also, these might be wrong:
-> 
-> arch/arm/kernel/smp_twd.c:              while (get_jiffies_64() < waitjiffies)
-> arch/arm/kernel/smp_twd.c:              while (get_jiffies_64() < waitjiffies)
-> fs/fuse/dir.c:  else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-> fs/fuse/dir.c:  if (fi->i_time < get_jiffies_64()) {
-> fs/fuse/dir.c:          if (fi->i_time < get_jiffies_64()) {
-> 
+The assumption for both the uart ports is that they are pre-configured
+in the bootloader. Since they are essentially the same always, it
+would be good to consolidate them to use only one macro, in this case
+'DEBUG_S3C_UART' would be a better option.
 
-Yup.  Normally a 64-bit jiffy will wrap around shortly after the heat
-death of the universe, but
+'DEBUG_S3C_UART' is defined only if DEBUG_LL is enabled. We can safely
+disable this option when DEBUG_LL is not defined and we can boot various
+boards with different UART port settings. Only drawback of this
+approach is that when DEBUG_LL is not defined, we would be missing the
+print "Uncompressing Linux... done, booting the kernel."
 
-a) it's derived from jiffies, which we evilly cause to wrap after 5
-   minutes uptime and
+Since CONFIG_S3C_LOWLEVEL_UART_PORT is still used by other Samsung
+boards, the consolidation applies only for ARCH_EXYNOS.
 
-b) it's derived from jiffies, which is 32-bit on 32-bit and hence
-   wraps every 49 days (HZ=1000).
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+ arch/arm/mach-exynos/include/mach/uncompress.h  |   11 ++++++++---
+ arch/arm/plat-samsung/include/plat/uncompress.h |   16 ++++++++++++++--
+ 2 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-exynos/include/mach/uncompress.h b/arch/arm/mach-exynos/include/mach/uncompress.h
+index 2979995..45b5c2a 100644
+--- a/arch/arm/mach-exynos/include/mach/uncompress.h
++++ b/arch/arm/mach-exynos/include/mach/uncompress.h
+@@ -37,11 +37,16 @@ static void arch_detect_cpu(void)
+ 	chip_id >>= 20;
+ 	chip_id &= 0xf;
+ 
++#ifdef CONFIG_DEBUG_LL
+ 	if (chip_id == 0x5)
+-		uart_base = (volatile u8 *)EXYNOS5_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
++		uart_base = (volatile u8 *)EXYNOS5_PA_UART +
++			(S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART);
+ 	else
+-		uart_base = (volatile u8 *)EXYNOS4_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
+-
++		uart_base = (volatile u8 *)EXYNOS4_PA_UART +
++			(S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART);
++#else
++	uart_base = 0;
++#endif
+ 	/*
+ 	 * For preventing FIFO overrun or infinite loop of UART console,
+ 	 * fifo_max should be the minimum fifo size of all of the UART channels
+diff --git a/arch/arm/plat-samsung/include/plat/uncompress.h b/arch/arm/plat-samsung/include/plat/uncompress.h
+index 438b248..028c2a8 100644
+--- a/arch/arm/plat-samsung/include/plat/uncompress.h
++++ b/arch/arm/plat-samsung/include/plat/uncompress.h
+@@ -38,7 +38,11 @@ static void arch_detect_cpu(void);
+ #define FIFO_MAX	 (14)
+ 
+ #ifdef S3C_PA_UART
+-#define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
++#ifdef CONFIG_DEBUG_LL
++#define uart_base (S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART))
++#else
++#define uart_base 0
++#endif
+ #endif
+ 
+ static __inline__ void
+@@ -66,6 +70,9 @@ uart_rd(unsigned int reg)
+ 
+ static void putc(int ch)
+ {
++	if (!uart_base)
++		return;
++
+ 	if (uart_rd(S3C2410_UFCON) & S3C2410_UFCON_FIFOMODE) {
+ 		int level;
+ 
+@@ -118,7 +125,12 @@ static void arch_decomp_error(const char *x)
+ #ifdef CONFIG_S3C_BOOT_UART_FORCE_FIFO
+ static inline void arch_enable_uart_fifo(void)
+ {
+-	u32 fifocon = uart_rd(S3C2410_UFCON);
++	u32 fifocon;
++
++	if (!uart_base)
++		return;
++
++	fifocon = uart_rd(S3C2410_UFCON);
+ 
+ 	if (!(fifocon & S3C2410_UFCON_FIFOMODE)) {
+ 		fifocon |= S3C2410_UFCON_RESETBOTH;
+-- 
+1.7.9.5
 
