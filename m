@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736Ab3E3P2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:28:46 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:35561 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3E3P2k (ORCPT
+	id S933775Ab3E3PaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:30:16 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:34950 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab3E3PaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:28:40 -0400
+	Thu, 30 May 2013 11:30:11 -0400
+Message-ID: <1369927806.2414.2.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH] include/linux/skbuff.h: using '0xffff' instead of '~0U'
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Chen Gang <gang.chen@asianux.com>
+CC: <edumazet@google.com>, Pravin Shelar <pshelar@nicira.com>,
+        <mgorman@suse.de>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Thu, 30 May 2013 16:30:06 +0100
+In-Reply-To: <51A6EBC5.7040601@asianux.com>
+References: <51A6EBC5.7040601@asianux.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-In-Reply-To: <CAHbNUh0kWxqDMvLwE-_PKQVassDJvbgiCiDDNSHn9AW3md=A5A@mail.gmail.com>
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-	<87sj1qzaov.fsf@linaro.org>
-	<5191AA89.6010901@linaro.org>
-	<20130528231740.GA28879@quad.lixom.net>
-	<51A57D39.8030506@linaro.org>
-	<CAOesGMh50Dzr_jczHZC5_txfW=6a+7EgFKvgZgj9MhUcVUTJ1Q@mail.gmail.com>
-	<51A5C16D.20408@linaro.org>
-	<000001ce5c4f$839f4cb0$8adde610$@samsung.com>
-	<3D99F44C56954EC59167436E26BE91F6@sisodomain.com>
-	<CAHbNUh0kWxqDMvLwE-_PKQVassDJvbgiCiDDNSHn9AW3md=A5A@mail.gmail.com>
-Date: Thu, 30 May 2013 20:58:39 +0530
-Message-ID: <CAHbNUh35vdhX4F7=QeXD9RMNKq42Vu-1yjx3LSKnbd_TH_+vrw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Patch Tracking <patches@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19904.005
+X-TM-AS-Result: No--14.199700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending in plain-text mode.
+On Thu, 2013-05-30 at 14:03 +0800, Chen Gang wrote:
+> Both 'transport_header' and 'mac_header' are u16, which are never equal
+> to '~0U'.
+> 
+> So need use '0xffff' instead of '~0U'.
 
-On 30 May 2013 20:56, Tushar Behera <tushar.behera@linaro.org> wrote:
->>>
->> We do have a driver for USB3503 in upstream now, which has enough
->> infrastructure for us to use.
->> We just want to handle states of HUB_CONNECT line or RESET_N line, which
->> should just be fine with this driver.
->>
->> Am I missing something ?
->>
+...and give this magic number a name?
 
-The USB3503 driver is an I2C client driver. In case of Arndale, the SDA and
-SCL lines for SMSC3503 chip are sorted, hence there are no I2C channels that
-the driver can register to. So effectively we can't use that driver for
-Arndale.
+Ben.
+
+> The related warning (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
+>   include/linux/skbuff.h:1587:2: warning: comparison is always true due to limited range of data type [-Wtype-limits]
+>   ...
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  include/linux/skbuff.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 2e0ced1..03ba058 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -1581,7 +1581,7 @@ static inline void skb_set_inner_mac_header(struct sk_buff *skb,
+>  }
+>  static inline bool skb_transport_header_was_set(const struct sk_buff *skb)
+>  {
+> -	return skb->transport_header != ~0U;
+> +	return skb->transport_header != 0xffff;
+>  }
+>  
+>  static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
+> @@ -1624,7 +1624,7 @@ static inline unsigned char *skb_mac_header(const struct sk_buff *skb)
+>  
+>  static inline int skb_mac_header_was_set(const struct sk_buff *skb)
+>  {
+> -	return skb->mac_header != ~0U;
+> +	return skb->mac_header != 0xffff;
+>  }
+>  
+>  static inline void skb_reset_mac_header(struct sk_buff *skb)
 
 -- 
-Tushar Behera
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
