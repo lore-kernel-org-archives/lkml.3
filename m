@@ -1,93 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967541Ab3E3FwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 01:52:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13740 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S966267Ab3E3FwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 01:52:06 -0400
-X-IronPort-AV: E=Sophos;i="4.87,768,1363104000"; 
-   d="scan'208";a="7409698"
-Message-ID: <51A6E85F.5000300@cn.fujitsu.com>
-Date: Thu, 30 May 2013 13:49:19 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        davej@redhat.com, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 2/7] Documentation/devices.txt: Remove /dev/oldmem description
-References: <51A02E50.5020507@gmail.com> <51A02F59.8000103@gmail.com> <87vc668x4w.fsf@xmission.com> <51A15E2F.7010308@gmail.com> <51A2B693.7000701@jp.fujitsu.com> <51A2B68E.4060605@cn.fujitsu.com> <20130529152007.893940a04d95fa1e38e851d4@linux-foundation.org>
-In-Reply-To: <20130529152007.893940a04d95fa1e38e851d4@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 13:50:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 13:50:31,
-	Serialize complete at 2013/05/30 13:50:31
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S967550Ab3E3F6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 01:58:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38199 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967532Ab3E3F6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 01:58:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,768,1363158000"; 
+   d="scan'208";a="321749921"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH] x86, tboot: enable SMX operation
+Date: Thu, 30 May 2013 13:48:45 +0800
+Message-Id: <1369892925-13118-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 06:20 AM, Andrew Morton wrote:
-> On Mon, 27 May 2013 09:27:42 +0800 Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
-> 
+Safer Mode Extensions (SMX) provide a programming interface for
+system software to establish a measured environment within the
+platform to support trust decisions by end users.
 
-snip
+We need enable SMX operation by setting CR4.SMXE[Bit 14] = 1,
+if system has txt supported and lives in messured environment.
 
->>
->> I've sent the v2 version and actually did what you said.
-> 
-> I can't find any v2 version of this patchset.
-> 
-> I did this:
-> 
-> --- a/Documentation/devices.txt~dev-oldmem-remove-the-interface-fix
-> +++ a/Documentation/devices.txt
-> @@ -102,6 +102,7 @@ Your cooperation is appreciated.
->  					export the buffered printk records.
->  		 12 = /dev/oldmem	Used by crashdump kernels to access
->  					the memory of the kernel that crashed.
-> +					(obsolete)
->  
->    1 block	RAM disk
->  		  0 = /dev/ram0		First RAM disk
-> _
-> 
-> 
-
-v1 is the same with v2 except this patch. I attach it below:
-
------------------------------------
->From d2f7baf2aba86069f941f32669a22dbd99082614 Mon Sep 17 00:00:00 2001
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Date: Wed, 29 May 2013 15:44:09 +0800
-Subject: [PATCH] Documentation/devices.txt: Mark /dev/oldmem obsolete
-
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- Documentation/devices.txt |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/include/uapi/asm/processor-flags.h |    1 +
+ arch/x86/kernel/tboot.c                     |  100 ++++++++++++++-------------
+ 2 files changed, 53 insertions(+), 48 deletions(-)
 
-diff --git a/Documentation/devices.txt b/Documentation/devices.txt
-index 08f01e7..315455a 100644
---- a/Documentation/devices.txt
-+++ b/Documentation/devices.txt
-@@ -100,8 +100,7 @@ Your cooperation is appreciated.
- 		 10 = /dev/aio		Asynchronous I/O notification interface
- 		 11 = /dev/kmsg		Writes to this come out as printk's, reads
- 					export the buffered printk records.
--		 12 = /dev/oldmem	Used by crashdump kernels to access
--					the memory of the kernel that crashed.
-+		 12 = /dev/oldmem	OBSOLETE - replaced by /proc/vmcore
+diff --git a/arch/x86/include/uapi/asm/processor-flags.h b/arch/x86/include/uapi/asm/processor-flags.h
+index 54991a7..9edd51f 100644
+--- a/arch/x86/include/uapi/asm/processor-flags.h
++++ b/arch/x86/include/uapi/asm/processor-flags.h
+@@ -61,6 +61,7 @@
+ #define X86_CR4_OSFXSR	0x00000200 /* enable fast FPU save and restore */
+ #define X86_CR4_OSXMMEXCPT 0x00000400 /* enable unmasked SSE exceptions */
+ #define X86_CR4_VMXE	0x00002000 /* enable VMX virtualization */
++#define X86_CR4_SMXE	0x00004000 /* enable SMX operation */
+ #define X86_CR4_RDWRGSFS 0x00010000 /* enable RDWRGSFS support */
+ #define X86_CR4_PCIDE	0x00020000 /* enable PCID support */
+ #define X86_CR4_OSXSAVE 0x00040000 /* enable xsave and xrestore */
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index f84fe00..184c546 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -58,51 +58,6 @@ EXPORT_SYMBOL(tboot);
  
-   1 block	RAM disk
- 		  0 = /dev/ram0		First RAM disk
+ static u8 tboot_uuid[16] __initdata = TBOOT_UUID;
+ 
+-void __init tboot_probe(void)
+-{
+-	/* Look for valid page-aligned address for shared page. */
+-	if (!boot_params.tboot_addr)
+-		return;
+-	/*
+-	 * also verify that it is mapped as we expect it before calling
+-	 * set_fixmap(), to reduce chance of garbage value causing crash
+-	 */
+-	if (!e820_any_mapped(boot_params.tboot_addr,
+-			     boot_params.tboot_addr, E820_RESERVED)) {
+-		pr_warning("non-0 tboot_addr but it is not of type E820_RESERVED\n");
+-		return;
+-	}
+-
+-	/* only a natively booted kernel should be using TXT */
+-	if (paravirt_enabled()) {
+-		pr_warning("non-0 tboot_addr but pv_ops is enabled\n");
+-		return;
+-	}
+-
+-	/* Map and check for tboot UUID. */
+-	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
+-	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
+-	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
+-		pr_warning("tboot at 0x%llx is invalid\n",
+-			   boot_params.tboot_addr);
+-		tboot = NULL;
+-		return;
+-	}
+-	if (tboot->version < 5) {
+-		pr_warning("tboot version is invalid: %u\n", tboot->version);
+-		tboot = NULL;
+-		return;
+-	}
+-
+-	pr_info("found shared page at phys addr 0x%llx:\n",
+-		boot_params.tboot_addr);
+-	pr_debug("version: %d\n", tboot->version);
+-	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
+-	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
+-	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
+-	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
+-}
+-
+ static pgd_t *tboot_pg_dir;
+ static struct mm_struct tboot_mm = {
+ 	.mm_rb          = RB_ROOT,
+@@ -329,6 +284,10 @@ static int __cpuinit tboot_cpu_callback(struct notifier_block *nfb,
+ 			if (tboot_wait_for_aps(atomic_read(&ap_wfs_count)))
+ 				return NOTIFY_BAD;
+ 		break;
++
++	case CPU_STARTING:
++		set_in_cr4(X86_CR4_SMXE);
++		break;
+ 	}
+ 	return NOTIFY_OK;
+ }
+@@ -338,6 +297,54 @@ static struct notifier_block tboot_cpu_notifier __cpuinitdata =
+ 	.notifier_call = tboot_cpu_callback,
+ };
+ 
++void __init tboot_probe(void)
++{
++	/* Look for valid page-aligned address for shared page. */
++	if (!boot_params.tboot_addr)
++		return;
++	/*
++	 * also verify that it is mapped as we expect it before calling
++	 * set_fixmap(), to reduce chance of garbage value causing crash
++	 */
++	if (!e820_any_mapped(boot_params.tboot_addr,
++			     boot_params.tboot_addr, E820_RESERVED)) {
++		pr_warn("non-0 tboot_addr but it is not of type E820_RESERVED\n");
++		return;
++	}
++
++	/* only a natively booted kernel should be using TXT */
++	if (paravirt_enabled()) {
++		pr_warn("non-0 tboot_addr but pv_ops is enabled\n");
++		return;
++	}
++
++	/* Map and check for tboot UUID. */
++	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
++	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
++	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
++		pr_warn("tboot at 0x%llx is invalid\n",
++			   boot_params.tboot_addr);
++		tboot = NULL;
++		return;
++	}
++	if (tboot->version < 5) {
++		pr_warn("tboot version is invalid: %u\n", tboot->version);
++		tboot = NULL;
++		return;
++	}
++
++	atomic_set(&ap_wfs_count, 0);
++	register_cpu_notifier(&tboot_cpu_notifier);
++
++	pr_info("found shared page at phys addr 0x%llx:\n",
++		boot_params.tboot_addr);
++	pr_debug("version: %d\n", tboot->version);
++	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
++	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
++	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
++	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
++}
++
+ static __init int tboot_late_init(void)
+ {
+ 	if (!tboot_enabled())
+@@ -345,9 +352,6 @@ static __init int tboot_late_init(void)
+ 
+ 	tboot_create_trampoline();
+ 
+-	atomic_set(&ap_wfs_count, 0);
+-	register_hotcpu_notifier(&tboot_cpu_notifier);
+-
+ 	acpi_os_set_prepare_sleep(&tboot_sleep);
+ 	return 0;
+ }
 -- 
-1.7.1
+1.7.9.5
+
