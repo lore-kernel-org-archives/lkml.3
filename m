@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab3E3Oxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:53:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22721 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab3E3OxY (ORCPT
+	id S1757689Ab3E3Oxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:53:43 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41075 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757518Ab3E3Oxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:53:24 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=f73XcKl29joA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=y5CGMQcehd0A:10 a=oCcaPWc0AAAA:8 a=rezNVQXxIapar52AQ-8A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369925602.26799.5.camel@gandalf.local.home>
-Subject: Re: [PATCH] RFC: Set irq thread to RT priority on creation
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 30 May 2013 10:53:22 -0400
-In-Reply-To: <1369915975-28797-1-git-send-email-meltedpianoman@gmail.com>
-References: <1369915975-28797-1-git-send-email-meltedpianoman@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 10:53:30 -0400
+Date: Thu, 30 May 2013 15:53:23 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/5] Various DT fixes related to ux500 ASoC driver
+Message-ID: <20130530145323.GB1915@gmail.com>
+References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-30 at 14:12 +0200, Ivo Sieben wrote:
+On Thu, 30 May 2013, Fabio Baltieri wrote:
 
->  kernel/irq/manage.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+> Hi Linus, Lee,
 > 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index fa17855..0ffe37b 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -950,6 +950,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
->  	 */
->  	if (new->thread_fn && !nested) {
->  		struct task_struct *t;
-> +		static const struct sched_param param = {
-> +			.sched_priority = MAX_USER_RT_PRIO/2,
-> +		};
->  
->  		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
->  				   new->name);
-> @@ -957,6 +960,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
->  			ret = PTR_ERR(t);
->  			goto out_mput;
->  		}
-> +
-> +		sched_setscheduler(t, SCHED_FIFO, &param);
-> +
+> these are various fixes I found while testing the ux500 ASoC driver on HREF
+> with device-tree.
+> 
+> First two patches are typos in DT files, while the others are
+> specifically to support ux500 ASoC driver with DT enabled.
+> 
+> The last patch can go in the mfd tree, while the others may safely go
+> through arm-soc, as there are no build dependencies or regression issues
+> in general.
+> 
+> Thanks,
+> Fabio
+> 
+> 
+> Fabio Baltieri (5):
+>   ARM: ux500: Fix trivial typo in v-anamic1 comment
+>   ARM: ux500: Correct anamic2 typo in DT files
+>   ARM: ux500: Add DT regulators for ab8500-codec
+>   ARM: ux500: Provide auxdata to ux500 ASoC driver
+>   mfd: ab8500-core: Add of_compatible property for ab8500-codec
+> 
+>  arch/arm/boot/dts/dbx5x0.dtsi     | 11 ++++++++---
+>  arch/arm/boot/dts/href.dtsi       |  2 +-
+>  arch/arm/boot/dts/hrefv60plus.dts |  2 +-
+>  arch/arm/boot/dts/snowball.dts    |  2 +-
+>  arch/arm/mach-ux500/cpu-db8500.c  |  2 ++
+>  drivers/mfd/ab8500-core.c         |  1 +
+>  drivers/regulator/ab8500.c        |  8 ++++----
+>  7 files changed, 18 insertions(+), 10 deletions(-)
 
-If you are adding this here, might as well remove the
-sched_set_scheduler() from irq_thread() as well. No need to do it twice.
+All look good to me.
 
--- Steve
+For patches 1-4:
 
->  		/*
->  		 * We keep the reference to the task struct even if
->  		 * the thread dies to avoid that the interrupt code
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+For patch 5:
 
+Applied thanks.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
