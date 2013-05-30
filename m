@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3E3OFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:05:53 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:26117 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab3E3OFn (ORCPT
+	id S1757416Ab3E3OHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:07:34 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51634 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666Ab3E3OH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:05:43 -0400
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>
-CC: "Luck, Tony" <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
- context
-Thread-Topic: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
- context
-Thread-Index: AQHOXL6xaJHLIdYYMUCf//A2tjAxCpkcyS2AgACME3GAAGbRAIAABCGg
-Date: Thu, 30 May 2013 14:04:42 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F95D13A762@G9W0715.americas.hpqcorp.net>
-References: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
-	 <30463843.EmBn1xaq3I@vostro.rjw.lan>
-	 <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
-	 <A961433CDFF2F640A2866803152E61F95D13A6F2@G9W0715.americas.hpqcorp.net>
-	 <20130530072849.GA20793@pd.tnic>
- <1369921028.26799.4.camel@gandalf.local.home>
-In-Reply-To: <1369921028.26799.4.camel@gandalf.local.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.17]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 30 May 2013 10:07:28 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 30 May 2013 07:07:54 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 3/3] watchdog: xilinx: Add WDIOC_SETTIMEOUT ioctl function
+Message-ID: <20130530140754.GB28232@roeck-us.net>
+References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
+ <595eb49b34909318959fe6825c209a7d635ed849.1369916757.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <595eb49b34909318959fe6825c209a7d635ed849.1369916757.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4UE5uvo017823
 
-> >
-> > Sounds to me, this TODO item should be on your TODO list - not in
-> kernel
-> > sources :-)
-> >
+On Thu, May 30, 2013 at 02:26:04PM +0200, Michal Simek wrote:
+> Standard watchdog programs try to setup timeout
+> via ioctl and this functionality should be implemented.
+> Timeout value is hardcoded in the hardware but
+> based on Documentation/watchdog/watchdog-api.txt
+> can return the real timeout used in the same variable.
 > 
-> Also, that TODO sounds like there's output to userspace that can be
-> parsed by a userspace tool. If a tool expects the current format, it
-> may
-> not be acceptable to change it later.
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>  drivers/watchdog/of_xilinx_wdt.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> If the contents of this patch has nothing to do with the TODO, then
-> leave it out. It just confuses things.
+> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+> index 79f358c..a3bbe72 100644
+> --- a/drivers/watchdog/of_xilinx_wdt.c
+> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> @@ -253,6 +253,7 @@ static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>  		xwdt_keepalive();
+>  		return 0;
+> 
+> +	case WDIOC_SETTIMEOUT:
+>  	case WDIOC_GETTIMEOUT:
+>  		if (no_timeout)
+>  			return -ENOTTY;
 
-Steve, you do have a good point here.  I am wondering if that is why we should consider changing the output to match aer_print_error().  The code path to aer_print_error() is the more common path where not as many platforms support the cper_print_error() path (firmware first AER).  So it is more likely that any tools written would know how to parse the output from aer_print_error().  It would be good for those tools to support firmware first AER when it becomes more common.  Of course this is purely conjecture.  I have no idea if there are any tools that parse this text output.
+Watchdog programs should check ident.options before trying to set the timeout.
+If they don't, there is an application bug. I don't think it is a good idea
+to start hacking the kernel to work around application bugs.
 
-Lance
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Guenter
