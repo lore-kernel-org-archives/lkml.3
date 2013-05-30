@@ -1,123 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab3E3Xm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 19:42:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51921 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3E3Xmw (ORCPT
+	id S1751624Ab3E3XnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 19:43:08 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:52435 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab3E3Xm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 19:42:52 -0400
-Date: Thu, 30 May 2013 16:42:35 -0700
-From: tip-bot for Pekka Riikonen <tipbot@zytor.com>
-Message-ID: <tip-5187b28ff08249ab8a162e802209ed04e271ca02@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        priikone@iki.fi, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        priikone@iki.fi, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <alpine.GSO.2.00.1305131356320.18@git.silcnet.org>
-References: <alpine.GSO.2.00.1305131356320.18@git.silcnet.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Allow FPU to be used at interrupt time even with eagerfpu
-Git-Commit-ID: 5187b28ff08249ab8a162e802209ed04e271ca02
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 30 May 2013 19:42:56 -0400
+Date: Fri, 31 May 2013 08:43:39 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree
+ (net-next tree related)
+Message-ID: <20130530234339.GC31349@verge.net.au>
+References: <20130530161757.e04eaefc2f3cf64c1135aac1@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130530161757.e04eaefc2f3cf64c1135aac1@canb.auug.org.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5187b28ff08249ab8a162e802209ed04e271ca02
-Gitweb:     http://git.kernel.org/tip/5187b28ff08249ab8a162e802209ed04e271ca02
-Author:     Pekka Riikonen <priikone@iki.fi>
-AuthorDate: Mon, 13 May 2013 14:32:07 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 30 May 2013 16:36:42 -0700
+On Thu, May 30, 2013 at 04:17:57PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> produced this warning:
+> 
+> net/netfilter/nf_nat_helper.c: In function 'mangle_contents':
+> net/netfilter/nf_nat_helper.c:108:9: warning: passing argument 3 of 'memmove' makes integer from pointer without a cast [enabled by default]
+> arch/x86/include/asm/string_32.h:200:7: note: expected 'size_t' but argument is of type 'sk_buff_data_t'
+> 
+> Presumably introduced by commit 1a37e412a022 ("net: Use 16bits for
+> *_headers fields of struct skbuff").
 
-x86: Allow FPU to be used at interrupt time even with eagerfpu
+Thanks Stephen.
 
-With the addition of eagerfpu the irq_fpu_usable() now returns false
-negatives especially in the case of ksoftirqd and interrupted idle task,
-two common cases for FPU use for example in networking/crypto.  With
-eagerfpu=off FPU use is possible in those contexts.  This is because of
-the eagerfpu check in interrupted_kernel_fpu_idle():
+I believe that you are correct. I'll prepare and post a patch ASAP.
 
-...
-  * For now, with eagerfpu we will return interrupted kernel FPU
-  * state as not-idle. TBD: Ideally we can change the return value
-  * to something like __thread_has_fpu(current). But we need to
-  * be careful of doing __thread_clear_has_fpu() before saving
-  * the FPU etc for supporting nested uses etc. For now, take
-  * the simple route!
-...
- 	if (use_eager_fpu())
- 		return 0;
-
-As eagerfpu is automatically "on" on those CPUs that also have the
-features like AES-NI this patch changes the eagerfpu check to return 1 in
-case the kernel_fpu_begin() has not been said yet.  Once it has been the
-__thread_has_fpu() will start returning 0.
-
-Notice that with eagerfpu the __thread_has_fpu is always true initially.
-FPU use is thus always possible no matter what task is under us, unless
-the state has already been saved with kernel_fpu_begin().
-
-[ hpa: this is a performance regression, not a correctness regression,
-  but since it can be quite serious on CPUs which need encryption at
-  interrupt time I am marking this for urgent/stable. ]
-
-Signed-off-by: Pekka Riikonen <priikone@iki.fi>
-Link: http://lkml.kernel.org/r/alpine.GSO.2.00.1305131356320.18@git.silcnet.org
-Cc: <stable@vger.kernel.org> v3.7+
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/i387.c | 14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 245a71d..cb33909 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -22,23 +22,19 @@
- /*
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-- * For now, with eagerfpu we will return interrupted kernel FPU
-- * state as not-idle. TBD: Ideally we can change the return value
-- * to something like __thread_has_fpu(current). But we need to
-- * be careful of doing __thread_clear_has_fpu() before saving
-- * the FPU etc for supporting nested uses etc. For now, take
-- * the simple route!
-- *
-  * On others, we can do a kernel_fpu_begin/end() pair *ONLY* if that
-  * pair does nothing at all: the thread must not have fpu (so
-  * that we don't try to save the FPU state), and TS must
-  * be set (so that the clts/stts pair does nothing that is
-  * visible in the interrupted kernel thread).
-+ *
-+ * Except for the eagerfpu case when we return 1 unless we've already
-+ * been eager and saved the state in kernel_fpu_begin().
-  */
- static inline bool interrupted_kernel_fpu_idle(void)
- {
- 	if (use_eager_fpu())
--		return 0;
-+		return __thread_has_fpu(current);
- 
- 	return !__thread_has_fpu(current) &&
- 		(read_cr0() & X86_CR0_TS);
-@@ -78,8 +74,8 @@ void __kernel_fpu_begin(void)
- 	struct task_struct *me = current;
- 
- 	if (__thread_has_fpu(me)) {
--		__save_init_fpu(me);
- 		__thread_clear_has_fpu(me);
-+		__save_init_fpu(me);
- 		/* We do 'stts()' in __kernel_fpu_end() */
- 	} else if (!use_eager_fpu()) {
- 		this_cpu_write(fpu_owner_task, NULL);
