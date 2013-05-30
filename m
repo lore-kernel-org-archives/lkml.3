@@ -1,52 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030388Ab3E3KVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:21:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11209 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030344Ab3E3KVq (ORCPT
+	id S1752125Ab3E3KXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:23:16 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:54539 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3E3KXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:21:46 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3/7] net, ipw2x00: remove redundant D0 power state set
-Date: Thu, 30 May 2013 18:21:29 +0800
-Message-ID: <1369909289-35752-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Thu, 30 May 2013 06:23:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1369729014-20974-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1369729014-20974-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369729014-20974-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 30 May 2013 13:23:03 +0300
+Message-ID: <CAHp75VdMz8+PZ_k4F1_ui=P4J3Cwg9tN5EspsAC7VK7HNaFcFA@mail.gmail.com>
+Subject: Re: [PATCH, resend 2/3] gpiolib: append SFI helpers for GPIO API
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: sfi-devel@simplefirmware.org, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci_enable_device() will set device power state to D0,
-so it's no need to do it again in ipw2100_pci_init_one().
+Drop this one away,  Sathyanarayanan Kuppuswamy takes care about it in
+his patchset.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/net/wireless/ipw2x00/ipw2100.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
-index 15920aa..f8ab193 100644
---- a/drivers/net/wireless/ipw2x00/ipw2100.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-@@ -6242,8 +6242,6 @@ static int ipw2100_pci_init_one(struct pci_dev *pci_dev,
- 	if ((val & 0x0000ff00) != 0)
- 		pci_write_config_dword(pci_dev, 0x40, val & 0xffff00ff);
- 
--	pci_set_power_state(pci_dev, PCI_D0);
--
- 	if (!ipw2100_hw_is_adapter_in_system(dev)) {
- 		printk(KERN_WARNING DRV_NAME
- 		       "Device not found via register read.\n");
 -- 
-1.7.1
-
-
+With Best Regards,
+Andy Shevchenko
