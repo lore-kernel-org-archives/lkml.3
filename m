@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab3E3OqU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:46:20 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:27968 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933053Ab3E3OqM (ORCPT
+	id S933356Ab3E3Oqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:46:34 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:3490 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933252Ab3E3OqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:46:12 -0400
+	Thu, 30 May 2013 10:46:19 -0400
 From: Betty Dall <betty.dall@hp.com>
 To: rjw@sisk.pl, bhelgaas@google.com
 Cc: ying.huang@intel.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Betty Dall <betty.dall@hp.com>
-Subject: [PATCH v2 1/3] PCI/AER: Fix incorrect return from aer_hest_parse()
-Date: Thu, 30 May 2013 08:39:27 -0600
-Message-Id: <1369924769-17183-2-git-send-email-betty.dall@hp.com>
+Subject: [PATCH v2 3/3] PCI/AER: Provide reset_link for firmware first root port
+Date: Thu, 30 May 2013 08:39:29 -0600
+Message-Id: <1369924769-17183-4-git-send-email-betty.dall@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
 References: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
@@ -22,32 +22,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function aer_hest_parse() is called to determine if the given
-PCI device is firmware first or not. The code loops through each
-section of the HEST table to look for a match. The bug is that
-the function always returns whether the last HEST section is firmware
-first. The fix stops the iteration once the info.firmware_first
-variable is set.  This is similar to how the function aer_hest_parse_aff()
-stops the iteration.
+The firmware first path does not install the aerdrv root port
+service driver, so the firmware first root port does not have
+a reset_link callback. When a firmware first root port does not have
+a reset_link callback, use a new default reset_link similar to what
+we already do for the default_downstream_reset_link(). The firmware
+first default reset_link brings the root port out of SBR if firmware
+left it in SBR.
+
+Changes since v1:
+Removed incorrect setting of p2p_ctrl after the read.
 
 Signed-off-by: Betty Dall <betty.dall@hp.com>
 ---
 
- drivers/pci/pcie/aer/aerdrv_acpi.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/pci/pcie/aer/aerdrv_core.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
 
-diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
-index 5194a7d..39b8671 100644
---- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-+++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-@@ -42,6 +42,9 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
- 	u8 bridge = 0;
- 	int ff = 0;
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index 8ec8b4f..72f76cd 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -413,6 +413,39 @@ static pci_ers_result_t default_downstream_reset_link(struct pci_dev *dev)
+ 	return PCI_ERS_RESULT_RECOVERED;
+ }
  
-+	if (info->firmware_first)
-+		return 0;
++/**
++ * default_ff_root_port_reset_link - default reset function for firmware
++ *		first Root Port
++ * @dev: pointer to root port's pci_dev data structure
++ *
++ * Invoked when performing link reset at Root Port w/ no aer driver.
++ * This happens through the firmware first path. Firmware may leave
++ * the Root Port in SBR and it is the OS responsiblity to bring it out
++ * of SBR.
++ */
++static pci_ers_result_t default_ff_root_port_reset_link(struct pci_dev *dev)
++{
++	u16 p2p_ctrl;
 +
- 	switch (hest_hdr->type) {
- 	case ACPI_HEST_TYPE_AER_ROOT_PORT:
- 		pcie_type = PCI_EXP_TYPE_ROOT_PORT;
++	/* Read Secondary Bus Reset */
++	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &p2p_ctrl);
++
++	/* De-assert Secondary Bus Reset, if it is set */
++	if (p2p_ctrl & PCI_BRIDGE_CTL_BUS_RESET) {
++		p2p_ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
++		pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
++
++		/*
++		 * System software must wait for at least 100ms from the end
++		 * of a reset of one or more device before it is permitted
++		 * to issue Configuration Requests to those devices.
++		 */
++		msleep(200);
++		dev_dbg(&dev->dev, "Root Port link has been reset\n");
++	}
++	return PCI_ERS_RESULT_RECOVERED;
++}
++
+ static int find_aer_service_iter(struct device *device, void *data)
+ {
+ 	struct pcie_port_service_driver *service_driver, **drv;
+@@ -460,6 +493,9 @@ static pci_ers_result_t reset_link(struct pci_dev *dev)
+ 		status = driver->reset_link(udev);
+ 	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_DOWNSTREAM) {
+ 		status = default_downstream_reset_link(udev);
++	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_ROOT_PORT &&
++		pcie_aer_get_firmware_first(udev)) {
++		status = default_ff_root_port_reset_link(udev);
+ 	} else {
+ 		dev_printk(KERN_DEBUG, &dev->dev,
+ 			"no link-reset support at upstream device %s\n",
