@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759930Ab3E3TgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:36:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59315 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759645Ab3E3TgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:36:12 -0400
-Date: Thu, 30 May 2013 12:36:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Robert Nelson <robertcnelson@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Robert Nelson <Robert.Nelson@digikey.com>,
-        <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-Message-Id: <20130530123609.6e2966a66dd7b131961ed052@linux-foundation.org>
-In-Reply-To: <51A704C3.6010109@atmel.com>
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com>
-	<1369298335-24597-1-git-send-email-jhovold@gmail.com>
-	<20130529133354.dd181c845ee4e96527483345@linux-foundation.org>
-	<CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com>
-	<51A704C3.6010109@atmel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759947Ab3E3Thl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:37:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55076 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759827Ab3E3Thh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 15:37:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: Re: System slow down from udev
+Date: Thu, 30 May 2013 21:46:31 +0200
+Message-ID: <6588324.67kEAqTjyb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
+References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com> <4462684.QmYxzGRhx8@vostro.rjw.lan> <CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 09:50:27 +0200 Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-
-> The review of this patch series was in my TODO list for some time...
+On Thursday, May 30, 2013 10:42:09 AM Yinghai Lu wrote:
+> On Thu, May 30, 2013 at 9:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, May 30, 2013 04:45:35 PM Rafael J. Wysocki wrote:
+> >> On Thursday, May 30, 2013 04:34:51 PM Rafael J. Wysocki wrote:
+> > [...]
+> >> >
+> >> > I'll try to dig deeper locally in the meantime.
+> >>
+> >> Actually, I think I know what the problem is, but I need some more time to
+> >> debug it.  Fortunately, I'm able to see some symptoms. :-)
+> >
+> > OK, one fix is appended, but there still is one more bug I need to investigate.
+> >
+> > Please check if this one helps, though.
 > 
-> Today, I magically took time to review it ;-)
-> The patch series is good and I (even if it is too late) here is my:
+> yes, that fix the problem.
+
+Great!
+
+> > ---
+> >  drivers/acpi/acpi_processor.c   |    5 +++++
+> >  drivers/acpi/processor_driver.c |    3 ---
+> >  2 files changed, 5 insertions(+), 3 deletions(-)
+> >
+> > Index: linux-pm/drivers/acpi/processor_driver.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/processor_driver.c
+> > +++ linux-pm/drivers/acpi/processor_driver.c
+> > @@ -78,9 +78,6 @@ static struct device_driver acpi_process
+> >         .remove = acpi_processor_stop,
+> >  };
+> >
+> > -DEFINE_PER_CPU(struct acpi_processor *, processors);
+> > -EXPORT_PER_CPU_SYMBOL(processors);
+> > -
+> >  static void acpi_processor_notify(acpi_handle handle, u32 event, void *data)
+> >  {
+> >         struct acpi_device *device = data;
+> > Index: linux-pm/drivers/acpi/acpi_processor.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/acpi_processor.c
+> > +++ linux-pm/drivers/acpi/acpi_processor.c
+> > @@ -29,6 +29,9 @@
+> >
+> >  ACPI_MODULE_NAME("processor");
+> >
+> > +DEFINE_PER_CPU(struct acpi_processor *, processors);
+> > +EXPORT_PER_CPU_SYMBOL(processors);
+> > +
+> >  /* --------------------------------------------------------------------------
+> >                                  Errata Handling
+> >     -------------------------------------------------------------------------- */
+> > @@ -387,6 +390,7 @@ static int __cpuinit acpi_processor_add(
+> >          * checks.
+> >          */
+> >         per_cpu(processor_device_array, pr->id) = device;
+> > +       per_cpu(processors, pr->id) = pr;
+> >
+> >         dev = get_cpu_device(pr->id);
+> >         result = acpi_bind_one(dev, pr->handle);
+> > @@ -406,6 +410,7 @@ static int __cpuinit acpi_processor_add(
+> >   err:
+> >         free_cpumask_var(pr->throttling.shared_cpu_map);
+> >         device->driver_data = NULL;
+> > +       per_cpu(processors, pr->id) = NULL;
+> >   err_free_pr:
+> >         kfree(pr);
+> >         return result;
+> >
 > 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> I do not know if the series can be stacked for inclusion in 3.10-rc but 
-> the resolution of this bug can help a lot (as Douglas is saying in 
-> subsequent email...).
+> do you need to remove
+>     per_cpu(processors, pr->id) = NULL;
+> from processor_driver.c::acpi_processor_stop ?
 
-We can do that, but looking through the discussion and changelogs I
-can't seem to find a usable description of what impact the bug (and its
-fix) have upon end-users.
+Yes, thanks for noticing that!
 
-A nicely packaged description of that impact would help grease the
-wheels, please.
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
