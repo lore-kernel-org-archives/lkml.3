@@ -1,147 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759905Ab3E3Tfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759645Ab3E3Tfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:35:40 -0400
-Message-ID: <51A7AA09.7020901@redhat.com>
-Date: Thu, 30 May 2013 15:35:37 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
+	id S1759924Ab3E3Tf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:35:57 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39078 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759745Ab3E3Tfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 15:35:43 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci: Fix flaw in pci_acs_enabled()
-References: <20130530183638.14466.74855.stgit@bling.home>
-In-Reply-To: <20130530183638.14466.74855.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1369776584-15271-1-git-send-email-n.a.balandin@gmail.com>
+References: <1369776584-15271-1-git-send-email-n.a.balandin@gmail.com>
+Date: Thu, 30 May 2013 22:35:40 +0300
+Message-ID: <CAHp75VcOEzRA2RrsSas-ep9CjX5R2zd-F_G7HCFZN1SRTvuyPw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] gpio: sx150x: convert to use devm_kzalloc()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Nikolay Balandin <n.a.balandin@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 02:37 PM, Alex Williamson wrote:
-> Downstream ports support for all ACS flags supercedes multifunction
-> exclusion of some flags.  The PCIe spec also fully specifies which
-> PCIe types are subject to the multifunction rules and excludes event
-> collectors and PCIe-to-PCI bridges entirely.  Document each rule to
-> the section of the PCIe spec.
+On Wed, May 29, 2013 at 12:29 AM, Nikolay Balandin
+<n.a.balandin@gmail.com> wrote:
+> From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 >
-> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> Use devm_kzalloc() to make cleanup paths simpler.
+
+What about request_threaded_irq?
+
+>
+> Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 > ---
->   drivers/pci/pci.c |   59 ++++++++++++++++++++++++++++++++++++++++-------------
->   1 file changed, 45 insertions(+), 14 deletions(-)
+>  drivers/gpio/gpio-sx150x.c |   13 +++++--------
+>  1 file changed, 5 insertions(+), 8 deletions(-)
 >
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index b099e00..457ae51 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2354,6 +2354,19 @@ void pci_enable_acs(struct pci_dev *dev)
->   	pci_write_config_word(dev, pos + PCI_ACS_CTRL, ctrl);
->   }
+> diff --git a/drivers/gpio/gpio-sx150x.c b/drivers/gpio/gpio-sx150x.c
+> index 796b6c4..17c67be 100644
+> --- a/drivers/gpio/gpio-sx150x.c
+> +++ b/drivers/gpio/gpio-sx150x.c
+> @@ -591,18 +591,19 @@ static int sx150x_probe(struct i2c_client *client,
+>         if (!i2c_check_functionality(client->adapter, i2c_funcs))
+>                 return -ENOSYS;
 >
-> +static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
-> +{
-> +	int pos;
-> +	u16 ctrl;
-> +
-> +	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
-> +	if (!pos)
-> +		return false;
-> +
-> +	pci_read_config_word(pdev, pos + PCI_ACS_CTRL,&ctrl);
-> +	return (ctrl&  acs_flags) == acs_flags;
-> +}
-> +
->   /**
->    * pci_acs_enabled - test ACS against required flags for a given device
->    * @pdev: device to test
-> @@ -2364,8 +2377,7 @@ void pci_enable_acs(struct pci_dev *dev)
->    */
->   bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
->   {
-> -	int pos, ret;
-> -	u16 ctrl;
-> +	int ret;
+> -       chip = kzalloc(sizeof(struct sx150x_chip), GFP_KERNEL);
+> +       chip = devm_kzalloc(&client->dev,
+> +               sizeof(struct sx150x_chip), GFP_KERNEL);
+>         if (!chip)
+>                 return -ENOMEM;
 >
->   	ret = pci_dev_specific_acs_enabled(pdev, acs_flags);
->   	if (ret>= 0)
-> @@ -2374,23 +2386,42 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
->   	if (!pci_is_pcie(pdev))
->   		return false;
+>         sx150x_init_chip(chip, client, id->driver_data, pdata);
+>         rc = sx150x_init_hw(chip, pdata);
+>         if (rc < 0)
+> -               goto probe_fail_pre_gpiochip_add;
+> +               return rc;
 >
-> -	/* Filter out flags not applicable to multifunction */
-> -	if (pdev->multifunction)
-> +	switch (pci_pcie_type(pdev)) {
-> +	/*
-> +	 * PCIe 3.0, 6.12.1 excludes ACS on these devices.  "Not applicable"
-> +	 */
-> +	case PCI_EXP_TYPE_PCI_BRIDGE:
-> +	case PCI_EXP_TYPE_RC_EC:
-> +		break;
-> +	/*
-> +	 * PCIe 3.0, 6.12.1.1 specifies full ACS capabilities on downstream
-> +	 * ports, regardless of them being multifunction devices.
-> +	 */
-> +	case PCI_EXP_TYPE_DOWNSTREAM:
-> +	case PCI_EXP_TYPE_ROOT_PORT:
-> +		return pci_acs_flags_enabled(pdev, acs_flags);
-> +	/*
-> +	 * PCIe 3.0, 6.12.1.2 specifies unimplemented ACS capabilities on
-> +	 * multifunction devices.  6.12 footnote identifies specifically
-> +	 * which devices types this applies to.
-> +	 */
-> +	case PCI_EXP_TYPE_ENDPOINT:
-> +	case PCI_EXP_TYPE_UPSTREAM:
-> +	case PCI_EXP_TYPE_LEG_END:
-> +	case PCI_EXP_TYPE_RC_END:
-> +		if (!pdev->multifunction)
-> +			break;
-> +
-
-
->   		acs_flags&= (PCI_ACS_RR | PCI_ACS_CR |
->   			      PCI_ACS_EC | PCI_ACS_DT);
+>         rc = gpiochip_add(&chip->gpio_chip);
+> -       if (rc < 0)
+> -               goto probe_fail_pre_gpiochip_add;
+> +       if (rc)
+> +               return rc;
 >
-> -	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM ||
-> -	    pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT ||
-> -	    pdev->multifunction) {
-> -		pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
-> -		if (!pos)
-> -			return false;
+>         if (pdata->irq_summary >= 0) {
+>                 rc = sx150x_install_irq_chip(chip,
+> @@ -617,8 +618,6 @@ static int sx150x_probe(struct i2c_client *client,
+>         return 0;
+>  probe_fail_post_gpiochip_add:
+>         WARN_ON(gpiochip_remove(&chip->gpio_chip) < 0);
+> -probe_fail_pre_gpiochip_add:
+> -       kfree(chip);
+>         return rc;
+>  }
+>
+> @@ -635,8 +634,6 @@ static int sx150x_remove(struct i2c_client *client)
+>         if (chip->irq_summary >= 0)
+>                 sx150x_remove_irq_chip(chip);
+>
+> -       kfree(chip);
 > -
-> -		pci_read_config_word(pdev, pos + PCI_ACS_CTRL,&ctrl);
-> -		if ((ctrl&  acs_flags) != acs_flags)
-> -			return false;
-> +		return pci_acs_flags_enabled(pdev, acs_flags);
-As I read 6.12.1.2, *if* a multifunction device supports peer-to-peer
-traffic with another function(s), then certain ACS subfunctions
-must be implemented.
-So, I conclude from that statement (3rd bullet under this section),
-if a MFD does not support peer-to-peer traffic, it doesn't have to provide
-an ACS cap ... which is what I'm seeing in a number of MFD NICs (with sriov devices).
-IOW, an MFD w/o an ACS cap == single function device w/o ACS cap.
-
-If that spec interpretation, and more importantly, hw implementation, is
-correct, then won't above code return 'false' for an MFD with no ACS cap,
-and shouldn't it return true in that case b/c it's optional/only-req'd
-if MFD has peer-to-peer btwn functions?
-
->   	}
->
-> +	/*
-> +	 * PCIe 3.0, 6.12.1.3 specifies no ACS capabilties are applicable
-> +	 * to single function devices with the exception of downstream ports.
-> +	 */
->   	return true;
->   }
->
+>         return 0;
+>  }
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+
+
+--
+With Best Regards,
+Andy Shevchenko
