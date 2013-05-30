@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967847Ab3E3Hul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:50:41 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:25912 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967837Ab3E3Hua (ORCPT
+	id S967852Ab3E3H5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:57:18 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59552 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967643Ab3E3H5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:50:30 -0400
-Message-ID: <51A704C3.6010109@atmel.com>
-Date: Thu, 30 May 2013 09:50:27 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 30 May 2013 03:57:12 -0400
 MIME-Version: 1.0
-To: Robert Nelson <robertcnelson@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johan Hovold <jhovold@gmail.com>
-CC: Robert Nelson <Robert.Nelson@digikey.com>, <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] rtc-at91rm9200: add shadow interrupt mask
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com> <1369298335-24597-1-git-send-email-jhovold@gmail.com> <20130529133354.dd181c845ee4e96527483345@linux-foundation.org> <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com>
-In-Reply-To: <CAOCHtYiK8Y6iTnb4dWAE+cKHqEta-64gj+PorSFVGBF5wmg1+Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1369756432-5552-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
+	<1369756432-5552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369756432-5552-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 30 May 2013 09:57:11 +0200
+X-Google-Sender-Auth: 5OkblL_Nmgets2rt3-xWSBVx7_g
+Message-ID: <CAMuHMdXBk6vMFNOJVsxYnt8qvuQN2xveXFaSTM8tUTbiEgPArQ@mail.gmail.com>
+Subject: Re: [PATCH] cris: kgdb: use native hex2bin
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cris <linux-cris-kernel@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/2013 22:41, Robert Nelson :
-> On Wed, May 29, 2013 at 3:33 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Thu, 23 May 2013 10:38:50 +0200 Johan Hovold <jhovold@gmail.com> wrote:
->>
->>> This is an update of the shadow-interrupt-mask series against v3.10-rc2.
->>>
->>> I guess we need Atmel to confirm that all sam9x5 SoCs are indeed
->>> affected. If not, then some probing mechanism as the one Doug suggested
->>> could be implemented on top of (a subset of) these patches. What do you
->>> say, Nicolas?
->>>
->>> Note that the first patch (adding a missing OF compile guard) could be
->>> applied straight away.
->>
->> At this stage it is unclear to me how to proceed with patches 2-5.
+On Tue, May 28, 2013 at 5:53 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+> index 37e6d2c..07bccd8 100644
+> --- a/arch/cris/arch-v10/kernel/kgdb.c
+> +++ b/arch/cris/arch-v10/kernel/kgdb.c
+
+> @@ -659,18 +651,6 @@ read_register (char regno, unsigned int *valptr)
+>  }
 >
-> fyi:
->
-> A version of these patches had been applied once before:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0ef1594c017521ea89278e80fe3f80dafb17abde
->
-> But due to a few issues it was later reverted:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e24b0bfa2f0446ffaad2661040be23668133aef8
+>  /********************************** Packet I/O ******************************/
+> -/* Returns the integer equivalent of a hexadecimal character. */
+> -static int
+> -hex (char ch)
+> -{
+> -       if ((ch >= 'a') && (ch <= 'f'))
+> -               return (ch - 'a' + 10);
+> -       if ((ch >= '0') && (ch <= '9'))
+> -               return (ch - '0');
+> -       if ((ch >= 'A') && (ch <= 'F'))
+> -               return (ch - 'A' + 10);
+> -       return (-1);
+> -}
 
-This new revision doesn't have the issue encountered by first version.
+This one handles both upper and lower case hex characters, while hex2bin()
+handles lower case only. Is that OK, or should hex2bin be extended?
 
-Andrew,
+Gr{oetje,eeting}s,
 
-The review of this patch series was in my TODO list for some time...
+                        Geert
 
-Today, I magically took time to review it ;-)
-The patch series is good and I (even if it is too late) here is my:
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-I do not know if the series can be stacked for inclusion in 3.10-rc but 
-the resolution of this bug can help a lot (as Douglas is saying in 
-subsequent email...).
-
-Best regards,
--- 
-Nicolas Ferre
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
