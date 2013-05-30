@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759707Ab3E3Ao5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 20:44:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44821 "EHLO mga09.intel.com"
+	id S1759732Ab3E3AyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 20:54:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61460 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593Ab3E3Aou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 20:44:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,767,1363158000"; 
-   d="scan'208";a="345424661"
-Message-ID: <51A6A0E0.5020200@intel.com>
-Date: Thu, 30 May 2013 08:44:16 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1757728Ab3E3AyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 20:54:04 -0400
+Date: Thu, 30 May 2013 03:53:38 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
+ pages
+Message-ID: <20130530005338.GC19294@redhat.com>
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130528003611.GA1958@amt.cnet>
+ <51A4CAED.7060608@linux.vnet.ibm.com>
+ <51A56FF7.2000907@linux.vnet.ibm.com>
+ <20130529123959.GC5931@amt.cnet>
+ <51A6006D.5060601@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>, peterz@infradead.org
-CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>  <1368199049-2798-9-git-send-email-alex.shi@intel.com> <1369846845.6121.6.camel@j-VirtualBox>
-In-Reply-To: <1369846845.6121.6.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A6006D.5060601@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 01:00 AM, Jason Low wrote:
-> On Fri, 2013-05-10 at 23:17 +0800, Alex Shi wrote:
->> blocked_load_avg sometime is too heavy and far bigger than runnable load
->> avg. that make balance make wrong decision. So better don't consider it.
->>
->> Signed-off-by: Alex Shi <alex.shi@intel.com>
+On Wed, May 29, 2013 at 09:19:41PM +0800, Xiao Guangrong wrote:
+> On 05/29/2013 08:39 PM, Marcelo Tosatti wrote:
+> > On Wed, May 29, 2013 at 11:03:19AM +0800, Xiao Guangrong wrote:
+> >>>>> the pages since other vcpus may be doing locklessly shadow
+> >>>>> page walking
+> >>>
+> >>> Ah, yes, i agree with you.
+> >>>
+> >>> We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
+> >>> zapped-page, the page-shrink will free the page on that list first.
+> >>>
+> >>> Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
+> >>> let them merged first, and do add some comments and tlb optimization later?
+> >>
+> >> Exclude patch 11 please, since it depends on the "collapse" optimization.
+> > 
+> > I'm fine with patch 1 being merged. I think the remaining patches need better
+> > understanding or explanation. The problems i see are:
+> > 
+> > 1) The magic number "10" to zap before considering reschedule is
+> > annoying. It would be good to understand why it is needed at all.
 > 
-> Hi Alex,
+> ......
 > 
-> I have been testing these patches with a Java server workload on an 8
-> socket (80 core) box with Hyperthreading enabled, and I have been seeing
-> good results with these patches.
+> > 
+> > But then again, the testcase is measuring kvm_mmu_zap_all performance
+> > alone which we know is not a common operation, so perhaps there is
+> > no need for that minimum-pages-to-zap-before-reschedule.
 > 
-> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-> improvement in performance of the workload compared to when using the
-> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-> kernel with just patches 1-7, the performance improvement of the
-> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
+> Well. Although, this is not the common operation, but this operation
+> can be triggered by VCPU - it one VCPU take long time on zap-all-pages,
+> other vcpus is missing IPI-synce, or missing IO. This is easily cause
+> soft lockups if the vcpu is doing memslot-releated things.
 > 
-> Tested-by: Jason Low <jason.low2@hp.com>
-> 
++1. If it is trigarable by a guest it may slow down the guest, but we
+should not allow for it to slow down a host.
 
-That is impressive!
-
-Thanks a lot for your testing! Just curious, what the benchmark are you
-using? :)
-
-> Thanks,
-> Jason
-> 
-
-
--- 
-Thanks
-    Alex
+--
+			Gleb.
