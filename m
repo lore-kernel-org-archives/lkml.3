@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935492Ab3E3Qg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:36:26 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56274 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935436Ab3E3QgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:36:17 -0400
-Message-ID: <51A77FF7.5090908@linux.vnet.ibm.com>
-Date: Thu, 30 May 2013 09:36:07 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S965046Ab3E3Qk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:40:56 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59340 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935568Ab3E3Qkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 12:40:47 -0400
+Date: Thu, 30 May 2013 11:11:27 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
+Message-ID: <20130530151127.GA13756@logfs.org>
+References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+ <20130523094201.GA24543@dastard>
+ <519E8B5F.3080905@hp.com>
+ <20130527020903.GR29466@dastard>
+ <51A624E2.3000301@hp.com>
+ <20130529184640.GA3243@fieldses.org>
+ <20130529203700.GM6123@two.firstfloor.org>
+ <20130529211917.GB6658@logfs.org>
+ <51A774E2.9050307@hp.com>
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: sparse: use __aligned() instead of manual padding
- in mem_section
-References: <1369869279-20155-1-git-send-email-cody@linux.vnet.ibm.com> <51A6A34B.6020907@gmail.com>
-In-Reply-To: <51A6A34B.6020907@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13053016-7182-0000-0000-00000706D820
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51A774E2.9050307@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 05:54 PM, Jiang Liu wrote:
-> On Thu 30 May 2013 07:14:39 AM CST, Cody P Schafer wrote:
->> Also, does anyone know what causes this alignment to be required here? I found
->> this was breaking things in a patchset I'm working on (WARNs in sysfs code
->> about duplicate filenames when initing mem_sections). Adding some documentation
->> for the reason would be appreciated.
-> Hi Cody,
->          I think the alignment requirement is caused by the way the
-> mem_section array is
-> organized. Basically it requires that PAGE_SIZE could be divided by
-> sizeof(struct mem_section).
-> So your change seems risky too because it should be aligned to power of
-> two instead
-> of 2 * sizeof(long).
+On Thu, 30 May 2013 11:48:50 -0400, Waiman Long wrote:
+> On 05/29/2013 05:19 PM, Jörn Engel wrote:
+> >On Wed, 29 May 2013 22:37:00 +0200, Andi Kleen wrote:
+> >>>As Dave said before, is the last path component sufficient?  Or how
+> >>>about an inode number?
+> >>Neither works, the profiler needs to find the file and read it.
+> >Ignoring all the complexity this would cause downstream, you could do
+> >the path lookup just once, attach some cookie to it and return the
+> >cookie ever-after.  Maybe some combination of i_sb and i_ino would be
+> >good enough as a cookie.
+> 
+> Still, it is just shifting the complexity from the d_path code to
+> the perf kernel subsystem as it needs to keep track of what paths
+> have been sent up before.
 
-Well, if that's the case then this patch is wrong, and manual padding 
-may be the only way to go. :(
+That sounds like a good thing to have.  Every single linux user
+depends on the dcache.  Only a relatively small subset cares about
+perf.  Having dcache pay the cost for perf's special needs is a
+classical externality.
 
+> It also have complications in case the
+> tracked files are being deleted or moved around in the filesystem.
+> Some kind of notification mechanism has to be implemented in the
+> dentry layer to notify the perf subsystem.
+
+Agreed.  The whole approach is based on getting the 99% case right and
+occasionally being wrong.  For perf this may be acceptable, not sure.
+
+Jörn
+
+--
+Without a major sea change, nothing that is under copyright today will
+ever come out from under it and fall into the public domain.
+-- Jake Edge
