@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300Ab3E3Lqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 07:46:40 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:39643 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255Ab3E3Lqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 07:46:31 -0400
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, rob.herring@calxeda.com,
-        catalin.marinas@arm.com, nico@linaro.org, r.sricharan@ti.com,
-        Po-Yu Chuang <ratbert.chuang@gmail.com>
-Subject: [PATCH v2] ARM: map_init_section flushes incorrect pmd
-Date: Thu, 30 May 2013 19:46:00 +0800
-Message-Id: <1369914361-4237-1-git-send-email-ratbert.chuang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CANutaR_ZHWdXQrZNBN91K==n3taMKBptmyU0+8DT1RzBStNCyA@mail.gmail.com>
-References: <CANutaR_ZHWdXQrZNBN91K==n3taMKBptmyU0+8DT1RzBStNCyA@mail.gmail.com>
+	id S934941Ab3E3Lqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 07:46:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932801Ab3E3Lqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 07:46:32 -0400
+Date: Thu, 30 May 2013 13:45:44 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf: Enable wakeup_events logic for all events
+Message-ID: <20130530114544.GB1099@krava.brq.redhat.com>
+References: <1369907587-8963-1-git-send-email-jolsa@redhat.com>
+ <1369907587-8963-2-git-send-email-jolsa@redhat.com>
+ <20130530110239.GN12193@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130530110239.GN12193@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This bug was introduced in commit e651eab0.
-Some v4/v5 platforms failed to boot due to this.
+On Thu, May 30, 2013 at 01:02:39PM +0200, Peter Zijlstra wrote:
+> On Thu, May 30, 2013 at 11:53:06AM +0200, Jiri Olsa wrote:
+> > Currently the perf_events_attr::wakeup_events logic is
+> > checked only for regular samples.
+> > 
+> > If we have an event that produce only auxiliary events
+> > (MMAP|COMM|EXIT|FORK), the poll call does not follow
+> > the perf_events_attr wakeup_events setup and reports
+> > no data.
+> > 
+> > Fixing this by moving the perf_events_attr::wakeup_events
+> > checking logic into the function and calling it from
+> > perf_output_end. This way any output event is checked
+> > properly.
+> > 
+> 
+> So something like this came up before and ISTR doing a patch similar to
+> what you propose but ended up not going with it because... uhm...
+> 
+> I have vague memories about people (possibly me) wanting wake_events to
+> mean samples. Like get me a wakeup every 20 samples. With your patch the
+> side-band events now also count towards 'events'.
+> 
+> I think the most common use of wake_events is people setting it to 1 and
+> have perf generate a SIGfoo for every sample so they can do magic in
+> their userspace signal handler. This is popular for interpreters.
+> 
+> It would be unfortunate to get SIGfoos for side-band chatter.
+> 
+> 
+> Makes sense?
 
-Signed-off-by: Po-Yu Chuang <ratbert.chuang@gmail.com>
----
-v2:
-prefix underscores to map_init_section to emphasize that it should never be
-called by some random function.
+hum, well the whole story is that for the ifunc user space tracer
+(profwiz) I'd need the auxiliary stuff for the tracee (MMAP, COMM...)
+so I could end up with 'reportable' perf.data file and use
+just VMA addresses for functions.
 
- arch/arm/mm/mmu.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+So, the only way now is to create an event which is never hit
+and set it up for this. At that point I noticed the poll would
+never return.. hence the patch ;-)
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e0d8565..4d409e6 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -616,10 +616,12 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
- 	} while (pte++, addr += PAGE_SIZE, addr != end);
- }
- 
--static void __init map_init_section(pmd_t *pmd, unsigned long addr,
-+static void __init __map_init_section(pmd_t *pmd, unsigned long addr,
- 			unsigned long end, phys_addr_t phys,
- 			const struct mem_type *type)
- {
-+	pmd_t *p = pmd;
-+
- #ifndef CONFIG_ARM_LPAE
- 	/*
- 	 * In classic MMU format, puds and pmds are folded in to
-@@ -638,7 +640,7 @@ static void __init map_init_section(pmd_t *pmd, unsigned long addr,
- 		phys += SECTION_SIZE;
- 	} while (pmd++, addr += SECTION_SIZE, addr != end);
- 
--	flush_pmd_entry(pmd);
-+	flush_pmd_entry(p);
- }
- 
- static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
-@@ -661,7 +663,7 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
- 		 */
- 		if (type->prot_sect &&
- 				((addr | next | phys) & ~SECTION_MASK) == 0) {
--			map_init_section(pmd, addr, next, phys, type);
-+			__map_init_section(pmd, addr, next, phys, type);
- 		} else {
- 			alloc_init_pte(pmd, addr, next,
- 						__phys_to_pfn(phys), type);
--- 
-1.7.9.5
+(I was also thinking of a new special SW event doing nothing,
+just be there to get aux stuff..)
 
+Anyway, I could always check the map manually.. but I'd sort of
+expect poll to work the same for anything you write/read via RB.
+
+how about having something like:
+
+ wakeup_events - setup for samples (stays)
+ wakeup_any    - new flag saying to use wakeup_events for
+                 anything going through the RB
+
+thanks,
+jirka
