@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab3E3PBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:01:11 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44031 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab3E3PBC (ORCPT
+	id S1757809Ab3E3PCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:02:46 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52202 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339Ab3E3PCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:01:02 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com, wfp5p@virginia.edu,
-        gregkh@linuxfoundation.org, thierry.reding@avionic-design.de
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] mtd: lantiq-flash: Convert to devm_kzalloc
-Date: Thu, 30 May 2013 17:00:36 +0200
-Message-Id: <1369926036-2416-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 30 May 2013 11:02:38 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 30 May 2013 08:03:06 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 3/3] watchdog: xilinx: Add WDIOC_SETTIMEOUT ioctl function
+Message-ID: <20130530150306.GA29508@roeck-us.net>
+References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
+ <595eb49b34909318959fe6825c209a7d635ed849.1369916757.git.michal.simek@xilinx.com>
+ <20130530140754.GB28232@roeck-us.net>
+ <51A75F11.7000001@monstr.eu>
+ <20130530142145.GA28856@roeck-us.net>
+ <51A7635A.8070300@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A7635A.8070300@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ltq_mtd_probe function is missing some error handling for
-memory allocation failure. This patch fixes that and simplifies
-the code by converting to devm_kzalloc.
+On Thu, May 30, 2013 at 04:34:02PM +0200, Michal Simek wrote:
+> On 05/30/2013 04:21 PM, Guenter Roeck wrote:
+> > On Thu, May 30, 2013 at 04:15:45PM +0200, Michal Simek wrote:
+> >> On 05/30/2013 04:07 PM, Guenter Roeck wrote:
+> >>> On Thu, May 30, 2013 at 02:26:04PM +0200, Michal Simek wrote:
+> >>>> Standard watchdog programs try to setup timeout
+> >>>> via ioctl and this functionality should be implemented.
+> >>>> Timeout value is hardcoded in the hardware but
+> >>>> based on Documentation/watchdog/watchdog-api.txt
+> >>>> can return the real timeout used in the same variable.
+> >>>>
+> >>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> >>>> ---
+> >>>>  drivers/watchdog/of_xilinx_wdt.c | 1 +
+> >>>>  1 file changed, 1 insertion(+)
+> >>>>
+> >>>> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+> >>>> index 79f358c..a3bbe72 100644
+> >>>> --- a/drivers/watchdog/of_xilinx_wdt.c
+> >>>> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> >>>> @@ -253,6 +253,7 @@ static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+> >>>>  		xwdt_keepalive();
+> >>>>  		return 0;
+> >>>>
+> >>>> +	case WDIOC_SETTIMEOUT:
+> >>>>  	case WDIOC_GETTIMEOUT:
+> >>>>  		if (no_timeout)
+> >>>>  			return -ENOTTY;
+> >>>
+> >>> Watchdog programs should check ident.options before trying to set the timeout.
+> >>> If they don't, there is an application bug. I don't think it is a good idea
+> >>> to start hacking the kernel to work around application bugs.
+> >>
+> >> Based on Documentation/watchdog/watchdog-api.txt
+> >>
+> >> "For some drivers it is possible to modify the watchdog timeout on the
+> >> fly with the SETTIMEOUT ioctl, those drivers have the WDIOF_SETTIMEOUT
+> >> flag set in their option field.  The argument is an integer
+> > 
+> > Yes, but WDIOF_SETTIMEOUT is not set in the driver's option field.
+> 
+> ok. It means I should probably enable it.
+> 
+I am missing your point. Applications should not try to write the timeout
+since WDIOF_SETTIMEOUT is not set. Any application doing it anyway is buggy
+and should be fixed.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/mtd/maps/lantiq-flash.c |   31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-flash.c
-index d7ac65d..de0ac1e 100644
---- a/drivers/mtd/maps/lantiq-flash.c
-+++ b/drivers/mtd/maps/lantiq-flash.c
-@@ -123,24 +123,28 @@ ltq_mtd_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	ltq_mtd = kzalloc(sizeof(struct ltq_mtd), GFP_KERNEL);
-+	ltq_mtd = devm_kzalloc(&pdev->dev, sizeof(struct ltq_mtd), GFP_KERNEL);
-+	if (!ltq_mtd)
-+		return -ENOMEM;
-+
- 	platform_set_drvdata(pdev, ltq_mtd);
- 
- 	ltq_mtd->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!ltq_mtd->res) {
- 		dev_err(&pdev->dev, "failed to get memory resource\n");
--		err = -ENOENT;
--		goto err_out;
-+		return -ENOENT;
- 	}
- 
--	ltq_mtd->map = kzalloc(sizeof(struct map_info), GFP_KERNEL);
-+	ltq_mtd->map = devm_kzalloc(&pdev->dev, sizeof(struct map_info),
-+				    GFP_KERNEL);
-+	if (!ltq_mtd->map)
-+		return -ENOMEM;
-+
- 	ltq_mtd->map->phys = ltq_mtd->res->start;
- 	ltq_mtd->map->size = resource_size(ltq_mtd->res);
- 	ltq_mtd->map->virt = devm_ioremap_resource(&pdev->dev, ltq_mtd->res);
--	if (IS_ERR(ltq_mtd->map->virt)) {
--		err = PTR_ERR(ltq_mtd->map->virt);
--		goto err_out;
--	}
-+	if (IS_ERR(ltq_mtd->map->virt))
-+		return PTR_ERR(ltq_mtd->map->virt);
- 
- 	ltq_mtd->map->name = ltq_map_name;
- 	ltq_mtd->map->bankwidth = 2;
-@@ -155,8 +159,7 @@ ltq_mtd_probe(struct platform_device *pdev)
- 
- 	if (!ltq_mtd->mtd) {
- 		dev_err(&pdev->dev, "probing failed\n");
--		err = -ENXIO;
--		goto err_free;
-+		return -ENXIO;
- 	}
- 
- 	ltq_mtd->mtd->owner = THIS_MODULE;
-@@ -177,10 +180,7 @@ ltq_mtd_probe(struct platform_device *pdev)
- 
- err_destroy:
- 	map_destroy(ltq_mtd->mtd);
--err_free:
--	kfree(ltq_mtd->map);
--err_out:
--	kfree(ltq_mtd);
-+
- 	return err;
- }
- 
-@@ -194,9 +194,8 @@ ltq_mtd_remove(struct platform_device *pdev)
- 			mtd_device_unregister(ltq_mtd->mtd);
- 			map_destroy(ltq_mtd->mtd);
- 		}
--		kfree(ltq_mtd->map);
--		kfree(ltq_mtd);
- 	}
-+
- 	return 0;
- }
- 
--- 
-1.7.10.4
-
+Guenter
