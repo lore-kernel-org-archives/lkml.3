@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab3E3MYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 08:24:17 -0400
-Received: from smtp302.phy.lolipop.jp ([210.157.22.85]:35538 "EHLO
-	smtp302.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3E3MYE (ORCPT
+	id S1753787Ab3E3M0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 08:26:21 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:55879 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab3E3M0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 08:24:04 -0400
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 08:24:03 EDT
-Message-ID: <51A742A1.8010108@sakamocchi.jp>
-Date: Thu, 30 May 2013 21:14:25 +0900
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: How to get driver_data of struct ieee1394_device_id in kernel
- driver module?
-References: <51A20AEE.7060201@sakamocchi.jp> <20130526233513.1a95d0d5@stein> <20130526225757.GA32606@kroah.com>
-In-Reply-To: <20130526225757.GA32606@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 08:26:14 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH 1/3] watchdog: xilinx: Fix driver header
+Date: Thu, 30 May 2013 14:26:02 +0200
+Message-Id: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-8706-1369916764-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan and Greg,
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-I'm glad to contact with you.
+--=_mimegpg-monstr-desktop-8706-1369916764-0001
 
-I'm quite a beginner of Linux Firewire subsystem (Juju) and the others 
-like PCI and USB. So it's hard for me to realize what Juju should be.
-But I can rebuild Juju and test it with my devices and modules for which 
-I'm working. I'm pleased to test your patches in this way if you need to 
-check probe() function in driver module.
+- Remove reference for IP version
+- Fix header coding style
+- Remove notes which are visible from the code
+- Fix driver license according to header
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/watchdog/of_xilinx_wdt.c | 30 ++++++++++--------------------
+ 1 file changed, 10 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index 2761ddb..d4a35ab 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -1,23 +1,13 @@
+ /*
+-*   of_xilinx_wdt.c  1.01  A Watchdog Device Driver for Xilinx xps_timebase_wdt
+-*
+-*   (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
+-*
+-*       -----------------------
+-*
+-*   This program is free software; you can redistribute it and/or
+-*   modify it under the terms of the GNU General Public License
+-*   as published by the Free Software Foundation; either version
+-*   2 of the License, or (at your option) any later version.
+-*
+-*       -----------------------
+-*	30-May-2011 Alejandro Cabrera <aldaya@gmail.com>
+-*		- If "xlnx,wdt-enable-once" wasn't found on device tree the
+-*		  module will use CONFIG_WATCHDOG_NOWAYOUT
+-*		- If the device tree parameters ("clock-frequency" and
+-*		  "xlnx,wdt-interval") wasn't found the driver won't
+-*		  know the wdt reset interval
+-*/
++ * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
++ *
++ * (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
+
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+@@ -413,5 +403,5 @@ module_platform_driver(xwdt_driver);
+
+ MODULE_AUTHOR("Alejandro Cabrera <aldaya@gmail.com>");
+ MODULE_DESCRIPTION("Xilinx Watchdog driver");
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL v2");
+ MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+--
+1.8.2.3
 
 
-Thanks
+--=_mimegpg-monstr-desktop-8706-1369916764-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
-Takashi Sakamoto
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-(May 27 2013 07:57), Greg Kroah-Hartman wrote:
-> On Sun, May 26, 2013 at 11:35:13PM +0200, Stefan Richter wrote:
->> I think your approach is sensible.  There is of course just the little
->> problem that firewire-core keeps the matching device_id table entry as a
->> secret to itself.  Therefore, struct ieee1394_device_id.driver_data is
->> currently totally useless.
->>
->> How about we make it available like in the following patch?
->>
->> Besides being useful to your presently out-of-tree work, the in-tree
->> sound/firewire/speakers.c::fwspk_detect() could be rewritten to use this
->> approach.  Maybe I will post an expanded version of this patch which
->> incorporates such a first in-tree usage.
->
-> Why not pass it in the probe() function, like USB and PCI does?  That
-> way, if the driver wants to save it for that device, it can.
->
-> thanks,
->
-> greg k-h
+iEYEABECAAYFAlGnRV0ACgkQykllyylKDCEJsACaAuVmUilKJwvkgDJ84poKAa/u
+UdUAn0SQRas+3NpUnGvNff8RgcWQiCwY
+=FmtY
+-----END PGP SIGNATURE-----
 
+--=_mimegpg-monstr-desktop-8706-1369916764-0001--
