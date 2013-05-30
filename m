@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab3E3Q4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:56:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52459 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab3E3Q4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:56:18 -0400
-Message-ID: <51A78478.6040704@infradead.org>
-Date: Thu, 30 May 2013 09:55:20 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial] treewide: Fix typo in printk
-References: <1369925065-16604-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1369925065-16604-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758463Ab3E3RBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:01:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32585 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab3E3RBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 13:01:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
+   d="scan'208";a="345807927"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 1/2] regmap: give users _choice_ to allow write access to debugfs
+Date: Thu, 30 May 2013 21:54:01 +0530
+Message-Id: <1369931042-9755-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/13 07:44, Masanari Iida wrote:
-> Correct spelling typo in printk within various part of drivers.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/acpi/acpica/utobject.c                 | 2 +-
->  drivers/cpufreq/s3c2416-cpufreq.c              | 2 +-
->  drivers/net/ethernet/mellanox/mlx4/main.c      | 2 +-
->  drivers/net/ethernet/neterion/vxge/vxge-main.c | 2 +-
->  drivers/net/wireless/ath/ath9k/Kconfig         | 2 +-
->  drivers/scsi/libiscsi_tcp.c                    | 2 +-
->  drivers/scsi/pmcraid.c                         | 2 +-
->  lib/Kconfig.kgdb                               | 2 +-
->  8 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-> index 140e878..e00037f 100644
-> --- a/lib/Kconfig.kgdb
-> +++ b/lib/Kconfig.kgdb
-> @@ -64,7 +64,7 @@ config KGDB_LOW_LEVEL_TRAP
->         default n
->         help
->           This will add an extra call back to kgdb for the breakpoint
-> -         exception handler on which will will allow kgdb to step
-> +         exception handler on which will allow kgdb to step
+is very handy is debug kernels and should _never_ be turned On in production
+mode
 
-	    exception handler which will allow kgdb to step
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/base/regmap/Kconfig          |    9 +++++++++
+ drivers/base/regmap/regmap-debugfs.c |    3 +--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
->           through a notify handler.
->  
->  config KGDB_KDB
-> 
-
-
+diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+index f0d3054..928d6e3 100644
+--- a/drivers/base/regmap/Kconfig
++++ b/drivers/base/regmap/Kconfig
+@@ -20,3 +20,12 @@ config REGMAP_MMIO
+ 
+ config REGMAP_IRQ
+ 	bool
++
++
++config REGMAP_ALLOW_WRITE_DEBUGFS
++	bool "Regmap write access to usermode"
++	default n
++	help
++	   WARNING: This allows usermode to write to hardware registers. Writing
++	   to stuff like PMICs is _never_ advised due to obvious side effects, use
++	   at very extreme caution. Is helpful for debugging
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 23b701f..7989052 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -248,8 +248,7 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
+ 				   count, ppos);
+ }
+ 
+-#undef REGMAP_ALLOW_WRITE_DEBUGFS
+-#ifdef REGMAP_ALLOW_WRITE_DEBUGFS
++#ifdef CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS
+ /*
+  * This can be dangerous especially when we have clients such as
+  * PMICs, therefore don't provide any real compile time configuration option
 -- 
-~Randy
+1.7.0.4
+
