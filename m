@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935478Ab3E3QMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:12:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50964 "EHLO
+	id S964847Ab3E3QMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:12:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50966 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934563Ab3E3QCO (ORCPT
+	with ESMTP id S934583Ab3E3QCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 12:02:14 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/66] perf sort: Consolidate sort_entry__setup_elide()
-Date: Thu, 30 May 2013 19:00:41 +0300
-Message-Id: <1369929699-8724-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/66] perf report: Fix alignment of symbol column when -v is given
+Date: Thu, 30 May 2013 19:00:37 +0300
+Message-Id: <1369929699-8724-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -30,8 +30,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The same code was duplicate to places, factor them out to common
-sort__setup_elide().
+When -v option is given, the symbol sort key prints its address also but
+it wasn't properly aligned since hists__calc_col_len() misses the
+additional part.  Also it missed 2 spaces for 0x prefix when printing.
+
+  $ perf report --stdio -v -s sym
+  # Samples: 133  of event 'cycles'
+  # Event count (approx.): 50536717
+  #
+  # Overhead                          Symbol
+  # ........  ..............................
+  #
+      12.20%  0xffffffff81384c50 v [k] intel_idle
+       7.62%  0xffffffff8170976a v [k] ftrace_caller
+       7.02%  0x2d986d         B [.] 0x00000000002d986d
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -41,156 +53,86 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1364991979-3008-11-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1364816125-12212-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c   |  4 +---
- tools/perf/builtin-report.c | 20 +-------------------
- tools/perf/builtin-top.c    |  4 +---
- tools/perf/util/sort.c      | 45 +++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/sort.h      |  3 +--
- 5 files changed, 47 insertions(+), 29 deletions(-)
+ tools/perf/util/hist.c | 26 +++++++++++++++-----------
+ tools/perf/util/sort.c |  2 +-
+ 2 files changed, 16 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 2d0462d..cabbea5 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -611,9 +611,7 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 514fc04..72b4eec 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -70,9 +70,17 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 	int symlen;
+ 	u16 len;
  
- 	setup_pager();
+-	if (h->ms.sym)
+-		hists__new_col_len(hists, HISTC_SYMBOL, h->ms.sym->namelen + 4);
+-	else {
++	/*
++	 * +4 accounts for '[x] ' priv level info
++	 * +2 accounts for 0x prefix on raw addresses
++	 * +3 accounts for ' y ' symtab origin info
++	 */
++	if (h->ms.sym) {
++		symlen = h->ms.sym->namelen + 4;
++		if (verbose)
++			symlen += BITS_PER_LONG / 4 + 2 + 3;
++		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
++	} else {
+ 		symlen = unresolved_col_width + 4 + 2;
+ 		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
+ 		hists__set_unres_dso_col_len(hists, HISTC_DSO);
+@@ -91,12 +99,10 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 		hists__new_col_len(hists, HISTC_PARENT, h->parent->namelen);
  
--	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", NULL);
--	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", NULL);
-+	sort__setup_elide(NULL);
+ 	if (h->branch_info) {
+-		/*
+-		 * +4 accounts for '[x] ' priv level info
+-		 * +2 account of 0x prefix on raw addresses
+-		 */
+ 		if (h->branch_info->from.sym) {
+ 			symlen = (int)h->branch_info->from.sym->namelen + 4;
++			if (verbose)
++				symlen += BITS_PER_LONG / 4 + 2 + 3;
+ 			hists__new_col_len(hists, HISTC_SYMBOL_FROM, symlen);
  
- 	return __cmd_diff();
- }
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 669405c..d45bf9b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -937,25 +937,7 @@ repeat:
- 		report.symbol_filter_str = argv[0];
+ 			symlen = dso__name_len(h->branch_info->from.map->dso);
+@@ -109,6 +115,8 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 
+ 		if (h->branch_info->to.sym) {
+ 			symlen = (int)h->branch_info->to.sym->namelen + 4;
++			if (verbose)
++				symlen += BITS_PER_LONG / 4 + 2 + 3;
+ 			hists__new_col_len(hists, HISTC_SYMBOL_TO, symlen);
+ 
+ 			symlen = dso__name_len(h->branch_info->to.map->dso);
+@@ -121,10 +129,6 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
  	}
  
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
--
--	if (sort__mode == SORT_MODE__BRANCH) {
--		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
--		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
--		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
--		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
--	} else {
--		if (report.mem_mode) {
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
--		}
--		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
--		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
--	}
-+	sort__setup_elide(stdout);
- 
- 	ret = __cmd_report(&report);
- 	if (ret == K_SWITCH_INPUT_DATA) {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 67bdb9f..2eb272d 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1200,9 +1200,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (symbol__init() < 0)
- 		return -1;
- 
--	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
--	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
-+	sort__setup_elide(stdout);
- 
- 	/*
- 	 * Avoid annotation data structures overhead when symbols aren't on the
+ 	if (h->mem_info) {
+-		/*
+-		 * +4 accounts for '[x] ' priv level info
+-		 * +2 account of 0x prefix on raw addresses
+-		 */
+ 		if (h->mem_info->daddr.sym) {
+ 			symlen = (int)h->mem_info->daddr.sym->namelen + 4
+ 			       + unresolved_col_width + 2;
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1dbf169..701ab1d 100644
+index 5f52d49..16d5e38 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -1,5 +1,6 @@
- #include "sort.h"
- #include "hist.h"
-+#include "symbol.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -1009,8 +1010,9 @@ int setup_sorting(void)
- 	return ret;
- }
- 
--void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
--			     const char *list_name, FILE *fp)
-+static void sort_entry__setup_elide(struct sort_entry *self,
-+				    struct strlist *list,
-+				    const char *list_name, FILE *fp)
- {
- 	if (list && strlist__nr_entries(list) == 1) {
- 		if (fp != NULL)
-@@ -1019,3 +1021,42 @@ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
- 		self->elide = true;
+@@ -194,7 +194,7 @@ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+ 	if (verbose) {
+ 		char o = map ? dso__symtab_origin(map->dso) : '!';
+ 		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
+-				       BITS_PER_LONG / 4, ip, o);
++				       BITS_PER_LONG / 4 + 2, ip, o);
  	}
- }
-+
-+void sort__setup_elide(FILE *output)
-+{
-+	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+				"dso", output);
-+	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
-+				"comm", output);
-+	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
-+				"symbol", output);
-+
-+	if (sort__mode == SORT_MODE__BRANCH) {
-+		sort_entry__setup_elide(&sort_dso_from,
-+					symbol_conf.dso_from_list,
-+					"dso_from", output);
-+		sort_entry__setup_elide(&sort_dso_to,
-+					symbol_conf.dso_to_list,
-+					"dso_to", output);
-+		sort_entry__setup_elide(&sort_sym_from,
-+					symbol_conf.sym_from_list,
-+					"sym_from", output);
-+		sort_entry__setup_elide(&sort_sym_to,
-+					symbol_conf.sym_to_list,
-+					"sym_to", output);
-+	} else if (sort__mode == SORT_MODE__MEMORY) {
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"symbol_daddr", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"dso_daddr", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"mem", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"local_weight", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"tlb", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"snoop", output);
-+	}
-+
-+}
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 0232d47..51f1b5a 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -181,7 +181,6 @@ extern struct list_head hist_entry__sort_list;
  
- int setup_sorting(void);
- extern int sort_dimension__add(const char *);
--void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
--			     const char *list_name, FILE *fp);
-+void sort__setup_elide(FILE *fp);
- 
- #endif	/* __PERF_SORT_H */
+ 	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", level);
 -- 
 1.8.1.4
 
