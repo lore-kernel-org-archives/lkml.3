@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab3E3OAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:00:07 -0400
-Received: from wms.aitel.kz ([212.154.154.130]:38108 "EHLO wms.aitel.kz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab3E3N76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:59:58 -0400
-X-Greylist: delayed 1669 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 09:59:58 EDT
+	id S1757293Ab3E3OAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:00:21 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50521 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666Ab3E3OAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 10:00:15 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 30 May 2013 07:00:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 2/3] watchdog: xilinx: Setup the origin compatible string
+Message-ID: <20130530140041.GA28232@roeck-us.net>
+References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
+ <eef4939944768b2d8cbed2bcb4cf75954b86fc27.1369916757.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Thu, 30 May 2013 15:20:48 +0200
-From: Web Administrator <info@gmail.com>
-To: undisclosed-recipients:;
-Subject: Dear Account User
-Reply-To: <mmmnelson1@hotmail.com>
-Mail-Reply-To: <mmmnelson1@hotmail.com>
-Message-ID: <6974a65282ef12072bbad82db78283bd@mail.aitel.kz>
-User-Agent: RoundCube Webmail/0.2.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <eef4939944768b2d8cbed2bcb4cf75954b86fc27.1369916757.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 30, 2013 at 02:26:03PM +0200, Michal Simek wrote:
+> Watchdog 1.01.a is also compatible with 1.00.a.
+> Setup the origin version to compatible list.
+> If you want to use newer watchdog version, please
+> extend your compatible list.
+> 
+> For example:
+> compatible = "xlnx,xps-timebase-wdt-1.02.a", "xlnx,xps-timebase-wdt-1.00.a";
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>  drivers/watchdog/of_xilinx_wdt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+> index d4a35ab..79f358c 100644
+> --- a/drivers/watchdog/of_xilinx_wdt.c
+> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> @@ -384,7 +384,7 @@ static int xwdt_remove(struct platform_device *dev)
+> 
+>  /* Match table for of_platform binding */
+>  static struct of_device_id xwdt_of_match[] = {
+> -	{ .compatible = "xlnx,xps-timebase-wdt-1.01.a", },
+> +	{ .compatible = "xlnx,xps-timebase-wdt-1.00.a", },
 
+Is this really a good idea ? It means every existing device tree binding which
+specifies 1.01a will now fail. If the code is compatible to 1.00a, I think it
+would make more sense to add that to the driver as additional entry instead of
+deleting the existing entry for 1.01a.
 
--- 
-Dear Account User,
-
-This message is from the Server Control Panel messaging center to you 
-dear
-e-mail account holder. Your  Account will undergo regularly
-scheduled maintenance. Access to your mailbox via our mail portal will
-be unavailable for some period of time during this maintenance 
-period.We shall
-be carrying out service maintenance on our database and  e-mail account
-center for better online services. We are deleting all unused  e-mail
-accounts to create more space for new accounts.
-
-In order to ensure you do not experience service interruptions/ 
-possible
-deactivation, please you must reply to this email immediately 
-confirming your
-email account details below for confirmation/identification because
-your  Account was recently trying to logged into from a computer, 
-mobile
-device on other location you've never used before. For your protection, 
-we
-will
-temporarily lock your account within 24hrs until you can review this 
-activity
-and make sure no one is trying to use your Account without your 
-permission.
-
-Did you log into your Account from a new device or an unusual location?
-
-If this was not you, please log into your account by filling in the 
-below
-details from your computer and follow the instructions provided to help 
-you
-verify your account information. And block the ip of the remote 
-computer from
-logging into your account again
-
-
-User Name:
-
-Email Address:
-
-Password:
-
-Confirm Password:
-
-Date Of Birth:
-
-Thanks, for your co-operation
-
-Web-mail Security Team
-Copyright ©web-mail security team 2012. All rights reserved
-Server Control Room
+Thanks,
+Guenter
