@@ -1,119 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967538Ab3E3FtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 01:49:06 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43000 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967488Ab3E3Fs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 01:48:57 -0400
-Date: Thu, 30 May 2013 14:48:52 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 5/9] memcg: use css_get/put when charging/uncharging kmem
-Message-ID: <20130530054852.GA9305@mtj.dyndns.org>
-References: <5195D5F8.7000609@huawei.com>
- <5195D666.6030408@huawei.com>
- <20130517180822.GC12632@mtj.dyndns.org>
- <519C838B.9060609@huawei.com>
- <20130524075420.GA24813@dhcp22.suse.cz>
+	id S967541Ab3E3FwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 01:52:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13740 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S966267Ab3E3FwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 01:52:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,768,1363104000"; 
+   d="scan'208";a="7409698"
+Message-ID: <51A6E85F.5000300@cn.fujitsu.com>
+Date: Thu, 30 May 2013 13:49:19 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524075420.GA24813@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        davej@redhat.com, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 2/7] Documentation/devices.txt: Remove /dev/oldmem description
+References: <51A02E50.5020507@gmail.com> <51A02F59.8000103@gmail.com> <87vc668x4w.fsf@xmission.com> <51A15E2F.7010308@gmail.com> <51A2B693.7000701@jp.fujitsu.com> <51A2B68E.4060605@cn.fujitsu.com> <20130529152007.893940a04d95fa1e38e851d4@linux-foundation.org>
+In-Reply-To: <20130529152007.893940a04d95fa1e38e851d4@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 13:50:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 13:50:31,
+	Serialize complete at 2013/05/30 13:50:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Sorry about the delay.  Have been and still am traveling.
-
-On Fri, May 24, 2013 at 09:54:20AM +0200, Michal Hocko wrote:
-> > > On Fri, May 17, 2013 at 03:04:06PM +0800, Li Zefan wrote:
-> > >> +	/*
-> > >> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
-> > >> +	 * this last uncharge is racing with the offlining code or it is
-> > >> +	 * outliving the memcg existence.
-> > >> +	 *
-> > >> +	 * The memory barrier imposed by test&clear is paired with the
-> > >> +	 * explicit one in kmem_cgroup_css_offline.
-> > > 
-> > > Paired with the wmb to achieve what?
+On 05/30/2013 06:20 AM, Andrew Morton wrote:
+> On Mon, 27 May 2013 09:27:42 +0800 Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
 > 
-> https://lkml.org/lkml/2013/4/4/190
-> "
-> ! > +	css_get(&memcg->css);
-> ! I think that you need a write memory barrier here because css_get
-> ! nor memcg_kmem_mark_dead implies it. memcg_uncharge_kmem uses
-> ! memcg_kmem_test_and_clear_dead which imply a full memory barrier but it
-> ! should see the elevated reference count. No?
-> ! 
-> ! > +	/*
-> ! > +	 * We need to call css_get() first, because memcg_uncharge_kmem()
-> ! > +	 * will call css_put() if it sees the memcg is dead.
-> ! > +	 */
-> ! >  	memcg_kmem_mark_dead(memcg);
-> "
+
+snip
+
+>>
+>> I've sent the v2 version and actually did what you said.
 > 
-> Does it make sense to you Tejun?
-
-Yeah, you're right.  We need them.  It's still a bummer that mark_dead
-has the appearance of proper encapsulation while not really taking
-care of synchronization.  I think it'd make more sense for mark_dead
-to have the barrier (which BTW should probably be smp_wmb() instead of
-wmb()) inside it or for the function to be just open-coded.  More on
-this topic later.
-
-> > The comment is wrong. I'll fix it.
+> I can't find any v2 version of this patchset.
 > 
-> Ohh, right. "Althouth this might sound strange as this path is called from
-> css_offline when the reference might have dropped down to 0 and shouldn't ..."
+> I did this:
 > 
-> Sounds better?
-
-Yeap.
-
-> > I don't quite like adding a lock not to protect data but just ensure code
-> > orders.
+> --- a/Documentation/devices.txt~dev-oldmem-remove-the-interface-fix
+> +++ a/Documentation/devices.txt
+> @@ -102,6 +102,7 @@ Your cooperation is appreciated.
+>  					export the buffered printk records.
+>  		 12 = /dev/oldmem	Used by crashdump kernels to access
+>  					the memory of the kernel that crashed.
+> +					(obsolete)
+>  
+>    1 block	RAM disk
+>  		  0 = /dev/ram0		First RAM disk
+> _
 > 
-> Agreed.
 > 
-> > Michal, what's your preference? I want to be sure that everyone is happy
-> > so the next version will hopefully be the last version.
-> 
-> I still do not see why the barrier is not needed and the lock seems too
-> big hammer.
 
-Yes, the barrier is necessary but I still think it's unnecessarily
-elaborate.  Among the locking constructs, the barriesr are the worst -
-they don't enforce any structures, people often misunderstand / make
-mistakes about them, bugs from misusages are extremely difficult to
-trigger and reproduce especially on x86.  It's a horrible construct
-and should only be used if no other options can meet the performance
-requirements required for the path.
+v1 is the same with v2 except this patch. I attach it below:
 
-So, to me, "lock is too big a hammer" looks to be approaching the
-problem from the completely wrong direction when the code path clearly
-isn't hot enough to justify memory barrier tricks.  We don't and
-shouldn't try to choose the mechanism with the lowest possible
-overhead for the given situation.  We should be as simple and
-straight-forward as the situation allows.  That's the only way to
-sustain long-term maintainability.
+-----------------------------------
+>From d2f7baf2aba86069f941f32669a22dbd99082614 Mon Sep 17 00:00:00 2001
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Date: Wed, 29 May 2013 15:44:09 +0800
+Subject: [PATCH] Documentation/devices.txt: Mark /dev/oldmem obsolete
 
-So, let's please do something which is apparent.  I don't really care
-what it is - a shared spinlock, test_and_lock bitops, whatever.  It's
-not gonna show up in any profile anyway.  There's absolutely no reason
-to mess with memory barriers.
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/devices.txt |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Thanks.
-
+diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+index 08f01e7..315455a 100644
+--- a/Documentation/devices.txt
++++ b/Documentation/devices.txt
+@@ -100,8 +100,7 @@ Your cooperation is appreciated.
+ 		 10 = /dev/aio		Asynchronous I/O notification interface
+ 		 11 = /dev/kmsg		Writes to this come out as printk's, reads
+ 					export the buffered printk records.
+-		 12 = /dev/oldmem	Used by crashdump kernels to access
+-					the memory of the kernel that crashed.
++		 12 = /dev/oldmem	OBSOLETE - replaced by /proc/vmcore
+ 
+   1 block	RAM disk
+ 		  0 = /dev/ram0		First RAM disk
 -- 
-tejun
+1.7.1
