@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030261Ab3E3JIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:08:32 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:62510 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967960Ab3E3JIV (ORCPT
+	id S1030257Ab3E3JJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:09:57 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:59865 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030209Ab3E3JJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:08:21 -0400
-Message-ID: <51A716FE.9040909@gmail.com>
-Date: Thu, 30 May 2013 11:08:14 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 30 May 2013 05:09:49 -0400
 MIME-Version: 1.0
-To: Arnaud Ebalard <arno@natisbad.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v5 12/13] ARM: kirkwood: remove redundant DT board files
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369855975-21489-13-git-send-email-sebastian.hesselbarth@gmail.com> <8738t4q1kv.fsf@natisbad.org>
-In-Reply-To: <8738t4q1kv.fsf@natisbad.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdXBk6vMFNOJVsxYnt8qvuQN2xveXFaSTM8tUTbiEgPArQ@mail.gmail.com>
+References: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
+	<1369756432-5552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369756432-5552-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAMuHMdXBk6vMFNOJVsxYnt8qvuQN2xveXFaSTM8tUTbiEgPArQ@mail.gmail.com>
+Date: Thu, 30 May 2013 12:09:48 +0300
+Message-ID: <CAHp75Ve+kEmV6PLwaybAS1eWN6MUZQDLYXXfzz115R40-5+yWw@mail.gmail.com>
+Subject: Re: [PATCH] cris: kgdb: use native hex2bin
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cris <linux-cris-kernel@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/13 11:06, Arnaud Ebalard wrote:
-> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
->> With DT support for mv643xx_eth board specific init for some boards now
->> is unneccessary. Remove those board files, Kconfig entries, and
->> corresponding entries in kirkwood_defconfig.
+On Thu, May 30, 2013 at 10:57 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, May 28, 2013 at 5:53 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+>> index 37e6d2c..07bccd8 100644
+>> --- a/arch/cris/arch-v10/kernel/kgdb.c
+>> +++ b/arch/cris/arch-v10/kernel/kgdb.c
+>
+>> @@ -659,18 +651,6 @@ read_register (char regno, unsigned int *valptr)
+>>  }
 >>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-...
-> Just a stupid note: With Thomas ongoing work to get mvebu-pcie driver in
-> place and enabled for kirkwood, some boards setup files will also lose
-> their pcie init routines, which may allow you to kill those additonal
-> files soon.
+>>  /********************************** Packet I/O ******************************/
+>> -/* Returns the integer equivalent of a hexadecimal character. */
+>> -static int
+>> -hex (char ch)
+>> -{
+>> -       if ((ch >= 'a') && (ch <= 'f'))
+>> -               return (ch - 'a' + 10);
+>> -       if ((ch >= '0') && (ch <= '9'))
+>> -               return (ch - '0');
+>> -       if ((ch >= 'A') && (ch <= 'F'))
+>> -               return (ch - 'A' + 10);
+>> -       return (-1);
+>> -}
 >
-> For instance 6bd98481ab34 (arm: kirkwood: NETGEAR ReadyNAS Duo v2 init
-> PCIe via DT) currently sitting in jcooper/mvebu/pcie_kirkwood removes
-> the PCIE init routine in board-readynas.c, and yours remove ge00
-> init. With both applied, the whole file can go away.
->
-> AFAICT, this may be the case soon for:
->
->   arch/arm/mach-kirkwood/board-iconnect.c   (36e5722089)
->   arch/arm/mach-kirkwood/board-mplcec4.c    (9470fbfb8d)
->   arch/arm/mach-kirkwood/board-nsa310.c     (40fa8e5da2)
->   arch/arm/mach-kirkwood/board-readynas.c   (6bd98481ab)
->   arch/arm/mach-kirkwood/board-ts219.c      (259e234608)
->
-> Anyway, thanks for this work Sebastian.
+> This one handles both upper and lower case hex characters, while hex2bin()
+> handles lower case only. Is that OK, or should hex2bin be extended?
 
-Arnaud,
+Its implementation is located in lib/hexdump.c
+If you look at it carefully you find that hex2bin calls hex_to_bin()
+which services both cases (via using tolower()).
 
-I already realized this when merging Jason's recent PRs and put
-mv643xx_eth patches on top. I am aware of it but as ARM part of
-mv643xx_eth will be delayed until net part surfaces, we have
-plenty of time to react on current updates to mach-kirkwood
-boards.
-
-Sebastian
-
+--
+With Best Regards,
+Andy Shevchenko
