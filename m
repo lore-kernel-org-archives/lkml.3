@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967855Ab3E3H7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:59:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56628 "EHLO song.cn.fujitsu.com"
+	id S967872Ab3E3H7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:59:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15871 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S967643Ab3E3H64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:58:56 -0400
+	id S967857Ab3E3H7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 03:59:09 -0400
 X-IronPort-AV: E=Sophos;i="4.87,769,1363104000"; 
-   d="scan'208";a="7411035"
+   d="scan'208";a="7411038"
 From: liguang <lig.fnst@cn.fujitsu.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         David Howells <dhowells@redhat.com>,
@@ -18,76 +18,67 @@ Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Dave Jones <davej@redhat.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         Al Viro <viro@zeniv.linux.org.uk>, liguang <lig.fnst@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] sys: remove unnecesscary parameter of set_one_prio
-Date: Thu, 30 May 2013 15:58:03 +0800
-Message-Id: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
+Subject: [PATCH 3/4] sys/reboot: boolize C_A_D
+Date: Thu, 30 May 2013 15:58:05 +0800
+Message-Id: <1369900686-5936-3-git-send-email-lig.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 15:57:13,
+ 2013/05/30 15:57:32,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/30 15:57:14,
-	Serialize complete at 2013/05/30 15:57:14
+ 2013/05/30 15:57:32,
+	Serialize complete at 2013/05/30 15:57:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 ---
- kernel/sys.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ include/linux/reboot.h |    2 +-
+ kernel/sys.c           |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 23b3630..a8c5e4c 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -35,7 +35,7 @@ extern void kernel_restart(char *cmd);
+ extern void kernel_halt(void);
+ extern void kernel_power_off(void);
+ 
+-extern int C_A_D; /* for sysctl */
++extern bool C_A_D; /* for sysctl */
+ void ctrl_alt_del(void);
+ 
+ #define POWEROFF_CMD_PATH_LEN	256
 diff --git a/kernel/sys.c b/kernel/sys.c
-index b95d3c7..07c6177 100644
+index 7f56ed4..6dabfc1 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -151,9 +151,9 @@ static bool set_one_prio_perm(struct task_struct *p)
-  * set the priority of a task
-  * - the caller must hold the RCU read lock
+@@ -119,7 +119,7 @@ EXPORT_SYMBOL(fs_overflowgid);
+  * this indicates whether you can reboot with ctrl-alt-del: the default is yes
   */
--static int set_one_prio(struct task_struct *p, int niceval, int error)
-+static int set_one_prio(struct task_struct *p, int niceval)
- {
--	int no_nice;
-+	int no_nice, error = 0;
  
- 	if (!set_one_prio_perm(p)) {
- 		error = -EPERM;
-@@ -168,8 +168,6 @@ static int set_one_prio(struct task_struct *p, int niceval, int error)
- 		error = no_nice;
- 		goto out;
- 	}
--	if (error == -ESRCH)
--		error = 0;
- 	set_user_nice(p, niceval);
- out:
- 	return error;
-@@ -203,7 +201,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
- 			else
- 				p = current;
- 			if (p)
--				error = set_one_prio(p, niceval, error);
-+				error = set_one_prio(p, niceval);
- 			break;
- 		case PRIO_PGRP:
- 			if (who)
-@@ -211,7 +209,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
- 			else
- 				pgrp = task_pgrp(current);
- 			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--				error = set_one_prio(p, niceval, error);
-+				error = set_one_prio(p, niceval);
- 			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
- 			break;
- 		case PRIO_USER:
-@@ -225,7 +223,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
+-int C_A_D = 1;
++bool C_A_D = true;
+ struct pid *cad_pid;
+ EXPORT_SYMBOL(cad_pid);
  
- 			do_each_thread(g, p) {
- 				if (uid_eq(task_uid(p), uid))
--					error = set_one_prio(p, niceval, error);
-+					error = set_one_prio(p, niceval);
- 			} while_each_thread(g, p);
- 			if (!uid_eq(uid, cred->uid))
- 				free_uid(user);		/* For find_user() */
+@@ -475,11 +475,11 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_CAD_ON:
+-		C_A_D = 1;
++		C_A_D = true;
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_CAD_OFF:
+-		C_A_D = 0;
++		C_A_D = false;
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_HALT:
 -- 
 1.7.2.5
 
