@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab3E3Vzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 17:55:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57977 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757925Ab3E3Vzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 17:55:48 -0400
-X-Greylist: delayed 623 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 17:55:48 EDT
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH] arm: Prevent memory aliasing on non-LPAE kernels
-Date: Thu, 30 May 2013 14:45:20 -0700
-Message-Id: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	id S1758886Ab3E3V5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 17:57:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757599Ab3E3V5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 17:57:21 -0400
+Date: Thu, 30 May 2013 18:56:57 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
+        riel@redhat.com, lwoodman@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, stable@vger.kernel.org
+Subject: Re: [PATCH] swap: avoid read_swap_cache_async() race to deadlock
+ while waiting on discard I/O compeletion
+Message-ID: <20130530215656.GD13605@optiplex.redhat.com>
+References: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
+ <20130530195539.GA27226@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130530195539.GA27226@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LPAE-capable systems may use a Device Tree containing
-memory nodes that describe memory extending beyond the 4GB
-physical address boundary. Ignore or truncate these memory
-nodes on kernels that have not been built with LPAE
-support, to prevent the extended physical addresses from
-being truncated and aliasing with physical addresses below
-the 4GB boundary.
+On Thu, May 30, 2013 at 03:55:39PM -0400, Johannes Weiner wrote:
+> On Thu, May 30, 2013 at 03:05:00PM -0300, Rafael Aquini wrote:
+> > read_swap_cache_async() can race against get_swap_page(), and stumble across
+> > a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought into the
+> > swapcache yet. This transient swap_map state is expected to be transitory,
+> > but the actual placement of discard at scan_swap_map() inserts a wait for
+> > I/O completion thus making the thread at read_swap_cache_async() to loop
+> > around its -EEXIST case, while the other end at get_swap_page()
+> > is scheduled away at scan_swap_map(). This can leave the system deadlocked
+> > if the I/O completion happens to be waiting on the CPU workqueue where
+> 
+> waitqueue?
+>
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/kernel/devtree.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Ugh! I will repost this to fix it and the "compeletion" typo at subject...
 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index bee7f9d..24bc80b 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -26,6 +26,18 @@
 
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- {
-+#ifndef CONFIG_ARM_LPAE
-+	if (base > ((phys_addr_t)~0)) {
-+		pr_crit("Ignoring memory at 0x%08llx due to lack of LPAE support\n",
-+			base);
-+		return;
-+	}
-+
-+	if (size > ((phys_addr_t)~0))
-+		size = ((phys_addr_t)~0);
-+
-+	/* arm_add_memory() already checks for the case of base + size > 4GB */
-+#endif
- 	arm_add_memory(base, size);
- }
+> > read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+> > 
+> > This patch introduces a cond_resched() call to make the aforementioned
+> > read_swap_cache_async() busy loop condition to bail out when necessary,
+> > thus avoiding the subtle race window.
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > ---
+> >  mm/swap_state.c | 14 +++++++++++++-
+> >  1 file changed, 13 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/swap_state.c b/mm/swap_state.c
+> > index b3d40dc..9ad9e3b 100644
+> > --- a/mm/swap_state.c
+> > +++ b/mm/swap_state.c
+> > @@ -336,8 +336,20 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+> >  		 * Swap entry may have been freed since our caller observed it.
+> >  		 */
+> >  		err = swapcache_prepare(entry);
+> > -		if (err == -EEXIST) {	/* seems racy */
+> > +		if (err == -EEXIST) {
+> >  			radix_tree_preload_end();
+> > +			/*
+> > +			 * We might race against get_swap_page() and stumble
+> > +			 * across a SWAP_HAS_CACHE swap_map entry whose page
+> > +			 * has not been brought into the swapcache yet, while
+> > +			 * the other end is scheduled away waiting on discard
+> > +			 * I/O completion.
+> > +			 * In order to avoid turning this transitory state
+> > +			 * into a permanent loop around this -EEXIST case,
+> > +			 * lets just conditionally invoke the scheduler,
+> > +			 * if there are some more important tasks to run.
+> > +			 */
+> > +			cond_resched();
+> 
+> Might be worth mentioning the !CONFIG_PREEMPT deadlock scenario here,
+> especially since under CONFIG_PREEMPT the radix_tree_preload_end() is
+> already a scheduling point through the preempt_enable().
+>
 
---
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Nice suggestion, will do it. Thanks for reviewing this patch!
 
+
+> Other than that, the patch looks good to me!
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
