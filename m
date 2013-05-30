@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935587Ab3E3RLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:11:11 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:65088 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934129Ab3E3RK6 (ORCPT
+	id S965395Ab3E3RPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:15:10 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57394 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964940Ab3E3RPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:10:58 -0400
-Date: Fri, 31 May 2013 02:10:53 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
- pages
-Message-Id: <20130531021053.44e73e8b9c39f2a1e9c73d5c@gmail.com>
-In-Reply-To: <20130531012443.6261af219a7c85bd7e227d88@gmail.com>
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-	<1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-	<20130528003611.GA1958@amt.cnet>
-	<51A4CAED.7060608@linux.vnet.ibm.com>
-	<51A56FF7.2000907@linux.vnet.ibm.com>
-	<20130529123959.GC5931@amt.cnet>
-	<51A6006D.5060601@linux.vnet.ibm.com>
-	<20130530005338.GC19294@redhat.com>
-	<20130531012443.6261af219a7c85bd7e227d88@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 30 May 2013 13:15:08 -0400
+Message-ID: <51A7890B.8080002@semaphore.gr>
+Date: Thu, 30 May 2013 20:14:51 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] cpufreq: ondemand: Increase frequency to any value
+ proportional to load
+References: <51A3C6CF.6080104@semaphore.gr> <1567913.u8NiyqJmvF@vostro.rjw.lan> <51A61BAC.2050203@semaphore.gr> <3000308.Hi6zX8my0D@vostro.rjw.lan>
+In-Reply-To: <3000308.Hi6zX8my0D@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013 01:24:43 +0900
-Takuya Yoshikawa <takuya.yoshikawa@gmail.com> wrote:
+On 05/30/2013 01:29 AM, Rafael J. Wysocki wrote:
+> On Wednesday, May 29, 2013 06:15:56 PM Stratos Karafotis wrote:
+>> On 05/28/2013 11:54 PM, Rafael J. Wysocki wrote:
+>>> On Tuesday, May 28, 2013 08:03:19 PM Stratos Karafotis wrote:
+>>>> I mean any value of freq table. Please let me know if you want me to rephrase
+>>>> it in description.
+>>>
+>>> Yes, it would be nice to be more precise.
+>>
+>> OK sure, I will add a more precise description.
+>>
+>>
+>>> Which is equivalent to saying that __cpufreq_driver_getavg() is not useful and
+>>> may be removed (but the patch doesn't do that and I wonder why?), but surely
+>>> the developer who added it wouldn't agree.
+>>>
+>>> So, please explain: why can we drop __cpufreq_driver_getavg()?
+>>>
+>>
+>> With the new proposed method the next frequency is not dependent from current
+>> or average frequency. The next frequency is dependent only from load.
+>> So, we don't need support for freq feedback from hardware anymore.
+>
+> OK, but that's a more significant change than the changelog suggests.
+> The changelog should tell the whole story and explain the rationale. :-)
+>
+> So, please explain that in fact it is not necessary to use the current or
+> average frequency to compute the target and why that is the case.
+>
+> Also the patch should remove __cpufreq_driver_getavg() and the callback used by
+> it, since that code will be dead after applying it anyway.
+>
+>> Even if, due to underlying hardware coordination mechanism, CPU runs in different
+>> frequency than the actual, the calculation of load and of target frequency will
+>> remain the unaffected, with this patch.
+>>
+>> With full respect to ondemand coauthor, and if the new method is acceptable,
+>> I could send a patch to revert the original one about the IA32_APERF and
+>> IA32_MPERF MSR support.
+>
+> I'm not sure what you mean by "revert", but please do as I said above.
+>
+>>>> Thus, in the comparison with up_threshold to increase frequency we actually
+>>>> do this (in cases that getavg is not implemented):
+>>>> if (load > up_theshold)
+>>>> 	increase to max
+>>>>
+>>>> So, after the patch we keep the same comparison to decide about the max frequency.
+>>>> I thought, that below up_threshold is 'fair' to decide about the next
+>>>> frequency with formula that frequency is proportional to load.
+>>>> For example in a CPU with min freq 100MHz and max 1000MHz with a
+>>>> load 50 target frequency should be 500MHz.
+>>>
+>>> Well, that sounds reasonable, but the patch actually does more than that.
+>>
+>> I'm sorry, but I didn't understand your last point.
+>
+> Please see above.
+>
+> The changelog doesn't even mention that the code is being switched from using
+> measured past frequencies to not using them, because you think that there's a
+> better way of computing the target (which by the way I can agree with :-)).
+>
+> Thanks,
+> Rafael
+>
+>
 
-> On Thu, 30 May 2013 03:53:38 +0300
-> Gleb Natapov <gleb@redhat.com> wrote:
-> 
-> > On Wed, May 29, 2013 at 09:19:41PM +0800, Xiao Guangrong wrote:
-> > > On 05/29/2013 08:39 PM, Marcelo Tosatti wrote:
-> > > > On Wed, May 29, 2013 at 11:03:19AM +0800, Xiao Guangrong wrote:
-> > > >>>>> the pages since other vcpus may be doing locklessly shadow
-> > > >>>>> page walking
-> > > >>>
-> > > >>> Ah, yes, i agree with you.
-> > > >>>
-> > > >>> We can introduce a list, say kvm->arch.obsolte_pages, to link all of the
-> > > >>> zapped-page, the page-shrink will free the page on that list first.
-> > > >>>
-> > > >>> Marcelo, if you do not have objection on  patch 1 ~ 8 and 11, could you please
-> > > >>> let them merged first, and do add some comments and tlb optimization later?
-> > > >>
-> > > >> Exclude patch 11 please, since it depends on the "collapse" optimization.
-> > > > 
-> > > > I'm fine with patch 1 being merged. I think the remaining patches need better
-> > > > understanding or explanation. The problems i see are:
-> > > > 
-> > > > 1) The magic number "10" to zap before considering reschedule is
-> > > > annoying. It would be good to understand why it is needed at all.
-> > > 
-> > > ......
-> > > 
-> > > > 
-> > > > But then again, the testcase is measuring kvm_mmu_zap_all performance
-> > > > alone which we know is not a common operation, so perhaps there is
-> > > > no need for that minimum-pages-to-zap-before-reschedule.
-> > > 
-> > > Well. Although, this is not the common operation, but this operation
-> > > can be triggered by VCPU - it one VCPU take long time on zap-all-pages,
-> > > other vcpus is missing IPI-synce, or missing IO. This is easily cause
-> > > soft lockups if the vcpu is doing memslot-releated things.
-> > > 
-> > +1. If it is trigarable by a guest it may slow down the guest, but we
-> > should not allow for it to slow down a host.
-> > 
-> 
-> Well, I don't object to the minimum-pages-to-zap-before-reschedule idea
-> itself, but if you're going to take patch 4, please at least add a warning
-> in the changelog that the magic number "10" was selected without good enough
-> reasoning.
-> 
-> "[ It improves kernel building 0.6% ~ 1% ]" alone will make it hard for
-> others to change the number later.
-> 
-> I actually once tried to do a similar thing for other code.  So I have a
-> possible reasoning for this, and 10 should probably be changed later.
-> 
+OK, I will send a new patch that includes your corrections and suggestions.
 
-In this case, the solution seems to be very simple: just drop spin_needbreak()
-and leave need_resched() alone.
+Thanks so much for your time and your comments!
 
-This way we can guarantee that zap-all will get a fair amount of CPU time for
-each scheduling from the host scheduler's point of view.  Of course this can
-block other VCPU threads waiting for mmu_lock during that time slice, but
-should be much better than blocking them for some magical number of zappings.
+Stratos
 
-We also need to remember that spin_needbreak() does not do anything for some
-preempt config settings.
-
-	Takuya
