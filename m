@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab3E3SeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:34:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11644 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752874Ab3E3SeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:34:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
-   d="scan'208";a="342669840"
-Date: Thu, 30 May 2013 23:26:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 35/39] dmaengine: ste_dma40_ll: Replace meaningless
- register set with comment
-Message-ID: <20130530175609.GF3767@intel.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-36-git-send-email-lee.jones@linaro.org>
- <CACRpkdbXVd7k9rzb-OKUmnW_9J+jWYhz=AjO09_Ymvd2_DOVcQ@mail.gmail.com>
+	id S1754920Ab3E3Sef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:34:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113Ab3E3SeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 14:34:19 -0400
+Date: Fri, 31 May 2013 03:32:58 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
+        riel@redhat.com, lwoodman@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, stable@vger.kernel.org
+Subject: Re: [PATCH] swap: avoid read_swap_cache_async() race to deadlock
+ while waiting on discard I/O compeletion
+Message-ID: <20130530183258.GA3453@kroah.com>
+References: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdbXVd7k9rzb-OKUmnW_9J+jWYhz=AjO09_Ymvd2_DOVcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 11:04:23AM +0200, Linus Walleij wrote:
-> On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Thu, May 30, 2013 at 03:05:00PM -0300, Rafael Aquini wrote:
+> read_swap_cache_async() can race against get_swap_page(), and stumble across
+> a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought into the
+> swapcache yet. This transient swap_map state is expected to be transitory,
+> but the actual placement of discard at scan_swap_map() inserts a wait for
+> I/O completion thus making the thread at read_swap_cache_async() to loop
+> around its -EEXIST case, while the other end at get_swap_page()
+> is scheduled away at scan_swap_map(). This can leave the system deadlocked
+> if the I/O completion happens to be waiting on the CPU workqueue where
+> read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
 > 
-> > Unsure of the author's intentions, rather than just removing the nop,
-> > we're replacing it with a comment containing the possible intention
-> > of the statement OR:ing with 0.
-> >
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <djbw@fb.com>
-> > Cc: Per Forlin <per.forlin@stericsson.com>
-> > Cc: Rabin Vincent <rabin@rab.in>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> This patch introduces a cond_resched() call to make the aforementioned
+> read_swap_cache_async() busy loop condition to bail out when necessary,
+> thus avoiding the subtle race window.
 > 
-> Tentatively applied. Missing Vinod's ACK.
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  mm/swap_state.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
 
---
-~Vinod
+
+<formletter>
+
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
+
+</formletter>
