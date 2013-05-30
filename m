@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968210Ab3E3K2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:28:19 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:40180 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968055Ab3E3K2M (ORCPT
+	id S1030351Ab3E3K2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:28:33 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:47454 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968162Ab3E3K2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:28:12 -0400
+	Thu, 30 May 2013 06:28:14 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        renner@efe-gmbh.de, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
+        renner@efe-gmbh.de, Bill Pemberton <wfp5p@virginia.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: [PATCH v2 0/6] Emaclite patches
-Date: Thu, 30 May 2013 12:28:02 +0200
-Message-Id: <cover.1369909618.git.michal.simek@xilinx.com>
+        netdev@vger.kernel.org
+Subject: [PATCH v2 1/6] net: emaclite: Report failures in mdio setup
+Date: Thu, 30 May 2013 12:28:03 +0200
+Message-Id: <286fceaa6f4268594b89707d6e5d9ce5bd309c2d.1369909618.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
+References: <cover.1369909618.git.michal.simek@xilinx.com>
+In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
+References: <cover.1369909618.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-5423-1369909688-0001";
+    boundary="=_mimegpg-monstr-desktop-5436-1369909691-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,45 +34,71 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-5423-1369909688-0001
+--=_mimegpg-monstr-desktop-5436-1369909691-0001
 
-I have separated these emaclite patches from
-phy patches because it is easier for creating
-new versions.
+Be more verbose when any problem happens.
 
-Thanks,
-Michal
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Changes in v2: None
 
-Changes in v2:
-- Fix __raw_iowrite() to pass correct parameters
-- s/Corrent/Correct/ in patch description
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Michal Simek (6):
-  net: emaclite: Report failures in mdio setup
-  net: emaclite: Support multiple phys connected to one MDIO bus
-  net: emaclite: Let's make xemaclite_adjust_link static
-  net: emaclite: Do not use microblaze and ppc IO functions
-  net: emaclite: Enable emaclite for Xilinx Arm Zynq platform
-  net: emaclite: Update driver header
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 919b983..a16dc35 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -852,8 +852,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 	/* Don't register the MDIO bus if the phy_node or its parent node
+ 	 * can't be found.
+ 	 */
+-	if (!np)
++	if (!np) {
++		dev_err(dev, "Failed to register mdio bus.\n");
+ 		return -ENODEV;
++	}
 
- drivers/net/ethernet/xilinx/Kconfig           |   4 +-
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 169 ++++++++++++++------------
- 2 files changed, 95 insertions(+), 78 deletions(-)
+ 	/* Enable the MDIO bus by asserting the enable bit in MDIO Control
+ 	 * register.
+@@ -862,8 +864,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 		 XEL_MDIOCTRL_MDIOEN_MASK);
+
+ 	bus = mdiobus_alloc();
+-	if (!bus)
++	if (!bus) {
++		dev_err(dev, "Failed to allocal mdiobus\n");
+ 		return -ENOMEM;
++	}
+
+ 	of_address_to_resource(np, 0, &res);
+ 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
+@@ -879,8 +883,10 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
+ 	lp->mii_bus = bus;
+
+ 	rc = of_mdiobus_register(bus, np);
+-	if (rc)
++	if (rc) {
++		dev_err(dev, "Failed to register mdio bus.\n");
+ 		goto err_register;
++	}
+
+ 	return 0;
 
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-5423-1369909688-0001
+--=_mimegpg-monstr-desktop-5436-1369909691-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGnKbgACgkQykllyylKDCFeSQCePtMXUJXtRD3gkQ/7MWQh91mm
-zEsAn3cORIkhACwH15sfqNDY4zkWvC+Y
-=XPdB
+iEYEABECAAYFAlGnKbsACgkQykllyylKDCE6pQCfYavTqYoY8FBtImYNpBGhclth
+aKcAni3mFVwF1ZVlO1kcJI/dktjVLSYZ
+=YFLe
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-5423-1369909688-0001--
+--=_mimegpg-monstr-desktop-5436-1369909691-0001--
