@@ -1,50 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030377Ab3E3KXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:23:31 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34742 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3E3KXH (ORCPT
+	id S1030401Ab3E3KXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:23:44 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36756 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030378Ab3E3KXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:23:07 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Guo-Fu Tseng <cooldavid@cooldavid.org>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 4/7] net, jme: remove redundant D0 power state set
-Date: Thu, 30 May 2013 18:22:43 +0800
-Message-ID: <1369909363-38612-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Thu, 30 May 2013 06:23:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1369729014-20974-3-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1369729014-20974-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369729014-20974-3-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 30 May 2013 13:23:30 +0300
+Message-ID: <CAHp75VeBByB7tPTebKGXRG5Kj=A_tCRuKX76etpscU2PDP2uUg@mail.gmail.com>
+Subject: Re: [PATCH, resend 3/3] x86: mrst: move to generic SFI GPIO API
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: sfi-devel@simplefirmware.org, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pci_enable_device() will set device power state to D0,
-so it's no need to do it again in jme_init_one().
+Drop this one away,  Sathyanarayanan Kuppuswamy takes care about it in
+his patchset.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/net/ethernet/jme.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/ethernet/jme.c b/drivers/net/ethernet/jme.c
-index 070a6f1..7fbe6ab 100644
---- a/drivers/net/ethernet/jme.c
-+++ b/drivers/net/ethernet/jme.c
-@@ -3148,7 +3148,6 @@ jme_init_one(struct pci_dev *pdev,
- 	jme->mii_if.mdio_write = jme_mdio_write;
- 
- 	jme_clear_pm(jme);
--	pci_set_power_state(jme->pdev, PCI_D0);
- 	device_set_wakeup_enable(&pdev->dev, true);
- 
- 	jme_set_phyfifo_5level(jme);
 -- 
-1.7.1
-
-
+With Best Regards,
+Andy Shevchenko
