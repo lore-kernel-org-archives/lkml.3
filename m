@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965272Ab3E3Qq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:46:29 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:33183 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965140Ab3E3QqV (ORCPT
+	id S965293Ab3E3Qq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:46:59 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:45401 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965072Ab3E3Qqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:46:21 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] i2c: omap: correct usage of the interrupt enable register
-References: <1369929379-19165-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-	<1369929379-19165-2-git-send-email-oleksandr.dmytryshyn@ti.com>
-Date: Thu, 30 May 2013 09:46:18 -0700
-In-Reply-To: <1369929379-19165-2-git-send-email-oleksandr.dmytryshyn@ti.com>
-	(Oleksandr Dmytryshyn's message of "Thu, 30 May 2013 18:56:19 +0300")
-Message-ID: <87vc604dr9.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 30 May 2013 12:46:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <001b01ce4a0a$5076bb90$f16432b0$@samsung.com>
+References: <001b01ce4a0a$5076bb90$f16432b0$@samsung.com>
+Date: Thu, 30 May 2013 18:46:51 +0200
+Message-ID: <CACRpkdYT04ODoYx_i=PET4skFxRDDNMqpUbYNs_W3f3pJg54sQ@mail.gmail.com>
+Subject: Re: [PATCH 5/7] gpio: tc3589x: remove unnecessary platform_set_drvdata()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com> writes:
+On Mon, May 6, 2013 at 5:32 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-> If the i2c controller during suspend will generate an interrupt, it
-> can lead to unpredictable behaviour in the kernel.
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
 >
-> Based on the logic of the kernel code interrupts from i2c should be
-> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
-> the omap_i2c_runtime_suspend() function. In the other side kernel
-> writes saved interrupt flags to the I2C_IE register in
-> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
-> during suspend.
->
-> This works for chips with version1 registers scheme. Interrupts are
-> disabled during suspend. For chips with version2 scheme registers
-> writting 0 to the I2C_IE register does nothing (because now the
-> I2C_IRQENABLE_SET register is located at this address). This register
-> is used to enable interrupts. For disabling interrupts
-> I2C_IRQENABLE_CLR register should be used.
->
-> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
-> addresses, the interrupt enabling procedure is unchanged.
->
-> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Much better, but still doesn't explain how/why this has been working up
-until now.  Have we just been lucky?
+Patch applied with Lee's ACK.
 
-> ---
->  drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index e02f9e3..2419899 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -180,6 +180,8 @@ enum {
->  #define I2C_OMAP_ERRATA_I207		(1 << 0)
->  #define I2C_OMAP_ERRATA_I462		(1 << 1)
->  
-> +#define OMAP_I2C_INTERRUPTS_MASK	0x6FFF
-
-To be more clear, this should probably have v2 in the name.
-
-Kevin
-
+Yours,
+Linus Walleij
