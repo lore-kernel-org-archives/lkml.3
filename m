@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968078Ab3E3JkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:40:22 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:56837 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab3E3JkP (ORCPT
+	id S968091Ab3E3JlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:41:16 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38190 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968060Ab3E3JlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:40:15 -0400
-X-Spam-Score: -100.8
-Message-ID: <51A71E49.1000707@asianux.com>
-Date: Thu, 30 May 2013 17:39:21 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>, gerg@uclinux.org,
-        schmitz@debian.org, Sam Ravnborg <sam@ravnborg.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-m68k@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH] arch: m68k: include: asm: the 3rd parameter of 'insl' and
- 'outsl' need '<< 2'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 05:41:10 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v2 1/3] video: xilinxfb: Fix OF probing on little-endian systems
+Date: Thu, 30 May 2013 11:41:00 +0200
+Message-Id: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-15062-1369906862-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-According to the original implementation in 2009, 'insl' and 'outsl'
-need '<< 2'.
+--=_mimegpg-monstr-desktop-15062-1369906862-0001
 
-Also add '#ifdef' to avoid multiple defination, and beautify code to
-pass "./scripts/checkpatch.pl"
+From: Michal Simek <monstr@monstr.eu>
 
-The related git number:
-  for parport.h: "4914802 m68k,m68knommu: merge header files" in 2009
-  for io_mm.h: "84b16b7 m68k/atari: ROM port ISA adapter support" in Apr 6 2013
+DTB is always big-endian that's why is necessary
+to convert it.
 
-The related warning (make EXTRA_CFLAG=-W ARCH=m68k allmodconfig):
-  arch/m68k/include/asm/parport.h:14:0: warning: "insl" redefined [enabled by default]
-  arch/m68k/include/asm/io_mm.h:403:0: note: this is the location of the previous definition
-  arch/m68k/include/asm/parport.h:15:0: warning: "outsl" redefined [enabled by default]
-  arch/m68k/include/asm/io_mm.h:406:0: note: this is the location of the previous definition
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- arch/m68k/include/asm/io_mm.h   |    5 +++--
- arch/m68k/include/asm/parport.h |    9 +++++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+Changes in v2:
+- use of_property_read_u32 helper function
 
-diff --git a/arch/m68k/include/asm/io_mm.h b/arch/m68k/include/asm/io_mm.h
-index ffdf54f4..66be3b2 100644
---- a/arch/m68k/include/asm/io_mm.h
-+++ b/arch/m68k/include/asm/io_mm.h
-@@ -400,10 +400,11 @@ static inline void isa_delay(void)
- 
- #define insb(port, buf, nr)	((port) < 1024 ? isa_rom_insb((port), (buf), (nr)) : isa_insb((port), (buf), (nr)))
- #define insw(port, buf, nr)	((port) < 1024 ? isa_rom_insw((port), (buf), (nr)) : isa_insw((port), (buf), (nr)))
--#define insl			isa_insl
-+#define insl(port, buf, len)	isa_insb((port), (buf), (len) << 2)
-+
- #define outsb(port, buf, nr)	((port) < 1024 ? isa_rom_outsb((port), (buf), (nr)) : isa_outsb((port), (buf), (nr)))
- #define outsw(port, buf, nr)	((port) < 1024 ? isa_rom_outsw((port), (buf), (nr)) : isa_outsw((port), (buf), (nr)))
--#define outsl			isa_outsl
-+#define outsl(port, buf, len)	isa_outsb((port), (buf), (len) << 2)
- 
- #define readb(addr)		in_8(addr)
- #define writeb(val, addr)	out_8((addr), (val))
-diff --git a/arch/m68k/include/asm/parport.h b/arch/m68k/include/asm/parport.h
-index 5ea75e6..e8e4a2a 100644
---- a/arch/m68k/include/asm/parport.h
-+++ b/arch/m68k/include/asm/parport.h
-@@ -11,8 +11,13 @@
- #ifndef _ASM_M68K_PARPORT_H
- #define _ASM_M68K_PARPORT_H 1
- 
--#define insl(port,buf,len)   isa_insb(port,buf,(len)<<2)
--#define outsl(port,buf,len)  isa_outsb(port,buf,(len)<<2)
-+#ifndef insl
-+#define insl(port, buf, len)   isa_insb((port), (buf), (len) << 2)
-+#endif
-+
-+#ifndef outsl
-+#define outsl(port, buf, len)  isa_outsb((port), (buf), (len) << 2)
-+#endif
- 
- /* no dma, or IRQ autoprobing */
- static int parport_pc_find_isa_ports (int autoirq, int autodma);
--- 
-1.7.7.6
+ drivers/video/xilinxfb.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+index af0b4fd..aecd15d 100644
+--- a/drivers/video/xilinxfb.c
++++ b/drivers/video/xilinxfb.c
+@@ -406,8 +406,7 @@ static int xilinxfb_release(struct device *dev)
+ static int xilinxfb_of_probe(struct platform_device *op)
+ {
+ 	const u32 *prop;
+-	u32 *p;
+-	u32 tft_access;
++	u32 tft_access = 0;
+ 	struct xilinxfb_platform_data pdata;
+ 	struct resource res;
+ 	int size, rc;
+@@ -427,8 +426,8 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	 * To check whether the core is connected directly to DCR or PLB
+ 	 * interface and initialize the tft_access accordingly.
+ 	 */
+-	p = (u32 *)of_get_property(op->dev.of_node, "xlnx,dcr-splb-slave-if", NULL);
+-	tft_access = p ? *p : 0;
++	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
++			     &tft_access);
+
+ 	/*
+ 	 * Fill the resource structure if its direct PLB interface
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-15062-1369906862-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGnHq4ACgkQykllyylKDCHicQCfa321WW8tMg8wbS2w8IIhGCM8
+jm4An3UPkCJTRPQjf42rvMccZNuBsrFl
+=eLYO
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-15062-1369906862-0001--
