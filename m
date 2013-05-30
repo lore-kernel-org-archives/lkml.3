@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967295Ab3E3AN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 20:13:57 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55489 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S966530Ab3E3ANw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 20:13:52 -0400
-Message-ID: <1369872829.22004.129.camel@joe-AO722>
-Subject: Re: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bart Van Assche <bart.vanassche@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 29 May 2013 17:13:49 -0700
-In-Reply-To: <20130529163813.5f637f04.akpm@linux-foundation.org>
-References: <519BC066.5080600@acm.org>
-	 <20130529160150.f0a498d188dc790d018200e9@linux-foundation.org>
-	 <1369869467.22004.122.camel@joe-AO722>
-	 <20130529163813.5f637f04.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S967309Ab3E3Ag1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 20:36:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22751 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965596Ab3E3AgR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 20:36:17 -0400
+Date: Wed, 29 May 2013 21:35:54 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Jon Arne =?UTF-8?B?SsO4cmdlbnNlbg==?= <jonarne@jonarne.no>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        g.liakhovetski@gmx.de, ezequiel.garcia@free-electrons.com,
+        timo.teras@iki.fi
+Subject: Re: [RFC 1/3] saa7115: Set saa7113 init to values from datasheet
+Message-ID: <20130529213554.690f7eaa@redhat.com>
+In-Reply-To: <1369860078-10334-2-git-send-email-jonarne@jonarne.no>
+References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
+	<1369860078-10334-2-git-send-email-jonarne@jonarne.no>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 16:38 -0700, Andrew Morton wrote:
-> On Wed, 29 May 2013 16:17:47 -0700 Joe Perches <joe@perches.com> wrote:
+Em Wed, 29 May 2013 22:41:16 +0200
+Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
+
+> Change all default values in the initial setup table to match the table
+> in the datasheet.
+
+This is not a good idea, as it can produce undesired side effects
+on the existing drivers that depend on it, and can't be easily
+tested.
+
+Please, don't change the current "default". It is, of course, OK
+to change them if needed via the information provided inside the
+platform data.
+
+Regards,
+Mauro
 > 
-> > >   We could perhaps have a checkpatch rule
-> > > which looks for comparisons against jiffes (and any other
-> > > time-measuring variables we can detect)
-> > 
-> > other variables like?
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/i2c/saa7115.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 > 
-> Grepping for time_after finds a bunch.  There's no real pattern to it though.
+> diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
+> index d6f589a..4403679 100644
+> --- a/drivers/media/i2c/saa7115.c
+> +++ b/drivers/media/i2c/saa7115.c
+> @@ -223,12 +223,12 @@ static const unsigned char saa7111_init[] = {
+>  static const unsigned char saa7113_init[] = {
+>  	R_01_INC_DELAY, 0x08,
+>  	R_02_INPUT_CNTL_1, 0xc2,
+> -	R_03_INPUT_CNTL_2, 0x30,
+> +	R_03_INPUT_CNTL_2, 0x33,
+>  	R_04_INPUT_CNTL_3, 0x00,
+>  	R_05_INPUT_CNTL_4, 0x00,
+> -	R_06_H_SYNC_START, 0x89,
+> +	R_06_H_SYNC_START, 0xe9,
+>  	R_07_H_SYNC_STOP, 0x0d,
+> -	R_08_SYNC_CNTL, 0x88,
+> +	R_08_SYNC_CNTL, 0x98,
+>  	R_09_LUMA_CNTL, 0x01,
+>  	R_0A_LUMA_BRIGHT_CNTL, 0x80,
+>  	R_0B_LUMA_CONTRAST_CNTL, 0x47,
+> @@ -236,11 +236,11 @@ static const unsigned char saa7113_init[] = {
+>  	R_0D_CHROMA_HUE_CNTL, 0x00,
+>  	R_0E_CHROMA_CNTL_1, 0x01,
+>  	R_0F_CHROMA_GAIN_CNTL, 0x2a,
+> -	R_10_CHROMA_CNTL_2, 0x08,
+> +	R_10_CHROMA_CNTL_2, 0x00,
+>  	R_11_MODE_DELAY_CNTL, 0x0c,
+> -	R_12_RT_SIGNAL_CNTL, 0x07,
+> +	R_12_RT_SIGNAL_CNTL, 0x01,
+>  	R_13_RT_X_PORT_OUT_CNTL, 0x00,
+> -	R_14_ANAL_ADC_COMPAT_CNTL, 0x00,
+> +	R_14_ANAL_ADC_COMPAT_CNTL, 0x00,	/* RESERVED */
+>  	R_15_VGATE_START_FID_CHG, 0x00,
+>  	R_16_VGATE_STOP, 0x00,
+>  	R_17_MISC_VGATE_CONF_AND_MSB, 0x00,
 
-get_jiffies_64() should probably be added as
-another test too.
 
-Also, these might be wrong:
+-- 
 
-arch/arm/kernel/smp_twd.c:              while (get_jiffies_64() < waitjiffies)
-arch/arm/kernel/smp_twd.c:              while (get_jiffies_64() < waitjiffies)
-fs/fuse/dir.c:  else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-fs/fuse/dir.c:  if (fi->i_time < get_jiffies_64()) {
-fs/fuse/dir.c:          if (fi->i_time < get_jiffies_64()) {
-
-
+Cheers,
+Mauro
