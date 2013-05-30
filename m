@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab3E3OVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:21:22 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63903 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab3E3OVQ (ORCPT
+	id S932678Ab3E3OWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:22:17 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53725 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932434Ab3E3OWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:21:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 30 May 2013 07:21:45 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: xilinx: Add WDIOC_SETTIMEOUT ioctl function
-Message-ID: <20130530142145.GA28856@roeck-us.net>
-References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
- <595eb49b34909318959fe6825c209a7d635ed849.1369916757.git.michal.simek@xilinx.com>
- <20130530140754.GB28232@roeck-us.net>
- <51A75F11.7000001@monstr.eu>
+	Thu, 30 May 2013 10:22:07 -0400
+Date: Thu, 30 May 2013 16:22:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Bohac <jbohac@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] nohz: Prevent broadcast source from stealing full
+ dynticks timekeeping duty
+Message-ID: <20130530142200.GA23384@somewhere>
+References: <1369845580-15273-1-git-send-email-fweisbec@gmail.com>
+ <1369845580-15273-2-git-send-email-fweisbec@gmail.com>
+ <alpine.LFD.2.02.1305301554100.2905@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51A75F11.7000001@monstr.eu>
+In-Reply-To: <alpine.LFD.2.02.1305301554100.2905@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 04:15:45PM +0200, Michal Simek wrote:
-> On 05/30/2013 04:07 PM, Guenter Roeck wrote:
-> > On Thu, May 30, 2013 at 02:26:04PM +0200, Michal Simek wrote:
-> >> Standard watchdog programs try to setup timeout
-> >> via ioctl and this functionality should be implemented.
-> >> Timeout value is hardcoded in the hardware but
-> >> based on Documentation/watchdog/watchdog-api.txt
-> >> can return the real timeout used in the same variable.
-> >>
-> >> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> >> ---
-> >>  drivers/watchdog/of_xilinx_wdt.c | 1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
-> >> index 79f358c..a3bbe72 100644
-> >> --- a/drivers/watchdog/of_xilinx_wdt.c
-> >> +++ b/drivers/watchdog/of_xilinx_wdt.c
-> >> @@ -253,6 +253,7 @@ static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> >>  		xwdt_keepalive();
-> >>  		return 0;
-> >>
-> >> +	case WDIOC_SETTIMEOUT:
-> >>  	case WDIOC_GETTIMEOUT:
-> >>  		if (no_timeout)
-> >>  			return -ENOTTY;
+On Thu, May 30, 2013 at 03:57:17PM +0200, Thomas Gleixner wrote:
+> On Wed, 29 May 2013, Frederic Weisbecker wrote:
+> 
+> > The timekeeping duty is currently assigned to the CPU that
+> > handles the tick broadcast clock device by the time it is set in
+> > one shot mode.
 > > 
-> > Watchdog programs should check ident.options before trying to set the timeout.
-> > If they don't, there is an application bug. I don't think it is a good idea
-> > to start hacking the kernel to work around application bugs.
+> > The reason for this is not entirely clear as outlined by Jiri
+> > Bohac: https://patchwork.kernel.org/patch/2302951/
+> > 
+> > One could speculate though that it makes sure only one CPU
+> > is woken up to fixup the timekeeping max deferment. But the
+> > timekeeper can change anytime after the broadcast CPU becomes
+> > idle. So probably we can remove this as in Jiri's patch, but
+> > not late in the -rc's.
 > 
-> Based on Documentation/watchdog/watchdog-api.txt
-> 
-> "For some drivers it is possible to modify the watchdog timeout on the
-> fly with the SETTIMEOUT ioctl, those drivers have the WDIOF_SETTIMEOUT
-> flag set in their option field.  The argument is an integer
+> Looking at commit 7300711e (clockevents: broadcast fixup possible
+> waiters) which introduced that takeover, I really can't see a reason
+> why we must do that. It's safe to remove it completely even now.
 
-Yes, but WDIOF_SETTIMEOUT is not set in the driver's option field.
+Yeah it seems so, if you're ok I can commit https://patchwork.kernel.org/patch/2302951/
+with your ack and send another pull request.
 
-Guenter
-
-> representing the timeout in seconds.  The driver returns the real
-> timeout used in the same variable, and this timeout might differ from
-> the requested one due to limitation of the hardware.
-> 
->     int timeout = 45;
->     ioctl(fd, WDIOC_SETTIMEOUT, &timeout);
->     printf("The timeout was set to %d seconds\n", timeout);
-> 
-> This example might actually print "The timeout was set to 60 seconds"
-> if the device has a granularity of minutes for its timeout."
-> 
-> should be completely fine that user application is trying to setup timeout
-> and driver should return value based on it.
-> 
-> And yes, user application should check return value from ioctl call
-> but still based on documentation driver can properly support it too.
-> 
-> Thanks,
-> Michal
-> 
-> -- 
-> Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-> w: www.monstr.eu p: +42-0-721842854
-> Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-> Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-> Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-> 
-> 
-
-
+Thanks.
