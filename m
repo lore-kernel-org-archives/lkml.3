@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965395Ab3E3RPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:15:10 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57394 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964940Ab3E3RPI (ORCPT
+	id S965367Ab3E3RVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:21:06 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:38160 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757312Ab3E3RU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:15:08 -0400
-Message-ID: <51A7890B.8080002@semaphore.gr>
-Date: Thu, 30 May 2013 20:14:51 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 30 May 2013 13:20:58 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] cpufreq: ondemand: Increase frequency to any value
- proportional to load
-References: <51A3C6CF.6080104@semaphore.gr> <1567913.u8NiyqJmvF@vostro.rjw.lan> <51A61BAC.2050203@semaphore.gr> <3000308.Hi6zX8my0D@vostro.rjw.lan>
-In-Reply-To: <3000308.Hi6zX8my0D@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1369218014-28990-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369218014-28990-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 30 May 2013 19:20:58 +0200
+Message-ID: <CACRpkdbY7WyH7kEOvNm1Gz_V8+MXMz2+1p6+YRvwX_gv7M+rWw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] gpio-langwell: initialize lock before usage
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: David Cohen <david.a.cohen@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 01:29 AM, Rafael J. Wysocki wrote:
-> On Wednesday, May 29, 2013 06:15:56 PM Stratos Karafotis wrote:
->> On 05/28/2013 11:54 PM, Rafael J. Wysocki wrote:
->>> On Tuesday, May 28, 2013 08:03:19 PM Stratos Karafotis wrote:
->>>> I mean any value of freq table. Please let me know if you want me to rephrase
->>>> it in description.
->>>
->>> Yes, it would be nice to be more precise.
->>
->> OK sure, I will add a more precise description.
->>
->>
->>> Which is equivalent to saying that __cpufreq_driver_getavg() is not useful and
->>> may be removed (but the patch doesn't do that and I wonder why?), but surely
->>> the developer who added it wouldn't agree.
->>>
->>> So, please explain: why can we drop __cpufreq_driver_getavg()?
->>>
->>
->> With the new proposed method the next frequency is not dependent from current
->> or average frequency. The next frequency is dependent only from load.
->> So, we don't need support for freq feedback from hardware anymore.
->
-> OK, but that's a more significant change than the changelog suggests.
-> The changelog should tell the whole story and explain the rationale. :-)
->
-> So, please explain that in fact it is not necessary to use the current or
-> average frequency to compute the target and why that is the case.
->
-> Also the patch should remove __cpufreq_driver_getavg() and the callback used by
-> it, since that code will be dead after applying it anyway.
->
->> Even if, due to underlying hardware coordination mechanism, CPU runs in different
->> frequency than the actual, the calculation of load and of target frequency will
->> remain the unaffected, with this patch.
->>
->> With full respect to ondemand coauthor, and if the new method is acceptable,
->> I could send a patch to revert the original one about the IA32_APERF and
->> IA32_MPERF MSR support.
->
-> I'm not sure what you mean by "revert", but please do as I said above.
->
->>>> Thus, in the comparison with up_threshold to increase frequency we actually
->>>> do this (in cases that getavg is not implemented):
->>>> if (load > up_theshold)
->>>> 	increase to max
->>>>
->>>> So, after the patch we keep the same comparison to decide about the max frequency.
->>>> I thought, that below up_threshold is 'fair' to decide about the next
->>>> frequency with formula that frequency is proportional to load.
->>>> For example in a CPU with min freq 100MHz and max 1000MHz with a
->>>> load 50 target frequency should be 500MHz.
->>>
->>> Well, that sounds reasonable, but the patch actually does more than that.
->>
->> I'm sorry, but I didn't understand your last point.
->
-> Please see above.
->
-> The changelog doesn't even mention that the code is being switched from using
-> measured past frequencies to not using them, because you think that there's a
-> better way of computing the target (which by the way I can agree with :-)).
->
-> Thanks,
-> Rafael
->
->
+On Wed, May 22, 2013 at 12:20 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
 
-OK, I will send a new patch that includes your corrections and suggestions.
+> Otherwise we will end up with traceback from LOCKDEP:
+>
+> INFO: trying to register non-static key.
+> the code is fine but needs lockdep annotation.
+> turning off the locking correctness validator.
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-next-20130521-00028-g09aa9fc #487
+>  00000000 00000000 f6c55c54 c1541fe4 f6040bf8 f6c55c8c c1069ef1 c1726bc1
+>  c1726cc8 c1726c9e 00000000 f6c584e0 f6c58000 f6c55ce8 00000000 f6040bf8
+>  f6040bf8 00000046 f6c58000 f6c55d00 c106a18d 00000a2b 00000003 00004f02
+> Call Trace:
+>  [<c1541fe4>] dump_stack+0x49/0x77
+>  [<c1069ef1>] register_lock_class+0x58/0x260
+>  [<c106a18d>] __lock_acquire+0x94/0xcff
+>  [<c106adc8>] ? __lock_acquire+0xccf/0xcff
+>  [<c106b2ad>] lock_acquire+0xcc/0x10d
+>  [<c1269c7c>] ? lnw_irq_type+0x63/0xe9
+>  [<c1545da0>] _raw_spin_lock_irqsave+0x32/0x42
+>  [<c1269c7c>] ? lnw_irq_type+0x63/0xe9
+>  [<c1269c7c>] lnw_irq_type+0x63/0xe9
+>  [<c108f454>] __irq_set_trigger+0x98/0x123
+>  [<c1090225>] irq_set_irq_type+0x2f/0x51
+>  [<c1090225>] ? irq_set_irq_type+0x2f/0x51
+>  [<c1269d02>] ? lnw_irq_type+0xe9/0xe9
+>  [<c1269d34>] lnw_gpio_irq_map+0x32/0x3b
+>  [<c10914f2>] irq_domain_add_legacy+0xe2/0x107
+>  [<c1091b53>] irq_domain_add_simple+0x47/0x60
+>  [<c1269f6e>] lnw_gpio_probe+0x119/0x217
+>  [<c1271018>] pci_device_probe+0x5a/0x92
+> ...
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Thanks so much for your time and your comments!
+Patch applied.
 
-Stratos
-
+Yours,
+Linus Walleij
