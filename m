@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967634Ab3E3Gfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:35:40 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:33393 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967595Ab3E3Gfd (ORCPT
+	id S967648Ab3E3GnG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:43:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39794 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967574Ab3E3GnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:35:33 -0400
-Date: Thu, 30 May 2013 08:35:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: Basic perf PMU support for Haswell v12
-Message-ID: <20130530063529.GB5310@gmail.com>
-References: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
- <20130528062915.GA26467@gmail.com>
- <20130528162038.GG6123@two.firstfloor.org>
+	Thu, 30 May 2013 02:43:00 -0400
+Date: Thu, 30 May 2013 08:42:21 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: NeilBrown <neilb@suse.de>
+Cc: "Richard W.M. Jones" <rjones@redhat.com>,
+        Kent Overstreet <koverstreet@google.com>,
+        Calvin Owens <jcalvinowens@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, majianpeng@gmail.com
+Subject: Re: [PATCH] md: Partially revert 2f6db2a7, which broke raid5
+Message-ID: <20130530064221.GP22724@kernel.dk>
+References: <20130517213223.GA2530@gmail.com>
+ <20130518070515.GL19781@kernel.dk>
+ <20130519175145.GC19194@moria.home.lan>
+ <20130529124357.GA15210@redhat.com>
+ <20130529130340.GC22724@kernel.dk>
+ <20130530092243.52fa17c3@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130528162038.GG6123@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130530092243.52fa17c3@notabene.brown>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> On Tue, May 28, 2013 at 08:29:15AM +0200, Ingo Molnar wrote:
-> > 
-> > * Andi Kleen <andi@firstfloor.org> wrote:
-> > 
-> > > All outstanding issues fixed I hope. And I added mem-loads/stores support.
+On Thu, May 30 2013, NeilBrown wrote:
+> On Wed, 29 May 2013 15:03:40 +0200 Jens Axboe <axboe@kernel.dk> wrote:
+> 
+> > On Wed, May 29 2013, Richard W.M. Jones wrote:
 > > > 
-> > > Contains support for:
-> > > - Basic Haswell PMU and PEBS support
-> > > - Late unmasking of the PMI
-> > > - mem-loads/stores support
+> > > On Sun, May 19, 2013 at 10:51:45AM -0700, Kent Overstreet wrote:
+> > > > Sorry for the delay - been vacationing. Reproduced the original bug,
+> > > > here's a patch that fixes it:
+> > > > 
+> > > > 
+> > > > commit 402f5db3708b2062795a384a3d8397cf702e27bc
+> > > > Author: Kent Overstreet <koverstreet@google.com>
+> > > > Date:   Sun May 19 10:27:07 2013 -0700
+> > > > 
+> > > >     raid5: Initialize bi_vcnt
+> > > >     
+> > > >     The patch that converted raid5 to use bio_reset() forgot to initialize
+> > > >     bi_vcnt.
+> > > >     
+> > > >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > > >     Cc: NeilBrown <neilb@suse.de>
+> > > >     Cc: Jens Axboe <axboe@kernel.dk>
+> > > >     Cc: linux-raid@vger.kernel.org
+> > > > 
+> > > > diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> > > > index 9359828..753f318 100644
+> > > > --- a/drivers/md/raid5.c
+> > > > +++ b/drivers/md/raid5.c
+> > > > @@ -664,6 +664,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> > > >  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+> > > >  				bi->bi_rw |= REQ_FLUSH;
+> > > >  
+> > > > +			bi->bi_vcnt = 1;
+> > > >  			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+> > > >  			bi->bi_io_vec[0].bv_offset = 0;
+> > > >  			bi->bi_size = STRIPE_SIZE;
+> > > > @@ -701,6 +702,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> > > >  			else
+> > > >  				rbi->bi_sector = (sh->sector
+> > > >  						  + rrdev->data_offset);
+> > > > +			rbi->bi_vcnt = 1;
+> > > >  			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+> > > >  			rbi->bi_io_vec[0].bv_offset = 0;
+> > > >  			rbi->bi_size = STRIPE_SIZE;
 > > > 
-> > > v2: Addressed Stephane's feedback. See individual patches for details.
-> > > v3: now even more bite-sized. Qualifier constraints merged earlier.
-> > > v4: Rename some variables, add some comments and other minor changes.
-> > > Add some Reviewed/Tested-bys.
-> > > v5: Address some minor review feedback. Port to latest perf/core
-> > > v6: Add just some variable names, add comments, edit descriptions, some
-> > > more testing, rebased to latest perf/core
-> > > v7: Expand comment
-> > > v8: Rename structure field.
-> > > v9: No wide counters, but add basic LBRs. Add some more 
-> > > constraints. Rebase to 3.9rc1
-> > > v10: Change some whitespace. Rebase to 3.9rc3
-> > > v11: Rebase to perf/core. Fix extra regs. Rename INTX.
-> > > v12: Rebase to 3.10-rc2
-> > > Add mem-loads/stores support for parity with Sandy Bridge.
-> > > Fix fixed counters (Thanks Ingo!)
-> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > > Make late ack optional
-> > > Export new config bits in sysfs.
-> > > Minor changes
+> > > Ditto to the previous follow up.  We've been tracking this
+> > > bug for nearly a month:
+> > > 
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=962079
+> > > 
+> > > Please include this (or the other) patch to fix it.
 > > 
-> > I reported a pretty nasty regression with the previous version (v10) which 
-> > made this series break default 'perf top' on non-Haswell systems - but 
-> > it's unclear from this changelog to what extent you managed to reproduce 
-> > the bug and fix it, and what the fix was?
+> > I'm assuming both Kent and I are waiting for Neil to pick it up. Neil, I
+> > can include this in my next round going upstream, just let me know. It
+> > should have been sent upstream a while back, sorry guys.
+> > 
 > 
-> Thanks for checking.
-> I didn't reproduce it, but I found a problem by code review with the 
-> fixed counter constraints.
+> Seems you were waiting for me, and I was waiting for you :-)
 > 
-> I think I fixed it by adding this hunk:
-> 
-> @@ -2227,7 +2313,7 @@ __init int intel_pmu_init(void)
->                  * counter, so do not extend mask to generic counters
->                  */
->                 for_each_event_constraint(c, x86_pmu.event_constraints) {
-> -                       if (c->cmask != X86_RAW_EVENT_MASK
-> +                       if (c->cmask != FIXED_EVENT_FLAGS
->                             || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
->                                 continue;
->                         }
-> 
-> It would be cleaner to detect the fixed counters in some other way,
-> but that was the simplest fix I could find.
-> 
-> Testing appreciated 
+> Yes: please include it with your next round.  Thanks!
 
-Fair enough - I'll give it a whirl - that hunk does indeed look like it 
-could make a difference.
+Hah, in that case we could have waited for a long time! I'll add it to
+the current mix, thanks.
 
-Thanks,
+-- 
+Jens Axboe
 
-	Ingo
