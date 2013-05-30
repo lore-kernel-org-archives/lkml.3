@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935608Ab3E3Ry3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:54:29 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:35011 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935581Ab3E3RyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:54:21 -0400
+	id S1756351Ab3E3R7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:59:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62873 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753584Ab3E3R7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 13:59:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
+   d="scan'208";a="345797016"
+Date: Thu, 30 May 2013 22:50:50 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 6/6] MIPS: jz4740: Remove custom DMA API
+Message-ID: <20130530172050.GB3767@intel.com>
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de>
+ <1369931105-28065-7-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <1369161163-6448-1-git-send-email-rvaswani@codeaurora.org>
-References: <1369161163-6448-1-git-send-email-rvaswani@codeaurora.org>
-Date: Thu, 30 May 2013 19:54:21 +0200
-Message-ID: <CACRpkdbS-dr-VFrJVyoHJYiaqZSDv2Q0u-N+5881PmLaj+yZkQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Cleanup MSM_GPIOMUX and add device-tree support for
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369931105-28065-7-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 8:32 PM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
+On Thu, May 30, 2013 at 06:25:05PM +0200, Lars-Peter Clausen wrote:
+> Now that all users of the custom jz4740 DMA API have been converted to use
+> the dmaengine API instead we can remove the custom API and move all the code
+> talking to the hardware to the dmaengine driver.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> ---
+> No changes since v1
+> ---
+>  arch/mips/include/asm/mach-jz4740/dma.h |  56 ------
+>  arch/mips/jz4740/Makefile               |   2 +-
+>  arch/mips/jz4740/dma.c                  | 307 --------------------------------
+>  drivers/dma/dma-jz4740.c                | 258 +++++++++++++++++++++++----
+>  4 files changed, 222 insertions(+), 401 deletions(-)
+>  delete mode 100644 arch/mips/jz4740/dma.c
+only dma.c, you should remove the dma.h or relocate it to linux/
 
-> Hi Linus,
-> Could this series go through David's tree or is there a better way to do this?
-> It would be great if I can have you ack for the gpio patch.
 
-Yep ACKed, go ahead.
+rest of the series looks fine, and once we have acks from repsective subsystem
+mainatiners, we should be good to merge
 
-Yours,
-Linus Walleij
+--
+~Vinod
