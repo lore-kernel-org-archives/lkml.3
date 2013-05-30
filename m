@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030418Ab3E3K26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:28:58 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:43230 "EHLO
+	id S1030439Ab3E3K3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:29:21 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:56856 "EHLO
 	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968200Ab3E3K2R (ORCPT
+	with ESMTP id S968222Ab3E3K20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:28:17 -0400
+	Thu, 30 May 2013 06:28:26 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
         renner@efe-gmbh.de, Bill Pemberton <wfp5p@virginia.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         netdev@vger.kernel.org
-Subject: [PATCH v2 2/6] net: emaclite: Support multiple phys connected to one MDIO bus
-Date: Thu, 30 May 2013 12:28:04 +0200
-Message-Id: <803bba7dfb86277c18cfb455518f22fb35bd5eb6.1369909618.git.michal.simek@xilinx.com>
+Subject: [PATCH v2 6/6] net: emaclite: Update driver header
+Date: Thu, 30 May 2013 12:28:08 +0200
+Message-Id: <e00b17108a0c21dd4f74107d78483c32ee5e2445.1369909618.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
 References: <cover.1369909618.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1369909618.git.michal.simek@xilinx.com>
 References: <cover.1369909618.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-5447-1369909693-0001";
+    boundary="=_mimegpg-monstr-desktop-5513-1369909702-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,112 +34,48 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-5447-1369909693-0001
+--=_mimegpg-monstr-desktop-5513-1369909702-0001
 
-For system which contains at least two ethernet IP where
-one IP manage MDIO bus with several PHYs.
-
-Example dts node:
-ethernet_mac0: ethernet@81000000 {
-	compatible = "xlnx,xps-ethernetlite-1.00.a";
-	device_type = "network";
-	interrupt-parent = <&xps_intc_0>;
-	interrupts = < 1 0 >;
-		local-mac-address = [ 00 0a 35 00 db bb ];
-	phy-handle = <&ethernet_mac0_phy0>;
-	reg = < 0x81000000 0x10000 >;
-	xlnx,duplex = <0x1>;
-	xlnx,family = "spartan3e";
-	xlnx,include-internal-loopback = <0x0>;
-	xlnx,include-mdio = <0x1>;
-	xlnx,rx-ping-pong = <0x0>;
-	xlnx,tx-ping-pong = <0x0>;
-	ethernet_mac0_mdio {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		ethernet_mac0_phy0: phy@1 {
-			reg = <0x1>;
-		} ;
-		ethernet_mac0_phy1: phy@3 {
-			reg = <0x3>;
-		} ;
-	} ;
-} ;
-ethernet_mac2: ethernet@81040000 {
-	compatible = "xlnx,xps-ethernetlite-1.00.a";
-	device_type = "network";
-	interrupt-parent = <&xps_intc_0>;
-	interrupts = < 11 0 >;
-		local-mac-address = [ 00 0a 35 00 db bb ];
-	phy-handle = <&ethernet_mac0_phy1>;
-	reg = < 0x81040000 0x10000 >;
-	xlnx,duplex = <0x1>;
-	xlnx,family = "spartan3e";
-	xlnx,include-internal-loopback = <0x0>;
-	xlnx,include-mdio = <0x0>;
-	xlnx,rx-ping-pong = <0x0>;
-	xlnx,tx-ping-pong = <0x0>;
-} ;
+Correct email address and years.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
-Changes in v2: None
+Changes in v2:
+- s/Corrent/Correct/ in patch description
 
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index a16dc35..fcd1e0b 100644
+index 9227ed7..aa14d8a 100644
 --- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
 +++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -848,6 +848,7 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 	int rc;
- 	struct resource res;
- 	struct device_node *np = of_get_parent(lp->phy_node);
-+	struct device_node *npp;
-
- 	/* Don't register the MDIO bus if the phy_node or its parent node
- 	 * can't be found.
-@@ -856,6 +857,17 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 		dev_err(dev, "Failed to register mdio bus.\n");
- 		return -ENODEV;
- 	}
-+	npp = of_get_parent(np);
-+
-+	of_address_to_resource(npp, 0, &res);
-+	if (lp->ndev->mem_start != res.start) {
-+		struct phy_device *phydev;
-+		phydev = of_phy_find_device(lp->phy_node);
-+		if (!phydev)
-+			dev_info(dev,
-+				 "MDIO of the phy is not registered yet\n");
-+		return 0;
-+	}
-
- 	/* Enable the MDIO bus by asserting the enable bit in MDIO Control
- 	 * register.
-@@ -869,7 +881,6 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
- 		return -ENOMEM;
- 	}
-
--	of_address_to_resource(np, 0, &res);
- 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
- 		 (unsigned long long)res.start);
- 	bus->priv = lp;
+@@ -2,9 +2,9 @@
+  * Xilinx EmacLite Linux driver for the Xilinx Ethernet MAC Lite device.
+  *
+  * This is a new flat driver which is based on the original emac_lite
+- * driver from John Williams <john.williams@petalogix.com>.
++ * driver from John Williams <john.williams@xilinx.com>.
+  *
+- * 2007-2009 (c) Xilinx, Inc.
++ * 2007 - 2013 (c) Xilinx, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-5447-1369909693-0001
+--=_mimegpg-monstr-desktop-5513-1369909702-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGnKb0ACgkQykllyylKDCF2tACcCZFEAlXG8wQEH2NUMLLhSzPG
-5lEAn1BEZ7G/X4aEB4gGZOLByPOxCanH
-=C3Qw
+iEYEABECAAYFAlGnKcYACgkQykllyylKDCGNJACggFJj43tCVFtsxRiXgfrI7rdJ
+lOsAnidZEsjMiHzcKAeUiiCJM73aNnkq
+=SsIc
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-5447-1369909693-0001--
+--=_mimegpg-monstr-desktop-5513-1369909702-0001--
