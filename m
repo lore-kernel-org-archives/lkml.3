@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517Ab3E3SOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:14:16 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:65161 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756627Ab3E3SOH (ORCPT
+	id S1758205Ab3E3SPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:15:03 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58251 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756886Ab3E3SO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:14:07 -0400
+	Thu, 30 May 2013 14:14:57 -0400
+Date: Thu, 30 May 2013 14:14:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Joe Perches <joe@perches.com>
+cc: Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Improving or replacing snd_printk()
+In-Reply-To: <1369857112.22004.119.camel@joe-AO722>
+Message-ID: <Pine.LNX.4.44L0.1305301411370.1137-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1369206634-6778-5-git-send-email-avinashphilip@ti.com>
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
-	<1369206634-6778-5-git-send-email-avinashphilip@ti.com>
-Date: Thu, 30 May 2013 20:14:06 +0200
-Message-ID: <CACRpkdaKjfyJWbr3HjHWCeFPeg0mrwDZ+G7Fn_y8Z_PGg2JM2A@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: davinci: da8xx: creation of gpio platform device
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KV Sujith <sujithkv@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 9:10 AM, Philip Avinash <avinashphilip@ti.com> wrote:
+On Wed, 29 May 2013, Joe Perches wrote:
 
-> From: KV Sujith <sujithkv@ti.com>
->
-> gpio controller resource information being associated with
-> davinci_soc_info structure and not created any device. Hence davinci
-> gpio didn't fall under proper device model. This patch creates gpio
-> davinci as a platform device for da8xx platforms.
->
-> - Add Memory and IRQ resources for DA8xx.
-> - Register GPIO platform driver for DA8xx.
-> - Add da8xx_register_gpio API to create platform device for da8xx
->   platforms.
->
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> On Wed, 2013-05-29 at 15:27 -0400, Alan Stern wrote:
+> > Has there been any thought of improving snd_printk(), or even better,
+> > changing the call sites to use the dev_*() routines instead?
+> 
+> Perhaps better would be to add and use some combination of
+> type specific logging message functions/macros like:
+> 
+> void snd_<level>(const struct snd_device *dev, const char *fmt, ...)
+> void snd_card_<level>(const struct snd_card *card, const char *fmt, ...)
+> void snd_ac97_<level>(const struct snd_ac97 *ac97, const char *fmt, ...)
+> 
+> allowing NULL as the type pointer when necessary/appropriate.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Almost anything would be better than the current situation.  The only 
+enhancement provided by CONFIG_SND_VERBOSE_PRINTK is to print the 
+filename and line number, which is relatively unhelpful (unless there 
+are multiple copies of the same message in several places).
 
-Yours,
-Linus Walleij
+Alan Stern
+
