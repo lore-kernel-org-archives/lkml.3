@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967492Ab3E3Dk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 23:40:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26968 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967402Ab3E3Dkt (ORCPT
+	id S967500Ab3E3Dmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 23:42:43 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52606 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759396Ab3E3Dmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 23:40:49 -0400
-X-Authority-Analysis: v=2.0 cv=MNbiabll c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=0JWmocrIWqufWoMOou4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369885247.26799.1.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.80-rt108
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Wed, 29 May 2013 23:40:47 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 May 2013 23:42:36 -0400
+Date: Thu, 30 May 2013 11:42:28 +0800
+From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Runzhen Wang <icycoder@gmail.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@kernel.org, dsahern@gmail.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH] perf tools: fix an error introduced by commit 93cbb398
+Message-ID: <20130530034228.GA4592@rz>
+Reply-To: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+References: <1369668455-6246-1-git-send-email-icycoder@gmail.com>
+ <20130529115615.GA1232@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529115615.GA1232@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13053003-5564-0000-0000-00000821D581
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 29, 2013 at 01:56:15PM +0200, Jiri Olsa wrote:
+>On Mon, May 27, 2013 at 11:27:35PM +0800, Runzhen Wang wrote:
+>> commit 0a720538e5dd3f424bfcc15c1e4af09df0becf92
+>> and
+>> commit 93cbb3985d5de867fb32e6e130fcfb1b5de4142b
+>> move some contents of Makefile from perf/Makefile to
+>> perf/config/Makefile.
+>
+>hi,
+>so you based on latest acme's perf/core, right?
+>
+>I think it's fixed right now within the branch.
+>The issue was there and got fixed by using:
+>
+>-BASIC_CFLAGS = \
+>+BASIC_CFLAGS += \
+>
+Yes, I based on the perf/core tree.
+I have fetched the latest code and found it had been fixed.
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.0.80-rt108 stable release.
-
-
-This release is just an update to the new stable 3.0.80 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.0-rt
-  Head SHA1: f9974bd0da356a196f5e356e3f3fab06836bc1c2
-
-
-Or to build 3.0.80-rt108 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.80.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.80-rt108.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
+thank you :)
+Runzhen Wang
+>should work right now,
+>
+>thanks,
+>jirka
+>
 
