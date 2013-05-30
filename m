@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933510Ab3E3PJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:09:35 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:45635 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933425Ab3E3PJ1 (ORCPT
+	id S933573Ab3E3PMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:12:31 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62932 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab3E3PMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:09:27 -0400
-Message-ID: <51A76B2F.8010904@mellanox.com>
-Date: Thu, 30 May 2013 18:07:27 +0300
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 30 May 2013 11:12:25 -0400
+Date: Thu, 30 May 2013 17:12:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 5/9] memcg: use css_get/put when charging/uncharging kmem
+Message-ID: <20130530151220.GB18155@dhcp22.suse.cz>
+References: <5195D5F8.7000609@huawei.com>
+ <5195D666.6030408@huawei.com>
+ <20130517180822.GC12632@mtj.dyndns.org>
+ <519C838B.9060609@huawei.com>
+ <20130524075420.GA24813@dhcp22.suse.cz>
+ <20130530054852.GA9305@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v7 net-next 2/5] net: implement support for low latency
- socket polling
-References: <20130530114045.12653.79183.stgit@ladj378.jer.intel.com> <20130530114111.12653.25023.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130530114111.12653.25023.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130530054852.GA9305@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/05/2013 14:41, Eliezer Tamir wrote:
-> diff --git a/fs/select.c b/fs/select.c
-> index 8c1c96c..f116bf0 100644
-> --- a/fs/select.c
-> +++ b/fs/select.c
-> @@ -27,6 +27,7 @@
->  #include <linux/rcupdate.h>
->  #include <linux/hrtimer.h>
->  #include <linux/sched/rt.h>
-> +#include <net/ll_poll.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -400,6 +401,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
->  	poll_table *wait;
->  	int retval, i, timed_out = 0;
->  	unsigned long slack = 0;
-> +	cycles_t ll_time = ll_end_time();
->  
->  	rcu_read_lock();
->  	retval = max_select_fd(n, fds);
-> @@ -486,6 +488,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
->  			break;
->  		}
->  
-> +		if (can_poll_ll(ll_time))
-> +			continue;
-I don't see here discrimination between sockets that you want to poll
-and other sockets.
-So it means that select will busy poll every type of file descriptor
-instead of going to sleep.
-Should have a condition with something like sk_valid_ll()
+On Thu 30-05-13 14:48:52, Tejun Heo wrote:
+> Hello,
+> 
+> Sorry about the delay.  Have been and still am traveling.
+> 
+> On Fri, May 24, 2013 at 09:54:20AM +0200, Michal Hocko wrote:
+> > > > On Fri, May 17, 2013 at 03:04:06PM +0800, Li Zefan wrote:
+> > > >> +	/*
+> > > >> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
+> > > >> +	 * this last uncharge is racing with the offlining code or it is
+> > > >> +	 * outliving the memcg existence.
+> > > >> +	 *
+> > > >> +	 * The memory barrier imposed by test&clear is paired with the
+> > > >> +	 * explicit one in kmem_cgroup_css_offline.
+> > > > 
+> > > > Paired with the wmb to achieve what?
+> > 
+> > https://lkml.org/lkml/2013/4/4/190
+> > "
+> > ! > +	css_get(&memcg->css);
+> > ! I think that you need a write memory barrier here because css_get
+> > ! nor memcg_kmem_mark_dead implies it. memcg_uncharge_kmem uses
+> > ! memcg_kmem_test_and_clear_dead which imply a full memory barrier but it
+> > ! should see the elevated reference count. No?
+> > ! 
+> > ! > +	/*
+> > ! > +	 * We need to call css_get() first, because memcg_uncharge_kmem()
+> > ! > +	 * will call css_put() if it sees the memcg is dead.
+> > ! > +	 */
+> > ! >  	memcg_kmem_mark_dead(memcg);
+> > "
+> > 
+> > Does it make sense to you Tejun?
+> 
+> Yeah, you're right.  We need them.  It's still a bummer that mark_dead
+> has the appearance of proper encapsulation while not really taking
+> care of synchronization. 
 
->  		/*
->  		 * If this is the first loop and we have a timeout
->  		 * given, then we convert to ktime_t and set the to
+No objection to put barrier there. You are right it is more natural.
 
+> I think it'd make more sense for mark_dead to have the barrier (which
+> BTW should probably be smp_wmb() instead of wmb())
 
-...
+Yes, smp_wmb sounds like a better fit.
 
-> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
-> +{
-> +}
-> +
-> +static inline bool can_poll_ll(unsigned long end_time)
-should use here cycles_t too.
+> inside it or for the function to be just open-coded.  More on this
+> topic later.
+>
+> > > The comment is wrong. I'll fix it.
+> > 
+> > Ohh, right. "Althouth this might sound strange as this path is called from
+> > css_offline when the reference might have dropped down to 0 and shouldn't ..."
+> > 
+> > Sounds better?
+> 
+> Yeap.
+> 
+> > > I don't quite like adding a lock not to protect data but just ensure code
+> > > orders.
+> > 
+> > Agreed.
+> > 
+> > > Michal, what's your preference? I want to be sure that everyone is happy
+> > > so the next version will hopefully be the last version.
+> > 
+> > I still do not see why the barrier is not needed and the lock seems too
+> > big hammer.
+> 
+> Yes, the barrier is necessary but I still think it's unnecessarily
+> elaborate.  Among the locking constructs, the barriesr are the worst -
+> they don't enforce any structures, people often misunderstand / make
+> mistakes about them, bugs from misusages are extremely difficult to
+> trigger and reproduce especially on x86.  It's a horrible construct
+> and should only be used if no other options can meet the performance
+> requirements required for the path.
 
-> +{
-> +	return false;
-> +}
-> +
-> +#endif /* CONFIG_NET_LL_RX_POLL */
-> +#endif /* _LINUX_NET_LL_POLL_H */
+I am all for simplifying the code. I guess it deserves a separate patch
+though and it is a bit unrelated to the scope of the series.
 
-
-Also, something general about this patch. I think you should split out
-to separate patches all the users of the feature, like you did for TCP.
-I would suggest small patches for UDP, select and poll.
-
-Thanks,
-Amir
+-- 
+Michal Hocko
+SUSE Labs
