@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967648Ab3E3GnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:43:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39794 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967574Ab3E3GnA (ORCPT
+	id S967655Ab3E3Gng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:43:36 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46198 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967574Ab3E3Gnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:43:00 -0400
-Date: Thu, 30 May 2013 08:42:21 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: NeilBrown <neilb@suse.de>
-Cc: "Richard W.M. Jones" <rjones@redhat.com>,
-        Kent Overstreet <koverstreet@google.com>,
-        Calvin Owens <jcalvinowens@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, majianpeng@gmail.com
-Subject: Re: [PATCH] md: Partially revert 2f6db2a7, which broke raid5
-Message-ID: <20130530064221.GP22724@kernel.dk>
-References: <20130517213223.GA2530@gmail.com>
- <20130518070515.GL19781@kernel.dk>
- <20130519175145.GC19194@moria.home.lan>
- <20130529124357.GA15210@redhat.com>
- <20130529130340.GC22724@kernel.dk>
- <20130530092243.52fa17c3@notabene.brown>
+	Thu, 30 May 2013 02:43:31 -0400
+Date: Thu, 30 May 2013 08:43:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.jf.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH 4/6] perf, x86: Move NMI clearing to end of PMI handler v2
+Message-ID: <20130530064327.GC5310@gmail.com>
+References: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
+ <1369261073-1275-5-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130530092243.52fa17c3@notabene.brown>
+In-Reply-To: <1369261073-1275-5-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30 2013, NeilBrown wrote:
-> On Wed, 29 May 2013 15:03:40 +0200 Jens Axboe <axboe@kernel.dk> wrote:
-> 
-> > On Wed, May 29 2013, Richard W.M. Jones wrote:
-> > > 
-> > > On Sun, May 19, 2013 at 10:51:45AM -0700, Kent Overstreet wrote:
-> > > > Sorry for the delay - been vacationing. Reproduced the original bug,
-> > > > here's a patch that fixes it:
-> > > > 
-> > > > 
-> > > > commit 402f5db3708b2062795a384a3d8397cf702e27bc
-> > > > Author: Kent Overstreet <koverstreet@google.com>
-> > > > Date:   Sun May 19 10:27:07 2013 -0700
-> > > > 
-> > > >     raid5: Initialize bi_vcnt
-> > > >     
-> > > >     The patch that converted raid5 to use bio_reset() forgot to initialize
-> > > >     bi_vcnt.
-> > > >     
-> > > >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > > >     Cc: NeilBrown <neilb@suse.de>
-> > > >     Cc: Jens Axboe <axboe@kernel.dk>
-> > > >     Cc: linux-raid@vger.kernel.org
-> > > > 
-> > > > diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> > > > index 9359828..753f318 100644
-> > > > --- a/drivers/md/raid5.c
-> > > > +++ b/drivers/md/raid5.c
-> > > > @@ -664,6 +664,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
-> > > >  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
-> > > >  				bi->bi_rw |= REQ_FLUSH;
-> > > >  
-> > > > +			bi->bi_vcnt = 1;
-> > > >  			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
-> > > >  			bi->bi_io_vec[0].bv_offset = 0;
-> > > >  			bi->bi_size = STRIPE_SIZE;
-> > > > @@ -701,6 +702,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
-> > > >  			else
-> > > >  				rbi->bi_sector = (sh->sector
-> > > >  						  + rrdev->data_offset);
-> > > > +			rbi->bi_vcnt = 1;
-> > > >  			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
-> > > >  			rbi->bi_io_vec[0].bv_offset = 0;
-> > > >  			rbi->bi_size = STRIPE_SIZE;
-> > > 
-> > > Ditto to the previous follow up.  We've been tracking this
-> > > bug for nearly a month:
-> > > 
-> > > https://bugzilla.redhat.com/show_bug.cgi?id=962079
-> > > 
-> > > Please include this (or the other) patch to fix it.
-> > 
-> > I'm assuming both Kent and I are waiting for Neil to pick it up. Neil, I
-> > can include this in my next round going upstream, just let me know. It
-> > should have been sent upstream a while back, sorry guys.
-> > 
-> 
-> Seems you were waiting for me, and I was waiting for you :-)
-> 
-> Yes: please include it with your next round.  Thanks!
 
-Hah, in that case we could have waited for a long time! I'll add it to
-the current mix, thanks.
+* Andi Kleen <andi@firstfloor.org> wrote:
 
--- 
-Jens Axboe
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> This avoids some problems with spurious PMIs on Haswell.
+> Haswell seems to behave more like P4 in this regard. Do
+> the same thing as the P4 perf handler by unmasking
+> the NMI only at the end. Shouldn't make any difference
+> for earlier family 6 cores.
+> 
+> Tested on Haswell, IvyBridge, Westmere, Saltwell (Atom)
+> 
+> v2: Enable only for Haswell
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.h       |  1 +
+>  arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
+>  2 files changed, 14 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index d2c3b42..a3887a3 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -378,6 +378,7 @@ struct x86_pmu {
+>  	struct event_constraint *event_constraints;
+>  	struct x86_pmu_quirk *quirks;
+>  	int		perfctr_second_write;
+> +	bool		late_ack;
+>  
+>  	/*
+>  	 * sysfs attrs
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 2164f39..b7442ff 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1184,16 +1184,12 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+>  
+>  	cpuc = &__get_cpu_var(cpu_hw_events);
+>  
+> -	/*
+> -	 * Some chipsets need to unmask the LVTPC in a particular spot
+> -	 * inside the nmi handler.  As a result, the unmasking was pushed
+> -	 * into all the nmi handlers.
+> -	 *
+> -	 * This handler doesn't seem to have any issues with the unmasking
+> -	 * so it was left at the top.
+> +	/* 
+> +	 * No known reason to not always do late ACK,
+> +	 * but just in case do it opt-in.
+>  	 */
+> -	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> -
+> +	if (!x86_pmu.late_ack)
+> +		apic_write(APIC_LVTPC, APIC_DM_NMI);
+>  	intel_pmu_disable_all();
+>  	handled = intel_pmu_drain_bts_buffer();
+>  	status = intel_pmu_get_status();
+> @@ -1253,6 +1249,13 @@ again:
+>  
+>  done:
+>  	intel_pmu_enable_all(0);
+> +	/*
+> +	 * Only unmask the NMI after the overflow counters
+> +	 * have been reset. This avoids spurious NMIs on
+> +	 * Haswell CPUs.
+> +	 */
+> +	if (x86_pmu.late_ack)
+> +		apic_write(APIC_LVTPC, APIC_DM_NMI);
+>  	return handled;
+>  }
+>  
+> @@ -2257,6 +2260,7 @@ __init int intel_pmu_init(void)
+>  	case 70:
+>  	case 71:
+>  	case 63:
+> +		x86_pmu.late_ack = true;
+>  		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+>  		       sizeof(hw_cache_event_ids));
+>  		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
 
+Ok - this is a lot less intrusive solution.
+
+Once the dust has settled we can try setting late_ack for all models, and 
+if that works out without regressing, we can switch to the late ack method 
+altogether.
+
+Thanks,
+
+	Ingo
