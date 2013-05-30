@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967784Ab3E3HXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 03:23:04 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:47554 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967699Ab3E3HW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 03:22:58 -0400
-Date: Thu, 30 May 2013 09:22:54 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Basic perf PMU support for Haswell v12
-Message-ID: <20130530072254.GA11890@gmail.com>
-References: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
+	id S967789Ab3E3HZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:25:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59578 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967687Ab3E3HZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 03:25:16 -0400
+Message-ID: <51A6FEA8.5030704@ti.com>
+Date: Thu, 30 May 2013 09:24:24 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Gupta, Pekon" <pekon@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "zonque@gmail.com" <zonque@gmail.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [v2, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+ am335x-evm
+References: <ebfab3e9123b3e50b9a9678c1480191addd86d59.1359007746.git.avinashphilip@ti.com> <517F5126.5000509@ti.com> <20130508235404.GX32546@atomide.com> <20980858CB6D3A4BAE95CA194937D5E73E9C320D@DBDE04.ent.ti.com> <20980858CB6D3A4BAE95CA194937D5E73E9C5629@DBDE04.ent.ti.com>
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9C5629@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Pekon,
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+On 05/20/2013 06:44 AM, Gupta, Pekon wrote:
+>  
+>>>>>
+>>>>>  	am33xx_pinmux: pinmux@44e10800 {
+>>>>>  		pinctrl-names = "default";
+>>>>> -		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0>;
+>>>>> +		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0
+>>>>> +			&nandflash_pins_s0>;
+>>>>
+>>>> Why add this to the board level fallback (called pinctrl hogs, I think)?
+>>>> This can be part of nand node you added below so that the pinctrl will
+>>>> take effect when nand gets probed instead of all the time.
+>>>
+>>> Yes we should have all the pinctrl entries under the related drivers.
+>>> This makes it easy remux pins during runtime if needed, and also
+>>> allows unloading pinctrl-single.ko for development.
+>>>
+>> Yes, accepted. This has been already fixed in v3 of this patch set.
+>> If all fine, then please pull this for next merge..
+>>
+>> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046712.html
+>>
+>> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046814.html
+>>
+>> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046710.html
+>>
+>>
+>> with regards, pekon
+> 
+> Request you to please accept | provide feedbacks on this patch series.
+> These are waiting acceptance since Jan-2013, and are necessary for 
+> DT based configs for board having NAND support.
+> 
+> with regards, pekon
 
-> v12: Rebase to 3.10-rc2
-> Add mem-loads/stores support for parity with Sandy Bridge.
-> Fix fixed counters (Thanks Ingo!)
-> Make late ack optional
-> Export new config bits in sysfs.
-> Minor changes
+Sorry, I missed that series.
 
-Sigh, what you have not fixed in your patches are the basic stylistic 
-mistakes I pointed out to the past:
-
-   https://lkml.org/lkml/2013/5/1/78
-
-(my previous feedback is also quoted below.)
-
-Here checkpatch.pl says this about your series:
-
-  total: 6 errors, 10 warnings, 662 lines checked
-
-and a handful of those checkpatch.pl complaints are for valid, real 
-problems.
-
-Furthermore, you have not replied to any of those two mails of mine, nor 
-have you fixed the stylistic problems I pointed out, in these latest 
-patches!
-
-To fix it simply follow the advice I gave you twice before: run 
-scripts/checkpatch.pl against your patches and address any valid 
-complaints it gives _BEFORE YOU RESUBMIT THEM_!
-
-Andi, what the heck is going on here? Your behavior makes no sense to me. 
-You are pretty much the only contributor I know who makes a habit out of 
-willfully ignoring maintainer feedback...
+I'm applying it right now.
 
 Thanks,
+Benoit
 
-	Ingo
 
---------------------->
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Ingo Molnar <mingo@kernel.org> wrote:
-> > 
-> > > You say it's barebones, yet it does not work :-( How well was this 
-> > > patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
-> > > installed base?
-> > > 
-> > > In particular, after applying your patches, 'perf top' stopped working 
-> > > on an Intel testbox of mine:
-> > 
-> > The other problem I noticed was stylistic: when I applied your patches for 
-> > testing even Git complained about their cleanliness ...
-> > 
-> > To quote from Documentation/SubmittingPatches:
-> > 
-> >   4) Style check your changes.
-> > 
-> >   Check your patch for basic style violations, details of which can be
-> >   found in Documentation/CodingStyle.  Failure to do so simply wastes
-> >   the reviewers time and will get your patch rejected, probably
-> >   without even being read.
-> > 
-> >   At a minimum you should check your patches with the patch style
-> >   checker prior to submission (scripts/checkpatch.pl).  You should
-> >   be able to justify all violations that remain in your patch.
-> > 
-> > Please make your patches less sloppy!
-> 
-> Andi, you have not replied to this mail of mine.
-> 
-> What new measures are you taking to avoid such annoying stylistic problems 
-> to creep into your patches?
-> 
-> These problems are regular in your patches and that has been going on for 
-> years - causing maintenance overhead for many maintainers, not just me.
-> 
-> Apparently you are not using proper tooling (checkpatch.pl for example) to 
-> check your patches. If you refuse to take action I will have to stop 
-> dealing with your patches directly altogether - the overhead just does not 
-> justify the effort. You'll need to get your patches reviewed by and signed 
-> off by a more experienced kernel hacker who knows how to submit patches.
-> 
-> Thanks,
