@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967677Ab3E3Gwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:52:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18799 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967616Ab3E3Gwg (ORCPT
+	id S967685Ab3E3G7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:59:09 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46950 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967623Ab3E3G67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:52:36 -0400
-Date: Thu, 30 May 2013 09:52:25 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] minix: bug widening a binary "not" operation
-Message-ID: <20130530065225.GL23987@mwanda>
-References: <20130516075148.GA7494@elgon.mountain>
- <20130529152826.043e95791122bbd39fc9d005@linux-foundation.org>
+	Thu, 30 May 2013 02:58:59 -0400
+Date: Thu, 30 May 2013 15:58:50 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Timur Tabi <timur@tabi.org>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH] ata: increase retry count but shorten duration for
+ Calxeda controller
+Message-ID: <20130530065850.GA22604@mtj.dyndns.org>
+References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
+ <CAOZdJXUHb1Kbu=LoqUgKA3_EMjPU3Q1KrZ-pENb-0Siym8_Pvw@mail.gmail.com>
+ <51A66690.6060109@calxeda.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130529152826.043e95791122bbd39fc9d005@linux-foundation.org>
+In-Reply-To: <51A66690.6060109@calxeda.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:28:26PM -0700, Andrew Morton wrote:
+On Wed, May 29, 2013 at 03:35:28PM -0500, Mark Langsdorf wrote:
+> On 05/29/2013 03:12 PM, Timur Tabi wrote:
+> > On Wed, May 29, 2013 at 10:51 AM, Mark Langsdorf
+> > <mark.langsdorf@calxeda.com> wrote:
+> >>
+> >>  {
+> >> -       const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
+> >> +       unsigned long timing[] = { 5, 100, 500};
+> > 
+> > 
+> > You didn't address my comments the last time you posted this.  I'll
+> > post them again:
+> > 
+> > 
+> > Why are you dropping the 'const'?
+> > 
+> > Assuming it works, this should be more efficient:
+> > 
+> > static const unsigned long timing[] = {5, 100, 500};
+> 
+> I thought there was a compile issue, but I just rechecked and there
+> wasn't. I'll fix for the next submission.
 
-> But we should fix it to set a good example, and to quieten
-> whatever-tool-i-suspect-you-were-using(?).
+Also, please add a comment explaining why those parameters are
+necessary and how they're determined - ie. the bulk of the commit
+message; otherwise, it looks pretty random.
 
-Linus wrote some Sparse patches that check for this but they haven't
-been merged yet.
+Thanks.
 
-regards,
-dan carpenter
+-- 
+tejun
