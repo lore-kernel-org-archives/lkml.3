@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab3E3Oji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:39:38 -0400
-Received: from smtp181.iad.emailsrvr.com ([207.97.245.181]:38487 "EHLO
-	smtp181.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932733Ab3E3Ojc (ORCPT
+	id S933150Ab3E3OkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:40:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33736 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932733Ab3E3Ojx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:39:32 -0400
-Message-ID: <51A764B4.9020302@calxeda.com>
-Date: Thu, 30 May 2013 09:39:48 -0500
-From: Timur Tabi <timur.tabi@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 30 May 2013 10:39:53 -0400
+Date: Thu, 30 May 2013 16:39:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Bohac <jbohac@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] nohz: Prevent broadcast source from stealing full dynticks
+ timekeeping duty
+In-Reply-To: <20130530142200.GA23384@somewhere>
+Message-ID: <alpine.LFD.2.02.1305301638470.2905@ionos>
+References: <1369845580-15273-1-git-send-email-fweisbec@gmail.com> <1369845580-15273-2-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1305301554100.2905@ionos> <20130530142200.GA23384@somewhere>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
- Calxeda controller
-References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com> <51A7646B.6080203@cogentembedded.com>
-In-Reply-To: <51A7646B.6080203@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 09:38 AM, Sergei Shtylyov wrote:
->>> >> -	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
->>> >> +	const unsigned long timing[] = { 5, 100, 500};
->> > You'll save space and time if you also make this array "static",
->> > otherwise the compiler will build the array every time this function is
->> > called.
->     No, *const* specifier is enough to not build this array every time. 
-> It will be put into the .const section.
+On Thu, 30 May 2013, Frederic Weisbecker wrote:
 
-Ok.  Now that I think about it, that makes sense.
+> On Thu, May 30, 2013 at 03:57:17PM +0200, Thomas Gleixner wrote:
+> > On Wed, 29 May 2013, Frederic Weisbecker wrote:
+> > 
+> > > The timekeeping duty is currently assigned to the CPU that
+> > > handles the tick broadcast clock device by the time it is set in
+> > > one shot mode.
+> > > 
+> > > The reason for this is not entirely clear as outlined by Jiri
+> > > Bohac: https://patchwork.kernel.org/patch/2302951/
+> > > 
+> > > One could speculate though that it makes sure only one CPU
+> > > is woken up to fixup the timekeeping max deferment. But the
+> > > timekeeper can change anytime after the broadcast CPU becomes
+> > > idle. So probably we can remove this as in Jiri's patch, but
+> > > not late in the -rc's.
+> > 
+> > Looking at commit 7300711e (clockevents: broadcast fixup possible
+> > waiters) which introduced that takeover, I really can't see a reason
+> > why we must do that. It's safe to remove it completely even now.
+> 
+> Yeah it seems so, if you're ok I can commit https://patchwork.kernel.org/patch/2302951/
+> with your ack and send another pull request.
 
--- 
-Timur Tabi
-Software Developer at Calxeda
+Yup.
