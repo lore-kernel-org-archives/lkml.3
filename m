@@ -1,103 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3E3Nfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:35:53 -0400
-Received: from mta.cujae.edu.cu ([200.55.139.24]:51877 "EHLO
-	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755983Ab3E3Nff (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:35:35 -0400
-X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 09:35:34 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -2.9
-X-Spam-Processed: udio.cujae.edu.cu, Thu, 30 May 2013 09:24:13 -0400
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
-X-MDRemoteIP: 10.9.3.110
-X-Return-Path: acabrera@udio.cujae.edu.cu
-X-Envelope-From: acabrera@udio.cujae.edu.cu
-Message-ID: <51A76199.5010004@udio.cujae.edu.cu>
-Date: Thu, 30 May 2013 09:26:33 -0500
-From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
-	rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756431Ab3E3NgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:36:14 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:10603 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755476Ab3E3Nf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 09:35:27 -0400
+X-IronPort-AV: E=Sophos;i="4.87,770,1363132800"; 
+   d="scan'208";a="28237210"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
+        <arnd@arndb.de>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        <nico@linaro.org>, <cov@codeaurora.org>
+Subject: [PATCH v5 3/4] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+Date: Thu, 30 May 2013 14:35:01 +0100
+Message-ID: <1369920902-3546-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 1/3] watchdog: xilinx: Fix driver header
-References: <b565740967bfa3b3fa867442634f524000c097f8.1369916757.git.michal.simek@xilinx.com>
-	<D958900912E20642BCBC71664EFECE3E6E51FD29A4@BGMAIL02.nvidia.com>
-	<51A746F3.5030503@monstr.eu>
-In-Reply-To: <51A746F3.5030503@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
 
+The only paravirt interface supported is pv_time_ops.steal_clock, so no
+runtime pvops patching needed.
 
-On 30/5/2013 7:32 AM, Michal Simek wrote:
-> On 05/30/2013 02:30 PM, Venu Byravarasu wrote:
->>> -----Original Message-----
->>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->>> owner@vger.kernel.org] On Behalf Of Michal Simek
->>> Sent: Thursday, May 30, 2013 5:56 PM
->>> To: linux-kernel@vger.kernel.org
->>> Cc: Michal Simek; Michal Simek; Wim Van Sebroeck; linux-
->>> watchdog@vger.kernel.org
->>> Subject: [PATCH 1/3] watchdog: xilinx: Fix driver header
->>>
->>> * PGP Signed by an unknown key
->>>
->>> - Remove reference for IP version
->>> - Fix header coding style
->>> - Remove notes which are visible from the code
->>> - Fix driver license according to header
->>>
->>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
->>> ---
->>>   drivers/watchdog/of_xilinx_wdt.c | 30 ++++++++++--------------------
->>>   1 file changed, 10 insertions(+), 20 deletions(-)
->>>
->>> diff --git a/drivers/watchdog/of_xilinx_wdt.c
->>> b/drivers/watchdog/of_xilinx_wdt.c
->>> index 2761ddb..d4a35ab 100644
->>> --- a/drivers/watchdog/of_xilinx_wdt.c
->>> +++ b/drivers/watchdog/of_xilinx_wdt.c
->>> @@ -1,23 +1,13 @@
->>>   /*
->>> -*   of_xilinx_wdt.c  1.01  A Watchdog Device Driver for Xilinx
->>> xps_timebase_wdt
->>> -*
->>> -*   (C) Copyright 2011 (Alejandro Cabrera<aldaya@gmail.com>)
->>> -*
->>> -*       -----------------------
->>> -*/
->>> + * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
->>> + *
->>> + * (C) Copyright 2011 (Alejandro Cabrera<aldaya@gmail.com>)
->> Should year not be updated?
-> This is just header fixup.
-> I think he is not working/maintaining this driver for a long time.
-Indeed :(.
-Since this driver was upstream the new watchdog subsystem was under 
-development and I want to port it to the new core, but unfortunately I 
-haven't enough time :(.
-> I would write there Xilinx copyright but I really don't care.
->
-> Thanks,
-> Michal
-Thanks, you,
-Alejandro
+This allows us to make use of steal_account_process_tick for stolen
+ticks accounting.
 
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Christopher Covington <cov@codeaurora.org>
+CC: linux@arm.linux.org.uk
+CC: will.deacon@arm.com
+CC: nico@linaro.org
+CC: marc.zyngier@arm.com
+CC: cov@codeaurora.org
+CC: arnd@arndb.de
+CC: olof@lixom.net
 
+Changes in v3:
+- improve commit description and Kconfig help text;
+- no need to initialize pv_time_ops;
+- add PARAVIRT_TIME_ACCOUNTING.
+---
+ arch/arm/Kconfig                |   20 ++++++++++++++++++++
+ arch/arm/include/asm/paravirt.h |   19 +++++++++++++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
+ 4 files changed, 65 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/include/asm/paravirt.h
+ create mode 100644 arch/arm/kernel/paravirt.c
 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 49d993c..5621a02 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1786,12 +1786,32 @@ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+ 
++config PARAVIRT
++	bool "Enable paravirtualization code"
++	---help---
++	  This changes the kernel so it can modify itself when it is run
++	  under a hypervisor, potentially improving performance significantly
++	  over full virtualization.
++
++config PARAVIRT_TIME_ACCOUNTING
++	bool "Paravirtual steal time accounting"
++	select PARAVIRT
++	default n
++	---help---
++	  Select this option to enable fine granularity task steal time
++	  accounting. Time spent executing other tasks in parallel with
++	  the current vCPU is discounted from the vCPU power. To account for
++	  that, there can be a small performance impact.
++
++	  If in doubt, say N here.
++
+ config XEN
+ 	bool "Xen guest support on ARM (EXPERIMENTAL)"
+ 	depends on ARM && AEABI && OF
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
+ 	select ARM_PSCI
++	select PARAVIRT
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
+diff --git a/arch/arm/include/asm/paravirt.h b/arch/arm/include/asm/paravirt.h
+new file mode 100644
+index 0000000..3b95bc6
+--- /dev/null
++++ b/arch/arm/include/asm/paravirt.h
+@@ -0,0 +1,19 @@
++#ifndef _ASM_ARM_PARAVIRT_H
++#define _ASM_ARM_PARAVIRT_H
++
++struct static_key;
++extern struct static_key paravirt_steal_enabled;
++extern struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops {
++	unsigned long long (*steal_clock)(int cpu);
++};
++extern struct pv_time_ops pv_time_ops;
++
++static inline u64 paravirt_steal_clock(int cpu)
++{
++	return pv_time_ops.steal_clock(cpu);
++}
++
++
++#endif
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 5f3338e..d911db6 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+ ifneq ($(CONFIG_ARCH_EBSA110),y)
+   obj-y		+= io.o
+ endif
++obj-$(CONFIG_PARAVIRT)	+= paravirt.o
+ 
+ head-y			:= head$(MMUEXT).o
+ obj-$(CONFIG_DEBUG_LL)	+= debug.o
+diff --git a/arch/arm/kernel/paravirt.c b/arch/arm/kernel/paravirt.c
+new file mode 100644
+index 0000000..53f371e
+--- /dev/null
++++ b/arch/arm/kernel/paravirt.c
+@@ -0,0 +1,25 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Copyright (C) 2013 Citrix Systems
++ *
++ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
++ */
++
++#include <linux/export.h>
++#include <linux/jump_label.h>
++#include <linux/types.h>
++#include <asm/paravirt.h>
++
++struct static_key paravirt_steal_enabled;
++struct static_key paravirt_steal_rq_enabled;
++
++struct pv_time_ops pv_time_ops;
++EXPORT_SYMBOL_GPL(pv_time_ops);
+-- 
+1.7.2.5
 
-48 Aniversario de la Cujae, Una obra de la Revolucion Cubana | 2 de diciembre de 1964 | http://cujae.edu.cu
-
-Consulte la enciclopedia colaborativa cubana. http://www.ecured.cu
