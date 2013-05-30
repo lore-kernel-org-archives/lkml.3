@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759827Ab3E3WcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 18:32:20 -0400
-Received: from mail-bn1lp0153.outbound.protection.outlook.com ([207.46.163.153]:48328
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751140Ab3E3WcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 18:32:13 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Russ Anderson <rja@sgi.com>
-CC: joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
-        Matt Fleming <matt@console-pimps.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Thread-Topic: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Thread-Index: AQHOXYWFcUqvqo+O5EOQ++qV+11m6g==
-Date: Thu, 30 May 2013 22:32:09 +0000
-Message-ID: <1369953129.11620.15.camel@x230>
-References: <20130523115801.GJ14575@console-pimps.org>
-	 <20130523203234.GD20913@sgi.com> <20130524074331.GL14575@console-pimps.org>
-	 <20130529210115.GC28027@sgi.com>
-	 <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
-	 <20130529224645.GA16582@sgi.com>
-	 <alpine.LNX.2.00.1305300048520.30576@pobox.suse.cz>
-	 <1369880172.17397.11.camel@linux-s257.site>
-	 <20130530221737.GA11105@sgi.com> <1369952512.11620.14.camel@x230>
-	 <20130530222836.GB11105@sgi.com>
-In-Reply-To: <20130530222836.GB11105@sgi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <19611AE13F041C49A746B8C0303F99BF@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1750917Ab3E3WuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 18:50:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab3E3WuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 18:50:06 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, hughd@google.com,
+        shli@kernel.org, riel@redhat.com, lwoodman@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
+Subject: [PATCH v2] swap: avoid read_swap_cache_async() race to deadlock while waiting on discard I/O completion
+Date: Thu, 30 May 2013 19:49:34 -0300
+Message-Id: <c217bcf6114e2af059488dc93d06b472077c5d74.1369953156.git.aquini@redhat.com>
+In-Reply-To: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
+References: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4UMWNnQ020993
 
-On Thu, 2013-05-30 at 17:28 -0500, Russ Anderson wrote:
-> On Thu, May 30, 2013 at 10:21:53PM +0000, Matthew Garrett wrote:
-> > On Thu, 2013-05-30 at 17:17 -0500, Russ Anderson wrote:
-> > 
-> > > That's a great idea.  This patch moves the QueryVariableInfo()
-> > > call from bootime to runtime, in efi_late_init().  The attached
-> > > patch is consistent with the UEFI spec and avoids the problem.
-> > 
-> > No, that defeats the entire point of the original patch.
-> 
-> How so?  It is still calling QueryVariableInfo()
-> before the data is used.
+read_swap_cache_async() can race against get_swap_page(), and stumble across
+a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought into the
+swapcache yet. This transient swap_map state is expected to be transitory,
+but the actual placement of discard at scan_swap_map() inserts a wait for
+I/O completion thus making the thread at read_swap_cache_async() to loop
+around its -EEXIST case, while the other end at get_swap_page()
+is scheduled away at scan_swap_map(). This can leave the system deadlocked
+if the I/O completion happens to be waiting on the CPU waitqueue where
+read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
 
-We want to know how much space is used by variables that aren't visible
-at runtime.
+This patch introduces a cond_resched() call to make the aforementioned
+read_swap_cache_async() busy loop condition to bail out when necessary,
+thus avoiding the subtle race window.
 
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+---
+Changelog:
+* fixed typos in commit message;			(hannes)
+* enhanced the commentary on the deadlock scenario;	(hannes)
+* include the received ACKs and Cc: stable
+
+ mm/swap_state.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index b3d40dc..f24ab0d 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -336,8 +336,24 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+ 		 * Swap entry may have been freed since our caller observed it.
+ 		 */
+ 		err = swapcache_prepare(entry);
+-		if (err == -EEXIST) {	/* seems racy */
++		if (err == -EEXIST) {
+ 			radix_tree_preload_end();
++			/*
++			 * We might race against get_swap_page() and stumble
++			 * across a SWAP_HAS_CACHE swap_map entry whose page
++			 * has not been brought into the swapcache yet, while
++			 * the other end is scheduled away waiting on discard
++			 * I/O completion at scan_swap_map().
++			 *
++			 * In order to avoid turning this transitory state
++			 * into a permanent loop around this -EEXIST case
++			 * if !CONFIG_PREEMPT and the I/O completion happens
++			 * to be waiting on the CPU waitqueue where we are now
++			 * busy looping, we just conditionally invoke the
++			 * scheduler here, if there are some more important
++			 * tasks to run.
++			 */
++			cond_resched();
+ 			continue;
+ 		}
+ 		if (err) {		/* swp entry is obsolete ? */
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.8.1.4
+
