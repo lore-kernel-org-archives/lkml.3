@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030495Ab3E3KJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:09:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42737 "EHLO arroyo.ext.ti.com"
+	id S968114Ab3E3KKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:10:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34369 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968107Ab3E3KIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:08:41 -0400
-From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-To: <khilman@linaro.org>, <j-keerthy@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: [PATCH v2 1/3] PM / AVS: SmartReflex: disable errgen before vpbound disable
-Date: Thu, 30 May 2013 13:08:34 +0300
-Message-ID: <1369908516-26573-2-git-send-email-andrii.tseglytskyi@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369908516-26573-1-git-send-email-andrii.tseglytskyi@ti.com>
-References: <1369908516-26573-1-git-send-email-andrii.tseglytskyi@ti.com>
+	id S967701Ab3E3KKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:10:48 -0400
+Date: Thu, 30 May 2013 11:10:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/8] Reduce system disruption due to kswapd followup V3
+Message-ID: <20130530101044.GB29426@suse.de>
+References: <1369869457-22570-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1369869457-22570-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+On Thu, May 30, 2013 at 12:17:29AM +0100, Mel Gorman wrote:
+> tldr; Overall the system is getting less kicked in the face. Scan rates
+> 	between zones is often more balanced than it used to be. There are
+> 	now fewer writes from reclaim context and a reduction in IO wait
+> 	times.
+> 
+> This series replaces all of the previous follow-up series. It was clear
+> that more of the stall logic needed to be in the same place so it is
+> comprehensible and easier to predict.
+> 
 
-vpboundsintr_en is available inside the IP block as an re-sycned
-version and one which is not. Due to this, there is an 1 sysclk
-cycle window where the SR_SInterruptz signal could be asserted low.
-IF, intr_en is cleared on the exact same cycle as the irqclr, an
-additional pulse is generated which indicates for VP that
-an additional adjustment of voltage is required.
+There was some unfortunate crossover in timing as I see mmotm has pulled
+in the previous follow up series. It would probably be easiest to replace
+these patches
 
-This results in VP doing two voltage adjustments for the SRERR
-(based on configuration, upto 4 steps), instead of the needed
-1 step.
-Due to the unexpected pulse from AVS which breaks the AVS-VP
-communication protocol, VP also ends up in a stuck condition by
-entering a state where VP module remains non-responsive
-to any futher AVS adjustment events. This creates the symptom
-called "TRANXDONE Timeout" scenario.
+mm-vmscan-stall-page-reclaim-and-writeback-pages-based-on-dirty-writepage-pages-encountered.patch
+mm-vmscan-stall-page-reclaim-after-a-list-of-pages-have-been-processed.patch
+mm-vmscan-take-page-buffers-dirty-and-locked-state-into-account.patch
+mm-vmscan-stall-page-reclaim-and-writeback-pages-based-on-dirty-writepage-pages-encountered.patch
 
-By disabling errgen prior to disable of intr_en, this situation
-can be avoided.
+with patches 2-8 of this series. The fixup patch
+mm-vmscan-block-kswapd-if-it-is-encountering-pages-under-writeback-fix-2.patch
+is still the same
 
-Signed-off-by: Vincent Bour <v-bour@ti.com>
-Signed-off-by: Leonardo Affortunati <l-affortunati@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Andrii.Tseglytskyi <andrii.tseglytskyi@ti.com>
----
- drivers/power/avs/smartreflex.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+Sorry for the inconvenience.
 
-diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-index 6b2238b..f34d34d 100644
---- a/drivers/power/avs/smartreflex.c
-+++ b/drivers/power/avs/smartreflex.c
-@@ -449,12 +449,17 @@ int sr_disable_errgen(struct voltagedomain *voltdm)
- 		return -EINVAL;
- 	}
- 
--	/* Disable the interrupts of ERROR module */
--	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
--
- 	/* Disable the Sensor and errorgen */
- 	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SENENABLE | SRCONFIG_ERRGEN_EN, 0);
- 
-+	/*
-+	 * Disable the interrupts of ERROR module
-+	 * NOTE: modify is a read, modify,write - an implicit OCP barrier
-+	 * which is required is present here - sequencing is critical
-+	 * at this point (after errgen is disabled, vpboundint disable)
-+	 */
-+	sr_modify_reg(sr, errconfig_offs, vpboundint_en | vpboundint_st, 0);
-+
- 	return 0;
- }
- 
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
