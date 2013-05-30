@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965060Ab3E3QQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:16:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50760 "EHLO
+	id S1758269Ab3E3QQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:16:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50763 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934262Ab3E3QCE (ORCPT
+	with ESMTP id S934264Ab3E3QCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 12:02:04 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 58/66] perf evlist: Reset SIGTERM handler in workload child process
-Date: Thu, 30 May 2013 19:01:31 +0300
-Message-Id: <1369929699-8724-59-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/66] perf tests: Fix compile errors in bp_signal files
+Date: Thu, 30 May 2013 19:00:48 +0300
+Message-Id: <1369929699-8724-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -23,47 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Jiri reported hanging perf tests on latest acme's perf/core and bisected
-it to 87f303a9f:
+When building on powerpc,  we get compile errors in bp_signal.c and
+bp_signal_overflow.c due to __u64 and '%llx'.
 
-[jolsa@krava2 perf]$ cat /proc/sys/kernel/perf_event_paranoid
-1
-[jolsa@krava2 perf]$ ./perf record -C 0 kill
-Error:
-You may not have permission to collect %sstats.
-Consider tweaking /proc/sys/kernel/perf_event_paranoid:
- -1 - Not paranoid at all
-  0 - Disallow raw tracepoint access for unpriv
-  1 - Disallow cpu events for unpriv
-  2 - Disallow kernel profiling for unpriv
+Powerpc, needs __SANE_USERSPACE_TYPES__ to be defined so we pick up
+<asm-generic/int-ll64.h> and define __u64 as unsigned long long.
 
-Need to let default handling kickin for workload process.
-
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1369525839-1261-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20130426173320.GA7029@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/tests/bp_signal.c          | 6 ++++++
+ tools/perf/tests/bp_signal_overflow.c | 6 ++++++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index f7c7278..99b43dd 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -776,6 +776,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 		if (pipe_output)
- 			dup2(2, 1);
+diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
+index 68daa28..aba0954 100644
+--- a/tools/perf/tests/bp_signal.c
++++ b/tools/perf/tests/bp_signal.c
+@@ -4,6 +4,12 @@
+  * (git://github.com/deater/perf_event_tests)
+  */
  
-+		signal(SIGTERM, SIG_DFL);
++/*
++ * Powerpc needs __SANE_USERSPACE_TYPES__ before <linux/types.h> to select
++ * 'int-ll64.h' and avoid compile warnings when printing __u64 with %llu.
++ */
++#define __SANE_USERSPACE_TYPES__
 +
- 		close(child_ready_pipe[0]);
- 		close(go_pipe[1]);
- 		fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
+diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+index fe7ed28..44ac821 100644
+--- a/tools/perf/tests/bp_signal_overflow.c
++++ b/tools/perf/tests/bp_signal_overflow.c
+@@ -3,6 +3,12 @@
+  * perf_event_tests (git://github.com/deater/perf_event_tests)
+  */
+ 
++/*
++ * Powerpc needs __SANE_USERSPACE_TYPES__ before <linux/types.h> to select
++ * 'int-ll64.h' and avoid compile warnings when printing __u64 with %llu.
++ */
++#define __SANE_USERSPACE_TYPES__
++
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
 -- 
 1.8.1.4
 
