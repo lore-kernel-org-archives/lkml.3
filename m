@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030213Ab3E3IdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 04:33:24 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:40220 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967903Ab3E3IdT (ORCPT
+	id S1030223Ab3E3IeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 04:34:09 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59310 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967903Ab3E3IeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 04:33:19 -0400
-Date: Thu, 30 May 2013 10:33:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: a.p.zijlstra@chello.nl, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v3][PATCH 2/4] x86: warn when NMI handlers take large amounts
- of time
-Message-ID: <20130530083315.GA14913@gmail.com>
-References: <20130529222756.25535229@viggo.jf.intel.com>
- <20130529222759.6D8C68B2@viggo.jf.intel.com>
+	Thu, 30 May 2013 04:34:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529222759.6D8C68B2@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368611522-9984-24-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-24-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 May 2013 10:34:00 +0200
+Message-ID: <CACRpkdbCx4br+2VH7hoPBPUF6Xpb+WDu2kDxUQAGFJxEHk8ffg@mail.gmail.com>
+Subject: Re: [PATCH 23/39] usb: musb: ux500: harden checks for platform data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-* Dave Hansen <dave@sr71.net> wrote:
+> In its current state, the ux500-musb driver uses platform data pointers
+> blindly with no prior checking. If no platform data pointer is passed
+> this will Oops the kernel. In this patch we ensure platform data and
+> board data are present prior to using them.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: linux-usb@vger.kernel.org
+> Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> @@ -96,8 +106,24 @@ static int __kprobes nmi_handle(unsigned
->  	 * can be latched at any given time.  Walk the whole list
->  	 * to handle those situations.
->  	 */
-> -	list_for_each_entry_rcu(a, &desc->head, list)
-> +	list_for_each_entry_rcu(a, &desc->head, list) {
-> +		u64 before, delta, whole_msecs;
-> +		int decimal_msecs;
-> +
-> +		before = local_clock();
->  		handled += a->handler(type, regs);
-> +		delta = local_clock() - before;
-> +
-> +		if (delta < nmi_longest_ns)
-> +			continue;
-> +
-> +		nmi_longest_ns = delta;
-> +		whole_msecs = delta / (1000 * 1000);
-> +		decimal_msecs = (delta / 1000) % 1000;
-> +		printk_ratelimited(KERN_INFO
-> +			"INFO: NMI handler took too long to run: "
-> +			"%lld.%03d msecs\n", whole_msecs, decimal_msecs);
-> +	}
+Tentatively applied with Felipe's ACK.
 
-One more thing, would it make sense to print the symbol name of the 
-->handler here? That way the message would be more actionable:
-
-	INFO: NMI handler (nmi_handler_foo) took too long to run: 12.613 msecs
-
-(Note, printk() has a '%ps' format string extension to print function 
-pointer symbolic names, so it's easy to add.)
-
-Thanks,
-
-	Ingo
+Yours,
+Linus Walleij
