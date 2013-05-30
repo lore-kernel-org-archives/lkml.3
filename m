@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759399Ab3E3TLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:11:00 -0400
-Received: from [207.46.163.26] ([207.46.163.26]:10749 "EHLO
+	id S1759489Ab3E3TLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:11:11 -0400
+Received: from [207.46.163.27] ([207.46.163.27]:55885 "EHLO
 	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1759245Ab3E3TKy (ORCPT
+	by vger.kernel.org with ESMTP id S1759364Ab3E3TK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:10:54 -0400
+	Thu, 30 May 2013 15:10:57 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MNML81-02-AB0-02
+X-WSS-ID: 0MNML82-02-AB2-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
@@ -18,11 +18,10 @@ To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
 CC: Fenghua Yu <fenghua.yu@intel.com>,
         Andreas Herrmann <herrmann.der.user@googlemail.com>,
         Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH V3 1/4] x86, microcode, intel: Correct typo in printk
-Date: Thu, 30 May 2013 14:09:16 -0500
-Message-ID: <1369940959-2077-2-git-send-email-jacob.shin@amd.com>
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V3 2/4] x86/microcode: vendor abstract out save_microcode_in_initrd()
+Date: Thu, 30 May 2013 14:09:17 -0500
+Message-ID: <1369940959-2077-3-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
 References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
@@ -33,38 +32,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Currently save_microcode_in_initrd() is declared in vendor neutural
+microcode.h file, but defined in vendor specific
+microcode_intel_early.c file. Vendor abstract it out to
+microcode_core_early.c with a wrapper function.
 
-User-visible so correct it.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/kernel/microcode_intel_early.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/microcode_intel.h  |    2 ++
+ arch/x86/kernel/microcode_core_early.c  |   10 ++++++++++
+ arch/x86/kernel/microcode_intel_early.c |    2 +-
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index 5356f92..87a0853 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -67,10 +67,12 @@ update_match_revision(struct microcode_header_intel *mc_header, int rev);
+ extern void __init load_ucode_intel_bsp(void);
+ extern void __cpuinit load_ucode_intel_ap(void);
+ extern void show_ucode_info_early(void);
++extern int __init save_microcode_in_initrd_intel(void);
+ #else
+ static inline __init void load_ucode_intel_bsp(void) {}
+ static inline __cpuinit void load_ucode_intel_ap(void) {}
+ static inline void show_ucode_info_early(void) {}
++static inline int __init save_microcode_in_initrd_intel(void) { return -EINVAL; }
+ #endif
+ 
+ #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
+diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/microcode_core_early.c
+index 833d51d..0d19ac5 100644
+--- a/arch/x86/kernel/microcode_core_early.c
++++ b/arch/x86/kernel/microcode_core_early.c
+@@ -98,3 +98,13 @@ void __cpuinit load_ucode_ap(void)
+ 	if (vendor == X86_VENDOR_INTEL && x86 >= 6)
+ 		load_ucode_intel_ap();
+ }
++
++int __init save_microcode_in_initrd(void)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	if (c->x86_vendor == X86_VENDOR_INTEL && c->x86 >= 6)
++		return save_microcode_in_initrd_intel();
++
++	return 0;
++}
 diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index 2e9e128..a07f0a0 100644
+index a07f0a0..dabef95 100644
 --- a/arch/x86/kernel/microcode_intel_early.c
 +++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -529,7 +529,7 @@ int save_mc_for_early(u8 *mc)
- 	 */
- 	ret = save_microcode(&mc_saved_data, mc_saved_tmp, mc_saved_count);
- 	if (ret) {
--		pr_err("Can not save microcode patch.\n");
-+		pr_err("Cannot save microcode patch.\n");
- 		goto out;
- 	}
- 
-@@ -711,7 +711,7 @@ int __init save_microcode_in_initrd(void)
- 	microcode_pointer(mc_saved, mc_saved_in_initrd, initrd_start, count);
- 	ret = save_microcode(&mc_saved_data, mc_saved, count);
- 	if (ret)
--		pr_err("Can not save microcod patches from initrd");
-+		pr_err("Cannot save microcode patches from initrd.\n");
- 
- 	show_saved_mc();
- 
+@@ -699,7 +699,7 @@ static int __cpuinit apply_microcode_early(struct mc_saved_data *mc_saved_data,
+  * This function converts microcode patch offsets previously stored in
+  * mc_saved_in_initrd to pointers and stores the pointers in mc_saved_data.
+  */
+-int __init save_microcode_in_initrd(void)
++int __init save_microcode_in_initrd_intel(void)
+ {
+ 	unsigned int count = mc_saved_data.mc_saved_count;
+ 	struct microcode_intel *mc_saved[MAX_UCODE_COUNT];
 -- 
 1.7.9.5
 
