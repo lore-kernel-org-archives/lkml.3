@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965935Ab3E3Rt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 13:49:27 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:41638 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965953Ab3E3RtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 13:49:07 -0400
+	id S966061Ab3E3Rus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 13:50:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22239 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965865Ab3E3Rum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 13:50:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
+   d="scan'208";a="248760869"
+Date: Thu, 30 May 2013 22:42:26 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 3/6] dma: Add a jz4740 dmaengine driver
+Message-ID: <20130530171225.GA3767@intel.com>
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de>
+ <1369931105-28065-4-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
-References: <CAE9FiQUbSeCGTsukX3zfVYBhFKgWfVd8WDDvpix==wSXzc=RVQ@mail.gmail.com>
-	<3463581.AQ3EkyvJ7g@vostro.rjw.lan>
-	<5738208.7rKb57pu5j@vostro.rjw.lan>
-	<4462684.QmYxzGRhx8@vostro.rjw.lan>
-	<CAE9FiQU=kC7J2Ocqy-Bq8rN-pO_2gDOrngwev_be70j=LLSpUg@mail.gmail.com>
-Date: Thu, 30 May 2013 10:49:07 -0700
-X-Google-Sender-Auth: 6Wld8oKuZ3tnTUeHmlVGN1m_Xxk
-Message-ID: <CAE9FiQX2tPe5EkdFBMtNwo73MqnVePKPxWCDktpa9BoJyRW5nQ@mail.gmail.com>
-Subject: Re: System slow down from udev
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369931105-28065-4-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 10:42 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, May 30, 2013 at 9:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Thursday, May 30, 2013 04:45:35 PM Rafael J. Wysocki wrote:
->>> On Thursday, May 30, 2013 04:34:51 PM Rafael J. Wysocki wrote:
->> [...]
->>> >
->>> > I'll try to dig deeper locally in the meantime.
->>>
->>> Actually, I think I know what the problem is, but I need some more time to
->>> debug it.  Fortunately, I'm able to see some symptoms. :-)
->>
->> OK, one fix is appended, but there still is one more bug I need to investigate.
->>
->> Please check if this one helps, though.
->
-> yes, that fix the problem.
->
->
->>
->> Thanks,
->> Rafael
->>
->>
->> ---
->>  drivers/acpi/acpi_processor.c   |    5 +++++
->>  drivers/acpi/processor_driver.c |    3 ---
->>  2 files changed, 5 insertions(+), 3 deletions(-)
->>
->> Index: linux-pm/drivers/acpi/processor_driver.c
->> ===================================================================
->> --- linux-pm.orig/drivers/acpi/processor_driver.c
->> +++ linux-pm/drivers/acpi/processor_driver.c
->> @@ -78,9 +78,6 @@ static struct device_driver acpi_process
->>         .remove = acpi_processor_stop,
->>  };
->>
->> -DEFINE_PER_CPU(struct acpi_processor *, processors);
->> -EXPORT_PER_CPU_SYMBOL(processors);
->> -
->>  static void acpi_processor_notify(acpi_handle handle, u32 event, void *data)
->>  {
->>         struct acpi_device *device = data;
->> Index: linux-pm/drivers/acpi/acpi_processor.c
->> ===================================================================
->> --- linux-pm.orig/drivers/acpi/acpi_processor.c
->> +++ linux-pm/drivers/acpi/acpi_processor.c
->> @@ -29,6 +29,9 @@
->>
->>  ACPI_MODULE_NAME("processor");
->>
->> +DEFINE_PER_CPU(struct acpi_processor *, processors);
->> +EXPORT_PER_CPU_SYMBOL(processors);
->> +
->>  /* --------------------------------------------------------------------------
->>                                  Errata Handling
->>     -------------------------------------------------------------------------- */
->> @@ -387,6 +390,7 @@ static int __cpuinit acpi_processor_add(
->>          * checks.
->>          */
->>         per_cpu(processor_device_array, pr->id) = device;
->> +       per_cpu(processors, pr->id) = pr;
->>
->>         dev = get_cpu_device(pr->id);
->>         result = acpi_bind_one(dev, pr->handle);
->> @@ -406,6 +410,7 @@ static int __cpuinit acpi_processor_add(
->>   err:
->>         free_cpumask_var(pr->throttling.shared_cpu_map);
->>         device->driver_data = NULL;
->> +       per_cpu(processors, pr->id) = NULL;
->>   err_free_pr:
->>         kfree(pr);
->>         return result;
->>
->
-> do you need to remove
->     per_cpu(processors, pr->id) = NULL;
-> from processor_driver.c::acpi_processor_stop ?
+On Thu, May 30, 2013 at 06:25:02PM +0200, Lars-Peter Clausen wrote:
+> This patch adds dmaengine support for the JZ4740 DMA controller. For now the
+> driver will be a wrapper around the custom JZ4740 DMA API. Once all users of the
+> custom JZ4740 DMA API have been converted to the dmaengine API the custom API
+> will be removed and direct hardware access will be added to the dmaengine
+> driver.
+> 
+> +
+> +#include <asm/mach-jz4740/dma.h>
+Am bit worried about having header in arch. Why cant we have this drivers header
+in linux/. That way same IP block cna be reused across archs.
+I was hoping that you would have move it in 6th patch, but that isnt the case
 
-also can you kill per_cpu processors ?
 
-You should always get it from
-acpi_device from per_cpu(processor_device_array, cpu)
-then driver_data from it.
+> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
+> +{
+> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+> +
+> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
+> +	if (!chan->jz_chan)
+> +		return -EBUSY;
+> +
+> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
+> +
+> +	return 0;
+Sorry, I didnt reply on this one. The API expects you to allocate a pool of
+descriptors. These descriptors are to be used in .device_prep_xxx calls later.
+
+--
+~Vinod
