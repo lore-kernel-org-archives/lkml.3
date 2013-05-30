@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758841Ab3E3S0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:26:50 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:58195 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab3E3S0p (ORCPT
+	id S1753082Ab3E3S30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:29:26 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:57516 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab3E3S3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:26:45 -0400
+	Thu, 30 May 2013 14:29:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369206634-6778-12-git-send-email-avinashphilip@ti.com>
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
-	<1369206634-6778-12-git-send-email-avinashphilip@ti.com>
-Date: Thu, 30 May 2013 20:26:44 +0200
-Message-ID: <CACRpkdYOGj9SQepDyv3hCSXkQugNb_cwb3+KY0vixEZ7PT-nOg@mail.gmail.com>
-Subject: Re: [PATCH 11/11] ARM: davinci: da850 evm: add GPIO DT data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Philip Avinash <avinashphilip@ti.com>,
-        ext Tony Lindgren <tony@atomide.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KV Sujith <sujithkv@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+References: <CAPgLHd-gjJ6ju3HyhiQi98YFGojvU3aYSTn7SOe4NhQPY1r++w@mail.gmail.com>
+Date: Thu, 30 May 2013 21:29:16 +0300
+Message-ID: <CAHp75Vf+ifmn62vRNZbqpVX1hnqeUkenzvY81gZLenFkEJ9pFA@mail.gmail.com>
+Subject: Re: [PATCH -next v2] dmaengine: ste_dma40: fix error return code in d40_probe()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: srinidhi.kasagar@stericsson.com, Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, yongjun_wei@trendmicro.com.cn,
+        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 9:10 AM, Philip Avinash <avinashphilip@ti.com> wrote:
+On Thu, May 30, 2013 at 7:32 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> In many of the error handling case, the return value 'ret' not set
+> and 0 will be return from d40_probe() even if error, but we should
+> return a negative error code instead in those error handling case.
+> This patch fixed them, and also removed useless variable 'err'.
 
-> From: KV Sujith <sujithkv@ti.com>
+Hold on, please.
+
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+
+> @@ -3619,6 +3618,7 @@ static int __init d40_probe(struct platform_device *pdev)
+>                 if (IS_ERR(base->lcpa_regulator)) {
+>                         d40_err(&pdev->dev, "Failed to get lcpa_regulator\n");
+>                         base->lcpa_regulator = NULL;
+> +                       ret = PTR_ERR(base->lcpa_regulator);
+
+Is it really what we want?
+
+I thixh you may remove that NULL assignment.
+
+
+>                         goto failure;
+>                 }
 >
-> - Add GPIO DT Data and pinmux for DA850 EVM. GPIO is configurable differently
->   on different boards. So add GPIO pinmuxing in dts file.
-> - Dependency: This patch is dependent on Grab-pin-control patch;
->   https://patchwork.kernel.org/patch/2013751/
+
+> @@ -3647,8 +3647,8 @@ static int __init d40_probe(struct platform_device *pdev)
+>         d40_hw_init(base);
 >
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+>         if (np) {
+> -               err = of_dma_controller_register(np, d40_xlate, NULL);
+> -               if (err && err != -ENODEV)
+> +               ret = of_dma_controller_register(np, d40_xlate, NULL);
+> +               if (ret && ret != -ENODEV)
 
-Looks fine to me, but Tony should review this.
+>From the discussion of dw_dmac I remember we decide that ENODEV check
+is redundant.
 
-Yours,
-Linus Walleij
+--
+With Best Regards,
+Andy Shevchenko
