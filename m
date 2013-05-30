@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab3E3SUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:20:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62345 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890Ab3E3SUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:20:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
-   d="scan'208";a="322070561"
-Date: Thu, 30 May 2013 11:20:09 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] USB: xhci: rename ambiguous named XHCI_NEC_HOST to
- XHCI_NEC_SHOW_FW
-Message-ID: <20130530182009.GB8006@xanatos>
-References: <1369862073-3685-1-git-send-email-holler@ahsoftware.de>
- <20130529222500.GC7151@xanatos>
- <51A6D2A2.30302@ahsoftware.de>
+	id S1758801Ab3E3SZb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:25:31 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54062 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab3E3SZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 14:25:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A6D2A2.30302@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1369206634-6778-10-git-send-email-avinashphilip@ti.com>
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
+	<1369206634-6778-10-git-send-email-avinashphilip@ti.com>
+Date: Thu, 30 May 2013 20:25:22 +0200
+Message-ID: <CACRpkdZH4w_-K617QNCo0Z9jH7LKQyjzoG9K-dj4UbN3h5Bcxw@mail.gmail.com>
+Subject: Re: [PATCH 09/11] gpio: davinci: DT changes for driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Philip Avinash <avinashphilip@ti.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KV Sujith <sujithkv@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 06:16:34AM +0200, Alexander Holler wrote:
-> Am 30.05.2013 00:25, schrieb Sarah Sharp:
-> > 
-> > On Wed, May 29, 2013 at 11:14:32PM +0200, Alexander Holler wrote:
-> >> Current Renesas Electronics XHCI hosts (which were formerly NEC)
-> >> do support the same vendor command to show the firmware. Rename the
-> >> ambigious named define XHCI_NEC_HOST to XHCI_NEC_SHOW_FW because it's
-> >> only used to display the firmware version. Besides that, change the
-> >> output "... NEC firmware version x.y" to "... firmware version x.y"
-> >> to not confuse owners of Renesas USB hosts.
-> >>
-> >> (so only cosmetic, no functional changes)
-> > 
-> > I'm actually inclined to say you should just rip out the firmware
-> > version code entirely.  I haven't needed to use it for years, and if
-> > Renesas changed their vendor command set, I would rather not submit
-> > random commands to the host.
-> > 
-> > So, can you redo this patch to just rip out XHCI_NEC_HOST and everything
-> > that uses it?
-> 
-> Hmm, I find the firmware version rather informational and would even
-> display it unconditionally (instead of with xhci_debug). It prevents the
-> need to boot Windows to checkout if the latest version is installed,
-> especially if someone is hunting a bug.
+On Wed, May 22, 2013 at 9:10 AM, Philip Avinash <avinashphilip@ti.com> wrote:
 
-Right, but we need to stop sending commands to Renesas hosts that don't
-support this command.  We don't know what that command does in the hosts
-that don't support the firmware version command.  For all we know, we
-could be setting the host into a debugging mode, or asking it to only
-report USB 2.0 device connects, or other things that I can't imagine.
+(...)
+> +- interrupts: The Starting IRQ number for GPIO
+> +- intc_irq_num: The number of IRQs supported by the Interrupt Controller
+(...)
 
-The point is that unless Renesas tells us how to know if a host
-supports the firmware fetch vendor command, we should stop issuing that
-command to the host.  I think my contacts at Renesas have moved onto
-other jobs, but maybe you know someone there?
+No this is not how you pass a number of IRQs in the device tree.
 
-> I just dont't like the name, because e.g. in my case, it made me to have
-> a deeper look at what that quirk does, because I had the hope it might
-> solve a problem. Therefor I think it's useful to rename it.
+"interrupts" is an array. Pass every interrupt here for a full
+resolution of the IRQs.
 
-I understand.  If the command worked fine on all Renesas hosts, I would
-be fine with renaming it and printing it with dev_info instead of
-xhci_dbg.  However, since some Renesas hosts don't support the command,
-I'm concerned we may be forced to rip out the code.  If you don't do it,
-I will have to.
+Further this looks fishy:
 
-Sarah Sharp
++ interrupts = <42>;
+
+Usually you pass flags with the IRQs, I would rather have expected
+an array like this:
+
+interrupts = < 90 0x4 96 0x4 14 0x4 15 0x4 79 0x4>;
+
+0x4 is IRQ_TYPE_LEVEL_HIGH, you can use the dts
+#include <dt-bindings/interrupt-controller/irq.h> and
+define that symbolically.
+
+Doesn't the DaVinci IRQ controller support *any* IRQ flags?
+
+Since the driver code is not reading out the interrupts but
+(I guess?) falling back to platform data IRQ assignment,
+this seems wrong.
+
+Yours,
+Linus Walleij
