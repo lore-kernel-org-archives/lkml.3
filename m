@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935225Ab3E3QDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:03:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50898 "EHLO
+	id S935313Ab3E3QDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:03:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50923 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934486Ab3E3QCK (ORCPT
+	with ESMTP id S934513Ab3E3QCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:02:10 -0400
+	Thu, 30 May 2013 12:02:12 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 31/66] perf stats: Fix divide by 0 in variance
-Date: Thu, 30 May 2013 19:01:04 +0300
-Message-Id: <1369929699-8724-32-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/66] perf hists: Free unused mem info of a matched hist entry
+Date: Thu, 30 May 2013 19:00:36 +0300
+Message-Id: <1369929699-8724-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369929699-8724-1-git-send-email-acme@infradead.org>
 References: <1369929699-8724-1-git-send-email-acme@infradead.org>
@@ -29,39 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Number of samples needs to be greater 1 to have a variance.
+The mem info is shared between matched entries so one should be freed.
 
-Fixes nan% in perf-kvm-live output.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1369527896-3650-9-git-send-email-dsahern@gmail.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1364816125-12212-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/stat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/hist.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 2374212..7c59c28 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -37,7 +37,7 @@ double stddev_stats(struct stats *stats)
- {
- 	double variance, variance_mean;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 9438d57..514fc04 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -374,6 +374,12 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 		if (!cmp) {
+ 			he_stat__add_period(&he->stat, period, weight);
  
--	if (!stats->n)
-+	if (stats->n < 2)
- 		return 0.0;
- 
- 	variance = stats->M2 / (stats->n - 1);
++			/*
++			 * This mem info was allocated from machine__resolve_mem
++			 * and will not be used anymore.
++			 */
++			free(entry->mem_info);
++
+ 			/* If the map of an existing hist_entry has
+ 			 * become out-of-date due to an exec() or
+ 			 * similar, update it.  Otherwise we will
 -- 
 1.8.1.4
 
