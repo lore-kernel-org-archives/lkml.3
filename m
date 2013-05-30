@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab3E3Eyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 00:54:39 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:42645 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab3E3Eyb (ORCPT
+	id S967409Ab3E3E5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 00:57:14 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:48984 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3E3E5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 00:54:31 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: arnd@arndb.de, patches@linaro.org, kgene.kim@samsung.com, olof@lixom.net
-Subject: [PATCH] ARM: EXYNOS: Consolidate multiple low-level UART port definitions
-Date: Thu, 30 May 2013 10:10:27 +0530
-Message-Id: <1369888827-9427-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 30 May 2013 00:57:09 -0400
+From: "Ortiz, Lance E" <lance.oritz@hp.com>
+To: "Luck, Tony" <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
+ context
+Thread-Topic: [PATCH v3] aerdrv: Move cper_print_aer() call out of interrupt
+ context
+Thread-Index: AQHOXL6xaJHLIdYYMUCf//A2tjAxCpkcyS2AgABcuTA=
+Date: Thu, 30 May 2013 04:55:20 +0000
+Message-ID: <A961433CDFF2F640A2866803152E61F95D13A6F2@G9W0715.americas.hpqcorp.net>
+References: <20130529190326.24171.86905.stgit@grignak.americas.hpqcorp.net>
+ <30463843.EmBn1xaq3I@vostro.rjw.lan>
+ <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA70112@ORSMSX106.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.17]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4U4vKg8014799
 
-There are two definitions for low-level UART ports for Exynos platform.
-CONFIG_S3C_LOWLEVEL_UART_PORT is used for printing "Uncompressing
-Linux... done, booting the kernel." and CONFIG_S3C_UART for other
-low-level messages.
+> > +	/*
+> > +	 * TODO: This function needs to be re-written so that it's output
+> > +	 * matches the output of aer_print_error().  Right now, the
+> output
+> > +	 * is formatted very differently.
+> > +	 */
+> 
+> So we have this big "TODO" comment sitting there very prominently ...
+> which Linus
+> is bound to ask about if I ask him to pull this into 3.10-rcX ...
+> what's the impact of
+> this?  What should I say when he asks why should he pull this fix into
+> 3.10 when
+> there is still some work to do?  Is matching the output no big deal and
+> can wait for
+> some future, while moving the pci bits to the work function needs to go
+> in now?
 
-The assumption for both the uart ports is that they are pre-configured
-in the bootloader. Since they are essentially the same always, it
-would be good to consolidate them to use only one macro, in this case
-'DEBUG_S3C_UART' would be a better option.
+Tony, 
 
-'DEBUG_S3C_UART' is defined only if DEBUG_LL is enabled. We can safely
-disable this option when DEBUG_LL is not defined and we can boot various
-boards with different UART port settings. Only drawback of this
-approach is that when DEBUG_LL is not defined, we would be missing the
-print "Uncompressing Linux... done, booting the kernel."
+You have a good point.  Ideally the console output should be the same in both the aer and the cper case.  The output in cper_print_error() does give us a reasonable amount of information, just not as detailed as I the aer case. Also now what we have the trace event for aer, the console output might be less important.  This TODO is a note for future clean-up and is not directly related to the bug being fixed with this patch.  Which lends to the argument of why put the TODO in this patch?  Opportunistic.  I don‚Äôt think we want to create a separate patch just for a TODO note.  
 
-Since CONFIG_S3C_LOWLEVEL_UART_PORT is still used by other Samsung
-boards, the consolidation applies only for ARCH_EXYNOS.
+So, why pull this patch in even though there is work to do?  The patch fixes a warning that might cause customers un-due concern and removes a call in interrupt context that should not be there.  
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- arch/arm/mach-exynos/include/mach/uncompress.h  |   11 ++++++++---
- arch/arm/plat-samsung/include/plat/uncompress.h |   16 ++++++++++++++--
- 2 files changed, 22 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/include/mach/uncompress.h b/arch/arm/mach-exynos/include/mach/uncompress.h
-index 2979995..45b5c2a 100644
---- a/arch/arm/mach-exynos/include/mach/uncompress.h
-+++ b/arch/arm/mach-exynos/include/mach/uncompress.h
-@@ -37,11 +37,16 @@ static void arch_detect_cpu(void)
- 	chip_id >>= 20;
- 	chip_id &= 0xf;
- 
-+#ifdef CONFIG_DEBUG_LL
- 	if (chip_id == 0x5)
--		uart_base = (volatile u8 *)EXYNOS5_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
-+		uart_base = (volatile u8 *)EXYNOS5_PA_UART +
-+			(S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART);
- 	else
--		uart_base = (volatile u8 *)EXYNOS4_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
--
-+		uart_base = (volatile u8 *)EXYNOS4_PA_UART +
-+			(S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART);
-+#else
-+	uart_base = 0;
-+#endif
- 	/*
- 	 * For preventing FIFO overrun or infinite loop of UART console,
- 	 * fifo_max should be the minimum fifo size of all of the UART channels
-diff --git a/arch/arm/plat-samsung/include/plat/uncompress.h b/arch/arm/plat-samsung/include/plat/uncompress.h
-index 438b248..028c2a8 100644
---- a/arch/arm/plat-samsung/include/plat/uncompress.h
-+++ b/arch/arm/plat-samsung/include/plat/uncompress.h
-@@ -38,7 +38,11 @@ static void arch_detect_cpu(void);
- #define FIFO_MAX	 (14)
- 
- #ifdef S3C_PA_UART
--#define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
-+#ifdef CONFIG_DEBUG_LL
-+#define uart_base (S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_DEBUG_S3C_UART))
-+#else
-+#define uart_base 0
-+#endif
- #endif
- 
- static __inline__ void
-@@ -66,6 +70,9 @@ uart_rd(unsigned int reg)
- 
- static void putc(int ch)
- {
-+	if (!uart_base)
-+		return;
-+
- 	if (uart_rd(S3C2410_UFCON) & S3C2410_UFCON_FIFOMODE) {
- 		int level;
- 
-@@ -118,7 +125,12 @@ static void arch_decomp_error(const char *x)
- #ifdef CONFIG_S3C_BOOT_UART_FORCE_FIFO
- static inline void arch_enable_uart_fifo(void)
- {
--	u32 fifocon = uart_rd(S3C2410_UFCON);
-+	u32 fifocon;
-+
-+	if (!uart_base)
-+		return;
-+
-+	fifocon = uart_rd(S3C2410_UFCON);
- 
- 	if (!(fifocon & S3C2410_UFCON_FIFOMODE)) {
- 		fifocon |= S3C2410_UFCON_RESETBOTH;
--- 
-1.7.9.5
-
+Lance
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
