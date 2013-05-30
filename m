@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758813Ab3E3VBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 17:01:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36237 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3E3VBS (ORCPT
+	id S1758556Ab3E3VGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 17:06:33 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36583 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757690Ab3E3VGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 17:01:18 -0400
+	Thu, 30 May 2013 17:06:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130524140114.GK23650@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk> <20130523104154.GA23650@twins.programming.kicks-ass.net>
- <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
- <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
- <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
- <20130524140114.GK23650@twins.programming.kicks-ass.net>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 30 May 2013 17:00:55 -0400
-Message-ID: <CAHGf_=oL+8n1aFx1T-7iH0gw9f95yY9doAdE+PZd4biSUTzstw@mail.gmail.com>
-Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <CACxGe6vP0F+E_UwULykPLyurO_uDQMVQhShR5VXJ7k0FynuTDw@mail.gmail.com>
+References: <1369793454-19197-1-git-send-email-grant.likely@linaro.org>
+	<1369793454-19197-4-git-send-email-grant.likely@linaro.org>
+	<CACRpkdYjph7swctH0VUJTnEX3O2EKEhX3_HcZz0JvK9L+NKhdA@mail.gmail.com>
+	<CACxGe6vP0F+E_UwULykPLyurO_uDQMVQhShR5VXJ7k0FynuTDw@mail.gmail.com>
+Date: Thu, 30 May 2013 23:06:22 +0200
+Message-ID: <CACRpkdbNW2JAGuvhrQW3xshDCoLRd+Nbyy+YtF26CMQjdo0anQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] irqchip: Make versatile fpga irq driver a generic chip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-> index a841123..f8f47dc 100644
-> --- a/drivers/infiniband/core/umem.c
-> +++ b/drivers/infiniband/core/umem.c
-> @@ -137,17 +137,22 @@ struct ib_umem *ib_umem_get (struct ib_ucontext *context, unsigned long addr,
+On Wed, May 29, 2013 at 9:56 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Wed, May 29, 2013 at 6:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+
+>> Hm, I could test this but what is the needed baseline? I think
+>> I need Thomas' patches underneath right?
+>>
+>> Could you publish a branch that I can test?
 >
->         down_write(&current->mm->mmap_sem);
+> Try this one:
 >
-> -       locked     = npages + current->mm->pinned_vm;
-> +       locked     = npages + mm_locked_pages(current->mm);
->         lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
->
->         if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
->                 ret = -ENOMEM;
-> -               goto out;
-> +               goto err;
->         }
->
->         cur_base = addr & PAGE_MASK;
-> +       umem->start_addr = cur_base;
-> +       umem->end_addr   = cur_base + npages;
-> +
-> +       ret = mm_mpin(umem->start_addr, umem->end_addr);
-> +       if (ret)
-> +               goto err;
+> git://git.secretlab.ca/git/linux irqdomain/generic-chip
 
-I believe RLIMIT_MEMLOCK should be checked within mm_mpin().
+Hey it works!
 
+Compiled and booted on Integrator/AP which uses this
+controller exclusively.
 
-> +static inline unsigned long mm_locked_pages(struct mm_struct *mm)
-> +{
-> +       return mm->pinned_vm + mm->locked_vm;
-> +}
+But you need this hunk:
 
-This is acceptable. but if we create mm_locked_pages(), /proc should
-also use this.
-Otherwise pinning operation magically decrease VmLck field in
-/proc/pid/status and people
-get a confusion.
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 8765502..0cca010 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -36,6 +36,7 @@ config RENESAS_IRQC
 
+ config VERSATILE_FPGA_IRQ
+        bool
++       select GENERIC_IRQ_CHIP
+        select IRQ_DOMAIN
 
+ config VERSATILE_FPGA_IRQ_NR
 
-> @@ -310,9 +309,49 @@ static int mlock_fixup(struct vm_area_struct *vma, struct vm_area_struct **prev,
->          * Keep track of amount of locked VM.
->          */
->         nr_pages = (end - start) >> PAGE_SHIFT;
-> -       if (!lock)
-> -               nr_pages = -nr_pages;
-> -       mm->locked_vm += nr_pages;
-> +
-> +       /*
-> +        * We should only account pages once, if VM_PINNED is set pages are
-> +        * accounted in mm_struct::pinned_vm, otherwise if VM_LOCKED is set,
-> +        * we'll account them in mm_struct::locked_vm.
-> +        *
-> +        * PL  := vma->vm_flags
-> +        * PL' := newflags
-> +        * PLd := {pinned,locked}_vm delta
-> +        *
-> +        * PL->PL' PLd
-> +        * -----------
-> +        * 00  01  0+
-> +        * 00  10  +0
-> +        * 01  11  +-
-> +        * 01  00  0-
-> +        * 10  00  -0
-> +        * 10  11  00
-> +        * 11  01  -+
-> +        * 11  10  00
-> +        */
+With that:
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-This comment is too cryptic. :-)
+For the series.
+
+Yours,
+Linus Walleij
