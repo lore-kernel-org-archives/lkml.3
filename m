@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab3E3Tzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:55:48 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:49502 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756608Ab3E3Tzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:55:42 -0400
-From: Nikolay Balandin <n.a.balandin@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Nikolay Balandin <nbalandin@dev.rtsoft.ru>
-Subject: [PATCH v3 1/1] gpio: sx150x: convert to use devm_* functions
-Date: Tue, 28 May 2013 15:02:50 -0700
-Message-Id: <1369778570-23613-1-git-send-email-n.a.balandin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758363Ab3E3Tz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:55:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46079 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756608Ab3E3Tzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 15:55:50 -0400
+Date: Thu, 30 May 2013 15:55:39 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
+        riel@redhat.com, lwoodman@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, stable@vger.kernel.org
+Subject: Re: [PATCH] swap: avoid read_swap_cache_async() race to deadlock
+ while waiting on discard I/O compeletion
+Message-ID: <20130530195539.GA27226@cmpxchg.org>
+References: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2434dea05a7fda7e7ccf48f70124bd65f2556b2d.1369935749.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+On Thu, May 30, 2013 at 03:05:00PM -0300, Rafael Aquini wrote:
+> read_swap_cache_async() can race against get_swap_page(), and stumble across
+> a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought into the
+> swapcache yet. This transient swap_map state is expected to be transitory,
+> but the actual placement of discard at scan_swap_map() inserts a wait for
+> I/O completion thus making the thread at read_swap_cache_async() to loop
+> around its -EEXIST case, while the other end at get_swap_page()
+> is scheduled away at scan_swap_map(). This can leave the system deadlocked
+> if the I/O completion happens to be waiting on the CPU workqueue where
 
-Use devm_* functions to make cleanup paths simpler.
+waitqueue?
 
-Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
----
- drivers/gpio/gpio-sx150x.c |   18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+> read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+> 
+> This patch introduces a cond_resched() call to make the aforementioned
+> read_swap_cache_async() busy loop condition to bail out when necessary,
+> thus avoiding the subtle race window.
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  mm/swap_state.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/swap_state.c b/mm/swap_state.c
+> index b3d40dc..9ad9e3b 100644
+> --- a/mm/swap_state.c
+> +++ b/mm/swap_state.c
+> @@ -336,8 +336,20 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+>  		 * Swap entry may have been freed since our caller observed it.
+>  		 */
+>  		err = swapcache_prepare(entry);
+> -		if (err == -EEXIST) {	/* seems racy */
+> +		if (err == -EEXIST) {
+>  			radix_tree_preload_end();
+> +			/*
+> +			 * We might race against get_swap_page() and stumble
+> +			 * across a SWAP_HAS_CACHE swap_map entry whose page
+> +			 * has not been brought into the swapcache yet, while
+> +			 * the other end is scheduled away waiting on discard
+> +			 * I/O completion.
+> +			 * In order to avoid turning this transitory state
+> +			 * into a permanent loop around this -EEXIST case,
+> +			 * lets just conditionally invoke the scheduler,
+> +			 * if there are some more important tasks to run.
+> +			 */
+> +			cond_resched();
 
-diff --git a/drivers/gpio/gpio-sx150x.c b/drivers/gpio/gpio-sx150x.c
-index 796b6c4..f371732 100644
---- a/drivers/gpio/gpio-sx150x.c
-+++ b/drivers/gpio/gpio-sx150x.c
-@@ -548,7 +548,8 @@ static int sx150x_install_irq_chip(struct sx150x_chip *chip,
- #endif
- 	}
- 
--	err = request_threaded_irq(irq_summary,
-+	err = devm_request_threaded_irq(&chip->client->dev,
-+				irq_summary,
- 				NULL,
- 				sx150x_irq_thread_fn,
- 				IRQF_SHARED | IRQF_TRIGGER_FALLING,
-@@ -567,8 +568,6 @@ static void sx150x_remove_irq_chip(struct sx150x_chip *chip)
- 	unsigned n;
- 	unsigned irq;
- 
--	free_irq(chip->irq_summary, chip);
--
- 	for (n = 0; n < chip->dev_cfg->ngpios; ++n) {
- 		irq = chip->irq_base + n;
- 		irq_set_chip_and_handler(irq, NULL, NULL);
-@@ -591,18 +590,19 @@ static int sx150x_probe(struct i2c_client *client,
- 	if (!i2c_check_functionality(client->adapter, i2c_funcs))
- 		return -ENOSYS;
- 
--	chip = kzalloc(sizeof(struct sx150x_chip), GFP_KERNEL);
-+	chip = devm_kzalloc(&client->dev,
-+		sizeof(struct sx150x_chip), GFP_KERNEL);
- 	if (!chip)
- 		return -ENOMEM;
- 
- 	sx150x_init_chip(chip, client, id->driver_data, pdata);
- 	rc = sx150x_init_hw(chip, pdata);
- 	if (rc < 0)
--		goto probe_fail_pre_gpiochip_add;
-+		return rc;
- 
- 	rc = gpiochip_add(&chip->gpio_chip);
--	if (rc < 0)
--		goto probe_fail_pre_gpiochip_add;
-+	if (rc)
-+		return rc;
- 
- 	if (pdata->irq_summary >= 0) {
- 		rc = sx150x_install_irq_chip(chip,
-@@ -617,8 +617,6 @@ static int sx150x_probe(struct i2c_client *client,
- 	return 0;
- probe_fail_post_gpiochip_add:
- 	WARN_ON(gpiochip_remove(&chip->gpio_chip) < 0);
--probe_fail_pre_gpiochip_add:
--	kfree(chip);
- 	return rc;
- }
- 
-@@ -635,8 +633,6 @@ static int sx150x_remove(struct i2c_client *client)
- 	if (chip->irq_summary >= 0)
- 		sx150x_remove_irq_chip(chip);
- 
--	kfree(chip);
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
+Might be worth mentioning the !CONFIG_PREEMPT deadlock scenario here,
+especially since under CONFIG_PREEMPT the radix_tree_preload_end() is
+already a scheduling point through the preempt_enable().
 
+Other than that, the patch looks good to me!
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
