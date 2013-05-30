@@ -1,161 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3E3MiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 08:38:16 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:55364 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab3E3MiF convert rfc822-to-8bit (ORCPT
+	id S1753967Ab3E3Mml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 08:42:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:58490 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab3E3Mme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 08:38:05 -0400
+	Thu, 30 May 2013 08:42:34 -0400
+Subject: [PATCH] fuse: fix alignment in short read optimization for async_dio
+To: miklos@szeredi.hu
+From: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Thu, 30 May 2013 16:41:34 +0400
+Message-ID: <20130530123858.16486.94636.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <CANFwon3SBnRBAFwPOAL6++fHdisxTh==2ZQWWDqyuoF5vPQLNQ@mail.gmail.com>
-References: <CANFwon3SBnRBAFwPOAL6++fHdisxTh==2ZQWWDqyuoF5vPQLNQ@mail.gmail.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Thu, 30 May 2013 20:37:24 +0800
-Message-ID: <CANFwon14wX-7Jt1sJxAnY999N_X=CZZdytPsp5WQmpeQYhYCig@mail.gmail.com>
-Subject: Re: KGTP (Linux debugger and tracer) 20130508 release (add single
- step support)
-To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
-        Oliver Yang <yangoliver@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The bug was introduced with async_dio feature: trying to optimize short reads,
+we cut number-of-bytes-to-read to i_size boundary. Hence the following example:
 
-I make a video to introduce how to use KGTP debug the Linux kernel of Android.
-Please goto http://youtu.be/_UGN2j8Ctg0 or
-http://www.tudou.com/programs/view/FjkQ6HhPnfE/ see the English
-version.
-Or goto http://www.tudou.com/programs/view/qCumSPhByFI/ or
-http://youtu.be/9YMpAvsl37I see the Chinese version.
+	truncate --size=300 /mnt/file
+	dd if=/mnt/file of=/dev/null iflag=direct
 
-Thanks,
-Hui
+led to FUSE_READ request of 300 bytes size. This turned out to be problem
+for userspace fuse implementations who rely on assumption that kernel fuse
+does not change alignment of request from client FS.
 
-On Wed, May 8, 2013 at 5:41 PM, Hui Zhu <teawater@gmail.com> wrote:
-> Hi guys,
->
-> KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
-> realtime Linux debugger and tracer.
-> To use it, you don't need patch or rebuild the Linux kernel. Just
-> build KGTP module and insmod it is OK.
->
-> Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
-> http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
-> about howto use KGTP.
->
-> Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Table_of_different_between_GDB_debug_normal_program_and_KGTP
-> or https://code.google.com/p/kgtp/wiki/HOWTOCN#GDB调试普通程序和KGTP的区别表
-> (Chinese) get the table of different between GDB debug normal program
-> and KGTP if you have experience using GDB debug normal program.
->
-> Now, KGTP 20130508 release.
-> You can get the package for it from
-> http://kgtp.googlecode.com/files/kgtp_20130508.tar.bz2
-> or
-> svn co https://kgtp.googlecode.com/svn/tags/20130508
->
-> The main change of this release is complete the support of
-> while-stepping.  KGTP can let Linux kernel do single step now.
-> Please note that while-stepping is just support by X86 and X86_64 now.
-> Howto use while-stepping:
-> while-stepping is a special tracepoint action that include some actions with it.
-> When tracepoints that its actions include "while-stepping n" execute,
-> it will do n times single steps and executes the actions of
-> while-stepping. For example:
-> trace vfs_read
-> #Because single step will make system slow, so use passcount or
-> condition to limit the execution times of tracepoint is better.
-> passcount 1
->   commands
->     collect $bt
->     collect $step_count
->     #do 2000 times single steps.
->     while-stepping 2000
->       #Following part is actions of "while-stepping 2000".
->       #Because step maybe execute to other functions, so does not
-> access local variables is better.
->       collect $bt
->       collect $step_count
->     end
->   end
-> You can switch KGTP to replay mode to select all the traceframe of a
-> while-stepping tracepoint with GDB execution and reverse-execution
-> commands. For example:
-> Use tfind select one the traceframe of a while-stepping tracepoint.
-> (gdb) tfind
-> Found trace frame 0, tracepoint 1
-> #0  vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0 <Address
-> 0x7fff74e4edb0 out of bounds>, count=16,
->     pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:365
-> 365     {
-> Following commands will swith KGTP to replay mode.
->
-> (gdb) monitor replay
-> (gdb) tfind -1
-> No longer looking at any trace frame
-> #0  vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0 <Address
-> 0x7fff74e4edb0 out of bounds>, count=16,
->     pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:365
-> 365     {
-> Then you can use execution commands.
->
-> (gdb) n
-> 368             if (!(file->f_mode & FMODE_READ))
-> (gdb) p file->f_mode
-> $5 = 3
-> Set breakpoints (Just valid in replay mode, will not affect Linux
-> kernel execution).
->
-> (gdb) b 375
-> Breakpoint 2 at 0xffffffff81179b75: file
-> /build/buildd/linux-3.2.0/fs/read_write.c, line 375.
-> (gdb) c
-> Continuing.
->
-> Breakpoint 2, vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0
-> <Address 0x7fff74e4edb0 out of bounds>, count=16,
->     pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:375
-> 375             ret = rw_verify_area(READ, file, pos, count);
-> (gdb) s
-> rw_verify_area (read_write=0, file=0xffff8801f7bd4c00,
-> ppos=0xffff8801f4b45f48, count=16)
->     at /build/buildd/linux-3.2.0/fs/read_write.c:300
-> 300             inode = file->f_path.dentry->d_inode;
-> Use reverse-execution commands.
->
-> (gdb) rs
->
-> Breakpoint 2, vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0
-> <Address 0x7fff74e4edb0 out of bounds>, count=16,
->     pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:375
-> 375             ret = rw_verify_area(READ, file, pos, count);
-> (gdb) rn
-> 372             if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
-> GDB commands tstart, tfind or quit can auto close the replay mode.
->
-> Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Use_while-stepping_let_Linux_kernel_do_single_step
-> or https://code.google.com/p/kgtp/wiki/HOWTOCN#使用while-stepping让Linux内核做单步
-> (Chinese version) get more info about it.
->
-> Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
-> about this release.
->
-> According to the comments of Christoph, Geoff and Andi.  I make lite
-> patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
-> see it.
->
-> Thanks,
-> Hui
+The patch turns off the optimization if async_dio is disabled. And, if it's
+enabled, the patch fixes adjustment of number-of-bytes-to-read to preserve
+alignment.
+
+Note, that we cannot throw out short read optimization entirely because
+otherwise a direct read of a huge size issued on a tiny file would generate
+a huge amount of fuse requests and most of them would be ACKed by userspace
+with zero bytes read.
+
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+---
+ fs/fuse/file.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index d1c9b85..9026572 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2365,6 +2365,11 @@ static void fuse_do_truncate(struct file *file)
+ 	fuse_do_setattr(inode, &attr, file);
+ }
+ 
++static inline loff_t fuse_round_up(loff_t off)
++{
++	return round_up(off, FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT);
++}
++
+ static ssize_t
+ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs)
+@@ -2372,6 +2377,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	ssize_t ret = 0;
+ 	struct file *file = iocb->ki_filp;
+ 	struct fuse_file *ff = file->private_data;
++	bool async_dio = ff->fc->async_dio;
+ 	loff_t pos = 0;
+ 	struct inode *inode;
+ 	loff_t i_size;
+@@ -2383,10 +2389,10 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	i_size = i_size_read(inode);
+ 
+ 	/* optimization for short read */
+-	if (rw != WRITE && offset + count > i_size) {
++	if (async_dio && rw != WRITE && offset + count > i_size) {
+ 		if (offset >= i_size)
+ 			return 0;
+-		count = i_size - offset;
++		count = min_t(loff_t, count, fuse_round_up(i_size - offset));
+ 	}
+ 
+ 	io = kmalloc(sizeof(struct fuse_io_priv), GFP_KERNEL);
+@@ -2404,7 +2410,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	 * By default, we want to optimize all I/Os with async request
+ 	 * submission to the client filesystem if supported.
+ 	 */
+-	io->async = ff->fc->async_dio;
++	io->async = async_dio;
+ 	io->iocb = iocb;
+ 
+ 	/*
+@@ -2412,7 +2418,7 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	 * to wait on real async I/O requests, so we must submit this request
+ 	 * synchronously.
+ 	 */
+-	if (!is_sync_kiocb(iocb) && (offset + count > i_size))
++	if (!is_sync_kiocb(iocb) && (offset + count > i_size) && rw == WRITE)
+ 		io->async = false;
+ 
+ 	if (rw == WRITE)
+
