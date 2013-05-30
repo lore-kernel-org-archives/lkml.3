@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab3E3Oi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 10:38:29 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57819 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932636Ab3E3OiW (ORCPT
+	id S933071Ab3E3Oin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 10:38:43 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:41558 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932785Ab3E3Oif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 10:38:22 -0400
-Message-ID: <1369924699.1972.4.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 0/5] scsi: use platform helper macro and wrapper
- functions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Kefeng Wang <wangkefeng.wang@huawei.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        guohanjun@huawei.com
-Date: Thu, 30 May 2013 07:38:19 -0700
-In-Reply-To: <1369915786-2660-1-git-send-email-wangkefeng.wang@huawei.com>
-References: <1369915786-2660-1-git-send-email-wangkefeng.wang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
+	Thu, 30 May 2013 10:38:35 -0400
+Message-ID: <51A7646B.6080203@cogentembedded.com>
+Date: Thu, 30 May 2013 18:38:35 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Timur Tabi <timur.tabi@calxeda.com>
+CC: Mark Langsdorf <mark.langsdorf@calxeda.com>, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
+ Calxeda controller
+References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com>
+In-Reply-To: <51A76197.9080708@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-30 at 20:09 +0800, Kefeng Wang wrote:
-> use module_platform_driver() and paltform{set,get}_drvdata to simpily code,
-> and patch 2/5 delete unnecessery drvdate set to null.
-> 
-> Kefeng Wang (5):
->   scsi: jazz: use module_platform_driver() and
->     platform_{set,get}_drvdata
->   scsi: sun: use module_platform_driver() and platform_{set,get}_drvdata
->   scsi: qlogicpti: use module_platform_driver() and
->     platform_{set,get}_drvdata
->   scsi: sun3x: use module_platform_driver() and
->     platform_{set,get}_drvdata
->   scsi: sni: use module_platform_driver() and platform_{set,get}_drvdata
-> 
->  drivers/scsi/jazz_esp.c   | 17 +++--------------
->  drivers/scsi/qlogicpti.c  | 17 +++--------------
->  drivers/scsi/sni_53c710.c | 17 +++--------------
->  drivers/scsi/sun3x_esp.c  | 16 +++-------------
->  drivers/scsi/sun_esp.c    | 19 +++----------------
->  5 files changed, 15 insertions(+), 71 deletions(-)
+Hello.
 
-There doesn't seem to be much point to these patches since either idiom
-is fine and easily understood.  We also try to touch the ancient drivers
-as little as possible since it can be months before anyone actually
-tries them out and notices that something got broken, so the rule for
-them is obvious bug fixes only.
+On 30-05-2013 18:26, Timur Tabi wrote:
 
-James
+>> -	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
+>> +	const unsigned long timing[] = { 5, 100, 500};
 
+> You'll save space and time if you also make this array "static",
+> otherwise the compiler will build the array every time this function is
+> called.
+
+    No, *const* specifier is enough to not build this array every time. 
+It will be put into the .const section.
+
+WBR, Sergei
 
