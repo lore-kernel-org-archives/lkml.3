@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030246Ab3E3JFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:05:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40000 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967252Ab3E3JFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:05:38 -0400
-Message-ID: <51A71455.9000002@ti.com>
-Date: Thu, 30 May 2013 14:26:53 +0530
-From: keerthy <j-keerthy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1030262Ab3E3JGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:06:15 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36245 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030243Ab3E3JGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 05:06:08 -0400
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 7/7] thermal: ti-soc-thermal: add DT example for DRA752
- chip
-References: <1369840066-20357-1-git-send-email-eduardo.valentin@ti.com> <1369840066-20357-8-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1369840066-20357-8-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1368611522-9984-37-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-37-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 May 2013 11:06:07 +0200
+Message-ID: <CACRpkda1LOfPyzQRAwChSH9WtcCFnLNfFa5kp=8JWX0x7ioj+g@mail.gmail.com>
+Subject: Re: [PATCH 36/39] dmaengine: ste_dma40: Allow memcpy channels to be
+ configured from DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-On 05/29/2013 08:37 PM, Eduardo Valentin wrote:
+> At this moment in time the memcpy channels which can be used by the D40
+> are fixed, as each supported platform in Mainline uses the same ones.
+> However, platforms do exist which don't follow this convention, so
+> these will need to be tailored. Fortunately, these platforms will be DT
+> only, so this change has very little impact on platform data.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> Update documentation by adding an example for DRA752 on DT description.
-> 
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: J Keerthy <j-keerthy@ti.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt b/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-> index 1629652..1953b33 100644
-> --- a/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/ti_soc_thermal.txt
-> @@ -59,3 +59,15 @@ bandgap {
->  	compatible = "ti,omap5430-bandgap";
->  	interrupts = <0 126 4>; /* talert */
->  };
-> +
-> +DRA752:
-> +bandgap {
-> +	reg = <0x4a0021e0 0xc
-> +		0x4a00232c 0xc
-> +		0x4a002380 0x2c
-> +		0x4a0023C0 0x3c
-> +		0x4a002564 0x8
-> +		0x4a002574 0x50>;
-> +	compatible = "ti,dra752-bandgap";
+Patch applied with Vinod's ACK.
 
-
-The general convention seems to be keeping it as dra7xx or dra7.
-Why add specific nodes like dra752? We can always reuse for
-forthcoming dra7 processors if the same address mapping and IP
-is retained right?
-
-> +	interrupts = <0 126 4>; /* talert */
-
-
-The TRM does not have any term called talert. Can the comment
-be /* thermal_alert */ so it is easy to figure out what it is.
-
-> +};
-
-
-Regards,
-Keerthy
+Yours,
+Linus Walleij
