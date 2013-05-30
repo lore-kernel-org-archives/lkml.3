@@ -1,72 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab3E3SjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 14:39:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31781 "EHLO mga01.intel.com"
+	id S932383Ab3E3Sj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 14:39:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56615 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757278Ab3E3SjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 14:39:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,772,1363158000"; 
-   d="scan'208";a="345813491"
-Date: Thu, 30 May 2013 23:31:26 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Dan Williams <djbw@fb.com>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH 09/21] dw_dmac: remove inline marking of EXPORT_SYMBOL
- functions
-Message-ID: <20130530180126.GG3767@intel.com>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
- <1368091192-10245-4-git-send-email-yefremov.denis@gmail.com>
+	id S1756413Ab3E3Sjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 14:39:48 -0400
+Subject: [PATCH] iommu: amd/intel: Remove multifunction assumption around
+ grouping
+To: iommu@lists.linux-foundation.org, dwmw2@infradead.org, joro@8bytes.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 30 May 2013 12:39:18 -0600
+Message-ID: <20130530183855.14612.15585.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368091192-10245-4-git-send-email-yefremov.denis@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 01:19:40PM +0400, Denis Efremov wrote:
-> EXPORT_SYMBOL and inline directives are contradictory to each other.
-> The patch fixes this inconsistency.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-Applied, thanks
+If a device is multifunction and does not have ACS enabled then we
+assume that the entire package lacks ACS and use function 0 as the
+base of the group.  The PCIe spec however states that components are
+permitted to implement ACS on some, none, or all of their applicable
+functions.  It's therefore conceivable that function 0 may be fully
+independent and support ACS while other functions do not.  Instead
+use the lowest function of the slot that does not have ACS enabled
+as the base of the group.  This may be the current device, which is
+intentional.  So long as we use a consistent algorithm, all the
+non-ACS functions will be grouped together and ACS functions will
+get separate groups.
 
---
-~Vinod
-> ---
->  drivers/dma/dw_dmac.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 43a5329..a526bb9 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -574,14 +574,14 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
->  
->  /* --------------------- Cyclic DMA API extensions -------------------- */
->  
-> -inline dma_addr_t dw_dma_get_src_addr(struct dma_chan *chan)
-> +dma_addr_t dw_dma_get_src_addr(struct dma_chan *chan)
->  {
->  	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
->  	return channel_readl(dwc, SAR);
->  }
->  EXPORT_SYMBOL(dw_dma_get_src_addr);
->  
-> -inline dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan)
-> +dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan)
->  {
->  	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
->  	return channel_readl(dwc, DAR);
-> -- 
-> 1.8.1.4
-> 
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/iommu/amd_iommu.c   |   25 +++++++++++++++++++------
+ drivers/iommu/intel-iommu.c |   25 +++++++++++++++++++------
+ 2 files changed, 38 insertions(+), 12 deletions(-)
 
--- 
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 1d84be1..565c745 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -287,14 +287,27 @@ static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
+ 
+ 	/*
+ 	 * If it's a multifunction device that does not support our
+-	 * required ACS flags, add to the same group as function 0.
++	 * required ACS flags, add to the same group as lowest numbered
++	 * function that also does not suport the required ACS flags.
+ 	 */
+ 	if (dma_pdev->multifunction &&
+-	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+-		swap_pci_ref(&dma_pdev,
+-			     pci_get_slot(dma_pdev->bus,
+-					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+-					  0)));
++	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
++		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
++
++		for (i = 0; i < 8; i++) {
++			struct pci_dev *tmp;
++
++			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
++			if (!tmp)
++				continue;
++
++			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
++				swap_pci_ref(&dma_pdev, tmp);
++				break;
++			}
++			pci_dev_put(tmp);
++		}
++	}
+ 
+ 	/*
+ 	 * Devices on the root bus go through the iommu.  If that's not us,
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index b4f0e28..eec0d3e 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4182,14 +4182,27 @@ static int intel_iommu_add_device(struct device *dev)
+ 
+ 	/*
+ 	 * If it's a multifunction device that does not support our
+-	 * required ACS flags, add to the same group as function 0.
++	 * required ACS flags, add to the same group as lowest numbered
++	 * function that also does not suport the required ACS flags.
+ 	 */
+ 	if (dma_pdev->multifunction &&
+-	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+-		swap_pci_ref(&dma_pdev,
+-			     pci_get_slot(dma_pdev->bus,
+-					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+-					  0)));
++	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
++		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
++
++		for (i = 0; i < 8; i++) {
++			struct pci_dev *tmp;
++
++			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
++			if (!tmp)
++				continue;
++
++			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
++				swap_pci_ref(&dma_pdev, tmp);
++				break;
++			}
++			pci_dev_put(tmp);
++		}
++	}
+ 
+ 	/*
+ 	 * Devices on the root bus go through the iommu.  If that's not us,
+
