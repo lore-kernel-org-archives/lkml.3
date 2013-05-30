@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3E3NtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:49:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54897 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755861Ab3E3NtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:49:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Fix potential NULL pointer dereference in acpi_processor_add()
-Date: Thu, 30 May 2013 15:57:58 +0200
-Message-ID: <2969934.XTKV7y9VVT@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51A6B9A2.8090904@linaro.org>
-References: <519E0F2A.4070602@linaro.org> <51A5E177.3090809@fold.natur.cuni.cz> <51A6B9A2.8090904@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756797Ab3E3Ntl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:49:41 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:39026 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab3E3Nte (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 09:49:34 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: davem@davemloft.net
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stefan Roese <sr@denx.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv4 0/6] ARM: sunxi: Add support for A10 Ethernet controller
+Date: Thu, 30 May 2013 15:49:19 +0200
+Message-Id: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 30, 2013 10:29:54 AM Hanjun Guo wrote:
-> On 2013-5-29 19:07, Martin Mokrejs wrote:
-> > Hanjun Guo wrote:
-> >> On 2013-5-29 7:30, Rafael J. Wysocki wrote:
-> >>> On Thursday, May 23, 2013 08:44:26 PM Hanjun Guo wrote:
-> >>>> In acpi_processor_add(), get_cpu_device() will return NULL sometimes,
-> >>>> although the chances are small, I think it should be fixed.
-> >>>>
-> >>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >>>
-> >>> This patch isn't necessary any more after the changes queued up for 3.11
-> >>> in the acpi-hotplug branch of the linux-pm.git tree.
-> >>
-> >> Ok, I noticed your patch set, just drop my patch.
-> > 
-> > But shouldn't this go to stable at least? I checked linux-3.9.4
-> > and it applies fine. Whether this is relevant for other stable
-> > series I will leave up to somebody else. ;)
-> 
-> Hi Rafeal,
-> 
-> What's your opinion on Martin's suggestion?
+Hi,
 
-Well, this is kind of hard to say.  We generally don't apply patches to -stable
-that don't have mainline counterparts.
+The Allwinner A10 SoC has an ethernet controller that seem to be specific to
+Allwinner. This IP has no public documentation, so exact
+details are quite sparse, and this code come from refactored Allwinner
+code.
 
-Greg, I wonder what your opinion is?
+The rework to use NAPI is taking more time than expected, I'm still working
+on it, but it could probably be sent as a follow-up patch.
 
-Rafael
+Thanks,
+Maxime
 
+Changes from v3:
+  - Moved the MDIO driver to drivers/net/phy
+  - Add error checking in the mdio driver for regulator_enable, that also
+    silences a warning
+  - Fixed the phy address in the cubieboard device tree (From Emilio Lopez)
+  - Fix broken builds by selecting CONFIG_REGULATOR (From Emilio Lopez)
+
+Changes from v2:
+  - Split the MDIO controller to a separate driver and make use of standards
+    device tree bindings
+  - Fixed various minor things as suggested by Florian Fainelli
+  - Added clock support now that we have a clock driver
+
+Changes from v1:
+  - Use phylib for the phy-related functions
+  - Use an optional regulator to power up the phy
+  - Rename the driver from Davicom Wemac to Allwinner EMAC, since it's the name
+    mentionned in the datasheet, and we have no strong evidence of a
+    relationship with Davicom
+  - Fix various small things around the driver: add defines for undocumented
+    values, fix documentation name and compatible example, etc.
+
+Maxime Ripard (4):
+  net: Add MDIO bus driver for the Allwinner EMAC
+  ARM: sun4i: Add muxing options for the ethernet controller
+  ARM: sunxi: Add EMAC controller node to sun4i DTSI
+  ARM: sunxi: Add EMAC Controller to Hackberry dt
+
+Stefan Roese (2):
+  net: Add EMAC ethernet driver found on Allwinner A10 SoC's
+  ARM: cubieboard: Enable ethernet (EMAC) support in dts
+
+ .../bindings/net/allwinner,sun4i-emac.txt          |  22 +
+ .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |  15 +
+ arch/arm/boot/dts/sun4i-a10-hackberry.dts          |  41 +
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |  27 +
+ drivers/net/ethernet/Kconfig                       |   1 +
+ drivers/net/ethernet/Makefile                      |   1 +
+ drivers/net/ethernet/allwinner/Kconfig             |  36 +
+ drivers/net/ethernet/allwinner/Makefile            |   5 +
+ drivers/net/ethernet/allwinner/sun4i-emac.c        | 960 +++++++++++++++++++++
+ drivers/net/ethernet/allwinner/sun4i-emac.h        | 108 +++
+ drivers/net/phy/Kconfig                            |  10 +
+ drivers/net/phy/Makefile                           |   1 +
+ drivers/net/phy/mdio-sun4i.c                       | 194 +++++
+ 14 files changed, 1447 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-emac.txt
+ create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun4i-mdio.txt
+ create mode 100644 drivers/net/ethernet/allwinner/Kconfig
+ create mode 100644 drivers/net/ethernet/allwinner/Makefile
+ create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.c
+ create mode 100644 drivers/net/ethernet/allwinner/sun4i-emac.h
+ create mode 100644 drivers/net/phy/mdio-sun4i.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.2.3
+
