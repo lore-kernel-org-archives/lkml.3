@@ -1,143 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab3E3PFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:05:03 -0400
-Received: from mail.skitlab.ru ([217.65.220.135]:41298 "EHLO mail.skitlab.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab3E3PEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:04:55 -0400
-From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
-To: linux-omap@vger.kernel.org
-Cc: tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: OMAP: TI816X: add powerdomains for TI816x
-Date: Thu, 30 May 2013 19:04:50 +0400
-Message-Id: <1369926290-30404-1-git-send-email-aida.mynzhasova@skitlab.ru>
-X-Mailer: git-send-email 1.7.10.4
+	id S933017Ab3E3PHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:07:04 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:40625 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757594Ab3E3PG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 11:06:58 -0400
+Date: Thu, 30 May 2013 23:06:36 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: parisc: kernel: using strlcpy() instead of strcpy()
+Message-ID: <20130530150636.GA2121@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Chen Gang <gang.chen@asianux.com>,
+	"James E.J. Bottomley" <jejb@parisc-linux.org>,
+	Helge Deller <deller@gmx.de>, Greg KH <gregkh@linuxfoundation.org>,
+	Parisc List <linux-parisc@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Linux-Arch <linux-arch@vger.kernel.org>
+References: <51A6A8F3.2030200@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A6A8F3.2030200@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds required structures for powerdomain initialization on
-the ti816x. It is impossible to use omap3430 structures in order to
-initialize powerdomains on ti816x, because there are big differences
-between PRCM module base address offsets on these CPUs.
+On Thu, May 30, 2013 at 09:18:43AM +0800, Chen Gang wrote:
+> 
+> 'boot_args' is an input args, and 'boot_command_line' has a fix length.
+> 
+> So need use strlcpy() instead of strcpy() to avoid memory overflow.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/parisc/kernel/setup.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/parisc/kernel/setup.c b/arch/parisc/kernel/setup.c
+> index 60c1ae6..7349a3f 100644
+> --- a/arch/parisc/kernel/setup.c
+> +++ b/arch/parisc/kernel/setup.c
+> @@ -69,7 +69,8 @@ void __init setup_cmdline(char **cmdline_p)
+>  		/* called from hpux boot loader */
+>  		boot_command_line[0] = '\0';
+>  	} else {
+> -		strcpy(boot_command_line, (char *)__va(boot_args[1]));
+> +		strlcpy(boot_command_line, (char *)__va(boot_args[1]),
+> +			COMMAND_LINE_SIZE);
 
-Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
----
- arch/arm/mach-omap2/powerdomains3xxx_data.c |   62 +++++++++++++++++++++++++++
- arch/arm/mach-omap2/prcm-common.h           |   11 +++++
- 2 files changed, 73 insertions(+)
+What about add 
+boot_command_line[COMMAND_LINE_SIZE - 1] = '\0';
+to protect the following another strcpy?
 
-diff --git a/arch/arm/mach-omap2/powerdomains3xxx_data.c b/arch/arm/mach-omap2/powerdomains3xxx_data.c
-index f0e14e9..e2d4bd8 100644
---- a/arch/arm/mach-omap2/powerdomains3xxx_data.c
-+++ b/arch/arm/mach-omap2/powerdomains3xxx_data.c
-@@ -336,6 +336,54 @@ static struct powerdomain dpll5_pwrdm = {
- 	.voltdm		  = { .name = "core" },
- };
- 
-+static struct powerdomain device_81xx_pwrdm = {
-+	.name		  = "device_pwrdm",
-+	.prcm_offs	  = TI81XX_PRM_DEVICE_MOD,
-+	.voltdm		  = { .name = "core" },
-+};
-+
-+static struct powerdomain active_816x_pwrdm = {
-+	.name		  = "active_pwrdm",
-+	.prcm_offs	  = TI816X_PRM_ACTIVE_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "core" },
-+};
-+
-+static struct powerdomain default_816x_pwrdm = {
-+	.name		  = "default_pwrdm",
-+	.prcm_offs	  = TI81XX_PRM_DEFAULT_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "core" },
-+};
-+
-+static struct powerdomain ivahd0_816x_pwrdm = {
-+	.name		  = "ivahd0_pwrdm",
-+	.prcm_offs	  = TI816X_PRM_IVAHD0_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "mpu_iva" },
-+};
-+
-+static struct powerdomain ivahd1_816x_pwrdm = {
-+	.name		  = "ivahd1_pwrdm",
-+	.prcm_offs	  = TI816X_PRM_IVAHD1_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "mpu_iva" },
-+};
-+
-+static struct powerdomain ivahd2_816x_pwrdm = {
-+	.name		  = "ivahd2_pwrdm",
-+	.prcm_offs	  = TI816X_PRM_IVAHD2_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "mpu_iva" },
-+};
-+
-+static struct powerdomain sgx_816x_pwrdm = {
-+	.name		  = "sgx_pwrdm",
-+	.prcm_offs	  = TI816X_PRM_SGX_MOD,
-+	.pwrsts		  = PWRSTS_OFF_ON,
-+	.voltdm		  = { .name = "core" },
-+};
-+
- /* As powerdomains are added or removed above, this list must also be changed */
- static struct powerdomain *powerdomains_omap3430_common[] __initdata = {
- 	&wkup_omap2_pwrdm,
-@@ -393,6 +441,17 @@ static struct powerdomain *powerdomains_am35x[] __initdata = {
- 	NULL
- };
- 
-+static struct powerdomain *powerdomains_ti81xx[] __initdata = {
-+	&device_81xx_pwrdm,
-+	&active_816x_pwrdm,
-+	&default_816x_pwrdm,
-+	&ivahd0_816x_pwrdm,
-+	&ivahd1_816x_pwrdm,
-+	&ivahd2_816x_pwrdm,
-+	&sgx_816x_pwrdm,
-+	NULL
-+};
-+
- void __init omap3xxx_powerdomains_init(void)
- {
- 	unsigned int rev;
-@@ -406,6 +465,9 @@ void __init omap3xxx_powerdomains_init(void)
- 
- 	if (rev == AM35XX_REV_ES1_0 || rev == AM35XX_REV_ES1_1) {
- 		pwrdm_register_pwrdms(powerdomains_am35x);
-+	} else if (rev == TI8168_REV_ES1_0 || rev == TI8168_REV_ES1_1
-+			|| rev == TI8168_REV_ES2_0 || rev == TI8168_REV_ES2_1) {
-+		pwrdm_register_pwrdms(powerdomains_ti81xx);
- 	} else {
- 		pwrdm_register_pwrdms(powerdomains_omap3430_common);
- 
-diff --git a/arch/arm/mach-omap2/prcm-common.h b/arch/arm/mach-omap2/prcm-common.h
-index c7d355f..ff1ac4a 100644
---- a/arch/arm/mach-omap2/prcm-common.h
-+++ b/arch/arm/mach-omap2/prcm-common.h
-@@ -48,6 +48,17 @@
- #define OMAP3430_NEON_MOD				0xb00
- #define OMAP3430ES2_USBHOST_MOD				0xc00
- 
-+/*
-+ * TI81XX PRM module offsets
-+ */
-+#define TI81XX_PRM_DEVICE_MOD			0x0000
-+#define TI816X_PRM_ACTIVE_MOD			0x0a00
-+#define TI81XX_PRM_DEFAULT_MOD			0x0b00
-+#define TI816X_PRM_IVAHD0_MOD			0x0c00
-+#define TI816X_PRM_IVAHD1_MOD			0x0d00
-+#define TI816X_PRM_IVAHD2_MOD			0x0e00
-+#define TI816X_PRM_SGX_MOD				0x0f00
-+
- /* 24XX register bits shared between CM & PRM registers */
- 
- /* CM_FCLKEN1_CORE, CM_ICLKEN1_CORE, PM_WKEN1_CORE shared bits */
--- 
-1.7.10.4
-
+"
+strcpy(command_line, boot_command_line);
+"
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+>  		if (boot_args[2] != 0) /* did palo pass us a ramdisk? */
+> -- 
+> 1.7.7.6
