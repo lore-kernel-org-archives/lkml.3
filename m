@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967570Ab3E3GF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:05:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34533 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967545Ab3E3GEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:04:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,768,1363158000"; 
-   d="scan'208";a="321752242"
-Message-ID: <51A6EBE2.6050108@linux.intel.com>
-Date: Thu, 30 May 2013 09:04:18 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S967561Ab3E3GJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:09:58 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:56076 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967507Ab3E3GJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 02:09:50 -0400
+Message-ID: <51A6ED2B.1080908@prisktech.co.nz>
+Date: Thu, 30 May 2013 18:09:47 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Eric Dumazet <erdnetdev@gmail.com>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v6 net-next 2/5] net: implement support for low latency
- socket polling
-References: <20130529063916.27486.3841.stgit@ladj378.jer.intel.com> <20130529063935.27486.18610.stgit@ladj378.jer.intel.com> <CAJZOPZJqF1FTLH3a3ZKUTA4ViesAZEkRi=dgd-ux8eRu9TyhBw@mail.gmail.com> <51A617D7.6000406@linux.intel.com> <CAJZOPZLC=drE9dTpnj2hLdDmfnL+T4gOU1j1xYwbmYy-J9HaAQ@mail.gmail.com>
-In-Reply-To: <CAJZOPZLC=drE9dTpnj2hLdDmfnL+T4gOU1j1xYwbmYy-J9HaAQ@mail.gmail.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: "List, VT8500" <vt8500-wm8505-linux-kernel@googlegroups.com>,
+        Alexey Charkov <alchark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] MAINTAINERS: vt8500: Add clk-vt8500.c to MAINTAINERS
+ file
+References: <1368825532-30917-1-git-send-email-linux@prisktech.co.nz> <1368825532-30917-5-git-send-email-linux@prisktech.co.nz> <CABjd4Yw2LbnaUbQFW_bd_6WRGTA34-Vp_tUC2b4Jczj-MM8x1w@mail.gmail.com> <51973C1D.2080404@prisktech.co.nz> <20130529231649.6058.4589@quantum>
+In-Reply-To: <20130529231649.6058.4589@quantum>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/2013 21:52, Or Gerlitz wrote:
-> Eliezer Tamir <eliezer.tamir@linux.intel.com> wrote:
->> Or Gerlitz wrote:
+On 30/05/13 11:16, Mike Turquette wrote:
+> Quoting Tony Prisk (2013-05-18 01:30:21)
+>> On 18/05/13 18:40, Alexey Charkov wrote:
+>>> On 18 May 2013 01:18, "Tony Prisk" <linux@prisktech.co.nz> wrote:
+>>>> This file has missed being added under ARM/VT8500 ARM ARCHITECTURE,
+>>>> and is maintained along with the rest of the vt8500 arch code.
+>>>>
+>>>> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+>>>> ---
+>>>>    MAINTAINERS |    1 +
+>>>>    1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>>> index 3d7782b..5ab8ccb 100644
+>>>> --- a/MAINTAINERS
+>>>> +++ b/MAINTAINERS
+>>>> @@ -1283,6 +1283,7 @@ M:        Tony Prisk <linux@prisktech.co.nz>
+>>>>    L:     linux-arm-kernel@lists.infradead.org (moderated for
+>>> non-subscribers)
+>>>>    S:     Maintained
+>>>>    F:     arch/arm/mach-vt8500/
+>>>> +F:     drivers/clk/vt8500-vt8500.c
+>>> This looks like a typo (clk vs. vt8500).
+>>>
+>>> Best,
+>>> Alexey
+>>>
+>> eeek - oops.
+>>
+>> Mike,
+>>
+>> Disregard this patch - I will send a more complete one through arm-soc
+>> as there are other files missing as well.
+>>
+> Hi Tony,
 >
->>> Unlike with TCP sockets, UDP sockets may receive packets from multiple
->>> sources and hence the receiving context may be steered to be executed
->>> on different cores through RSS or other Flow-Steering HW mechanisms
->>> which could mean different napi contexts for the same socket, is that
->>> a problem here? what's the severity?
+> I've taken patch #1 into clk-fixes.  I took patches #2 & #3 into
+> clk-next from your previous series posted on May 13, which appear
+> identical to the ones in this series.  In the future could you put a
+> "v2" in the patch subject since those patches were re-posted?  It would
+> have helped me catch it.
 >
->> Nothing will break if you poll on the wrong queue.
->> Your data will come through normal NAPI processing of the right queue.
+> I have not taken patch #4.
 >
-> Can you elaborate a little further, why you call this "wrong" and "right"?
+> Does this all sound correct to you?
+>
+> Thanks,
+> Mike
+>
+>> Regards
+>> Tony P
+Perfect - Thanks Mike
 
-Right == the queue the packets arrive on.
-Wrong == any other queue.
-
-BTW, if you have an application that receives UDP data to an unbound 
-socket, wouldn't it be better in any case to steer all of the incoming 
-packets for this UDP socket to a single queue disregarding the source 
-address? (Can't your hardware do that?)
-
-The general approach is that userspace needs to make sure that threads, 
-connections and IRQs are bound to the right CPUs.
-
--Eliezer
-
+Regards
+Tony P
