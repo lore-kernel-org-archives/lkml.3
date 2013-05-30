@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934057Ab3E3QAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:00:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58902 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934049Ab3E3P7t (ORCPT
+	id S934289Ab3E3QAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:00:44 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:41069 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934049Ab3E3QAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:59:49 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/3] spi: fix incorrect handling of min param in SPI_BPW_RANGE_MASK
-Date: Thu, 30 May 2013 09:59:40 -0600
-Message-Id: <1369929581-30258-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369929581-30258-1-git-send-email-swarren@wwwdotorg.org>
-References: <1369929581-30258-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Thu, 30 May 2013 12:00:38 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, gnatapov@redhat.com, jan.kiszka@siemens.com
+Subject: [PATCH 0/2] KVM: x86: minimal debugging support during emulation
+Date: Thu, 30 May 2013 18:00:29 +0200
+Message-Id: <1369929631-2101-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+The switch to emulate_invalid_guest_state brought one slightly unwelcome
+change; the debugging interface does not work in the initial boot phase
+because KVM_SET_GUEST_DEBUG is basically ignored.
 
-SPI_BPW_RANGE_MASK is intended to work by calculating two masks; one
-representing support for all bits up-to-and-including the "max" supported
-value, and one representing support for all bits up-to-but-not-including
-the "min" supported value, and then taking the difference between the
-two, resulting in a mask representing support for all bits between
-(inclusive) the min and max values.
+These two patches bring some initial support for debugging, namely for
+hardware breakpoints and single-stepping.  Software breakpoints and
+hardware watchpoints are still ignored.
 
-However, the second mask ended up representing all bits up-to-and-
-including rather up-to-but-not-including. Fix this bug.
+Paolo
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- include/linux/spi/spi.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Paolo Bonzini (2):
+  KVM: x86: handle hardware breakpoints during emulation
+  KVM: x86: handle singlestep during emulation
 
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 3e94791..28e440b 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -310,7 +310,7 @@ struct spi_master {
- 	u32			bits_per_word_mask;
- #define SPI_BPW_MASK(bits) BIT((bits) - 1)
- #define SPI_BIT_MASK(bits) (((bits) == 32) ? ~0UL : (BIT(bits) - 1))
--#define SPI_BPW_RANGE_MASK(min, max) (SPI_BIT_MASK(max) - SPI_BIT_MASK(min))
-+#define SPI_BPW_RANGE_MASK(min, max) (SPI_BIT_MASK(max) - SPI_BIT_MASK(min - 1))
- 
- 	/* other constraints relevant to this driver */
- 	u16			flags;
+ arch/x86/include/asm/kvm_emulate.h |   1 +
+ arch/x86/include/asm/kvm_host.h    |   3 +-
+ arch/x86/kvm/emulate.c             |   1 +
+ arch/x86/kvm/x86.c                 | 106 ++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 109 insertions(+), 2 deletions(-)
+
 -- 
-1.7.10.4
+1.8.1.4
 
