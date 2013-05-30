@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030271Ab3E3JLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:11:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65498 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030209Ab3E3JLB (ORCPT
+	id S1030280Ab3E3JLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 05:11:46 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:48837 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030209Ab3E3JLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:11:01 -0400
-Date: Thu, 30 May 2013 10:09:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-Message-ID: <20130530090949.GC7483@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
- <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+	Thu, 30 May 2013 05:11:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJfpeguL6psFDbS2JY3ieVCvMXAezR3vk24e1nRW+ReHXSSfdw@mail.gmail.com>
+References: <20130527153313.GC1842@tucsk.piliscsaba.szeredi.hu>
+	<CA+55aFzTG_fU6SxWVAag-8oCDT1ozNdH96vmfDNkphLCvas-MA@mail.gmail.com>
+	<CAJfpeguL6psFDbS2JY3ieVCvMXAezR3vk24e1nRW+ReHXSSfdw@mail.gmail.com>
+Date: Thu, 30 May 2013 18:11:36 +0900
+X-Google-Sender-Auth: wh1-HphoyRDXGTQ7lIXezB5b_Zc
+Message-ID: <CA+55aFwmUsDW+y0k2jgF-Z0uCiTP3FrioQEwU9ue7UAJVkCDtg@mail.gmail.com>
+Subject: Re: [RFC PATCH] vfs: add permute operation
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: David Howells <dhowells@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zach Brown <zab@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
-> Hi  Will,
+On Thu, May 30, 2013 at 5:45 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> The third name is because of the replace-empty-directory wart in the
+> rename(2) definition.  With overlay/union that can become
+>
+>  1) check if destination directory is empty:  upper directory contains a
+> whiteout for each lower directory entry and nothing else
+>  2) if empty then remove whiteouts in destination directory
+>  3) and then go on with the normal rename procedure, replacing the empty
+> destination directory with the source directory ,
+>
+> This is done with directory locking, so atomicity is not usually a problem.
+> But in case of a crash between 2) and 3)  we just seriously corrupted the
+> overlay.
+>
+> Suggestions for fixing that?
 
-Hello,
+Why not just do the NFS thing. That has worked forever - using a
+sillyrename as a "pending deletion" instead of actually deleting
+things.
 
-> Have you received the log files?
+So in between (1) and (2), silly-rename the pseudo-empty target. At
+that point (2) is no longer even an atomicity requirement, because you
+can do the whiteout removal later. In fact, you probably want to do it
+at the end, after doing the "real" rename.
 
-Yep, and you seem to be completely correct: CPU0 ages the page from which
-CPU1 just executed a system call, so we explode trying to load the swi
-instruction in order to retrieve the immediate.
+No, it's not perfect, but it works in practice. NFS may not be POSIX,
+but nobody really cares. It's usable.
 
-> And is there someone looking at this issue now ?
+> We could just refuse to do the rename-over-empty-directory and see if anyone
+> complains.  I don't think it's often used, but if something is documented
+> then people are bound to find some stupid use for it.
 
-It's on my list, but I'm pretty busy right now and OABI-compat isn't high
-priority. Are you actually running OABI binaries? If not, you can simply
-turn that option off (in fact, a quick fix to this issue is to make that
-depend on !SMP).
+I'm sure there are uses for it, since it's traditional unix behavior.
+And I'm sure there are good reasons for it too (eg locking over NFS or
+whatever)
 
-> This issue happened on Qcom Scorpoin CPUs,
-> And  it just happened in our stability test occasionally .
-> 
-> If you have some patch for this issue,
-> I can do the test for it .
-
-I'll have a look at cooking something which uses an exception table entry
-to rewind the PC and retry the system call. That's simpler than directly
-injecting a user page fault from the system call path.
-
-Will
+             Linus
