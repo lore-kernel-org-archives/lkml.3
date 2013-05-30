@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968114Ab3E3KKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 06:10:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34369 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967701Ab3E3KKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 06:10:48 -0400
-Date: Thu, 30 May 2013 11:10:44 +0100
-From: Mel Gorman <mgorman@suse.de>
+	id S968115Ab3E3KOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:14:54 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:46338 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967701Ab3E3KOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:14:47 -0400
+Message-ID: <1369908882.17429.13.camel@host5.omatika.ru>
+Subject: Re: [PATCH] rtc-ds1302: handle write protection
+From: Sergey Yanovich <ynvich@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] Reduce system disruption due to kswapd followup V3
-Message-ID: <20130530101044.GB29426@suse.de>
-References: <1369869457-22570-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1369869457-22570-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Marc Zyngier <maz@misterjones.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Date: Thu, 30 May 2013 14:14:42 +0400
+In-Reply-To: <20130529155311.9e35e847968f3923bc83f4cd@linux-foundation.org>
+References: <1369092090-5384-1-git-send-email-ynvich@gmail.com>
+	 <20130529155311.9e35e847968f3923bc83f4cd@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 12:17:29AM +0100, Mel Gorman wrote:
-> tldr; Overall the system is getting less kicked in the face. Scan rates
-> 	between zones is often more balanced than it used to be. There are
-> 	now fewer writes from reclaim context and a reduction in IO wait
-> 	times.
+On Wed, 2013-05-29 at 15:53 -0700, Andrew Morton wrote:
+> On Tue, 21 May 2013 03:21:30 +0400 Sergey Yanovich <ynvich@gmail.com> wrote:
+> @@ -321,6 +326,7 @@ static int ds1302_rtc_remove(struct platform_device *pdev)
+> >  {
+> >  	struct rtc_device *rtc = platform_get_drvdata(pdev);
+> >  
+> > +	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_DISABLE);
+> >  	rtc_device_unregister(rtc);
+> >  	platform_set_drvdata(pdev, NULL);
 > 
-> This series replaces all of the previous follow-up series. It was clear
-> that more of the stall logic needed to be in the same place so it is
-> comprehensible and easier to predict.
+> ds1302_rtc_remove() no longer exists in my tree - it got whittled away
+> to nothing by
+> http://ozlabs.org/~akpm/mmots/broken-out/rtc-rtc-ds1302-remove-unnecessary-platform_set_drvdata.patch
+> and
+> http://ozlabs.org/~akpm/mmots/broken-out/drivers-rtc-rtc-ds1302c-remove-empty-function.patch
 > 
+> Perhaps it should be re-added for this?
 
-There was some unfortunate crossover in timing as I see mmotm has pulled
-in the previous follow up series. It would probably be easiest to replace
-these patches
+There are 2 options. I would be happy with either.
 
-mm-vmscan-stall-page-reclaim-and-writeback-pages-based-on-dirty-writepage-pages-encountered.patch
-mm-vmscan-stall-page-reclaim-after-a-list-of-pages-have-been-processed.patch
-mm-vmscan-take-page-buffers-dirty-and-locked-state-into-account.patch
-mm-vmscan-stall-page-reclaim-and-writeback-pages-based-on-dirty-writepage-pages-encountered.patch
+1. I've chosen 'probe/remove' to enable/disable write access.
 
-with patches 2-8 of this series. The fixup patch
-mm-vmscan-block-kswapd-if-it-is-encountering-pages-under-writeback-fix-2.patch
-is still the same
+2. Another option is to wrap enable/disable around
+ds1302_rtc_set_time().
 
-Sorry for the inconvenience.
+IIUC, the former saves a few bytes of memory. However, now, when
+ds1302_rtc_remove() is gone, the latter looks better. So I could rewrite
+the patch either way.
 
--- 
-Mel Gorman
-SUSE Labs
