@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660Ab3E3AnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 20:43:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6824 "EHLO mx1.redhat.com"
+	id S1759707Ab3E3Ao5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 20:44:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44821 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593Ab3E3AnQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 20:43:16 -0400
-Date: Wed, 29 May 2013 21:42:50 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Jon Arne =?UTF-8?B?SsO4cmdlbnNlbg==?= <jonarne@jonarne.no>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
-        g.liakhovetski@gmx.de, ezequiel.garcia@free-electrons.com,
-        timo.teras@iki.fi
-Subject: Re: [RFC 3/3] saa7115: Implement i2c_board_info.platform data
-Message-ID: <20130529214250.435b252b@redhat.com>
-In-Reply-To: <1369860078-10334-4-git-send-email-jonarne@jonarne.no>
-References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
-	<1369860078-10334-4-git-send-email-jonarne@jonarne.no>
-Mime-Version: 1.0
+	id S1752593Ab3E3Aou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 May 2013 20:44:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,767,1363158000"; 
+   d="scan'208";a="345424661"
+Message-ID: <51A6A0E0.5020200@intel.com>
+Date: Thu, 30 May 2013 08:44:16 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jason Low <jason.low2@hp.com>, peterz@infradead.org
+CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com
+Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
+References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>  <1368199049-2798-9-git-send-email-alex.shi@intel.com> <1369846845.6121.6.camel@j-VirtualBox>
+In-Reply-To: <1369846845.6121.6.camel@j-VirtualBox>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 29 May 2013 22:41:18 +0200
-Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
-
-> Implement i2c_board_info.platform_data handling in the driver so we can
-> make device specific changes to the chips we support.
+On 05/30/2013 01:00 AM, Jason Low wrote:
+> On Fri, 2013-05-10 at 23:17 +0800, Alex Shi wrote:
+>> blocked_load_avg sometime is too heavy and far bigger than runnable load
+>> avg. that make balance make wrong decision. So better don't consider it.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> 
+> Hi Alex,
+> 
+> I have been testing these patches with a Java server workload on an 8
+> socket (80 core) box with Hyperthreading enabled, and I have been seeing
+> good results with these patches.
+> 
+> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
+> improvement in performance of the workload compared to when using the
+> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
+> kernel with just patches 1-7, the performance improvement of the
+> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
+> 
+> Tested-by: Jason Low <jason.low2@hp.com>
 > 
 
-...
+That is impressive!
 
-> +struct saa7115_platform_data {
-> +	/* Horizontal time constant */
-> +	u8 saa7113_r08_htc;
-> +
-> +	u8 saa7113_r10_vrln;
-> +	u8 saa7113_r10_ofts;
-> +
-> +	u8 saa7113_r12_rts0;
-> +	u8 saa7113_r12_rts1;
-> +
-> +	u8 saa7113_r13_adlsb;
-> +};
+Thanks a lot for your testing! Just curious, what the benchmark are you
+using? :)
 
-While this works, it makes harder to analyze what's changed there,
-as the above nomenclature is too obfuscated.
-
-The better would be if you could, instead, name the bits (or bytes)
-that will require different data, like (I just got some random
-bits from reg08, on saa7113 datasheet - I didn't actually checked
-what bits are you using):
-
-	unsigned pll_closed: 1;
-	unsigned fast_mode: 1;
-	unsigned fast_locking: 1;
+> Thanks,
+> Jason
+> 
 
 
 -- 
-
-Cheers,
-Mauro
+Thanks
+    Alex
