@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab3E3UVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:21:31 -0400
-Received: from 18.mo5.mail-out.ovh.net ([178.33.45.10]:34767 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750921Ab3E3UVX (ORCPT
+	id S1755957Ab3E3U01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 16:26:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31268 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3E3U0S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:21:23 -0400
-X-Greylist: delayed 32843 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 16:21:23 EDT
-Date: Thu, 30 May 2013 22:17:14 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH] of: Export of_irq_count for using in modules
-Message-ID: <20130530201714.GE19834@game.jcrosoft.org>
-References: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
+	Thu, 30 May 2013 16:26:18 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13024691598917741471
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: 3.10-rc3 NFSv3 mount issues
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <51A7B442.9010108@sandia.gov>
+Date: Thu, 30 May 2013 16:26:12 -0400
+Cc: Weston Andros Adamson <dros@netapp.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D74C8145-AD4D-4CFE-963C-643B8D7DBA10@oracle.com>
+References: <51A7B442.9010108@sandia.gov>
+To: Jim Schutt <jaschut@sandia.gov>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+X-Mailer: Apple Mail (2.1503)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:49 Thu 30 May     , Michal Simek wrote:
-> Export of_irq_count for modules.
 
-can you explain why do you need to call of_irq_count
+On May 30, 2013, at 4:19 PM, Jim Schutt <jaschut@sandia.gov> wrote:
 
-Best Regards,
-J.
+> Hi,
 > 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> We are using this function in remoteproc module drivers.
-> There is also drivers/gpio/gpio-mvebu.c in the tree
-> which use this function but this driver can't be compiled
-> as module. This could be also the reason why is not this driver as module.
-> ---
->  drivers/of/irq.c | 1 +
->  1 file changed, 1 insertion(+)
+> I've been trying to test 3.10-rc3 on some diskless clients, and found
+> that I can no longer mount my root file system via NFSv3.
 > 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index a3c1c5a..c918dde 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -374,6 +374,7 @@ int of_irq_count(struct device_node *dev)
+> I poked around looking at NFS changes for 3.10, and found these two
+> commits:
 > 
->  	return nr;
->  }
-> +EXPORT_SYMBOL_GPL(of_irq_count);
+> d497ab9751 "NFSv3: match sec= flavor against server list"
+> 4580a92d44 "NFS: Use server-recommended security flavor by default (NFSv3)"
 > 
->  /**
->   * of_irq_to_resource_table - Fill in resource table with node's IRQ info
-> --
-> 1.8.2.3
+> If I revert both of these commits from 3.10-rc3, then my diskless
+> client can mount its root file system.
 > 
+> The busybox mount command fails like this, when using 3.10-rc3:
+> 
+> / # mount  -t nfs -o ro,nolock,vers=3,proto=tcp 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
+> mount: mounting 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x on /mnt failed: Invalid argument
+> 
+> The commit messages for both these commits seem to say that mounting
+> with the "sys=sec" option should work, but unfortunately, my busybox doesn't
+> seem to understand the "sec=" mount option:
+> 
+> / # mount  -t nfs -o ro,nolock,vers=3,proto=tcp,sec=sys 172.17.0.122:/gmi/images/jaschut/ceph.toss-2x /mnt
+> mount: invalid number 'sys'
+> 
+> My NFS server is based on RHEL6, and is not using any "sec=" option
+> in its export for this file system.  I did try exporting with "sec=sys",
+> but it didn't seem to make any difference either.
+> 
+> So far, this seems like a regression to me ....
+> Any ideas what I might be doing wrong?  How can I
+> help make this work again?
+
+3.10-rc3 appears to be missing the fix for this.  See:
+
+  http://marc.info/?l=linux-nfs&m=136855668104598&w=2
+
+Trond, can we get this applied?
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
 
 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
 
