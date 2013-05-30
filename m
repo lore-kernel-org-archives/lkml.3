@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967685Ab3E3G7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:59:09 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:46950 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967623Ab3E3G67 (ORCPT
+	id S967682Ab3E3HCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 03:02:00 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:39281 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967563Ab3E3HBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:58:59 -0400
-Date: Thu, 30 May 2013 15:58:50 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: Timur Tabi <timur@tabi.org>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH] ata: increase retry count but shorten duration for
- Calxeda controller
-Message-ID: <20130530065850.GA22604@mtj.dyndns.org>
-References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
- <CAOZdJXUHb1Kbu=LoqUgKA3_EMjPU3Q1KrZ-pENb-0Siym8_Pvw@mail.gmail.com>
- <51A66690.6060109@calxeda.com>
+	Thu, 30 May 2013 03:01:52 -0400
+Date: Thu, 30 May 2013 09:01:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Basic perf PMU support for Haswell v12
+Message-ID: <20130530070149.GA10409@gmail.com>
+References: <1369261073-1275-1-git-send-email-andi@firstfloor.org>
+ <20130528062915.GA26467@gmail.com>
+ <20130528162038.GG6123@two.firstfloor.org>
+ <20130530063529.GB5310@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51A66690.6060109@calxeda.com>
+In-Reply-To: <20130530063529.GB5310@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:35:28PM -0500, Mark Langsdorf wrote:
-> On 05/29/2013 03:12 PM, Timur Tabi wrote:
-> > On Wed, May 29, 2013 at 10:51 AM, Mark Langsdorf
-> > <mark.langsdorf@calxeda.com> wrote:
-> >>
-> >>  {
-> >> -       const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-> >> +       unsigned long timing[] = { 5, 100, 500};
-> > 
-> > 
-> > You didn't address my comments the last time you posted this.  I'll
-> > post them again:
-> > 
-> > 
-> > Why are you dropping the 'const'?
-> > 
-> > Assuming it works, this should be more efficient:
-> > 
-> > static const unsigned long timing[] = {5, 100, 500};
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
+> * Andi Kleen <andi@firstfloor.org> wrote:
 > 
-> I thought there was a compile issue, but I just rechecked and there
-> wasn't. I'll fix for the next submission.
+> > On Tue, May 28, 2013 at 08:29:15AM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Andi Kleen <andi@firstfloor.org> wrote:
+> > > 
+> > > > All outstanding issues fixed I hope. And I added mem-loads/stores support.
+> > > > 
+> > > > Contains support for:
+> > > > - Basic Haswell PMU and PEBS support
+> > > > - Late unmasking of the PMI
+> > > > - mem-loads/stores support
+> > > > 
+> > > > v2: Addressed Stephane's feedback. See individual patches for details.
+> > > > v3: now even more bite-sized. Qualifier constraints merged earlier.
+> > > > v4: Rename some variables, add some comments and other minor changes.
+> > > > Add some Reviewed/Tested-bys.
+> > > > v5: Address some minor review feedback. Port to latest perf/core
+> > > > v6: Add just some variable names, add comments, edit descriptions, some
+> > > > more testing, rebased to latest perf/core
+> > > > v7: Expand comment
+> > > > v8: Rename structure field.
+> > > > v9: No wide counters, but add basic LBRs. Add some more 
+> > > > constraints. Rebase to 3.9rc1
+> > > > v10: Change some whitespace. Rebase to 3.9rc3
+> > > > v11: Rebase to perf/core. Fix extra regs. Rename INTX.
+> > > > v12: Rebase to 3.10-rc2
+> > > > Add mem-loads/stores support for parity with Sandy Bridge.
+> > > > Fix fixed counters (Thanks Ingo!)
+> > ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> > > > Make late ack optional
+> > > > Export new config bits in sysfs.
+> > > > Minor changes
+> > > 
+> > > I reported a pretty nasty regression with the previous version (v10) which 
+> > > made this series break default 'perf top' on non-Haswell systems - but 
+> > > it's unclear from this changelog to what extent you managed to reproduce 
+> > > the bug and fix it, and what the fix was?
+> > 
+> > Thanks for checking.
+> > I didn't reproduce it, but I found a problem by code review with the 
+> > fixed counter constraints.
+> > 
+> > I think I fixed it by adding this hunk:
+> > 
+> > @@ -2227,7 +2313,7 @@ __init int intel_pmu_init(void)
+> >                  * counter, so do not extend mask to generic counters
+> >                  */
+> >                 for_each_event_constraint(c, x86_pmu.event_constraints) {
+> > -                       if (c->cmask != X86_RAW_EVENT_MASK
+> > +                       if (c->cmask != FIXED_EVENT_FLAGS
+> >                             || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
+> >                                 continue;
+> >                         }
+> > 
+> > It would be cleaner to detect the fixed counters in some other way,
+> > but that was the simplest fix I could find.
+> > 
+> > Testing appreciated 
+> 
+> Fair enough - I'll give it a whirl - that hunk does indeed look like it 
+> could make a difference.
 
-Also, please add a comment explaining why those parameters are
-necessary and how they're determined - ie. the bulk of the commit
-message; otherwise, it looks pretty random.
+Ok, I can confirm that this fixed the perf top and perf record regression 
+I saw on Intel systems.
 
-Thanks.
+Thanks,
 
--- 
-tejun
+	Ingo
