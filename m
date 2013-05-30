@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab3E3TrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 15:47:00 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:47296 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab3E3Tqy (ORCPT
+	id S1759954Ab3E3Tux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 15:50:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35043 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab3E3Tuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 15:46:54 -0400
+	Thu, 30 May 2013 15:50:44 -0400
+Date: Thu, 30 May 2013 21:50:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Ivo Sieben <meltedpianoman@gmail.com>, RT <linux-rt-users@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RFC: Set irq thread to RT priority on creation
+In-Reply-To: <1369925681.26799.6.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.02.1305302147290.2905@ionos>
+References: <1369915975-28797-1-git-send-email-meltedpianoman@gmail.com>  <alpine.LFD.2.02.1305301602490.2905@ionos> <1369925681.26799.6.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
-References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
-Date: Thu, 30 May 2013 21:46:54 +0200
-Message-ID: <CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 1:27 PM, Michal Simek <michal.simek@xilinx.com> wrote:
+On Thu, 30 May 2013, Steven Rostedt wrote:
 
-> Supporting the second channel in the driver.
-> Offset is 0x8 and both channnels share the same
-> IRQ.
->
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> On Thu, 2013-05-30 at 16:07 +0200, Thomas Gleixner wrote:
+> 
+> > > This patch solves an issue for me where a device driver is expected to handle an
+> > > interrupt immediatly after irq handlers are installed and interrupts enabled.
+> > 
+> > You miss to explain what kind of issue that is.
+> 
+> I could envision the case where the interrupt is initialized but doesn't
+> go off until much later. If it never ran, then it would still be in
+> SCHED_OTHER(), and that first interrupt could have a large delay.
 
-(...)
-> +/* Read/Write access to the GPIO registers */
-> +#define xgpio_readreg(offset)          __raw_readl(offset)
-> +#define xgpio_writereg(offset, val)    __raw_writel(val, offset)
+Nope. As Ivo explained it's about an interrupt coming in right away,
+i.e. before __setup_irq() reaches:
 
-So you're swithing in_be32/out_be32 to the CPU-dependent
-__raw_readl/__raw_writel functions? Why?
+        if (new->thread)
+	   wake_up_process(new->thread);
 
-Can you explain exactly why you are using __raw_* accessors
-rather than e.g. atleast readl_relaxed()/writel_relaxed()
-or even plain readl/writel so you know the writes will hit
-the hardware as immediately as possible?
+The ones which come much later do not have that issue as the thread
+code already sits in the waiting loop and already adjusted the
+priority.
 
-I'd prefer this step to be a separate patch.
+Thanks,
 
->  struct xgpio_instance {
->         struct of_mm_gpio_chip mmchip;
->         u32 gpio_state;         /* GPIO state shadow register */
->         u32 gpio_dir;           /* GPIO direction shadow register */
-> +       u32 offset;
->         spinlock_t gpio_lock;   /* Lock used for synchronization */
->  };
+	tglx
 
-Why not take this opportunity to move the comments out to
-kerneldoc above this struct, plus document what "offset"
-means.
-
-> -       return (in_be32(mm_gc->regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
-> +       return (xgpio_readreg(regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
-
-
-Another way would be:
-
-#include <linux/bitops.h>
-
-return !!(xgpio_readreg(regs + XGPIO_DATA_OFFSET & BIT(gpio));
-
-> +
-> +       pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
-> +                                                       chip->mmchip.gc.base);
-> +
-> +       tree_info = of_get_property(np, "xlnx,is-dual", NULL);
-
-This looks like you want to use of_property_read_bool().
-
-Have you documented these new bindings? It doesn't seem so.
-Documentation/devicetree/bindings/gpio/*...
-
-If it's undocumented so far, this is a good oppotunity to add it.
-
-> +       if (tree_info && be32_to_cpup(tree_info)) {
-> +               chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> +               if (!chip)
-> +                       return -ENOMEM;
-> +
-> +               /* Add dual channel offset */
-> +               chip->offset = XGPIO_CHANNEL_OFFSET;
-> +
-> +               /* Update GPIO state shadow register with default value */
-> +               tree_info = of_get_property(np, "xlnx,dout-default-2", NULL);
-> +               if (tree_info)
-> +                       chip->gpio_state = be32_to_cpup(tree_info);
-
-This is basically a jam table (hardware set-up) in the device tree.
-
-I don't exactly like this. Is this necessary?
-
-> +               /* Update GPIO direction shadow register with default value */
-> +               /* By default, all pins are inputs */
-> +               chip->gpio_dir = 0xFFFFFFFF;
-> +               tree_info = of_get_property(np, "xlnx,tri-default-2", NULL);
-> +               if (tree_info)
-> +                       chip->gpio_dir = be32_to_cpup(tree_info);
-
-Dito.
-
-> +               /* Check device node and parent device node for device width */
-> +               /* By default assume full GPIO controller */
-> +               chip->mmchip.gc.ngpio = 32;
-> +               tree_info = of_get_property(np, "xlnx,gpio2-width", NULL);
-> +               if (tree_info)
-> +                       chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
-
-Seems fine, but document it in the binding.
-
-Yours,
-Linus Walleij
