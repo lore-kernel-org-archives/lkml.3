@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967661Ab3E3GpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:45:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41698 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967601Ab3E3GpF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:45:05 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Peter Korsgaard <jacmet@sunsite.dk>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>
-CC: "poeschel@lemonage.de" <poeschel@lemonage.de>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] dts: am33xx: Correct properties on gpmc node
-Thread-Topic: [PATCH] dts: am33xx: Correct properties on gpmc node
-Thread-Index: AQHOW35Jhz7prP+DnUa2m40h+onjAZkaWt/xgALu5IA=
-Date: Thu, 30 May 2013 06:44:02 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9C8B98@DBDE04.ent.ti.com>
-References: <1369729497-11897-1-git-send-email-larsi@wh2.tu-dresden.de>
- <87mwrfbfgv.fsf@dell.be.48ers.dk>
-In-Reply-To: <87mwrfbfgv.fsf@dell.be.48ers.dk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S967650Ab3E3Gsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:48:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:44866 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500Ab3E3Gsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 02:48:35 -0400
+X-IronPort-AV: E=Sophos;i="4.87,769,1363104000"; 
+   d="scan'208";a="7410202"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH] powerpc/smp: use '==' instead of '<' for  system_state
+Date: Thu, 30 May 2013 14:47:53 +0800
+Message-Id: <1369896473-23588-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 14:46:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/30 14:47:02,
+	Serialize complete at 2013/05/30 14:47:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>> "Lars" == Lars Poeschel <larsi@wh2.tu-dresden.de> writes:
-> 
->  Lars> From: Lars Poeschel <poeschel@lemonage.de>
->  Lars> The gpmc driver is actually looking for "gpmc,num-cs" and
->  Lars> "gpmc,num-waitpins" properties in DT. The binding doc also states
->  Lars> this.
->  Lars> Correct the properties in the dts to provide the right values for the
->  Lars> gpmc driver.
-> 
->  Lars> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
-> 
-> Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-> 
-Acked-by: Pekon Gupta <pekon@ti.com>
+'system_state < SYSTEM_RUNNING' will have same effect
+with 'system_state == SYSTEM_BOOTING', but the later
+one is more clearer.
 
-My another patch [V3, 2/3] on same can be dropped, in lieu of this one..
-http://www.spinics.net/lists/linux-omap/msg91167.html
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+---
+ arch/powerpc/platforms/cell/smp.c    |    2 +-
+ arch/powerpc/platforms/powernv/smp.c |    2 +-
+ arch/powerpc/platforms/pseries/smp.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/arch/powerpc/platforms/cell/smp.c b/arch/powerpc/platforms/cell/smp.c
+index d35dbbc..f75f6fc 100644
+--- a/arch/powerpc/platforms/cell/smp.c
++++ b/arch/powerpc/platforms/cell/smp.c
+@@ -142,7 +142,7 @@ static int smp_cell_cpu_bootable(unsigned int nr)
+ 	 * during boot if the user requests it.  Odd-numbered
+ 	 * cpus are assumed to be secondary threads.
+ 	 */
+-	if (system_state < SYSTEM_RUNNING &&
++	if (system_state == SYSTEM_BOOTING &&
+ 	    cpu_has_feature(CPU_FTR_SMT) &&
+ 	    !smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
+ 		return 0;
+diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
+index 88c9459..77784ae 100644
+--- a/arch/powerpc/platforms/powernv/smp.c
++++ b/arch/powerpc/platforms/powernv/smp.c
+@@ -51,7 +51,7 @@ static int pnv_smp_cpu_bootable(unsigned int nr)
+ 	/* Special case - we inhibit secondary thread startup
+ 	 * during boot if the user requests it.
+ 	 */
+-	if (system_state < SYSTEM_RUNNING && cpu_has_feature(CPU_FTR_SMT)) {
++	if (system_state == SYSTEM_BOOTING && cpu_has_feature(CPU_FTR_SMT)) {
+ 		if (!smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
+ 			return 0;
+ 		if (smt_enabled_at_boot
+diff --git a/arch/powerpc/platforms/pseries/smp.c b/arch/powerpc/platforms/pseries/smp.c
+index 12bc8c3..306643c 100644
+--- a/arch/powerpc/platforms/pseries/smp.c
++++ b/arch/powerpc/platforms/pseries/smp.c
+@@ -192,7 +192,7 @@ static int smp_pSeries_cpu_bootable(unsigned int nr)
+ 	/* Special case - we inhibit secondary thread startup
+ 	 * during boot if the user requests it.
+ 	 */
+-	if (system_state < SYSTEM_RUNNING && cpu_has_feature(CPU_FTR_SMT)) {
++	if (system_state == SYSTEM_BOOTING && cpu_has_feature(CPU_FTR_SMT)) {
+ 		if (!smt_enabled_at_boot && cpu_thread_in_core(nr) != 0)
+ 			return 0;
+ 		if (smt_enabled_at_boot
+-- 
+1.7.2.5
 
-with regards, pekon
