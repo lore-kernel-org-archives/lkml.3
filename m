@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935521Ab3E3QUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 12:20:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:64500 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934203Ab3E3QS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 12:18:59 -0400
-X-IronPort-AV: E=Sophos;i="4.87,772,1363132800"; 
-   d="scan'208";a="28290762"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
-        <catalin.marinas@arm.com>, <Ian.Campbell@citrix.com>,
-        <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH RFC 1/6] [HACK!] arm64/xen: create links to arch/arm include files and Xen code
-Date: Thu, 30 May 2013 17:18:28 +0100
-Message-ID: <1369930713-6063-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S935509Ab3E3QWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 12:22:19 -0400
+Received: from smtp-out-016.synserver.de ([212.40.185.16]:1114 "EHLO
+	smtp-out-015.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934256Ab3E3QWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 12:22:10 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 26279
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Ralf Baechle <ralf@linux-mips.org>, Vinod Koul <vinod.koul@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 0/6] Convert JZ4740 to dmaengine
+Date: Thu, 30 May 2013 18:24:59 +0200
+Message-Id: <1369931105-28065-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of Xen support for ARM is common between ARMv7 and ARMv8.
-Create links to the code under arch/arm (bleah).
+Hi,
 
-Other, probably better alternatives:
+This series replaces the custom JZ4740 DMA API with a dmaengine driver. This is
+done in 3 steps:
+	1) Add a dmaengine driver which wraps the custom JZ4740 DMA API
+	2) Update all users of the JZ4740 DMA API to use dmaengine instead
+	3) Remove the custom API and move all direct hardware access to the
+	   dmaengine driver.
 
-- move the code to a different location, maybe the header files to
-include/xen/arm and the code to drivers/xen/arm (still pretty ugly)?
+The first two patches in the series also make sure that the clock of the DMA
+core is enabled.
 
-- create a copy of the code to arch/arm64 (even worse);
+Since the patches in this series depend on each other I'd prefer if they could
+all go through the DMA tree.
 
-Please advice on how you would like me to move forward on this.
+There are a few minor changes to the patch 3 in v2 of this series, all other
+patches are identical to v1.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm64/include/asm/xen   |    1 +
- arch/arm64/xen/enlighten.c   |    1 +
- arch/arm64/xen/grant-table.c |    1 +
- 3 files changed, 3 insertions(+), 0 deletions(-)
- create mode 120000 arch/arm64/include/asm/xen
- create mode 120000 arch/arm64/xen/enlighten.c
- create mode 120000 arch/arm64/xen/grant-table.c
+- Lars
 
-diff --git a/arch/arm64/include/asm/xen b/arch/arm64/include/asm/xen
-new file mode 120000
-index 0000000..c27d6980
---- /dev/null
-+++ b/arch/arm64/include/asm/xen
-@@ -0,0 +1 @@
-+../../../arm/include/asm/xen
-\ No newline at end of file
-diff --git a/arch/arm64/xen/enlighten.c b/arch/arm64/xen/enlighten.c
-new file mode 120000
-index 0000000..cb31b7c
---- /dev/null
-+++ b/arch/arm64/xen/enlighten.c
-@@ -0,0 +1 @@
-+../../arm/xen/enlighten.c
-\ No newline at end of file
-diff --git a/arch/arm64/xen/grant-table.c b/arch/arm64/xen/grant-table.c
-new file mode 120000
-index 0000000..5494f6c
---- /dev/null
-+++ b/arch/arm64/xen/grant-table.c
-@@ -0,0 +1 @@
-+../../arm/xen/grant-table.c
-\ No newline at end of file
+Lars-Peter Clausen (4):
+  dma: Add a jz4740 dmaengine driver
+  MIPS: jz4740: Register jz4740 DMA device
+  ASoC: jz4740: Use the generic dmaengine PCM driver
+  MIPS: jz4740: Remove custom DMA API
+
+Maarten ter Huurne (2):
+  MIPS: jz4740: Correct clock gate bit for DMA controller
+  MIPS: jz4740: Acquire and enable DMA controller clock
+
+ arch/mips/include/asm/mach-jz4740/dma.h      |  56 ---
+ arch/mips/include/asm/mach-jz4740/platform.h |   1 +
+ arch/mips/jz4740/Makefile                    |   2 +-
+ arch/mips/jz4740/board-qi_lb60.c             |   1 +
+ arch/mips/jz4740/clock.c                     |   2 +-
+ arch/mips/jz4740/dma.c                       | 287 -------------
+ arch/mips/jz4740/platform.c                  |  21 +
+ drivers/dma/Kconfig                          |   6 +
+ drivers/dma/Makefile                         |   1 +
+ drivers/dma/dma-jz4740.c                     | 617 +++++++++++++++++++++++++++
+ sound/soc/jz4740/Kconfig                     |   1 +
+ sound/soc/jz4740/jz4740-i2s.c                |  48 +--
+ sound/soc/jz4740/jz4740-pcm.c                | 310 +-------------
+ sound/soc/jz4740/jz4740-pcm.h                |  20 -
+ 14 files changed, 676 insertions(+), 697 deletions(-)
+ delete mode 100644 arch/mips/jz4740/dma.c
+ create mode 100644 drivers/dma/dma-jz4740.c
+ delete mode 100644 sound/soc/jz4740/jz4740-pcm.h
+
 -- 
-1.7.2.5
+1.8.2.1
 
