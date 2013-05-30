@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030385Ab3E3J7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 05:59:23 -0400
-Received: from bitmer.com ([213.157.87.50]:33691 "EHLO bitmer.com"
+	id S1030334Ab3E3KF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 06:05:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34205 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967560Ab3E3J7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 05:59:15 -0400
-X-Greylist: delayed 1266 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 05:59:15 EDT
-Date: Thu, 30 May 2013 12:39:14 +0300
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: OMAP: Remove obsolete Makefile line
-Message-Id: <20130530123914.fba4840122d4fbca3c182e08@bitmer.com>
-In-Reply-To: <1369899460.23034.31.camel@x61.thuisdomein>
-References: <1369899460.23034.31.camel@x61.thuisdomein>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S968038Ab3E3KFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 06:05:54 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 0/2] Update aops documentation
+Date: Thu, 30 May 2013 11:05:46 +0100
+Message-Id: <1369908348-7943-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 09:37:40 +0200
-Paul Bolle <pebolle@tiscali.nl> wrote:
+> > This patch adds an address_space operation that filesystems may
+> > optionally use to check if a page is really dirty or really under
+> > writeback.
+> 
+> address_space_operations methods are Documented in
+> Documentation/filesystems/vfs.txt ;)
 
-> Support for omap2evm was removed in v3.0. But only one of its two
-> lines in this Makefile was removed. Remove the second line too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Eyeball tested only.
-> 
->  sound/soc/omap/Makefile | 1 -
->  1 file changed, 1 deletion(-)
-> 
-True, commit 91d94af ("omap: Remove support for omap2evm") removed only omap2evm.o.
+I could whinge that the aops docs are already out of date but fixing it
+takes less time than coming up with excuses :)
 
-Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
+ Documentation/filesystems/vfs.txt | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
+
+-- 
+1.8.1.4
+
