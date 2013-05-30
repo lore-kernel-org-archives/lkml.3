@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab3E3Nun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 09:50:43 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39075 "EHLO
+	id S932555Ab3E3NvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 09:51:18 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:39062 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab3E3Nts (ORCPT
+	with ESMTP id S1756826Ab3E3Nto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 09:49:48 -0400
+	Thu, 30 May 2013 09:49:44 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: davem@davemloft.net
 Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv4 6/6] ARM: sunxi: Add EMAC Controller to Hackberry dt
-Date: Thu, 30 May 2013 15:49:25 +0200
-Message-Id: <1369921765-3367-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv4 4/6] ARM: sunxi: Add EMAC controller node to sun4i DTSI
+Date: Thu, 30 May 2013 15:49:23 +0200
+Message-Id: <1369921765-3367-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,71 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hackberry has a PHY that needs to be powered up through a GPIO, so
-we need to use a fixed regulator here.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Tested-by: Richard Genoud <richard.genoud@gmail.com>
 ---
- arch/arm/boot/dts/sun4i-a10-hackberry.dts | 41 +++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ arch/arm/boot/dts/sun4i-a10.dtsi | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sun4i-a10-hackberry.dts b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-index b9efac1..3514b37 100644
---- a/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-+++ b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-@@ -23,10 +23,51 @@
- 	};
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index ff1f41f..983da33 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -163,6 +163,22 @@
+ 		reg = <0x01c20000 0x300000>;
+ 		ranges;
  
- 	soc@01c20000 {
 +		emac: ethernet@01c0b000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&emac_pins_a>;
-+			phy = <&phy0>;
-+			status = "okay";
++			compatible = "allwinner,sun4i-emac";
++			reg = <0x01c0b000 0x1000>;
++			interrupts = <55>;
++			clocks = <&ahb_gates 17>;
++			status = "disabled";
 +		};
 +
 +		mdio@01c0b080 {
-+			phy-supply = <&reg_emac_3v3>;
-+			status = "okay";
-+
-+			phy0: ethernet-phy@0 {
-+				reg = <0>;
-+			};
++			compatible = "allwinner,sun4i-mdio";
++			reg = <0x01c0b080 0x14>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
 +		};
 +
-+		pio: pinctrl@01c20800 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&hackberry_hogs>;
-+
-+			hackberry_hogs: hogs@0 {
-+				allwinner,pins = "PH19";
-+				allwinner,function = "gpio_out";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+		};
-+
- 		uart0: serial@01c28000 {
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&uart0_pins_a>;
- 			status = "okay";
- 		};
- 	};
-+
-+	regulators {
-+		compatible = "simple-bus";
-+
-+		reg_emac_3v3: emac-3v3 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "emac-3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&pio 7 19 0>;
-+		};
-+	};
- };
+ 		intc: interrupt-controller@01c20400 {
+ 			compatible = "allwinner,sun4i-ic";
+ 			reg = <0x01c20400 0x400>;
 -- 
 1.8.2.3
 
