@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967603Ab3E3GXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:23:20 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50809 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967549Ab3E3GXM (ORCPT
+	id S967607Ab3E3G0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:26:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:2319 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966921Ab3E3G0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:23:12 -0400
+	Thu, 30 May 2013 02:26:02 -0400
+X-Spam-Score: -100.8
+Message-ID: <51A6F0C6.9050806@asianux.com>
+Date: Thu, 30 May 2013 14:25:10 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <878v2xmgmw.fsf@rustcorp.com.au>
-References: <20130529102735.3ce72ecc@endymion.delvare>
-	<878v2xmgmw.fsf@rustcorp.com.au>
-Date: Thu, 30 May 2013 11:53:10 +0530
-Message-ID: <CAK7N6vpv6JpsXEdjLOUd-+7+y=DB9Q-zcMdj12iZWu=bGkAieQ@mail.gmail.com>
-Subject: Re: What is listed in /sys/module?
-From: anish singh <anish198519851985@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-m68k@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch: m68k: math-emu: unsigned issue, 'unsigned long' will
+ never be less than zero.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 6:24 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Jean Delvare <khali@linux-fr.org> writes:
->> Hi Greg, Rusty,
->>
->> I have a question related to /sys/module and can't seem to find the
->> answer by myself so I hope you can explain.
->>
->> I noticed that /sys/module contains more than /proc/modules. At first I
->> thought that any potentially modular piece of code would show up
->> in /sys/module, so /sys/module would include both actual modules and
->> "built-in modules".
->>
->> However I then noticed that some built-in modules do _not_ show up
->> in /sys/module. For example, I have USB and I2C core support built into
->> my 3.9.4 kernel, /sys/module/usbcore exists but /sys/module/i2c_core
->> does not. CONFIG_SENSORS_W83795=y did not give me /sys/module/w83795
->> either.
->
-> Yes.  /sys/module entries are created for builtin "modules" with
-> parameters.  This is because, the module names are discovered by
-So documentation is wrong about that.
-> scouring the parameters: see param_sysfs_builtin().
->
-> Two things to note about builtin modules:
->
-> 1) There is nothing other than parameters in /sys/module/, except a
->    uevent which is used for managing the parameters.  So, without
->    parameters, it would be an empty directory.
->
-> 2) We actually do generate a list of builtin modules these days, called
->    modules.builtin.  So we could generate sysfs dirs from this.
-As I understand modules.builtin is the output of the kernel compilation.
-So if we want to make /sys/module consistent then this file needs to
-be parsed by kernel and corresponding sysfs created but what is the
-point of creating just the sysfs without having any parameters information
-which is why this /sys/module exists in the first place right?
->
-> If you want to make it consistent, I look forward to your patch!
-I would be interested here.
->
-> Cheers,
-> Rusty.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
+author wanted to check the highest bit whether set.
+
+So need type cast form 'unsigned long' to 'long'.
+
+The related warning: (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
+  arch/m68k/math-emu/fp_arith.c:522:4: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/m68k/math-emu/fp_arith.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/m68k/math-emu/fp_arith.c b/arch/m68k/math-emu/fp_arith.c
+index 08f286d..ef013c5 100644
+--- a/arch/m68k/math-emu/fp_arith.c
++++ b/arch/m68k/math-emu/fp_arith.c
+@@ -519,7 +519,7 @@ static void fp_roundint(struct fp_ext *dest, int mode)
+ 				return;
+ 			break;
+ 		case 0x401e:
+-			if (!(oldmant.m32[1] >= 0))
++			if (!((long)oldmant.m32[1] >= 0))
+ 				return;
+ 			if (oldmant.m32[0] & 1)
+ 				break;
+-- 
+1.7.7.6
