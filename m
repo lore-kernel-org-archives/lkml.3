@@ -1,104 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967349Ab3E3CpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 May 2013 22:45:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:56457 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3E3Co6 (ORCPT
+	id S967355Ab3E3C4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 May 2013 22:56:38 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44275 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978Ab3E3C4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 May 2013 22:44:58 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-5e-51a6bd28ef8f
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Jungseok Lee'" <jays.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable] ARM: EXYNOS: fix software reset logic for
- EXYNOS5440 SOC
-Date: Thu, 30 May 2013 11:44:56 +0900
-Message-id: <000101ce5cdf$abbdd410$03397c30$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMACauT0A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zQ12NvcsCDU71mlncv/qd0WJJM7dF
-	74KrbBaXd81hs1iw8RGjA6tH35ZVjB6fN8kFMEVx2aSk5mSWpRbp2yVwZUzbeoy5oJG7ouVU
-	VgNjC2cXIweHhICJxK4Dhl2MnECmmMSFe+vZuhi5OIQEljFKbPt4jR0iYSIx70AjO0RiOqPE
-	/v4VLBDOX0aJ69dfMYNUsQnoShxbv4UVxBYR8JY4NeUXWJxZIFOif+dNNpBtQgLcEqubg0DC
-	nAI8Euv+dIKVCAuESdw78hHMZhFQlfj5bAsLiM0rYCfRtvw2E4QtKPFj8j0WiJFaEut3HmeC
-	sOUlNq95ywzxjLrEo7+6IKeJCLQwSnScaWSEqBGR2PfiHSNIQkLgGLvE4dnnGCGWCUh8m3yI
-	BaJZVmLTAWaIhyUlDq64wTKBUWIWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0StOzC0u
-	zUvXS87P3cQIicMJOxjvHbA+xJgMtH4is5Rocj4wjvNK4g2NzYwsTE1MjY3MLc1IE1YS51Vv
-	sQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwKiiWT1TmM/sSq+q8MqSncmTnqad0nhd1y2+
-	lFfJLLCt5P8Pgcx2pVtHmvsSt277vkZ8u2m8/45pbhtO/ro6QyTNjGeq6Eap2knehh7FvodV
-	JOJurr7vo//0i+hmd0vNPN+gKRx9h7q3xt6fveyNcE+KxpzfNz+s7llwc4/pTV3bxQpPug8I
-	n1NiKc5INNRiLipOBADKyaHb2QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jQV2NvcsCDTZ9M7S4f/U7o8WSZm6L
-	3gVX2Swu75rDZrFg4yNGB1aPvi2rGD0+b5ILYIpqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8yYtvUYc0Ejd0XLqawGxhbOLkZODgkBE4l5BxrZIWwxiQv31rN1MXJxCAlM
-	Z5TY37+CBcL5yyhx/forZpAqNgFdiWPrt7CC2CIC3hKnpvwCizMLZEr077wJ1M0B1MAtsbo5
-	CCTMKcAjse5PJ1iJsECYxL0jH8FsFgFViZ/PtrCA2LwCdhJty28zQdiCEj8m32OBGKklsX7n
-	cSYIW15i85q3zCDjJQTUJR791QU5TUSghVGi40wjI0SNiMS+F+8YJzAKzUIyahaSUbOQjJqF
-	pGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOA4fya1g3Flg8UhRgEORiUe3g1aywKF
-	WBPLiitzDzFKcDArifCu0QYK8aYkVlalFuXHF5XmpBYfYkwG+nQis5Rocj4wBeWVxBsam5gZ
-	WRqZWRiZmJuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6Ogy1LXz4cLpyhq/94/PdDq
-	4xuDukccGmGqRv+fLI74M8v4hPznfRpLps/g2ab+zfB9QC1z26mpxW1rL6le9y0uL2faJag/
-	x4QzdLr7o9aPd/JnRDbMPXE6k23my116bY43wz5bJb+/UaVeE98Vv01hRRDLnCqNLzZyO6b3
-	mNrt+n6i4eqm/KdKLMUZiYZazEXFiQDkApRYNwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 29 May 2013 22:56:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130529235507.GA23190@arwen.pp.htv.fi>
+References: <1369852310-8687-1-git-send-email-yhchen@faraday-tech.com>
+	<20130529235507.GA23190@arwen.pp.htv.fi>
+Date: Thu, 30 May 2013 10:56:29 +0800
+Message-ID: <CADB-GoLuw+voV6cbMSa68Yzhow78k6h82-m1VFa1V4v2_nUv0A@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: add Faraday fotg210_udc driver
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Yuan-Hsin Chen <yhchen@faraday-tech.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+Hi,
 
-------------------
+On Thu, May 30, 2013 at 7:55 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Wed, May 29, 2013 at 06:31:50PM +0000, Yuan-Hsin Chen wrote:
+>> Faraday fotg210 udc driver supports only Bulk transfer so far.
+>> fotg210 could be configured as an USB2.0 peripheral.
+>>
+>> This driver is tested with mass storage gadget driver on Faraday
+>> EVB a369.
+>>
+>> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+>
+> Run through checkpatch.pl --strict and fix all errors, warnings and all
+> checks which make sense.
+>
+> WARNING: please write a paragraph that describes the config symbol fully
+> #81: FILE: drivers/usb/gadget/Kconfig:196:
+> +config USB_FOTG210_UDC
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #183: FILE: drivers/usb/gadget/fotg210-udc.c:76:
+> +       if (ep->epnum) {
+> [...]
+> +       } else
+> [...]
+>
+> WARNING: line over 80 characters
+> #190: FILE: drivers/usb/gadget/fotg210-udc.c:83:
+> +static void fotg210_fifo_ep_mapping(struct fotg210_ep *ep, u32 epnum, u32 dir_in)
+>
+> WARNING: line over 80 characters
+> #237: FILE: drivers/usb/gadget/fotg210-udc.c:130:
+> +static void fotg210_set_mps(struct fotg210_ep *ep, u32 epnum, u32 mps, u32 dir_in)
+>
+> WARNING: line over 80 characters
+> #241: FILE: drivers/usb/gadget/fotg210-udc.c:134:
+> +       u32 offset = dir_in ? FOTG210_INEPMPSR(epnum) : FOTG210_OUTEPMPSR(epnum);
+>
+> WARNING: line over 80 characters
+> #349: FILE: drivers/usb/gadget/fotg210-udc.c:242:
+> +static void fotg210_ep_free_request(struct usb_ep *_ep, struct usb_request *_req)
+>
+> WARNING: Avoid CamelCase: <DMATFNR_ACC_Fn>
+> #372: FILE: drivers/usb/gadget/fotg210-udc.c:265:
+> +               value |= DMATFNR_ACC_Fn(ep->epnum - 1);
+>
+> WARNING: line over 80 characters
+> #418: FILE: drivers/usb/gadget/fotg210-udc.c:311:
+> +               value = ioread32(ep->fotg210->reg + FOTG210_FIBCR(ep->epnum - 1));
+>
+> WARNING: line over 80 characters
+> #420: FILE: drivers/usb/gadget/fotg210-udc.c:313:
+> +               iowrite32(value, ep->fotg210->reg + FOTG210_FIBCR(ep->epnum - 1));
+>
+> WARNING: line over 80 characters
+> #441: FILE: drivers/usb/gadget/fotg210-udc.c:334:
+> +                       length = ioread32(ep->fotg210->reg + FOTG210_FIBCR(ep->epnum - 1));
+>
+> WARNING: Avoid CamelCase: <FIBCR_BCFx>
+> #442: FILE: drivers/usb/gadget/fotg210-udc.c:335:
+> +                       length &= FIBCR_BCFx;
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #456: FILE: drivers/usb/gadget/fotg210-udc.c:349:
+> +               printk(KERN_DEBUG "dma_mapping_error\n");
+>
+> CHECK: Alignment should match open parenthesis
+> #461: FILE: drivers/usb/gadget/fotg210-udc.c:354:
+> +       dma_sync_single_for_device(NULL, d, length,
+> +                       ep->dir_in ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+>
+> WARNING: line over 80 characters
+> #476: FILE: drivers/usb/gadget/fotg210-udc.c:369:
+> +static void fotg210_ep0_queue(struct fotg210_ep *ep, struct fotg210_request *req)
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #483: FILE: drivers/usb/gadget/fotg210-udc.c:376:
+> +               if (req->req.length) {
+> [...]
+> +               } else
+> [...]
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #486: FILE: drivers/usb/gadget/fotg210-udc.c:379:
+> +                       printk(KERN_DEBUG "%s : req->req.length = 0x%x\n",
+>
+> CHECK: Alignment should match open parenthesis
+> #487: FILE: drivers/usb/gadget/fotg210-udc.c:380:
+> +                       printk(KERN_DEBUG "%s : req->req.length = 0x%x\n",
+> +                               __func__, req->req.length);
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #492: FILE: drivers/usb/gadget/fotg210-udc.c:385:
+> +               if (!req->req.length)
+> [...]
+> +               else {
+> [...]
+>
+> WARNING: line over 80 characters
+> #495: FILE: drivers/usb/gadget/fotg210-udc.c:388:
+> +                       u32 value = ioread32(ep->fotg210->reg + FOTG210_DMISGR0);
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #680: FILE: drivers/usb/gadget/fotg210-udc.c:573:
+> +               printk(KERN_DEBUG "    0x%x\n", data);
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #691: FILE: drivers/usb/gadget/fotg210-udc.c:584:
+> +               printk(KERN_DEBUG "    0x%x\n", data);
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #696: FILE: drivers/usb/gadget/fotg210-udc.c:589:
+> +               printk(KERN_DEBUG "    0x%x\n", data);
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #702: FILE: drivers/usb/gadget/fotg210-udc.c:595:
+> +               printk(KERN_DEBUG "    0x%x\n", data);
+>
+> WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+> #741: FILE: drivers/usb/gadget/fotg210-udc.c:634:
+> +       printk(KERN_DEBUG "request error!!\n");
+>
+> WARNING: line over 80 characters
+> #744: FILE: drivers/usb/gadget/fotg210-udc.c:637:
+> +static void fotg210_set_address(struct fotg210_udc *fotg210, struct usb_ctrlrequest *ctrl)
+>
+> WARNING: Avoid CamelCase: <ctrl->wValue>
+> #746: FILE: drivers/usb/gadget/fotg210-udc.c:639:
+> +       if (ctrl->wValue >= 0x0100)
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #746: FILE: drivers/usb/gadget/fotg210-udc.c:639:
+> +       if (ctrl->wValue >= 0x0100)
+> [...]
+> +       else {
+> [...]
+>
+> WARNING: line over 80 characters
+> #754: FILE: drivers/usb/gadget/fotg210-udc.c:647:
+> +static void fotg210_set_feature(struct fotg210_udc *fotg210, struct usb_ctrlrequest *ctrl)
+>
+> WARNING: Avoid CamelCase: <ctrl->bRequestType>
+> #756: FILE: drivers/usb/gadget/fotg210-udc.c:649:
+> +       switch (ctrl->bRequestType & USB_RECIP_MASK) {
+>
+> WARNING: Avoid CamelCase: <ctrl->wIndex>
+> #765: FILE: drivers/usb/gadget/fotg210-udc.c:658:
+> +               epnum = le16_to_cpu(ctrl->wIndex) & USB_ENDPOINT_NUMBER_MASK;
+>
+> WARNING: line over 80 characters
+> #779: FILE: drivers/usb/gadget/fotg210-udc.c:672:
+> +static void fotg210_clear_feature(struct fotg210_udc *fotg210, struct usb_ctrlrequest *ctrl)
+>
+> WARNING: line over 80 characters
+> #821: FILE: drivers/usb/gadget/fotg210-udc.c:714:
+> +static void fotg210_get_status(struct fotg210_udc *fotg210, struct usb_ctrlrequest *ctrl)
+>
+> WARNING: line over 80 characters
+> #836: FILE: drivers/usb/gadget/fotg210-udc.c:729:
+> +                               fotg210_is_epnstall(fotg210->ep[epnum]) << USB_ENDPOINT_HALT;
+>
+> WARNING: line over 80 characters
+> #854: FILE: drivers/usb/gadget/fotg210-udc.c:747:
+> +static int fotg210_setup_packet(struct fotg210_udc *fotg210, struct usb_ctrlrequest *ctrl)
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #870: FILE: drivers/usb/gadget/fotg210-udc.c:763:
+> +       if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD) {
+> [...]
+> +       } else
+> [...]
+>
+> WARNING: Avoid CamelCase: <ctrl->bRequest>
+> #871: FILE: drivers/usb/gadget/fotg210-udc.c:764:
+> +               switch (ctrl->bRequest) {
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #902: FILE: drivers/usb/gadget/fotg210-udc.c:795:
+> +       if (!list_empty(&ep->queue) && !ep->dir_in) {
+> [...]
+> +       } else
+> [...]
+>
+> CHECK: braces {} should be used on all arms of this statement
+> #921: FILE: drivers/usb/gadget/fotg210-udc.c:814:
+> +       if ((!list_empty(&ep->queue)) && (ep->dir_in)) {
+> [...]
+> +       } else
+> [...]
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #989: FILE: drivers/usb/gadget/fotg210-udc.c:882:
+> +                       printk(KERN_INFO"fotg210 udc reset\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #995: FILE: drivers/usb/gadget/fotg210-udc.c:888:
+> +                       printk(KERN_INFO"fotg210 udc suspend\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1001: FILE: drivers/usb/gadget/fotg210-udc.c:894:
+> +                       printk(KERN_INFO"fotg210 udc resume\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1007: FILE: drivers/usb/gadget/fotg210-udc.c:900:
+> +                       printk(KERN_INFO"fotg210 iso sequence error\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1013: FILE: drivers/usb/gadget/fotg210-udc.c:906:
+> +                       printk(KERN_INFO"fotg210 iso sequence abort\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1020: FILE: drivers/usb/gadget/fotg210-udc.c:913:
+> +                       printk(KERN_INFO"fotg210 transferred 0 byte\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1027: FILE: drivers/usb/gadget/fotg210-udc.c:920:
+> +                       printk(KERN_INFO"fotg210 received 0 byte\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1047: FILE: drivers/usb/gadget/fotg210-udc.c:940:
+> +                       printk(KERN_INFO "fotg210 CX command abort\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1051: FILE: drivers/usb/gadget/fotg210-udc.c:944:
+> +                       printk(KERN_INFO "fotg210 ep0 setup\n");
+>
+> WARNING: line over 80 characters
+> #1054: FILE: drivers/usb/gadget/fotg210-udc.c:947:
+> +                               if (fotg210->driver->setup(&fotg210->gadget, &ctrl) < 0)
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1060: FILE: drivers/usb/gadget/fotg210-udc.c:953:
+> +                       printk(KERN_INFO "fotg210 cmd end\n");
+>
+> WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> #1070: FILE: drivers/usb/gadget/fotg210-udc.c:963:
+> +                       printk(KERN_INFO "fotg210 ep0 fail\n");
+>
+> CHECK: Alignment should match open parenthesis
+> #1129: FILE: drivers/usb/gadget/fotg210-udc.c:1022:
+> +       iowrite32(GMIR_MHC_INT | GMIR_MOTG_INT | GMIR_INT_POLARITY,
+> +               fotg210->reg + FOTG210_GMIR);
+>
+> WARNING: space prohibited before semicolon
+> #1237: FILE: drivers/usb/gadget/fotg210-udc.c:1130:
+> +       for (i = 0; i < FOTG210_MAX_NUM_EP ; i++) {
+>
+> CHECK: Alignment should match open parenthesis
+> #1243: FILE: drivers/usb/gadget/fotg210-udc.c:1136:
+> +                       list_add_tail(&fotg210->ep[i]->ep.ep_list,
+> +                                    &fotg210->gadget.ep_list);
+>
+> WARNING: kfree(NULL) is safe this check is probably not required
+> #1291: FILE: drivers/usb/gadget/fotg210-udc.c:1184:
+> +       if (fotg210)
+> +               kfree(fotg210);
+>
+> CHECK: No space is necessary after a cast
+> #1298: FILE: drivers/usb/gadget/fotg210-udc.c:1191:
+> +       .driver         = {
+> +               .name = (char *) udc_name,
+>
+> WARNING: line over 80 characters
+> #1477: FILE: drivers/usb/gadget/fotg210.h:162:
+> +#define EPMAP_FIFONO(ep, dir)  ((((ep) - 1) << ((ep) - 1) * 8) << ((dir) ? 0 : 4))
+>
+> WARNING: line over 80 characters
+> #1478: FILE: drivers/usb/gadget/fotg210.h:163:
+> +#define EPMAP_FIFONOMSK(ep, dir)       ((3 << ((ep) - 1) * 8) << ((dir) ? 0 : 4))
+>
+> CHECK: spinlock_t definition without comment
+> #1549: FILE: drivers/usb/gadget/fotg210.h:234:
+> +       spinlock_t              lock;
+>
+> total: 0 errors, 45 warnings, 13 checks, 1472 lines checked
+>
+> Your patch has style problems, please review.
+>
+> If any of these errors are false positives, please report
+> them to the maintainer, see CHECKPATCH in MAINTAINERS.
+>
 
-From: "Jungseok Lee <jays.lee@samsung.com>"
+Sorry about my negligence. I'll fix and resend it later.
+Thanks for your time.
 
-commit 1ba830c9997214a7fbe4d91cf238793764620e3b upstream
+Yuan-Hsin
 
-This patch fixes software reset logic. Software reset applies only to
-powered-on domains in SOC because software reset to all domains causes
-reboot failure.
-
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- arch/arm/mach-exynos/common.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index d63d399..4d962ec 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -308,9 +308,16 @@ void exynos5_restart(char mode, const char *cmd)
- 		val = 0x1;
- 		addr = EXYNOS_SWRESET;
- 	} else if (of_machine_is_compatible("samsung,exynos5440")) {
-+		u32 status;
- 		np = of_find_compatible_node(NULL, NULL,
-"samsung,exynos5440-clock");
-+
-+		addr = of_iomap(np, 0) + 0xbc;
-+		status = __raw_readl(addr);
-+
- 		addr = of_iomap(np, 0) + 0xcc;
--		val = (0xfff << 20) | (0x1 << 16);
-+		val = __raw_readl(addr);
-+
-+		val = (val & 0xffff0000) | (status & 0xffff);
- 	} else {
- 		pr_err("%s: cannot support non-DT\n", __func__);
- 		return;
--- 
-1.7.9.5
-
+> --
+> balbi
