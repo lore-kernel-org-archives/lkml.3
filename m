@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933342Ab3E3ULR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 16:11:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11104 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756648Ab3E3ULJ (ORCPT
+	id S933515Ab3E3UNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 16:13:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43080 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758969Ab3E3UNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 16:11:09 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=iT4cs34EYqoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=8r7ovOuLwwQA:10 a=kjOJ-vx8jqwRM_yI9FUA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369944667.26799.45.camel@gandalf.local.home>
-Subject: Re: [ 104/136 ] r8169: fix 8168evl frame padding.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Stefan Bader <stefan.bader@canonical.com>,
-        hayeswang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 30 May 2013 16:11:07 -0400
-In-Reply-To: <20130518100224.GA20930@electric-eye.fr.zoreil.com>
-References: <20130518021557.139113314@goodmis.org>
-	 <20130518021658.398536101@goodmis.org>
-	 <20130518100224.GA20930@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 16:13:37 -0400
+Date: Thu, 30 May 2013 16:13:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH RFC] PM / Runtime: Rework the "runtime idle" helper
+ routine
+In-Reply-To: <5291416.b4M4MTrzPC@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1305301613120.887-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-05-18 at 12:02 +0200, Francois Romieu wrote:
-> Steven Rostedt <rostedt@goodmis.org> :
-> > 3.6.11.4 stable review patch.
-> > If anyone has any objections, please let me know.
+On Thu, 30 May 2013, Rafael J. Wysocki wrote:
+
+> > > > > Index: linux-pm/Documentation/power/runtime_pm.txt
+> > > > > ===================================================================
+> > > > > --- linux-pm.orig/Documentation/power/runtime_pm.txt
+> > > > > +++ linux-pm/Documentation/power/runtime_pm.txt
+> > > > > @@ -660,11 +660,6 @@ Subsystems may wish to conserve code spa
+> > > > >  management callbacks provided by the PM core, defined in
+> > > > >  driver/base/power/generic_ops.c:
+> > > > >  
+> > > > > -  int pm_generic_runtime_idle(struct device *dev);
+> > > > > -    - invoke the ->runtime_idle() callback provided by the driver of this
+> > > > > -      device, if defined, and call pm_runtime_suspend() for this device if the
+> > > > > -      return value is 0 or the callback is not defined
+> > > > > -
+> > > > 
+> > > > The documentation for the runtime-idle callback needs to be updated too.
+> > > 
+> > > Well, I actually couldn't find the part of it that would need to be updated. :-)
+> > 
+> > How about this?
 > 
-> You should postpone it until the fix for a regression it induces when
-> user enable Tx checksumming is merged.
+> Looks good! :-)
 > 
+> May I add your sign-off to it?
 
-I'm working on 3.6.11.5. Has the fix for the regression been pulled into
-mainline yet, and if so, what's the commit SHA1?
+Go ahead.
 
-Thanks,
-
--- Steve
+Alan Stern
 
