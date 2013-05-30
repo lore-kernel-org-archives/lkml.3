@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab3E3WxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 18:53:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60844 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3E3WxJ (ORCPT
+	id S1751290Ab3E3WyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 18:54:10 -0400
+Received: from 11.mo5.mail-out.ovh.net ([46.105.47.167]:47064 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750891Ab3E3WyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 18:53:09 -0400
-Date: Fri, 31 May 2013 07:25:42 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Fix potential NULL pointer dereference in
- acpi_processor_add()
-Message-ID: <20130530222542.GD1630@kroah.com>
-References: <519E0F2A.4070602@linaro.org>
- <51A5E177.3090809@fold.natur.cuni.cz>
- <51A6B9A2.8090904@linaro.org>
- <2969934.XTKV7y9VVT@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2969934.XTKV7y9VVT@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 May 2013 18:54:07 -0400
+X-Greylist: delayed 40206 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 May 2013 18:54:07 EDT
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: [RESEND PATCH 1/1] MAINTAINERS: Framebuffer Layer maintainers update
+Date: Thu, 30 May 2013 22:23:44 +0200
+Message-Id: <1369945424-3121-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Ovh-Tracer-Id: 13135311265199991576
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 03:57:58PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, May 30, 2013 10:29:54 AM Hanjun Guo wrote:
-> > On 2013-5-29 19:07, Martin Mokrejs wrote:
-> > > Hanjun Guo wrote:
-> > >> On 2013-5-29 7:30, Rafael J. Wysocki wrote:
-> > >>> On Thursday, May 23, 2013 08:44:26 PM Hanjun Guo wrote:
-> > >>>> In acpi_processor_add(), get_cpu_device() will return NULL sometimes,
-> > >>>> although the chances are small, I think it should be fixed.
-> > >>>>
-> > >>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > >>>
-> > >>> This patch isn't necessary any more after the changes queued up for 3.11
-> > >>> in the acpi-hotplug branch of the linux-pm.git tree.
-> > >>
-> > >> Ok, I noticed your patch set, just drop my patch.
-> > > 
-> > > But shouldn't this go to stable at least? I checked linux-3.9.4
-> > > and it applies fine. Whether this is relevant for other stable
-> > > series I will leave up to somebody else. ;)
-> > 
-> > Hi Rafeal,
-> > 
-> > What's your opinion on Martin's suggestion?
-> 
-> Well, this is kind of hard to say.  We generally don't apply patches to -stable
-> that don't have mainline counterparts.
-> 
-> Greg, I wonder what your opinion is?
+Tomi and I will now take care of the Framebuffer Layer
 
-We do not apply patches to -stable that are not in Linus's tree, unless
-there is no problem in Linus's tree due to a major rewrite of the code,
-and it has been confirmed that the same problem isn't there.
+The git tree is now on kernel.org
 
-thanks,
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org
+---
+Hi,
 
-greg k-h
+	resend as git send-email drop my name in the From
+
+Best Regards,
+J.
+ MAINTAINERS |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fd3a495..7714c3c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3322,11 +3322,12 @@ F:	drivers/net/wan/dlci.c
+ F:	drivers/net/wan/sdla.c
+ 
+ FRAMEBUFFER LAYER
+-M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
++M:	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
++M:	Tomi Valkeinen <tomi.valkeinen@ti.com>
+ L:	linux-fbdev@vger.kernel.org
+ W:	http://linux-fbdev.sourceforge.net/
+ Q:	http://patchwork.kernel.org/project/linux-fbdev/list/
+-T:	git git://github.com/schandinat/linux-2.6.git fbdev-next
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git
+ S:	Maintained
+ F:	Documentation/fb/
+ F:	Documentation/devicetree/bindings/fb/
+-- 
+1.7.10.4
+
