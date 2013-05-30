@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab3E3POB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:14:01 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:45733 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933340Ab3E3PNy (ORCPT
+	id S933533Ab3E3PXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:23:31 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:53617 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab3E3PXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:13:54 -0400
-Message-ID: <51A76CA9.6080607@linaro.org>
-Date: Thu, 30 May 2013 17:13:45 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Daniel Tang <dt.tangr@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add TI-Nspire timer support
-References: <5F0F2B5B-F956-4F5A-A105-E60F73678882@gmail.com>
-In-Reply-To: <5F0F2B5B-F956-4F5A-A105-E60F73678882@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 30 May 2013 11:23:25 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
+Date: Thu, 30 May 2013 17:23:05 +0200
+Message-Id: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 01:11 PM, Daniel Tang wrote:
-> Hi,
-> 
-> This patch adds a clocksource/clockevent driver for the TI-Nspire calculator series.
+I have faced a sequence where the Idle Load Balance was sometime not
+ triggered for a while on my platform.
 
-Please, can you write a better changelog ? What does this chip provide ?
-What are the specificity of this chip ? Is there any trick in the code
-related to this chip ? etc ...
+CPU 0 and CPU 1 are running tasks and CPU 2 is idle
 
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+CPU 1 kicks the Idle Load Balance
+CPU 1 selects CPU 2 as the new Idle Load Balancer
+CPU 1 sets NOHZ_BALANCE_KICK for CPU 2
+CPU 1 sends a reschedule IPI to CPU 2
+While CPU 2 wakes up, CPU 0 or CPU 1 migrates a waking task A on CPU 2
+CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
+Task A quickly goes back to sleep (before a tick occurs on CPU 2)
+CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
 
-Seconding Thomas feedbacks + some comments below.
+Whenever CPU 2 will be selected for the ILB, reschedule IPI will be not
+sent to CPU2, which is idle, because NOHZ_BALANCE_KICK is already set
+and no Idle Load Balance will be performed.
 
-[ ... ]
+We must wait for the sched softirq to be raised on CPU 2 thanks to
+another part of the kernel to clear NOHZ_BALANCE_KICKand come back to
+a normal situation.
 
-> +struct zevio_timer {
-> +	void __iomem *base;
-> +	void __iomem *timer1, *timer2;
-> +	void __iomem *interrupt_regs;
-> +
-> +	int irqnr;
+The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
+we can't raise the sched_softirq for the Idle Load Balance.
 
-Why do you need to add this field for a value you need to store at init
-time ? You can declare this variable in the function, no ?
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> +
-> +	struct clk *clk;
-> +	struct clock_event_device clkevt;
-> +	struct irqaction clkevt_irq;
-> +
-> +	char clocksource_name[64];
-> +	char clockevent_name[64];
-> +};
-> +
-
-[ ... ]
-
-> +static int __init zevio_timer_add(struct device_node *node)
-> +{
-> +	struct zevio_timer *timer;
-> +	struct resource res;
-> +	int ret;
-> +
-> +	timer = kzalloc(sizeof(*timer), GFP_ATOMIC);
-> +	if (!timer)
-> +		return -ENOMEM;
-> +
-> +	timer->base = of_iomap(node, 0);
-> +	if (!timer->base) {
-> +		ret = -EINVAL;
-> +		goto error_free;
-> +	}
-> +	timer->timer1 = timer->base + IO_TIMER1;
-> +	timer->timer2 = timer->base + IO_TIMER2;
-> +
-> +	timer->clk = of_clk_get(node, 0);
-> +	if (IS_ERR(timer->clk)) {
-> +		ret = PTR_ERR(timer->clk);
-> +		pr_err("Timer clock not found! (error %d)\n", ret);
-> +		goto error_unmap;
-> +	}
-> +
-> +	timer->interrupt_regs = of_iomap(node, 1);
-> +	timer->irqnr = irq_of_parse_and_map(node, 0);
-> +
-> +	of_address_to_resource(node, 0, &res);
-> +	scnprintf(timer->clocksource_name, sizeof(timer->clocksource_name),
-> +			"%llx.%s_clocksource",
-> +			(unsigned long long)res.start, node->name);
-> +
-> +	scnprintf(timer->clockevent_name, sizeof(timer->clockevent_name),
-> +			"%llx.%s_clockevent",
-> +			(unsigned long long)res.start, node->name);
-> +
-> +	if (timer->interrupt_regs && timer->irqnr) {
-> +		timer->clkevt.name	= timer->clockevent_name;
-> +		timer->clkevt.set_next_event = zevio_timer_set_event;
-> +		timer->clkevt.set_mode	= zevio_timer_set_mode;
-> +		timer->clkevt.rating	= 200;
-> +		timer->clkevt.cpumask	= cpu_all_mask;
-> +		timer->clkevt.features	=
-> +			CLOCK_EVT_FEAT_ONESHOT;
-
-		timer->clkevt.irq       = timer->irqnr;
-
-> +
-> +		writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
-> +		writel(0, timer->timer1 + IO_DIVIDER);
-> +
-
-[ ... ]
-
-Thanks
-  -- Daniel
-
-
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..51fc715 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1420,7 +1420,8 @@ void scheduler_ipi(void)
+ 	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
+ 		this_rq()->idle_balance = 1;
+ 		raise_softirq_irqoff(SCHED_SOFTIRQ);
+-	}
++	} else
++		clear_bit(NOHZ_BALANCE_KICK, nohz_flags(smp_processor_id()));
+ 	irq_exit();
+ }
+ 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.9.5
 
