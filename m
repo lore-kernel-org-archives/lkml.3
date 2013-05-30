@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967611Ab3E3G1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 02:27:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63405 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966921Ab3E3G1D convert rfc822-to-8bit (ORCPT
+	id S967625Ab3E3GcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 02:32:17 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40441 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967568Ab3E3GcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 02:27:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,769,1363158000"; 
-   d="scan'208";a="342373831"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>, Yijing Wang <wangyijing@huawei.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] PCI: set correct value for iov device before device
-Thread-Topic: [PATCH] PCI: set correct value for iov device before device
-Thread-Index: AQHOXPj93z4//Pk0rk6Egvj8nMkloJkctyqAgACJ2XA=
-Date: Thu, 30 May 2013 06:26:55 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D3010E40DB8@SHSMSX152.ccr.corp.intel.com>
-References: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
- <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
-In-Reply-To: <CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 May 2013 02:32:10 -0400
+Date: Thu, 30 May 2013 08:32:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, roland@kernel.org,
+        infinipath@qlogic.com, linux-mm@kvack.org, linux-rdma@vger.kernel.org,
+        Or Gerlitz <or.gerlitz@gmail.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
+Message-ID: <20130530063205.GA5310@gmail.com>
+References: <20130523152458.GD23650@twins.programming.kicks-ass.net>
+ <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
+ <20130523163901.GG23650@twins.programming.kicks-ass.net>
+ <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
+ <20130524140114.GK23650@twins.programming.kicks-ass.net>
+ <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
+ <20130527064834.GA2781@laptop>
+ <0000013eec0006ee-0f8caf7b-cc94-4f54-ae38-0ca6623b7841-000000@email.amazonses.com>
+ <20130529075845.GA24506@gmail.com>
+ <51A65CC0.3050800@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A65CC0.3050800@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, I saw patch in PCI tree two days ago by Jiang Liu.
+
+* KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+
+> Hi
+> 
+> I'm unhappy you guys uses offensive word so much. Please cool down all 
+> you guys. :-/ In fact, _BOTH_ the behavior before and after Cristoph's 
+> patch doesn't have cleaner semantics.
+
+Erm, this feature _regressed_ after the patch. All other concerns are 
+secondary. What's so difficult to understand about that?
+
+> And PeterZ proposed make new cleaner one rather than revert. No need to 
+> hassle.
+
+Sorry, that's not how we deal with regressions upstream...
+
+I've been pretty polite in fact, compared to say Linus - someone should 
+put a politically correct summary of:
+
+   https://lkml.org/lkml/2013/2/22/456
+   https://lkml.org/lkml/2013/3/26/1113
+
+into Documentation/, people keep forgetting about it.
+
+I'm sorry if being direct and to the point offends you [no, not really], 
+this discussion got _way_ off the real track it should be on: that this is 
+a _regression_.
 
 Thanks,
--Xudong
 
-
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
-> Yinghai Lu
-> Sent: Thursday, May 30, 2013 2:05 PM
-> To: Hao, Xudong
-> Cc: Bjorn Helgaas; linux-pci@vger.kernel.org; Linux Kernel Mailing List
-> Subject: Re: [PATCH] PCI: set correct value for iov device before device
-> 
-> On Wed, May 29, 2013 at 10:45 PM, Xudong Hao <xudong.hao@intel.com>
-> wrote:
-> > Since device registering is put into pci_device_add(), it must set value of
-> > Virtual Function device's member before the pci_dev is put to device tree. Or
-> > some relevant subsystem of driver model such as xen will report a incorrect
-> > IOV device to Xen hypervior.
-> >
-> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> > ---
-> >  drivers/pci/iov.c | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> > index c93071d..43d3de9 100644
-> > --- a/drivers/pci/iov.c
-> > +++ b/drivers/pci/iov.c
-> > @@ -110,12 +110,12 @@ static int virtfn_add(struct pci_dev *dev, int id, int
-> reset)
-> >         if (reset)
-> >                 __pci_reset_function(virtfn);
-> >
-> > -       pci_device_add(virtfn, virtfn->bus);
-> > -       mutex_unlock(&iov->dev->sriov->lock);
-> > -
-> >         virtfn->physfn = pci_dev_get(dev);
-> >         virtfn->is_virtfn = 1;
-> >
-> > +       pci_device_add(virtfn, virtfn->bus);
-> > +       mutex_unlock(&iov->dev->sriov->lock);
-> > +
-> >         rc = pci_bus_add_device(virtfn);
-> >         sprintf(buf, "virtfn%u", id);
-> >         rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
-> 
-> I have similar patch at
-> https://patchwork.kernel.org/patch/2562551/
->    [5/7] PCI, ACPI: Don't glue ACPI dev with pci VFs
-> 
-> and Jiang has another one
-> https://patchwork.kernel.org/patch/2613481/
->    [v3,part1,10/10] PCI, IOV: hide remove and rescan sysfs interfaces
-> for SR-IOV virtual functions
-> 
-> Thanks
-> 
-> Yinghai
+	Ingo
