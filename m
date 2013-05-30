@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab3E3WES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 18:04:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60323 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab3E3WEG (ORCPT
+	id S1759155Ab3E3WFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 18:05:46 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59343 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3E3WFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 18:04:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] video: xilinxfb: Do not use out_be32 IO function
-Date: Fri, 31 May 2013 00:04:01 +0200
-Message-ID: <3808365.SOUxDqkW9J@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <a15de155a3f32fc1416833df1b281db05d347541.1369906849.git.michal.simek@xilinx.com>
-References: <27e53d5633766ab0dc1ac492023d5a0d0199e3aa.1369906849.git.michal.simek@xilinx.com> <a15de155a3f32fc1416833df1b281db05d347541.1369906849.git.michal.simek@xilinx.com>
+	Thu, 30 May 2013 18:05:39 -0400
+Date: Thu, 30 May 2013 16:36:51 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
+Subject: [PATCH] target: don't corrupt bh_count in
+ iscsit_stop_time2retain_timer()
+Message-ID: <20130530203651.GB13756@logfs.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TKETzEtYcDeQbyLOroHelkc0NLeJ4s9MMCJXy2Ce0My
- Jq34xwu4R8H/57M7fm6UqS9MoX6qY34ZFlcrLOb5AWZdnEvsVZ
- vRTxkdQQpMYCAPuRtnj6qeRD4UKPLGZRyLed3WEwQDlFLscl89
- Jl9CKgHDEvnHcqbN+vKZMIEmf/X7o5zBH4qH7R3M+m/+VX/D2Y
- KjQ4g7GM6PKlxRKBRsWNalXOos+GnRTs9xBbCXSUWi8gfV/Kt0
- EIpXNyn8E8gEl4JyRdHBI5qaWPfezE+MUopCIDgmS+PWmr0hWX
- 5mPtqTDTxm3hcjypL+Gr6sX3JTYI26egUh78W+VUrGYQwyI6Zp
- 5apvWaz2kaqOhCPPZf4I=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 May 2013 11:41:01 Michal Simek wrote:
->   * To perform the read/write on the registers we need to check on
->   * which bus its connected and call the appropriate write API.
->   */
-> -static void xilinx_fb_out_be32(struct xilinxfb_drvdata *drvdata, u32 offset,
-> +static void xilinx_fb_out32(struct xilinxfb_drvdata *drvdata, u32 offset,
->                                 u32 val)
->  {
->         if (drvdata->flags & PLB_ACCESS_FLAG)
-> -               out_be32(drvdata->regs + (offset << 2), val);
-> +               __raw_writel(val, drvdata->regs + (offset << 2));
->  #ifdef CONFIG_PPC_DCR
->         else
->                 dcr_write(drvdata->dcr_host, offset, val);
-> 
+Nick,
 
-This is probably missing barriers, and is wrong on systems on which
-the endianess of the device is different from the CPU.
+I just started noticing this one.  Patch is completely untested so
+far, so don't merge it just yet.  I just wanted early review,
+considering how scary this looks.
 
-You already have an indirection in there, so I guess it won't hurt
-to create a third case for little-endian registers and add
-another bit in drvdata->flags, or make it depend on the architecture,
-if the endianess of the device registers is known at compile time.
+Jörn
 
-	Arnd
+--
+Do not stop an army on its way home.
+-- Sun Tzu
+
+Here is a fun one.  Bug seems to have been introduced by 140854cb,
+almost two years ago.  I have no idea why we only started seeing it now,
+but we did.
+
+Rough callgraph:
+core_tpg_set_initiator_node_queue_depth()
+`-> spin_lock_irqsave(&tpg->session_lock, flags);
+`-> lio_tpg_shutdown_session()
+    `-> iscsit_stop_time2retain_timer()
+        `-> spin_unlock_bh(&se_tpg->session_lock);
+        `-> spin_lock_bh(&se_tpg->session_lock);
+`-> spin_unlock_irqrestore(&tpg->session_lock, flags);
+
+core_tpg_set_initiator_node_queue_depth() used to call spin_lock_bh(),
+but 140854cb changed that to spin_lock_irqsave().  However,
+lio_tpg_shutdown_session() still claims to be called with spin_lock_bh()
+held, as does iscsit_stop_time2retain_timer():
+ *      Called with spin_lock_bh(&struct se_portal_group->session_lock) held
+
+Stale documentation is mostly annoying, but in this case the dropping
+the lock with the _bh variant is plain wrong.  It is also wrong to drop
+locks two functions below the lock-holder, but I will ignore that bit
+for now.
+
+After some more locking and unlocking we eventually hit this backtrace:
+------------[ cut here ]------------
+WARNING: at kernel/softirq.c:159 local_bh_enable_ip+0xe8/0x100()
+Pid: 24645, comm: lio_helper.py Tainted: G           O 3.6.11+
+Call Trace:
+ [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffffa040ae37>] ? iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
+ [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff810472f8>] local_bh_enable_ip+0xe8/0x100
+ [<ffffffff815b8365>] _raw_spin_unlock_bh+0x15/0x20
+ [<ffffffffa040ae37>] iscsit_inc_conn_usage_count+0x37/0x50 [iscsi_target_mod]
+ [<ffffffffa041149a>] iscsit_stop_session+0xfa/0x1c0 [iscsi_target_mod]
+ [<ffffffffa0417fab>] lio_tpg_shutdown_session+0x7b/0x90 [iscsi_target_mod]
+ [<ffffffffa033ede4>] core_tpg_set_initiator_node_queue_depth+0xe4/0x290 [target_core_mod]
+ [<ffffffffa0409032>] iscsit_tpg_set_initiator_node_queue_depth+0x12/0x20 [iscsi_target_mod]
+ [<ffffffffa0415c29>] lio_target_nacl_store_cmdsn_depth+0xa9/0x180 [iscsi_target_mod]
+ [<ffffffffa0331b49>] target_fabric_nacl_base_attr_store+0x39/0x40 [target_core_mod]
+ [<ffffffff811b857d>] configfs_write_file+0xbd/0x120
+ [<ffffffff81148f36>] vfs_write+0xc6/0x180
+ [<ffffffff81149251>] sys_write+0x51/0x90
+ [<ffffffff815c0969>] system_call_fastpath+0x16/0x1b
+---[ end trace 3747632b9b164652 ]---
+
+As a pure band-aid, this patch drops the _bh.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ drivers/target/iscsi/iscsi_target_erl0.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_erl0.c b/drivers/target/iscsi/iscsi_target_erl0.c
+index 9a577ff..9bd27f2 100644
+--- a/drivers/target/iscsi/iscsi_target_erl0.c
++++ b/drivers/target/iscsi/iscsi_target_erl0.c
+@@ -834,11 +834,11 @@ extern int iscsit_stop_time2retain_timer(struct iscsi_session *sess)
+ 		return 0;
+ 
+ 	sess->time2retain_timer_flags |= ISCSI_TF_STOP;
+-	spin_unlock_bh(&se_tpg->session_lock);
++	spin_unlock(&se_tpg->session_lock);
+ 
+ 	del_timer_sync(&sess->time2retain_timer);
+ 
+-	spin_lock_bh(&se_tpg->session_lock);
++	spin_lock(&se_tpg->session_lock);
+ 	sess->time2retain_timer_flags &= ~ISCSI_TF_RUNNING;
+ 	pr_debug("Stopped Time2Retain Timer for SID: %u\n",
+ 			sess->sid);
+-- 
+1.7.10.4
+
