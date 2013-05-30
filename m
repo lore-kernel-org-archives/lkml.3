@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933533Ab3E3PXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 11:23:31 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53617 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3E3PXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 11:23:25 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-Date: Thu, 30 May 2013 17:23:05 +0200
-Message-Id: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S933553Ab3E3PZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 11:25:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932445Ab3E3PZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 11:25:01 -0400
+Date: Thu, 30 May 2013 11:00:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+Message-ID: <20130530150030.GF2864@redhat.com>
+References: <20130524152849.GF18218@redhat.com>
+ <87mwrkatgu.fsf@xmission.com>
+ <51A006CF.90105@gmail.com>
+ <87k3mnahkf.fsf@xmission.com>
+ <51A076FE.3060604@gmail.com>
+ <20130525145217.0549138a@holzheu>
+ <20130528135500.GC7088@redhat.com>
+ <20130529135144.7f95c4c0@holzheu>
+ <20130529162325.GD22146@redhat.com>
+ <20130529191249.19a235be@holzheu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529191249.19a235be@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have faced a sequence where the Idle Load Balance was sometime not
- triggered for a while on my platform.
+On Wed, May 29, 2013 at 07:12:49PM +0200, Michael Holzheu wrote:
 
-CPU 0 and CPU 1 are running tasks and CPU 2 is idle
+[..]
+> > > > So are you saying that s390 is ready to switch to mechanism of
+> > > > creating ELF headers in first kernel by kexec-tools and new kernel
+> > > > does not have to preare ELF headers?
+> > > 
+> > > No, I meant that currently nobody is using the kexec tools ELF
+> > > header creation in the 1st kernel on s390. We create the ELF header
+> > > in the 2nd kernel (mainly because of our cpuplugd issue).
+> > > 
+> > > Therefore, I think, we can safely change the ELF header creation in
+> > > 2nd kernel to use your p_offset swap trick *and* we remove the swap
+> > > code in the copy_oldmem_page() implementation (same kernel).
+> > 
+> > Ok. Got it. So s390 can fix it in kernel without creating any backward
+> > compatibility issues (given the fact that nobody sees to be using
+> > kexec-tools to build headers).
+> > 
+> > So please go ahead and fix it and that should solve your mmap() issue
+> > too. Also please fix kexec-tools and that change will not be backward
+> > compatible. 
+> 
+> Ok, I will do this.
+> 
+> I think we should add this "swap in ELF header" patch to the "kdump:
+> Allow ELF header creation in new kernel" patch series (on top of the
+> mmap patch series). Because when I remove the swap code from
+> copy_oldmem_page(), the old trick to access the ELF header in the first
+> kernel memory will no longer work.
+> 
+> Is that ok for you?
 
-CPU 1 kicks the Idle Load Balance
-CPU 1 selects CPU 2 as the new Idle Load Balancer
-CPU 1 sets NOHZ_BALANCE_KICK for CPU 2
-CPU 1 sends a reschedule IPI to CPU 2
-While CPU 2 wakes up, CPU 0 or CPU 1 migrates a waking task A on CPU 2
-CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
-Task A quickly goes back to sleep (before a tick occurs on CPU 2)
-CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
+I am fine with both the patches in same series.
 
-Whenever CPU 2 will be selected for the ILB, reschedule IPI will be not
-sent to CPU2, which is idle, because NOHZ_BALANCE_KICK is already set
-and no Idle Load Balance will be performed.
-
-We must wait for the sched softirq to be raised on CPU 2 thanks to
-another part of the kernel to clear NOHZ_BALANCE_KICKand come back to
-a normal situation.
-
-The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
-we can't raise the sched_softirq for the Idle Load Balance.
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 58453b8..51fc715 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1420,7 +1420,8 @@ void scheduler_ipi(void)
- 	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
- 		this_rq()->idle_balance = 1;
- 		raise_softirq_irqoff(SCHED_SOFTIRQ);
--	}
-+	} else
-+		clear_bit(NOHZ_BALANCE_KICK, nohz_flags(smp_processor_id()));
- 	irq_exit();
- }
- 
--- 
-1.7.9.5
-
+Thanks
+Vivek
