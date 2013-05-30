@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968025Ab3E3IyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 04:54:18 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:63003 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967933Ab3E3IyN (ORCPT
+	id S968018Ab3E3I4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 04:56:13 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59054 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967933Ab3E3I4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 04:54:13 -0400
+	Thu, 30 May 2013 04:56:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-32-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1368611522-9984-33-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-32-git-send-email-lee.jones@linaro.org>
-Date: Thu, 30 May 2013 10:54:12 +0200
-Message-ID: <CACRpkdZvdT6jb_dRteNnWDtaOY3jZ2DnRjb0SywOYbt7X51ksg@mail.gmail.com>
-Subject: Re: [PATCH 31/39] dmaengine: ste_dma40: Replace ST-E's home-brew DMA
- direction defs with generic ones
+	<1368611522-9984-33-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 May 2013 10:56:07 +0200
+Message-ID: <CACRpkdY1XOGPz19ftH2yZFG6-_Ww3bVqrsDvRZGk60gzuu0Maw@mail.gmail.com>
+Subject: Re: [PATCH 32/39] ARM: ux500: Remove recently unused
+ stedma40_xfer_dir enums
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -25,11 +25,9 @@ Cc: "linux-arm-kernel@lists.infradead.org"
         "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
         "David S. Miller" <davem@davemloft.net>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Arnd Bergmann <arnd@arndb.de>,
         Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,17 +35,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> STEDMA40_*_TO_* direction definitions are identical in all but name to
-> the pre-defined generic DMA_*_TO_* ones. Let's make things easy by not
-> duplicating such things.
+> We're now using the transfer direction definitions provided by the DMA
+> sub-system, so the home-brew ones have become obsolete.
 >
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Patch applied to my dma40 branch with Vinod's ACK.
+Tentatively applied, also missing Vinod's ACK on this, but it seems
+it was implicitly ACKed in the discussion on patch 31.
 
 Yours,
 Linus Walleij
