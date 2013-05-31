@@ -1,135 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab3EaXSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:18:40 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:64474 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757517Ab3EaXSb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:18:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369217581-16285-7-git-send-email-serban.constantinescu@arm.com>
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
-	<1369217581-16285-7-git-send-email-serban.constantinescu@arm.com>
-Date: Fri, 31 May 2013 16:18:30 -0700
-Message-ID: <CAMP5XgdDB-T6vo=vp+xwF2ZO4PPC_cd6Ls4FuNMMKW7VPduCgg@mail.gmail.com>
-Subject: Re: [PATCH v4 6/6] staging: android: binder: replace types with
- portable ones
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757750Ab3EaXWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:22:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32926 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755413Ab3EaXWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 19:22:16 -0400
+Message-ID: <1370042526.3928.162.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Sat, 01 Jun 2013 09:22:06 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 3:13 AM, Serban Constantinescu
-<serban.constantinescu@arm.com> wrote:
-> Since this driver is meant to be used on different types of processors
-> and a portable driver should specify the size a variable expects to be
-> this patch changes the types used throughout the binder interface.
->
-> We use "userspace" types since this header will be exported and used by
-> the Android filesystem.
->
-> The patch does not change in any way the functionality of the binder driver.
->
-> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-> ---
->  drivers/staging/android/binder.h |   26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-> index c3562c4..bff1c74 100644
-> --- a/drivers/staging/android/binder.h
-> +++ b/drivers/staging/android/binder.h
-> @@ -123,10 +123,10 @@ struct binder_transaction_data {
->                 void    *ptr;   /* target descriptor of return transaction */
->         } target;
->         void            *cookie;        /* target object cookie */
-> -       unsigned int    code;           /* transaction command */
-> +       __u32           code;           /* transaction command */
->
->         /* General information about the transaction. */
-> -       unsigned int    flags;
-> +       __u32           flags;
->         pid_t           sender_pid;
->         uid_t           sender_euid;
->         size_t          data_size;      /* number of bytes of data */
-> @@ -143,7 +143,7 @@ struct binder_transaction_data {
->                         /* offsets from buffer to flat_binder_object structs */
->                         const void __user       *offsets;
->                 } ptr;
-> -               uint8_t buf[8];
-> +               __u8    buf[8];
->         } data;
->  };
->
-> @@ -153,18 +153,18 @@ struct binder_ptr_cookie {
->  };
->
->  struct binder_pri_desc {
-> -       int priority;
-> -       int desc;
-> +       __s32 priority;
-> +       __s32 desc;
->  };
->
->  struct binder_pri_ptr_cookie {
-> -       int priority;
-> +       __s32 priority;
->         void *ptr;
->         void *cookie;
->  };
->
->  enum binder_driver_return_protocol {
-> -       BR_ERROR = _IOR('r', 0, int),
-> +       BR_ERROR = _IOR('r', 0, __s32),
->         /*
->          * int: error code
->          */
-> @@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
->          * binder_transaction_data: the received command.
->          */
->
-> -       BR_ACQUIRE_RESULT = _IOR('r', 4, int),
-> +       BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
->         /*
->          * not currently supported
->          * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
-> @@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
->          * binder_transaction_data: the sent command.
->          */
->
-> -       BC_ACQUIRE_RESULT = _IOW('c', 2, int),
-> +       BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
->         /*
->          * not currently supported
->          * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
-> @@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
->          * void *: ptr to transaction data received on a read
->          */
->
-> -       BC_INCREFS = _IOW('c', 4, int),
-> -       BC_ACQUIRE = _IOW('c', 5, int),
-> -       BC_RELEASE = _IOW('c', 6, int),
-> -       BC_DECREFS = _IOW('c', 7, int),
-> +       BC_INCREFS = _IOW('c', 4, __u32),
-> +       BC_ACQUIRE = _IOW('c', 5, __u32),
-> +       BC_RELEASE = _IOW('c', 6, __u32),
-> +       BC_DECREFS = _IOW('c', 7, __u32),
->         /*
->          * int: descriptor
->          */
-> --
-> 1.7.9.5
->
+Hi Linus !
 
-Acked-by: Arve Hjønnevåg <arve@android.com>
+Here are a few more fixes for powerpc 3.10. It's a bit more than I would
+have liked this late in the game but I suppose that's what happens with
+a brand new chip generation coming out.
 
---
-Arve Hjønnevåg
+A few regression fixes, some last minute fixes for new P8 features such
+as transactional memory,...
+
+There's also one powerpc KVM patch that I requested that adds two
+missing functions to our in-kernel interrupt controller support which
+is itself a new 3.10 feature. These are defined by the base hypervisor
+specification. We didn't implement them originally because Linux doesn't
+use them but they are simple and I'm not comfortable having a
+half-implemented interface in 3.10 and having to deal with versionning
+etc... later when something starts needing those calls. They cannot be
+emulated in qemu when using in-kernel interrupt controller (not enough
+shared state).
+
+Cheers,
+Ben.
+
+The following changes since commit 58f8bbd2e39c3732c55698494338ee19a92c53a0:
+
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-05-28 10:11:34 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 58a032c3b106adcd2b83b7e631de3b79f238cdd2:
+
+  powerpc/perf: Add missing SIER support (2013-06-01 08:29:29 +1000)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc/mm: Always invalidate tlb on hpte invalidate and update
+
+Kevin Hao (2):
+      powerpc/pci: Remove the stale comments of pci_process_bridge_OF_ranges
+      powerpc/pci: Remove the unused variables in pci_process_bridge_OF_ranges
+
+Michael Ellerman (2):
+      powerpc/perf: Revert to original NO_SIPR logic
+      powerpc/perf: Add missing SIER support
+
+Michael Neuling (7):
+      powerpc/tm: Make room for hypervisor in abort cause codes
+      powerpc/tm: Update cause codes documentation
+      powerpc/tm: Abort on emulation and alignment faults
+      powerpc/tm: Move TM abort cause codes to uapi
+      powerpc/tm: Fix userspace stack corruption on signal delivery for active transactions
+      powerpc/pseries: Kill all prefetch streams on context switch
+      powerpc/pseries: Improve stream generation comments in copypage/user
+
+Nishanth Aravamudan (1):
+      powerpc/cputable: Fix oprofile_cpu_type on power8
+
+Paul Mackerras (1):
+      powerpc/kvm/book3s: Add support for H_IPOLL and H_XIRR_X in XICS emulation
+
+Priyanka Jain (1):
+      powerpc/32bit:Store temporary result in r0 instead of r8
+
+Srivatsa S. Bhat (1):
+      powerpc/pseries: Always enable CONFIG_HOTPLUG_CPU on PSERIES SMP
+
+chenhui zhao (1):
+      powerpc/mpic: Fix irq distribution problem when MPIC_SINGLE_DEST_CPU
+
+ Documentation/powerpc/transactional_memory.txt |   27 +++++++++-
+ arch/powerpc/include/asm/hvcall.h              |    1 +
+ arch/powerpc/include/asm/ppc_asm.h             |   11 ++++
+ arch/powerpc/include/asm/processor.h           |   13 ++---
+ arch/powerpc/include/asm/reg.h                 |   11 ----
+ arch/powerpc/include/asm/signal.h              |    3 ++
+ arch/powerpc/include/asm/tm.h                  |    2 +
+ arch/powerpc/include/uapi/asm/Kbuild           |    1 +
+ arch/powerpc/include/uapi/asm/tm.h             |   18 +++++++
+ arch/powerpc/kernel/cputable.c                 |    4 +-
+ arch/powerpc/kernel/entry_32.S                 |    2 +-
+ arch/powerpc/kernel/entry_64.S                 |    7 +++
+ arch/powerpc/kernel/pci-common.c               |   14 +----
+ arch/powerpc/kernel/signal.c                   |   40 +++++++++++++-
+ arch/powerpc/kernel/signal.h                   |    2 +-
+ arch/powerpc/kernel/signal_32.c                |   10 +---
+ arch/powerpc/kernel/signal_64.c                |   23 +++-----
+ arch/powerpc/kernel/traps.c                    |   29 ++++++++++
+ arch/powerpc/kvm/book3s_hv.c                   |    2 +
+ arch/powerpc/kvm/book3s_pr_papr.c              |    2 +
+ arch/powerpc/kvm/book3s_xics.c                 |   29 ++++++++++
+ arch/powerpc/lib/copypage_power7.S             |   19 ++++---
+ arch/powerpc/lib/copyuser_power7.S             |   12 +++--
+ arch/powerpc/mm/hash_native_64.c               |   30 ++++++++---
+ arch/powerpc/perf/core-book3s.c                |   67 +++++++++++-------------
+ arch/powerpc/platforms/pseries/Kconfig         |    2 +
+ arch/powerpc/sysdev/mpic.c                     |    4 +-
+ 27 files changed, 261 insertions(+), 124 deletions(-)
+ create mode 100644 arch/powerpc/include/uapi/asm/tm.h
+
+
