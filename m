@@ -1,365 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab3EaLHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:07:07 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.175]:32806 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753240Ab3EaLHB (ORCPT
+	id S1754952Ab3EaLNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:13:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56339 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab3EaLNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:07:01 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-10.tower-38.messagelabs.com!1369998408!15390798!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 31 May 2013 13:06:48 +0200
-Date: Fri, 31 May 2013 13:08:52 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <guenter@roeck-us.net>, <linux-watchdog@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <johannes.thumshirn@men.de>
-Subject: [PATCH v6] watchdog: New watchdog driver for MEN A21 watchdogs
-Message-ID: <20130531110846.GA15707@jtlinux>
-References: <20130531103654.GB5619@roeck-us.net>
+	Fri, 31 May 2013 07:13:10 -0400
+Date: Fri, 31 May 2013 04:12:38 -0700
+From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
+Message-ID: <tip-6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
+        namhyung@kernel.org
+In-Reply-To: <20130329192950.GA9312@us.ibm.com>
+References: <20130329192950.GA9312@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix bug in isupper() and islower()
+Git-Commit-ID: 6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130531103654.GB5619@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 31 May 2013 11:06:48.0088 (UTC) FILETIME=[F1D04180:01CE5DEE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the driver for the watchdog devices found on MEN Mikro
-Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-watchdog framework.
+Commit-ID:  6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
+Gitweb:     http://git.kernel.org/tip/6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Fri, 29 Mar 2013 12:14:43 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:23:51 +0300
 
-Revision 2:
-* Removed unneeded open flag in struct a21_wdt_drv
-* Corrected 3bit reason code from gpio
-* Additional sysfs files are now part of watchdog sysfs
-* Changed OFF/ON delay in ping from 400ms to 10ns
-* Reworked timeout setting
-* Removed a21_wdt_ioctl(...)
+perf tools: Fix bug in isupper() and islower()
 
-Revision 3:
-* Changed pr_{err,info} to dev_{err,info}
-* Removed out of memory error print
-* Transition from "fast" to "slow" mode not allowed by chip
+One of the reasons 'perf test' is failing on Power appears to be due to
+a bug in isupper().
 
-Revision 4:
-* Remove reboot_notifier and place disable code into platform_device's shutdown function
-* Removed sysfs interface
+isupper(c) and islower(c) should be checking 'c' against the mask 0x20.
+Instead they are checking sane_ctype[c] which causes isupper() to be
+true for lower case letters.
 
-Revision 5:
-
-* Added setting of .bootstatus on driver init
-* Added initial timeout on driver init
-
-Revision 6:
-* Use watchdog_init_timeout() to initialize timeout
-
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/20130329192950.GA9312@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- MAINTAINERS                   |    6 ++
- drivers/watchdog/Kconfig      |    8 ++
- drivers/watchdog/Makefile     |    1 +
- drivers/watchdog/mena21_wdt.c |  234 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 249 insertions(+)
- create mode 100644 drivers/watchdog/mena21_wdt.c
+ tools/perf/util/util.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7714c3c..023945a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5307,6 +5307,12 @@ F:	drivers/mtd/
- F:	include/linux/mtd/
- F:	include/uapi/mtd/
-
-+MEN A21 WATCHDOG DRIVER
-+M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
-+L:	linux-watchdog@vger.kernel.org
-+S:	Supported
-+F:	drivers/watchdog/mena21_wdt.c
-+
- METAG ARCHITECTURE
- M:	James Hogan <james.hogan@imgtec.com>
- S:	Supported
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index e89fc31..192b84d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
-
- 	  The value can be overridden by the wdt_period command-line parameter.
-
-+config MEN_A21_WDT
-+       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-+       select WATCHDOG_CORE
-+       help
-+        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-+
-+	If unsure select N here.
-+
- # PPC64 Architecture
-
- config WATCHDOG_RTAS
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..bffdcb1 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
- obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
- obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
- obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-+obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
-
- # PPC64 Architecture
- obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-new file mode 100644
-index 0000000..9874c63
---- /dev/null
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -0,0 +1,234 @@
-+/*
-+ * Watchdog driver for the A21 VME CPU Boards
-+ *
-+ * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation
-+ */
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+#include <linux/uaccess.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
-+#include <linux/bitops.h>
-+
-+#define GPIO_WD_ENAB	169
-+#define GPIO_WD_FAST	170
-+#define GPIO_WD_TRIG	171
-+
-+#define GPIO_RST_CAUSE_BASE 166
-+
-+struct a21_wdt_drv {
-+	struct watchdog_device wdt;
-+	struct mutex lock;
-+};
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+static int a21_wdt_get_bootstatus(unsigned int *reset)
-+{
-+	int i;
-+
-+	for (i = 0; i < 3; i++)
-+		*reset |= gpio_get_value(GPIO_RST_CAUSE_BASE + i)
-+			? (1 << i) : 0;
-+
-+	if (*reset >= 8)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_start(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	/* We don't stop if WDOG_NO_WAY_OUT is set */
-+	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-+		return -EINVAL;
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 0);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_TRIG, 0);
-+	ndelay(10);
-+	gpio_set_value(GPIO_WD_TRIG, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-+			       unsigned int timeout)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	if (timeout != 1 && timeout != 30) {
-+		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
-+		return -EINVAL;
-+	}
-+
-+	if (timeout == 30 && wdt->timeout == 1) {
-+		dev_err(wdt->dev,
-+			"Transition from fast to slow mode not allowed\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&drv->lock);
-+
-+	if (timeout == 1)
-+		gpio_set_value(GPIO_WD_FAST, 1);
-+	else
-+		gpio_set_value(GPIO_WD_FAST, 0);
-+
-+	wdt->timeout = timeout;
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static const struct watchdog_info a21_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "MEN A21 Watchdog",
-+};
-+
-+static const struct watchdog_ops a21_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = a21_wdt_start,
-+	.stop = a21_wdt_stop,
-+	.ping = a21_wdt_ping,
-+	.set_timeout = a21_wdt_set_timeout,
-+};
-+
-+static struct watchdog_device a21_wdt = {
-+	.info = &a21_wdt_info,
-+	.ops = &a21_wdt_ops,
-+	.min_timeout = 1,
-+	.max_timeout = 30,
-+};
-+
-+static int a21_wdt_probe(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv;
-+	unsigned int reset = 0;
-+	int ret;
-+
-+	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-+
-+	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-+	if (!drv)
-+		return -ENOMEM;
-+
-+	mutex_init(&drv->lock);
-+	watchdog_init_timeout(&a21_wdt, 30, &pdev->dev);
-+	watchdog_set_nowayout(&a21_wdt, nowayout);
-+	watchdog_set_drvdata(&a21_wdt, drv);
-+
-+	ret = watchdog_register_device(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot register watchdog device\n");
-+		goto err_register_wd;
-+	}
-+
-+	ret = a21_wdt_get_bootstatus(&reset);
-+	if (ret)
-+		dev_warn(&pdev->dev, "Reset Cause contains invalid data\n");
-+	else {
-+		if (reset == 2)
-+			a21_wdt.bootstatus |= WDIOF_EXTERN1;
-+		else if (reset == 4)
-+			a21_wdt.bootstatus |= WDIOF_CARDRESET;
-+		else if (reset == 5)
-+			a21_wdt.bootstatus |= WDIOF_POWERUNDER;
-+		else if (reset == 7)
-+			a21_wdt.bootstatus |= WDIOF_EXTERN2;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, drv);
-+
-+	return 0;
-+
-+err_register_wd:
-+	mutex_destroy(&drv->lock);
-+
-+	return ret;
-+}
-+
-+static int a21_wdt_remove(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-+
-+	dev_warn(&pdev->dev,
-+		"Unregistering A21 watchdog driver, board may reboot\n");
-+
-+
-+	watchdog_unregister_device(&drv->wdt);
-+
-+	mutex_destroy(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_shutdown(struct platform_device *pdev)
-+{
-+	gpio_set_value(GPIO_WD_ENAB, 0);
-+}
-+
-+static const struct of_device_id a21_wdt_ids[] = {
-+	{ .compatible = "men,a021-wdt" },
-+	{ },
-+};
-+
-+static struct platform_driver a21_wdt_driver = {
-+	.probe = a21_wdt_probe,
-+	.remove = a21_wdt_remove,
-+	.shutdown = a21_wdt_shutdown,
-+	.driver = {
-+		.name = "a21-watchdog",
-+		.of_match_table = a21_wdt_ids,
-+	},
-+};
-+
-+module_platform_driver(a21_wdt_driver);
-+
-+MODULE_AUTHOR("MEN Mikro Elektronik");
-+MODULE_DESCRIPTION("MEN A21 Watchdog");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:a21-watchdog");
---
-1.7.9.5
-
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index a45710b..7a484c9 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -221,8 +221,8 @@ extern unsigned char sane_ctype[256];
+ #define isalpha(x) sane_istest(x,GIT_ALPHA)
+ #define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
+ #define isprint(x) sane_istest(x,GIT_PRINT)
+-#define islower(x) (sane_istest(x,GIT_ALPHA) && sane_istest(x,0x20))
+-#define isupper(x) (sane_istest(x,GIT_ALPHA) && !sane_istest(x,0x20))
++#define islower(x) (sane_istest(x,GIT_ALPHA) && (x & 0x20))
++#define isupper(x) (sane_istest(x,GIT_ALPHA) && !(x & 0x20))
+ #define tolower(x) sane_case((unsigned char)(x), 0x20)
+ #define toupper(x) sane_case((unsigned char)(x), 0)
+ 
