@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3EaSdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:33:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33542 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab3EaSdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:33:11 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: David Gibson <david@gibson.dropbear.id.au>, jdl@jdl.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, mmarek@suse.cz, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, linux-kbuild@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] dtc: ensure #line directives don't consume data from the next line
-Date: Fri, 31 May 2013 12:33:04 -0600
-Message-Id: <1370025184-23808-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	id S1756864Ab3EaSdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:33:43 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:55101 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754845Ab3EaSdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 14:33:35 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
+Date: Fri, 31 May 2013 14:33:35 -0400
+User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
+Cc: "Lars-Peter Clausen" <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+References: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart4500085.ugIRaR2pSE";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305311433.37838.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+--nextPart4500085.ugIRaR2pSE
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
-could match line-break characters. If the #line directive did not contain
-the optional flags field at the end, this could cause any integer data on
-the next line to be consumed as part of the #line directive parsing. This
-could cause syntax errors (i.e. #line parsing consuming the leading 0
-from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
-which is a syntax error), or invalid compilation results (i.e. simply
-consuming literal 1234 as part of the #line processing, thus removing it
-from the cell data).
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
 
-Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+--nextPart4500085.ugIRaR2pSE
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Convert all instances of {WS}, even though the other instances should be
-irrelevant for any well-formed #line directive. This is done for
-consistency and ultimate safety.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v2: Convert all instances of {WS} in the regex.
+iQIcBAABAgAGBQJRqO0BAAoJEEFjO5/oN/WB+SYQAKseEnJf7RXdkUpLZo62c2n8
+r2lKL5M5N8M02TNCAfEiMraVZ6t1y7it7KnqleHSjhDT2wqGVICDKp1chlxxTRjy
+axdh2NWxg50MHEyBim0sG/J53PDvgr3556KFS3x5AgenPAJM9jcxCC+KryWJthfK
+Gs+VPXvBAY1Tf3vaE+IDtcieRrcr69MHGu0JowQrdErzIi9LiM4kJDZMdX3z/qyE
+G1WWJAmDGKVY4FZex3ZmHluiG1Cv/Lie2HAAWwRPsO2GHuXkEJyLYw8ym4cM3FNo
+4PbkKsq23kUMuFCAioWa9955/LkB02J0XYPmfKg8vaWsOJYnapy+on3XLt+bUmFs
+6lBvM7WMWLhFoo5p0QGCAnXdqMFPTOkrbYeNnriaVMCzGHEShXSX+y12znn5Vm3s
+e20FhTQzEMhHbrZthoWMMl8AfKu4zoWcatW5OS1m3JDPSZlYceCrgAIne3KzEsEQ
+Y9h0PETbZMq27PqvCboK2bcDokMY/wHwTzX66zBFxGNFe7kFG3eJ8mihaemxvaHX
+yOx3TNZs2Blw3CKYFC9t/ihwUMpFULiDm+KjqADZEZiUmEEQCZO4zS+xdgIqAaJ2
++MXyJEE34FAnuqgm73wXg43LZZ6Z3vc7JN11El4eInlWjzqa4i9Oq/9RxYOkrySP
+6nx+EiH7YWYTxAwJpTPS
+=IB94
+-----END PGP SIGNATURE-----
 
-This is a patch for dtc upstream, in response to thread "DTB build
-failure due to preproccessing". If/when it's accepted into dtc, I'll
-follow up with a kernel patch that makes the same fix.
----
- dtc-lexer.l               |    2 +-
- tests/line_directives.dts |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/dtc-lexer.l b/dtc-lexer.l
-index 254d5af..3b41bfc 100644
---- a/dtc-lexer.l
-+++ b/dtc-lexer.l
-@@ -71,7 +71,7 @@ static int pop_input_file(void);
- 			push_input_file(name);
- 		}
- 
--<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
-+<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)? {
- 			char *line, *tmp, *fn;
- 			/* skip text before line # */
- 			line = yytext;
-diff --git a/tests/line_directives.dts b/tests/line_directives.dts
-index e9d0800..046ef37 100644
---- a/tests/line_directives.dts
-+++ b/tests/line_directives.dts
-@@ -8,4 +8,14 @@
- # 6 "bar.dts"
- 
- / {
-+/*
-+ * Make sure optional flags don't consume integer data on next line. The issue
-+ * was that the {WS} in the trailing ({WS}+[0-9]+)? could cross the * line-
-+ * break, and consume the leading "0" of the hex constant, leaving "x12345678"
-+ * to be parsed as a number, which is invalid syntax.
-+ */
-+	prop1 = <
-+# 10 "qux.dts"
-+		0x12345678
-+	>;
- };
--- 
-1.7.10.4
-
+--nextPart4500085.ugIRaR2pSE--
