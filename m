@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3EaHDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 03:03:43 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59945 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3EaHDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 03:03:37 -0400
-Message-ID: <51A84B45.3070804@monstr.eu>
-Date: Fri, 31 May 2013 09:03:33 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <joshc@eso.teric.us>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2 0/5] Zynq: revised CCF code
-References: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com> <51961F37.3030202@monstr.eu> <20130530184443.4470.73215@quantum> <51A83287.3010604@monstr.eu> <20130531063225.21525.49143@quantum>
-In-Reply-To: <20130531063225.21525.49143@quantum>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2QPTIUGRIVICCSIKCKMDU"
+	id S1753278Ab3EaHGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 03:06:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46406 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751161Ab3EaHGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 03:06:08 -0400
+Message-ID: <1369983967.10556.48.camel@joe-AO722>
+Subject: Re: [alsa-devel] Improving or replacing snd_printk()
+From: Joe Perches <joe@perches.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Fri, 31 May 2013 00:06:07 -0700
+In-Reply-To: <s5hr4gniri4.wl%tiwai@suse.de>
+References: <Pine.LNX.4.44L0.1305301411370.1137-100000@iolanthe.rowland.org>
+	 <51A79F25.6040007@perex.cz> <s5hr4gniri4.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2QPTIUGRIVICCSIKCKMDU
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-05-31 at 08:37 +0200, Takashi Iwai wrote:
+> It's a problem only with snd_printk(), as CONFIG_SND_VERBOSE_PRINTK
+> influences on the behavior of snd_printk() and not on the debug prints
+> with snd_printd() & co.
 
-On 05/31/2013 08:32 AM, Mike Turquette wrote:
-> Quoting Michal Simek (2013-05-30 22:17:59)
->> On 05/30/2013 08:44 PM, Mike Turquette wrote:
->>> Quoting Michal Simek (2013-05-17 05:14:47)
->>>> Hi Mike,
->>>>
->>>> I have sent email to Greg to take this patch from this series
->>>> though his serial tree because it is unrelated to this clock stuff.
->>>>
->>>> Can you please give me your ACK for these patches or add them
->>>> to your CLK tree?
->>>>
->>>
->>> For the four clock-related patches:
->>>
->>> Acked-by: Mike Turquette <mturquette@linaro.org>
->>
->> I have already sent pull request to Arnd and Olof.
->> Or is it you who should take these patches through your tree?
->>
->=20
-> Either way is fine.  Since you have already sent the pull request to th=
-e
-> arm-soc tree then that is probably the best path.
+Are you're perhaps confused about how CONFIG_SND_VERBOSE_PRINTK
+works with or varies between snd_printd and snd_printk?
 
-ok. I will keep my eyes on it.
+#if defined(CONFIG_SND_DEBUG) || defined(CONFIG_SND_VERBOSE_PRINTK)
+__printf(4, 5)
+void __snd_printk(unsigned int level, const char *file, int line,
+		  const char *format, ...);
 
-Thanks,
-Michal
+...
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+#define snd_printk(fmt, args...) \
+	__snd_printk(0, __FILE__, __LINE__, fmt, ##args)
 
+#ifdef CONFIG_SND_DEBUG
+[...]
+#define snd_printd(fmt, args...) \
+	__snd_printk(1, __FILE__, __LINE__, fmt, ##args)
 
+I don't see a difference.
 
-------enig2QPTIUGRIVICCSIKCKMDU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> Hence, the goal we should achieve is rather to drop
+> CONFIG_SND_VERBOSE_PRINTK.  *This* is the useless thing.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Maybe.
 
-iEYEARECAAYFAlGoS0UACgkQykllyylKDCHrfACePczcmEO0O3XKitWN36J999U7
-uvAAn3WtiVCerkFHGn6hs3iCAW3fA4SV
-=V2Lo
------END PGP SIGNATURE-----
+> Meanwhile, many snd_printk() messages might start looking annoying
+> with the extra information.  If so, such lines should be replaced with
+> the standard prints like dev_*().  I think almost all snd_printk()
+> like below are better replaced with standard ones.
 
-------enig2QPTIUGRIVICCSIKCKMDU--
+below?  Was there something that was supposed to be below?
+Are you referring to the KERN_ERR/urb example above?
+
+> So, alternatively, we can begin with replacing some snd_printk() with
+> the standard functions, then dropping CONFIG_SND_VERBOSE_PRINTK.
+
+Dropping CONFIG_SND_VERBOSE_PRINTK would simplify code a bit.
+
+> I think most of snd_printd() and snd_printdd() can be kept as is.
+> These are just debug messages, after all.
+
+Some of those are emitted at levels other than KERN_DEBUG.
+I think that odd.
+
