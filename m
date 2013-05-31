@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3EaGS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:18:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37005 "EHLO mx2.suse.de"
+	id S1752848Ab3EaGT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:19:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37020 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab3EaGSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:18:53 -0400
-Date: Fri, 31 May 2013 08:19:23 +0200
-Message-ID: <s5htxljisd0.wl%tiwai@suse.de>
+	id S1751147Ab3EaGTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 02:19:21 -0400
+Date: Fri, 31 May 2013 08:20:00 +0200
+Message-ID: <s5hsj13isbz.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: perex@perex.cz, wfp5p@virginia.edu, adam.buchbinder@gmail.com,
-        jkosina@suse.cz, Julia.Lawall@lip6.fr, yongjun_wei@trendmicro.com.cn,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: sis7019: fix error return code in sis_chip_create()
-In-Reply-To: <CAPgLHd_QmY-8YEh8_kVGLGYq+mwYrXfjjYjtzn-tx5tmf87Ztg@mail.gmail.com>
-References: <CAPgLHd_QmY-8YEh8_kVGLGYq+mwYrXfjjYjtzn-tx5tmf87Ztg@mail.gmail.com>
+To: Ebben Aries <earies@dscp.org>
+Cc: Jaroslav Kysela <perex@perex.cz>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Kailang Yang <kailang@realtek.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ALSA: hda - add dock support for Thinkpad T431s
+In-Reply-To: <1369888038-6044-1-git-send-email-earies@dscp.org>
+References: <1369888038-6044-1-git-send-email-earies@dscp.org>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,37 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 30 May 2013 19:55:34 +0800,
-Wei Yongjun wrote:
+At Wed, 29 May 2013 22:27:18 -0600,
+Ebben Aries wrote:
 > 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Add a model/fixup string "lenovo-dock", for Thinkpad T431s, to allow sound in docking station.
 > 
-> Fix to return a negative error code in the pci_set_dma_mask() error
-> handling case instead of 0, as done elsewhere in this function.
+> Tested on Lenovo T431s with ThinkPad Mini Dock Plus Series 3
 > 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Signed-off-by: Ebben Aries <earies@dscp.org>
 
-Thanks, applied.
+Thanks, applied now.
 
 
 Takashi
 
 > ---
->  sound/pci/sis7019.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  sound/pci/hda/patch_realtek.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
-> index f2639a0..e413b4e 100644
-> --- a/sound/pci/sis7019.c
-> +++ b/sound/pci/sis7019.c
-> @@ -1341,7 +1341,8 @@ static int sis_chip_create(struct snd_card *card,
->  	if (rc)
->  		goto error_out;
->  
-> -	if (pci_set_dma_mask(pci, DMA_BIT_MASK(30)) < 0) {
-> +	rc = pci_set_dma_mask(pci, DMA_BIT_MASK(30));
-> +	if (rc < 0) {
->  		dev_err(&pci->dev, "architecture does not support 30-bit PCI busmaster DMA");
->  		goto error_out_enabled;
->  	}
+> diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+> index 59d2e91..9658faf 100644
+> --- a/sound/pci/hda/patch_realtek.c
+> +++ b/sound/pci/hda/patch_realtek.c
+> @@ -3530,6 +3530,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+>  	SND_PCI_QUIRK(0x17aa, 0x21fa, "Thinkpad X230", ALC269_FIXUP_LENOVO_DOCK),
+>  	SND_PCI_QUIRK(0x17aa, 0x21f3, "Thinkpad T430", ALC269_FIXUP_LENOVO_DOCK),
+>  	SND_PCI_QUIRK(0x17aa, 0x21fb, "Thinkpad T430s", ALC269_FIXUP_LENOVO_DOCK),
+> +	SND_PCI_QUIRK(0x17aa, 0x2208, "Thinkpad T431s", ALC269_FIXUP_LENOVO_DOCK),
+>  	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+>  	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_PCM_44K),
+>  	SND_PCI_QUIRK(0x17aa, 0x9e54, "LENOVO NB", ALC269_FIXUP_LENOVO_EAPD),
+> -- 
+> 1.7.12.1
 > 
