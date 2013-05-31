@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab3EaMJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:09:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57322 "EHLO
+	id S1755821Ab3EaMKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:10:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57352 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab3EaMJZ (ORCPT
+	with ESMTP id S1755018Ab3EaMKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:09:25 -0400
-Date: Fri, 31 May 2013 05:08:49 -0700
+	Fri, 31 May 2013 08:10:43 -0400
+Date: Fri, 31 May 2013 05:10:06 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-6e533cf12de06368aee4a44b6e781c9d3c9f7eb2@git.kernel.org>
+Message-ID: <tip-c3cf8368452d2799296ce4244898ccb66b93686d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
         a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1369398928-9809-13-git-send-email-jolsa@redhat.com>
-References: <1369398928-9809-13-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1369398928-9809-14-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-14-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move libpython check config into config/Makefile
-Git-Commit-ID: 6e533cf12de06368aee4a44b6e781c9d3c9f7eb2
+Subject: [tip:perf/core] perf tools: Move libbfd check config into config/
+ Makefile
+Git-Commit-ID: c3cf8368452d2799296ce4244898ccb66b93686d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,16 +38,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e533cf12de06368aee4a44b6e781c9d3c9f7eb2
-Gitweb:     http://git.kernel.org/tip/6e533cf12de06368aee4a44b6e781c9d3c9f7eb2
+Commit-ID:  c3cf8368452d2799296ce4244898ccb66b93686d
+Gitweb:     http://git.kernel.org/tip/c3cf8368452d2799296ce4244898ccb66b93686d
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 18 Mar 2013 00:35:32 +0100
+AuthorDate: Mon, 18 Mar 2013 00:38:16 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 14:45:44 +0300
+CommitDate: Wed, 29 May 2013 14:47:34 +0300
 
-perf tools: Move libpython check config into config/Makefile
+perf tools: Move libbfd check config into config/Makefile
 
-Moving libpython check config into config/Makefile.
+Moving libbfd check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Borislav Petkov <bp@alien8.de>
@@ -59,167 +59,103 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-13-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1369398928-9809-14-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile        | 68 ++--------------------------------------------
- tools/perf/config/Makefile | 63 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+), 65 deletions(-)
+ tools/perf/Makefile        | 37 -------------------------------------
+ tools/perf/config/Makefile | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 37 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f856bb5..061de65 100644
+index 061de65..e4d99c4 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -196,8 +196,6 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- #
- PROGRAMS += $(OUTPUT)perf
- 
--LANG_BINDINGS =
--
- # what 'all' will build and 'install' will install, in perfexecdir
- ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
- 
-@@ -535,69 +533,9 @@ ifndef NO_LIBPERL
- 	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+@@ -538,43 +538,6 @@ ifndef NO_LIBPYTHON
+ 	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
  endif
  
--disable-python = $(eval $(disable-python_code))
--define disable-python_code
--  BASIC_CFLAGS += -DNO_LIBPYTHON
--  $(if $(1),$(warning No $(1) was found))
--  $(warning Python support will not be built)
--endef
--
--override PYTHON := \
--  $(call get-executable-or-default,PYTHON,python)
--
--ifndef PYTHON
--  $(call disable-python,python interpreter)
+-ifdef NO_DEMANGLE
+-	BASIC_CFLAGS += -DNO_DEMANGLE
 -else
+-	ifdef HAVE_CPLUS_DEMANGLE
+-		EXTLIBS += -liberty
+-		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-	else
+-		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+-		ifeq ($(has_bfd),y)
+-			EXTLIBS += -lbfd
+-		else
+-			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+-			ifeq ($(has_bfd_iberty),y)
+-				EXTLIBS += -lbfd -liberty
+-			else
+-				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
+-				ifeq ($(has_bfd_iberty_z),y)
+-					EXTLIBS += -lbfd -liberty -lz
+-				else
+-					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
+-					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+-					ifeq ($(has_cplus_demangle),y)
+-						EXTLIBS += -liberty
+-						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-					else
+-						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-						BASIC_CFLAGS += -DNO_DEMANGLE
+-					endif
+-				endif
+-			endif
+-		endif
+-	endif
+-endif
 -
--  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
--
--  ifdef NO_LIBPYTHON
--    $(call disable-python)
--  else
--
--    override PYTHON_CONFIG := \
--      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
--
--    ifndef PYTHON_CONFIG
--      $(call disable-python,python-config tool)
--    else
--
--      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
--
--      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
--      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
--      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
--
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
--        $(call disable-python,Python.h (for Python 2.x))
--      else
--
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
--          $(warning Python 3 is not yet supported; please set)
--          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
--          $(warning If you also have Python 2 installed, then)
--          $(warning try something like:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make PYTHON=python2)
--          $(warning $(and ,))
--          $(warning Otherwise, disable Python support entirely:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make NO_LIBPYTHON=1)
--          $(warning $(and ,))
--          $(error   $(and ,))
--        else
--          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
--          EXTLIBS += $(PYTHON_EMBED_LIBADD)
--          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
--          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
--          LANG_BINDINGS += $(OUTPUT)python/perf.so
--        endif
--
--      endif
--    endif
--  endif
-+ifndef NO_LIBPYTHON
-+	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
-+	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
- endif
- 
- ifdef NO_DEMANGLE
+ ifeq ($(NO_PERF_REGS),0)
+ 	ifeq ($(ARCH),x86)
+ 		LIB_H += arch/x86/include/perf_regs.h
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index a42c7b8..b9b1465 100644
+index b9b1465..317dafe 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -261,3 +261,66 @@ else
- 		EXTLIBS += $(PERL_EMBED_LIBADD)
- 	endif
+@@ -324,3 +324,40 @@ else
+     endif
+   endif
  endif
 +
-+disable-python = $(eval $(disable-python_code))
-+define disable-python_code
-+  BASIC_CFLAGS += -DNO_LIBPYTHON
-+  $(if $(1),$(warning No $(1) was found))
-+  $(warning Python support will not be built)
-+  NO_LIBPYTHON := 1
-+endef
-+
-+override PYTHON := \
-+  $(call get-executable-or-default,PYTHON,python)
-+
-+ifndef PYTHON
-+  $(call disable-python,python interpreter)
++ifdef NO_DEMANGLE
++	BASIC_CFLAGS += -DNO_DEMANGLE
 +else
-+
-+  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
-+
-+  ifdef NO_LIBPYTHON
-+    $(call disable-python)
-+  else
-+
-+    override PYTHON_CONFIG := \
-+      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+
-+    ifndef PYTHON_CONFIG
-+      $(call disable-python,python-config tool)
-+    else
-+
-+      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
-+
-+      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-+      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
-+      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-+
-+      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
-+        $(call disable-python,Python.h (for Python 2.x))
-+      else
-+
-+        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-+          $(warning Python 3 is not yet supported; please set)
-+          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-+          $(warning If you also have Python 2 installed, then)
-+          $(warning try something like:)
-+          $(warning $(and ,))
-+          $(warning $(and ,)  make PYTHON=python2)
-+          $(warning $(and ,))
-+          $(warning Otherwise, disable Python support entirely:)
-+          $(warning $(and ,))
-+          $(warning $(and ,)  make NO_LIBPYTHON=1)
-+          $(warning $(and ,))
-+          $(error   $(and ,))
-+        else
-+          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
-+          EXTLIBS += $(PYTHON_EMBED_LIBADD)
-+          LANG_BINDINGS += $(OUTPUT)python/perf.so
-+        endif
-+      endif
-+    endif
-+  endif
++	ifdef HAVE_CPLUS_DEMANGLE
++		EXTLIBS += -liberty
++		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++	else
++		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
++		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
++		ifeq ($(has_bfd),y)
++			EXTLIBS += -lbfd
++		else
++			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
++			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
++			ifeq ($(has_bfd_iberty),y)
++				EXTLIBS += -lbfd -liberty
++			else
++				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
++				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
++				ifeq ($(has_bfd_iberty_z),y)
++					EXTLIBS += -lbfd -liberty -lz
++				else
++					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
++					ifeq ($(has_cplus_demangle),y)
++						EXTLIBS += -liberty
++						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++					else
++						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++						BASIC_CFLAGS += -DNO_DEMANGLE
++					endif
++				endif
++			endif
++		endif
++	endif
 +endif
