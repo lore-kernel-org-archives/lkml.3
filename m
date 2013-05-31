@@ -1,46 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3EaBLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:11:34 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:2271 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab3EaBLb (ORCPT
+	id S1752693Ab3EaBMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:12:13 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:13714 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab3EaBMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 21:11:31 -0400
-Message-ID: <1369962688.1751.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] net: skbuff: use _RET_IP_
+	Thu, 30 May 2013 21:12:02 -0400
+Message-ID: <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 30 May 2013 18:11:28 -0700
-In-Reply-To: <87obbsohd1.fsf@nemi.mork.no>
-References: <1369861743.4188.33.camel@buesod1.americas.hpqcorp.net>
-	 <51A6768B.5050603@cogentembedded.com> <87obbsohd1.fsf@nemi.mork.no>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 30 May 2013 18:12:00 -0700
+In-Reply-To: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-30 at 13:08 +0200, Bjørn Mork wrote:
-> Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> writes:
-> 
-> >     Why not "text:%#lx" as already used in this string? It's
-> > equivalent to "0x%lx".
-> 
-> Well, I don't know the reasoning in this case, but I'd like to note that
-> those are not strictly equivalent.  Personally I find the formatting of 0
-> annoying enough to avoid %#x for any value which may be 0.  It's
-> especially bad if you try to line up things by adding leading zeros.
+ping?
 
-Yep, I found that 0x%lx produced the same output as %p. If you'd rather
-I use something else instead, I'm happy to update the patch.
+On Thu, 2013-05-23 at 16:59 -0700, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> 
+> Upon entering the slowpath, we immediately attempt to acquire the lock
+> by checking if it is already unlocked. If we are lucky enough that this
+> is the case, then we don't need to deal with any waiter related logic.
+> 
+> Furthermore any checks for an empty wait_list are unnecessary as we
+> already know that count is non-negative and hence no one is waiting for
+> the lock.
+> 
+> Move the count check and xchg calls to be done before any waiters are
+> setup - including waiter debugging. Upon failure to acquire the lock,
+> the xchg sets the counter to 0, instead of -1 as it was originally.
+> This can be done here since we set it back to -1 right at the beginning
+> of the loop so other waiters are woken up when the lock is released.
+> 
+> When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
+> kernel, this patch provides some small performance benefits (+2-6%).
+> While it could be considered in the noise level, the average percentages
+> were stable across multiple runs and no performance regressions were seen.
+> Two big winners, for small amounts of users (10-100), were the short and
+> compute workloads had a +19.36% and +%15.76% in jobs per minute.
+>   
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> ---
+>  kernel/mutex.c | 26 ++++++++++++++------------
+>  1 file changed, 14 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index ad53a66..a8cd741 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		owner = ACCESS_ONCE(lock->owner);
+>  		if (owner && !mutex_spin_on_owner(lock, owner)) {
+>  			mspin_unlock(MLOCK(lock), &node);
+> -			break;
+> +			goto slowpath;
+>  		}
+>  
+>  		if ((atomic_read(&lock->count) == 1) &&
+> @@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  			lock_acquired(&lock->dep_map, ip);
+>  			mutex_set_owner(lock);
+>  			mspin_unlock(MLOCK(lock), &node);
+> -			preempt_enable();
+> -			return 0;
+> +			goto done;
+>  		}
+>  		mspin_unlock(MLOCK(lock), &node);
+>  
+> @@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		 * the owner complete.
+>  		 */
+>  		if (!owner && (need_resched() || rt_task(task)))
+> -			break;
+> +			goto slowpath;
+>  
+>  		/*
+>  		 * The cpu_relax() call is a compiler barrier which forces
+> @@ -340,6 +339,14 @@ slowpath:
+>  #endif
+>  	spin_lock_mutex(&lock->wait_lock, flags);
+>  
+> +	/* once more, can we acquire the lock? */
+> +	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
+> +		lock_acquired(&lock->dep_map, ip);
+> +		mutex_set_owner(lock);
+> +		spin_unlock_mutex(&lock->wait_lock, flags);
+> +		goto done;
+> +	}
+> +
+>  	debug_mutex_lock_common(lock, &waiter);
+>  	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
+>  
+> @@ -347,9 +354,6 @@ slowpath:
+>  	list_add_tail(&waiter.list, &lock->wait_list);
+>  	waiter.task = task;
+>  
+> -	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
+> -		goto done;
+> -
+>  	lock_contended(&lock->dep_map, ip);
+>  
+>  	for (;;) {
+> @@ -363,7 +367,7 @@ slowpath:
+>  		 * other waiters:
+>  		 */
+>  		if (MUTEX_SHOW_NO_WAITER(lock) &&
+> -		   (atomic_xchg(&lock->count, -1) == 1))
+> +		    (atomic_xchg(&lock->count, -1) == 1))
+>  			break;
+>  
+>  		/*
+> @@ -388,9 +392,8 @@ slowpath:
+>  		spin_lock_mutex(&lock->wait_lock, flags);
+>  	}
+>  
+> -done:
+> +	/* got the lock - cleanup and rejoice! */
+>  	lock_acquired(&lock->dep_map, ip);
+> -	/* got the lock - rejoice! */
+>  	mutex_remove_waiter(lock, &waiter, current_thread_info());
+>  	mutex_set_owner(lock);
+>  
+> @@ -399,10 +402,9 @@ done:
+>  		atomic_set(&lock->count, 0);
+>  
+>  	spin_unlock_mutex(&lock->wait_lock, flags);
+> -
+>  	debug_mutex_free_waiter(&waiter);
+> +done:
+>  	preempt_enable();
+> -
+>  	return 0;
+>  }
+>  
 
-Thanks,
-Davidlohr
 
