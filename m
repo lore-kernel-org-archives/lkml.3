@@ -1,73 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3EaJ1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:27:14 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:59283 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab3EaJ1K (ORCPT
+	id S1754717Ab3EaJ1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:27:50 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40529 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3EaJ1m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:27:10 -0400
-Date: Fri, 31 May 2013 11:27:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Dreier <roland@kernel.org>, infinipath@qlogic.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-rdma@vger.kernel.org,
-        Or Gerlitz <or.gerlitz@gmail.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
-Message-ID: <20130531092704.GA30394@gmail.com>
-References: <20130523163901.GG23650@twins.programming.kicks-ass.net>
- <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
- <20130524140114.GK23650@twins.programming.kicks-ass.net>
- <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
- <20130527064834.GA2781@laptop>
- <0000013eec0006ee-0f8caf7b-cc94-4f54-ae38-0ca6623b7841-000000@email.amazonses.com>
- <20130529075845.GA24506@gmail.com>
- <51A65CC0.3050800@gmail.com>
- <20130530063205.GA5310@gmail.com>
- <CAHGf_=qkJWEhwKRY4gu0wL4OLU1PhOW3=n6JNmAocSK-T0PhmA@mail.gmail.com>
-MIME-Version: 1.0
+	Fri, 31 May 2013 05:27:42 -0400
+From: Daniel Tang <dt.tangr@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=qkJWEhwKRY4gu0wL4OLU1PhOW3=n6JNmAocSK-T0PhmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCHv2] Add TI-Nspire clock drivers
+Date: Fri, 31 May 2013 19:27:33 +1000
+Message-Id: <8A6F4A19-35D4-4D60-B9EA-9DE51E938B8C@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+To: Mike Turquette <mturquette@linaro.org>
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a basic clock driver for the TI-Nspire calculator series.
 
-* KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+Changes from v1:
+* Removed filename in header comment
+* Removed unnecessary #undef EXTRACT statement
 
-> >> I'm unhappy you guys uses offensive word so much. Please cool down all
-> >> you guys. :-/ In fact, _BOTH_ the behavior before and after Cristoph's
-> >> patch doesn't have cleaner semantics.
-> >
-> > Erm, this feature _regressed_ after the patch. All other concerns are
-> > secondary. What's so difficult to understand about that?
-> 
-> Because it is not new commit at all. Christoph's patch was introduced
-> 10 releases before.
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+---
+ .../devicetree/bindings/clock/nspire-clock.txt     |  24 ++++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-nspire.c                           | 153 +++++++++++++++++++++
+ 3 files changed, 178 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/nspire-clock.txt
+ create mode 100644 drivers/clk/clk-nspire.c
 
-That's indeed sad - resource limits are not typically tested by apps. The 
-lack of Cc:s to people affected also helped hide the effects of the 
-change.
+diff --git a/Documentation/devicetree/bindings/clock/nspire-clock.txt b/Documentation/devicetree/bindings/clock/nspire-clock.txt
+new file mode 100644
+index 0000000..7c3bc8b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/nspire-clock.txt
+@@ -0,0 +1,24 @@
++TI-NSPIRE Clocks
++
++Required properties:
++- compatible: Valid compatible properties include:
++	"lsi,nspire-cx-ahb-divider" for the AHB divider in the CX model
++	"lsi,nspire-classic-ahb-divider" for the AHB divider in the older model
++	"lsi,nspire-cx-clock" for the base clock in the CX model
++	"lsi,nspire-classic-clock" for the base clock in the older model
++
++- reg: Physical base address of the controller and length of memory mapped
++	region.
++
++Optional:
++- clocks: For the "nspire-*-ahb-divider" compatible clocks, this is the parent
++	clock where it divides the rate from.
++
++Example:
++
++ahb_clk {
++	#clock-cells = <0>;
++	compatible = "lsi,nspire-cx-clock";
++	reg = <0x900B0000 0x4>;
++	clocks = <&base_clk>;
++};
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 137d3e7..72ebbe1 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
++obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs/
+ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+diff --git a/drivers/clk/clk-nspire.c b/drivers/clk/clk-nspire.c
+new file mode 100644
+index 0000000..a378db7
+--- /dev/null
++++ b/drivers/clk/clk-nspire.c
+@@ -0,0 +1,153 @@
++/*
++ *
++ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2, as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++
++#define MHZ (1000 * 1000)
++
++#define BASE_CPU_SHIFT		1
++#define BASE_CPU_MASK		0x7F
++
++#define CPU_AHB_SHIFT		12
++#define CPU_AHB_MASK		0x07
++
++#define FIXED_BASE_SHIFT	8
++#define FIXED_BASE_MASK		0x01
++
++#define CLASSIC_BASE_SHIFT	16
++#define CLASSIC_BASE_MASK	0x1F
++
++#define CX_BASE_SHIFT		15
++#define CX_BASE_MASK		0x3F
++
++#define CX_UNKNOWN_SHIFT	21
++#define CX_UNKNOWN_MASK		0x03
++
++struct nspire_clk_info {
++	u32 base_clock;
++	u16 base_cpu_ratio;
++	u16 base_ahb_ratio;
++};
++
++
++#define EXTRACT(var, prop) (((var)>>prop##_SHIFT) & prop##_MASK)
++static void nspire_clkinfo_cx(u32 val, struct nspire_clk_info *clk)
++{
++	if (EXTRACT(val, FIXED_BASE))
++		clk->base_clock = 48 * MHZ;
++	else
++		clk->base_clock = 6 * EXTRACT(val, CX_BASE) * MHZ;
++
++	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * EXTRACT(val, CX_UNKNOWN);
++	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
++}
++
++static void nspire_clkinfo_classic(u32 val, struct nspire_clk_info *clk)
++{
++	if (EXTRACT(val, FIXED_BASE))
++		clk->base_clock = 27 * MHZ;
++	else
++		clk->base_clock = (300 - 6 * EXTRACT(val, CLASSIC_BASE)) * MHZ;
++
++	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * 2;
++	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
++}
++
++static void __init nspire_ahbdiv_setup(struct device_node *node,
++		void (*get_clkinfo)(u32, struct nspire_clk_info *))
++{
++	u32 val;
++	void __iomem *io;
++	struct clk *clk;
++	const char *clk_name = node->name;
++	const char *parent_name;
++	struct nspire_clk_info info;
++
++	io = of_iomap(node, 0);
++	if (!io)
++		return;
++	val = readl(io);
++	iounmap(io);
++
++	get_clkinfo(val, &info);
++
++	of_property_read_string(node, "clock-output-names", &clk_name);
++	parent_name = of_clk_get_parent_name(node, 0);
++
++	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
++					1, info.base_ahb_ratio);
++	if (!IS_ERR(clk))
++		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++
++static void __init nspire_ahbdiv_setup_cx(struct device_node *node)
++{
++	nspire_ahbdiv_setup(node, nspire_clkinfo_cx);
++}
++
++static void __init nspire_ahbdiv_setup_classic(struct device_node *node)
++{
++	nspire_ahbdiv_setup(node, nspire_clkinfo_classic);
++}
++
++CLK_OF_DECLARE(nspire_ahbdiv_cx, "lsi,nspire-cx-ahb-divider",
++		nspire_ahbdiv_setup_cx);
++CLK_OF_DECLARE(nspire_ahbdiv_classic, "lsi,nspire-classic-ahb-divider",
++		nspire_ahbdiv_setup_classic);
++
++static void __init nspire_clk_setup(struct device_node *node,
++		void (*get_clkinfo)(u32, struct nspire_clk_info *))
++{
++	u32 val;
++	void __iomem *io;
++	struct clk *clk;
++	const char *clk_name = node->name;
++	struct nspire_clk_info info;
++
++	io = of_iomap(node, 0);
++	if (!io)
++		return;
++	val = readl(io);
++	iounmap(io);
++
++	get_clkinfo(val, &info);
++
++	of_property_read_string(node, "clock-output-names", &clk_name);
++
++	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT,
++			info.base_clock);
++	if (!IS_ERR(clk))
++		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++	else
++		return;
++
++	pr_info("TI-NSPIRE Base: %uMHz CPU: %uMHz AHB: %uMHz\n",
++		info.base_clock / MHZ,
++		info.base_clock / info.base_cpu_ratio / MHZ,
++		info.base_clock / info.base_ahb_ratio / MHZ);
++}
++
++static void __init nspire_clk_setup_cx(struct device_node *node)
++{
++	nspire_clk_setup(node, nspire_clkinfo_cx);
++}
++
++static void __init nspire_clk_setup_classic(struct device_node *node)
++{
++	nspire_clk_setup(node, nspire_clkinfo_classic);
++}
++
++CLK_OF_DECLARE(nspire_clk_cx, "lsi,nspire-cx-clock", nspire_clk_setup_cx);
++CLK_OF_DECLARE(nspire_clk_classic, "lsi,nspire-classic-clock",
++		nspire_clk_setup_classic);
+-- 
+1.8.1.3
 
-> $ git describe bc3e53f682
-> v3.1-7235-gbc3e53f
-> 
-> If we just revert it, we may get another and opposite regression report. 
-> I'm worried about it. Moreover, I don't think discussion better fix is 
-> too difficult for us.
-
-Sure, I agree that a fix is generally better.
-
-Thanks,
-
-	Ingo
