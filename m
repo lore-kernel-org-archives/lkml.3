@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab3EaPzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:55:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23531 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab3EaPzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:55:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,779,1363158000"; 
-   d="scan'208";a="249147302"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, lance.ortiz@hp.com
-Subject: [GIT PULL] Fix aer error logging
-Date: Fri, 31 May 2013 08:54:59 -0700
-Message-Id: <51a8c7d311309a525@agluck-desk.sc.intel.com>
+	id S1756752Ab3EaPzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:55:12 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:39211 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756668Ab3EaPzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 11:55:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130531154815.GG27176@twins.programming.kicks-ass.net>
+References: <1369332423-4400-1-git-send-email-ahh@google.com>
+	<CABPqkBT6Hsq9ttSAP_c7R_GOEOCECu3Di_gjwvveFVrfVRTP+Q@mail.gmail.com>
+	<20130531154815.GG27176@twins.programming.kicks-ass.net>
+Date: Fri, 31 May 2013 17:55:05 +0200
+Message-ID: <CABPqkBQ3zCMim_1vR2DAB-cOaLxMqm0CZ6uBWj6HpoJ2fZvszw@mail.gmail.com>
+Subject: Re: [PATCH] perf: reduce stack usage of schedule_events
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Hunter <ahh@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
+On Fri, May 31, 2013 at 5:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, May 31, 2013 at 04:21:04PM +0200, Stephane Eranian wrote:
+>> Hi,
+>>
+>> Any comment on this patch?
+>> It does really help with stack pressure and will help fix a PEBS-LL issue.
+>
+> Yeah, its on my todo list, but I've been spending all of my time trying
+> to fix all the bugs Vince has been throwing my way.
+>
+I have seen some of his reports but not all of them I suspect.
+Are they all on LKML?
 
-  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-aertracefix
-
-for you to fetch changes up to 37448adfc7ce0d6d5892b87aa8d57edde4126f49:
-
-  aerdrv: Move cper_print_aer() call out of interrupt context (2013-05-30 10:51:20 -0700)
-
-----------------------------------------------------------------
-Can't call pci_get_domain_bus_and_slot() from interupt context
-
-----------------------------------------------------------------
-Lance Ortiz (1):
-      aerdrv: Move cper_print_aer() call out of interrupt context
-
- drivers/acpi/apei/cper.c               | 18 ------------------
- drivers/acpi/apei/ghes.c               |  4 +++-
- drivers/pci/pcie/aer/aerdrv_core.c     |  5 ++++-
- drivers/pci/pcie/aer/aerdrv_errprint.c |  4 ++--
- include/linux/aer.h                    |  5 +++--
- 5 files changed, 12 insertions(+), 24 deletions(-)
+>
