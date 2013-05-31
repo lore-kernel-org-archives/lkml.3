@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab3EaPbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:31:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57293 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756650Ab3EaPbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:31:33 -0400
-Date: Fri, 31 May 2013 17:31:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robert Richter <rric@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@calxeda.com>
-Subject: Re: [PATCH 0/4] perf tools: Persistent events, changes for perf tool
- integration
-Message-ID: <20130531153143.GA18138@nazgul.tnic>
-References: <1369991785-10499-1-git-send-email-rric@kernel.org>
- <20130531120720.GA7885@gmail.com>
- <20130531122443.GB17843@nazgul.tnic>
- <20130531124805.GA8659@gmail.com>
+	id S1756650Ab3EaPcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:32:46 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:39785 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab3EaPch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 11:32:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130531124805.GA8659@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hehcn2tc3.wl%tiwai@suse.de>
+References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
+ <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
+ <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
+ <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
+ <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
+ <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
+ <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
+ <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
+ <s5h1u8wtsk9.wl%tiwai@suse.de> <CALxABCZdm=qd1E63NeabcqmD0csnL1FcuUBCFTwa1yDOVRVXyg@mail.gmail.com>
+ <s5h1u8w8f82.wl%tiwai@suse.de> <CALxABCbJ-4_UPNX5qNAOy-PdQ+tp+vVBDE535nLyfjgzDjjebQ@mail.gmail.com>
+ <s5h1u8p7pxi.wl%tiwai@suse.de> <CALxABCbBYRJDsXMw0Y0BLs+RuXNMa_RMOAF5i4rmWDaYPa2H0Q@mail.gmail.com>
+ <s5hehcn2tc3.wl%tiwai@suse.de>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Fri, 31 May 2013 17:32:16 +0200
+Message-ID: <CALxABCaQ_drc+jKP4wZ5S_5wZVcE7rVXW_LZdVJ8tqZUai-=UQ@mail.gmail.com>
+Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
+ HDA, codec VIA VT1802
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 02:48:05PM +0200, Ingo Molnar wrote:
-> A kernel command line does not make it very practical - this needs to
-> be accessible from tooling ...
+On Fri, May 31, 2013 at 3:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> Below is a series of patches.  For simplicity, I just attach them, not
+> inlining to the mail.  They should be applicable cleanly to 3.9.4 as
+> well.  Let me know if this works.  If this still doesn't work, I need
+> to rewrite the patch to correct the pin-ctl / EAPD of the headphone
+> pin after changing the speaker pin.
 
-It will be accessible from tooling since the event is always enabled and
-with the persistent pmu you spacify that you want to consume already
-created buffers, i.e. the persistent event.
+Still does not work. The results are for 3.9.4 + patches:
 
-However, you need to be able to enable such event as early as possible
-for tasks like boot tracing. I don't care if it is a kernel command line
-param or something else - in the end of the day we need a mechanism
-to say "enable this event the earliest moment possible, after you've
-enabled the perf subsystem."
+  http://familie-riesen.de/~raa/public/test/dpc-automute-vol-pinctl.tar.bz2
 
-Hmm.
+I tried patched 3.9.2, with the same result.
