@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3EaJy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:54:27 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:37319 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751203Ab3EaJyN (ORCPT
+	id S1753447Ab3EaJyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:54:38 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:40369 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753062Ab3EaJy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:54:13 -0400
+	Fri, 31 May 2013 05:54:26 -0400
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: Barry Song <baohua.song@csr.com>
 Cc: Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH v1 1/2] ARM:prima2: move sirfsoc_of_rstc_init to .init_early
-Date: Fri, 31 May 2013 10:45:01 +0100
-Message-Id: <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v1 2/2] ARM:prima2:move postcore_initcalls to init_machine.
+Date: Fri, 31 May 2013 10:45:17 +0100
+Message-Id: <1369993517-24735-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com>
@@ -24,102 +24,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-This patch moves sirfsoc_of_rstc_init from early_initcall to .init_early
-in machine descriptor, doing this way a multi_v7 kernel will not crash
-on non-prima2 SOCs.
+This patch moves all  postcore_initcalls to very first calls in
+init_machine. This should achieve the same sequencing as done via
+postcore_initcalls.
+Without this patch a multi_v7 kernel panics if we boot it on any
+non prima2 parts with below log:
 
-Without this patch the multi_v7 kernel panics if we boot it on any non
-prima2 parts with below log:
+Kernel panic - not syncing: unable to find compatible pwrc node in dtb
 
-Kernel panic - not syncing: unable to find compatible rstc node in dtb
-
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc3-00535-gc3cc4ac #62
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc3-00536-ge2f1bc1 #63
 [<c001387c>] (unwind_backtrace+0x0/0xf8) from [<c00111cc>]
 (show_stack+0x10/0x14)
-[<c00111cc>] (show_stack+0x10/0x14) from [<c03417f4>] (panic+0x90/0x1e4)
-[<c03417f4>] (panic+0x90/0x1e4) from [<c04256d0>]
-(sirfsoc_of_rstc_init+0x24/0x5c)
-[<c04256d0>] (sirfsoc_of_rstc_init+0x24/0x5c) from [<c041f854>]
+[<c00111cc>] (show_stack+0x10/0x14) from [<c0341834>] (panic+0x90/0x1e4)
+[<c0341834>] (panic+0x90/0x1e4) from [<c0425784>]
+(sirfsoc_of_pwrc_init+0x24/0x58)
+[<c0425784>] (sirfsoc_of_pwrc_init+0x24/0x58) from [<c041f854>]
 (do_one_initcall+0x90/0x150)
-[<c041f854>] (do_one_initcall+0x90/0x150) from [<c041f978>]
-(kernel_init_freeable+0x64/0x1c4)
-[<c041f978>] (kernel_init_freeable+0x64/0x1c4) from [<c033d344>]
+[<c041f854>] (do_one_initcall+0x90/0x150) from [<c041fa10>]
+(kernel_init_freeable+0xfc/0x1c4)
+[<c041fa10>] (kernel_init_freeable+0xfc/0x1c4) from [<c033d384>]
 (kernel_init+0x8/0xe4)
-[<c033d344>] (kernel_init+0x8/0xe4) from [<c000ded8>]
+[<c033d384>] (kernel_init+0x8/0xe4) from [<c000ded8>]
 (ret_from_fork+0x14/0x3c)
+CPU1: stopping
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc3-00536-ge2f1bc1 #63
+[<c001387c>] (unwind_backtrace+0x0/0xf8) from [<c00111cc>]
+(show_stack+0x10/0x14)
+[<c00111cc>] (show_stack+0x10/0x14) from [<c0012030>]
+(handle_IPI+0xf8/0x12c)
+[<c0012030>] (handle_IPI+0xf8/0x12c) from [<c0008600>]
+(gic_handle_irq+0x54/0x5c)
+[<c0008600>] (gic_handle_irq+0x54/0x5c) from [<c000da80>]
+(__irq_svc+0x40/0x50)
+Exception stack(0xef079fa0 to 0xef079fe8)
+9fa0: c0ddd6d8 00000000 000002d2 00000000 ef078000 c04888f5 00000001
+c04888f5
+9fc0: c045c490 c045c42c c0348f38 00000000 01000000 ef079fe8 c000f018
+c000f01c
+9fe0: 60000113 ffffffff
+[<c000da80>] (__irq_svc+0x40/0x50) from [<c000f01c>]
+(arch_cpu_idle+0x28/0x30)
+[<c000f01c>] (arch_cpu_idle+0x28/0x30) from [<c0051080>]
+(cpu_startup_entry+0x60/0x130)
+[<c0051080>] (cpu_startup_entry+0x60/0x130) from [<6033dfc4>]
+(0x6033dfc4)
 
 Initially detected when booting Stih415 SOC with multi_v7_defconfig.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
  arch/arm/mach-prima2/common.c |    3 +++
- arch/arm/mach-prima2/common.h |    1 +
- arch/arm/mach-prima2/rstc.c   |    5 +----
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/mach-prima2/pm.c     |    6 ++----
+ arch/arm/mach-prima2/pm.h     |    2 ++
+ 3 files changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
-index 4f94cd8..9aefcd6 100644
+index 9aefcd6..8e27cb7 100644
 --- a/arch/arm/mach-prima2/common.c
 +++ b/arch/arm/mach-prima2/common.c
-@@ -61,6 +61,7 @@ DT_MACHINE_START(ATLAS6_DT, "Generic ATLAS6 (Flattened Device Tree)")
- 	.init_late	= sirfsoc_init_late,
- 	.dt_compat      = atlas6_dt_match,
- 	.restart	= sirfsoc_restart,
-+	.init_early	= sirfsoc_of_rstc_init,
- MACHINE_END
- #endif
+@@ -16,6 +16,7 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include "common.h"
++#include "pm.h"
  
-@@ -81,6 +82,7 @@ DT_MACHINE_START(PRIMA2_DT, "Generic PRIMA2 (Flattened Device Tree)")
- 	.init_late	= sirfsoc_init_late,
- 	.dt_compat      = prima2_dt_match,
- 	.restart	= sirfsoc_restart,
-+	.init_early	= sirfsoc_of_rstc_init,
- MACHINE_END
- #endif
+ static struct of_device_id sirfsoc_of_bus_ids[] __initdata = {
+ 	{ .compatible = "simple-bus", },
+@@ -24,6 +25,8 @@ static struct of_device_id sirfsoc_of_bus_ids[] __initdata = {
  
-@@ -100,5 +102,6 @@ DT_MACHINE_START(MARCO_DT, "Generic MARCO (Flattened Device Tree)")
- 	.init_late	= sirfsoc_init_late,
- 	.dt_compat      = marco_dt_match,
- 	.restart	= sirfsoc_restart,
-+	.init_early	= sirfsoc_of_rstc_init,
- MACHINE_END
- #endif
-diff --git a/arch/arm/mach-prima2/common.h b/arch/arm/mach-prima2/common.h
-index 81135cd..65703a4 100644
---- a/arch/arm/mach-prima2/common.h
-+++ b/arch/arm/mach-prima2/common.h
-@@ -20,6 +20,7 @@ extern struct smp_operations   sirfsoc_smp_ops;
- extern void sirfsoc_secondary_startup(void);
- extern void sirfsoc_cpu_die(unsigned int cpu);
+ void __init sirfsoc_mach_init(void)
+ {
++	sirfsoc_of_pwrc_init();
++	sirfsoc_memc_init();
+ 	of_platform_bus_probe(NULL, sirfsoc_of_bus_ids, NULL);
+ }
  
-+extern void sirfsoc_of_rstc_init(void);
- extern void __init sirfsoc_of_irq_init(void);
- extern void __init sirfsoc_of_clk_init(void);
- extern void sirfsoc_restart(char, const char *);
-diff --git a/arch/arm/mach-prima2/rstc.c b/arch/arm/mach-prima2/rstc.c
-index 435019c..5506425 100644
---- a/arch/arm/mach-prima2/rstc.c
-+++ b/arch/arm/mach-prima2/rstc.c
-@@ -23,7 +23,7 @@ static struct of_device_id rstc_ids[]  = {
- 	{},
+diff --git a/arch/arm/mach-prima2/pm.c b/arch/arm/mach-prima2/pm.c
+index 9936c18..8850e3b 100644
+--- a/arch/arm/mach-prima2/pm.c
++++ b/arch/arm/mach-prima2/pm.c
+@@ -96,7 +96,7 @@ static const struct of_device_id pwrc_ids[] = {
+ 	{}
  };
  
--static int __init sirfsoc_of_rstc_init(void)
-+void sirfsoc_of_rstc_init(void)
+-static int __init sirfsoc_of_pwrc_init(void)
++int __init sirfsoc_of_pwrc_init(void)
  {
  	struct device_node *np;
  
-@@ -36,10 +36,7 @@ static int __init sirfsoc_of_rstc_init(void)
- 		panic("unable to map rstc cpu registers\n");
+@@ -116,7 +116,6 @@ static int __init sirfsoc_of_pwrc_init(void)
  
- 	of_node_put(np);
--
--	return 0;
+ 	return 0;
  }
--early_initcall(sirfsoc_of_rstc_init);
+-postcore_initcall(sirfsoc_of_pwrc_init);
  
- int sirfsoc_reset_device(struct device *dev)
+ static const struct of_device_id memc_ids[] = {
+ 	{ .compatible = "sirf,prima2-memc" },
+@@ -143,8 +142,7 @@ static struct platform_driver sirfsoc_memc_driver = {
+ 	},
+ };
+ 
+-static int __init sirfsoc_memc_init(void)
++int __init sirfsoc_memc_init(void)
  {
+ 	return platform_driver_register(&sirfsoc_memc_driver);
+ }
+-postcore_initcall(sirfsoc_memc_init);
+diff --git a/arch/arm/mach-prima2/pm.h b/arch/arm/mach-prima2/pm.h
+index bae6d77..b658d66 100644
+--- a/arch/arm/mach-prima2/pm.h
++++ b/arch/arm/mach-prima2/pm.h
+@@ -23,6 +23,8 @@
+ 
+ #ifndef __ASSEMBLY__
+ extern int sirfsoc_finish_suspend(unsigned long);
++extern int __init sirfsoc_of_pwrc_init(void);
++extern int __init sirfsoc_memc_init(void);
+ #endif
+ 
+ #endif
 -- 
 1.7.6.5
 
