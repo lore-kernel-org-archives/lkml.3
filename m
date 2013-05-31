@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3EaJMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:12:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56977 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab3EaJLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:11:55 -0400
-Date: Fri, 31 May 2013 11:12:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@calxeda.com>
-Subject: Re: [PATCH 06/16] perf, persistent: Return -EACCES if mapped buffers
- must be readonly
-Message-ID: <20130531091206.GG14076@nazgul.tnic>
-References: <1369990056-10310-1-git-send-email-rric@kernel.org>
- <1369990056-10310-7-git-send-email-rric@kernel.org>
+	id S1754510Ab3EaJMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:12:36 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52992 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab3EaJM2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 05:12:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1369990056-10310-7-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51A70C10.6000408@asianux.com>
+References: <51A6F0C6.9050806@asianux.com>
+	<m2a9ndndu5.fsf@linux-m68k.org>
+	<51A70C10.6000408@asianux.com>
+Date: Fri, 31 May 2013 11:12:27 +0200
+X-Google-Sender-Auth: Na1UjPRgHDP7uB4mdyIeCLsUEFE
+Message-ID: <CAMuHMdWOxh_YvQyid-PiN7FsM=OC=0YWOzJb86pKaQn3HrjaQw@mail.gmail.com>
+Subject: Re: [PATCH v2] arch: m68k: math-emu: unsigned issue, 'unsigned long'
+ will never be less than zero
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 10:47:26AM +0200, Robert Richter wrote:
-> From: Robert Richter <robert.richter@calxeda.com>
-> 
-> mmap should return EACCES error if fd can not be opened writable.
-> This error code also helps userland to map buffers readonly on
-> failure.
-> 
-> Signed-off-by: Robert Richter <robert.richter@calxeda.com>
-> ---
->  kernel/events/core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 0730f36..a9b6470 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3761,7 +3761,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
->  		return -EINVAL;
->  
->  	if (event->attr.persistent && (vma->vm_flags & VM_WRITE))
-> -		return -EINVAL;
-> +		return -EACCES;
->  
->  	vma_size = vma->vm_end - vma->vm_start;
->  	nr_pages = (vma_size / PAGE_SIZE) - 1;
+On Thu, May 30, 2013 at 10:21 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> 'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
+> author wanted to check the highest bit whether set.
+>
+> So need make the bit test explicit (which is better than type cast form
+> 'unsigned long' to 'long').
+>
+> The related warning: (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
+>   arch/m68k/math-emu/fp_arith.c:522:4: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-Also merge.
+Thanks, applied and queued for 3.11!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
