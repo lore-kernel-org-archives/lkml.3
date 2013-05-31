@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3EaDJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 23:09:50 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2745 "EHLO
+	id S1752916Ab3EaDKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 23:10:54 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:2970 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab3EaDJq (ORCPT
+	with ESMTP id S1751741Ab3EaDKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 23:09:46 -0400
+	Thu, 30 May 2013 23:10:50 -0400
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <wim@iguana.be>, <linux@arm.linux.org.uk>, <nicolas.ferre@atmel.com>,
@@ -14,9 +14,11 @@ CC: <wim@iguana.be>, <linux@arm.linux.org.uk>, <nicolas.ferre@atmel.com>,
         <richard.genoud@gmail.com>, <linux-kernel@vger.kernel.org>,
         <wenyou.yang@atmel.com>, <jm.lin@atmel.com>
 Subject: [PATCH 0/2] ARM: dts: add watchdog device tree node in at91 dts files  
-Date: Fri, 31 May 2013 11:09:04 +0800
-Message-ID: <1369969744-3428-1-git-send-email-wenyou.yang@atmel.com>
+Date: Fri, 31 May 2013 11:10:01 +0800
+Message-ID: <1369969802-7840-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1369969744-3428-1-git-send-email-wenyou.yang@atmel.com>
+References: <1369969744-3428-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
