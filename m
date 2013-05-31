@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3EaPtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:49:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62047 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab3EaPto (ORCPT
+	id S1756626Ab3EaPua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:50:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46710 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab3EaPuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:49:44 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCHv2 2/2] atmel_lcdfb: blank the backlight on remove
-Date: Fri, 31 May 2013 17:49:35 +0200
-Message-Id: <1370015375-5954-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CACQ1gAh5HL8ouhe3YeGe4B9AO+L02C+wF5a2pUvka01PbupCDg@mail.gmail.com>
-References: <CACQ1gAh5HL8ouhe3YeGe4B9AO+L02C+wF5a2pUvka01PbupCDg@mail.gmail.com>
+	Fri, 31 May 2013 11:50:22 -0400
+Date: Fri, 31 May 2013 08:50:20 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 0/3] Cleanup MSM_GPIOMUX and add DT support for gpio-msm
+Message-ID: <20130531155020.GA26312@codeaurora.org>
+References: <1369420342-27085-1-git-send-email-rvaswani@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1369420342-27085-1-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When removing atmel_lcdfb module, the backlight is unregistered but not
-blanked. (only for CONFIG_BACKLIGHT_ATMEL_LCDC case).
-This can result in the screen going full white depending on how the PWM
-is wired.
+On Fri, May 24, 2013 at 11:32:19AM -0700, Rohit Vaswani wrote:
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- drivers/video/atmel_lcdfb.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+>Could this series go through David's tree or is there a better way to do this?
+>It would be great if I can have you ack for the gpio patch.
 
-diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index 6e6491f..effdb37 100644
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -223,8 +223,14 @@ static void init_backlight(struct atmel_lcdfb_info *sinfo)
- 
- static void exit_backlight(struct atmel_lcdfb_info *sinfo)
- {
--	if (sinfo->backlight)
--		backlight_device_unregister(sinfo->backlight);
-+	if (!sinfo->backlight)
-+		return;
-+
-+	if (sinfo->backlight->ops) {
-+		sinfo->backlight->props.power = FB_BLANK_POWERDOWN;
-+		sinfo->backlight->ops->update_status(sinfo->backlight);
-+	}
-+	backlight_device_unregister(sinfo->backlight);
- }
- 
- #else
+Due to pending feedback, and compilation failures on ppc, I'll drop
+this series from my tree for now.
+
+David
+
 -- 
-1.7.10.4
-
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
