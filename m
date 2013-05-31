@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab3EaU5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 16:57:00 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:62499 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab3EaU4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 16:56:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHp75Ve1rSf6McAJXFohDJF9yWzhpSx3fbKp0ewxC9tpJOMhBw@mail.gmail.com>
-References: <1369268964-28304-1-git-send-email-rvaswani@codeaurora.org>
- <1369268964-28304-4-git-send-email-rvaswani@codeaurora.org> <CAHp75Ve1rSf6McAJXFohDJF9yWzhpSx3fbKp0ewxC9tpJOMhBw@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 31 May 2013 21:56:20 +0100
-X-Google-Sender-Auth: DQf90zpt_oBP0vjsUicVEGBDbOw
-Message-ID: <CACxGe6vSBWSUp+p=UMsLpWcmr-b559p6xa3kPiKpvs+D4Kubiw@mail.gmail.com>
-Subject: Re: [PATCHv2 3/3] gpio: msm: Add device tree and irqdomain support
- for gpio-msm-v2
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756957Ab3EaVDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:03:13 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:40991 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754217Ab3EaVDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:03:08 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS fixes #2 for 3.10-rc4
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130531210303.EDAE1500B4B@whiskey.americas.sgi.com>
+Date: Fri, 31 May 2013 16:03:03 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 9:01 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Thu, May 23, 2013 at 3:29 AM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
->> This cleans up the gpio-msm-v2 driver of all the global define usage.
->> The number of gpios are now defined in the device tree. This enables
->> adding irqdomain support as well.
->
-> Besides the other comments, I have one important here.
->
->> -static int __init msm_gpio_init(void)
->> -{
->> -       int rc;
->> -
->> -       rc = platform_driver_register(&msm_gpio_driver);
->> -       if (!rc) {
->> -               rc = platform_device_register(&msm_device_gpio);
->> -               if (rc)
->> -                       platform_driver_unregister(&msm_gpio_driver);
->> -       }
->> -
->> -       return rc;
->> -}
->> -
->> -static void __exit msm_gpio_exit(void)
->> -{
->> -       platform_device_unregister(&msm_device_gpio);
->> -       platform_driver_unregister(&msm_gpio_driver);
->> -}
->> -
->> -postcore_initcall(msm_gpio_init);
->> -module_exit(msm_gpio_exit);
->> +module_platform_driver(msm_gpio_driver)
->
-> It's a really big mistake to do this.
-> GPIO nowadays is used in many hardware subsystems to support early
-> stages of booting and initializing.
->
-> postcore_initcall is early enough to support mostly anything that
-> hardware wants from GPIO (for example, ACPI events, though it seems
-> not a case here).
+Hi Linus,
 
-Actually, we're going the other way in the kernel. I do agree that for
-existing drivers you need to be careful and make sure that switching
-the initcall level won't cause any breakage with existing systems, but
-new platform support must not rely on the initcall order for setting
-up gpios. That's what deferred probe is intended to solve.
+   Please pull these fixes for XFS.  Here are several fixes that are relevant
+   on CRC enabled XFS filesystems.  They are followed by a rework of the remote
+   attribute code so that each block of the attribute contains a header with a
+   CRC.  Previously there was a CRC header per extent in the remote attribute
+   code, but this was untenable because it was not possible to know how many
+   extents would be allocated for the attribute until after the allocation has
+   completed, due to the fragmentation of free space.  This became complicated
+   because the size of the headers needs to be added to the length of the
+   payload to get the overall length required for the allocation.  With a
+   header per block, things are less complicated at the cost of a little space.  
 
-g.
+   I would have preferred to defer this and the rest of the CRC queue to 3.11
+   to mitigate risk for existing non-crc users in 3.10.  Doing so would require
+   setting a feature bit for the on-disk changes, and so I have been pressured
+   into sending this pull request by Eric Sandeen and David Chinner from Red
+   Hat.  I'll send another pull request or two with the rest of the CRC queue
+   next week.
+
+Thanks,
+     Ben	
+   
+The following changes since commit e400d27d1690d609f203f2d7d8efebc98cbc3089:
+
+  xfs: fix dir3 freespace block corruption (2013-05-30 17:22:54 -0500)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.10-rc4-crc-xattr-fixes
+
+for you to fetch changes up to 7bc0dc271e494e12be3afd3c6431e5216347c624:
+
+  xfs: rework remote attr CRCs (2013-05-30 17:26:31 -0500)
+
+----------------------------------------------------------------
+xfs: extended attribute fixes for CRCs
+
+- Remove assert on count of remote attribute CRC headers
+- Fix the number of blocks read in for remote attributes
+- Zero remote attribute tails properly
+- Fix mapping of remote attribute buffers to have correct length
+- initialize temp leaf properly in xfs_attr3_leaf_unbalance, and
+  xfs_attr3_leaf_compact
+- Rework remote atttributes to have a header per block
+
+----------------------------------------------------------------
+Dave Chinner (7):
+      xfs: remote attribute allocation may be contiguous
+      xfs: remote attribute read too short
+      xfs: remote attribute tail zeroing does too much
+      xfs: correctly map remote attr buffers during removal
+      xfs: fully initialise temp leaf in xfs_attr3_leaf_unbalance
+      xfs: fully initialise temp leaf in xfs_attr3_leaf_compact
+      xfs: rework remote attr CRCs
+
+ fs/xfs/xfs_attr_leaf.c   |  71 ++++++---
+ fs/xfs/xfs_attr_remote.c | 408 +++++++++++++++++++++++++++++------------------
+ fs/xfs/xfs_attr_remote.h |  10 ++
+ fs/xfs/xfs_buf.c         |   1 +
+ 4 files changed, 307 insertions(+), 183 deletions(-)
