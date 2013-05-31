@@ -1,56 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3EaMCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:02:32 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:28751 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113Ab3EaMCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:02:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,778,1363132800"; 
-   d="scan'208";a="28497450"
-Date: Fri, 31 May 2013 13:02:04 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC 1/6] [HACK!] arm64/xen: create links to arch/arm
- include files and Xen code
-In-Reply-To: <20130531103617.GA18045@localhost.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1305311259090.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com> <1369930713-6063-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130531103617.GA18045@localhost.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755495Ab3EaMDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:03:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57191 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab3EaMDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:03:02 -0400
+Date: Fri, 31 May 2013 05:02:23 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-0e433feb109da0a174d838f0a5fb1af144848761@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1369398928-9809-8-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-8-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Move libunwind check config into config/Makefile
+Git-Commit-ID: 0e433feb109da0a174d838f0a5fb1af144848761
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Catalin Marinas wrote:
-> On Thu, May 30, 2013 at 05:18:28PM +0100, Stefano Stabellini wrote:
-> > Most of Xen support for ARM is common between ARMv7 and ARMv8.
-> > Create links to the code under arch/arm (bleah).
-> > 
-> > Other, probably better alternatives:
-> > 
-> > - move the code to a different location, maybe the header files to
-> > include/xen/arm and the code to drivers/xen/arm (still pretty ugly)?
-> > 
-> > - create a copy of the code to arch/arm64 (even worse);
-> 
-> KVM handles this in the Makefile by referencing back to arch/arm or even
-> the generic kvm directory. I think that's the 'cleanest' ;)
+Commit-ID:  0e433feb109da0a174d838f0a5fb1af144848761
+Gitweb:     http://git.kernel.org/tip/0e433feb109da0a174d838f0a5fb1af144848761
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 25 Mar 2013 00:53:03 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 May 2013 14:37:17 +0300
 
-Do you mean creating links in the Makefile or generating header file
-copies from the Makefile?
-Or do you mean using something like "-I arch/arm/include/asm/xen" in the
-arch/arm64 Makefile?
+perf tools: Move libunwind check config into config/Makefile
 
-I tried to find exactly what KVM is doing but I couldn't find the code
-you are talking about..
+Moving libunwind check config into config/Makefile.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1369398928-9809-8-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile        | 24 ------------------------
+ tools/perf/config/Makefile | 27 +++++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 24 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 51fac31..7dc6615 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -473,26 +473,6 @@ ifneq ($(MAKECMDGOALS),tags)
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
+ 
+-# There's only x86 (both 32 and 64) support for CFI unwind so far
+-ifneq ($(ARCH),x86)
+-	NO_LIBUNWIND := 1
+-endif
+-
+-ifndef NO_LIBUNWIND
+-# for linking with debug library, run like:
+-# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
+-ifdef LIBUNWIND_DIR
+-	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
+-	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+-endif
+-
+-FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+-	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+-	NO_LIBUNWIND := 1
+-endif # Libunwind support
+-endif # NO_LIBUNWIND
+-
+ -include arch/$(ARCH)/Makefile
+ 
+ ifneq ($(OUTPUT),)
+@@ -521,10 +501,6 @@ endif # NO_DWARF
+ endif # NO_LIBELF
+ 
+ ifndef NO_LIBUNWIND
+-	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
+-	EXTLIBS += $(LIBUNWIND_LIBS)
+-	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
+ 	LIB_OBJS += $(OUTPUT)util/unwind.o
+ endif
+ 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 71e737c..438574b 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -170,3 +170,30 @@ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
+ endif # NO_LIBELF
++
++# There's only x86 (both 32 and 64) support for CFI unwind so far
++ifneq ($(ARCH),x86)
++	NO_LIBUNWIND := 1
++endif
++
++ifndef NO_LIBUNWIND
++# for linking with debug library, run like:
++# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++ifdef LIBUNWIND_DIR
++	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++endif
++
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
++	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
++	NO_LIBUNWIND := 1
++endif # Libunwind support
++endif # NO_LIBUNWIND
++
++ifndef NO_LIBUNWIND
++	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
++	EXTLIBS += $(LIBUNWIND_LIBS)
++	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++endif # NO_LIBUNWIND
