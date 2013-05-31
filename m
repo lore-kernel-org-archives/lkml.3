@@ -1,132 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab3EaWx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:53:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41100 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab3EaWxx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:53:53 -0400
-Date: Fri, 31 May 2013 15:53:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] sys: remove unnecesscary parameter of set_one_prio
-Message-Id: <20130531155351.830389cd15a543377fbaf289@linux-foundation.org>
-In-Reply-To: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757173Ab3EaW5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:57:40 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42570 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753129Ab3EaW5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 18:57:34 -0400
+Date: Fri, 31 May 2013 17:57:31 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, joeyli <jlee@suse.com>,
+        Matt Fleming <matt@console-pimps.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+	info to runtime code
+Message-ID: <20130531225730.GB14752@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz> <20130531101250.GD30394@gmail.com> <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz> <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com> <20130531143425.GA5850@srcf.ucam.org> <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com> <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com> <20130531162815.GA8082@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130531162815.GA8082@srcf.ucam.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 15:58:03 +0800 liguang <lig.fnst@cn.fujitsu.com> wrote:
-
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  kernel/sys.c |   12 +++++-------
->  1 files changed, 5 insertions(+), 7 deletions(-)
+On Fri, May 31, 2013 at 05:28:16PM +0100, Matthew Garrett wrote:
+> On Fri, May 31, 2013 at 10:43:49AM -0500, Russ Anderson wrote:
 > 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index b95d3c7..07c6177 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -151,9 +151,9 @@ static bool set_one_prio_perm(struct task_struct *p)
->   * set the priority of a task
->   * - the caller must hold the RCU read lock
->   */
-> -static int set_one_prio(struct task_struct *p, int niceval, int error)
-> +static int set_one_prio(struct task_struct *p, int niceval)
->  {
-> -	int no_nice;
-> +	int no_nice, error = 0;
->  
->  	if (!set_one_prio_perm(p)) {
->  		error = -EPERM;
-> @@ -168,8 +168,6 @@ static int set_one_prio(struct task_struct *p, int niceval, int error)
->  		error = no_nice;
->  		goto out;
->  	}
-> -	if (error == -ESRCH)
-> -		error = 0;
->  	set_user_nice(p, niceval);
->  out:
->  	return error;
-> @@ -203,7 +201,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
->  			else
->  				p = current;
->  			if (p)
-> -				error = set_one_prio(p, niceval, error);
-> +				error = set_one_prio(p, niceval);
->  			break;
->  		case PRIO_PGRP:
->  			if (who)
-> @@ -211,7 +209,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
->  			else
->  				pgrp = task_pgrp(current);
->  			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-> -				error = set_one_prio(p, niceval, error);
-> +				error = set_one_prio(p, niceval);
->  			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
->  			break;
->  		case PRIO_USER:
-> @@ -225,7 +223,7 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
->  
->  			do_each_thread(g, p) {
->  				if (uid_eq(task_uid(p), uid))
-> -					error = set_one_prio(p, niceval, error);
-> +					error = set_one_prio(p, niceval);
->  			} while_each_thread(g, p);
->  			if (!uid_eq(uid, cred->uid))
->  				free_uid(user);		/* For find_user() */
+> > When did writing EFI variables to nvram become necessary to boot on 
+> > UEFI? And if it is necessary, why is it that only linux boot loaders 
+> > that use EFI stubs (generally grub2) need it?  The current kernel 
+> > boots using EFI/grub and EFI/elilo.  It is just when EFI stubs are 
+> > used that the boot fails.
+> 
+> I think you've misunderstood the problem.
 
-Yes, that apepars to be an evuivalent change, but only because
-security_task_setnice() cannot return -ESRCH.  The existing code is
-rather awkward.
+The problem for me is the system not booting.  I was not
+familiar with the problem you are trying to solve, but
+have now looked at the links.
 
-A couple of changes:
+>                                           If nvram becaomes full, some 
+> systems crash during firmware initialisation. So we can't let nvram 
+> become full. The obvious thing to do here is to look at the values from 
+> QueryVariableInfo, but many systems won't perform any garbage collection 
+> until they're almost out of space and so variables that have been 
+> deleted still show up as used space.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: kernel-sysc-remove-unnecessary-parameter-of-set_one_prio-fix
+OK.  I get nvram looks full due to lack of garbage collection
+on some systems.  Does QueryVariableInfo (at runtime) tell you
+it is full?  Is the problem that it says it is full when it
+is not, or does not tell you it is full when it is?
 
-clean up definitions, remove unneeded assignment
+>                                       We can work around that by adding 
+> up the size of the variables ourselves, but that only gives us the value 
+> for runtime-visible variables. We also need to know how much space is 
+> used by variables that are only visible during boot,
 
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Is it valid to assume that only the kernel writes to nvram at
+runtime?  Can bios log error information to nvram on an SMM
+interrupt (for example)?
 
- kernel/sys.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>                                                      hence calling 
+> QueryVariableInfo before ExitBootServices.
 
-diff -puN kernel/sys.c~kernel-sysc-remove-unnecessary-parameter-of-set_one_prio-fix kernel/sys.c
---- a/kernel/sys.c~kernel-sysc-remove-unnecessary-parameter-of-set_one_prio-fix
-+++ a/kernel/sys.c
-@@ -153,7 +153,8 @@ static bool set_one_prio_perm(struct tas
-  */
- static int set_one_prio(struct task_struct *p, int niceval)
- {
--	int no_nice, error = 0;
-+	int no_nice;
-+	int error = 0;
- 
- 	if (!set_one_prio_perm(p)) {
- 		error = -EPERM;
-@@ -186,7 +187,6 @@ SYSCALL_DEFINE3(setpriority, int, which,
- 		goto out;
- 
- 	/* normalize: avoid signed division (rounding problems) */
--	error = -ESRCH;
- 	if (niceval < -20)
- 		niceval = -20;
- 	if (niceval > 19)
-_
+Correct me if I am wrong, but that is called from EFI stubs,
+which is only used by some bootloaders (sometimes grub2).
+Does that mean EFI/grub and EFI/elilo will not hit the problem,
+or will not have your fix?
 
+
+> > Which means the previous patch(es) that caused the bricking should
+> > get pulled, too.
+> 
+> There are no patches that cause the bricking.
+
+I thought that was the problem you were trying to avoid.
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
