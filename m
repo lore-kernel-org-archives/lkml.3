@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3EaLsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:48:36 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:61778 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab3EaLs2 (ORCPT
+	id S1755423Ab3EaLs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:48:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56943 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206Ab3EaLst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:48:28 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: DTB build failure due to preproccessing
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: linuxppc-dev@lists.ozlabs.org, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>, JonLoeliger <jdl@jdl.com>,
-        linux-kbuild@vger.kernel.org
-In-Reply-To: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
-References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
-Date: Fri, 31 May 2013 12:48:24 +0100
-Message-Id: <20130531114824.60D223E0901@localhost>
+	Fri, 31 May 2013 07:48:49 -0400
+Date: Fri, 31 May 2013 04:48:38 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-b69e63a45f2d96a0dfe930ed20385058d4574d2f@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
+        jolsa@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
+        jolsa@redhat.com
+In-Reply-To: <1369526040-1368-1-git-send-email-dsahern@gmail.com>
+References: <1369526040-1368-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evsel:
+  Fix printing of perf_event_paranoid message
+Git-Commit-ID: b69e63a45f2d96a0dfe930ed20385058d4574d2f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013 11:29:30 +0100, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
-> actually a more general issue:
-> 
->         $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb 
->           CC      scripts/mod/devicetable-offsets.s
->           GEN     scripts/mod/devicetable-offsets.h
->           HOSTCC  scripts/mod/file2alias.o
->           HOSTLD  scripts/mod/modpost
->           DTC     arch/powerpc/boot/virtex440-ml510.dtb
->         Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
->         FATAL ERROR: Unable to parse input tree
->         make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
->         make: *** [virtex440-ml510.dtb] Error 2
->         
-> Line 374 is the "IDSEL 0x16..." line here:
-> 			interrupt-map = <
-> 				/* IRQ mapping for pci slots and ALI M1533
-> 				 ...
-> 				 * management core also isn't used.
-> 				 */
-> 
-> 				/* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
-> 				0x3000 0 0 1 &xps_intc_0 3 2
-> 				0x3000 0 0 2 &xps_intc_0 2 2
-> 				0x3000 0 0 3 &xps_intc_0 5 2
-> 				0x3000 0 0 4 &xps_intc_0 4 2
-> 
-> Which gets preprocessed into:
->            interrupt-map = <
->         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
->             0x3000 0 0 1 &xps_intc_0 3 2
->             0x3000 0 0 2 &xps_intc_0 2 2
->             0x3000 0 0 3 &xps_intc_0 5 2
->             0x3000 0 0 4 &xps_intc_0 4 2
-> 
-> If I manually remove the "# 375 " line then that fixes the error
-> (although there is then a subsequent one of the same type).
-> 
-> I suppose this is a bug in dtc? It appears to have at least some
-> awareness of these preprocessor line number comments since it manages to
-> report the original source line number.
+Commit-ID:  b69e63a45f2d96a0dfe930ed20385058d4574d2f
+Gitweb:     http://git.kernel.org/tip/b69e63a45f2d96a0dfe930ed20385058d4574d2f
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sat, 25 May 2013 17:54:00 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:24:03 +0300
 
-dtc is only able to track line numbers when the native /include/
-directive is used. The #include directive doesn't help it. It should be
-added, but until it is the following patch solves the problem:
+perf evsel: Fix printing of perf_event_paranoid message
 
-I've got this patch in my tree. Either Rob or I will push it to Linus in
-the next few days.
+message is currently shown as:
 
-g.
+  Error:
+  You may not have permission to collect %sstats.
+  Consider tweaking /proc/sys/kernel/perf_event_paranoid:
 
+Note the %sstats. With patch this becomes:
+
+  Error:
+  You may not have permission to collect stats.
+  Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1369526040-1368-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-commit d01dccdcb3ea8233b09efb9c24db9f057fbd3b37
-Author: Grant Likely <grant.likely@linaro.org>
-Date:   Fri May 31 12:45:18 2013 +0100
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    dtc: Suppress cpp linemarker annotations
-    
-    DTC isn't able to parse cpp linemarker annotations, so suppress them in
-    the cpp output by adding the -P flag to the cpp options.
-    
-    Signed-off-by: Grant Likely <grant.likely@linaro.org>
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 51bb3de..fc08a2b 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -149,7 +149,7 @@ cpp_flags      = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
- 
- ld_flags       = $(LDFLAGS) $(ldflags-y)
- 
--dtc_cpp_flags  = -Wp,-MD,$(depfile).pre -nostdinc                        \
-+dtc_cpp_flags  = -Wp,-MD,$(depfile).pre -nostdinc -P                     \
- 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
- 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
- 		 -undef -D__DTS__
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 07b1a3a..63b6f8c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1514,7 +1514,7 @@ int perf_evsel__open_strerror(struct perf_evsel *evsel,
+ 	switch (err) {
+ 	case EPERM:
+ 	case EACCES:
+-		return scnprintf(msg, size, "%s",
++		return scnprintf(msg, size,
+ 		 "You may not have permission to collect %sstats.\n"
+ 		 "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
+ 		 " -1 - Not paranoid at all\n"
