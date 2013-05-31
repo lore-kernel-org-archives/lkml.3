@@ -1,437 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab3EaC4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 22:56:47 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:16976 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751559Ab3EaC4i (ORCPT
+	id S1752392Ab3EaC63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 22:58:29 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:35224 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3EaC6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 22:56:38 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 31 May 2013 10:56:31 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5dKq95WlHgHcz3TVeFrcOFSEcvowAf4A8A
-Message-ID: <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
- <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
-In-Reply-To: <20130530114112.GH7483@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_35FD53F367049845BC99AC72306C23D1610991B86DCNBJMBX05corp_"
+	Thu, 30 May 2013 22:58:22 -0400
+Message-ID: <51A811C8.9090509@linaro.org>
+Date: Fri, 31 May 2013 08:28:16 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Patch Tracking <patches@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Consolidate multiple low-level UART port
+ definitions
+References: <1369888827-9427-1-git-send-email-tushar.behera@linaro.org> <CAOesGMgt=zvPM7WoHn4VcUkw28j7+HDUvU2n3hNojx7Nr5PqJQ@mail.gmail.com>
+In-Reply-To: <CAOesGMgt=zvPM7WoHn4VcUkw28j7+HDUvU2n3hNojx7Nr5PqJQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_35FD53F367049845BC99AC72306C23D1610991B86DCNBJMBX05corp_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On 05/31/2013 02:41 AM, Olof Johansson wrote:
+> Hi,
+> 
+> On Wed, May 29, 2013 at 9:40 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
+>> There are two definitions for low-level UART ports for Exynos platform.
+>> CONFIG_S3C_LOWLEVEL_UART_PORT is used for printing "Uncompressing
+>> Linux... done, booting the kernel." and CONFIG_S3C_UART for other
+>> low-level messages.
+>>
+>> The assumption for both the uart ports is that they are pre-configured
+>> in the bootloader. Since they are essentially the same always, it
+>> would be good to consolidate them to use only one macro, in this case
+>> 'DEBUG_S3C_UART' would be a better option.
+>>
+>> 'DEBUG_S3C_UART' is defined only if DEBUG_LL is enabled. We can safely
+>> disable this option when DEBUG_LL is not defined and we can boot various
+>> boards with different UART port settings. Only drawback of this
+>> approach is that when DEBUG_LL is not defined, we would be missing the
+>> print "Uncompressing Linux... done, booting the kernel."
+>>
+>> Since CONFIG_S3C_LOWLEVEL_UART_PORT is still used by other Samsung
+>> boards, the consolidation applies only for ARCH_EXYNOS.
+>>
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> 
+> This looks reasonable, but you have to convert the other samsung
+> platforms too -- it's not ok to ignore them.
+> 
 
-Hi Will,
+Sure thing. I will update those platforms in a subsequent patchset.
 
-Thanks for your patch ,
+> 
+> -Olof
+> 
 
-But I found  I don't have ct_user_exit  macro=20
-In my arch/arm/kernel/entry-common.S=20
 
-My kernel version is 3.4.0=20
-
-I have add the file as attachment,
-
-Could you make a patch for this file ?
-
-Thank you !
-
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com]=20
-Sent: Thursday, May 30, 2013 7:41 PM
-To: Wang, Yalin
-Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@=
-vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: A bug about system call on ARM
-
-On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
-> On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
-> > If you have some patch for this issue, I can do the test for it .
->=20
-> I'll have a look at cooking something which uses an exception table=20
-> entry to rewind the PC and retry the system call. That's simpler than=20
-> directly injecting a user page fault from the system call path.
-
-Ok, please can you try the following?
-
-Will
-
---->8
-
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.=
-S index bc5bc0a..855926e 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -361,6 +361,15 @@ ENTRY(vector_swi)
- 	str	r8, [sp, #S_PSR]		@ Save CPSR
- 	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
- 	zero_fp
-+	enable_irq
-+	ct_user_exit
-+
-+#ifdef CONFIG_ALIGNMENT_TRAP
-+	ldr	ip, __cr_alignment
-+	ldr	ip, [ip]
-+	mcr	p15, 0, ip, c1, c0		@ update control register
-+#endif
-+	get_thread_info tsk
-=20
- 	/*
- 	 * Get the system call number.
-@@ -375,9 +384,9 @@ ENTRY(vector_swi)
- #ifdef CONFIG_ARM_THUMB
- 	tst	r8, #PSR_T_BIT
- 	movne	r10, #0				@ no thumb OABI emulation
--	ldreq	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldreq	r10, [lr, #-4]		)	@ get SWI instruction
- #else
--	ldr	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldr	r10, [lr, #-4]		)	@ get SWI instruction
- #endif
- #ifdef CONFIG_CPU_ENDIAN_BE8
- 	rev	r10, r10			@ little endian instruction
-@@ -392,22 +401,13 @@ ENTRY(vector_swi)
- 	/* Legacy ABI only, possibly thumb mode. */
- 	tst	r8, #PSR_T_BIT			@ this is SPSR from save_user_regs
- 	addne	scno, r7, #__NR_SYSCALL_BASE	@ put OS number in
--	ldreq	scno, [lr, #-4]
-+ USER(	ldreq	scno, [lr, #-4]		)
-=20
- #else
- 	/* Legacy ABI only. */
--	ldr	scno, [lr, #-4]			@ get SWI instruction
--#endif
--
--#ifdef CONFIG_ALIGNMENT_TRAP
--	ldr	ip, __cr_alignment
--	ldr	ip, [ip]
--	mcr	p15, 0, ip, c1, c0		@ update control register
-+ USER(	ldr	scno, [lr, #-4]		)	@ get SWI instruction
- #endif
--	enable_irq
--	ct_user_exit
-=20
--	get_thread_info tsk
- 	adr	tbl, sys_call_table		@ load syscall table pointer
-=20
- #if defined(CONFIG_OABI_COMPAT)
-@@ -442,6 +442,18 @@ local_restart:
- 	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
- 	bcs	arm_syscall=09
- 	b	sys_ni_syscall			@ not private func
-+
-+#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
-+	/*
-+	 * We may have faulted trying to load the SWI instruction due to
-+	 * concurrent page aging on another CPU. In this case, return
-+	 * back to the swi instruction and fault the page back.
-+	 */
-+9001:
-+	sub	lr, lr, #4
-+	str	lr, [sp, #S_PC]
-+	b	ret_fast_syscall
-+#endif
- ENDPROC(vector_swi)
-=20
- 	/*
-
---_002_35FD53F367049845BC99AC72306C23D1610991B86DCNBJMBX05corp_
-Content-Type: application/octet-stream; name="entry-common.S"
-Content-Description: entry-common.S
-Content-Disposition: attachment; filename="entry-common.S"; size=15071;
-	creation-date="Fri, 31 May 2013 02:56:05 GMT";
-	modification-date="Mon, 27 Aug 2012 04:18:05 GMT"
-Content-Transfer-Encoding: base64
-
-LyoKICogIGxpbnV4L2FyY2gvYXJtL2tlcm5lbC9lbnRyeS1jb21tb24uUwogKgogKiAgQ29weXJp
-Z2h0IChDKSAyMDAwIFJ1c3NlbGwgS2luZwogKgogKiBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0
-d2FyZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1vZGlmeQogKiBpdCB1bmRlciB0
-aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIHZlcnNpb24gMiBhcwog
-KiBwdWJsaXNoZWQgYnkgdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbi4KICovCgojaW5jbHVk
-ZSA8YXNtL3VuaXN0ZC5oPgojaW5jbHVkZSA8YXNtL2Z0cmFjZS5oPgojaW5jbHVkZSA8YXNtL3Vu
-d2luZC5oPgoKI2lmZGVmIENPTkZJR19ORUVEX1JFVF9UT19VU0VSCiNpbmNsdWRlIDxtYWNoL2Vu
-dHJ5LW1hY3JvLlM+CiNlbHNlCgkubWFjcm8gIGFyY2hfcmV0X3RvX3VzZXIsIHRtcDEsIHRtcDIK
-CS5lbmRtCiNlbmRpZgoKI2luY2x1ZGUgImVudHJ5LWhlYWRlci5TIgoKCgkuYWxpZ24JNQovKgog
-KiBUaGlzIGlzIHRoZSBmYXN0IHN5c2NhbGwgcmV0dXJuIHBhdGguICBXZSBkbyBhcyBsaXR0bGUg
-YXMKICogcG9zc2libGUgaGVyZSwgYW5kIHRoaXMgaW5jbHVkZXMgc2F2aW5nIHIwIGJhY2sgaW50
-byB0aGUgU1ZDCiAqIHN0YWNrLgogKi8KcmV0X2Zhc3Rfc3lzY2FsbDoKIFVOV0lORCguZm5zdGFy
-dAkpCiBVTldJTkQoLmNhbnR1bndpbmQJKQoJZGlzYWJsZV9pcnEJCQkJQCBkaXNhYmxlIGludGVy
-cnVwdHMKCWxkcglyMSwgW3RzaywgI1RJX0ZMQUdTXQoJdHN0CXIxLCAjX1RJRl9XT1JLX01BU0sK
-CWJuZQlmYXN0X3dvcmtfcGVuZGluZwojaWYgZGVmaW5lZChDT05GSUdfSVJRU09GRl9UUkFDRVIp
-Cglhc21fdHJhY2VfaGFyZGlycXNfb24KI2VuZGlmCgoJLyogcGVyZm9ybSBhcmNoaXRlY3R1cmUg
-c3BlY2lmaWMgYWN0aW9ucyBiZWZvcmUgdXNlciByZXR1cm4gKi8KCWFyY2hfcmV0X3RvX3VzZXIg
-cjEsIGxyCgoJcmVzdG9yZV91c2VyX3JlZ3MgZmFzdCA9IDEsIG9mZnNldCA9IFNfT0ZGCiBVTldJ
-TkQoLmZuZW5kCQkpCgovKgogKiBPaywgd2UgbmVlZCB0byBkbyBleHRyYSBwcm9jZXNzaW5nLCBl
-bnRlciB0aGUgc2xvdyBwYXRoLgogKi8KZmFzdF93b3JrX3BlbmRpbmc6CglzdHIJcjAsIFtzcCwg
-I1NfUjArU19PRkZdIQkJQCByZXR1cm5lZCByMAp3b3JrX3BlbmRpbmc6Cgl0c3QJcjEsICNfVElG
-X05FRURfUkVTQ0hFRAoJYm5lCXdvcmtfcmVzY2hlZAoJdHN0CXIxLCAjX1RJRl9TSUdQRU5ESU5H
-fF9USUZfTk9USUZZX1JFU1VNRQoJYmVxCW5vX3dvcmtfcGVuZGluZwoJbW92CXIwLCBzcAkJCQlA
-ICdyZWdzJwoJbW92CXIyLCB3aHkJCQkJQCAnc3lzY2FsbCcKCXRzdAlyMSwgI19USUZfU0lHUEVO
-RElORwkJQCBkZWxpdmVyaW5nIGEgc2lnbmFsPwoJbW92bmUJd2h5LCAjMAkJCQlAIHByZXZlbnQg
-ZnVydGhlciByZXN0YXJ0cwoJYmwJZG9fbm90aWZ5X3Jlc3VtZQoJYglyZXRfc2xvd19zeXNjYWxs
-CQlAIENoZWNrIHdvcmsgYWdhaW4KCndvcmtfcmVzY2hlZDoKCWJsCXNjaGVkdWxlCi8qCiAqICJz
-bG93IiBzeXNjYWxsIHJldHVybiBwYXRoLiAgIndoeSIgdGVsbHMgdXMgaWYgdGhpcyB3YXMgYSBy
-ZWFsIHN5c2NhbGwuCiAqLwpFTlRSWShyZXRfdG9fdXNlcikKcmV0X3Nsb3dfc3lzY2FsbDoKCWRp
-c2FibGVfaXJxCQkJCUAgZGlzYWJsZSBpbnRlcnJ1cHRzCkVOVFJZKHJldF90b191c2VyX2Zyb21f
-aXJxKQoJbGRyCXIxLCBbdHNrLCAjVElfRkxBR1NdCgl0c3QJcjEsICNfVElGX1dPUktfTUFTSwoJ
-Ym5lCXdvcmtfcGVuZGluZwpub193b3JrX3BlbmRpbmc6CiNpZiBkZWZpbmVkKENPTkZJR19JUlFT
-T0ZGX1RSQUNFUikKCWFzbV90cmFjZV9oYXJkaXJxc19vbgojZW5kaWYKCS8qIHBlcmZvcm0gYXJj
-aGl0ZWN0dXJlIHNwZWNpZmljIGFjdGlvbnMgYmVmb3JlIHVzZXIgcmV0dXJuICovCglhcmNoX3Jl
-dF90b191c2VyIHIxLCBscgoKCXJlc3RvcmVfdXNlcl9yZWdzIGZhc3QgPSAwLCBvZmZzZXQgPSAw
-CkVORFBST0MocmV0X3RvX3VzZXJfZnJvbV9pcnEpCkVORFBST0MocmV0X3RvX3VzZXIpCgovKgog
-KiBUaGlzIGlzIGhvdyB3ZSByZXR1cm4gZnJvbSBhIGZvcmsuCiAqLwpFTlRSWShyZXRfZnJvbV9m
-b3JrKQoJYmwJc2NoZWR1bGVfdGFpbAoJZ2V0X3RocmVhZF9pbmZvIHRzawoJbGRyCXIxLCBbdHNr
-LCAjVElfRkxBR1NdCQlAIGNoZWNrIGZvciBzeXNjYWxsIHRyYWNpbmcKCW1vdgl3aHksICMxCgl0
-c3QJcjEsICNfVElGX1NZU0NBTExfV09SSwkJQCBhcmUgd2UgdHJhY2luZyBzeXNjYWxscz8KCWJl
-cQlyZXRfc2xvd19zeXNjYWxsCgltb3YJcjEsIHNwCgltb3YJcjAsICMxCQkJCUAgdHJhY2UgZXhp
-dCBbSVAgPSAxXQoJYmwJc3lzY2FsbF90cmFjZQoJYglyZXRfc2xvd19zeXNjYWxsCkVORFBST0Mo
-cmV0X2Zyb21fZm9yaykKCgkuZXF1IE5SX3N5c2NhbGxzLDAKI2RlZmluZSBDQUxMKHgpIC5lcXUg
-TlJfc3lzY2FsbHMsTlJfc3lzY2FsbHMrMQojaW5jbHVkZSAiY2FsbHMuUyIKI3VuZGVmIENBTEwK
-I2RlZmluZSBDQUxMKHgpIC5sb25nIHgKCiNpZmRlZiBDT05GSUdfRlVOQ1RJT05fVFJBQ0VSCi8q
-CiAqIFdoZW4gY29tcGlsaW5nIHdpdGggLXBnLCBnY2MgaW5zZXJ0cyBhIGNhbGwgdG8gdGhlIG1j
-b3VudCByb3V0aW5lIGF0IHRoZQogKiBzdGFydCBvZiBldmVyeSBmdW5jdGlvbi4gIEluIG1jb3Vu
-dCwgYXBhcnQgZnJvbSB0aGUgZnVuY3Rpb24ncyBhZGRyZXNzIChpbgogKiBsciksIHdlIG5lZWQg
-dG8gZ2V0IGhvbGQgb2YgdGhlIGZ1bmN0aW9uJ3MgY2FsbGVyJ3MgYWRkcmVzcy4KICoKICogT2xk
-ZXIgR0NDcyAocHJlLTQuNCkgaW5zZXJ0ZWQgYSBjYWxsIHRvIGEgcm91dGluZSBjYWxsZWQgbWNv
-dW50IGxpa2UgdGhpczoKICoKICoJYmwJbWNvdW50CiAqCiAqIFRoZXNlIHZlcnNpb25zIGhhdmUg
-dGhlIGxpbWl0YXRpb24gdGhhdCBpbiBvcmRlciBmb3IgdGhlIG1jb3VudCByb3V0aW5lIHRvCiAq
-IGJlIGFibGUgdG8gZGV0ZXJtaW5lIHRoZSBmdW5jdGlvbidzIGNhbGxlcidzIGFkZHJlc3MsIGFu
-IEFQQ1Mtc3R5bGUgZnJhbWUKICogcG9pbnRlciAod2hpY2ggaXMgc2V0IHVwIHdpdGggc29tZXRo
-aW5nIGxpa2UgdGhlIGNvZGUgYmVsb3cpIGlzIHJlcXVpcmVkLgogKgogKgltb3YgICAgIGlwLCBz
-cAogKglwdXNoICAgIHtmcCwgaXAsIGxyLCBwY30KICoJc3ViICAgICBmcCwgaXAsICM0CiAqCiAq
-IFdpdGggRUFCSSwgdGhlc2UgZnJhbWUgcG9pbnRlcnMgYXJlIG5vdCBhdmFpbGFibGUgdW5sZXNz
-IC1tYXBjcy1mcmFtZSBpcwogKiBzcGVjaWZpZWQsIGFuZCBpZiBidWlsZGluZyBhcyBUaHVtYi0y
-LCBub3QgZXZlbiB0aGVuLgogKgogKiBOZXdlciBHQ0NzICg0LjQrKSBzb2x2ZSB0aGlzIHByb2Js
-ZW0gYnkgaW50cm9kdWNpbmcgYSBuZXcgdmVyc2lvbiBvZiBtY291bnQsCiAqIHdpdGggY2FsbCBz
-aXRlcyBsaWtlOgogKgogKglwdXNoCXtscn0KICoJYmwJX19nbnVfbWNvdW50X25jCiAqCiAqIFdp
-dGggdGhlc2UgY29tcGlsZXJzLCBmcmFtZSBwb2ludGVycyBhcmUgbm90IG5lY2Vzc2FyeS4KICoK
-ICogbWNvdW50IGNhbiBiZSB0aG91Z2h0IG9mIGFzIGEgZnVuY3Rpb24gY2FsbGVkIGluIHRoZSBt
-aWRkbGUgb2YgYSBzdWJyb3V0aW5lCiAqIGNhbGwuICBBcyBzdWNoLCBpdCBuZWVkcyB0byBiZSB0
-cmFuc3BhcmVudCBmb3IgYm90aCB0aGUgY2FsbGVyIGFuZCB0aGUKICogY2FsbGVlOiB0aGUgb3Jp
-Z2luYWwgbHIgbmVlZHMgdG8gYmUgcmVzdG9yZWQgd2hlbiBsZWF2aW5nIG1jb3VudCwgYW5kIG5v
-CiAqIHJlZ2lzdGVycyBzaG91bGQgYmUgY2xvYmJlcmVkLiAgKEluIHRoZSBfX2dudV9tY291bnRf
-bmMgaW1wbGVtZW50YXRpb24sIHdlCiAqIGNsb2JiZXIgdGhlIGlwIHJlZ2lzdGVyLiAgVGhpcyBp
-cyBPSyBiZWNhdXNlIHRoZSBBUk0gY2FsbGluZyBjb252ZW50aW9uCiAqIGFsbG93cyBpdCB0byBi
-ZSBjbG9iYmVyZWQgaW4gc3Vicm91dGluZXMgYW5kIGRvZXNuJ3QgdXNlIGl0IHRvIGhvbGQKICog
-cGFyYW1ldGVycy4pCiAqCiAqIFdoZW4gdXNpbmcgZHluYW1pYyBmdHJhY2UsIHdlIHBhdGNoIG91
-dCB0aGUgbWNvdW50IGNhbGwgYnkgYSAibW92IHIwLCByMCIKICogZm9yIHRoZSBtY291bnQgY2Fz
-ZSwgYW5kIGEgInBvcCB7bHJ9IiBmb3IgdGhlIF9fZ251X21jb3VudF9uYyBjYXNlIChzZWUKICog
-YXJjaC9hcm0va2VybmVsL2Z0cmFjZS5jKS4KICovCgojaWZuZGVmIENPTkZJR19PTERfTUNPVU5U
-CiNpZiAoX19HTlVDX18gPCA0IHx8IChfX0dOVUNfXyA9PSA0ICYmIF9fR05VQ19NSU5PUl9fIDwg
-NCkpCiNlcnJvciBGdHJhY2UgcmVxdWlyZXMgQ09ORklHX0ZSQU1FX1BPSU5URVI9eSB3aXRoIEdD
-QyBvbGRlciB0aGFuIDQuNC4wLgojZW5kaWYKI2VuZGlmCgoubWFjcm8gbWNvdW50X2FkanVzdF9h
-ZGRyIHJkLCBybgoJYmljCVxyZCwgXHJuLCAjMQkJQCBjbGVhciB0aGUgVGh1bWIgYml0IGlmIHBy
-ZXNlbnQKCXN1YglccmQsIFxyZCwgI01DT1VOVF9JTlNOX1NJWkUKLmVuZG0KCi5tYWNybyBfX21j
-b3VudCBzdWZmaXgKCW1jb3VudF9lbnRlcgoJbGRyCXIwLCA9ZnRyYWNlX3RyYWNlX2Z1bmN0aW9u
-CglsZHIJcjIsIFtyMF0KCWFkcglyMCwgLkxmdHJhY2Vfc3R1YgoJY21wCXIwLCByMgoJYm5lCTFm
-CgojaWZkZWYgQ09ORklHX0ZVTkNUSU9OX0dSQVBIX1RSQUNFUgoJbGRyICAgICByMSwgPWZ0cmFj
-ZV9ncmFwaF9yZXR1cm4KCWxkciAgICAgcjIsIFtyMV0KCWNtcCAgICAgcjAsIHIyCglibmUgICAg
-IGZ0cmFjZV9ncmFwaF9jYWxsZXJcc3VmZml4CgoJbGRyICAgICByMSwgPWZ0cmFjZV9ncmFwaF9l
-bnRyeQoJbGRyICAgICByMiwgW3IxXQoJbGRyICAgICByMCwgPWZ0cmFjZV9ncmFwaF9lbnRyeV9z
-dHViCgljbXAgICAgIHIwLCByMgoJYm5lICAgICBmdHJhY2VfZ3JhcGhfY2FsbGVyXHN1ZmZpeAoj
-ZW5kaWYKCgltY291bnRfZXhpdAoKMTogCW1jb3VudF9nZXRfbHIJcjEJCQlAIGxyIG9mIGluc3Ry
-dW1lbnRlZCBmdW5jCgltY291bnRfYWRqdXN0X2FkZHIJcjAsIGxyCQlAIGluc3RydW1lbnRlZCBm
-dW5jdGlvbgoJYWRyCWxyLCBCU1lNKDJmKQoJbW92CXBjLCByMgoyOgltY291bnRfZXhpdAouZW5k
-bQoKLm1hY3JvIF9fZnRyYWNlX2NhbGxlciBzdWZmaXgKCW1jb3VudF9lbnRlcgoKCW1jb3VudF9n
-ZXRfbHIJcjEJCQlAIGxyIG9mIGluc3RydW1lbnRlZCBmdW5jCgltY291bnRfYWRqdXN0X2FkZHIJ
-cjAsIGxyCQlAIGluc3RydW1lbnRlZCBmdW5jdGlvbgoKCS5nbG9ibCBmdHJhY2VfY2FsbFxzdWZm
-aXgKZnRyYWNlX2NhbGxcc3VmZml4OgoJYmwJZnRyYWNlX3N0dWIKCiNpZmRlZiBDT05GSUdfRlVO
-Q1RJT05fR1JBUEhfVFJBQ0VSCgkuZ2xvYmwgZnRyYWNlX2dyYXBoX2NhbGxcc3VmZml4CmZ0cmFj
-ZV9ncmFwaF9jYWxsXHN1ZmZpeDoKCW1vdglyMCwgcjAKI2VuZGlmCgoJbWNvdW50X2V4aXQKLmVu
-ZG0KCi5tYWNybyBfX2Z0cmFjZV9ncmFwaF9jYWxsZXIKCXN1YglyMCwgZnAsICM0CQlAICZsciBv
-ZiBpbnN0cnVtZW50ZWQgcm91dGluZSAoJnBhcmVudCkKI2lmZGVmIENPTkZJR19EWU5BTUlDX0ZU
-UkFDRQoJQCBjYWxsZWQgZnJvbSBfX2Z0cmFjZV9jYWxsZXIsIHNhdmVkIGluIG1jb3VudF9lbnRl
-cgoJbGRyCXIxLCBbc3AsICMxNl0JCUAgaW5zdHJ1bWVudGVkIHJvdXRpbmUgKGZ1bmMpCgltY291
-bnRfYWRqdXN0X2FkZHIJcjEsIHIxCiNlbHNlCglAIGNhbGxlZCBmcm9tIF9fbWNvdW50LCB1bnRv
-dWNoZWQgaW4gbHIKCW1jb3VudF9hZGp1c3RfYWRkcglyMSwgbHIJQCBpbnN0cnVtZW50ZWQgcm91
-dGluZSAoZnVuYykKI2VuZGlmCgltb3YJcjIsIGZwCQkJQCBmcmFtZSBwb2ludGVyCglibAlwcmVw
-YXJlX2Z0cmFjZV9yZXR1cm4KCW1jb3VudF9leGl0Ci5lbmRtCgojaWZkZWYgQ09ORklHX09MRF9N
-Q09VTlQKLyoKICogbWNvdW50CiAqLwoKLm1hY3JvIG1jb3VudF9lbnRlcgoJc3RtZGIJc3AhLCB7
-cjAtcjMsIGxyfQouZW5kbQoKLm1hY3JvIG1jb3VudF9nZXRfbHIgcmVnCglsZHIJXHJlZywgW2Zw
-LCAjLTRdCi5lbmRtCgoubWFjcm8gbWNvdW50X2V4aXQKCWxkcglsciwgW2ZwLCAjLTRdCglsZG1p
-YQlzcCEsIHtyMC1yMywgcGN9Ci5lbmRtCgpFTlRSWShtY291bnQpCiNpZmRlZiBDT05GSUdfRFlO
-QU1JQ19GVFJBQ0UKCXN0bWRiCXNwISwge2xyfQoJbGRyCWxyLCBbZnAsICMtNF0KCWxkbWlhCXNw
-ISwge3BjfQojZWxzZQoJX19tY291bnQgX29sZAojZW5kaWYKRU5EUFJPQyhtY291bnQpCgojaWZk
-ZWYgQ09ORklHX0RZTkFNSUNfRlRSQUNFCkVOVFJZKGZ0cmFjZV9jYWxsZXJfb2xkKQoJX19mdHJh
-Y2VfY2FsbGVyIF9vbGQKRU5EUFJPQyhmdHJhY2VfY2FsbGVyX29sZCkKI2VuZGlmCgojaWZkZWYg
-Q09ORklHX0ZVTkNUSU9OX0dSQVBIX1RSQUNFUgpFTlRSWShmdHJhY2VfZ3JhcGhfY2FsbGVyX29s
-ZCkKCV9fZnRyYWNlX2dyYXBoX2NhbGxlcgpFTkRQUk9DKGZ0cmFjZV9ncmFwaF9jYWxsZXJfb2xk
-KQojZW5kaWYKCi5wdXJnZW0gbWNvdW50X2VudGVyCi5wdXJnZW0gbWNvdW50X2dldF9scgoucHVy
-Z2VtIG1jb3VudF9leGl0CiNlbmRpZgoKLyoKICogX19nbnVfbWNvdW50X25jCiAqLwoKLm1hY3Jv
-IG1jb3VudF9lbnRlcgoJc3RtZGIJc3AhLCB7cjAtcjMsIGxyfQouZW5kbQoKLm1hY3JvIG1jb3Vu
-dF9nZXRfbHIgcmVnCglsZHIJXHJlZywgW3NwLCAjMjBdCi5lbmRtCgoubWFjcm8gbWNvdW50X2V4
-aXQKCWxkbWlhCXNwISwge3IwLXIzLCBpcCwgbHJ9Cgltb3YJcGMsIGlwCi5lbmRtCgpFTlRSWShf
-X2dudV9tY291bnRfbmMpCiNpZmRlZiBDT05GSUdfRFlOQU1JQ19GVFJBQ0UKCW1vdglpcCwgbHIK
-CWxkbWlhCXNwISwge2xyfQoJbW92CXBjLCBpcAojZWxzZQoJX19tY291bnQKI2VuZGlmCkVORFBS
-T0MoX19nbnVfbWNvdW50X25jKQoKI2lmZGVmIENPTkZJR19EWU5BTUlDX0ZUUkFDRQpFTlRSWShm
-dHJhY2VfY2FsbGVyKQoJX19mdHJhY2VfY2FsbGVyCkVORFBST0MoZnRyYWNlX2NhbGxlcikKI2Vu
-ZGlmCgojaWZkZWYgQ09ORklHX0ZVTkNUSU9OX0dSQVBIX1RSQUNFUgpFTlRSWShmdHJhY2VfZ3Jh
-cGhfY2FsbGVyKQoJX19mdHJhY2VfZ3JhcGhfY2FsbGVyCkVORFBST0MoZnRyYWNlX2dyYXBoX2Nh
-bGxlcikKI2VuZGlmCgoucHVyZ2VtIG1jb3VudF9lbnRlcgoucHVyZ2VtIG1jb3VudF9nZXRfbHIK
-LnB1cmdlbSBtY291bnRfZXhpdAoKI2lmZGVmIENPTkZJR19GVU5DVElPTl9HUkFQSF9UUkFDRVIK
-CS5nbG9ibCByZXR1cm5fdG9faGFuZGxlcgpyZXR1cm5fdG9faGFuZGxlcjoKCXN0bWRiCXNwISwg
-e3IwLXIzfQoJbW92CXIwLCBmcAkJCUAgZnJhbWUgcG9pbnRlcgoJYmwJZnRyYWNlX3JldHVybl90
-b19oYW5kbGVyCgltb3YJbHIsIHIwCQkJQCByMCBoYXMgcmVhbCByZXQgYWRkcgoJbGRtaWEJc3Ah
-LCB7cjAtcjN9Cgltb3YJcGMsIGxyCiNlbmRpZgoKRU5UUlkoZnRyYWNlX3N0dWIpCi5MZnRyYWNl
-X3N0dWI6Cgltb3YJcGMsIGxyCkVORFBST0MoZnRyYWNlX3N0dWIpCgojZW5kaWYgLyogQ09ORklH
-X0ZVTkNUSU9OX1RSQUNFUiAqLwoKLyo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogKiBTV0kgaGFuZGxl
-cgogKi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAqLwoKCS8qIElmIHdlJ3JlIG9wdGltaXNpbmcgZm9y
-IFN0cm9uZ0FSTSB0aGUgcmVzdWx0aW5nIGNvZGUgd29uJ3QgCgkgICBydW4gb24gYW4gQVJNNyBh
-bmQgd2UgY2FuIHNhdmUgYSBjb3VwbGUgb2YgaW5zdHJ1Y3Rpb25zLiAgCgkJCQkJCQkJLS1wYiAq
-LwojaWZkZWYgQ09ORklHX0NQVV9BUk03MTAKI2RlZmluZSBBNzEwKGNvZGUuLi4pIGNvZGUKLkxh
-cm03MTBidWc6CglsZG1pYQlzcCwge3IwIC0gbHJ9XgkJCUAgR2V0IGNhbGxpbmcgcjAgLSBscgoJ
-bW92CXIwLCByMAoJYWRkCXNwLCBzcCwgI1NfRlJBTUVfU0laRQoJc3VicwlwYywgbHIsICM0CiNl
-bHNlCiNkZWZpbmUgQTcxMChjb2RlLi4uKQojZW5kaWYKCgkuYWxpZ24JNQpFTlRSWSh2ZWN0b3Jf
-c3dpKQoJc3ViCXNwLCBzcCwgI1NfRlJBTUVfU0laRQoJc3RtaWEJc3AsIHtyMCAtIHIxMn0JCQlA
-IENhbGxpbmcgcjAgLSByMTIKIEFSTSgJYWRkCXI4LCBzcCwgI1NfUEMJCSkKIEFSTSgJc3RtZGIJ
-cjgsIHtzcCwgbHJ9XgkJKQlAIENhbGxpbmcgc3AsIGxyCiBUSFVNQigJbW92CXI4LCBzcAkJCSkK
-IFRIVU1CKAlzdG9yZV91c2VyX3NwX2xyIHI4LCByMTAsIFNfU1AJKQlAIGNhbGxpbmcgc3AsIGxy
-CgltcnMJcjgsIHNwc3IJCQlAIGNhbGxlZCBmcm9tIG5vbi1GSVEgbW9kZSwgc28gb2suCglzdHIJ
-bHIsIFtzcCwgI1NfUENdCQkJQCBTYXZlIGNhbGxpbmcgUEMKCXN0cglyOCwgW3NwLCAjU19QU1Jd
-CQlAIFNhdmUgQ1BTUgoJc3RyCXIwLCBbc3AsICNTX09MRF9SMF0JCUAgU2F2ZSBPTERfUjAKCXpl
-cm9fZnAKCgkvKgoJICogR2V0IHRoZSBzeXN0ZW0gY2FsbCBudW1iZXIuCgkgKi8KCiNpZiBkZWZp
-bmVkKENPTkZJR19PQUJJX0NPTVBBVCkKCgkvKgoJICogSWYgd2UgaGF2ZSBDT05GSUdfT0FCSV9D
-T01QQVQgdGhlbiB3ZSBuZWVkIHRvIGxvb2sgYXQgdGhlIHN3aQoJICogdmFsdWUgdG8gZGV0ZXJt
-aW5lIGlmIGl0IGlzIGFuIEVBQkkgb3IgYW4gb2xkIEFCSSBjYWxsLgoJICovCiNpZmRlZiBDT05G
-SUdfQVJNX1RIVU1CCgl0c3QJcjgsICNQU1JfVF9CSVQKCW1vdm5lCXIxMCwgIzAJCQkJQCBubyB0
-aHVtYiBPQUJJIGVtdWxhdGlvbgoJbGRyZXEJcjEwLCBbbHIsICMtNF0JCQlAIGdldCBTV0kgaW5z
-dHJ1Y3Rpb24KI2Vsc2UKCWxkcglyMTAsIFtsciwgIy00XQkJCUAgZ2V0IFNXSSBpbnN0cnVjdGlv
-bgogIEE3MTAoCWFuZAlpcCwgcjEwLCAjMHgwZjAwMDAwMAkJQCBjaGVjayBmb3IgU1dJCQkpCiAg
-QTcxMCgJdGVxCWlwLCAjMHgwZjAwMDAwMAkJCQkJCSkKICBBNzEwKAlibmUJLkxhcm03MTBidWcJ
-CQkJCQkpCiNlbmRpZgojaWZkZWYgQ09ORklHX0NQVV9FTkRJQU5fQkU4CglyZXYJcjEwLCByMTAJ
-CQlAIGxpdHRsZSBlbmRpYW4gaW5zdHJ1Y3Rpb24KI2VuZGlmCgojZWxpZiBkZWZpbmVkKENPTkZJ
-R19BRUFCSSkKCgkvKgoJICogUHVyZSBFQUJJIHVzZXIgc3BhY2UgYWx3YXlzIHB1dCBzeXNjYWxs
-IG51bWJlciBpbnRvIHNjbm8gKHI3KS4KCSAqLwogIEE3MTAoCWxkcglpcCwgW2xyLCAjLTRdCQkJ
-QCBnZXQgU1dJIGluc3RydWN0aW9uCSkKICBBNzEwKAlhbmQJaXAsIGlwLCAjMHgwZjAwMDAwMAkJ
-QCBjaGVjayBmb3IgU1dJCQkpCiAgQTcxMCgJdGVxCWlwLCAjMHgwZjAwMDAwMAkJCQkJCSkKICBB
-NzEwKAlibmUJLkxhcm03MTBidWcJCQkJCQkpCgojZWxpZiBkZWZpbmVkKENPTkZJR19BUk1fVEhV
-TUIpCgoJLyogTGVnYWN5IEFCSSBvbmx5LCBwb3NzaWJseSB0aHVtYiBtb2RlLiAqLwoJdHN0CXI4
-LCAjUFNSX1RfQklUCQkJQCB0aGlzIGlzIFNQU1IgZnJvbSBzYXZlX3VzZXJfcmVncwoJYWRkbmUJ
-c2NubywgcjcsICNfX05SX1NZU0NBTExfQkFTRQlAIHB1dCBPUyBudW1iZXIgaW4KCWxkcmVxCXNj
-bm8sIFtsciwgIy00XQoKI2Vsc2UKCgkvKiBMZWdhY3kgQUJJIG9ubHkuICovCglsZHIJc2Nubywg
-W2xyLCAjLTRdCQkJQCBnZXQgU1dJIGluc3RydWN0aW9uCiAgQTcxMCgJYW5kCWlwLCBzY25vLCAj
-MHgwZjAwMDAwMAkJQCBjaGVjayBmb3IgU1dJCQkpCiAgQTcxMCgJdGVxCWlwLCAjMHgwZjAwMDAw
-MAkJCQkJCSkKICBBNzEwKAlibmUJLkxhcm03MTBidWcJCQkJCQkpCgojZW5kaWYKCiNpZmRlZiBD
-T05GSUdfQUxJR05NRU5UX1RSQVAKCWxkcglpcCwgX19jcl9hbGlnbm1lbnQKCWxkcglpcCwgW2lw
-XQoJbWNyCXAxNSwgMCwgaXAsIGMxLCBjMAkJQCB1cGRhdGUgY29udHJvbCByZWdpc3RlcgojZW5k
-aWYKCWVuYWJsZV9pcnEKCglnZXRfdGhyZWFkX2luZm8gdHNrCglhZHIJdGJsLCBzeXNfY2FsbF90
-YWJsZQkJQCBsb2FkIHN5c2NhbGwgdGFibGUgcG9pbnRlcgoKI2lmIGRlZmluZWQoQ09ORklHX09B
-QklfQ09NUEFUKQoJLyoKCSAqIElmIHRoZSBzd2kgYXJndW1lbnQgaXMgemVybywgdGhpcyBpcyBh
-biBFQUJJIGNhbGwgYW5kIHdlIGRvIG5vdGhpbmcuCgkgKgoJICogSWYgdGhpcyBpcyBhbiBvbGQg
-QUJJIGNhbGwsIGdldCB0aGUgc3lzY2FsbCBudW1iZXIgaW50byBzY25vIGFuZAoJICogZ2V0IHRo
-ZSBvbGQgQUJJIHN5c2NhbGwgdGFibGUgYWRkcmVzcy4KCSAqLwoJYmljcwlyMTAsIHIxMCwgIzB4
-ZmYwMDAwMDAKCWVvcm5lCXNjbm8sIHIxMCwgI19fTlJfT0FCSV9TWVNDQUxMX0JBU0UKCWxkcm5l
-CXRibCwgPXN5c19vYWJpX2NhbGxfdGFibGUKI2VsaWYgIWRlZmluZWQoQ09ORklHX0FFQUJJKQoJ
-YmljCXNjbm8sIHNjbm8sICMweGZmMDAwMDAwCQlAIG1hc2sgb2ZmIFNXSSBvcC1jb2RlCgllb3IJ
-c2Nubywgc2NubywgI19fTlJfU1lTQ0FMTF9CQVNFCUAgY2hlY2sgT1MgbnVtYmVyCiNlbmRpZgoK
-CWxkcglyMTAsIFt0c2ssICNUSV9GTEFHU10JCUAgY2hlY2sgZm9yIHN5c2NhbGwgdHJhY2luZwoJ
-c3RtZGIJc3AhLCB7cjQsIHI1fQkJCUAgcHVzaCBmaWZ0aCBhbmQgc2l4dGggYXJncwoKI2lmZGVm
-IENPTkZJR19TRUNDT01QCgl0c3QJcjEwLCAjX1RJRl9TRUNDT01QCgliZXEJMWYKCW1vdglyMCwg
-c2NubwoJYmwJX19zZWN1cmVfY29tcHV0aW5nCQoJYWRkCXIwLCBzcCwgI1NfUjAgKyBTX09GRgkJ
-QCBwb2ludGVyIHRvIHJlZ3MKCWxkbWlhCXIwLCB7cjAgLSByM30JCQlAIGhhdmUgdG8gcmVsb2Fk
-IHIwIC0gcjMKMToKI2VuZGlmCgoJdHN0CXIxMCwgI19USUZfU1lTQ0FMTF9XT1JLCQlAIGFyZSB3
-ZSB0cmFjaW5nIHN5c2NhbGxzPwoJYm5lCV9fc3lzX3RyYWNlCgoJY21wCXNjbm8sICNOUl9zeXNj
-YWxscwkJQCBjaGVjayB1cHBlciBzeXNjYWxsIGxpbWl0CglhZHIJbHIsIEJTWU0ocmV0X2Zhc3Rf
-c3lzY2FsbCkJQCByZXR1cm4gYWRkcmVzcwoJbGRyY2MJcGMsIFt0YmwsIHNjbm8sIGxzbCAjMl0J
-CUAgY2FsbCBzeXNfKiByb3V0aW5lCgoJYWRkCXIxLCBzcCwgI1NfT0ZGCjI6CW1vdgl3aHksICMw
-CQkJCUAgbm8gbG9uZ2VyIGEgcmVhbCBzeXNjYWxsCgljbXAJc2NubywgIyhfX0FSTV9OUl9CQVNF
-IC0gX19OUl9TWVNDQUxMX0JBU0UpCgllb3IJcjAsIHNjbm8sICNfX05SX1NZU0NBTExfQkFTRQlA
-IHB1dCBPUyBudW1iZXIgYmFjawoJYmNzCWFybV9zeXNjYWxsCQoJYglzeXNfbmlfc3lzY2FsbAkJ
-CUAgbm90IHByaXZhdGUgZnVuYwpFTkRQUk9DKHZlY3Rvcl9zd2kpCgoJLyoKCSAqIFRoaXMgaXMg
-dGhlIHJlYWxseSBzbG93IHBhdGguICBXZSdyZSBnb2luZyB0byBiZSBkb2luZwoJICogY29udGV4
-dCBzd2l0Y2hlcywgYW5kIHdhaXRpbmcgZm9yIG91ciBwYXJlbnQgdG8gcmVzcG9uZC4KCSAqLwpf
-X3N5c190cmFjZToKCW1vdglyMiwgc2NubwoJYWRkCXIxLCBzcCwgI1NfT0ZGCgltb3YJcjAsICMw
-CQkJCUAgdHJhY2UgZW50cnkgW0lQID0gMF0KCWJsCXN5c2NhbGxfdHJhY2UKCglhZHIJbHIsIEJT
-WU0oX19zeXNfdHJhY2VfcmV0dXJuKQlAIHJldHVybiBhZGRyZXNzCgltb3YJc2NubywgcjAJCQlA
-IHN5c2NhbGwgbnVtYmVyIChwb3NzaWJseSBuZXcpCglhZGQJcjEsIHNwLCAjU19SMCArIFNfT0ZG
-CQlAIHBvaW50ZXIgdG8gcmVncwoJY21wCXNjbm8sICNOUl9zeXNjYWxscwkJQCBjaGVjayB1cHBl
-ciBzeXNjYWxsIGxpbWl0CglsZG1jY2lhCXIxLCB7cjAgLSByM30JCQlAIGhhdmUgdG8gcmVsb2Fk
-IHIwIC0gcjMKCWxkcmNjCXBjLCBbdGJsLCBzY25vLCBsc2wgIzJdCQlAIGNhbGwgc3lzXyogcm91
-dGluZQoJYgkyYgoKX19zeXNfdHJhY2VfcmV0dXJuOgoJc3RyCXIwLCBbc3AsICNTX1IwICsgU19P
-RkZdIQlAIHNhdmUgcmV0dXJuZWQgcjAKCW1vdglyMiwgc2NubwoJbW92CXIxLCBzcAoJbW92CXIw
-LCAjMQkJCQlAIHRyYWNlIGV4aXQgW0lQID0gMV0KCWJsCXN5c2NhbGxfdHJhY2UKCWIJcmV0X3Ns
-b3dfc3lzY2FsbAoKCS5hbGlnbgk1CiNpZmRlZiBDT05GSUdfQUxJR05NRU5UX1RSQVAKCS50eXBl
-CV9fY3JfYWxpZ25tZW50LCAjb2JqZWN0Cl9fY3JfYWxpZ25tZW50OgoJLndvcmQJY3JfYWxpZ25t
-ZW50CiNlbmRpZgoJLmx0b3JnCgovKgogKiBUaGlzIGlzIHRoZSBzeXNjYWxsIHRhYmxlIGRlY2xh
-cmF0aW9uIGZvciBuYXRpdmUgQUJJIHN5c2NhbGxzLgogKiBXaXRoIEVBQkkgYSBjb3VwbGUgc3lz
-Y2FsbHMgYXJlIG9ic29sZXRlIGFuZCBkZWZpbmVkIGFzIHN5c19uaV9zeXNjYWxsLgogKi8KI2Rl
-ZmluZSBBQkkobmF0aXZlLCBjb21wYXQpIG5hdGl2ZQojaWZkZWYgQ09ORklHX0FFQUJJCiNkZWZp
-bmUgT0JTT0xFVEUoc3lzY2FsbCkgc3lzX25pX3N5c2NhbGwKI2Vsc2UKI2RlZmluZSBPQlNPTEVU
-RShzeXNjYWxsKSBzeXNjYWxsCiNlbmRpZgoKCS50eXBlCXN5c19jYWxsX3RhYmxlLCAjb2JqZWN0
-CkVOVFJZKHN5c19jYWxsX3RhYmxlKQojaW5jbHVkZSAiY2FsbHMuUyIKI3VuZGVmIEFCSQojdW5k
-ZWYgT0JTT0xFVEUKCi8qPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogKiBTcGVjaWFsIHN5c3RlbSBjYWxs
-IHdyYXBwZXJzCiAqLwpAIHIwID0gc3lzY2FsbCBudW1iZXIKQCByOCA9IHN5c2NhbGwgdGFibGUK
-c3lzX3N5c2NhbGw6CgkJYmljCXNjbm8sIHIwLCAjX19OUl9PQUJJX1NZU0NBTExfQkFTRQoJCWNt
-cAlzY25vLCAjX19OUl9zeXNjYWxsIC0gX19OUl9TWVNDQUxMX0JBU0UKCQljbXBuZQlzY25vLCAj
-TlJfc3lzY2FsbHMJQCBjaGVjayByYW5nZQoJCXN0bWxvaWEJc3AsIHtyNSwgcjZ9CQlAIHNodWZm
-bGUgYXJncwoJCW1vdmxvCXIwLCByMQoJCW1vdmxvCXIxLCByMgoJCW1vdmxvCXIyLCByMwoJCW1v
-dmxvCXIzLCByNAoJCWxkcmxvCXBjLCBbdGJsLCBzY25vLCBsc2wgIzJdCgkJYglzeXNfbmlfc3lz
-Y2FsbApFTkRQUk9DKHN5c19zeXNjYWxsKQoKc3lzX2Zvcmtfd3JhcHBlcjoKCQlhZGQJcjAsIHNw
-LCAjU19PRkYKCQliCXN5c19mb3JrCkVORFBST0Moc3lzX2Zvcmtfd3JhcHBlcikKCnN5c192Zm9y
-a193cmFwcGVyOgoJCWFkZAlyMCwgc3AsICNTX09GRgoJCWIJc3lzX3Zmb3JrCkVORFBST0Moc3lz
-X3Zmb3JrX3dyYXBwZXIpCgpzeXNfZXhlY3ZlX3dyYXBwZXI6CgkJYWRkCXIzLCBzcCwgI1NfT0ZG
-CgkJYglzeXNfZXhlY3ZlCkVORFBST0Moc3lzX2V4ZWN2ZV93cmFwcGVyKQoKc3lzX2Nsb25lX3dy
-YXBwZXI6CgkJYWRkCWlwLCBzcCwgI1NfT0ZGCgkJc3RyCWlwLCBbc3AsICM0XQoJCWIJc3lzX2Ns
-b25lCkVORFBST0Moc3lzX2Nsb25lX3dyYXBwZXIpCgpzeXNfc2lncmV0dXJuX3dyYXBwZXI6CgkJ
-YWRkCXIwLCBzcCwgI1NfT0ZGCgkJbW92CXdoeSwgIzAJCUAgcHJldmVudCBzeXNjYWxsIHJlc3Rh
-cnQgaGFuZGxpbmcKCQliCXN5c19zaWdyZXR1cm4KRU5EUFJPQyhzeXNfc2lncmV0dXJuX3dyYXBw
-ZXIpCgpzeXNfcnRfc2lncmV0dXJuX3dyYXBwZXI6CgkJYWRkCXIwLCBzcCwgI1NfT0ZGCgkJbW92
-CXdoeSwgIzAJCUAgcHJldmVudCBzeXNjYWxsIHJlc3RhcnQgaGFuZGxpbmcKCQliCXN5c19ydF9z
-aWdyZXR1cm4KRU5EUFJPQyhzeXNfcnRfc2lncmV0dXJuX3dyYXBwZXIpCgpzeXNfc2lnYWx0c3Rh
-Y2tfd3JhcHBlcjoKCQlsZHIJcjIsIFtzcCwgI1NfT0ZGICsgU19TUF0KCQliCWRvX3NpZ2FsdHN0
-YWNrCkVORFBST0Moc3lzX3NpZ2FsdHN0YWNrX3dyYXBwZXIpCgpzeXNfc3RhdGZzNjRfd3JhcHBl
-cjoKCQl0ZXEJcjEsICM4OAoJCW1vdmVxCXIxLCAjODQKCQliCXN5c19zdGF0ZnM2NApFTkRQUk9D
-KHN5c19zdGF0ZnM2NF93cmFwcGVyKQoKc3lzX2ZzdGF0ZnM2NF93cmFwcGVyOgoJCXRlcQlyMSwg
-Izg4CgkJbW92ZXEJcjEsICM4NAoJCWIJc3lzX2ZzdGF0ZnM2NApFTkRQUk9DKHN5c19mc3RhdGZz
-NjRfd3JhcHBlcikKCi8qCiAqIE5vdGU6IG9mZl80ayAocjUpIGlzIGFsd2F5cyB1bml0cyBvZiA0
-Sy4gIElmIHdlIGNhbid0IGRvIHRoZSByZXF1ZXN0ZWQKICogb2Zmc2V0LCB3ZSByZXR1cm4gRUlO
-VkFMLgogKi8Kc3lzX21tYXAyOgojaWYgUEFHRV9TSElGVCA+IDEyCgkJdHN0CXI1LCAjUEdPRkZf
-TUFTSwoJCW1vdmVxCXI1LCByNSwgbHNyICNQQUdFX1NISUZUIC0gMTIKCQlzdHJlcQlyNSwgW3Nw
-LCAjNF0KCQliZXEJc3lzX21tYXBfcGdvZmYKCQltb3YJcjAsICMtRUlOVkFMCgkJbW92CXBjLCBs
-cgojZWxzZQoJCXN0cglyNSwgW3NwLCAjNF0KCQliCXN5c19tbWFwX3Bnb2ZmCiNlbmRpZgpFTkRQ
-Uk9DKHN5c19tbWFwMikKCiNpZmRlZiBDT05GSUdfT0FCSV9DT01QQVQKCi8qCiAqIFRoZXNlIGFy
-ZSBzeXNjYWxscyB3aXRoIGFyZ3VtZW50IHJlZ2lzdGVyIGRpZmZlcmVuY2VzCiAqLwoKc3lzX29h
-YmlfcHJlYWQ2NDoKCQlzdG1pYQlzcCwge3IzLCByNH0KCQliCXN5c19wcmVhZDY0CkVORFBST0Mo
-c3lzX29hYmlfcHJlYWQ2NCkKCnN5c19vYWJpX3B3cml0ZTY0OgoJCXN0bWlhCXNwLCB7cjMsIHI0
-fQoJCWIJc3lzX3B3cml0ZTY0CkVORFBST0Moc3lzX29hYmlfcHdyaXRlNjQpCgpzeXNfb2FiaV90
-cnVuY2F0ZTY0OgoJCW1vdglyMywgcjIKCQltb3YJcjIsIHIxCgkJYglzeXNfdHJ1bmNhdGU2NApF
-TkRQUk9DKHN5c19vYWJpX3RydW5jYXRlNjQpCgpzeXNfb2FiaV9mdHJ1bmNhdGU2NDoKCQltb3YJ
-cjMsIHIyCgkJbW92CXIyLCByMQoJCWIJc3lzX2Z0cnVuY2F0ZTY0CkVORFBST0Moc3lzX29hYmlf
-ZnRydW5jYXRlNjQpCgpzeXNfb2FiaV9yZWFkYWhlYWQ6CgkJc3RyCXIzLCBbc3BdCgkJbW92CXIz
-LCByMgoJCW1vdglyMiwgcjEKCQliCXN5c19yZWFkYWhlYWQKRU5EUFJPQyhzeXNfb2FiaV9yZWFk
-YWhlYWQpCgovKgogKiBMZXQncyBkZWNsYXJlIGEgc2Vjb25kIHN5c2NhbGwgdGFibGUgZm9yIG9s
-ZCBBQkkgYmluYXJpZXMKICogdXNpbmcgdGhlIGNvbXBhdGliaWxpdHkgc3lzY2FsbCBlbnRyaWVz
-LgogKi8KI2RlZmluZSBBQkkobmF0aXZlLCBjb21wYXQpIGNvbXBhdAojZGVmaW5lIE9CU09MRVRF
-KHN5c2NhbGwpIHN5c2NhbGwKCgkudHlwZQlzeXNfb2FiaV9jYWxsX3RhYmxlLCAjb2JqZWN0CkVO
-VFJZKHN5c19vYWJpX2NhbGxfdGFibGUpCiNpbmNsdWRlICJjYWxscy5TIgojdW5kZWYgQUJJCiN1
-bmRlZiBPQlNPTEVURQoKI2VuZGlmCgo=
-
---_002_35FD53F367049845BC99AC72306C23D1610991B86DCNBJMBX05corp_--
+-- 
+Tushar Behera
