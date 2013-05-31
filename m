@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab3EaAtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 20:49:05 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30402 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab3EaAs5 (ORCPT
+	id S1752264Ab3EaAyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 20:54:33 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:61945 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab3EaAyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 20:48:57 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-7f-51a7f3782d18
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable]   ASoC: wm8994: Fix reporting of accessory removal
- on
-Date: Fri, 31 May 2013 09:48:56 +0900
-Message-id: <001001ce5d98$a1557eb0$e4007c10$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAAABz0QA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zY92Kz8sDDV7cULb4N/sUm8WSZm6L
-	y7vmsFks2PiI0YHF4+XE32wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfFot1LBds6KnTuv
-	sTUwPmHvYuTkkBAwkbh0bQWULSZx4d56ti5GLg4hgWWMEmeXLWCBKfp++jM7RGIRo8TDtZNY
-	IZy/jBL/vqxlBaliE9CVOLZ+C5gtIuAtcWrKL2YQm1nAT+JT02+gbg6gBm6J1c1BIGFOAR6J
-	dX86wUqEBYIlXjUfZwKxWQRUJX6eeQQW5xWwk+g838cIYQtK/Jh8jwVipJbE+p0Q9cwC8hKb
-	17xlBhkvIaAu8eivLshpIgJTGCU2XljFCFEjIrHvxTtGkISEwDF2iZlzl0ItE5D4NvkQC0Sz
-	rMSmA8wQD0tKHFxxg2UCo8QsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kolecmFtcmpeu
-	l5yfu4kREokTdjDeO2B9iDEZaP1EZinR5HxgJOeVxBsamxlZmJqYGhuZW5qRJqwkzqveYh0o
-	JJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVGvpuS63E6rnmTl8ypV9wyzFyzfp+yhwGj0OSEs
-	Qlbg1ZyPmU1LOsQ4G+Yxn7p+/GjxvKZugVA96cDjR2eGflp1K2LW/9SrC4IY0yKLPthrtujP
-	WbdCweLAE/aNAcbca9WOCyo19TOIPvK1tZ2W/aEjR+xi+Id7ltuXHLn05vGFfr/uYIaHfEos
-	xRmJhlrMRcWJAKX85N/aAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jAd2Kz8sDDX5+l7f4N/sUm8WSZm6L
-	y7vmsFks2PiI0YHF4+XE32wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5jxaLdSwXbOip07r7E1MD5h72Lk5JAQMJH4fvozlC0mceHeerYuRi4OIYFF
-	jBIP105ihXD+Mkr8+7KWFaSKTUBX4tj6LWC2iIC3xKkpv5hBbGYBP4lPTb+BJnEANXBLrG4O
-	AglzCvBIrPvTCVYiLBAs8ar5OBOIzSKgKvHzzCOwOK+AnUTn+T5GCFtQ4sfkeywQI7Uk1u+E
-	qGcWkJfYvOYtM8h4CQF1iUd/dUFOExGYwiix8cIqRogaEYl9L94xTmAUmoVk1Cwko2YhGTUL
-	ScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFx/kx6B+OqBotDjAIcjEo8vAdTlgcK
-	sSaWFVfmHmKU4GBWEuHtPAcU4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5HxgCsoriTc0NjEz
-	sjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsZJn9sehO/eHH9mUs/pD1Xv
-	Zc0a9tUs3C+T6lkg0M31n2eL6o/nr784m6x0+ivadlbZN+H5lpl9D5a1z+/7evY54ylFfdU5
-	NnmSuVz7ntYEp53inma6RuGn25vFNma8640b+KPjEp8qL7hZOOd1ufEpjX5Xvqg/3qt/bPr2
-	w+2TUMf1Qv0He44rsRRnJBpqMRcVJwIAawk23jcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 30 May 2013 20:54:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5o3KvkXnLsOuFZsP0M3Jq1VL9yweXgEusAu2=NmqjLiA@mail.gmail.com>
+References: <1369892734-26244-1-git-send-email-xudong.hao@intel.com>
+	<CAE9FiQUCOJ5FFwRWpVy59RqEwGC2KMNXvKe5HUAKLSES5fAR+Q@mail.gmail.com>
+	<CAE9FiQWfSW7yT4cZrDoh==H=v_qmvR=9WF54jggSKGq8S_xqug@mail.gmail.com>
+	<CAErSpo5o3KvkXnLsOuFZsP0M3Jq1VL9yweXgEusAu2=NmqjLiA@mail.gmail.com>
+Date: Thu, 30 May 2013 17:54:24 -0700
+X-Google-Sender-Auth: oNv-rnr1aDoga5lnvo4N2wDQBPI
+Message-ID: <CAE9FiQXERyJ-rw8OX1X1XJC_9OMtoYxCCbZUR6N27Bp=tnqnrA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: set correct value for iov device before device
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xudong Hao <xudong.hao@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+On Thu, May 30, 2013 at 4:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, May 30, 2013 at 2:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Wed, May 29, 2013 at 11:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> On Wed, May 29, 2013 at 10:45 PM, Xudong Hao <xudong.hao@intel.com> wrote:
+>>>> Since device registering is put into pci_device_add(), it must set value of
+>>>> Virtual Function device's member before the pci_dev is put to device tree. Or
+>>>> some relevant subsystem of driver model such as xen will report a incorrect
+>>>> IOV device to Xen hypervior.
+>>>>
+>>>> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+>>>> ---
+>>>>  drivers/pci/iov.c | 6 +++---
+>>>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+>>>> index c93071d..43d3de9 100644
+>>>> --- a/drivers/pci/iov.c
+>>>> +++ b/drivers/pci/iov.c
+>>>> @@ -110,12 +110,12 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+>>>>         if (reset)
+>>>>                 __pci_reset_function(virtfn);
+>>>>
+>>>> -       pci_device_add(virtfn, virtfn->bus);
+>>>> -       mutex_unlock(&iov->dev->sriov->lock);
+>>>> -
+>>>>         virtfn->physfn = pci_dev_get(dev);
+>>>>         virtfn->is_virtfn = 1;
+>>>>
+>>>> +       pci_device_add(virtfn, virtfn->bus);
+>>>> +       mutex_unlock(&iov->dev->sriov->lock);
+>>>> +
+>>>>         rc = pci_bus_add_device(virtfn);
+>>>>         sprintf(buf, "virtfn%u", id);
+>>>>         rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
+>>>
+>>> I have similar patch at
+>>> https://patchwork.kernel.org/patch/2562551/
+>>>    [5/7] PCI, ACPI: Don't glue ACPI dev with pci VFs
+>>>
+>>> and Jiang has another one
+>>> https://patchwork.kernel.org/patch/2613481/
+>>>    [v3,part1,10/10] PCI, IOV: hide remove and rescan sysfs interfaces
+>>> for SR-IOV virtual functions
+>>
+>> Bjorn,
+>>
+>> I double check this one, we should split the patch from me or Jiang.
+>
+> I don't know what the sentence above means.
 
-------------------
+I mean half of patch
+https://patchwork.kernel.org/patch/2562551/
+or half of patch
+https://patchwork.kernel.org/patch/2613481/
 
-From: "Mark Brown <broonie@opensource.wolfsonmicro.com>"
+just like what Xudong extracted.
 
-commit 9767a58b8b2a0b153c246fb6306c7d48d51bb379 upstream
+>
+>> and the one about set virtfn=1 should be -stable material.
+>
+> I assume you mean that Jiang's "[v3,part1,10/10] PCI, IOV: hide remove
+> and rescan sysfs interfaces for SR-IOV virtual functions" patch does
+> not need to be in v3.10, but it should be marked for -stable.
 
-During recent refactoring the code to report removal when MICDET reports
-an absent microphone was removed, causing problems for systems which rely
-solely on the MICDET for this functionality. Restore it.
+no half of it, move set virtfn=1 two lines forward.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- sound/soc/codecs/wm8994.c |    5 +++++
- 1 file changed, 5 insertions(+)
+>
+> How far back should it go?  v3.9+?
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 8b769ba..f9dc7c0 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3791,6 +3791,11 @@ static irqreturn_t wm8958_mic_irq(int irq, void
-*data)
- 			dev_dbg(codec->dev, "Ignoring removed jack\n");
- 			return IRQ_HANDLED;
- 		}
-+	} else if (!(reg & WM8958_MICD_STS)) {
-+		snd_soc_jack_report(wm8994->micdet[0].jack, 0,
-+				    SND_JACK_MECHANICAL | SND_JACK_HEADSET |
-+				    wm8994->btn_mask);
-+		goto out;
- 	}
- 
- 	if (wm8994->mic_detecting)
--- 
-1.7.9.5
+yes. v3.9+
 
+>
+>> That will address another problem that is caused by
+>> moving device_add from pci_bus_add_device to pci_device_add.
+>
+> I assume you're talking about a problem caused by 4f535093 ("PCI: Put
+> pci_dev in device tree as early as possible").  That commit appeared
+> in v3.9.
+
+yes.
+
+>
+> If we're asking to add the "hide remove and rescan sysfs interfaces"
+> patch to the v3.9 stable series, we should have a description of
+> exactly what problem it fixes, and ideally, a bugzilla for it.  Can
+> you provide that?
+
+No. that is not what i mean.
+
+That problem have been there when sriov support was added.
+
+>
+> That patch appears to be the only one in the [v3,part1,0/10] series
+> that actually directly fixes an issue, so it would be nice to have
+> more specifics in that changelog to begin with.  The other patches in
+> that series appear to to be cleanups and preparation for the real
+> fixes that will come later.
+
+yes. even should be separated from that patchset.
+
+Yinghai
