@@ -1,111 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab3EaL4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:56:09 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33719 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3EaLz6 (ORCPT
+	id S1755752Ab3EaL4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:56:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57054 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab3EaL43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:55:58 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18WRGGgfGz29+hoV2HQNlB488zlxV79nwo=
-Date: Fri, 31 May 2013 07:54:50 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnaud Ebalard <arno@natisbad.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v5 12/13] ARM: kirkwood: remove redundant DT board files
-Message-ID: <20130531115450.GA3803@titan.lakedaemon.net>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369855975-21489-13-git-send-email-sebastian.hesselbarth@gmail.com>
- <8738t4q1kv.fsf@natisbad.org>
- <20130530193708.GC31290@titan.lakedaemon.net>
- <87txlknluf.fsf@natisbad.org>
+	Fri, 31 May 2013 07:56:29 -0400
+Date: Fri, 31 May 2013 04:55:55 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-8bd407b962e39f34d5df08de8cd02d0f5add802b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1369398928-9809-3-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-3-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Move arch check into config/Makefile
+Git-Commit-ID: 8bd407b962e39f34d5df08de8cd02d0f5add802b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <87txlknluf.fsf@natisbad.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaud,
+Commit-ID:  8bd407b962e39f34d5df08de8cd02d0f5add802b
+Gitweb:     http://git.kernel.org/tip/8bd407b962e39f34d5df08de8cd02d0f5add802b
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 15 Mar 2013 16:28:49 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:24:05 +0300
 
-On Fri, May 31, 2013 at 12:28:56AM +0200, Arnaud Ebalard wrote:
-> Hi,
-> 
-> Jason Cooper <jason@lakedaemon.net> writes:
-> 
-> >> For instance 6bd98481ab34 (arm: kirkwood: NETGEAR ReadyNAS Duo v2 init
-> >> PCIe via DT) currently sitting in jcooper/mvebu/pcie_kirkwood removes
-> >> the PCIE init routine in board-readynas.c, and yours remove ge00
-> >> init. With both applied, the whole file can go away.
-> >> 
-> >> AFAICT, this may be the case soon for:
-> >> 
-> >>  arch/arm/mach-kirkwood/board-iconnect.c   (36e5722089)
-> >>  arch/arm/mach-kirkwood/board-mplcec4.c    (9470fbfb8d)
-> >>  arch/arm/mach-kirkwood/board-nsa310.c     (40fa8e5da2)
-> >>  arch/arm/mach-kirkwood/board-readynas.c   (6bd98481ab)
-> >>  arch/arm/mach-kirkwood/board-ts219.c      (259e234608)
-> >
-> > Would you mind putting a patch together (for after v3.10 drops) to do
-> > this?  If you applied Sebastian's series on top of mvebu/pcie_kirkwood,
-> > that should get you almost there.  The last half of his series is going
-> > in after v3.10...
-> 
-> Something like the quick quilt-generated patch at the end of this email
-> (done after a dummy merge of Sebastian's set in mvebu/pcie_kirkwood)? 
+perf tools: Move arch check into config/Makefile
 
-yep.
+Moving arch check into config/Makefile.
 
-> I will take a look at what remains after Sebastian's set hit one of
-> your branch but I guess he will have included most of what is in the
-> patch to help you with the merge.
-> 
-> Anyway, at the end here is what DT board files would remain:
-> 
-> $ ls -1 arch/arm/mach-kirkwood/board-*.c
-> arch/arm/mach-kirkwood/board-dnskw.c
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1369398928-9809-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile        | 43 ++++++++++++++-----------------------------
+ tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 29 deletions(-)
 
-This one seems to just be setting a gpio to enable reboot after power
-failure.  Should be simple to move to DT.
-
-> arch/arm/mach-kirkwood/board-dt.c
-
-We obviously need this one. ;-)
-
-> arch/arm/mach-kirkwood/board-lsxl.c
-
-This is taken care of in mvebu/boards
-
-  391a16c ARM: Kirkwood: Convert LSXL to restart-poweroff driver.
-
-> arch/arm/mach-kirkwood/board-ts219.c
-
-Also in mvebu/boards
-
-  4350a47 ARM: Kirkwood: Make use of the QNAP Power off driver.
-
-> Just one question though: the removal of MACH_*_DT in Kconfig removes
-> the automatic selection of useful board specific options like
-> ARM_APPENDED_DTB, ARM_ATAG_DTB_COMPAT, POWER_RESET_RESTART,
-> POWER_RESET_QNAP. Is that expected?
-
-I would select POWER_RESET_QNAP and POWER_RESET_RESTART in Kconfig for
-ARCH_KIRKWOOD_DT, and put ARM_APPENDED_DTB and ARM_ATAG_DTB_COMPAT into
-the defconfig.
-
-thx,
-
-Jason.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index c8fb0fd..a4abdaf 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -55,37 +55,23 @@ include config/utilities.mak
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+ 
+-uname_M := $(shell uname -m 2>/dev/null || echo not)
+-
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+-				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+-				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+-				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+-NO_PERF_REGS := 1
+-
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ 
+-# Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-	override ARCH := x86
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++# include config/Makefile by default and rule out
++# non-config cases
++config := 1
++
++NON_CONFIG_TARGETS := clean TAGS tags cscope help
++
++ifdef MAKECMDGOALS
++ifeq ($(filter-out $(NON_CONFIG_TARGETS),$(MAKECMDGOALS)),)
++  config := 0
+ endif
+-ifeq ($(ARCH),x86_64)
+-	override ARCH := x86
+-	IS_X86_64 := 0
+-	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-	endif
+-	ifeq (${IS_X86_64}, 1)
+-		RAW_ARCH := x86_64
+-		ARCH_CFLAGS := -DARCH_X86_64
+-		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+-	endif
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++endif
++
++ifeq ($(config),1)
++include config/Makefile
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+@@ -208,7 +194,7 @@ ifneq ($(OUTPUT),)
+ #$(info Determined 'OUTPUT' to be $(OUTPUT))
+ endif
+ 
+-BASIC_CFLAGS = \
++BASIC_CFLAGS += \
+ 	-Iutil/include \
+ 	-Iarch/$(ARCH)/include \
+ 	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+@@ -857,7 +843,6 @@ ifeq ($(NO_PERF_REGS),0)
+ 	ifeq ($(ARCH),x86)
+ 		LIB_H += arch/x86/include/perf_regs.h
+ 	endif
+-	BASIC_CFLAGS += -DHAVE_PERF_REGS
+ endif
+ 
+ ifndef NO_STRLCPY
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+new file mode 100644
+index 0000000..fe317c2
+--- /dev/null
++++ b/tools/perf/config/Makefile
+@@ -0,0 +1,34 @@
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++				  -e s/arm.*/arm/ -e s/sa110/arm/ \
++				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
++				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
++				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++NO_PERF_REGS := 1
++
++# Additional ARCH settings for x86
++ifeq ($(ARCH),i386)
++	override ARCH := x86
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++endif
++
++ifeq ($(ARCH),x86_64)
++	override ARCH := x86
++	IS_X86_64 := 0
++	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++	endif
++	ifeq (${IS_X86_64}, 1)
++		RAW_ARCH := x86_64
++		ARCH_CFLAGS := -DARCH_X86_64
++		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++	endif
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++endif
++
++ifeq ($(NO_PERF_REGS),0)
++        BASIC_CFLAGS += -DHAVE_PERF_REGS
++endif
