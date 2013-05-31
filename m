@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab3EaMWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:22:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57546 "EHLO
+	id S1756229Ab3EaMX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:23:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57558 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab3EaMWD (ORCPT
+	with ESMTP id S1754446Ab3EaMXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:22:03 -0400
-Date: Fri, 31 May 2013 05:21:39 -0700
-From: tip-bot for Rabin Vincent <tipbot@zytor.com>
-Message-ID: <tip-3c4797d46c14fa0c7cf733a77bd4b28875078b53@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, rabin@rab.in, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, rabin@rab.in, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1368822464-4887-1-git-send-email-rabin@rab.in>
-References: <1368822464-4887-1-git-send-email-rabin@rab.in>
+	Fri, 31 May 2013 08:23:21 -0400
+Date: Fri, 31 May 2013 05:22:56 -0700
+From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
+Message-ID: <tip-bd1060eb7b46968a8fbdc58e7d8b4575406a5c93@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, benh@kernel.crashing.org,
+        tglx@linutronix.de, sukadev@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        benh@kernel.crashing.org, tglx@linutronix.de,
+        sukadev@linux.vnet.ibm.com
+In-Reply-To: <20130406164803.GA408@us.ibm.com>
+References: <20130406164803.GA408@us.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib lk: Respect CROSS_COMPILE
-Git-Commit-ID: 3c4797d46c14fa0c7cf733a77bd4b28875078b53
+Subject: [tip:perf/core] perf: Power7:
+  Make CPI stack events available in sysfs
+Git-Commit-ID: bd1060eb7b46968a8fbdc58e7d8b4575406a5c93
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,37 +35,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3c4797d46c14fa0c7cf733a77bd4b28875078b53
-Gitweb:     http://git.kernel.org/tip/3c4797d46c14fa0c7cf733a77bd4b28875078b53
-Author:     Rabin Vincent <rabin@rab.in>
-AuthorDate: Fri, 17 May 2013 22:27:44 +0200
+Commit-ID:  bd1060eb7b46968a8fbdc58e7d8b4575406a5c93
+Gitweb:     http://git.kernel.org/tip/bd1060eb7b46968a8fbdc58e7d8b4575406a5c93
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Sat, 6 Apr 2013 08:48:26 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 15:46:36 +0300
+CommitDate: Wed, 29 May 2013 16:04:18 +0300
 
-tools lib lk: Respect CROSS_COMPILE
+perf: Power7: Make CPI stack events available in sysfs
 
-Make lk use CROSS_COMPILE, in order to be able to cross compile perf
-again.
+A set of Power7 events are often used for Cycles Per Instruction (CPI) stack
+analysis. Make these events available in sysfs (/sys/devices/cpu/events/) so
+they can be identified using their symbolic names:
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1368822464-4887-1-git-send-email-rabin@rab.in
+	perf stat -e 'cpu/PM_CMPLU_STALL_DCACHE_MISS/' /bin/ls
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20130406164803.GA408@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lk/Makefile | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/perf/power7-pmu.c | 73 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 926cbf3..2c5a197 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -1,5 +1,8 @@
- include ../../scripts/Makefile.include
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index 3c475d6..13c3f0e 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -62,6 +62,29 @@
+ #define	PME_PM_BRU_FIN			0x10068
+ #define	PME_PM_BRU_MPRED		0x400f6
  
-+CC = $(CROSS_COMPILE)gcc
-+AR = $(CROSS_COMPILE)ar
++#define PME_PM_CMPLU_STALL_FXU			0x20014
++#define PME_PM_CMPLU_STALL_DIV			0x40014
++#define PME_PM_CMPLU_STALL_SCALAR		0x40012
++#define PME_PM_CMPLU_STALL_SCALAR_LONG		0x20018
++#define PME_PM_CMPLU_STALL_VECTOR		0x2001c
++#define PME_PM_CMPLU_STALL_VECTOR_LONG		0x4004a
++#define PME_PM_CMPLU_STALL_LSU			0x20012
++#define PME_PM_CMPLU_STALL_REJECT		0x40016
++#define PME_PM_CMPLU_STALL_ERAT_MISS		0x40018
++#define PME_PM_CMPLU_STALL_DCACHE_MISS		0x20016
++#define PME_PM_CMPLU_STALL_STORE		0x2004a
++#define PME_PM_CMPLU_STALL_THRD			0x1001c
++#define PME_PM_CMPLU_STALL_IFU			0x4004c
++#define PME_PM_CMPLU_STALL_BRU			0x4004e
++#define PME_PM_GCT_NOSLOT_IC_MISS		0x2001a
++#define PME_PM_GCT_NOSLOT_BR_MPRED		0x4001a
++#define PME_PM_GCT_NOSLOT_BR_MPRED_IC_MISS	0x4001c
++#define PME_PM_GRP_CMPL				0x30004
++#define PME_PM_1PLUS_PPC_CMPL			0x100f2
++#define PME_PM_CMPLU_STALL_DFU			0x2003c
++#define PME_PM_RUN_CYC				0x200f4
++#define PME_PM_RUN_INST_CMPL			0x400fa
 +
- # guard against environment variables
- LIB_H=
- LIB_OBJS=
+ /*
+  * Layout of constraint bits:
+  * 6666555555555544444444443333333333222222222211111111110000000000
+@@ -393,6 +416,31 @@ POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
+ POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
+ POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
+ 
++POWER_EVENT_ATTR(CMPLU_STALL_FXU,		CMPLU_STALL_FXU);
++POWER_EVENT_ATTR(CMPLU_STALL_DIV,		CMPLU_STALL_DIV);
++POWER_EVENT_ATTR(CMPLU_STALL_SCALAR,		CMPLU_STALL_SCALAR);
++POWER_EVENT_ATTR(CMPLU_STALL_SCALAR_LONG,	CMPLU_STALL_SCALAR_LONG);
++POWER_EVENT_ATTR(CMPLU_STALL_VECTOR,		CMPLU_STALL_VECTOR);
++POWER_EVENT_ATTR(CMPLU_STALL_VECTOR_LONG,	CMPLU_STALL_VECTOR_LONG);
++POWER_EVENT_ATTR(CMPLU_STALL_LSU,		CMPLU_STALL_LSU);
++POWER_EVENT_ATTR(CMPLU_STALL_REJECT,		CMPLU_STALL_REJECT);
++
++POWER_EVENT_ATTR(CMPLU_STALL_ERAT_MISS,		CMPLU_STALL_ERAT_MISS);
++POWER_EVENT_ATTR(CMPLU_STALL_DCACHE_MISS,	CMPLU_STALL_DCACHE_MISS);
++POWER_EVENT_ATTR(CMPLU_STALL_STORE,		CMPLU_STALL_STORE);
++POWER_EVENT_ATTR(CMPLU_STALL_THRD,		CMPLU_STALL_THRD);
++POWER_EVENT_ATTR(CMPLU_STALL_IFU,		CMPLU_STALL_IFU);
++POWER_EVENT_ATTR(CMPLU_STALL_BRU,		CMPLU_STALL_BRU);
++POWER_EVENT_ATTR(GCT_NOSLOT_IC_MISS,		GCT_NOSLOT_IC_MISS);
++
++POWER_EVENT_ATTR(GCT_NOSLOT_BR_MPRED,		GCT_NOSLOT_BR_MPRED);
++POWER_EVENT_ATTR(GCT_NOSLOT_BR_MPRED_IC_MISS,	GCT_NOSLOT_BR_MPRED_IC_MISS);
++POWER_EVENT_ATTR(GRP_CMPL,			GRP_CMPL);
++POWER_EVENT_ATTR(1PLUS_PPC_CMPL,		1PLUS_PPC_CMPL);
++POWER_EVENT_ATTR(CMPLU_STALL_DFU,		CMPLU_STALL_DFU);
++POWER_EVENT_ATTR(RUN_CYC,			RUN_CYC);
++POWER_EVENT_ATTR(RUN_INST_CMPL,			RUN_INST_CMPL);
++
+ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(CYC),
+ 	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
+@@ -411,6 +459,31 @@ static struct attribute *power7_events_attr[] = {
+ 	POWER_EVENT_PTR(LD_MISS_L1),
+ 	POWER_EVENT_PTR(BRU_FIN),
+ 	POWER_EVENT_PTR(BRU_MPRED),
++
++	POWER_EVENT_PTR(CMPLU_STALL_FXU),
++	POWER_EVENT_PTR(CMPLU_STALL_DIV),
++	POWER_EVENT_PTR(CMPLU_STALL_SCALAR),
++	POWER_EVENT_PTR(CMPLU_STALL_SCALAR_LONG),
++	POWER_EVENT_PTR(CMPLU_STALL_VECTOR),
++	POWER_EVENT_PTR(CMPLU_STALL_VECTOR_LONG),
++	POWER_EVENT_PTR(CMPLU_STALL_LSU),
++	POWER_EVENT_PTR(CMPLU_STALL_REJECT),
++
++	POWER_EVENT_PTR(CMPLU_STALL_ERAT_MISS),
++	POWER_EVENT_PTR(CMPLU_STALL_DCACHE_MISS),
++	POWER_EVENT_PTR(CMPLU_STALL_STORE),
++	POWER_EVENT_PTR(CMPLU_STALL_THRD),
++	POWER_EVENT_PTR(CMPLU_STALL_IFU),
++	POWER_EVENT_PTR(CMPLU_STALL_BRU),
++	POWER_EVENT_PTR(GCT_NOSLOT_IC_MISS),
++	POWER_EVENT_PTR(GCT_NOSLOT_BR_MPRED),
++
++	POWER_EVENT_PTR(GCT_NOSLOT_BR_MPRED_IC_MISS),
++	POWER_EVENT_PTR(GRP_CMPL),
++	POWER_EVENT_PTR(1PLUS_PPC_CMPL),
++	POWER_EVENT_PTR(CMPLU_STALL_DFU),
++	POWER_EVENT_PTR(RUN_CYC),
++	POWER_EVENT_PTR(RUN_INST_CMPL),
+ 	NULL
+ };
+ 
