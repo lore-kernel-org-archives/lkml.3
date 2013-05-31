@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3EaLNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:13:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56339 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab3EaLNK (ORCPT
+	id S1755132Ab3EaLNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:13:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63179 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752526Ab3EaLNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:13:10 -0400
-Date: Fri, 31 May 2013 04:12:38 -0700
-From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
-Message-ID: <tip-6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
-        namhyung@kernel.org
-In-Reply-To: <20130329192950.GA9312@us.ibm.com>
-References: <20130329192950.GA9312@us.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix bug in isupper() and islower()
-Git-Commit-ID: 6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 31 May 2013 07:13:37 -0400
+Date: Fri, 31 May 2013 12:13:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: A bug about system call on ARM
+Message-ID: <20130531111305.GI4928@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
-Gitweb:     http://git.kernel.org/tip/6956664a5c4c32d5aa48fe96d5e2421a3e3f72d5
-Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-AuthorDate: Fri, 29 Mar 2013 12:14:43 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 28 May 2013 16:23:51 +0300
+On Fri, May 31, 2013 at 12:02:49PM +0100, Wang, Yalin wrote:
+> Hi  Will,
+> 
+> I have merge your code ,
+> But there is a different ,
+> 
+> +	
+> +	ct_user_exit
 
-perf tools: Fix bug in isupper() and islower()
+I thought you didn't have ct_user_exit? In which case, just delete this
+line.
 
-One of the reasons 'perf test' is failing on Power appears to be due to
-a bug in isupper().
+> +#ifdef CONFIG_ALIGNMENT_TRAP
+> +	ldr	ip, __cr_alignment
+> +	ldr	ip, [ip]
+> +	mcr	p15, 0, ip, c1, c0		@ update control register
+> +#endif 
+> 
+> +	enable_irq
+> +	get_thread_info tsk
 
-isupper(c) and islower(c) should be checking 'c' against the mask 0x20.
-Instead they are checking sane_ctype[c] which causes isupper() to be
-true for lower case letters.
+Hard to tell without context. You can take a look at my git tree if you
+like (I fixed it up based on Nico's comment):
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20130329192950.GA9312@us.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/util.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+  https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=misc-patches
 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index a45710b..7a484c9 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -221,8 +221,8 @@ extern unsigned char sane_ctype[256];
- #define isalpha(x) sane_istest(x,GIT_ALPHA)
- #define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
- #define isprint(x) sane_istest(x,GIT_PRINT)
--#define islower(x) (sane_istest(x,GIT_ALPHA) && sane_istest(x,0x20))
--#define isupper(x) (sane_istest(x,GIT_ALPHA) && !sane_istest(x,0x20))
-+#define islower(x) (sane_istest(x,GIT_ALPHA) && (x & 0x20))
-+#define isupper(x) (sane_istest(x,GIT_ALPHA) && !(x & 0x20))
- #define tolower(x) sane_case((unsigned char)(x), 0x20)
- #define toupper(x) sane_case((unsigned char)(x), 0)
- 
+Will
