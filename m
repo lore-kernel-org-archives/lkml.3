@@ -1,71 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3EaSIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:08:13 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:64691 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3EaSIJ (ORCPT
+	id S1756761Ab3EaSIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:08:42 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33046 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab3EaSId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:08:09 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>, grant.likely@linaro.org,
-        linus.walleij@linaro.org, rob.herring@calxeda.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, vaibhav.bedia@ti.com,
-        sudhakar.raj@ti.com, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 00/11] drivers: Add Pinctrl PM support
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
-	<20130531170437.GA17591@core.coreip.homeip.net>
-Date: Fri, 31 May 2013 11:08:06 -0700
-In-Reply-To: <20130531170437.GA17591@core.coreip.homeip.net> (Dmitry
-	Torokhov's message of "Fri, 31 May 2013 10:04:37 -0700")
-Message-ID: <8761xz10qh.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 31 May 2013 14:08:33 -0400
+Message-ID: <51A8E71D.1000407@linaro.org>
+Date: Fri, 31 May 2013 11:08:29 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv6 00/11] Remove ARM local timer API
+References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org> <20130531174526.GD599@codeaurora.org>
+In-Reply-To: <20130531174526.GD599@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Linus W. (pinctrl maintainer)
+On 05/31/2013 10:45 AM, Stephen Boyd wrote:
+> Comments have been light for this round so I think we're about
+> ready to merge. John/Thomas, can you pick up these patches or
+> shall I route them through arm-soc or something else?
 
-Dmitry Torokhov <dmitry.torokhov@gmail.com> writes:
 
-> Hi Hebbar,
->
-> On Fri, May 31, 2013 at 03:43:00PM +0530, Hebbar Gururaja wrote:
->> By optionally putting the pins into sleep state in the suspend [or in
->> runtime_suspend] callback we can accomplish two things.
->> - One is to minimize current leakage from pins and thus save power,
->> - second, we can prevent the IP from driving pins output in an
->> uncontrolled manner, which may happen if the power domain drops the
->> domain regulator.
->> 
->> These states can be specified in the DT blob and corresponding driver
->> can pick these states during probe & set the related values during
->> idle/suspend.
->> 
->> Not all drivers support/has idle state. Drivers like i2c, spi, mmc has
->> idle states and hence these drivers are updated to support all the
->> three states
->> - default  : during regular operation
->> - idle : when the module is in idle state
->> - sleep : when the module is in suspend state
->> 
->> For those drivers which doesn't support/have idle state (at least at
->> the moment), only default & sleep state is added.
->
-> As with the original introduction of pinctrl states my question is: "Can
-> all of this be handled in the driver/bus core instead of adding a lot
-> of boilerplate code to the individual drivers".
+So there looks to be a fair amount of additions in the ARM tree, do 
+those already have acks from Arnd/Olof/other folks? (I think I was only 
+cc'ed on the first two patches).
 
-Yes, I had the same thought.
+Daniel (cc'ed) has just started helping out here, and should be able to 
+review and hopefully ack or pick up the timer related 
+drivers/clocksource changes to feed to Thomas' tree. Not sure if he's 
+got them in his mailbox so you might want to resend them and make sure 
+he's CC'ed.
 
-What's being handled here are either events related to runtime PM
-(runtime suspend, runtime resume) or system PM (suspend/resume) so seems
-appropriat to handle them in the PM core.
+If Arnd/Olof/whomever else from the arm side has acked things, Daniel 
+probably could queue the arm changes too, but it might be better just to 
+get Daniel's ack on the drivers/clocksource changes and then queue 
+things via arm-soc?
 
-Kevin
+thanks
+-john
+
+
+
+> On 05/13, Stephen Boyd wrote:
+>> In light of Mark Rutland's recent work on divorcing the ARM architected
+>> timers from the ARM local timer API and introducing a generic arch hook for
+>> broadcast it seems that we should remove the local timer API entirely.
+>> Doing so will reduce the architecture dependencies of our timer drivers,
+>> reduce code in ARM core, and simplify timer drivers because they no longer
+>> go through an architecture layer that is essentially a hotplug notifier.
+>>
+>> Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+>> be accepted now so that we can clean up the timer drivers that are
+>> used in both UP and SMP situations. Right now these drivers have to ignore
+>> the timer setup callback on the boot CPU to avoid registering clockevents
+>> twice. This is not very symmetric and causes convuluted code that does
+>> the same thing in two places.
+>>
+>> Patches based on next-20130418
+>>
+>> I'm still looking for Acks/Tested-by on EXYNOS and PRIMA2.
+>>
+>> [1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
+>>
+>> Note: A hotplug notifier is used by both x86 for the apb_timer (see
+>> apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+>> metag_generic.c) so this is not new.
+>>
+>> Changes since v5:
+>>   * Rebased onto v3.10-rc1
+>>   * Rebase caused minor updates to mct patch
+>>
+>> Changes since v4:
+>>   * Rebased onto next-20130418
+>>   * Rebase caused minor updates to mct patch and twd Kconfig
+>>
+>> Changes since v3:
+>>   * New patch to fix SMP with dummy timers registered after a global timer
+>>   * Push this_cpu_ptr lower to avoid preemptible false positive warnings
+>>   * Collected acks/tested-bys
+>>
+>> Changes since v2:
+>>   * Bug fixes in smp_twd from Tony Lindgren's testing
+>>   * Move smp_twd to use late_time_init hook
+>>   * Collected Acks
+>>
+>> Changes since v1:
+>>   * Picked up Mark's generic dummy timer driver
+>>   * Split out omap changes into new patch
+>>
+>> Mark Rutland (1):
+>>    clocksource: add generic dummy timer driver
+>>
+>> Stephen Boyd (10):
+>>    clockevents: Prefer CPU local devices over global devices
+>>    ARM: smp: Remove duplicate dummy timer implementation
+>>    ARM: smp_twd: Divorce smp_twd from local timer API
+>>    ARM: OMAP2+: Divorce from local timer API
+>>    ARM: EXYNOS4: Divorce mct from local timer API
+>>    ARM: PRIMA2: Divorce timer-marco from local timer API
+>>    ARM: msm: Divorce msm_timer from local timer API
+>>    clocksource: time-armada-370-xp: Fix sparse warning
+>>    clocksource: time-armada-370-xp: Divorce from local timer API
+>>    ARM: smp: Remove local timer API
+>>
+>>   arch/arm/Kconfig                         |  12 +--
+>>   arch/arm/include/asm/localtimer.h        |  34 ---------
+>>   arch/arm/kernel/smp.c                    |  87 ---------------------
+>>   arch/arm/kernel/smp_twd.c                |  64 ++++++++++------
+>>   arch/arm/mach-highbank/Kconfig           |   2 +-
+>>   arch/arm/mach-imx/Kconfig                |   2 +-
+>>   arch/arm/mach-msm/timer.c                | 126 +++++++++++++++++--------------
+>>   arch/arm/mach-omap2/Kconfig              |   3 +-
+>>   arch/arm/mach-omap2/timer.c              |   7 --
+>>   arch/arm/mach-realview/Kconfig           |   8 +-
+>>   arch/arm/mach-spear/Kconfig              |   2 +-
+>>   arch/arm/mach-tegra/Kconfig              |   2 +-
+>>   arch/arm/mach-ux500/Kconfig              |   2 +-
+>>   arch/arm/mach-vexpress/Kconfig           |   2 +-
+>>   arch/arm/mach-zynq/Kconfig               |   2 +-
+>>   drivers/clocksource/Makefile             |   1 +
+>>   drivers/clocksource/dummy_timer.c        |  69 +++++++++++++++++
+>>   drivers/clocksource/exynos_mct.c         |  60 ++++++++++-----
+>>   drivers/clocksource/time-armada-370-xp.c |  92 +++++++++++-----------
+>>   drivers/clocksource/timer-marco.c        | 100 +++++++++++++-----------
+>>   include/linux/time-armada-370-xp.h       |   4 +-
+>>   kernel/time/tick-common.c                |   5 +-
+>>   22 files changed, 340 insertions(+), 346 deletions(-)
+>>   delete mode 100644 arch/arm/include/asm/localtimer.h
+>>   create mode 100644 drivers/clocksource/dummy_timer.c
+>>
+>> -- 
+>> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+>> hosted by The Linux Foundation
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
