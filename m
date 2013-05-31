@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab3EaOYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:24:48 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35822 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab3EaOYl (ORCPT
+	id S1753770Ab3EaOZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:25:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41192 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751880Ab3EaOYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:24:41 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/2] ARM: ux500: Allocate correct amount of memory for the u8540 in DT
-Date: Fri, 31 May 2013 15:24:31 +0100
-Message-Id: <1370010272-25520-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 31 May 2013 10:24:52 -0400
+Date: Fri, 31 May 2013 10:24:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Takashi Iwai <tiwai@suse.de>
+cc: Joe Perches <joe@perches.com>, Jaroslav Kysela <perex@perex.cz>,
+        <alsa-devel@alsa-project.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] Improving or replacing snd_printk()
+In-Reply-To: <s5ha9nbinre.wl%tiwai@suse.de>
+Message-ID: <Pine.LNX.4.44L0.1305311014330.1276-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As it stands, the memory node in the u8540 Device Tree is ignored and
-memory is actually stipulated by the bootloader via ATAGS. ARM core
-architecture code then extracts the memory ATAG and inserts it into the
-Device Tree. In the u8540 the LittleKernel bootloader only stipulates
-512MB of memory; however, the u8540 actually has 4GB. We're taking the
-responsibility to register the remainder from Device Tree here.
+On Fri, 31 May 2013, Takashi Iwai wrote:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/ccu8540.dts |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> > I don't see the complexity/hell in adding functions
+> > for specific types of struct * to reduce the complexity
+> > of the code though.  Centralizing those indirections
+> > into functions also generally reduces overall code size.
+> 
+> I don't mind to add the struct pointer to new snd_*() -- if we really
+> introduce them.  The bigger question is whether we really need to
+> introduce such, and if yes, what variants.  And for that, I don't
+> think we need to add many functions.  Maybe snd_card_<level>() would
+> be good.  But others don't seem to make sense to me (remember that I
+> suggest dropping CONFIG_SND_VERBOSE_PRINTK).
 
-diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-index 12f0bc2..199866b 100644
---- a/arch/arm/boot/dts/ccu8540.dts
-+++ b/arch/arm/boot/dts/ccu8540.dts
-@@ -16,8 +16,8 @@
- 	model = "ST-Ericsson U8540 platform with Device Tree";
- 	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
- 
--	memory {
--		reg = <0x00000000 0x20000000>;
-+	memory@0 {
-+		reg = <0x20000000 0x3f000000>, <0xc0000000 0x3f000000>;
- 	};
- 
- 	soc {
--- 
-1.7.10.4
+struct snd_card contains pointers to two different devices: dev and 
+card_dev.  Some contexts might want to use one of them for log messages 
+while other contexts might want to use the other.
+
+I guess defining snd_card_*() to use card->card_dev makes the most 
+sense.  If some code wants to use card->dev instead, it can pass that 
+as the first argument to dev_*().
+
+The most commonly used levels seem to be err, warn, info, and dbg.  
+Those ought to be enough.  In fact, you probably could getting along 
+without warn -- just err, info, and dbg.
+
+Alan Stern
 
