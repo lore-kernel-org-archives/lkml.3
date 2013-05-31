@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab3EaWS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:18:26 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:37110 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab3EaWSS (ORCPT
+	id S1757455Ab3EaWVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:21:34 -0400
+Received: from forward10.mail.yandex.net ([77.88.61.49]:52546 "EHLO
+	forward10.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3EaWV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:18:18 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-In-Reply-To: <alpine.LFD.2.02.1305311835040.2905@ionos>
-References: <20130530211944.05F4D3E0A90@localhost> <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com> <alpine.LFD.2.02.1305311835040.2905@ionos>
-Date: Fri, 31 May 2013 23:18:14 +0100
-Message-Id: <20130531221814.534DF3E08FE@localhost>
+	Fri, 31 May 2013 18:21:29 -0400
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 May 2013 18:21:28 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        =?utf-8?B?VHJlcMOhayBWaWxtb3M=?= <trepo@netcomga.sk>
+In-Reply-To: <1360371370037208@web3f.yandex.ru>
+References: <1360371370037208@web3f.yandex.ru>
+Subject: Re: [PATCH]hp-wmi: Fix gps support in hp_wmi_rfkill_setup()
+MIME-Version: 1.0
+Message-Id: <1307091370038533@web21e.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 01 Jun 2013 02:15:33 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 31 May 2013, Christian Ruppert wrote:
-> 
-> > The SOC interrupt controller driver for the Abilis Systems TB10x series of
-> > SOCs based on ARC700 CPUs.
-> > 
-> > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
-> > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
-> 
-> That branch can be pulled into ARC as well. It only contains the
-> changes, which are necessary for the irq domain support of the generic
-> irq chip.
-> 
-> > +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
-> > +{
-> > +	struct irq_domain *domain = irq_desc_get_handler_data(desc);
-> > +
-> > +	generic_handle_irq(irq_find_mapping(domain, irq));
-> > +}
-> 
-> ...
-> 
-> > +	for (i = 0; i < nrirqs; i++) {
-> > +		unsigned int irq = irq_of_parse_and_map(ictl, i);
-> > +
-> > +		irq_set_handler_data(irq, domain);
-> > +		irq_set_chained_handler(irq, tb10x_irq_cascade);
-> > +	}
-> 
-> I might be completely confused, but this does not make any sense at
-> all.
-> 
-> You allocate a linear domain and then map the interrupts in the
-> domain. The mapping function retrieves the hardware interrupt number
-> and creates a virtual interrupt number, installs the chip and the
-> handler for the interrupt and finally returns the virtual interrupt
-> number.
-> 
-> Now you take that virtual interrupt number and install
-> tb10x_irq_cascade as the handler. irq_set_chained_handler() will
-> startup (unmask) the interrupt right away.
-> 
-> In the cascade handler you take the virtual interrupt number, which
-> you get as argument, and find the mapping, i.e. the matching VIRTUAL
-> interrupt number for the VIRTUAL interrupt number and then call the
-> handler.
-> 
-> How is this supposed to work?
+One more error.. I'll resend patch to x86-platform mailing list
 
-I think what is going on here is that the tb10x interrupt controller
-appears to be more of a front-end to another interrupt controller with
-each input wired up 1:1 to the interrupt inputs of the other controller.
-(I don't know why someone would design an interrupt controller that way,
-but that's another issue). The loop above is mapping each of the
-interrupt inputs on the parent controller so that each child controller
-can be chained to it as an input. I can't think of how else it could be
-set up with the current code if the drivers were kept separate.
-
-Christian, what is the parent interrupt controller for this SoC? It
-really feels like the tb10x-ictl belongs as part of the parent
-controller. I went and looked at the parent node, and I saw this:
-
-		intc: interrupt-controller {
-				compatible = "snps,arc700-intc";
-				interrupt-controller;
-				#interrupt-cells = <1>;
-		};
-
-I noticed the conspicuous absence of a reg property. Is this something
-architectural? If I were working on this system I'd drop the
-snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
-encapsulated the properties of both (you would of course want to share
-handler functions for the 'normal' inputs without the custom features).
-That would eliminate the goofyness of listing 27 separate interrupts in
-the abilis,tb10x-ictl interrupts property.
-
-g.
-
+01.06.2013, 01:53, "Kirill Tkhai" <tkhai@yandex.ru>:
+> Current gps support in hp_wmi_rfkill_setup() looks like bad copy/past.
+> It leads to kernel panic on my HP530 laptop. So I did:
+>
+> 1)Fix wwan/gps register_*_error label order
+> 2)Fix rfkill_set_hw_state() wrong argument in case of gps
+>
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+> CC: Matthew Garrett <matthew.garrett@nebula.com>
+> CC: Trepák Vilmos <trepo@netcomga.sk>
+> ---
+>  drivers/platform/x86/hp-wmi.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+> index 45cacf7..cdb8afb 100644
+> --- a/drivers/platform/x86/hp-wmi.c
+> +++ b/drivers/platform/x86/hp-wmi.c
+> @@ -658,7 +658,7 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+>                                             (void *) HPWMI_WWAN);
+>                  if (!wwan_rfkill) {
+>                          err = -ENOMEM;
+> - goto register_gps_error;
+> + goto register_bluetooth_error;
+>                  }
+>                  rfkill_init_sw_state(wwan_rfkill,
+>                                       hp_wmi_get_sw_state(HPWMI_WWAN));
+> @@ -666,7 +666,7 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+>                                      hp_wmi_get_hw_state(HPWMI_WWAN));
+>                  err = rfkill_register(wwan_rfkill);
+>                  if (err)
+> - goto register_wwan_err;
+> + goto register_wwan_error;
+>          }
+>
+>          if (wireless & 0x8) {
+> @@ -676,11 +676,11 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+>                                                  (void *) HPWMI_GPS);
+>                  if (!gps_rfkill) {
+>                          err = -ENOMEM;
+> - goto register_bluetooth_error;
+> + goto register_wwan_error;
+>                  }
+>                  rfkill_init_sw_state(gps_rfkill,
+>                                       hp_wmi_get_sw_state(HPWMI_GPS));
+> - rfkill_set_hw_state(bluetooth_rfkill,
+> + rfkill_set_hw_state(gps_rfkill,
+>                                      hp_wmi_get_hw_state(HPWMI_GPS));
+>                  err = rfkill_register(gps_rfkill);
+>                  if (err)
+> @@ -688,16 +688,16 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+>          }
+>
+>          return 0;
+> -register_wwan_err:
+> - rfkill_destroy(wwan_rfkill);
+> - wwan_rfkill = NULL;
+> - if (gps_rfkill)
+> - rfkill_unregister(gps_rfkill);
+>  register_gps_error:
+>          rfkill_destroy(gps_rfkill);
+>          gps_rfkill = NULL;
+>          if (bluetooth_rfkill)
+>                  rfkill_unregister(bluetooth_rfkill);
+> +register_wwan_error:
+> + rfkill_destroy(wwan_rfkill);
+> + wwan_rfkill = NULL;
+> + if (gps_rfkill)
+> + rfkill_unregister(gps_rfkill);
+>  register_bluetooth_error:
+>          rfkill_destroy(bluetooth_rfkill);
+>          bluetooth_rfkill = NULL;
