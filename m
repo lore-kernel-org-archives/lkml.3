@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3EaKXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:23:15 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:64677 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab3EaKXC (ORCPT
+	id S1754253Ab3EaK3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:29:48 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:45236 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab3EaK3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:23:02 -0400
-Date: Fri, 31 May 2013 03:22:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-In-Reply-To: <20130531081052.GA32491@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com> <20130530150539.GA18155@dhcp22.suse.cz> <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com> <20130531081052.GA32491@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 31 May 2013 06:29:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,778,1363132800"; 
+   d="scan'208";a="5198668"
+Message-ID: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
+Subject: DTB build failure due to preproccessing
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>, JonLoeliger <jdl@jdl.com>,
+        <linux-kbuild@vger.kernel.org>
+Date: Fri, 31 May 2013 11:29:30 +0100
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Michal Hocko wrote:
+This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
+actually a more general issue:
 
-> I have always discouraged people from running oom handler in the same
-> memcg (or even in the same hierarchy).
-> 
+        $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb 
+          CC      scripts/mod/devicetable-offsets.s
+          GEN     scripts/mod/devicetable-offsets.h
+          HOSTCC  scripts/mod/file2alias.o
+          HOSTLD  scripts/mod/modpost
+          DTC     arch/powerpc/boot/virtex440-ml510.dtb
+        Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
+        FATAL ERROR: Unable to parse input tree
+        make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
+        make: *** [virtex440-ml510.dtb] Error 2
+        
+Line 374 is the "IDSEL 0x16..." line here:
+			interrupt-map = <
+				/* IRQ mapping for pci slots and ALI M1533
+				 ...
+				 * management core also isn't used.
+				 */
 
-We allow users to control their own memcgs by chowning them, so they must 
-be run in the same hierarchy if they want to run their own userspace oom 
-handler.  There's nothing in the kernel that prevents that and the user 
-has no other option but to run in a parent cgroup.
+				/* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
+				0x3000 0 0 1 &xps_intc_0 3 2
+				0x3000 0 0 2 &xps_intc_0 2 2
+				0x3000 0 0 3 &xps_intc_0 5 2
+				0x3000 0 0 4 &xps_intc_0 4 2
 
-> Yes, mmap_sem is tricky. Nothing in the proc code should take it for
-> writing and charges are done with mmap_sem held for reading but that
-> doesn't prevent from non-oom thread to try to get it for writing which
-> would block also all future readers. We have also seen i_mutex being
-> held during charge so you have to be careful about that one as well but
-> I am not aware of other locks that could be a problem.
-> 
-> The question is, do you really need to open any /proc/<pid>/ files which
-> depend on mmap_sem (e.g. maps, smaps). /proc/<pid>/status should tell you
-> about used memory. Or put it another way around. What kind of data you
-> need for your OOM handler?
-> 
+Which gets preprocessed into:
+           interrupt-map = <
+        # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
+            0x3000 0 0 1 &xps_intc_0 3 2
+            0x3000 0 0 2 &xps_intc_0 2 2
+            0x3000 0 0 3 &xps_intc_0 5 2
+            0x3000 0 0 4 &xps_intc_0 4 2
 
-It's too easy to simply do even a "ps ax" in an oom memcg and make that 
-thread completely unresponsive because it allocates memory.
+If I manually remove the "# 375 " line then that fixes the error
+(although there is then a subsequent one of the same type).
 
-> I might be thinking about different use cases but user space OOM
-> handlers I have seen so far had quite a good idea what is going on
-> in the group and who to kill.
+I suppose this is a bug in dtc? It appears to have at least some
+awareness of these preprocessor line number comments since it manages to
+report the original source line number.
 
-Then perhaps I'm raising constraints that you've never worked with, I 
-don't know.  We choose to have a priority-based approach that is inherited 
-by children; this priority is kept in userspace and and the oom handler 
-would naturally need to know the set of tasks in the oom memcg at the time 
-of oom and their parent-child relationship.  These priorities are 
-completely independent of memory usage.
+Ian.
 
-> > If the oom notifier is in the oom cgroup, it may not be able to       
-> > successfully read the memcg "tasks" file to even determine the set of 
-> > eligible processes.
-> 
-> It would have to use preallocated buffer and have mlocked all the memory
-> that will be used during oom event.
-> 
-
-Wrong, the kernel itself allocates memory when reading this information 
-and that would fail in an oom memcg.
