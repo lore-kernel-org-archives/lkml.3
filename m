@@ -1,90 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3EaL7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:59:00 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:31180 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab3EaL6x (ORCPT
+	id S1755876Ab3EaL7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:59:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57093 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755799Ab3EaL7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:58:53 -0400
-X-IronPort-AV: E=Sophos;i="4.87,778,1363132800"; 
-   d="scan'208";a="5201928"
-Message-ID: <1370001530.5199.118.camel@zakaz.uk.xensource.com>
-Subject: Re: DTB build failure due to preproccessing
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>,
-        "Stephen Warren" <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>, JonLoeliger <jdl@jdl.com>,
-        <linux-kbuild@vger.kernel.org>
-Date: Fri, 31 May 2013 12:58:50 +0100
-In-Reply-To: <20130531114824.60D223E0901@localhost>
-References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
-	 <20130531114824.60D223E0901@localhost>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 31 May 2013 07:59:03 -0400
+Date: Fri, 31 May 2013 04:58:29 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-362493f0d63e25698018f6f36b2e02201342dbee@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1369398928-9809-5-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-5-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Move compiler and linker flags check into config/Makefile
+Git-Commit-ID: 362493f0d63e25698018f6f36b2e02201342dbee
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-31 at 12:48 +0100, Grant Likely wrote:
-> On Fri, 31 May 2013 11:29:30 +0100, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
-> > actually a more general issue:
-> > 
-> >         $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb 
-> >           CC      scripts/mod/devicetable-offsets.s
-> >           GEN     scripts/mod/devicetable-offsets.h
-> >           HOSTCC  scripts/mod/file2alias.o
-> >           HOSTLD  scripts/mod/modpost
-> >           DTC     arch/powerpc/boot/virtex440-ml510.dtb
-> >         Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
-> >         FATAL ERROR: Unable to parse input tree
-> >         make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
-> >         make: *** [virtex440-ml510.dtb] Error 2
-> >         
-> > Line 374 is the "IDSEL 0x16..." line here:
-> > 			interrupt-map = <
-> > 				/* IRQ mapping for pci slots and ALI M1533
-> > 				 ...
-> > 				 * management core also isn't used.
-> > 				 */
-> > 
-> > 				/* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
-> > 				0x3000 0 0 1 &xps_intc_0 3 2
-> > 				0x3000 0 0 2 &xps_intc_0 2 2
-> > 				0x3000 0 0 3 &xps_intc_0 5 2
-> > 				0x3000 0 0 4 &xps_intc_0 4 2
-> > 
-> > Which gets preprocessed into:
-> >            interrupt-map = <
-> >         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
-> >             0x3000 0 0 1 &xps_intc_0 3 2
-> >             0x3000 0 0 2 &xps_intc_0 2 2
-> >             0x3000 0 0 3 &xps_intc_0 5 2
-> >             0x3000 0 0 4 &xps_intc_0 4 2
-> > 
-> > If I manually remove the "# 375 " line then that fixes the error
-> > (although there is then a subsequent one of the same type).
-> > 
-> > I suppose this is a bug in dtc? It appears to have at least some
-> > awareness of these preprocessor line number comments since it manages to
-> > report the original source line number.
-> 
-> dtc is only able to track line numbers when the native /include/
-> directive is used. The #include directive doesn't help it. It should be
-> added, but until it is the following patch solves the problem:
-> 
-> I've got this patch in my tree. Either Rob or I will push it to Linus in
-> the next few days.
+Commit-ID:  362493f0d63e25698018f6f36b2e02201342dbee
+Gitweb:     http://git.kernel.org/tip/362493f0d63e25698018f6f36b2e02201342dbee
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 25 Mar 2013 00:40:48 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:24:06 +0300
 
-Thanks, I'll do something similar in my device-tree.git tree.
+perf tools: Move compiler and linker flags check into config/Makefile
 
-Ian
+Moving compiler and linker flags check into config/Makefile.
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1369398928-9809-5-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile        | 110 ++++++++-------------------------------------
+ tools/perf/config/Makefile |  66 +++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+), 91 deletions(-)
 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2a75476..aa6f933 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -52,6 +52,20 @@ include config/utilities.mak
+ #
+ # Define NO_LIBNUMA if you do not want numa perf benchmark
+ 
++ifeq ($(srctree),)
++srctree := $(patsubst %/,%,$(dir $(shell pwd)))
++srctree := $(patsubst %/,%,$(dir $(srctree)))
++#$(info Determined 'srctree' to be $(srctree))
++endif
++
++ifneq ($(objtree),)
++#$(info Determined 'objtree' to be $(objtree))
++endif
++
++ifneq ($(OUTPUT),)
++#$(info Determined 'OUTPUT' to be $(OUTPUT))
++endif
++
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+ 
+@@ -66,6 +80,9 @@ FLEX    = flex
+ BISON   = bison
+ STRIP  ?= strip
+ 
++LK_DIR = ../lib/lk/
++TRACE_EVENT_DIR = ../lib/traceevent/
++
+ # include config/Makefile by default and rule out
+ # non-config cases
+ config := 1
+@@ -82,33 +99,10 @@ ifeq ($(config),1)
+ include config/Makefile
+ endif
+ 
+-# Treat warnings as errors unless directed not to
+-ifneq ($(WERROR),0)
+-  CFLAGS_WERROR := -Werror
+-endif
+-
+-ifeq ("$(origin DEBUG)", "command line")
+-  PERF_DEBUG = $(DEBUG)
+-endif
+-ifndef PERF_DEBUG
+-  CFLAGS_OPTIMIZE = -O6
+-endif
+-
+-ifdef PARSER_DEBUG
+-	PARSER_DEBUG_BISON  := -t
+-	PARSER_DEBUG_FLEX   := -d
+-	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+-endif
+-
+ ifdef NO_NEWT
+ 	NO_SLANG=1
+ endif
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+-EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-ALL_LDFLAGS = $(LDFLAGS)
+-
+ # Among the variables below, these:
+ #   perfexecdir
+ #   template_dir
+@@ -148,71 +142,6 @@ export prefix bindir sharedir sysconfdir
+ # explicitly what architecture to check for. Fix this up for yours..
+ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
+-ifneq ($(MAKECMDGOALS),clean)
+-ifneq ($(MAKECMDGOALS),tags)
+--include config/feature-tests.mak
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+-	CFLAGS := $(CFLAGS) -fstack-protector-all
+-endif
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
+-       CFLAGS := $(CFLAGS) -Wstack-protector
+-endif
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
+-       CFLAGS := $(CFLAGS) -Wvolatile-register-var
+-endif
+-
+-ifndef PERF_DEBUG
+-	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
+-		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
+-	endif
+-endif
+-
+-### --- END CONFIGURATION SECTION ---
+-
+-ifeq ($(srctree),)
+-srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+-srctree := $(patsubst %/,%,$(dir $(srctree)))
+-#$(info Determined 'srctree' to be $(srctree))
+-endif
+-
+-ifneq ($(objtree),)
+-#$(info Determined 'objtree' to be $(objtree))
+-endif
+-
+-ifneq ($(OUTPUT),)
+-#$(info Determined 'OUTPUT' to be $(OUTPUT))
+-endif
+-
+-BASIC_CFLAGS += \
+-	-Iutil/include \
+-	-Iarch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+-	-I$(srctree)/arch/$(ARCH)/include/uapi \
+-	-I$(srctree)/arch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
+-	-I$(srctree)/include/uapi \
+-	-I$(srctree)/include \
+-	-I$(OUTPUT)util \
+-	-Iutil \
+-	-I. \
+-	-I$(TRACE_EVENT_DIR) \
+-	-I../lib/ \
+-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-
+-BASIC_LDFLAGS =
+-
+-ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+-	BIONIC := 1
+-	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+-	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+-	BASIC_CFLAGS += -I.
+-endif
+-endif # MAKECMDGOALS != tags
+-endif # MAKECMDGOALS != clean
+-
+ # Guard against environment variables
+ BUILTIN_OBJS =
+ LIB_H =
+@@ -225,9 +154,6 @@ SCRIPT_SH += perf-archive.sh
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
+-LK_DIR = ../lib/lk/
+-TRACE_EVENT_DIR = ../lib/traceevent/
+-
+ LK_PATH=$(LK_DIR)
+ 
+ ifneq ($(OUTPUT),)
+@@ -541,6 +467,8 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ ifneq ($(MAKECMDGOALS),clean)
+ ifneq ($(MAKECMDGOALS),tags)
+ 
++-include config/feature-tests.mak
++
+ # We choose to avoid "if .. else if .. else .. endif endif"
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 04bf8ac..8acbcfe 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -42,3 +42,69 @@ endif
+ ifeq ($(call get-executable,$(BISON)),)
+ 	dummy := $(error Error: $(BISON) is missing on this system, please install it)
+ endif
++
++# Treat warnings as errors unless directed not to
++ifneq ($(WERROR),0)
++	CFLAGS_WERROR := -Werror
++endif
++
++ifeq ("$(origin DEBUG)", "command line")
++	PERF_DEBUG = $(DEBUG)
++endif
++ifndef PERF_DEBUG
++	CFLAGS_OPTIMIZE = -O6
++endif
++
++ifdef PARSER_DEBUG
++	PARSER_DEBUG_BISON  := -t
++	PARSER_DEBUG_FLEX   := -d
++	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
++endif
++
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
++EXTLIBS = -lpthread -lrt -lelf -lm
++ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++ALL_LDFLAGS = $(LDFLAGS)
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
++	CFLAGS := $(CFLAGS) -fstack-protector-all
++endif
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
++	CFLAGS := $(CFLAGS) -Wstack-protector
++endif
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
++	CFLAGS := $(CFLAGS) -Wvolatile-register-var
++endif
++
++ifndef PERF_DEBUG
++	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
++	endif
++endif
++
++BASIC_CFLAGS += \
++	-Iutil/include \
++	-Iarch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
++	-I$(srctree)/arch/$(ARCH)/include/uapi \
++	-I$(srctree)/arch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
++	-I$(srctree)/include/uapi \
++	-I$(srctree)/include \
++	-I$(OUTPUT)util \
++	-Iutil \
++	-I. \
++	-I$(TRACE_EVENT_DIR) \
++	-I../lib/ \
++	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++
++BASIC_LDFLAGS =
++
++ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
++	BIONIC := 1
++	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
++	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
++	BASIC_CFLAGS += -I.
++endif
