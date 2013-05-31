@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3EaOub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:50:31 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4190 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3EaOu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:50:26 -0400
-From: Maarten ter Huurne <maarten@treewalker.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        Maarten ter Huurne <maarten@treewalker.org>
-Subject: [PATCH] regmap: regcache-rbtree: Fixed node range check on sync
-Date: Fri, 31 May 2013 16:45:13 +0200
-Message-Id: <1370011513-10816-2-git-send-email-maarten@treewalker.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370011513-10816-1-git-send-email-maarten@treewalker.org>
-References: <1370011513-10816-1-git-send-email-maarten@treewalker.org>
+	id S1752889Ab3EaOup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:50:45 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:43312 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab3EaOug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 10:50:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,779,1363132800"; 
+   d="scan'208";a="28537422"
+Date: Fri, 31 May 2013 15:50:16 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC 5/6] arm64/xen: implement xen_remap on arm64
+In-Reply-To: <20130531141601.GC15551@arm.com>
+Message-ID: <alpine.DEB.2.02.1305311530440.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com> <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com> <20130531105915.GC18045@localhost.cambridge.arm.com> <alpine.DEB.2.02.1305311419280.4799@kaball.uk.xensource.com>
+ <20130531141601.GC15551@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A node starting before the minimum register is no reason to reject it,
-since its end could be in range. The check for the end already exists
-two lines lower, so we can just remove the incorrect check.
+On Fri, 31 May 2013, Catalin Marinas wrote:
+> On Fri, May 31, 2013 at 02:21:16PM +0100, Stefano Stabellini wrote:
+> > On Fri, 31 May 2013, Catalin Marinas wrote:
+> > > On Thu, May 30, 2013 at 05:18:32PM +0100, Stefano Stabellini wrote:
+> > > > --- a/arch/arm/include/asm/xen/page.h
+> > > > +++ b/arch/arm/include/asm/xen/page.h
+> > > > @@ -90,6 +90,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> > > >  	return __set_phys_to_machine(pfn, mfn);
+> > > >  }
+> > > >  
+> > > > +#ifdef CONFIG_ARM64
+> > > > +#define xen_remap(cookie, size) __ioremap((cookie), (size), __pgprot(PROT_NORMAL))
+> > > > +#else
+> > > >  #define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
+> > > > +#endif
+> > > 
+> > > Now I saw the ARM-specific part. Can you not use something like
+> > > ioremap_cached() which would give normal cacheable memory (at least on
+> > > ARMv7).
+> > 
+> > No, I cannot because ioremap_cached uses MT_DEVICE_CACHED, while this
+> > needs to be MT_MEMORY. It is used for normal memory pages, not device
+> > memory.
+> 
+> MT_DEVICE_CACHED is Normal memory for ARMv7.
 
-Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
----
- drivers/base/regmap/regcache-rbtree.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 79f4fca..bd57ed4 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -385,8 +385,6 @@ static int regcache_rbtree_sync(struct regmap *map, unsigned int min,
- 	for (node = rb_first(&rbtree_ctx->root); node; node = rb_next(node)) {
- 		rbnode = rb_entry(node, struct regcache_rbtree_node, node);
- 
--		if (rbnode->base_reg < min)
--			continue;
- 		if (rbnode->base_reg > max)
- 			break;
- 		if (rbnode->base_reg + rbnode->blklen < min)
--- 
-1.7.10.4
-
+I didn't realize that MT_DEVICE_CACHED and MT_MEMORY end up having the
+same AttrIndx encoding!
+In that case yes, I should be able to use it.
+I take that I should just implement ioremap_cached on arm64 as well?
