@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3EaMVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:21:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42877 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab3EaMV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:21:26 -0400
-Date: Fri, 31 May 2013 14:21:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] perf, persistent: Kernel updates for perf tool
- integration
-Message-ID: <20130531122136.GA17843@nazgul.tnic>
-References: <1369990056-10310-1-git-send-email-rric@kernel.org>
- <20130531091540.GH14076@nazgul.tnic>
- <20130531093210.GC2132@rric.localhost>
+	id S1755105Ab3EaMWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:22:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57546 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab3EaMWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:22:03 -0400
+Date: Fri, 31 May 2013 05:21:39 -0700
+From: tip-bot for Rabin Vincent <tipbot@zytor.com>
+Message-ID: <tip-3c4797d46c14fa0c7cf733a77bd4b28875078b53@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, rabin@rab.in, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, rabin@rab.in, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1368822464-4887-1-git-send-email-rabin@rab.in>
+References: <1368822464-4887-1-git-send-email-rabin@rab.in>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib lk: Respect CROSS_COMPILE
+Git-Commit-ID: 3c4797d46c14fa0c7cf733a77bd4b28875078b53
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130531093210.GC2132@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:32:10AM +0200, Robert Richter wrote:
-> Hmm, since the changes in the onliner patches are either hard effort
-> to find in reviewing/testing or more or less related to the new
-> implementation, I better prefer to keep authorship as well to document
-> the code development (don't blame me about patch count ;)). We better
-> should add a branch (preferable at topic branch in tip?) as soon as
-> possible for this.
+Commit-ID:  3c4797d46c14fa0c7cf733a77bd4b28875078b53
+Gitweb:     http://git.kernel.org/tip/3c4797d46c14fa0c7cf733a77bd4b28875078b53
+Author:     Rabin Vincent <rabin@rab.in>
+AuthorDate: Fri, 17 May 2013 22:27:44 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 May 2013 15:46:36 +0300
 
-Yes, you should definitely keep authorship - simply state this in the
-commit message, add your SOB, etc. However, I don't want to have messy
-history for patches which haven't been reviewed yet. This complicates
-review needlessly and makes absolutely no sense for later when you stare
-at the history.
+tools lib lk: Respect CROSS_COMPILE
 
-Thanks.
+Make lk use CROSS_COMPILE, in order to be able to cross compile perf
+again.
+
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1368822464-4887-1-git-send-email-rabin@rab.in
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/lk/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
+index 926cbf3..2c5a197 100644
+--- a/tools/lib/lk/Makefile
++++ b/tools/lib/lk/Makefile
+@@ -1,5 +1,8 @@
+ include ../../scripts/Makefile.include
+ 
++CC = $(CROSS_COMPILE)gcc
++AR = $(CROSS_COMPILE)ar
++
+ # guard against environment variables
+ LIB_H=
+ LIB_OBJS=
