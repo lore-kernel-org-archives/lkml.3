@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3EaIsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:48:47 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:40835 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab3EaIsV (ORCPT
+	id S1754422Ab3EaIs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:48:57 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:46713 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab3EaIsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:48:21 -0400
+	Fri, 31 May 2013 04:48:22 -0400
 From: Robert Richter <rric@kernel.org>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org,
         Robert Richter <robert.richter@calxeda.com>
-Subject: [PATCH 07/16] perf, persistent: Rework struct pers_event_desc
-Date: Fri, 31 May 2013 10:47:27 +0200
-Message-Id: <1369990056-10310-8-git-send-email-rric@kernel.org>
+Subject: [PATCH 08/16] perf, persistent: Remove rb_put()
+Date: Fri, 31 May 2013 10:47:28 +0200
+Message-Id: <1369990056-10310-9-git-send-email-rric@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1369990056-10310-1-git-send-email-rric@kernel.org>
 References: <1369990056-10310-1-git-send-email-rric@kernel.org>
@@ -25,85 +25,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@calxeda.com>
 
-Struct pers_event_desc is only used in kernel/events/persistent.c.
-Moving it there. Also, removing attr member as this is a copy of
-event->attr.
+rb_put() is called already in perf_event_release_kernel(), so no need
+to do the same in del_persistent_event(). We also don't need it in
+add_persistent_event_on_cpu() after a rework. Since there are no users
+of rb_put() anymore, we can make it private again to only
+events/core.c.
 
 Signed-off-by: Robert Richter <robert.richter@calxeda.com>
 ---
- include/linux/perf_event.h |  7 -------
- kernel/events/persistent.c | 12 ++++++++----
- 2 files changed, 8 insertions(+), 11 deletions(-)
+ kernel/events/core.c       |  4 +++-
+ kernel/events/internal.h   |  1 -
+ kernel/events/persistent.c | 29 +++++++++++------------------
+ 3 files changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index d2a42b7..dc72c93 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -518,13 +518,6 @@ struct perf_output_handle {
- 	int				page;
- };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a9b6470..8f85caa 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3021,6 +3021,8 @@ static void free_event_rcu(struct rcu_head *head)
+ 	kfree(event);
+ }
  
--struct pers_event_desc {
--	struct perf_event_attr *attr;
--	struct perf_event *event;
--	struct list_head plist;
--	int fd;
--};
--
- #ifdef CONFIG_PERF_EVENTS
++static void rb_put(struct ring_buffer *rb);
++
+ static void free_event(struct perf_event *event)
+ {
+ 	irq_work_sync(&event->pending);
+@@ -3680,7 +3682,7 @@ static struct ring_buffer *rb_get(struct perf_event *event)
+ 	return rb;
+ }
  
- extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
+-void rb_put(struct ring_buffer *rb)
++static void rb_put(struct ring_buffer *rb)
+ {
+ 	struct perf_event *event, *n;
+ 	unsigned long flags;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 3b481be..3647289 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -38,7 +38,6 @@ struct ring_buffer {
+ extern void rb_free(struct ring_buffer *rb);
+ extern struct ring_buffer *
+ rb_alloc(int nr_pages, long watermark, int cpu, int flags);
+-extern void rb_put(struct ring_buffer *rb);
+ extern void perf_event_wakeup(struct perf_event *event);
+ 
+ extern void
 diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index 190aa75..22297e5 100644
+index 22297e5..ff1ce3b 100644
 --- a/kernel/events/persistent.c
 +++ b/kernel/events/persistent.c
-@@ -8,6 +8,12 @@
- /* 512 kiB: default perf tools memory size, see perf_evlist__mmap() */
- #define CPU_BUFFER_NR_PAGES	((512 * 1024) / PAGE_SIZE)
- 
-+struct pers_event_desc {
+@@ -20,22 +20,22 @@ static struct perf_event *
+ add_persistent_event_on_cpu(unsigned int cpu, struct perf_event_attr *attr,
+ 			    unsigned nr_pages)
+ {
+-	struct perf_event *event = ERR_PTR(-ENOMEM);
 +	struct perf_event *event;
-+	struct list_head plist;
-+	int fd;
-+};
-+
- static DEFINE_PER_CPU(struct list_head, pers_events);
+ 	struct pers_event_desc *desc;
+ 	struct ring_buffer *buf;
  
- static struct perf_event *
-@@ -33,7 +39,6 @@ add_persistent_event_on_cpu(unsigned int cpu, struct perf_event_attr *attr,
+ 	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+ 	if (!desc)
+-		goto out;
+-
+-	buf = rb_alloc(nr_pages, 0, cpu, 0);
+-	if (!buf)
+-		goto err_rb;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	event = perf_event_create_kernel_counter(attr, cpu, NULL, NULL, NULL);
+ 	if (IS_ERR(event))
+ 		goto err_event;
+ 
++	buf = rb_alloc(nr_pages, 0, cpu, 0);
++	if (!buf)
++		goto err_rb;
++
  	rcu_assign_pointer(event->rb, buf);
  
  	desc->event = event;
--	desc->attr  = attr;
+@@ -47,14 +47,12 @@ add_persistent_event_on_cpu(unsigned int cpu, struct perf_event_attr *attr,
+ 	perf_event_enable(event);
  
- 	INIT_LIST_HEAD(&desc->plist);
- 	list_add_tail(&desc->plist, &per_cpu(pers_events, cpu));
-@@ -59,7 +64,7 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
- 	struct perf_event *event = NULL;
- 
- 	list_for_each_entry_safe(desc, tmp, &per_cpu(pers_events, cpu), plist) {
--		if (desc->attr->config == attr->config) {
-+		if (desc->event->attr.config == attr->config) {
- 			event = desc->event;
- 			break;
- 		}
-@@ -78,7 +83,6 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
- 
- 	perf_event_release_kernel(event);
- 	put_unused_fd(desc->fd);
--	kfree(desc->attr);
+ 	goto out;
+-
+- err_event:
+-	rb_put(buf);
+-
+- err_rb:
++err_rb:
++	perf_event_release_kernel(event);
++	event = ERR_PTR(-ENOMEM);
++err_event:
  	kfree(desc);
+-
+- out:
++out:
+ 	return event;
  }
  
-@@ -162,7 +166,7 @@ int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
- 	struct pers_event_desc *desc;
+@@ -76,11 +74,6 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
+ 	list_del(&desc->plist);
  
- 	list_for_each_entry(desc, &per_cpu(pers_events, cpu), plist)
--		if (desc->attr->config == attr->config)
-+		if (desc->event->attr.config == attr->config)
- 			return __alloc_persistent_event_fd(desc);
- 
- 	return -ENODEV;
+ 	perf_event_disable(event);
+-	if (event->rb) {
+-		rb_put(event->rb);
+-		rcu_assign_pointer(event->rb, NULL);
+-	}
+-
+ 	perf_event_release_kernel(event);
+ 	put_unused_fd(desc->fd);
+ 	kfree(desc);
 -- 
 1.8.1.1
 
