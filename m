@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3EaGK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:10:28 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:37759 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab3EaGKY (ORCPT
+	id S1751424Ab3EaGPE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:15:04 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:48195 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3EaGO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:10:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-757885e94a22bcc82beb9b1445c95218cb20ceab@git.kernel.org>
-References: <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
-	<tip-757885e94a22bcc82beb9b1445c95218cb20ceab@git.kernel.org>
-Date: Thu, 30 May 2013 23:10:23 -0700
-X-Google-Sender-Auth: _w-ohNIvhzFr9IoTA12xJ0doREc
-Message-ID: <CAE9FiQWJbM=4WOzTfrAbNLgatkH_TXavK8vp1ZXHjw=bs-Obvg@mail.gmail.com>
-Subject: Re: [tip:x86/microcode] x86, microcode, amd: Early microcode patch
- loading support for AMD
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, Jacob Shin <jacob.shin@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 May 2013 02:14:56 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-95-51a83fde1ec1
+Date: Fri, 31 May 2013 08:14:49 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/2] sched: Use do_div() for 64 bit division at power
+ utilization calculation (putil)
+Message-id: <20130531081449.29511151@amdc308.digital.local>
+In-reply-to: <51A6B00A.90903@intel.com>
+References: <1369298064-14998-1-git-send-email-l.majewski@samsung.com>
+ <51A6B00A.90903@intel.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd179isCDba2GFj0b/vJYtF59gmz
+	xdmmN+wWl3fNYbP43HuE0eJ24wo2i44j35gd2D0W73nJ5HHn2h42j74tqxg9Pm+SC2CJ4rJJ
+	Sc3JLEst0rdL4MrY/eYIc8EniYp5PbfZGxjbRLoYOTkkBEwkfmx8xwxhi0lcuLeerYuRi0NI
+	YDqjxPULU5ggnHYmidW7trODVLEIqErs27qMBcRmE9CT+Hz3KROILSKgKPFm+gsWkAZmgV4m
+	iVmbT4GNFRbIllj/+TYriM0rYC3xqPkkkM3BwSmgLvFlgw1IWEggWeLM2qtgc/gFJCXa//2A
+	ushO4tynDewQrYISPybfA9vLLKAlsXlbEyuELS+xec1b5gmMgrOQlM1CUjYLSdkCRuZVjKKp
+	BckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFB/0xqB+PKBotDjAIcjEo8vAdSlgcKsSaWFVfmHmKU
+	4GBWEuHtPAcU4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnV
+	wCjB6/ef1+90iWJJ8zzr8+85Szbw9R+5eqs8ba+2m+BdL+4nc05YaXUZMddtdD1QzNp6c6ND
+	Byf/xXOTe1WXeM1MOPRqQ1KghcPhh7PXWLvqi/Gfv8faJmfEM/f5E8PkSo3w1uB3f9b73/uS
+	6VLxeZWBpfUCE+6sPf/qqj6cnNijxqY43+lAiRJLcUaioRZzUXEiACp1gvl2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 8:31 PM, tip-bot for Jacob Shin
-<tipbot@zytor.com> wrote:
-> Commit-ID:  757885e94a22bcc82beb9b1445c95218cb20ceab
-> Gitweb:     http://git.kernel.org/tip/757885e94a22bcc82beb9b1445c95218cb20ceab
-> Author:     Jacob Shin <jacob.shin@amd.com>
-> AuthorDate: Thu, 30 May 2013 14:09:19 -0500
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Thu, 30 May 2013 20:19:25 -0700
->
-> x86, microcode, amd: Early microcode patch loading support for AMD
->
-> Add early microcode patch loading support for AMD.
->
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> Link: http://lkml.kernel.org/r/1369940959-2077-5-git-send-email-jacob.shin@amd.com
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> ---
->  Documentation/x86/early-microcode.txt  |  11 +-
->  arch/x86/Kconfig                       |  14 ++-
->  arch/x86/include/asm/microcode_amd.h   |  14 +++
->  arch/x86/kernel/Makefile               |   1 +
->  arch/x86/kernel/microcode_amd.c        |  22 ++++
->  arch/x86/kernel/microcode_amd_early.c  | 222 +++++++++++++++++++++++++++++++++
->  arch/x86/kernel/microcode_core_early.c |  43 ++++++-
->  7 files changed, 310 insertions(+), 17 deletions(-)
->
+Hi Alex,
 
-WARNING: arch/x86/kernel/built-in.o(.cpuinit.text+0x7115): Section
-mismatch in reference from the function load_ucode_amd_ap() to the
-function .init.text:find_ucode_in_initrd()
-The function __cpuinit load_ucode_amd_ap() references
-a function __init find_ucode_in_initrd().
-If find_ucode_in_initrd is only used by load_ucode_amd_ap then
-annotate find_ucode_in_initrd with a matching annotation.
+> On 05/23/2013 04:34 PM, Lukasz Majewski wrote:
+> > Now explicit casting is done when power usage variable (putil) is
+> > calculated
+> > 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> > This patch was developed on top of the following Alex's repository:
+> > https://github.com/alexshi/power-scheduling/commits/power-scheduling
+> > ---
+> >  kernel/sched/fair.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> 
+> 
+> Thanks for catch this issue. seems use div_u64 is better, and there
+> are 2 same bugs. so, could I rewrite the patch like following?
+
+Yes, no problem. 
+
+> ---
+> 
+> From 9f72c25607351981898d99822f5a66e0ca67a3da Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Wed, 29 May 2013 11:09:39 +0800
+> Subject: [PATCH 1/2] sched: fix cast on power utilization calculation
+> and use div_u64
+> 
+> Now explicit casting is done when power usage variable (putil) is
+> calculated.
+> div_u64 is optimized on u32.
+> 
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 09ae48a..3a4917c 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1504,8 +1504,8 @@ static inline void
+> update_rq_runnable_avg(struct rq *rq, int runnable)
+> __update_tg_runnable_avg(&rq->avg, &rq->cfs); 
+>  	period = rq->avg.runnable_avg_period ?
+> rq->avg.runnable_avg_period : 1;
+> -	rq->util = (u64)(rq->avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT)
+> -				/ period;
+> +	rq->util = div_u64(((u64)rq->avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT),
+> +				period);
+>  }
+>  
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> @@ -3407,8 +3407,8 @@ static int is_sd_full(struct sched_domain *sd,
+>  		/* p maybe a new forked task */
+>  		putil = FULL_UTIL;
+>  	else
+> -		putil = (u64)(p->se.avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT)
+> -				/ (p->se.avg.runnable_avg_period +
+> 1);
+> +		putil = div_u64(((u64)p->se.avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT),
+> +				p->se.avg.runnable_avg_period + 1);
+>  
+>  	/* Try to collect the domain's utilization */
+>  	group = sd->groups;
+> @@ -3463,9 +3463,11 @@ find_leader_cpu(struct sched_group *group,
+> struct task_struct *p, int this_cpu, int vacancy, min_vacancy =
+> INT_MAX; int leader_cpu = -1;
+>  	int i;
+> +
+>  	/* percentage of the task's util */
+> -	unsigned putil = (u64)(p->se.avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT)
+> -				/ (p->se.avg.runnable_avg_period +
+> 1);
+> +	unsigned putil;
+> +	putil = div_u64(((u64)p->se.avg.runnable_avg_sum <<
+> SCHED_POWER_SHIFT),
+> +				p->se.avg.runnable_avg_period + 1);
+>  
+>  	/* bias toward local cpu */
+>  	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Poland (SRPOL) | Linux Platform Group
