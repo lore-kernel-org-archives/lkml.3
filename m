@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab3EaUXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 16:23:21 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51289 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab3EaUXO (ORCPT
+	id S1755471Ab3EaUYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 16:24:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39105 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab3EaUYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 16:23:14 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] usb: musb: Fix format specifier warning
-Date: Fri, 31 May 2013 22:22:58 +0200
-Message-Id: <1370031778-25965-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 31 May 2013 16:24:23 -0400
+Date: Fri, 31 May 2013 21:24:22 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] assorted fixes
+Message-ID: <20130531202422.GJ25399@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a format specifier warning. dma_addr_t can be either
-u32 or u64 so we should cast to the largest type and change the format
-specifier to %llx.
-The addition of urb->transfer_dma and urb->actual_length is also done a
-few lines below. I have moved this code up and pass the variable buf to
-dev_dbg.
+Assorted fixes...  There'll be more - I'm trying to dig out from under
+the pile of mail (a couple of weeks of something flu-like ;-/) and there's
+several more things waiting for review; this is just the obvious stuff.
+Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-Sparse output:
-drivers/usb/musb/musb_host.c:1761:4: warning:
-	format ‘%x’ expects argument of type ‘unsigned int’,
-	but argument 6 has type ‘dma_addr_t’ [-Wformat]
+Shortlog:
+Al Viro (4):
+      qnx6: qnx6_readdir() has a braino in pos calculation
+      hpfs: deadlock and race in directory lseek()
+      befs_readdir(): do not increment ->f_pos if filldir tells us to stop
+      zoran: racy refcount handling in vm_ops ->open()/->close()
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/usb/musb/musb_host.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+Jan Beulich (1):
+      fix buffer leak after "scsi: saner replacements for ->proc_info()"
 
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index 094cf80..d647ccb 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -1756,11 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 			dma_addr_t		buf;
- 
- 			rx_count = musb_readw(epio, MUSB_RXCOUNT);
-+			buf = urb->transfer_dma + urb->actual_length;
- 
--			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%x len %d/%d\n",
-+			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
- 					epnum, rx_count,
--					urb->transfer_dma
--						+ urb->actual_length,
-+					(unsigned long long)buf,
- 					qh->offset,
- 					urb->transfer_buffer_length);
- 
-@@ -1789,11 +1789,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 					length = rx_count;
- 				d->status = d_status;
- 				buf = urb->transfer_dma + d->offset;
--			} else {
-+			} else
- 				length = rx_count;
--				buf = urb->transfer_dma +
--						urb->actual_length;
--			}
- 
- 			dma->desired_mode = 0;
- #ifdef USE_MODE1
--- 
-1.7.10.4
+Takashi Iwai (1):
+      vfs: Fix invalid ida_remove() call
 
+Diffstat:
+ drivers/media/pci/zoran/zoran.h        |    2 +-
+ drivers/media/pci/zoran/zoran_driver.c |   15 ++++++++-------
+ drivers/scsi/scsi_proc.c               |    1 +
+ fs/befs/linuxvfs.c                     |    4 ++--
+ fs/hpfs/dir.c                          |   10 ++++++----
+ fs/pnode.c                             |    3 ++-
+ fs/qnx6/dir.c                          |    2 +-
+ 7 files changed, 21 insertions(+), 16 deletions(-)
