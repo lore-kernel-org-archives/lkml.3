@@ -1,103 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3EaHOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 03:14:34 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:57523 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab3EaHOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 03:14:25 -0400
+	id S1753235Ab3EaHSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 03:18:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43176 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab3EaHR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 03:17:57 -0400
+Message-ID: <51A84E7A.106@ti.com>
+Date: Fri, 31 May 2013 10:17:14 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <51A8387C.4030704@monstr.eu>
-References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
-	<CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com>
-	<51A8387C.4030704@monstr.eu>
-Date: Fri, 31 May 2013 09:14:24 +0200
-Message-ID: <CACRpkdbHiaK6YPgXyxNgEeZxAsddK4x0vS-q3YfyXnj_BgHvuw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <balbi@ti.com>, <shc_work@mail.ru>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: omap-usb-host: Fix memory leaks
+References: <1369400818-31625-1-git-send-email-rogerq@ti.com> <20130530210025.GE6467@atomide.com>
+In-Reply-To: <20130530210025.GE6467@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 7:43 AM, Michal Simek <monstr@monstr.eu> wrote:
-> On 05/30/2013 09:46 PM, Linus Walleij wrote:
+Hi Tony,
 
->> (...)
->>> +/* Read/Write access to the GPIO registers */
->>> +#define xgpio_readreg(offset)          __raw_readl(offset)
->>> +#define xgpio_writereg(offset, val)    __raw_writel(val, offset)
+On 05/31/2013 12:00 AM, Tony Lindgren wrote:
+> Hi Roger,
+> 
+> * Roger Quadros <rogerq@ti.com> [130524 06:12]:
+>> Fix memory leaks in the error path.
+>> Also, use platform_device_register_full() to allocate
+>> the platform devices and set platform data.
+> 
+> If you need this for the v3.10-rc, you should describe why this patch
+> is needed and ideally have some oops or regression causing commit
+> listed. Care to update the description for that?
+
+There is no oops or regression happening. Just that there will be a
+small memory leak if any of the memory allocations fail or if the
+platform device is destroyed.
+
+If it doesn't look that serious to you then it can wait.
+But if we move to device tree only boot then this patch and the file
+"usb-host.c" might not be required at all.
+
+cheers,
+-roger
+
+>  
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/usb-host.c |  106 +++++++++++++++++++++-------------------
+>>  1 files changed, 56 insertions(+), 50 deletions(-)
 >>
->> So you're swithing in_be32/out_be32 to the CPU-dependent
->> __raw_readl/__raw_writel functions? Why?
->
-> The reason is that this driver can be used on ARM where in_be32/out_be32
-> is not implemented.
-
-OK I buy this (and the following explanation).
-
-I think readl/writel is always in LE (PCI) endianness anyway, which
-is likely not what you want. (I suspect the next point was about
-that.)
-
->> Have you documented these new bindings? It doesn't seem so.
->> Documentation/devicetree/bindings/gpio/*...
+>> diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+>> index aa27d7f..609b330 100644
+>> --- a/arch/arm/mach-omap2/usb-host.c
+>> +++ b/arch/arm/mach-omap2/usb-host.c
+>> @@ -28,6 +28,7 @@
+>>  #include <linux/io.h>
+>>  #include <linux/gpio.h>
+>>  #include <linux/usb/phy.h>
+>> +#include <linux/usb/nop-usb-xceiv.h>
+>>  
+>>  #include "soc.h"
+>>  #include "omap_device.h"
+>> @@ -560,7 +561,8 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>>  	struct regulator_init_data *reg_data;
+>>  	struct fixed_voltage_config *config;
+>>  	struct platform_device *pdev;
+>> -	int ret;
+>> +	struct platform_device_info pdevinfo;
+>> +	int ret = -ENOMEM;
+>>  
+>>  	supplies = kzalloc(sizeof(*supplies), GFP_KERNEL);
+>>  	if (!supplies)
+>> @@ -571,7 +573,7 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>>  
+>>  	reg_data = kzalloc(sizeof(*reg_data), GFP_KERNEL);
+>>  	if (!reg_data)
+>> -		return -ENOMEM;
+>> +		goto err_data;
+>>  
+>>  	reg_data->constraints.valid_ops_mask = REGULATOR_CHANGE_STATUS;
+>>  	reg_data->consumer_supplies = supplies;
+>> @@ -580,39 +582,53 @@ static int usbhs_add_regulator(char *name, char *dev_id, char *dev_supply,
+>>  	config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
+>>  			GFP_KERNEL);
+>>  	if (!config)
+>> -		return -ENOMEM;
+>> +		goto err_config;
+>> +
+>> +	config->supply_name = kstrdup(name, GFP_KERNEL);
+>> +	if (!config->supply_name)
+>> +		goto err_supplyname;
+>>  
+>> -	config->supply_name = name;
+>>  	config->gpio = gpio;
+>>  	config->enable_high = polarity;
+>>  	config->init_data = reg_data;
+>>  
+>>  	/* create a regulator device */
+>> -	pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+>> -	if (!pdev)
+>> -		return -ENOMEM;
+>> +	memset(&pdevinfo, 0, sizeof(pdevinfo));
+>> +	pdevinfo.name = reg_name;
+>> +	pdevinfo.id = PLATFORM_DEVID_AUTO;
+>> +	pdevinfo.data = config;
+>> +	pdevinfo.size_data = sizeof(*config);
+>>  
+>> -	pdev->id = PLATFORM_DEVID_AUTO;
+>> -	pdev->name = reg_name;
+>> -	pdev->dev.platform_data = config;
+>> +	pdev = platform_device_register_full(&pdevinfo);
+>> +	if (IS_ERR(pdev)) {
+>> +		ret = PTR_ERR(pdev);
+>> +		pr_err("%s: Failed registering regulator %s for %s : %d\n",
+>> +				__func__, name, dev_id, ret);
+>> +		goto err_register;
+>> +	}
+>>  
+>> -	ret = platform_device_register(pdev);
+>> -	if (ret)
+>> -		pr_err("%s: Failed registering regulator %s for %s\n",
+>> -				__func__, name, dev_id);
+>> +	return 0;
+>>  
+>> +err_register:
+>> +	kfree(config->supply_name);
+>> +err_supplyname:
+>> +	kfree(config);
+>> +err_config:
+>> +	kfree(reg_data);
+>> +err_data:
+>> +	kfree(supplies);
+>>  	return ret;
+>>  }
+>>  
+>> +#define MAX_STR 20
+>> +
+>>  int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>>  {
+>> -	char *rail_name;
+>> -	int i, len;
+>> +	char rail_name[MAX_STR];
+>> +	int i;
+>>  	struct platform_device *pdev;
+>>  	char *phy_id;
+>> -
+>> -	/* the phy_id will be something like "nop_usb_xceiv.1" */
+>> -	len = strlen(nop_name) + 3; /* 3 -> ".1" and NULL terminator */
+>> +	struct platform_device_info pdevinfo;
+>>  
+>>  	for (i = 0; i < num_phys; i++) {
+>>  
+>> @@ -627,25 +643,26 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>>  			!gpio_is_valid(phy->vcc_gpio))
+>>  			continue;
+>>  
+>> -		/* create a NOP PHY device */
+>> -		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+>> -		if (!pdev)
+>> -			return -ENOMEM;
+>> -
+>> -		pdev->id = phy->port;
+>> -		pdev->name = nop_name;
+>> -		pdev->dev.platform_data = phy->platform_data;
+>> -
+>> -		phy_id = kmalloc(len, GFP_KERNEL);
+>> -		if (!phy_id)
+>> +		phy_id = kmalloc(MAX_STR, GFP_KERNEL);
+>> +		if (!phy_id) {
+>> +			pr_err("%s: kmalloc() failed\n", __func__);
+>>  			return -ENOMEM;
+>> +		}
+>>  
+>> -		scnprintf(phy_id, len, "nop_usb_xceiv.%d\n",
+>> -					pdev->id);
+>> -
+>> -		if (platform_device_register(pdev)) {
+>> -			pr_err("%s: Failed to register device %s\n",
+>> -				__func__,  phy_id);
+>> +		/* create a NOP PHY device */
+>> +		memset(&pdevinfo, 0, sizeof(pdevinfo));
+>> +		pdevinfo.name = nop_name;
+>> +		pdevinfo.id = phy->port;
+>> +		pdevinfo.data = phy->platform_data;
+>> +		pdevinfo.size_data = sizeof(struct nop_usb_xceiv_platform_data);
+>> +
+>> +		scnprintf(phy_id, MAX_STR, "nop_usb_xceiv.%d",
+>> +					phy->port);
+>> +		pdev = platform_device_register_full(&pdevinfo);
+>> +		if (IS_ERR(pdev)) {
+>> +			pr_err("%s: Failed to register device %s : %ld\n",
+>> +				__func__,  phy_id, PTR_ERR(pdev));
+>> +			kfree(phy_id);
+>>  			continue;
+>>  		}
+>>  
+>> @@ -653,26 +670,15 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
+>>  
+>>  		/* Do we need RESET regulator ? */
+>>  		if (gpio_is_valid(phy->reset_gpio)) {
+>> -
+>> -			rail_name = kmalloc(13, GFP_KERNEL);
+>> -			if (!rail_name)
+>> -				return -ENOMEM;
+>> -
+>> -			scnprintf(rail_name, 13, "hsusb%d_reset", phy->port);
+>> -
+>> +			scnprintf(rail_name, MAX_STR,
+>> +					"hsusb%d_reset", phy->port);
+>>  			usbhs_add_regulator(rail_name, phy_id, "reset",
+>>  						phy->reset_gpio, 1);
+>>  		}
+>>  
+>>  		/* Do we need VCC regulator ? */
+>>  		if (gpio_is_valid(phy->vcc_gpio)) {
+>> -
+>> -			rail_name = kmalloc(13, GFP_KERNEL);
+>> -			if (!rail_name)
+>> -				return -ENOMEM;
+>> -
+>> -			scnprintf(rail_name, 13, "hsusb%d_vcc", phy->port);
+>> -
+>> +			scnprintf(rail_name, MAX_STR, "hsusb%d_vcc", phy->port);
+>>  			usbhs_add_regulator(rail_name, phy_id, "vcc",
+>>  					phy->vcc_gpio, phy->vcc_polarity);
+>>  		}
+>> -- 
+>> 1.7.4.1
 >>
->> If it's undocumented so far, this is a good oppotunity to add it.
->
-> Isn't it enough what it is in 2/2?
 
-I didn't see 2/2, I guess I wasn't on CC...
-
-Anyway I guess it's this:
-http://marc.info/?l=linux-kernel&m=136982686732560&w=2
-
-It's OK, but fix the boolean member so as to just needing to
-be present:
-
-xlnx,is-dual;
-
-Rather than
-
-xlnx,is-dual = <1>;
-
-> Or do you want to describe current binding in the first patch
-> and then extend it in this patch when dual channel is added?
-
-Nah. 2/2 is fine.
-
->> This is basically a jam table (hardware set-up) in the device tree.
->
-> Not sure what you mean by that. Xilinx GPIO is soft IP which can be configured
-> to different configurations before bitstream is generated.
-> At the end you will get different setting/addresses setup for every pin
-> which is described by these xlnx,X descriptions.
->
->> I don't exactly like this. Is this necessary?
->
-> If you mean names or values in there that all of them are autogenerated
-> from design tools and they are reflect IP hardware description and all
-> configuration options which you can have there.
-> It means that all these values give you exact hardware description.
->
-> Do I answer your question?
-
-Yes, this is OK, I buy that explanation. I thought it was
-something else.
-
-I think the overall problem is that I do not understand what a
-"channel" is in this context, and thus it is hard to understand the
-patch as a whole. 2/2 could add some more verbose explanation
-about the HW IP so I get comfortable and can understand the
-whole hardware block...
-
-Yours,
-Linus Walleij
