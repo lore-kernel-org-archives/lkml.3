@@ -1,57 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3EaQNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:13:06 -0400
-Received: from smtp4.epfl.ch ([128.178.224.219]:50669 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753687Ab3EaQNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:13:01 -0400
-Message-ID: <51A8CC08.6090305@epfl.ch>
-Date: Fri, 31 May 2013 18:12:56 +0200
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1756903Ab3EaQPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:15:14 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:48778 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab3EaQPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 12:15:10 -0400
+Date: Fri, 31 May 2013 18:15:04 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
+        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 07/13] x86, numa, mem-hotplug: Mark nodes which the
+ kernel resides in.
+Message-ID: <20130531161504.GA29043@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1367313683-10267-8-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Dan Murphy <dmurphy@ti.com>
-CC: b-cousson@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] ARM: dts: omap4-panda: Update the twl6040 gpio to
- macro definition
-References: <1370015122-26792-1-git-send-email-dmurphy@ti.com>
-In-Reply-To: <1370015122-26792-1-git-send-email-dmurphy@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367313683-10267-8-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
+Hi,
 
-On 05/31/2013 05:45 PM, Dan Murphy wrote:
-> Update the dt property ti,audpwron-gpio to use the
-> gpio macro definition for GPIO_ACTIVE_HIGH.
->
-> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+On Tue, Apr 30, 2013 at 05:21:17PM +0800, Tang Chen wrote:
+> If all the memory ranges in SRAT are hotpluggable, we should not
+> arrange them all in ZONE_MOVABLE. Otherwise the kernel won't have
+> enough memory to boot.
+> 
+> This patch introduce a global variable kernel_nodemask to mark
+> all the nodes the kernel resides in. And no matter if they are
+> hotpluggable, we arrange them as un-hotpluggable.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > ---
->   arch/arm/boot/dts/omap4-panda-common.dtsi |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> index 800fa4e..00cbaa5 100644
-> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> @@ -190,7 +190,7 @@
->   		/* IRQ# = 119 */
->   		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_2N cascaded to gic */
->   		interrupt-parent = <&gic>;
-> -		ti,audpwron-gpio = <&gpio4 31 0>;  /* gpio line 127 */
-> +		ti,audpwron-gpio = <&gpio4 31 GPIO_ACTIVE_HIGH>;  /* gpio line 127 */
->
->   		vio-supply = <&v1v8>;
->   		v2v1-supply = <&v2v1>;
->
+>  arch/x86/mm/numa.c       |    6 ++++++
+>  include/linux/memblock.h |    1 +
+>  mm/memblock.c            |   20 ++++++++++++++++++++
+>  3 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 26d1800..105b092 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -658,6 +658,12 @@ static bool srat_used __initdata;
+>   */
+>  static void __init early_x86_numa_init(void)
+>  {
+> +	/*
+> +	 * Need to find out which nodes the kernel resides in, and arrange
+> +	 * them as un-hotpluggable when parsing SRAT.
+> +	 */
+> +	memblock_mark_kernel_nodes();
+> +
+>  	if (!numa_off) {
+>  #ifdef CONFIG_X86_NUMAQ
+>  		if (!numa_init(numaq_numa_init))
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index c63a66e..5064eed 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -66,6 +66,7 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
+>  int memblock_free(phys_addr_t base, phys_addr_t size);
+>  int memblock_reserve(phys_addr_t base, phys_addr_t size);
+>  void memblock_trim_memory(phys_addr_t align);
+> +void memblock_mark_kernel_nodes(void);
+>  
+>  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+>  void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 63924ae..1b93a5d 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -35,6 +35,9 @@ struct memblock memblock __initdata_memblock = {
+>  	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+>  };
+>  
+> +/* Mark which nodes the kernel resides in. */
+> +static nodemask_t memblock_kernel_nodemask __initdata_memblock;
+> +
+>  int memblock_debug __initdata_memblock;
+>  static int memblock_can_resize __initdata_memblock;
+>  static int memblock_memory_in_slab __initdata_memblock = 0;
+> @@ -787,6 +790,23 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+>  	memblock_merge_regions(type);
+>  	return 0;
+>  }
+> +
+> +void __init_memblock memblock_mark_kernel_nodes()
+> +{
+> +	int i, nid;
+> +	struct memblock_type *reserved = &memblock.reserved;
+> +
+> +	for (i = 0; i < reserved->cnt; i++)
+> +		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+> +			nid = memblock_get_region_node(&reserved->regions[i]);
+> +			node_set(nid, memblock_kernel_nodemask);
+> +		}
+> +}
 
-I missed it during the conversion, thank you.
+I think there is a problem here because memblock_set_region_node is sometimes
+called with nid == MAX_NUMNODES. This means the correct node is not properly
+masked in the memblock_kernel_nodemask bitmap.
+E.g. in a VM test, memblock_mark_kernel_nodes with extra pr_warn calls iterates
+over the following memblocks (ranges below are memblks base-(base+size)):
 
-Reviewed-by: Florian Vaussard <florian.vaussard@epfl.ch>
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000000000-0x00000000010000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000098000-0x00000000100000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000001000000-0x00000001a5a000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000037000000-0x000000377f8000
+
+where MAX_NUMNODES is 64 because CONFIG_NODES_SHIFT=6.
+The ranges above belong to node 0, but the node's bit is never marked.
+
+With a buggy bios that marks all memory as hotpluggable, this results in a
+panic, because both checks against hotpluggable bit and memblock_kernel_bitmask
+(in early_mem_hotplug_init) fail, the numa regions have all been merged together
+and memblock_reserve_hotpluggable is called for all memory. 
+
+With a correct bios (some part of initial memory is not hotplug-able) the kernel
+can boot since the hotpluggable bit check works ok, but extra dimms on node 0
+will still be allowed to be in MOVABLE_ZONE.
+
+Actually this behaviour (being able to have MOVABLE memory on nodes with kernel
+reserved memblocks) sort of matches the policy I requested in v2 :). But i
+suspect that is not your intent i.e. you want memblock_kernel_nodemask_bitmap to
+prevent movable reservations for the whole node where kernel has reserved
+memblocks.
+
+Is there a way to get accurate nid information for memblocks at early boot? I
+suspect pfn_to_nid doesn't work yet at this stage (i got a panic when I
+attempted iirc)
+
+I used the hack below but it depends on CONFIG_NUMA, hopefully there is a
+cleaner general way:
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index cfd8c2f..af8ad2a 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -133,6 +133,19 @@ void __init setup_node_to_cpumask_map(void)
+ 	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
+ }
+ 
++int __init numa_find_range_nid(u64 start, u64 size)
++{
++	unsigned int i;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	for (i = 0; i < mi->nr_blks; i++) {
++		if (start >= mi->blk[i].start && start + size -1 <= mi->blk[i].end)
++		 return mi->blk[i].nid;
++	}
++	return -1;
++}
++EXPORT_SYMBOL(numa_find_range_nid);
++
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 				     bool hotpluggable,
+ 				     struct numa_meminfo *mi)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 77a71fb..194b7c7 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1600,6 +1600,9 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ #endif
+ 
++#ifdef CONFIG_NUMA
++int __init numa_find_range_nid(u64 start, u64 size);
++#endif
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a6b7845..284aced 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -834,15 +834,26 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+ 
+ void __init_memblock memblock_mark_kernel_nodes()
+ {
+-	int i, nid;
++	int i, nid, tmpnid;
+ 	struct memblock_type *reserved = &memblock.reserved;
+ 
+ 	for (i = 0; i < reserved->cnt; i++)
+ 		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+ 			nid = memblock_get_region_node(&reserved->regions[i]);
++		if (nid == MAX_NUMNODES) {
++			tmpnid = numa_find_range_nid(reserved->regions[i].base,
++				reserved->regions[i].size);
++			if (tmpnid >= 0)
++				nid = tmpnid;
++		}
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index e862311..84d6e64 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -667,11 +667,7 @@ static bool srat_used __initdata;
+  */
+ static void __init early_x86_numa_init(void)
+ {
+-	/*
+-	 * Need to find out which nodes the kernel resides in, and arrange
+-	 * them as un-hotpluggable when parsing SRAT.
+-	 */
+-	memblock_mark_kernel_nodes();
+ 
+ 	if (!numa_off) {
+ #ifdef CONFIG_X86_NUMAQ
+@@ -779,6 +775,12 @@ void __init early_initmem_init(void)
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ 
++	/*
++	 * Need to find out which nodes the kernel resides in, and arrange
++	 * them as un-hotpluggable when parsing SRAT.
++	 */
++
++	memblock_mark_kernel_nodes();
+ 	early_mem_hotplug_init();
+ 
+ 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+-- 
+
