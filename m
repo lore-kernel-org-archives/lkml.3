@@ -1,80 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3EaKum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:50:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46506 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3EaKud (ORCPT
+	id S1754496Ab3EaKvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:51:35 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.173]:12556 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751814Ab3EaKv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:50:33 -0400
+	Fri, 31 May 2013 06:51:27 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-3.tower-39.messagelabs.com!1369997483!11817401!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 31 May 2013 12:51:23 +0200
+Date: Fri, 31 May 2013 12:53:27 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <johannes.thumshirn@men.de>
+Subject: Re: [PATCH v5 1/2] watchdog: New watchdog driver for MEN A21
+ watchdogs
+Message-ID: <20130531105326.GA8983@jtlinux>
+References: <20130531085842.GA8572@jtlinux>
+ <20130531103654.GB5619@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=DoWB+E-bgWCUVec5Y8wsfEu0V43Pg5mHzqep8yn0_JA@mail.gmail.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-	<CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
-	<CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
-	<CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
-	<CAKohponBfXsy21RTik+jWMukL_VnDNXOL7xmj4sEBF3HEBXqpQ@mail.gmail.com>
-	<CAKohpo=DoWB+E-bgWCUVec5Y8wsfEu0V43Pg5mHzqep8yn0_JA@mail.gmail.com>
-Date: Fri, 31 May 2013 16:20:33 +0530
-Message-ID: <CAKohpokgTmb6d79ipR9pV2iOfLSzngrPbMV3hFcuP64kbNYSQA@mail.gmail.com>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        deepthi@linux.vnet.ibm.com
-Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130531103654.GB5619@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 31 May 2013 10:51:23.0211 (UTC) FILETIME=[CA8B39B0:01CE5DEC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 May 2013 10:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 13 May 2013 11:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 22 April 2013 12:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>>> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>>>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
->>>>>>
->>>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>>>> Cc: Paul Mackerras <paulus@samba.org>
->>>>>> Cc: Olof Johansson <olof@lixom.net>
->>>>>> Cc: linuxppc-dev@lists.ozlabs.org
->>>>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>>>>> ---
->>>>>> Compile Tested only.
->>>>>>
->>>>>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
->>>>>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
->>>>>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
->>>>>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
->>>>>>  drivers/cpufreq/Makefile                           |  3 +++
->>>>>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
->>>>>>  .../cpufreq/pmac32-cpufreq.c                       |  0
->>>>>>  .../cpufreq/pmac64-cpufreq.c                       |  0
->>>>>>  8 files changed, 29 insertions(+), 34 deletions(-)
->>>>>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->>>>>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->>>>>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
->>>>>
->>>>> Hi Deepthi,
->>>>>
->>>>> Can you help testing this please?
->>>>
->>>> Ping!!
->>>
->>> Ping!!
->>
->> Hi Benjamin,
->>
->> Hope you are back from your vacations. Can you give it a try now?
+On Fri, May 31, 2013 at 03:36:54AM -0700, Guenter Roeck wrote:
+> On Fri, May 31, 2013 at 10:58:48AM +0200, Johannes Thumshirn wrote:
+> > This patch adds the driver for the watchdog devices found on MEN Mikro
+> > Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
+> > watchdog framework.
+> >
+> > Revision 2:
+> > * Removed unneeded open flag in struct a21_wdt_drv
+> > * Corrected 3bit reason code from gpio
+> > * Additional sysfs files are now part of watchdog sysfs
+> > * Changed OFF/ON delay in ping from 400ms to 10ns
+> > * Reworked timeout setting
+> > * Removed a21_wdt_ioctl(...)
+> >
+> > Revision 3:
+> > * Changed pr_{err,info} to dev_{err,info}
+> > * Removed out of memory error print
+> > * Transition from "fast" to "slow" mode not allowed by chip
+> >
+> > Revision 4:
+> > * Remove reboot_notifier and place disable code into platform_device's shutdown function
+> > * Removed sysfs interface
+> >
+> > Revision 5:
+> >
+> > * Added setting of .bootstatus on driver init
+> > * Added initial timeout on driver init
+> >
+> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > ---
+> >  MAINTAINERS                   |    6 ++
+> >  drivers/watchdog/Kconfig      |    8 ++
+> >  drivers/watchdog/Makefile     |    1 +
+> >  drivers/watchdog/mena21_wdt.c |  234 +++++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 249 insertions(+)
+> >  create mode 100644 drivers/watchdog/mena21_wdt.c
+> >
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 7714c3c..023945a 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -5307,6 +5307,12 @@ F:	drivers/mtd/
+> >  F:	include/linux/mtd/
+> >  F:	include/uapi/mtd/
+> >
+> > +MEN A21 WATCHDOG DRIVER
+> > +M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
+> > +L:	linux-watchdog@vger.kernel.org
+> > +S:	Supported
+> > +F:	drivers/watchdog/mena21_wdt.c
+> > +
+> >  METAG ARCHITECTURE
+> >  M:	James Hogan <james.hogan@imgtec.com>
+> >  S:	Supported
+> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> > index e89fc31..192b84d 100644
+> > --- a/drivers/watchdog/Kconfig
+> > +++ b/drivers/watchdog/Kconfig
+> > @@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+> >
+> >  	  The value can be overridden by the wdt_period command-line parameter.
+> >
+> > +config MEN_A21_WDT
+> > +       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
+> > +       select WATCHDOG_CORE
+> > +       help
+> > +        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
+> > +
+> > +	If unsure select N here.
+> > +
+> >  # PPC64 Architecture
+> >
+> >  config WATCHDOG_RTAS
+> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> > index a300b94..bffdcb1 100644
+> > --- a/drivers/watchdog/Makefile
+> > +++ b/drivers/watchdog/Makefile
+> > @@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
+> >  obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
+> >  obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
+> >  obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
+> > +obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
+> >
+> >  # PPC64 Architecture
+> >  obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
+> > diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
+> > new file mode 100644
+> > index 0000000..e586c2e
+> > --- /dev/null
+> > +++ b/drivers/watchdog/mena21_wdt.c
+> > @@ -0,0 +1,234 @@
+> > +/*
+> > + * Watchdog driver for the A21 VME CPU Boards
+> > + *
+> > + * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation
+> > + */
+> > +#include <linux/module.h>
+> > +#include <linux/moduleparam.h>
+> > +#include <linux/types.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/watchdog.h>
+> > +#include <linux/uaccess.h>
+> > +#include <linux/gpio.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/bitops.h>
+> > +
+> > +#define GPIO_WD_ENAB	169
+> > +#define GPIO_WD_FAST	170
+> > +#define GPIO_WD_TRIG	171
+> > +
+> > +#define GPIO_RST_CAUSE_BASE 166
+> > +
+> > +struct a21_wdt_drv {
+> > +	struct watchdog_device wdt;
+> > +	struct mutex lock;
+> > +};
+> > +
+> > +static bool nowayout = WATCHDOG_NOWAYOUT;
+> > +module_param(nowayout, bool, 0);
+> > +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> > +			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> > +
+> > +static int a21_wdt_get_bootstatus(unsigned int *reset)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < 3; i++)
+> > +		*reset |= gpio_get_value(GPIO_RST_CAUSE_BASE + i)
+> > +			? (1 << i) : 0;
+> > +
+> > +	if (*reset >= 8)
+> > +		return -EINVAL;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int a21_wdt_start(struct watchdog_device *wdt)
+> > +{
+> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> > +
+> > +	mutex_lock(&drv->lock);
+> > +
+> > +	gpio_set_value(GPIO_WD_ENAB, 1);
+> > +
+> > +	mutex_unlock(&drv->lock);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int a21_wdt_stop(struct watchdog_device *wdt)
+> > +{
+> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> > +
+> > +	/* We don't stop if WDOG_NO_WAY_OUT is set */
+> > +	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
+> > +		return -EINVAL;
+> > +
+> > +	mutex_lock(&drv->lock);
+> > +
+> > +	gpio_set_value(GPIO_WD_ENAB, 0);
+> > +
+> > +	mutex_unlock(&drv->lock);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int a21_wdt_ping(struct watchdog_device *wdt)
+> > +{
+> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> > +
+> > +	mutex_lock(&drv->lock);
+> > +
+> > +	gpio_set_value(GPIO_WD_TRIG, 0);
+> > +	ndelay(10);
+> > +	gpio_set_value(GPIO_WD_TRIG, 1);
+> > +
+> > +	mutex_unlock(&drv->lock);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int a21_wdt_set_timeout(struct watchdog_device *wdt,
+> > +			       unsigned int timeout)
+> > +{
+> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+> > +
+> > +	if (timeout != 1 && timeout != 30) {
+> > +		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (timeout == 30 && wdt->timeout == 1) {
+> > +		dev_err(wdt->dev,
+> > +			"Transition from fast to slow mode not allowed\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	mutex_lock(&drv->lock);
+> > +
+> > +	if (timeout == 1)
+> > +		gpio_set_value(GPIO_WD_FAST, 1);
+> > +	else
+> > +		gpio_set_value(GPIO_WD_FAST, 0);
+> > +
+> > +	wdt->timeout = timeout;
+> > +
+> > +	mutex_unlock(&drv->lock);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct watchdog_info a21_wdt_info = {
+> > +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
+> > +	.identity = "MEN A21 Watchdog",
+> > +};
+> > +
+> > +static const struct watchdog_ops a21_wdt_ops = {
+> > +	.owner = THIS_MODULE,
+> > +	.start = a21_wdt_start,
+> > +	.stop = a21_wdt_stop,
+> > +	.ping = a21_wdt_ping,
+> > +	.set_timeout = a21_wdt_set_timeout,
+> > +};
+> > +
+> > +static struct watchdog_device a21_wdt = {
+> > +	.info = &a21_wdt_info,
+> > +	.ops = &a21_wdt_ops,
+> > +	.min_timeout = 1,
+> > +	.max_timeout = 30,
+> > +};
+> > +
+> > +static int a21_wdt_probe(struct platform_device *pdev)
+> > +{
+> > +	struct a21_wdt_drv *drv;
+> > +	unsigned int reset = 0;
+> > +	int ret;
+> > +
+> > +	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
+> > +
+> > +	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
+> > +	if (!drv)
+> > +		return -ENOMEM;
+> > +
+> > +	mutex_init(&drv->lock);
+> > +	watchdog_set_nowayout(&a21_wdt, nowayout);
+> > +	watchdog_set_drvdata(&a21_wdt, drv);
+> > +
+> > +	ret = watchdog_register_device(&a21_wdt);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "Cannot register watchdog device\n");
+> > +		goto err_register_wd;
+> > +	}
+> > +
+> > +	a21_wdt.timeout = 30;
 >
-> Ping!!
+> It would be better to use watchdog_init_timeout(), as it automatically
+> supports setting the timeout through an fdt property. It should be set
+> before registering the device with the watchdog subsystem.
 
-Ping!!
+I thought there would be something like watchdog_init_timeout() but didn't find
+it actually. Only found watchdog_set_timeout() which isn't exported...
+
+Up for the next update..
