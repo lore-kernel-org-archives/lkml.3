@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3EaGIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:08:53 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:61222 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab3EaGIh (ORCPT
+	id S1752698Ab3EaGJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:09:07 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:46137 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab3EaGIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:08:37 -0400
+	Fri, 31 May 2013 02:08:44 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH v2 1/5] phy: Clean coding style in vitesse phy
-Date: Fri, 31 May 2013 08:08:23 +0200
-Message-Id: <131c9262c3094ee3c664bd729a66e0709ceae82c.1369980470.git.michal.simek@xilinx.com>
+        Rick Hoover <RHoover@digilentinc.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Steven Wang <steven.wang@digilentinc.com>, netdev@vger.kernel.org
+Subject: [PATCH v2 4/5] phy: Add Marvell 88E1116R phy ID
+Date: Fri, 31 May 2013 08:08:26 +0200
+Message-Id: <fe731ed9f2d4fe71b44af91da7ef9cdc0d4ecdf1.1369980470.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
 References: <cover.1369980470.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
 References: <cover.1369980470.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-1678-1369980513-0001";
+    boundary="=_mimegpg-monstr-desktop-1714-1369980519-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,88 +37,142 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-1678-1369980513-0001
+--=_mimegpg-monstr-desktop-1714-1369980519-0001
 
-- Remove trailing white space
-- Remove spaces before tag
-- Fix comments
+This phy is on Xilinx ZC702 zynq development board.
 
+Signed-off-by: Anirudha Sarangi <anirudh@xilinx.com>
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 Changes in v2: None
 
- drivers/net/phy/vitesse.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ drivers/net/phy/marvell.c   | 65 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/marvell_phy.h |  1 +
+ 2 files changed, 66 insertions(+)
 
-diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
-index 3492b53..d6e988f 100644
---- a/drivers/net/phy/vitesse.c
-+++ b/drivers/net/phy/vitesse.c
-@@ -44,12 +44,12 @@
- #define MII_VSC8244_ISTAT_DUPLEX	0x1000
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index 371353c..df5a9f6 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -116,6 +116,8 @@
+ #define MII_M1011_PHY_STATUS_RESOLVED	0x0800
+ #define MII_M1011_PHY_STATUS_LINK	0x0400
 
- /* Vitesse Auxiliary Control/Status Register */
--#define MII_VSC8244_AUX_CONSTAT        	0x1c
--#define MII_VSC8244_AUXCONSTAT_INIT    	0x0000
--#define MII_VSC8244_AUXCONSTAT_DUPLEX  	0x0020
--#define MII_VSC8244_AUXCONSTAT_SPEED   	0x0018
--#define MII_VSC8244_AUXCONSTAT_GBIT    	0x0010
--#define MII_VSC8244_AUXCONSTAT_100     	0x0008
-+#define MII_VSC8244_AUX_CONSTAT		0x1c
-+#define MII_VSC8244_AUXCONSTAT_INIT	0x0000
-+#define MII_VSC8244_AUXCONSTAT_DUPLEX	0x0020
-+#define MII_VSC8244_AUXCONSTAT_SPEED	0x0018
-+#define MII_VSC8244_AUXCONSTAT_GBIT	0x0010
-+#define MII_VSC8244_AUXCONSTAT_100	0x0008
-
- #define MII_VSC8221_AUXCONSTAT_INIT	0x0004 /* need to set this bit? */
- #define MII_VSC8221_AUXCONSTAT_RESERVED	0x0004
-@@ -100,9 +100,8 @@ static int vsc824x_config_init(struct phy_device *phydev)
- static int vsc824x_ack_interrupt(struct phy_device *phydev)
- {
- 	int err = 0;
--	
--	/*
--	 * Don't bother to ACK the interrupts if interrupts
++#define MII_M1116R_CONTROL_REG_MAC	21
 +
-+	/* Don't bother to ACK the interrupts if interrupts
- 	 * are disabled.  The 824x cannot clear the interrupts
- 	 * if they are disabled.
- 	 */
-@@ -122,8 +121,7 @@ static int vsc82xx_config_intr(struct phy_device *phydev)
- 				MII_VSC8244_IMASK_MASK :
- 				MII_VSC8221_IMASK_MASK);
- 	else {
--		/*
--		 * The Vitesse PHY cannot clear the interrupt
-+		/* The Vitesse PHY cannot clear the interrupt
- 		 * once it has disabled them, so we clear them first
- 		 */
- 		err = phy_read(phydev, MII_VSC8244_ISTAT);
-@@ -146,7 +144,8 @@ static int vsc8221_config_init(struct phy_device *phydev)
- 	return err;
 
- 	/* Perhaps we should set EXT_CON1 based on the interface?
--	   Options are 802.3Z SerDes or SGMII */
-+	 * Options are 802.3Z SerDes or SGMII
-+	 */
+ MODULE_DESCRIPTION("Marvell PHY driver");
+ MODULE_AUTHOR("Andy Fleming");
+@@ -372,6 +374,55 @@ static int m88e1318_config_aneg(struct phy_device *phydev)
+ 	return m88e1121_config_aneg(phydev);
  }
 
- /* Vitesse 824x */
++static int m88e1116r_config_init(struct phy_device *phydev)
++{
++	int temp;
++	int err;
++
++	temp = phy_read(phydev, MII_BMCR);
++	temp |= BMCR_RESET;
++	err = phy_write(phydev, MII_BMCR, temp);
++	if (err < 0)
++		return err;
++
++	mdelay(500);
++
++	err = phy_write(phydev, MII_MARVELL_PHY_PAGE, 0);
++	if (err < 0)
++		return err;
++
++	temp = phy_read(phydev, MII_M1011_PHY_SCR);
++	temp |= (7 << 12);	/* max number of gigabit attempts */
++	temp |= (1 << 11);	/* enable downshift */
++	temp |= MII_M1011_PHY_SCR_AUTO_CROSS;
++	err = phy_write(phydev, MII_M1011_PHY_SCR, temp);
++	if (err < 0)
++		return err;
++
++	err = phy_write(phydev, MII_MARVELL_PHY_PAGE, 2);
++	if (err < 0)
++		return err;
++	temp = phy_read(phydev, MII_M1116R_CONTROL_REG_MAC);
++	temp |= (1 << 5);
++	temp |= (1 << 4);
++	err = phy_write(phydev, MII_M1116R_CONTROL_REG_MAC, temp);
++	if (err < 0)
++		return err;
++	err = phy_write(phydev, MII_MARVELL_PHY_PAGE, 0);
++	if (err < 0)
++		return err;
++
++	temp = phy_read(phydev, MII_BMCR);
++	temp |= BMCR_RESET;
++	err = phy_write(phydev, MII_BMCR, temp);
++	if (err < 0)
++		return err;
++
++	mdelay(500);
++
++	return 0;
++}
++
+ static int m88e1111_config_init(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -940,6 +991,19 @@ static struct phy_driver marvell_drivers[] = {
+ 		.config_intr = &marvell_config_intr,
+ 		.driver = { .owner = THIS_MODULE },
+ 	},
++	{
++		.phy_id = MARVELL_PHY_ID_88E1116R,
++		.phy_id_mask = MARVELL_PHY_ID_MASK,
++		.name = "Marvell 88E1116R",
++		.features = PHY_GBIT_FEATURES,
++		.flags = PHY_HAS_INTERRUPT,
++		.config_init = &m88e1116r_config_init,
++		.config_aneg = &genphy_config_aneg,
++		.read_status = &genphy_read_status,
++		.ack_interrupt = &marvell_ack_interrupt,
++		.config_intr = &marvell_config_intr,
++		.driver = { .owner = THIS_MODULE },
++	},
+ };
+
+ static int __init marvell_init(void)
+@@ -967,6 +1031,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
+ 	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK },
+ 	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
+ 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
++	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
+ 	{ }
+ };
+
+diff --git a/include/linux/marvell_phy.h b/include/linux/marvell_phy.h
+index dd3c34e..ec41025 100644
+--- a/include/linux/marvell_phy.h
++++ b/include/linux/marvell_phy.h
+@@ -14,6 +14,7 @@
+ #define MARVELL_PHY_ID_88E1149R		0x01410e50
+ #define MARVELL_PHY_ID_88E1240		0x01410e30
+ #define MARVELL_PHY_ID_88E1318S		0x01410e90
++#define MARVELL_PHY_ID_88E1116R		0x01410e40
+
+ /* struct phy_device dev_flags definitions */
+ #define MARVELL_PHY_M1145_FLAGS_RESISTANCE	0x00000001
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-1678-1369980513-0001
+--=_mimegpg-monstr-desktop-1714-1369980519-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGoPmEACgkQykllyylKDCGqcwCfRyrtsfbl1MV3L2jepKeBHwQF
-ro0AnRdxLWUTadpMWMqIOTmibe3gjzK1
-=/jWX
+iEYEABECAAYFAlGoPmcACgkQykllyylKDCF1mwCfRj3Abq6qYDq1K9XwIYTsMfMF
+YRcAn23BxoD4LvFdPA/2LyUJysAOfBG6
+=1/S0
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-1678-1369980513-0001--
+--=_mimegpg-monstr-desktop-1714-1369980519-0001--
