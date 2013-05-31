@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3EaRsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:48:11 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48387 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab3EaRsH (ORCPT
+	id S1756668Ab3EaRvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:51:38 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:60872 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab3EaRvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:48:07 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: <akpm@linux-foundation.org>, <linux@arm.linux.org.uk>, <zonque@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <a.zummo@towertech.it>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>
-Subject: Re: [PATCH 1/2] rtc: omap: add option to indicate wakeup support through DT
-References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com>
-	<1369982005-8572-2-git-send-email-gururaja.hebbar@ti.com>
-Date: Fri, 31 May 2013 10:48:03 -0700
-In-Reply-To: <1369982005-8572-2-git-send-email-gururaja.hebbar@ti.com> (Hebbar
-	Gururaja's message of "Fri, 31 May 2013 12:03:24 +0530")
-Message-ID: <87wqqf11nw.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 31 May 2013 13:51:31 -0400
+Message-ID: <51A8E326.70800@cogentembedded.com>
+Date: Fri, 31 May 2013 21:51:34 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Joe Perches <joe@perches.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mo?= =?ISO-8859-1?Q?rk?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: skbuff: use _RET_IP_
+References: <1369861743.4188.33.camel@buesod1.americas.hpqcorp.net>  <51A6768B.5050603@cogentembedded.com> <87obbsohd1.fsf@nemi.mork.no>  <1369962688.1751.6.camel@buesod1.americas.hpqcorp.net>  <1369977659.10556.34.camel@joe-AO722> <51A8B4A4.1010204@cogentembedded.com> <1370019292.10556.79.camel@joe-AO722>
+In-Reply-To: <1370019292.10556.79.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
+Hello.
 
-> Even though RTC-IP is wakeup capable, Not all Boards support it.
+On 05/31/2013 08:54 PM, Joe Perches wrote:
+
+>>> Don't use a standalone gcc compiled program to
+>>> determine what the kernel outputs.
+> []
+>>> The kernel output is;
+>>> 	printk("0x%lx\n", 0x100ul)		0x100
+>>> 	printk("%p\n", (void *)0x100ul)		00000100
+>>> 	printk("%#p\n", (void *)0x100ul)	0x00000100
+>>> The last one isn't used at all in kernel source. (gcc complains)
+>>> It's always "0x%p"
+>>       I was talking about using "%#lx", not "%#p". I don't see it in your
+>> example.
+> "0x%lx" and "%#lx" produce the same output in the kernel.
 >
-> For example
-> The rtc alarm wakeup is available in rtc-ip since omap1 days but alarm
-> was not wired properly in previous ompa1 boards.
->
-> 	commit fa5b07820fe3a0fc06ac368516e71f10a59b9539
-> 	Author: Sekhar Nori <nsekhar@ti.com>
-> 	Date:   Wed Oct 27 15:33:05 2010 -0700
->
-> 	rtc: omap: let device wakeup capability be configured from chip
-> 	init logic
->
-> 	The rtc-omap driver currently hardcodes the RTC wakeup
-> 	capability to be "not capable".  While this seems to be true for
-> 	existing OMAP1 boards which are not wired for this, the
-> 	DA850/OMAP-L138 SoC, the RTC can always be wake up source from
-> 	its "deep sleep" mode.
->
-> Current rtc-omap driver expects the rtc module wake-up capabilities to
-> be set up by board specific code. However, in case of DT, this is not
-> possible.
->
-> So, add a DT property "ti,wakeup_capable" to indicate that the module is
-> wake-up capable.
+> The latter isn't used very often though.
 
-Why is this a TI-specific property?  
+    It's already used in the same format string in this case. That's why 
+I suggested
+not to deviate from the existing code.
 
-Also, I think we can do this without a new DT property.Did you see this
-patch from Tony which is already queued for v3.11:
-
-    http://marc.info/?l=linux-omap&m=136917244530612&w=2
-
-I think this is the right way to go.  Platforms that don't want/need
-wakeup support can disable it from userspace via:
-
-    echo disabled > /sys/devices/.../power/wakeup
-
-Kevin
+WBR, Sergei
 
