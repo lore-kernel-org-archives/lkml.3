@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab3EaOGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:06:30 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:44881 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3EaOGV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:06:21 -0400
-Date: Fri, 31 May 2013 17:08:02 +0300
-From: Timo Teras <timo.teras@iki.fi>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Jon Arne =?UTF-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
-        Andy Walls <awalls@md.metrocast.net>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hans.verkuil@cisco.com,
-        prabhakar.csengg@gmail.com, g.liakhovetski@gmx.de,
-        ezequiel.garcia@free-electrons.com
-Subject: Re: [RFC 1/3] saa7115: Set saa7113 init to values from datasheet
-Message-ID: <20130531170802.642fbc3e@vostro>
-In-Reply-To: <20130531100827.10710841@redhat.com>
-References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
-	<1369860078-10334-2-git-send-email-jonarne@jonarne.no>
-	<20130529213554.690f7eaa@redhat.com>
-	<7454763a-75fe-4d98-b7ab-29b6649dc25e@email.android.com>
-	<20130530052136.GF2367@dell.arpanet.local>
-	<20130530083332.245e3c62@vostro>
-	<20130530190001.GG2367@dell.arpanet.local>
-	<20130531100827.10710841@redhat.com>
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752538Ab3EaOH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:07:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41756 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab3EaOHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 10:07:21 -0400
+Message-ID: <51A8AE72.5010601@ti.com>
+Date: Fri, 31 May 2013 16:06:42 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dan Murphy <dmurphy@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7] ARM: dts: omap4-panda: Update the LED support for
+ the panda DTS
+References: <1369826427-31963-1-git-send-email-dmurphy@ti.com>
+In-Reply-To: <1369826427-31963-1-git-send-email-dmurphy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013 10:08:27 -0300
-Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+Hi Dan,
 
-> Em Thu, 30 May 2013 21:00:01 +0200
-> Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
+On 05/29/2013 01:20 PM, Dan Murphy wrote:
+> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+> are different.
 > 
-> > On Thu, May 30, 2013 at 08:33:32AM +0300, Timo Teras wrote:
-> > > I would rather have the platform_data provide the new table. Or
-> > > if you think bulk of the table will be the same for most users,
-> > > then perhaps add there an enum saying which table to use - and
-> > > name the tables according to the chip variant it applies to.
-> > > 
-> > 
-> > I think the bulk of the table will be the same for all drivers.
-> > It's one bit here and one bit there that needs changing.
-> > As the driver didn't support platform data.
-> > Changing to a new init table for the drivers that implement
-> > platform_data shouldn't cause any regressions.
+> A1-A3 = gpio_wk7clean
+> ES = gpio_110
 > 
-> There are several things that are very bad on passing a table via
-> platform data:
-
-Sorry, my wording was self-conflicting. The intention was to
-suggest providing an enum saying which table to use. Not that the
-platform data would provide the whole table.
-
-> 	1) you're adding saa711x-specific data at the bridge driver,
-> 	   so, the saa711x code is spread on several places at the
-> 	   long term;
+> There is no change to LED D2
 > 
-> 	2) some part of the saa711x code may override the data there, 
-> 	   as it is not aware about what bits should be preserved from
-> 	   the new device;
+> Abstract away the pinmux and the LED definitions for the two boards into
+> the respective DTS files.
 > 
-> 	3) due (2), latter changes on the code are more likely to
-> 	   cause regressions;
-> 
-> 	4) also due to (2), some hacks can be needed, in order to warn
-> 	   saa711x to handle some things differently.
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
 
-Agreed.
+That patch was good... until Florian introduces some new constant to
+improve the readability of the DTS [1].
 
-> That's why it is a way better to add meaningful parameters telling
-> what bits are needed for the driver to work with the bridge. That's
-> also why we do this with all other drivers.
-
-Based on the latest patch, more of these bits need to be controlled
-individually than I figured. So yes, individual meaningful bits do make
-the most sense.
+Could you rebase on the lastest for_3.11/dts and use the macros for the
+GPIO and pinctrl nodes?
 
 Thanks,
- Timo
+Benoit
+
+[1] http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89684.html
+
+> ---
+> v7 - Update headline to add spaces - https://patchwork.kernel.org/patch/2583661/
+> v6 - Review comments updated - https://patchwork.kernel.org/patch/2582771/
+> v5 - Provide pincrtl phandle to the gpio-led driver - https://patchwork.kernel.org/patch/2573981/
+> 
+>  arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
+>  arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> index 03bd60d..5fd59b3 100644
+> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> @@ -16,8 +16,13 @@
+>  		reg = <0x80000000 0x40000000>; /* 1 GB */
+>  	};
+>  
+> -	leds {
+> +	leds: leds {
+>  		compatible = "gpio-leds";
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <
+> +			&led_wkgpio_pins
+> +		>;
+> +
+>  		heartbeat {
+>  			label = "pandaboard::status1";
+>  			gpios = <&gpio1 7 0>;
+> @@ -137,6 +142,15 @@
+>  	};
+>  };
+>  
+> +&omap4_pmx_wkup {
+> +	led_wkgpio_pins: pinmux_leds_wkpins {
+> +		pinctrl-single,pins = <
+> +			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
+> +			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+> +		>;
+> +	};
+> +};
+> +
+>  &i2c1 {
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&i2c1_pins>;
+> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+> index f1d8c21..c968a3b 100644
+> --- a/arch/arm/boot/dts/omap4-panda-es.dts
+> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
+> @@ -34,3 +34,31 @@
+>  		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
+>  		>;
+>  };
+> +
+> +&omap4_pmx_core {
+> +	led_gpio_pins: gpio_led_pmx {
+> +		pinctrl-single,pins = <
+> +			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
+> +		>;
+> +	};
+> +};
+> +
+> +&led_wkgpio_pins {
+> +	pinctrl-single,pins = <
+> +		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+> +	>;
+> +};
+> +
+> +&leds {
+> +	pinctrl-0 = <
+> +		&led_gpio_pins
+> +		&led_wkgpio_pins
+> +	>;
+> +
+> +	heartbeat {
+> +		gpios = <&gpio4 14 0>;
+> +	};
+> +	mmc {
+> +		gpios = <&gpio1 8 0>;
+> +	};
+> +};
+> 
+
