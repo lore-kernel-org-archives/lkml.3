@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab3EaSjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:39:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57561 "EHLO mga03.intel.com"
+	id S1757035Ab3EaSjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:39:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42707 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756950Ab3EaSi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:38:58 -0400
+	id S1757053Ab3EaSjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 14:39:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,780,1363158000"; 
-   d="scan'208";a="310670498"
-Subject: [v4][PATCH 1/6] mm: swap: defer clearing of page_private() for swap cache pages
+   d="scan'208";a="343159136"
+Subject: [v4][PATCH 4/6] mm: vmscan: break out mapping "freepage" code
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
         tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 31 May 2013 11:38:56 -0700
+Date: Fri, 31 May 2013 11:39:01 -0700
 References: <20130531183855.44DDF928@viggo.jf.intel.com>
 In-Reply-To: <20130531183855.44DDF928@viggo.jf.intel.com>
-Message-Id: <20130531183856.1D7D75AD@viggo.jf.intel.com>
+Message-Id: <20130531183901.375FE758@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,75 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This patch defers the destruction of swapcache-specific data in
-'struct page'.  This simplifies the code because we do not have
-to keep extra copies of the data during the removal of a page
-from the swap cache.
+__remove_mapping() only deals with pages with mappings, meaning
+page cache and swap cache.
 
-There are only two callers of swapcache_free() which actually
-pass in a non-NULL 'struct page'.  Both of them (__remove_mapping
-and delete_from_swap_cache())  create a temporary on-stack
-'swp_entry_t' and set entry.val to page_private().
+At this point, the page has been removed from the mapping's radix
+tree, and we need to ensure that any fs-specific (or swap-
+specific) resources are freed up.
 
-They need to do this since __delete_from_swap_cache() does
-set_page_private(page, 0) and destroys the information.
-
-However, I'd like to batch a few of these operations on several
-pages together in a new version of __remove_mapping(), and I
-would prefer not to have to allocate temporary storage for each
-page.  The code is pretty ugly, and it's a bit silly to create
-these on-stack 'swp_entry_t's when it is so easy to just keep the
-information around in 'struct page'.
-
-There should not be any danger in doing this since we are
-absolutely on the path of freeing these page.  There is no
-turning back, and no other rerferences can be obtained after it
-comes out of the radix tree.
-
-Note: This patch is separate from the next one since it
-introduces the behavior change.  I've seen issues with this patch
-by itself in various forms and I think having it separate like
-this aids bisection.
+We will be using this function from a second location in a
+following patch.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
 ---
 
- linux.git-davehans/mm/swap_state.c |    4 ++--
- linux.git-davehans/mm/vmscan.c     |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ linux.git-davehans/mm/vmscan.c |   28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
-diff -puN mm/swap_state.c~__delete_from_swap_cache-dont-clear-page-private mm/swap_state.c
---- linux.git/mm/swap_state.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-30 16:07:50.630079404 -0700
-+++ linux.git-davehans/mm/swap_state.c	2013-05-30 16:07:50.635079624 -0700
-@@ -148,8 +148,6 @@ void __delete_from_swap_cache(struct pag
- 	entry.val = page_private(page);
- 	address_space = swap_address_space(entry);
- 	radix_tree_delete(&address_space->page_tree, page_private(page));
--	set_page_private(page, 0);
--	ClearPageSwapCache(page);
- 	address_space->nrpages--;
- 	__dec_zone_page_state(page, NR_FILE_PAGES);
- 	INC_CACHE_INFO(del_total);
-@@ -226,6 +224,8 @@ void delete_from_swap_cache(struct page
- 	spin_unlock_irq(&address_space->tree_lock);
- 
- 	swapcache_free(entry, page);
-+	set_page_private(page, 0);
-+	ClearPageSwapCache(page);
- 	page_cache_release(page);
+diff -puN mm/vmscan.c~free_mapping_page mm/vmscan.c
+--- linux.git/mm/vmscan.c~free_mapping_page	2013-05-30 16:07:51.461115968 -0700
++++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:51.465116144 -0700
+@@ -497,6 +497,24 @@ static int __remove_mapping(struct addre
+ 	return 1;
  }
  
-diff -puN mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private mm/vmscan.c
---- linux.git/mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-30 16:07:50.632079492 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:50.637079712 -0700
-@@ -494,6 +494,8 @@ static int __remove_mapping(struct addre
- 		__delete_from_swap_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
- 		swapcache_free(swap, page);
-+		set_page_private(page, 0);
-+		ClearPageSwapCache(page);
- 	} else {
- 		void (*freepage)(struct page *);
++/*
++ * Release any resources the mapping had tied up in
++ * the page.
++ */
++static void mapping_release_page(struct address_space *mapping,
++				 struct page *page)
++{
++	if (PageSwapCache(page)) {
++		swapcache_free_page_entry(page);
++	} else {
++		void (*freepage)(struct page *);
++		freepage = mapping->a_ops->freepage;
++		mem_cgroup_uncharge_cache_page(page);
++		if (freepage != NULL)
++			freepage(page);
++	}
++}
++
+ static int lock_remove_mapping(struct address_space *mapping, struct page *page)
+ {
+ 	int ret;
+@@ -510,15 +528,7 @@ static int lock_remove_mapping(struct ad
+ 	if (!ret)
+ 		return 0;
+ 
+-	if (PageSwapCache(page)) {
+-		swapcache_free_page_entry(page);
+-	} else {
+-		void (*freepage)(struct page *);
+-		freepage = mapping->a_ops->freepage;
+-		mem_cgroup_uncharge_cache_page(page);
+-		if (freepage != NULL)
+-			freepage(page);
+-	}
++	mapping_release_page(mapping, page);
+ 	return ret;
+ }
  
 _
