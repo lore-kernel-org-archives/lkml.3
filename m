@@ -1,69 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab3EaXax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:30:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39512 "EHLO mx2.suse.de"
+	id S1755267Ab3EaXdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:33:03 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38697 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab3EaXap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:30:45 -0400
-Date: Sat, 1 Jun 2013 01:30:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Russ Anderson <rja@sgi.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
-        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-In-Reply-To: <20130531225730.GB14752@sgi.com>
-Message-ID: <alpine.LNX.2.00.1306010124420.2852@pobox.suse.cz>
-References: <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz> <20130531101250.GD30394@gmail.com> <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz> <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com> <20130531143425.GA5850@srcf.ucam.org>
- <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com> <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com> <20130531162815.GA8082@srcf.ucam.org> <20130531225730.GB14752@sgi.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755013Ab3EaXdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 19:33:00 -0400
+Message-ID: <1370043169.3928.165.camel@pasglop>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Sat, 01 Jun 2013 09:32:49 +1000
+In-Reply-To: <1370042526.3928.162.camel@pasglop>
+References: <1370042526.3928.162.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Russ Anderson wrote:
-
-> OK.  I get nvram looks full due to lack of garbage collection
-> on some systems.  Does QueryVariableInfo (at runtime) tell you
-> it is full?  Is the problem that it says it is full when it
-> is not, or does not tell you it is full when it is?
-
-We are trying to count the size occupied by existing UEFI variables. 
-QueryVariableInfo() called from runtime environment doesn't give a full 
-picture, as it doesn't provide information about boot-only variables.
-
-Hence the patch.
-
-> > up the size of the variables ourselves, but that only gives us the value 
-> > for runtime-visible variables. We also need to know how much space is 
-> > used by variables that are only visible during boot,
+On Sat, 2013-06-01 at 09:22 +1000, Benjamin Herrenschmidt wrote:
+> Hi Linus !
 > 
-> Is it valid to assume that only the kernel writes to nvram at
-> runtime?  
-
-Well, mostly yes. But if the kernel doesn't know what the initial state 
-is, it can't count the size properly.
-
-> > > Which means the previous patch(es) that caused the bricking should
-> > > get pulled, too.
-> > 
-> > There are no patches that cause the bricking.
+> Here are a few more fixes for powerpc 3.10. It's a bit more than I would
+> have liked this late in the game but I suppose that's what happens with
+> a brand new chip generation coming out.
+>
+> A few regression fixes, some last minute fixes for new P8 features such
+> as transactional memory,...
 > 
-> I thought that was the problem you were trying to avoid.
+> There's also one powerpc KVM patch that I requested that adds two
+> missing functions to our in-kernel interrupt controller support which
+> is itself a new 3.10 feature. These are defined by the base hypervisor
+> specification. We didn't implement them originally because Linux doesn't
+> use them but they are simple and I'm not comfortable having a
+> half-implemented interface in 3.10 and having to deal with versionning
+> etc... later when something starts needing those calls. They cannot be
+> emulated in qemu when using in-kernel interrupt controller (not enough
+> shared state).
 
-The problem that needs to be avoided is machines turning into bricks if 
-EFI storage nvram is getting full.
+Just added a last minute patch to fix a typo introducing a breakage
+in our cputable for Power7+ processors, sorry about that, but the
+regression it fixes just hurt me :-)
 
--- 
-Jiri Kosina
-SUSE Labs
+Sorry about that..
+
+Cheers,
+Ben.
+
+The following changes since commit 58f8bbd2e39c3732c55698494338ee19a92c53a0:
+
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-05-28 10:11:34 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to badec11b645e21acbc2411d7759e3efa559af443:
+
+  powerpc/cputable: Fix typo on P7+ cputable entry (2013-06-01 09:30:03 +1000)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc/mm: Always invalidate tlb on hpte invalidate and update
+
+Kevin Hao (2):
+      powerpc/pci: Remove the stale comments of pci_process_bridge_OF_ranges
+      powerpc/pci: Remove the unused variables in pci_process_bridge_OF_ranges
+
+Michael Ellerman (2):
+      powerpc/perf: Revert to original NO_SIPR logic
+      powerpc/perf: Add missing SIER support
+
+Michael Neuling (7):
+      powerpc/tm: Make room for hypervisor in abort cause codes
+      powerpc/tm: Update cause codes documentation
+      powerpc/tm: Abort on emulation and alignment faults
+      powerpc/tm: Move TM abort cause codes to uapi
+      powerpc/tm: Fix userspace stack corruption on signal delivery for active transactions
+      powerpc/pseries: Kill all prefetch streams on context switch
+      powerpc/pseries: Improve stream generation comments in copypage/user
+
+Nishanth Aravamudan (1):
+      powerpc/cputable: Fix oprofile_cpu_type on power8
+
+Paul Mackerras (1):
+      powerpc/kvm/book3s: Add support for H_IPOLL and H_XIRR_X in XICS emulation
+
+Priyanka Jain (1):
+      powerpc/32bit:Store temporary result in r0 instead of r8
+
+Srivatsa S. Bhat (1):
+      powerpc/pseries: Always enable CONFIG_HOTPLUG_CPU on PSERIES SMP
+
+Will Schmidt (1):
+      powerpc/cputable: Fix typo on P7+ cputable entry
+
+chenhui zhao (1):
+      powerpc/mpic: Fix irq distribution problem when MPIC_SINGLE_DEST_CPU
+
+ Documentation/powerpc/transactional_memory.txt |   27 +++++++++-
+ arch/powerpc/include/asm/hvcall.h              |    1 +
+ arch/powerpc/include/asm/ppc_asm.h             |   11 ++++
+ arch/powerpc/include/asm/processor.h           |   13 ++---
+ arch/powerpc/include/asm/reg.h                 |   11 ----
+ arch/powerpc/include/asm/signal.h              |    3 ++
+ arch/powerpc/include/asm/tm.h                  |    2 +
+ arch/powerpc/include/uapi/asm/Kbuild           |    1 +
+ arch/powerpc/include/uapi/asm/tm.h             |   18 +++++++
+ arch/powerpc/kernel/cputable.c                 |    6 +--
+ arch/powerpc/kernel/entry_32.S                 |    2 +-
+ arch/powerpc/kernel/entry_64.S                 |    7 +++
+ arch/powerpc/kernel/pci-common.c               |   14 +----
+ arch/powerpc/kernel/signal.c                   |   40 +++++++++++++-
+ arch/powerpc/kernel/signal.h                   |    2 +-
+ arch/powerpc/kernel/signal_32.c                |   10 +---
+ arch/powerpc/kernel/signal_64.c                |   23 +++-----
+ arch/powerpc/kernel/traps.c                    |   29 ++++++++++
+ arch/powerpc/kvm/book3s_hv.c                   |    2 +
+ arch/powerpc/kvm/book3s_pr_papr.c              |    2 +
+ arch/powerpc/kvm/book3s_xics.c                 |   29 ++++++++++
+ arch/powerpc/lib/copypage_power7.S             |   19 ++++---
+ arch/powerpc/lib/copyuser_power7.S             |   12 +++--
+ arch/powerpc/mm/hash_native_64.c               |   30 ++++++++---
+ arch/powerpc/perf/core-book3s.c                |   67 +++++++++++-------------
+ arch/powerpc/platforms/pseries/Kconfig         |    2 +
+ arch/powerpc/sysdev/mpic.c                     |    4 +-
+ 27 files changed, 262 insertions(+), 125 deletions(-)
+ create mode 100644 arch/powerpc/include/uapi/asm/tm.h
+
+
