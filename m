@@ -1,81 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab3EaDzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 23:55:03 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:44444 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3EaDy6 (ORCPT
+	id S1752997Ab3EaD7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 23:59:40 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44312 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab3EaD7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 23:54:58 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 30 May 2013 23:54:56 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-In-reply-to: <20130530114112.GH7483@mudshark.cambridge.arm.com>
-Message-id: <alpine.LFD.2.03.1305302319430.30828@syhkavp.arg>
-References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
- <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 30 May 2013 23:59:32 -0400
+Message-ID: <51A81FF9.8030403@linaro.org>
+Date: Fri, 31 May 2013 11:58:49 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH] ACPI: Fix potential NULL pointer dereference in acpi_processor_add()
+References: <519E0F2A.4070602@linaro.org> <51A5E177.3090809@fold.natur.cuni.cz> <51A6B9A2.8090904@linaro.org> <2969934.XTKV7y9VVT@vostro.rjw.lan> <20130530222542.GD1630@kroah.com>
+In-Reply-To: <20130530222542.GD1630@kroah.com>
+Content-Type: multipart/mixed;
+ boundary="------------040608000109010708060807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013, Will Deacon wrote:
+This is a multi-part message in MIME format.
+--------------040608000109010708060807
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
-> > On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
-> > > If you have some patch for this issue,
-> > > I can do the test for it .
-> > 
-> > I'll have a look at cooking something which uses an exception table entry
-> > to rewind the PC and retry the system call. That's simpler than directly
-> > injecting a user page fault from the system call path.
+On 2013-5-31 6:25, Greg Kroah-Hartman wrote:
+> On Thu, May 30, 2013 at 03:57:58PM +0200, Rafael J. Wysocki wrote:
+>> On Thursday, May 30, 2013 10:29:54 AM Hanjun Guo wrote:
+>>> On 2013-5-29 19:07, Martin Mokrejs wrote:
+>>>> Hanjun Guo wrote:
+>>>>> On 2013-5-29 7:30, Rafael J. Wysocki wrote:
+>>>>>> On Thursday, May 23, 2013 08:44:26 PM Hanjun Guo wrote:
+>>>>>>> In acpi_processor_add(), get_cpu_device() will return NULL sometimes,
+>>>>>>> although the chances are small, I think it should be fixed.
+>>>>>>>
+>>>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>>>>>
+>>>>>> This patch isn't necessary any more after the changes queued up for 3.11
+>>>>>> in the acpi-hotplug branch of the linux-pm.git tree.
+>>>>>
+>>>>> Ok, I noticed your patch set, just drop my patch.
+>>>>
+>>>> But shouldn't this go to stable at least? I checked linux-3.9.4
+>>>> and it applies fine. Whether this is relevant for other stable
+>>>> series I will leave up to somebody else. ;)
+>>>
+>>> Hi Rafeal,
+>>>
+>>> What's your opinion on Martin's suggestion?
+>>
+>> Well, this is kind of hard to say.  We generally don't apply patches to -stable
+>> that don't have mainline counterparts.
+>>
+>> Greg, I wonder what your opinion is?
 > 
-> Ok, please can you try the following?
-> 
-> Will
-> 
-> --->8
-> 
-> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-> index bc5bc0a..855926e 100644
-> --- a/arch/arm/kernel/entry-common.S
-> +++ b/arch/arm/kernel/entry-common.S
-> @@ -361,6 +361,15 @@ ENTRY(vector_swi)
->  	str	r8, [sp, #S_PSR]		@ Save CPSR
->  	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
->  	zero_fp
-> +	enable_irq
-> +	ct_user_exit
-> +
-> +#ifdef CONFIG_ALIGNMENT_TRAP
-> +	ldr	ip, __cr_alignment
-> +	ldr	ip, [ip]
-> +	mcr	p15, 0, ip, c1, c0		@ update control register
-> +#endif
+> We do not apply patches to -stable that are not in Linus's tree, unless
+> there is no problem in Linus's tree due to a major rewrite of the code,
+> and it has been confirmed that the same problem isn't there.
 
-This is wrong.  you must set up the align bit in the control register 
-_before_ enabling IRQs or an IRQ handler might run without alignment 
-fixup.
+Hi Rafael,
 
-Otherwise the patch looks good to me.
+I found that the problem is still there in your acpi-hotplug tree, sorry for
+I didn't noticed early. I made a patch for this again, I hope it will make
+sense to you.
+
+The patch is attached, based on your acpi-hotplug tree.
+
+Thanks
+Hanjun
 
 
-Nicolas
+
+
+--------------040608000109010708060807
+Content-Type: text/plain; charset=gb18030;
+ name="0001-ACPI-processor-Fix-potential-NULL-pointer-dereferenc.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ACPI-processor-Fix-potential-NULL-pointer-dereferenc.pa";
+ filename*1="tch"
+
+>From 975e30f5906a883e533e4226d8eca1c449c7366b Mon Sep 17 00:00:00 2001
+From: Hanjun Guo <hanjun.guo@linaro.org>
+Date: Fri, 31 May 2013 11:36:08 +0800
+Subject: [PATCH 1/1] ACPI / processor: Fix potential NULL pointer dereference
+ in acpi_processor_add()
+
+In acpi_processor_add(), get_cpu_device() will return NULL in some cases,
+and ACPI_HANDLE_SET() just use the return dev directly, this will case a
+potential NULL pointer dereference, fix it.
+
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/acpi/acpi_processor.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index 587d2af..4466b36 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -389,6 +389,11 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device,
+ 	per_cpu(processor_device_array, pr->id) = device;
+ 
+ 	dev = get_cpu_device(pr->id);
++	if (!dev) {
++		result = -ENODEV;
++		goto err;
++	}
++
+ 	ACPI_HANDLE_SET(dev, pr->handle);
+ 	result = acpi_bind_one(dev, NULL);
+ 	if (result)
+-- 
+1.7.9.5
+
+
+--------------040608000109010708060807--
