@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab3EaMBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:01:23 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59496 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab3EaMBT (ORCPT
+	id S1756221Ab3EaMBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:01:40 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:54589 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196Ab3EaMBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:01:19 -0400
+	Fri, 31 May 2013 08:01:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369218014-28990-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1369218014-28990-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 31 May 2013 14:01:18 +0200
-Message-ID: <CACRpkdZnaN=TOB9nZJUS5EPXcCDoMiBvoL47AufDOOcDoH-khg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] gpio-langwell: initialize lock before usage
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: David Cohen <david.a.cohen@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 31 May 2013 20:01:30 +0800
+Message-ID: <CAPgLHd8ULtaP23U96nygh-Sr6ySS4-aOuuK3NkvGz1bGj8Dh_A@mail.gmail.com>
+Subject: [PATCH] pcie-gadget-spear: fix error return code in spear_pcie_gadget_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:20 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-> Otherwise we will end up with traceback from LOCKDEP:
+Fix to return a negative error code in the clk_get_sys() and clk_enable()
+error handling case instead of 0, as done elsewhere in this function.
 
-Andy do you consider this a regression that needs to go into fixes?
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/misc/spear13xx_pcie_gadget.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-I.e. is this used in in-tree code and causing problems with v3.10...
+diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+index 7deb25d..288c35b 100644
+--- a/drivers/misc/spear13xx_pcie_gadget.c
++++ b/drivers/misc/spear13xx_pcie_gadget.c
+@@ -814,9 +814,11 @@ static int spear_pcie_gadget_probe(struct platform_device *pdev)
+ 		clk = clk_get_sys("pcie1", NULL);
+ 		if (IS_ERR(clk)) {
+ 			pr_err("%s:couldn't get clk for pcie1\n", __func__);
++			status = PTR_ERR(clk);
+ 			goto err_irq;
+ 		}
+-		if (clk_enable(clk)) {
++		status = clk_enable(clk);
++		if (status) {
+ 			pr_err("%s:couldn't enable clk for pcie1\n", __func__);
+ 			goto err_irq;
+ 		}
+@@ -828,9 +830,11 @@ static int spear_pcie_gadget_probe(struct platform_device *pdev)
+ 		clk = clk_get_sys("pcie2", NULL);
+ 		if (IS_ERR(clk)) {
+ 			pr_err("%s:couldn't get clk for pcie2\n", __func__);
++			status = PTR_ERR(clk);
+ 			goto err_irq;
+ 		}
+-		if (clk_enable(clk)) {
++		status = clk_enable(clk);
++		if (status) {
+ 			pr_err("%s:couldn't enable clk for pcie2\n", __func__);
+ 			goto err_irq;
+ 		}
 
-I'm asking because it creates a mess as the rest of the series depend
-on it.
-
-It is currently applied for v3.11.
-
-Yours,
-Linus Walleij
