@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3EaJc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:32:27 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52475 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3EaJcV (ORCPT
+	id S1754831Ab3EaJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:32:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35109 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3EaJcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:32:21 -0400
-Date: Fri, 31 May 2013 11:32:10 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Fri, 31 May 2013 05:32:51 -0400
+Date: Fri, 31 May 2013 02:32:50 -0700 (PDT)
+Message-Id: <20130531.023250.1043552574744640563.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: buytenh@wantstofly.org, jason@lakedaemon.net, andrew@lunn.ch,
+        benh@kernel.crashing.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] perf, persistent: Kernel updates for perf tool
- integration
-Message-ID: <20130531093210.GC2132@rric.localhost>
-References: <1369990056-10310-1-git-send-email-rric@kernel.org>
- <20130531091540.GH14076@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130531091540.GH14076@nazgul.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH v5 00/13] net: mv643xx_eth DT support and fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51A8432A.4000602@gmail.com>
+References: <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130530.175549.407800685811475192.davem@davemloft.net>
+	<51A8432A.4000602@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.05.13 11:15:40, Borislav Petkov wrote:
-> On Fri, May 31, 2013 at 10:47:20AM +0200, Robert Richter wrote:
-> > Patches base on Boris' patches which I have rebased to latest
-> > tip/perf/core. All patches can be found here:
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git persistent
-> 
-> Right, we should merge the fixes/changes to the persistent patches with
-> the original ones since they are still WIP anyway.
-> 
-> Feel free to rework them as you see fit, or, I could do that when I get
-> back.
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Date: Fri, 31 May 2013 08:28:58 +0200
 
-Hmm, since the changes in the onliner patches are either hard effort
-to find in reviewing/testing or more or less related to the new
-implementation, I better prefer to keep authorship as well to document
-the code development (don't blame me about patch count ;)). We better
-should add a branch (preferable at topic branch in tip?) as soon as
-possible for this.
+> thanks for pulling these in. I finally found how to check if a patch
+> already went into -stable. As Jason already said, the mdio patch that
+> #1 fixes did not yet went into -stable. Can you unqueue it? Sorry for
+> the confusion.
 
--Robert
+I'll unqueue it, thanks.
