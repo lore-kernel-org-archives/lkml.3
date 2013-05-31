@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab3EaImz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:42:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34714 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab3EaImp (ORCPT
+	id S1753473Ab3EaInZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:43:25 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:57102 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab3EaInW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:42:45 -0400
-Date: Fri, 31 May 2013 01:42:44 -0700 (PDT)
-Message-Id: <20130531.014244.1871655049070137342.davem@davemloft.net>
-To: xiyou.wangcong@gmail.com
-Cc: mschiffer@universe-factory.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net/3.9] ipv6: ndisc: fix ndisc_send_redirect writing
- to the wrong skb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAM_iQpWNAnRTgzjPTPxLU-eqz1nWqD=zyjTgwZaaxbwcpf4KMw@mail.gmail.com>
-References: <51A66CF3.7010202@universe-factory.net>
-	<5578958b49fff222740711e091c2325100f5a440.1369963643.git.mschiffer@universe-factory.net>
-	<CAM_iQpWNAnRTgzjPTPxLU-eqz1nWqD=zyjTgwZaaxbwcpf4KMw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 31 May 2013 04:43:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+V-a8sAXXq=gBO_uDsOS1MonXJan+mpBwo15tvp+wR40kAMKA@mail.gmail.com>
+References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1369503576-22271-2-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8sAXXq=gBO_uDsOS1MonXJan+mpBwo15tvp+wR40kAMKA@mail.gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 31 May 2013 14:13:00 +0530
+Message-ID: <CA+V-a8t8vx2S0rAZrZysF9PT2zVwx+EM0B5D=t50qoSiW8U_GA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] ARM: davinci: dm365 evm: remove init_enable from
+ ths7303 pdata
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
-Date: Fri, 31 May 2013 11:23:11 +0800
+Hi Sekhar,
 
-> On Fri, May 31, 2013 at 9:27 AM, Matthias Schiffer
-> <mschiffer@universe-factory.net> wrote:
->> Since some refactoring in 5f5a011, ndisc_send_redirect called
->> ndisc_fill_redirect_hdr_option on the wrong skb, leading to data corruption or
->> in the worst case a panic when the skb_put failed.
+On Sat, May 25, 2013 at 11:13 PM, Prabhakar Lad
+<prabhakar.csengg@gmail.com> wrote:
+> Hi Sekhar,
+>
+> On Sat, May 25, 2013 at 11:09 PM, Prabhakar Lad
+> <prabhakar.csengg@gmail.com> wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 >>
->> Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
-> 
-> 
-> Good catch!
-> 
-> Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
+>> remove init_enable from ths7303 pdata as it is being dropped
+>> from ths7303_platform_data.
+>>
+> Can you please ack this patch as I intend to take this patch via media
+> tree.
+gentle ping.
 
-I've queued this up for -stable.
+Regards,
+--Prabhakar
