@@ -1,173 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3EaOVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:21:43 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:58762 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab3EaOVf (ORCPT
+	id S1753336Ab3EaOWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:22:35 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:48207 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab3EaOW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:21:35 -0400
-Date: Fri, 31 May 2013 16:21:27 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130531162127.6d512233@holzheu>
-In-Reply-To: <20130530203847.GB5968@redhat.com>
-References: <20130524143644.GD18218@redhat.com>
-	<20130524170626.2ac06efe@holzheu>
-	<20130524152849.GF18218@redhat.com>
-	<87mwrkatgu.fsf@xmission.com>
-	<51A006CF.90105@gmail.com>
-	<87k3mnahkf.fsf@xmission.com>
-	<51A076FE.3060604@gmail.com>
-	<20130525145217.0549138a@holzheu>
-	<20130528135500.GC7088@redhat.com>
-	<20130529135144.7f95c4c0@holzheu>
-	<20130530203847.GB5968@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13053114-6892-0000-0000-0000054D93C8
+	Fri, 31 May 2013 10:22:28 -0400
+Message-ID: <51A8B220.6070308@monstr.eu>
+Date: Fri, 31 May 2013 16:22:24 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Timur Tabi <timur@tabi.org>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v3 7/8] video: xilinxfb: Fix sparse warnings
+References: <cover.1370004925.git.michal.simek@xilinx.com> <ea3d6fcbb9f7a00a9cdbd3d0a7a4d3401265ebf0.1370004925.git.michal.simek@xilinx.com> <51A8A4ED.6070104@tabi.org> <51A8A7B1.3040709@monstr.eu> <51A8A89C.8030404@tabi.org>
+In-Reply-To: <51A8A89C.8030404@tabi.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2LVILDVRGTUKTCOQRGRAN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 16:38:47 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2LVILDVRGTUKTCOQRGRAN
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, May 29, 2013 at 01:51:44PM +0200, Michael Holzheu wrote:
-> 
-> [..]
-> > >>> START QUOTE
-> > 
-> > [PATCH v3 1/3] kdump: Introduce ELF header in new memory feature
-> > 
-> > Currently for s390 we create the ELF core header in the 2nd kernel
-> > with a small trick. We relocate the addresses in the ELF header in
-> > a way that for the /proc/vmcore code it seems to be in the 1st
-> > kernel (old) memory and the read_from_oldmem() returns the correct
-> > data. This allows the /proc/vmcore code to use the ELF header in
-> > the 2nd kernel.
-> > 
-> > >>> END QUOTE
-> > 
-> > For our current zfcpdump project (see "[PATCH 3/3]s390/kdump: Use
-> > vmcore for zfcpdump") we could no longer use this trick. Therefore
-> > we sent you the patches to get a clean interface for ELF header
-> > creation in the 2nd kernel.
-> 
-> Hi Michael,
-> 
-> Few more questions.
-> 
-> - What's the difference between zfcpdump and kdump. I thought zfcpdump
->   just boots specific kernel from fixed drive? If yes, why can't that
->   kernel prepare headers in similar way as regular kdump kernel does
->   and gain from kdump kernel swap trick?
+On 05/31/2013 03:41 PM, Timur Tabi wrote:
+> On 05/31/2013 08:37 AM, Michal Simek wrote:
+>> The same is for Microblaze. Driver shares fb_virt for IO memory
+>> and for allocated memory. The purpose of this driver wasn't
+>> to change the driver logic just resolved sparse warnings.
+>> The other way is also wrong.
+>> I have compiled this driver with ppc toolchain and it should
+>> remove sparse warnings for PPC.
+>=20
+> But it's not I/O memory.  It's regular memory.  __iomem is for
+> memory-mapped I/O, which is limited to a specific range of memory locat=
+ions.
+>=20
+> If sometimes you use regular memory for the framebuffer, and other time=
+s
+> you use real I/O memory for the framebuffer, then you should have two
+> different pointers.
 
-Correct, the zfcpdump kernel is booted from a fixed disk drive. The
-difference is that the zfcpdump HSA memory is not mapped into real
-memory. It is accessed using a read memory interface "memcpy_hsa()"
-that copies memory from the hypervisor owned HSA memory into the Linux
-memory.
+I agree with you and if you like I can change it.
+But there will be at least one retype because dma_alloc_coherent returns =
+void *
+but struct fb_info expects that pointer is __iomem (char __iomem *screen_=
+base).
+Patch is below.
 
-So it looks like the following:
+Thanks,
+Michal
 
-+----------+                 +------------+
-|          |   memcpy_hsa()  |            |
-| zfcpdump | <-------------- | HSA memory |
-|          |                 |            |
-+----------+                 +------------+
-|          |
-| old mem  |
-|          |
-+----------+
 
-In the copy_oldmem_page() function for zfcpdump we do the following:
+diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+index f3d4a69..885f294 100644
+--- a/drivers/video/xilinxfb.c
++++ b/drivers/video/xilinxfb.c
+@@ -132,8 +132,8 @@ struct xilinxfb_drvdata {
+ 	unsigned int    dcr_len;
+ #endif
+ 	void		*fb_virt;	/* virt. address of the frame buffer */
++	void __iomem	*fb_virt_io;	/* virt. address of the frame buffer */
+ 	dma_addr_t	fb_phys;	/* phys. address of the frame buffer */
+-	int		fb_alloced;	/* Flag, was the fb memory alloced? */
 
-copy_oldmem_page_zfcpdump(...)
-{
-	if (src < ZFCPDUMP_HSA_SIZE) {
-		if (memcpy_hsa(buf, src, csize, userbuf) < 0)
-			return -EINVAL;
-	} else {
-		if (userbuf)
-			copy_to_user_real((buf, src, csize);
-		else
-			memcpy_real(buf, src, csize);
-	}
-}
+ 	u8 		flags;		/* features of the driver */
 
-So I think for zfcpdump we only can use the read() interface
-of /proc/vmcore. But this is sufficient for us since we also provide
-the s390 specific zfcpdump user space that copies /proc/vmcore.
+@@ -270,24 +270,36 @@ static int xilinxfb_assign(struct platform_device *=
+pdev,
+ 	/* Allocate the framebuffer memory */
+ 	if (pdata->fb_phys) {
+ 		drvdata->fb_phys =3D pdata->fb_phys;
+-		drvdata->fb_virt =3D ioremap(pdata->fb_phys, fbsize);
++		drvdata->fb_virt_io =3D ioremap(pdata->fb_phys, fbsize);
++
++		if (!drvdata->fb_virt_io) {
++			dev_err(dev, "Could not allocate frame buffer memory\n");
++			rc =3D -ENOMEM;
++			if (drvdata->flags & BUS_ACCESS_FLAG)
++				goto err_fbmem;
++			else
++				goto err_region;
++		}
++
++		/* Clear (turn to black) the framebuffer */
++		memset_io(drvdata->fb_virt_io, 0, fbsize);
+ 	} else {
+-		drvdata->fb_alloced =3D 1;
+ 		drvdata->fb_virt =3D dma_alloc_coherent(dev, PAGE_ALIGN(fbsize),
+ 					&drvdata->fb_phys, GFP_KERNEL);
+-	}
 
-> Also, we are accessing the contents of elf headers using physical
-> address. If that's the case, does it make a difference if data is
-> in old kernel's memory or new kernel's memory. We will use the
-> physical address and create a temporary mapping and it should not
-> make a difference whether same physical page is already mapped in
-> current kernel or not.
->
-> Only restriction this places is that all ELF header needs to be
-> contiguous. I see that s390 code already creates elf headers using
-> kzalloc_panic(). So memory allocated should by physically contiguous.
-> 
-> So can't we just put __pa(elfcorebuf) in elfcorehdr_addr. And same
-> is true for p_offset fields in PT_NOTE headers and everything should
-> work fine?
-> 
-> Only problem we can face is that at some point of time kzalloc() might
-> not be able to contiguous memory request. We can handle that once s390
-> runs into those issues. You are anyway allocating memory using
-> kzalloc().
-> 
-> And if this works for s390 kdump, it should work for zfcpdump too?
+-	if (!drvdata->fb_virt) {
+-		dev_err(dev, "Could not allocate frame buffer memory\n");
+-		rc =3D -ENOMEM;
+-		if (drvdata->flags & BUS_ACCESS_FLAG)
+-			goto err_fbmem;
+-		else
+-			goto err_region;
++		if (!drvdata->fb_virt_io) {
++			dev_err(dev, "Could not allocate frame buffer memory\n");
++			rc =3D -ENOMEM;
++			if (drvdata->flags & BUS_ACCESS_FLAG)
++				goto err_fbmem;
++			else
++				goto err_region;
++		memset(drvdata->fb_virt, 0, fbsize);
+ 	}
 
-So your suggestion is that copy_oldmem_page() should also be used for
-copying memory from the new kernel, correct?
+-	/* Clear (turn to black) the framebuffer */
+-	memset_io((void __iomem *)drvdata->fb_virt, 0, fbsize);
++
 
-For kdump on s390 I think this will work with the new "ELF header swap"
-patch. With that patch access to [0, OLDMEM_SIZE] will uniquely identify
-an address in the new kernel and access to [OLDMEM_BASE, OLDMEM_BASE +
-OLDMEM_SIZE] will identify an address in the old kernel.
+ 	/* Tell the hardware where the frame buffer is */
+ 	xilinx_fb_out32(drvdata, REG_FB_ADDR, drvdata->fb_phys);
+@@ -307,7 +319,11 @@ static int xilinxfb_assign(struct platform_device *p=
+dev,
 
-For zfcpdump currently we add a load from [0, HSA_SIZE] where p_offset
-equals p_paddr. Therefore we can't distinguish in copy_oldmem_page() if
-we read from oldmem (HSA) or newmem. The range [0, HSA_SIZE] is used
-twice. As a workaroun we could use an artificial p_offset for the HSA
-memory chunk that is not used by the 1st kernel physical memory. This
-is not really beautiful, but probably doable.
+ 	/* Fill struct fb_info */
+ 	drvdata->info.device =3D dev;
+-	drvdata->info.screen_base =3D (void __iomem *)drvdata->fb_virt;
++	if (drvdata->fb_virt)
++		drvdata->info.screen_base =3D (__force void __iomem *)
++							drvdata->fb_virt;
++	else
++		drvdata->info.screen_base =3D drvdata->fb_virt_io;
+ 	drvdata->info.fbops =3D &xilinxfb_ops;
+ 	drvdata->info.fix =3D xilinx_fb_fix;
+ 	drvdata->info.fix.smem_start =3D drvdata->fb_phys;
+@@ -341,8 +357,8 @@ static int xilinxfb_assign(struct platform_device *pd=
+ev,
 
-When I tried to implement this for kdump, I noticed another problem
-with the vmcore mmap patches. Our copy_oldmem_page() function uses
-memcpy_real() to access the old 1st kernel memory. This function
-switches to real mode and therefore does not require any page tables.
-But as a side effect of that we can't copy to vmalloc memory. The mmap
-patches use vmalloc memory for "notes_buf". So currently using our
-copy_oldmem_page() fails here.
+ 	if (drvdata->flags & BUS_ACCESS_FLAG) {
+ 		/* Put a banner in the log (for DEBUG) */
+-		dev_dbg(dev, "regs: phys=3D%x, virt=3D%p\n", drvdata->regs_phys,
+-					drvdata->regs);
++		dev_dbg(dev, "regs: phys=3D%x, virt=3D%p\n",
++			(u32)drvdata->regs_phys, drvdata->regs);
+ 	}
+ 	/* Put a banner in the log (for DEBUG) */
+ 	dev_dbg(dev, "fb: phys=3D%llx, virt=3D%p, size=3D%x\n",
+@@ -354,11 +370,11 @@ err_regfb:
+ 	fb_dealloc_cmap(&drvdata->info.cmap);
 
-If copy_oldmem_page() now also must be able to copy to vmalloc memory,
-we would have to add new code for that:
+ err_cmap:
+-	if (drvdata->fb_alloced)
++	if (drvdata->fb_virt)
+ 		dma_free_coherent(dev, PAGE_ALIGN(fbsize), drvdata->fb_virt,
+ 			drvdata->fb_phys);
+ 	else
+-		iounmap(drvdata->fb_virt);
++		iounmap(drvdata->fb_virt_io);
 
-* oldmem -> newmem (real): Use direct memcpy_real()
-* oldmem -> newmem (vmalloc): Use intermediate buffer with memcpy_real()
-* newmem -> newmem: Use memcpy()
+ 	/* Turn off the display */
+ 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+@@ -386,11 +402,11 @@ static int xilinxfb_release(struct device *dev)
 
-What do you think?
+ 	fb_dealloc_cmap(&drvdata->info.cmap);
 
-Best Regards,
-Michael
+-	if (drvdata->fb_alloced)
++	if (drvdata->fb_virt)
+ 		dma_free_coherent(dev, PAGE_ALIGN(drvdata->info.fix.smem_len),
+ 				  drvdata->fb_virt, drvdata->fb_phys);
+ 	else
+-		iounmap(drvdata->fb_virt);
++		iounmap(drvdata->fb_virt_io);
 
+ 	/* Turn off the display */
+ 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2LVILDVRGTUKTCOQRGRAN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGosiAACgkQykllyylKDCEXHwCePztRoSE7qPhCjZHj2mK0lmit
+0boAn0rcGWto72qGn0ZnGImOM1k8R9JB
+=DnSM
+-----END PGP SIGNATURE-----
+
+------enig2LVILDVRGTUKTCOQRGRAN--
