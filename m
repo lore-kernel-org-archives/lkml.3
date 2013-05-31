@@ -1,137 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab3EaI13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:27:29 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:40190 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3EaI1Y (ORCPT
+	id S1751564Ab3EaIer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:34:47 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:37403 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3EaIei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:27:24 -0400
+	Fri, 31 May 2013 04:34:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALnjE+qTqQDfrBxEogo6UJm63=USX7rgO=d4fasF1Cc-S3nQ1g@mail.gmail.com>
-References: <CACG0VPV3-x5Ncp+_hci8wVNYUeqAUZ0KFm0MAuHMntXzaL9Nqw@mail.gmail.com>
- <CALnjE+p3vFkYBu=XioeDTEL1cyXh_379ix84Yoojj1eB11q57Q@mail.gmail.com>
- <CACG0VPWeu8JoMYJNnQ39zvubftpeTB_EvKNrxZm7Op9q6HUVXA@mail.gmail.com>
- <CALnjE+q-dbK0bha_J848mb7sdmLi7a5-BMjKng+wQ8KaDFL=LQ@mail.gmail.com>
- <CACG0VPXWoD=33rSv9S_C2t7XSHny9vHwKysoiTdwWueQM7MLsA@mail.gmail.com> <CALnjE+qTqQDfrBxEogo6UJm63=USX7rgO=d4fasF1Cc-S3nQ1g@mail.gmail.com>
-From: Joao Correia <joaomiguelcorreia@gmail.com>
-Date: Fri, 31 May 2013 09:26:42 +0100
-Message-ID: <CACG0VPXVU1A_c23OYwYsKY8rambCLVWrapFD5OnFwFn66-WeBA@mail.gmail.com>
-Subject: Re: Network issue on 3.10 rcs, bisected
-To: Pravin Shelar <pshelar@nicira.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1369988485-23176-1-git-send-email-wangxfdu@gmail.com>
+References: <1369988485-23176-1-git-send-email-wangxfdu@gmail.com>
+Date: Fri, 31 May 2013 11:34:36 +0300
+Message-ID: <CAHp75Veb+FK=5u_HBUp+KNT4__GjbSg1T-kq1tGebDq2pEJOBA@mail.gmail.com>
+Subject: Re: [PATCH] dma: mmp_pdma: support for getting residual bytes
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Xiang Wang <wangxfdu@gmail.com>
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 12:13 AM, Pravin Shelar <pshelar@nicira.com> wrote:
-> On Thu, May 30, 2013 at 2:14 PM, Joao Correia
-> <joaomiguelcorreia@gmail.com> wrote:
->> On Thu, May 30, 2013 at 5:48 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->>> On Wed, May 29, 2013 at 12:53 PM, Joao Correia
->>> <joaomiguelcorreia@gmail.com> wrote:
->>>> On Wed, May 29, 2013 at 7:59 PM, Pravin Shelar <pshelar@nicira.com> wrote:
->>>>>
->>>>> On Wed, May 29, 2013 at 4:37 AM, Joao Correia
->>>>> <joaomiguelcorreia@gmail.com> wrote:
->>>>> > Hello list
->>>>> >
->>>>> > While trying the rc's for 3.10, i've stumbled upon a problem where
->>>>> > networking does not work at all. Iptables will show packet counts going up,
->>>>> > but nothing actually reaches the programs.
->>>>> >
->>>>> > I'm running fedora under hyper-v 3 (a windows 2012 host). Only tested ipv4
->>>>> > traffic, and everything times out (ping, telnet to open ports) on both
->>>>> > directions. The networking devices come up apparently ok - has static ip
->>>>> > set, and dmesg shows no errors (although i don't have many debugging options
->>>>> > enabled).
->>>>> >
->>>>> > I bisected this, and git blames commit
->>>>> > ec5f061564238892005257c83565a0b58ec79295 (net: ill link between CSUM and SG
->>>>> > features.). I can't revert it cleanly on current rc's.
->>>>> >
->>>>> Can you also send network features set on the device?
->>>>> ethtool -k <dev>
->>>>
->>>>
->>>> As requested:
->>>> Features for eth0:
->>>> rx-checksumming: off [fixed]
->>>> tx-checksumming: off
->>>>     tx-checksum-ipv4: off [fixed]
->>>>     tx-checksum-ip-generic: off [fixed]
->>>>     tx-checksum-ipv6: off [fixed]
->>>>     tx-checksum-fcoe-crc: off [fixed]
->>>>     tx-checksum-sctp: off [fixed]
->>>> scatter-gather: on
->>>>     tx-scatter-gather: on
->>>>     tx-scatter-gather-fraglist: off [fixed]
->>>> tcp-segmentation-offload: off
->>>>     tx-tcp-segmentation: off [fixed]
->>>>     tx-tcp-ecn-segmentation: off [fixed]
->>>>     tx-tcp6-segmentation: off [fixed]
->>>> udp-fragmentation-offload: off [fixed]
->>>> generic-segmentation-offload: on
->>>> generic-receive-offload: on
->>>> large-receive-offload: off [fixed]
->>>> rx-vlan-offload: off
->>>> tx-vlan-offload: on
->>>> ntuple-filters: off [fixed]
->>>> receive-hashing: off [fixed]
->>>> highdma: off [fixed]
->>>> tx-vlan-ctag-hw-insert: on [fixed]
->>>> rx-vlan-ctag-hw-parse: off [fixed]
->>>> rx-vlan-ctag-filter: off [fixed]
->>>> tx-vlan-stag-hw-insert: off [fixed]
->>>> rx-vlan-stag-hw-parse: off [fixed]
->>>> rx-vlan-stag-filter: off [fixed]
->>>> vlan-challenged: off [fixed]
->>>> tx-lockless: off [fixed]
->>>> netns-local: off [fixed]
->>>> tx-gso-robust: off [fixed]
->>>> tx-fcoe-segmentation: off [fixed]
->>>> tx-gre-segmentation: off [fixed]
->>>> tx-udp_tnl-segmentation: off [fixed]
->>>> fcoe-mtu: off [fixed]
->>>> tx-nocache-copy: off
->>>> loopback: off [fixed]
->>>> rx-fcs: off [fixed]
->>>> rx-all: off [fixed]
->>>>
->>>> The output is similar on a working (3.9) and a bad (3.10) kernel.
->>>> diff-ing both outputs shows:
->>>> tx-vlan-stag-hw-insert: off [fixed]
->>>> rx-vlan-stag-hw-parse: off [fixed]
->>>> rx-vlan-stag-filter: off [fixed]
->>>> as last on the broken kernels.
->>>>
->>>
->>> I could not reproduce it, I will try it on VM. Meanwhile can you turn
->>> off feature "sg" and try same test ?
->>
->> Hello
->>
->> Your hint was spot-on. With sg off, i can't reproduce the problem and
->> networking seems fine. It works fine either way on 3.9, so this is a
->> regression for 3.10.
->>
-> Nice.
-> but still this does not look right. Can you tell me driver for the nic?
-> `ethtool -i <dev>`
+On Fri, May 31, 2013 at 11:21 AM, Xiang Wang <wangxfdu@gmail.com> wrote:
+> In some of our drivers (e.g. UART) we may stop a running DMA
+> before it finishes. So we need to know how many bytes have
+> been transferred.
 
-ethtool -i eth0:
-driver: hv_netvsc
-version: 3.1
-firmware-version: N/A
-bus-info:
-supports-statistics: no
-supports-test: no
-supports-eeprom-access: no
-supports-register-dump: no
-supports-priv-flags: no
+Couple of comments below.
 
+> --- a/drivers/dma/mmp_pdma.c
+> +++ b/drivers/dma/mmp_pdma.c
+
+> @@ -589,7 +638,13 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+>                 mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+>                 mmp_pdma_free_desc_list(chan, &chan->chain_running);
+>                 spin_unlock_irqrestore(&chan->desc_lock, flags);
+> -               chan->idle = true;
+> +               chan->status = DMA_SUCCESS;
+> +               chan->bytes_residue = 0;
+> +               break;
+> +       case DMA_PAUSE:
+> +               disable_chan(chan->phy);
+> +               chan->status = DMA_PAUSED;
+> +               chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+
+Does it mean user has to do DMA_PAUSE first to get more or less
+accurate residue?
+Logically that sound correct, but in general we may allow user to get
+approximate residue value of on going transfer.
+
+>                 break;
+>         case DMA_SLAVE_CONFIG:
+>                 if (cfg->direction == DMA_DEV_TO_MEM) {
+> @@ -637,7 +692,8 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
+>         unsigned long flags;
 >
-> Thanks,
-> Pravin.
+>         spin_lock_irqsave(&chan->desc_lock, flags);
+> -       ret = dma_cookie_status(dchan, cookie, txstate);
+> +       ret = chan->status;
+> +       dma_set_residue(txstate, chan->bytes_residue);
+>         spin_unlock_irqrestore(&chan->desc_lock, flags);
+
+Besides my patch which removes this spinlock I think the workflow
+should be something like
+
+status = dma_cookie_status()
+if status == DMA_SUCCESS or !txstate:
+return status
+
+dma_set_residue()
+return status
+
+Because there is no reason to return residue of successfully finished
+transfer. It should be 0.
+
+--
+With Best Regards,
+Andy Shevchenko
