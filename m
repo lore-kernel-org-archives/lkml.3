@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab3EaXSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:18:15 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:59493 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab3EaXSI convert rfc822-to-8bit (ORCPT
+	id S1757697Ab3EaXSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:18:40 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:64474 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757517Ab3EaXSb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:18:08 -0400
+	Fri, 31 May 2013 19:18:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369217581-16285-6-git-send-email-serban.constantinescu@arm.com>
+In-Reply-To: <1369217581-16285-7-git-send-email-serban.constantinescu@arm.com>
 References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
-	<1369217581-16285-6-git-send-email-serban.constantinescu@arm.com>
-Date: Fri, 31 May 2013 16:18:08 -0700
-Message-ID: <CAMP5Xgf_hQqFdwhjbC_4CeQVR0aHM+LU8-bvuUk8MrVuM+2H5w@mail.gmail.com>
-Subject: Re: [PATCH v4 5/6] staging: android: binder: fix alignment issues
+	<1369217581-16285-7-git-send-email-serban.constantinescu@arm.com>
+Date: Fri, 31 May 2013 16:18:30 -0700
+Message-ID: <CAMP5XgdDB-T6vo=vp+xwF2ZO4PPC_cd6Ls4FuNMMKW7VPduCgg@mail.gmail.com>
+Subject: Re: [PATCH v4 6/6] staging: android: binder: replace types with
+ portable ones
 From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
 To: Serban Constantinescu <serban.constantinescu@arm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -28,129 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, May 22, 2013 at 3:13 AM, Serban Constantinescu
 <serban.constantinescu@arm.com> wrote:
-> The Android userspace aligns the data written to the binder buffers to
-> 4bytes. Thus for 32bit platforms or 64bit platforms running an 32bit
-> Android userspace we can have a buffer looking like this:
+> Since this driver is meant to be used on different types of processors
+> and a portable driver should specify the size a variable expects to be
+> this patch changes the types used throughout the binder interface.
 >
-> platform    buffer(binder_cmd   pointer)      size
-> 32/32                 32b         32b          8B
-> 64/32                 32b         64b          12B
-> 64/64                 32b         64b          12B
+> We use "userspace" types since this header will be exported and used by
+> the Android filesystem.
 >
-> Thus the kernel needs to check that the buffer size is aligned to 4bytes
-> not to (void *) that will be 8bytes on 64bit machines.
->
-> The patch also fixes the alignment issues for the offsets buffer, where
-> on 64bit systems, if the data_size is not aligned to 8bytes the offset's
-> start address will be incorrectly calculated.
-
-I think this refers to a problem introduced in a previous version of
-this patch, not a problem with the existing code. If you want to
-include this in the change description you should make that more
-clear.
-
->
-> The change does not affect existing 32bit ABI.
+> The patch does not change in any way the functionality of the binder driver.
 >
 > Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 > ---
->  drivers/staging/android/binder.c |   18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+>  drivers/staging/android/binder.h |   26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
 >
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index ca79084..72f5bb9 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -658,8 +658,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
->                 return NULL;
->         }
+> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+> index c3562c4..bff1c74 100644
+> --- a/drivers/staging/android/binder.h
+> +++ b/drivers/staging/android/binder.h
+> @@ -123,10 +123,10 @@ struct binder_transaction_data {
+>                 void    *ptr;   /* target descriptor of return transaction */
+>         } target;
+>         void            *cookie;        /* target object cookie */
+> -       unsigned int    code;           /* transaction command */
+> +       __u32           code;           /* transaction command */
 >
-> -       size = ALIGN(data_size, sizeof(void *)) +
-> -               ALIGN(offsets_size, sizeof(void *));
-> +       size = ALIGN(data_size, sizeof(u32)) +
-> +               ALIGN(offsets_size, sizeof(u32));
-
-I still disagree with this change. There is no reason to not keep the
-kernel allocated buffers aligned to the native pointer size. The
-binder_buffer struct contain several pointers that are not longer
-aligned with this change.
-
+>         /* General information about the transaction. */
+> -       unsigned int    flags;
+> +       __u32           flags;
+>         pid_t           sender_pid;
+>         uid_t           sender_euid;
+>         size_t          data_size;      /* number of bytes of data */
+> @@ -143,7 +143,7 @@ struct binder_transaction_data {
+>                         /* offsets from buffer to flat_binder_object structs */
+>                         const void __user       *offsets;
+>                 } ptr;
+> -               uint8_t buf[8];
+> +               __u8    buf[8];
+>         } data;
+>  };
 >
->         if (size < data_size || size < offsets_size) {
->                 binder_user_error("%d: got transaction with invalid size %zd-%zd\n",
-> @@ -807,8 +807,8 @@ static void binder_free_buf(struct binder_proc *proc,
+> @@ -153,18 +153,18 @@ struct binder_ptr_cookie {
+>  };
 >
->         buffer_size = binder_buffer_size(proc, buffer);
+>  struct binder_pri_desc {
+> -       int priority;
+> -       int desc;
+> +       __s32 priority;
+> +       __s32 desc;
+>  };
 >
-> -       size = ALIGN(buffer->data_size, sizeof(void *)) +
-> -               ALIGN(buffer->offsets_size, sizeof(void *));
-> +       size = ALIGN(buffer->data_size, sizeof(u32)) +
-> +               ALIGN(buffer->offsets_size, sizeof(u32));
-
-This change should also be removed.
-
+>  struct binder_pri_ptr_cookie {
+> -       int priority;
+> +       __s32 priority;
+>         void *ptr;
+>         void *cookie;
+>  };
 >
->         binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
->                      "%d: binder_free_buf %p size %zd buffer_size %zd\n",
-> @@ -1238,7 +1238,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
->         if (buffer->target_node)
->                 binder_dec_node(buffer->target_node, 1, 0);
+>  enum binder_driver_return_protocol {
+> -       BR_ERROR = _IOR('r', 0, int),
+> +       BR_ERROR = _IOR('r', 0, __s32),
+>         /*
+>          * int: error code
+>          */
+> @@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
+>          * binder_transaction_data: the received command.
+>          */
 >
-> -       offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(void *)));
-> +       offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(u32)));
-
-This change should also be removed.
-
->         if (failed_at)
->                 off_end = failed_at;
->         else
-> @@ -1247,7 +1247,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
->                 struct flat_binder_object *fp;
->                 if (*offp > buffer->data_size - sizeof(*fp) ||
->                     buffer->data_size < sizeof(*fp) ||
-> -                   !IS_ALIGNED(*offp, sizeof(void *))) {
-> +                   !IS_ALIGNED(*offp, sizeof(u32))) {
->                         pr_err("transaction release %d bad offset %zd, size %zd\n",
->                          debug_id, *offp, buffer->data_size);
->                         continue;
-> @@ -1471,7 +1471,7 @@ static void binder_transaction(struct binder_proc *proc,
->         if (target_node)
->                 binder_inc_node(target_node, 1, 0, NULL);
+> -       BR_ACQUIRE_RESULT = _IOR('r', 4, int),
+> +       BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+>         /*
+>          * not currently supported
+>          * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
+> @@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
+>          * binder_transaction_data: the sent command.
+>          */
 >
-> -       offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(void *)));
-> +       offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(u32)));
-
-This change should also be removed.
-
+> -       BC_ACQUIRE_RESULT = _IOW('c', 2, int),
+> +       BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
+>         /*
+>          * not currently supported
+>          * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
+> @@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
+>          * void *: ptr to transaction data received on a read
+>          */
 >
->         if (copy_from_user(t->buffer->data, tr->data.ptr.buffer, tr->data_size)) {
->                 binder_user_error("%d:%d got transaction with invalid data ptr\n",
-> @@ -1496,7 +1496,7 @@ static void binder_transaction(struct binder_proc *proc,
->                 struct flat_binder_object *fp;
->                 if (*offp > t->buffer->data_size - sizeof(*fp) ||
->                     t->buffer->data_size < sizeof(*fp) ||
-> -                   !IS_ALIGNED(*offp, sizeof(void *))) {
-> +                   !IS_ALIGNED(*offp, sizeof(u32))) {
->                         binder_user_error("%d:%d got transaction with invalid offset, %zd\n",
->                                         proc->pid, thread->pid, *offp);
->                         return_error = BR_FAILED_REPLY;
-> @@ -2332,7 +2332,7 @@ retry:
->                                         proc->user_buffer_offset;
->                 tr.data.ptr.offsets = tr.data.ptr.buffer +
->                                         ALIGN(t->buffer->data_size,
-> -                                           sizeof(void *));
-> +                                           sizeof(u32));
-
-This change should also be removed.
-
->
->                 if (put_user(cmd, (uint32_t __user *)ptr))
->                         return -EFAULT;
+> -       BC_INCREFS = _IOW('c', 4, int),
+> -       BC_ACQUIRE = _IOW('c', 5, int),
+> -       BC_RELEASE = _IOW('c', 6, int),
+> -       BC_DECREFS = _IOW('c', 7, int),
+> +       BC_INCREFS = _IOW('c', 4, __u32),
+> +       BC_ACQUIRE = _IOW('c', 5, __u32),
+> +       BC_RELEASE = _IOW('c', 6, __u32),
+> +       BC_DECREFS = _IOW('c', 7, __u32),
+>         /*
+>          * int: descriptor
+>          */
 > --
 > 1.7.9.5
 >
 
-
+Acked-by: Arve Hjønnevåg <arve@android.com>
 
 --
 Arve Hjønnevåg
