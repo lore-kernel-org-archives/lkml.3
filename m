@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab3EaBuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:50:12 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:43527 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3EaBuI (ORCPT
+	id S1752451Ab3EaBu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:50:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30139 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3EaBuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 21:50:08 -0400
+	Thu, 30 May 2013 21:50:25 -0400
+Message-ID: <51A8015C.6020402@oracle.com>
+Date: Fri, 31 May 2013 09:48:12 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Date: Fri, 31 May 2013 09:50:07 +0800
-Message-ID: <CAPgLHd_uppj5twah650PqQnYw1JZp-GKrnBF+ZrXRarJQSNkug@mail.gmail.com>
-Subject: [PATCH -next v3] dmaengine: ste_dma40: fix error return code in d40_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: srinidhi.kasagar@stericsson.com, linus.walleij@linaro.org, djbw@fb.com,
-        vinod.koul@intel.com, grant.likely@linaro.org, rob.herring@calxeda.com,
-        andy.shevchenko@gmail.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv12 2/4] zbud: add to mm/
+References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com> <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com> <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org> <20130529154500.GB428@cerebellum> <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org> <20130529204236.GD428@cerebellum> <20130529134835.58dd89774f47205da4a06202@linux-foundation.org> <754ae8a0-23af-4c87-953f-d608cba84191@default> <20130529142904.ace2a29b90a9076d0ee251fd@linux-foundation.org> <20130530174344.GA15837@medulla> <20130530212017.GB15837@medulla>
+In-Reply-To: <20130530212017.GB15837@medulla>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Seth,
 
-In many of the error handling case, the return value 'ret' not set
-and 0 will be return from d40_probe() even if error, but we should
-return a negative error code instead in those error handling case.
-This patch fixed them, and also removed useless variable 'err'.
+On 05/31/2013 05:20 AM, Seth Jennings wrote:
+> Andrew, Mel,
+> 
+> This struct page stuffing is taking a lot of time to work out and _might_ be
+> fraught with peril when memmap peekers are considered.
+> 
+> What do you think about just storing the zbud page metadata inline in the
+> memory page in the first zbud page chunk?
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
-v2 -> v3: move NULL assign below set ret, and remove redundant ENODEV check.
----
- drivers/dma/ste_dma40.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+How about making zswap based on SLAB? Create a PAGE_SIZE slab and when
+zswap need to alloc_page() using kmem_cache_alloc() instead.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 7f23d45..88e3cd4 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -3506,7 +3506,6 @@ static int __init d40_probe(struct platform_device *pdev)
- {
- 	struct stedma40_platform_data *plat_data = pdev->dev.platform_data;
- 	struct device_node *np = pdev->dev.of_node;
--	int err;
- 	int ret = -ENOENT;
- 	struct d40_base *base = NULL;
- 	struct resource *res = NULL;
-@@ -3618,6 +3617,7 @@ static int __init d40_probe(struct platform_device *pdev)
- 		base->lcpa_regulator = regulator_get(base->dev, "lcla_esram");
- 		if (IS_ERR(base->lcpa_regulator)) {
- 			d40_err(&pdev->dev, "Failed to get lcpa_regulator\n");
-+			ret = PTR_ERR(base->lcpa_regulator);
- 			base->lcpa_regulator = NULL;
- 			goto failure;
- 		}
-@@ -3633,13 +3633,13 @@ static int __init d40_probe(struct platform_device *pdev)
- 	}
- 
- 	base->initialized = true;
--	err = d40_dmaengine_init(base, num_reserved_chans);
--	if (err)
-+	ret = d40_dmaengine_init(base, num_reserved_chans);
-+	if (ret)
- 		goto failure;
- 
- 	base->dev->dma_parms = &base->dma_parms;
--	err = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
--	if (err) {
-+	ret = dma_set_max_seg_size(base->dev, STEDMA40_MAX_SEG_SIZE);
-+	if (ret) {
- 		d40_err(&pdev->dev, "Failed to set dma max seg size\n");
- 		goto failure;
- 	}
-@@ -3647,8 +3647,8 @@ static int __init d40_probe(struct platform_device *pdev)
- 	d40_hw_init(base);
- 
- 	if (np) {
--		err = of_dma_controller_register(np, d40_xlate, NULL);
--		if (err && err != -ENODEV)
-+		ret = of_dma_controller_register(np, d40_xlate, NULL);
-+		if (ret)
- 			dev_err(&pdev->dev,
- 				"could not register of_dma_controller\n");
- 	}
+So that leave SLAB layer to handler the NUMA problem and do the
+dynamical pool size for us.
 
+In this way, an extra struct need to manage the zbud page metadate
+instead of using struct page.
+But I think it's easy and won't occupy many memory.
+
+> 
+> Mel, this kinda hurts you plans for making NCHUNKS = 2, since there would
+> only be one chunk available for storage and would make zbud useless.
+> 
+> Just a way to sidestep this whole issue.  What do you think?
+> 
+> Seth
+> 
+
+-- 
+Regards,
+-Bob
