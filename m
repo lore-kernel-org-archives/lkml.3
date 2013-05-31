@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab3EaLiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:38:07 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:37526 "EHLO
-	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756022Ab3EaLhd (ORCPT
+	id S1756089Ab3EaLiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:38:24 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1054 "EHLO
+	smtp-out-122.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756070Ab3EaLhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:37:33 -0400
-From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, mchehab@redhat.com, hans.verkuil@cisco.com,
-        prabhakar.csengg@gmail.com, g.liakhovetski@gmx.de,
-        ezequiel.garcia@free-electrons.com, timo.teras@iki.fi
-Subject: [RFC v2 2/2] saa7115: Remove gm7113c video_std register change
-Date: Fri, 31 May 2013 13:40:26 +0200
-Message-Id: <1370000426-3324-3-git-send-email-jonarne@jonarne.no>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1370000426-3324-1-git-send-email-jonarne@jonarne.no>
-References: <1370000426-3324-1-git-send-email-jonarne@jonarne.no>
+	Fri, 31 May 2013 07:37:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25770
+Message-ID: <51A88B85.5070202@metafoo.de>
+Date: Fri, 31 May 2013 13:37:41 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
+References: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On video std change, the driver would disable the automatic field
-detection on the gm7113c chip, and force either 50Hz or 60Hz.
-Don't do this any more.
+On 05/31/2013 11:40 AM, Geert Uytterhoeven wrote:
+> arch/blackfin/mach-bf533/boards/stamp.c:545:2: error: operator '||' has no right operand
+> arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: 'bfin_snd_resources' undeclared here (not in a function)
+> arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: negative width in bit-field '<anonymous>'
+> arch/blackfin/mach-bf533/boards/stamp.c:665:21: error: 'bfin_snd_data' undeclared here (not in a function)
+> make[4]: *** [arch/blackfin/mach-bf533/boards/stamp.o] Error 1
+> 
+> Introduced by commit 15502e0ca0da651b48c7def2983e7bb464349b2a ("blackfin:
+> Remove references to the bf5x_tdm driver"), which removed two config
+> options, but only one "||".
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
----
- drivers/media/i2c/saa7115.c | 26 ++------------------------
- 1 file changed, 2 insertions(+), 24 deletions(-)
+Hm, right I missed that one, thanks.
 
-diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
-index 4a52b4d..ba18e57 100644
---- a/drivers/media/i2c/saa7115.c
-+++ b/drivers/media/i2c/saa7115.c
-@@ -479,24 +479,6 @@ static const unsigned char saa7115_cfg_50hz_video[] = {
- 
- /* ============== SAA7715 VIDEO templates (end) =======  */
- 
--/* ============== GM7113C VIDEO templates =============  */
--static const unsigned char gm7113c_cfg_60hz_video[] = {
--	R_08_SYNC_CNTL, 0x68,			/* 0xBO: auto detection, 0x68 = NTSC */
--	R_0E_CHROMA_CNTL_1, 0x07,		/* video autodetection is on */
--
--	0x00, 0x00
--};
--
--static const unsigned char gm7113c_cfg_50hz_video[] = {
--	R_08_SYNC_CNTL, 0x28,			/* 0x28 = PAL */
--	R_0E_CHROMA_CNTL_1, 0x07,
--
--	0x00, 0x00
--};
--
--/* ============== GM7113C VIDEO templates (end) =======  */
--
--
- static const unsigned char saa7115_cfg_vbi_on[] = {
- 	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
- 	R_88_POWER_SAVE_ADC_PORT_CNTL, 0xd0,		/* reset scaler */
-@@ -981,16 +963,12 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
- 	// This works for NTSC-M, SECAM-L and the 50Hz PAL variants.
- 	if (std & V4L2_STD_525_60) {
- 		v4l2_dbg(1, debug, sd, "decoder set standard 60 Hz\n");
--		if (state->ident == V4L2_IDENT_GM7113C)
--			saa711x_writeregs(sd, gm7113c_cfg_60hz_video);
--		else
-+		if (state->ident != V4L2_IDENT_GM7113C)
- 			saa711x_writeregs(sd, saa7115_cfg_60hz_video);
- 		saa711x_set_size(sd, 720, 480);
- 	} else {
- 		v4l2_dbg(1, debug, sd, "decoder set standard 50 Hz\n");
--		if (state->ident == V4L2_IDENT_GM7113C)
--			saa711x_writeregs(sd, gm7113c_cfg_50hz_video);
--		else
-+		if (state->ident != V4L2_IDENT_GM7113C)
- 			saa711x_writeregs(sd, saa7115_cfg_50hz_video);
- 		saa711x_set_size(sd, 720, 576);
- 	}
--- 
-1.8.2.3
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+
+Mark can you queue it up in your topic/blackfin branch?
+
+> ---
+> http://kisskb.ellerman.id.au/kisskb/buildresult/8848472/
+> 
+>  arch/blackfin/mach-bf533/boards/stamp.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
+> index 1ea1dda..4a8c2e3 100644
+> --- a/arch/blackfin/mach-bf533/boards/stamp.c
+> +++ b/arch/blackfin/mach-bf533/boards/stamp.c
+> @@ -542,7 +542,7 @@ static struct platform_device bfin_dpmc = {
+>  };
+>  
+>  #if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE) || \
+> -	|| defined(CONFIG_SND_BF5XX_AC97) || \
+> +	defined(CONFIG_SND_BF5XX_AC97) || \
+>  	defined(CONFIG_SND_BF5XX_AC97_MODULE)
+>  
+>  #include <asm/bfin_sport.h>
 
