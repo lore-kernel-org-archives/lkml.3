@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3EaP5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:57:07 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48940 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756760Ab3EaP46 (ORCPT
+	id S1756787Ab3EaP6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:58:34 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:45834
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752843Ab3EaP62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:56:58 -0400
-Date: Fri, 31 May 2013 16:56:13 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC 5/6] arm64/xen: implement xen_remap on arm64
-Message-ID: <20130531155613.GF15551@arm.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
- <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130531105915.GC18045@localhost.cambridge.arm.com>
- <alpine.DEB.2.02.1305311419280.4799@kaball.uk.xensource.com>
- <20130531141601.GC15551@arm.com>
- <alpine.DEB.2.02.1305311530440.4799@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1305311622150.4799@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305311622150.4799@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 31 May 2013 11:58:28 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: a.zummo@towertech.it, rafael.j.wysocki@intel.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH] drivers/rtc/class: Convert from Legacy pm ops to dev_pm_ops
+Date: Fri, 31 May 2013 09:57:52 -0600
+Message-Id: <1370015872-3560-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 04:23:20PM +0100, Stefano Stabellini wrote:
-> On Fri, 31 May 2013, Stefano Stabellini wrote:
-> > On Fri, 31 May 2013, Catalin Marinas wrote:
-> > > On Fri, May 31, 2013 at 02:21:16PM +0100, Stefano Stabellini wrote:
-> > > > On Fri, 31 May 2013, Catalin Marinas wrote:
-> > > > > On Thu, May 30, 2013 at 05:18:32PM +0100, Stefano Stabellini wrote:
-> > > > > > --- a/arch/arm/include/asm/xen/page.h
-> > > > > > +++ b/arch/arm/include/asm/xen/page.h
-> > > > > > @@ -90,6 +90,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> > > > > >  	return __set_phys_to_machine(pfn, mfn);
-> > > > > >  }
-> > > > > >  
-> > > > > > +#ifdef CONFIG_ARM64
-> > > > > > +#define xen_remap(cookie, size) __ioremap((cookie), (size), __pgprot(PROT_NORMAL))
-> > > > > > +#else
-> > > > > >  #define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
-> > > > > > +#endif
-> > > > > 
-> > > > > Now I saw the ARM-specific part. Can you not use something like
-> > > > > ioremap_cached() which would give normal cacheable memory (at least on
-> > > > > ARMv7).
-> > > > 
-> > > > No, I cannot because ioremap_cached uses MT_DEVICE_CACHED, while this
-> > > > needs to be MT_MEMORY. It is used for normal memory pages, not device
-> > > > memory.
-> > > 
-> > > MT_DEVICE_CACHED is Normal memory for ARMv7.
-> > 
-> > I didn't realize that MT_DEVICE_CACHED and MT_MEMORY end up having the
-> > same AttrIndx encoding!
-> > In that case yes, I should be able to use it.
-> > I take that I should just implement ioremap_cached on arm64 as well?
-> > 
-> 
-> Should just use MT_MEMORY and call it PROT_NORMAL?
-> 
-> #define PROT_NORMAL     (PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL))
-> #define ioremap_cached(addr, size)     __ioremap((addr), (size), __pgprot(PROT_NORMAL))
+Convert drivers/rtc/class to use dev_pm_ops for power management and
+remove Legacy PM ops hooks. With this change, rtc class registers
+suspend/resume callbacks via class->pm (dev_pm_ops) instead of Legacy
+class->suspend/resume. When __device_suspend() runs call-backs, it will
+find class->pm ops for the rtc class.
 
-Looks fine.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/rtc/class.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 6638540..21d83ec 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -135,9 +135,9 @@ static int rtc_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(rtc_class_dev_pm_ops, rtc_suspend, rtc_resume);
+ #else
+-#define rtc_suspend	NULL
+-#define rtc_resume	NULL
++#define rtc_class_dev_pm_ops	NULL
+ #endif
+ 
+ 
+@@ -336,8 +336,7 @@ static int __init rtc_init(void)
+ 		pr_err("couldn't create class\n");
+ 		return PTR_ERR(rtc_class);
+ 	}
+-	rtc_class->suspend = rtc_suspend;
+-	rtc_class->resume = rtc_resume;
++	rtc_class->pm = &rtc_class_dev_pm_ops;
+ 	rtc_dev_init();
+ 	rtc_sysfs_init(rtc_class);
+ 	return 0;
 -- 
-Catalin
+1.7.10.4
+
