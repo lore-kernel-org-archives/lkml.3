@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751152Ab3EaE06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 00:26:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43517 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750788Ab3EaE0x (ORCPT
+	id S1751229Ab3EaEb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 00:31:26 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45092 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3EaEbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 00:26:53 -0400
-X-Sasl-enc: exONko62d1QzFCAq2EYCPuIz7czdbVO7n4wR2vEbxoCE 1369974411
-Date: Fri, 31 May 2013 01:26:49 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
- support for AMD
-Message-ID: <20130531042649.GA4488@khazad-dum.debian.net>
-References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
- <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+	Fri, 31 May 2013 00:31:20 -0400
+Message-ID: <51A82793.4080204@gmail.com>
+Date: Fri, 31 May 2013 12:31:15 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <florianschandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v8, part3 06/14] mm, acornfb: use free_reserved_area()
+ to simplify code
+References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com> <1369575522-26405-7-git-send-email-jiang.liu@huawei.com> <20130530145844.902b3a947c1f7430c1c2ecf5@linux-foundation.org>
+In-Reply-To: <20130530145844.902b3a947c1f7430c1c2ecf5@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013, Jacob Shin wrote:
->  mkdir initrd
->  cd initrd
-> -mkdir kernel
-> -mkdir kernel/x86
-> -mkdir kernel/x86/microcode
-> -cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
-> -find .|cpio -oc >../ucode.cpio
-> +mkdir -p kernel/x86/microcode
-> +cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
+On Fri 31 May 2013 05:58:44 AM CST, Andrew Morton wrote:
+> On Sun, 26 May 2013 21:38:34 +0800 Jiang Liu <liuj97@gmail.com> wrote:
+>
+>> Use common help function free_reserved_area() to simplify code.
+>
+> http://ozlabs.org/~akpm/mmots/broken-out/drivers-video-acornfbc-remove-dead-code.patch
+> removes all the code which your patch alters.
+Thanks Andrew, please just drop that patch.
 
-Can I just 
-'cat /lib/firmware/amd-ucode/*bin >kernel/x86/microcode/AuthenticAMD.bin' 
-to get a valid microcode container for all amd processors?
-
-The answer for Intel is "yes".  I sure hope it is the same for AMD...
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
