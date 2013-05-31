@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab3EaOaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:30:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43004 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3EaOaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:30:13 -0400
-Message-ID: <51A8B3D6.1020608@ti.com>
-Date: Fri, 31 May 2013 09:29:42 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753637Ab3EaOdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:33:14 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:60256 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3EaOdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 10:33:06 -0400
+Message-ID: <51A8B4A4.1010204@cogentembedded.com>
+Date: Fri, 31 May 2013 18:33:08 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7] ARM: dts: omap4-panda: Update the LED support for
- the panda DTS
-References: <1369826427-31963-1-git-send-email-dmurphy@ti.com> <51A8AE72.5010601@ti.com>
-In-Reply-To: <51A8AE72.5010601@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Joe Perches <joe@perches.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mo?= =?ISO-8859-1?Q?rk?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: skbuff: use _RET_IP_
+References: <1369861743.4188.33.camel@buesod1.americas.hpqcorp.net>  <51A6768B.5050603@cogentembedded.com> <87obbsohd1.fsf@nemi.mork.no>  <1369962688.1751.6.camel@buesod1.americas.hpqcorp.net> <1369977659.10556.34.camel@joe-AO722>
+In-Reply-To: <1369977659.10556.34.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-On 05/31/2013 09:06 AM, Benoit Cousson wrote:
-> Hi Dan,
->
-> On 05/29/2013 01:20 PM, Dan Murphy wrote:
->> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
->> are different.
->>
->> A1-A3 = gpio_wk7clean
->> ES = gpio_110
->>
->> There is no change to LED D2
->>
->> Abstract away the pinmux and the LED definitions for the two boards into
->> the respective DTS files.
->>
->> Signed-off-by: Dan Murphy <dmurphy@ti.com>
-> That patch was good... until Florian introduces some new constant to
-> improve the readability of the DTS [1].
->
-> Could you rebase on the lastest for_3.11/dts and use the macros for the
-> GPIO and pinctrl nodes?
-N/P working on it now
+Hello.
 
-Thanks
-> Thanks,
-> Benoit
->
-> [1] http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89684.html
->
+On 31-05-2013 9:20, Joe Perches wrote:
 
--- 
-------------------
-Dan Murphy
+>>>>      Why not "text:%#lx" as already used in this string? It's
+>>>> equivalent to "0x%lx".
+
+>>> Well, I don't know the reasoning in this case, but I'd like to note that
+>>> those are not strictly equivalent.  Personally I find the formatting of 0
+>>> annoying enough to avoid %#x for any value which may be 0.  It's
+>>> especially bad if you try to line up things by adding leading zeros.
+
+>> Yep, I found that 0x%lx produced the same output as %p.
+
+> Don't use a standalone gcc compiled program to
+> determine what the kernel outputs.
+
+> lib/vsprintf.c does not output the same. (32 bit)
+
+> The kernel output is;
+
+> 	printk("0x%lx\n", 0x100ul)		0x100
+> 	printk("%p\n", (void *)0x100ul)		00000100
+> 	printk("%#p\n", (void *)0x100ul)	0x00000100
+
+> The last one isn't used at all in kernel source. (gcc complains)
+> It's always "0x%p"
+
+     I was talking about using "%#lx", not "%#p". I don't see it in your 
+example.
+
+WBR, Sergei
 
