@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab3EaMHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:07:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57276 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab3EaMGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:06:54 -0400
-Date: Fri, 31 May 2013 05:06:15 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-58cabf6ab1f68f4a44e88bee5d578f68d8a39b38@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1369398928-9809-11-git-send-email-jolsa@redhat.com>
-References: <1369398928-9809-11-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Move gtk2 check config into config/
- Makefile
-Git-Commit-ID: 58cabf6ab1f68f4a44e88bee5d578f68d8a39b38
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756358Ab3EaMHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:07:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40029 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644Ab3EaMGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:06:52 -0400
+Message-ID: <51A89258.7050308@ti.com>
+Date: Fri, 31 May 2013 07:06:48 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/1] i2c: omap: correct usage of the interrupt enable
+ register
+References: <1369988788-23987-1-git-send-email-oleksandr.dmytryshyn@ti.com> <1369988788-23987-2-git-send-email-oleksandr.dmytryshyn@ti.com>
+In-Reply-To: <1369988788-23987-2-git-send-email-oleksandr.dmytryshyn@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  58cabf6ab1f68f4a44e88bee5d578f68d8a39b38
-Gitweb:     http://git.kernel.org/tip/58cabf6ab1f68f4a44e88bee5d578f68d8a39b38
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 18 Mar 2013 00:09:24 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 14:42:26 +0300
+On 05/31/2013 03:26 AM, Oleksandr Dmytryshyn wrote:
+> If the i2c controller during suspend will generate an interrupt, it
+> can lead to unpredictable behaviour in the kernel.
+>
+> Based on the logic of the kernel code interrupts from i2c should be
+> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
+> the omap_i2c_runtime_suspend() function. In the other side kernel
+> writes saved interrupt flags to the I2C_IE register in
+> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
+> during suspend.
+>
+> This works for chips with version1 registers scheme. Interrupts are
+> disabled during suspend. For chips with version2 scheme registers
+> writting 0 to the I2C_IE register does nothing (because now the
+> I2C_IRQENABLE_SET register is located at this address). This register
+> is used to enable interrupts. For disabling interrupts
+> I2C_IRQENABLE_CLR register should be used.
+>
+> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
+> addresses, the interrupt enabling procedure is unchanged.
+>
+> Change-Id: Ie49165990a4e7c67a4ccf2e4a66cd3b78f2e2b70
+Remove this.
+> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+> ---
+>  drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+> index e02f9e3..64c26f9 100644
+> --- a/drivers/i2c/busses/i2c-omap.c
+> +++ b/drivers/i2c/busses/i2c-omap.c
+> @@ -180,6 +180,8 @@ enum {
+>  #define I2C_OMAP_ERRATA_I207		(1 << 0)
+>  #define I2C_OMAP_ERRATA_I462		(1 << 1)
+>  
+> +#define OMAP_I2C_IP_V2_INTERRUPTS_MASK	0x6FFF
+> +
+>  struct omap_i2c_dev {
+>  	spinlock_t		lock;		/* IRQ synchronization */
+>  	struct device		*dev;
+> @@ -193,6 +195,7 @@ struct omap_i2c_dev {
+>  						    long latency);
+>  	u32			speed;		/* Speed of bus in kHz */
+>  	u32			flags;
+> +	u16			scheme;
+>  	u16			cmd_err;
+>  	u8			*buf;
+>  	u8			*regs;
+> @@ -1082,7 +1085,7 @@ omap_i2c_probe(struct platform_device *pdev)
+>  	int irq;
+>  	int r;
+>  	u32 rev;
+> -	u16 minor, major, scheme;
+> +	u16 minor, major;
+>  
+>  	/* NOTE: driver uses the static register mapping */
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> @@ -1159,8 +1162,8 @@ omap_i2c_probe(struct platform_device *pdev)
+>  	 */
+>  	rev = __raw_readw(dev->base + 0x04);
+>  
+> -	scheme = OMAP_I2C_SCHEME(rev);
+> -	switch (scheme) {
+> +	dev->scheme = OMAP_I2C_SCHEME(rev);
+> +	switch (dev->scheme) {
+>  	case OMAP_I2C_SCHEME_0:
+>  		dev->regs = (u8 *)reg_map_ip_v1;
+>  		dev->rev = omap_i2c_read_reg(dev, OMAP_I2C_REV_REG);
+> @@ -1289,7 +1292,11 @@ static int omap_i2c_runtime_suspend(struct device *dev)
+>  
+>  	_dev->iestate = omap_i2c_read_reg(_dev, OMAP_I2C_IE_REG);
+>  
+> -	omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
+> +	if (_dev->scheme == OMAP_I2C_SCHEME_0)
+> +		omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
+> +	else
+> +		omap_i2c_write_reg(_dev, OMAP_I2C_IP_V2_IRQENABLE_CLR,
+> +				   OMAP_I2C_IP_V2_INTERRUPTS_MASK);
+>  
+>  	if (_dev->rev < OMAP_I2C_OMAP1_REV_2) {
+>  		omap_i2c_read_reg(_dev, OMAP_I2C_IV_REG); /* Read clears */
 
-perf tools: Move gtk2 check config into config/Makefile
 
-Moving gtk2 check config into config/Makefile.
+-- 
+------------------
+Dan Murphy
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-11-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile        | 25 +++++++------------------
- tools/perf/config/Makefile | 15 +++++++++++++++
- 2 files changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f0c23ce..8e59a4d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -521,24 +521,13 @@ ifndef NO_SLANG
- endif
- 
- ifndef NO_GTK2
--	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
--		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
--	else
--		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
--		endif
--		BASIC_CFLAGS += -DGTK2_SUPPORT
--		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
--		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
--	endif
-+	LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
- endif
- 
- ifdef NO_LIBPERL
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 06634be..8cf0958 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -225,3 +225,18 @@ ifndef NO_SLANG
- 		EXTLIBS += -lslang
- 	endif
- endif
-+
-+ifndef NO_GTK2
-+	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
-+		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
-+		NO_GTK2 := 1
-+	else
-+		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
-+			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
-+		endif
-+		BASIC_CFLAGS += -DGTK2_SUPPORT
-+		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+	endif
-+endif
