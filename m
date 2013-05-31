@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3EaMRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:17:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57467 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642Ab3EaMQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:16:53 -0400
-Date: Fri, 31 May 2013 05:16:31 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-8e72a67a7fcbdaa45d1b08f8ce601a37a4e9e163@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1369394201-20044-2-git-send-email-jolsa@redhat.com>
-References: <1369394201-20044-2-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Fix attr test for record -d option
-Git-Commit-ID: 8e72a67a7fcbdaa45d1b08f8ce601a37a4e9e163
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755926Ab3EaMR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:17:58 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:17294 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034Ab3EaMRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:17:52 -0400
+Message-ID: <51A894EB.3040604@imgtec.com>
+Date: Fri, 31 May 2013 13:17:47 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 9/9] gpio-tz1090-pdc: add TZ1090 PDC gpio driver
+References: <1369412476-14245-1-git-send-email-james.hogan@imgtec.com> <1369412476-14245-10-git-send-email-james.hogan@imgtec.com> <CACRpkdZ0Gav0TKDXyD9MwaUrdcenV=+JV9oWNN1+ifsbO3uJ1w@mail.gmail.com> <51A628E1.8060805@imgtec.com>
+In-Reply-To: <51A628E1.8060805@imgtec.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_05_31_13_17_49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e72a67a7fcbdaa45d1b08f8ce601a37a4e9e163
-Gitweb:     http://git.kernel.org/tip/8e72a67a7fcbdaa45d1b08f8ce601a37a4e9e163
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 24 May 2013 13:16:37 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 15:11:10 +0300
+On 29/05/13 17:12, James Hogan wrote:
+> On 29/05/13 16:38, Linus Walleij wrote:
+>> On Fri, May 24, 2013 at 6:21 PM, James Hogan <james.hogan@imgtec.com> wrote:
+>>> +Optional properties:
+>>> +- gpio-ranges: Mapping to pin controller pins
+>>> +
+>>> +- interrupts: Individual syswake interrupts (other GPIOs cannot interrupt)
+>>> +
+>>> +
+>>> +Example:
+>>> +
+>>> +       pdc_gpios: gpio-controller@02006500 {
+>>> +               gpio-controller;
+>>> +               #gpio-cells = <2>;
+>>> +
+>>> +               compatible = "img,tz1090-pdc-gpio";
+>>> +               reg = <0x02006500 0x100>;
+>>> +
+>>> +               interrupt-parent = <&pdc>;
+>>> +               interrupts =    <1 0 0>,        /* Syswake 0 */
+>>> +                               <1 1 0>,        /* Syswake 1 */
+>>> +                               <1 2 0>;        /* Syswake 2 */
+>>> +       };
+>>
+>> Interrupt flags seem to be undocumented here.
+> 
+> Hmmm yes, good spot.
 
-perf tests: Fix attr test for record -d option
+Looking again at this, the driver doesn't expose any new interrupts.
+These 3 interrupts are simply passed on by the gpio chip's to_irq()
+callback. The flags in the example depend entirely on the interrupt
+parent, in this case the PDC irq driver in patch 2, so they don't need
+documenting here.
 
-The sample type for '-d' option is changed, because of the memory
-profiling patches from Stephane. The '-d' now adds PERF_SAMPLE_DATA_SRC
-sample_type.
+Cheers
+James
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369394201-20044-2-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/attr/test-record-data | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/tests/attr/test-record-data b/tools/perf/tests/attr/test-record-data
-index 6627c3e..716e143 100644
---- a/tools/perf/tests/attr/test-record-data
-+++ b/tools/perf/tests/attr/test-record-data
-@@ -4,5 +4,8 @@ args    = -d kill >/dev/null 2>&1
- 
- [event:base-record]
- sample_period=4000
--sample_type=271
-+
-+# sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME |
-+# PERF_SAMPLE_ADDR | PERF_SAMPLE_PERIOD | PERF_SAMPLE_DATA_SRC
-+sample_type=33039
- mmap_data=1
