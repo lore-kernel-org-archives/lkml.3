@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab3EaTaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:30:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39936 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab3EaTaF (ORCPT
+	id S932118Ab3EaTcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:32:16 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:59570 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab3EaTcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:30:05 -0400
-Date: Fri, 31 May 2013 12:30:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] migrate: add migrate_entry_wait_huge()
-Message-Id: <20130531123003.1baf00c89bb25514de63c4f6@linux-foundation.org>
-In-Reply-To: <1369770771-8447-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1369770771-8447-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1369770771-8447-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 31 May 2013 15:32:07 -0400
+Date: Fri, 31 May 2013 21:32:00 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
+ support for AMD
+Message-ID: <20130531193200.GA8346@alberich>
+References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
+ <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+ <20130531042649.GA4488@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130531042649.GA4488@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 May 2013 15:52:51 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Fri, May 31, 2013 at 01:26:49AM -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 30 May 2013, Jacob Shin wrote:
+> >  mkdir initrd
+> >  cd initrd
+> > -mkdir kernel
+> > -mkdir kernel/x86
+> > -mkdir kernel/x86/microcode
+> > -cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
+> > -find .|cpio -oc >../ucode.cpio
+> > +mkdir -p kernel/x86/microcode
+> > +cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
+> 
+> Can I just 
+> 'cat /lib/firmware/amd-ucode/*bin >kernel/x86/microcode/AuthenticAMD.bin' 
+> to get a valid microcode container for all amd processors?
+> 
+> The answer for Intel is "yes".  I sure hope it is the same for AMD...
 
-> When we have a page fault for the address which is backed by a hugepage
-> under migration, the kernel can't wait correctly and do busy looping on
-> hugepage fault until the migration finishes.
-> This is because pte_offset_map_lock() can't get a correct migration entry
-> or a correct page table lock for hugepage.
-> This patch introduces migration_entry_wait_huge() to solve this.
-> 
-> Note that the caller, hugetlb_fault(), gets the pointer to the "leaf"
-> entry with huge_pte_offset() inside which all the arch-dependency of
-> the page table structure are. So migration_entry_wait_huge() and
-> __migration_entry_wait() are free from arch-dependency.
-> 
-> ChangeLog v3:
->  - use huge_pte_lockptr
-> 
-> ChangeLog v2:
->  - remove dup in migrate_entry_wait_huge()
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Cc: stable@vger.kernel.org # 2.6.35
+No, this doesn't work for AMD.
 
-That changelog is not suitable for a -stable patch.  People who
-maintain and utilize the stable trees need to know in some detail what
-is the end-user impact of the patch (or, equivalently, of the bug
-which the patch fixes).
+The container file includes a header section with information how to
+map CPU F/M/S to microcode revisions provided with a container
+file. Concatenating several container files will not create an
+all-embracing header section.
 
+More details were available on the amd64.org web pages.  But it seems
+that the web site is not available anymore ...
+
+
+Andreas
