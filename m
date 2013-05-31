@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab3EaTqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:46:32 -0400
-Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:46955 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757276Ab3EaTqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:46:18 -0400
-Date: Fri, 31 May 2013 21:42:09 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PULL] FBDEV: some small fixes for 3.10-rc4
-Message-ID: <20130531194209.GS19468@game.jcrosoft.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757350Ab3EaTqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:46:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13911 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757109Ab3EaTqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 15:46:46 -0400
+Date: Fri, 31 May 2013 15:46:24 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Message-ID: <1370029584-qjpvbow1-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130531123003.1baf00c89bb25514de63c4f6@linux-foundation.org>
+References: <1369770771-8447-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1369770771-8447-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130531123003.1baf00c89bb25514de63c4f6@linux-foundation.org>
+Subject: Re: [PATCH v3 2/2] migrate: add migrate_entry_wait_huge()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 18304317737628969786
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Mutt-References: <20130531123003.1baf00c89bb25514de63c4f6@linux-foundation.org>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> That changelog is not suitable for a -stable patch.  People who
+> maintain and utilize the stable trees need to know in some detail what
+> is the end-user impact of the patch (or, equivalently, of the bug
+> which the patch fixes).
 
-	This contain some small fixes for Atmel LCDC, ps3fb and OMAPDSS
+OK. So, could you insert the following sentence?
 
-please pull
-The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
+On Fri, May 31, 2013 at 12:30:03PM -0700, Andrew Morton wrote:
+> On Tue, 28 May 2013 15:52:51 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > When we have a page fault for the address which is backed by a hugepage
+> > under migration, the kernel can't wait correctly and do busy looping on
+> > hugepage fault until the migration finishes.
 
-  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
+As a result, users who try to kick hugepage migration (via soft offlining,
+for example) occasionally experience long delay or soft lockup.
 
-are available in the git repository at:
+Thanks,
+Naoya
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git tags/fbdev-for-3.10-rc4
-
-for you to fetch changes up to 56c21b53ab071feb3ce93375a563ead745fa7105:
-
-  atmel_lcdfb: blank the backlight on remove (2013-06-01 03:18:55 +0800)
-
-----------------------------------------------------------------
-fbdev: fixes for 3.10-rc4
-
-This contains some small fixes
-
-Atmel LCDC: fix blank the backlight on remove
-ps3fb: fix compile warning
-OMAPDSS: Fix crash with DT boot
-
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      Merge branch 'fbdev-3.10-fixes' of git://gitorious.org/linux-omap-dss2/linux into linux-fbdev/for-3.10-fixes
-
-Richard Genoud (2):
-      trivial: atmel_lcdfb: add missing error message
-      atmel_lcdfb: blank the backlight on remove
-
-Tomi Valkeinen (2):
-      fbdev/ps3fb: fix compile warning
-      OMAPDSS: Fix crash with DT boot
-
- drivers/gpu/drm/omapdrm/omap_drv.c       |    3 +++
- drivers/media/platform/omap/omap_vout.c  |    3 +++
- drivers/video/atmel_lcdfb.c              |   15 ++++++++++++---
- drivers/video/omap2/dss/core.c           |   20 +++++++++++++++++++-
- drivers/video/omap2/omapfb/omapfb-main.c |    3 +++
- drivers/video/ps3fb.c                    |    2 +-
- include/video/omapdss.h                  |    1 +
- 7 files changed, 42 insertions(+), 5 deletions(-)
-
-Brest Regards,
-J.
+> > This is because pte_offset_map_lock() can't get a correct migration entry
+> > or a correct page table lock for hugepage.
+> > This patch introduces migration_entry_wait_huge() to solve this.
+> > 
+> > Note that the caller, hugetlb_fault(), gets the pointer to the "leaf"
+> > entry with huge_pte_offset() inside which all the arch-dependency of
+> > the page table structure are. So migration_entry_wait_huge() and
+> > __migration_entry_wait() are free from arch-dependency.
+> > 
+> > ChangeLog v3:
+> >  - use huge_pte_lockptr
+> > 
+> > ChangeLog v2:
+> >  - remove dup in migrate_entry_wait_huge()
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Reviewed-by: Rik van Riel <riel@redhat.com>
+> > Cc: stable@vger.kernel.org # 2.6.35
+> 
+> That changelog is not suitable for a -stable patch.  People who
+> maintain and utilize the stable trees need to know in some detail what
+> is the end-user impact of the patch (or, equivalently, of the bug
+> which the patch fixes).
