@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3EaLW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:22:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56514 "EHLO
+	id S1755321Ab3EaLXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:23:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56530 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab3EaLWW (ORCPT
+	with ESMTP id S1754104Ab3EaLXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:22:22 -0400
-Date: Fri, 31 May 2013 04:21:38 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-08e71542fd0f4a0e30b4e3794329d63ae891e0c0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        andi@firstfloor.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+	Fri, 31 May 2013 07:23:44 -0400
+Date: Fri, 31 May 2013 04:22:55 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-s7476m0irq0naxkzd9iekbr3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com, wcohen@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, wcohen@redhat.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         tglx@linutronix.de
-In-Reply-To: <1364991979-3008-11-git-send-email-namhyung@kernel.org>
-References: <1364991979-3008-11-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf sort: Consolidate sort_entry__setup_elide()
-Git-Commit-ID: 08e71542fd0f4a0e30b4e3794329d63ae891e0c0
+Subject: [tip:perf/core] perf archive: Fix typo on Documentation
+Git-Commit-ID: bc8b8c0d6ae55c3d11c381cfd6339c7557bbab44
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,173 +34,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08e71542fd0f4a0e30b4e3794329d63ae891e0c0
-Gitweb:     http://git.kernel.org/tip/08e71542fd0f4a0e30b4e3794329d63ae891e0c0
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Wed, 3 Apr 2013 21:26:19 +0900
+Commit-ID:  bc8b8c0d6ae55c3d11c381cfd6339c7557bbab44
+Gitweb:     http://git.kernel.org/tip/bc8b8c0d6ae55c3d11c381cfd6339c7557bbab44
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 4 Apr 2013 12:41:22 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 28 May 2013 16:23:54 +0300
+CommitDate: Tue, 28 May 2013 16:23:55 +0300
 
-perf sort: Consolidate sort_entry__setup_elide()
+perf archive: Fix typo on Documentation
 
-The same code was duplicate to places, factor them out to common
-sort__setup_elide().
+It is analysis, not analisys.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+Reported-by: William Cohen <wcohen@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1364991979-3008-11-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/n/tip-s7476m0irq0naxkzd9iekbr3@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c   |  4 +---
- tools/perf/builtin-report.c | 20 +-------------------
- tools/perf/builtin-top.c    |  4 +---
- tools/perf/util/sort.c      | 45 +++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/sort.h      |  3 +--
- 5 files changed, 47 insertions(+), 29 deletions(-)
+ tools/perf/Documentation/perf-archive.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 2d0462d..cabbea5 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -611,9 +611,7 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+diff --git a/tools/perf/Documentation/perf-archive.txt b/tools/perf/Documentation/perf-archive.txt
+index fae174d..5032a14 100644
+--- a/tools/perf/Documentation/perf-archive.txt
++++ b/tools/perf/Documentation/perf-archive.txt
+@@ -13,7 +13,7 @@ SYNOPSIS
+ DESCRIPTION
+ -----------
+ This command runs runs perf-buildid-list --with-hits, and collects the files
+-with the buildids found so that analisys of perf.data contents can be possible
++with the buildids found so that analysis of perf.data contents can be possible
+ on another machine.
  
- 	setup_pager();
  
--	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", NULL);
--	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", NULL);
-+	sort__setup_elide(NULL);
- 
- 	return __cmd_diff();
- }
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 669405c..d45bf9b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -937,25 +937,7 @@ repeat:
- 		report.symbol_filter_str = argv[0];
- 	}
- 
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
--
--	if (sort__mode == SORT_MODE__BRANCH) {
--		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
--		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
--		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
--		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
--	} else {
--		if (report.mem_mode) {
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
--			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
--		}
--		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
--		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
--	}
-+	sort__setup_elide(stdout);
- 
- 	ret = __cmd_report(&report);
- 	if (ret == K_SWITCH_INPUT_DATA) {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 67bdb9f..2eb272d 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1200,9 +1200,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (symbol__init() < 0)
- 		return -1;
- 
--	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
--	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
--	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
-+	sort__setup_elide(stdout);
- 
- 	/*
- 	 * Avoid annotation data structures overhead when symbols aren't on the
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1dbf169..701ab1d 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1,5 +1,6 @@
- #include "sort.h"
- #include "hist.h"
-+#include "symbol.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -1009,8 +1010,9 @@ int setup_sorting(void)
- 	return ret;
- }
- 
--void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
--			     const char *list_name, FILE *fp)
-+static void sort_entry__setup_elide(struct sort_entry *self,
-+				    struct strlist *list,
-+				    const char *list_name, FILE *fp)
- {
- 	if (list && strlist__nr_entries(list) == 1) {
- 		if (fp != NULL)
-@@ -1019,3 +1021,42 @@ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
- 		self->elide = true;
- 	}
- }
-+
-+void sort__setup_elide(FILE *output)
-+{
-+	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+				"dso", output);
-+	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
-+				"comm", output);
-+	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
-+				"symbol", output);
-+
-+	if (sort__mode == SORT_MODE__BRANCH) {
-+		sort_entry__setup_elide(&sort_dso_from,
-+					symbol_conf.dso_from_list,
-+					"dso_from", output);
-+		sort_entry__setup_elide(&sort_dso_to,
-+					symbol_conf.dso_to_list,
-+					"dso_to", output);
-+		sort_entry__setup_elide(&sort_sym_from,
-+					symbol_conf.sym_from_list,
-+					"sym_from", output);
-+		sort_entry__setup_elide(&sort_sym_to,
-+					symbol_conf.sym_to_list,
-+					"sym_to", output);
-+	} else if (sort__mode == SORT_MODE__MEMORY) {
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"symbol_daddr", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"dso_daddr", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"mem", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"local_weight", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"tlb", output);
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
-+					"snoop", output);
-+	}
-+
-+}
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 0232d47..51f1b5a 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -181,7 +181,6 @@ extern struct list_head hist_entry__sort_list;
- 
- int setup_sorting(void);
- extern int sort_dimension__add(const char *);
--void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
--			     const char *list_name, FILE *fp);
-+void sort__setup_elide(FILE *fp);
- 
- #endif	/* __PERF_SORT_H */
