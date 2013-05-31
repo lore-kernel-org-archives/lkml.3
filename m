@@ -1,140 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3EaM7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:59:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab3EaM6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:58:38 -0400
-Date: Fri, 31 May 2013 15:00:01 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [PATCH] powerpc/pseries: Request FW for power of two MSI-Xs only
-Message-ID: <20130531130001.GA1468@dhcp-26-207.brq.redhat.com>
+	id S1753628Ab3EaNCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:02:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58806 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3EaNCa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 09:02:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363895995-12967-2-git-send-email-andi@firstfloor.org>
+References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
+	<1363895995-12967-2-git-send-email-andi@firstfloor.org>
+Date: Fri, 31 May 2013 15:02:29 +0200
+Message-ID: <CABPqkBSuiWCLyXkNhuq6wXFP2G+4rOQv_H4134R55CqcVFAAUA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v5
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current logic in requesting firmware for MSI-X interrupts
-is confusing. On the one hand it is known the firmware
-refuses any non power of two allocations. On the other
-hand such attempts still could be taken, but surprisingly
-- after the attempt to request power of two interrupts
-failed, not before.
+Hi,
 
-This update sticks to the idea the firmware can only
-allocate power of two MSI-X interrupts and makes the logic
-bit more straight.
+So looked at this patch again. There is nothing wrong with the code.
+But there is something bothering me with the usage model. I think
+the choice of having pebs->ip for precise=1 or pebs->real_ip for
+precise=2 is too restrictive.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/powerpc/platforms/pseries/msi.c |   43 ++++++++++++++++-----------------
- 1 files changed, 21 insertions(+), 22 deletions(-)
+There are situations where you want BOTH the real_ip AND the
+off-by-one ip. This is when you're sampling call branches.
+The real_ip gives you the call site, the off-by-one gives you
+the target of the branch. This is very handy because you do
+not need to use the LBR to get this, unlike with SandyBridge.
 
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 420524e..40c7db3 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -357,18 +357,35 @@ static int rtas_msi_check_device(struct pci_dev *pdev, int nvec, int type)
- {
- 	int quota, rc;
- 
-+	/*
-+	 * Firmware currently refuses any non power of two allocation
-+	 * so we round up if the quota will allow it.
-+	 */
-+
-+	nvec = roundup_pow_of_two(nvec);
-+
- 	if (type == PCI_CAP_ID_MSIX)
- 		rc = check_req_msix(pdev, nvec);
- 	else
- 		rc = check_req_msi(pdev, nvec);
- 
--	if (rc)
-+	/*
-+	 * Prevent endless recursion with the same value of 'nvec' by rounding
-+	 * 'nvec' down to the previous power of two on fallback paths.
-+	 */
-+
-+	if (rc) {
-+		if (rc > (nvec / 2))
-+			rc = (nvec / 2);
- 		return rc;
-+	}
- 
- 	quota = msi_quota_for_device(pdev, nvec);
--
--	if (quota && quota < nvec)
-+	if (quota && quota < nvec) {
-+		if (quota > (nvec / 2))
-+			quota = (nvec / 2);
- 		return quota;
-+	}
- 
- 	return 0;
- }
-@@ -394,13 +411,12 @@ static int check_msix_entries(struct pci_dev *pdev)
- 	return 0;
- }
- 
--static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
-+static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
- {
- 	struct pci_dn *pdn;
- 	int hwirq, virq, i, rc;
- 	struct msi_desc *entry;
- 	struct msi_msg msg;
--	int nvec = nvec_in;
- 
- 	pdn = get_pdn(pdev);
- 	if (!pdn)
-@@ -410,23 +426,10 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
- 		return -EINVAL;
- 
- 	/*
--	 * Firmware currently refuse any non power of two allocation
--	 * so we round up if the quota will allow it.
--	 */
--	if (type == PCI_CAP_ID_MSIX) {
--		int m = roundup_pow_of_two(nvec);
--		int quota = msi_quota_for_device(pdev, m);
--
--		if (quota >= m)
--			nvec = m;
--	}
--
--	/*
- 	 * Try the new more explicit firmware interface, if that fails fall
- 	 * back to the old interface. The old interface is known to never
- 	 * return MSI-Xs.
- 	 */
--again:
- 	if (type == PCI_CAP_ID_MSI) {
- 		if (pdn->force_32bit_msi)
- 			rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, nvec);
-@@ -441,10 +444,6 @@ again:
- 		rc = rtas_change_msi(pdn, RTAS_CHANGE_MSIX_FN, nvec);
- 
- 	if (rc != nvec) {
--		if (nvec != nvec_in) {
--			nvec = nvec_in;
--			goto again;
--		}
- 		pr_debug("rtas_msi: rtas_change_msi() failed\n");
- 		return rc;
- 	}
--- 
-1.7.7.6
+Yet in the patch, I don't see a way to get this by simply tweaking the
+precise= parameter. And I want this feature because I need it for
+function value profiling support.
+
+So we need to find an extension or a way to return both IPs
+without invoking LBR. Easiest would be to add another
+PERF_SAMPLE_*.
+
+Any better idea?
 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+On Thu, Mar 21, 2013 at 8:59 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add support for the Haswell extended (fmt2) PEBS format.
+>
+> It has a superset of the nhm (fmt1) PEBS fields, but has a longer record so
+> we need to adjust the code paths.
+>
+> The main advantage is the new "EventingRip" support which directly
+> gives the instruction, not off-by-one instruction. So with precise == 2
+> we use that directly and don't try to use LBRs and walking basic blocks.
+> This lowers the overhead of using precise significantly.
+>
+> Some other features are added in later patches.
+>
+> Reviewed-by: Stephane Eranian <eranian@google.com>
+> v2: Rename various identifiers. Add more comments. Get rid of a cast.
+> v3: fmt2->hsw rename
+> v4: ip_of_the_event->real_ip rename
+> v5: use pr_cont. white space changes.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c          |    3 +-
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |  114 +++++++++++++++++++++++------
+>  2 files changed, 93 insertions(+), 24 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index bf0f01a..758f3fd 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -397,7 +397,8 @@ int x86_pmu_hw_config(struct perf_event *event)
+>                  * check that PEBS LBR correction does not conflict with
+>                  * whatever the user is asking with attr->branch_sample_type
+>                  */
+> -               if (event->attr.precise_ip > 1) {
+> +               if (event->attr.precise_ip > 1 &&
+> +                   x86_pmu.intel_cap.pebs_format < 2) {
+>                         u64 *br_type = &event->attr.branch_sample_type;
+>
+>                         if (has_branch_stack(event)) {
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index b05a575..a7ab4db 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -41,6 +41,22 @@ struct pebs_record_nhm {
+>         u64 status, dla, dse, lat;
+>  };
+>
+> +/*
+> + * Same as pebs_record_nhm, with two additional fields.
+> + */
+> +struct pebs_record_hsw {
+> +       struct pebs_record_nhm nhm;
+> +       /*
+> +        * Real IP of the event. In the Intel documentation this
+> +        * is called eventingrip.
+> +        */
+> +       u64 real_ip;
+> +       /*
+> +        * TSX tuning information field: abort cycles and abort flags.
+> +        */
+> +       u64 tsx_tuning;
+> +};
+> +
+>  void init_debug_store_on_cpu(int cpu)
+>  {
+>         struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+> @@ -559,11 +575,11 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>  {
+>         /*
+>          * We cast to pebs_record_core since that is a subset of
+> -        * both formats and we don't use the other fields in this
+> -        * routine.
+> +        * all formats.
+>          */
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>         struct pebs_record_core *pebs = __pebs;
+> +       struct pebs_record_hsw *pebs_hsw = __pebs;
+>         struct perf_sample_data data;
+>         struct pt_regs regs;
+>
+> @@ -588,7 +604,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>         regs.bp = pebs->bp;
+>         regs.sp = pebs->sp;
+>
+> -       if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+> +               regs.ip = pebs_hsw->real_ip;
+> +               regs.flags |= PERF_EFLAGS_EXACT;
+> +       } else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+>                 regs.flags |= PERF_EFLAGS_EXACT;
+>         else
+>                 regs.flags &= ~PERF_EFLAGS_EXACT;
+> @@ -641,35 +660,22 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+>         __intel_pmu_pebs_event(event, iregs, at);
+>  }
+>
+> -static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+> +static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
+> +                                       void *top)
+>  {
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>         struct debug_store *ds = cpuc->ds;
+> -       struct pebs_record_nhm *at, *top;
+>         struct perf_event *event = NULL;
+>         u64 status = 0;
+> -       int bit, n;
+> -
+> -       if (!x86_pmu.pebs_active)
+> -               return;
+> -
+> -       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+> -       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
+> +       int bit;
+>
+>         ds->pebs_index = ds->pebs_buffer_base;
+>
+> -       n = top - at;
+> -       if (n <= 0)
+> -               return;
+> -
+> -       /*
+> -        * Should not happen, we program the threshold at 1 and do not
+> -        * set a reset value.
+> -        */
+> -       WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
+> +       for ( ; at < top; at += x86_pmu.pebs_record_size) {
+> +               struct pebs_record_nhm *p = at;
+>
+> -       for ( ; at < top; at++) {
+> -               for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
+> +               for_each_set_bit(bit, (unsigned long *)&p->status,
+> +                                x86_pmu.max_pebs_events) {
+>                         event = cpuc->events[bit];
+>                         if (!test_bit(bit, cpuc->active_mask))
+>                                 continue;
+> @@ -692,6 +698,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+>         }
+>  }
+>
+> +static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+> +{
+> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +       struct debug_store *ds = cpuc->ds;
+> +       struct pebs_record_nhm *at, *top;
+> +       int n;
+> +
+> +       if (!x86_pmu.pebs_active)
+> +               return;
+> +
+> +       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+> +       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
+> +
+> +       ds->pebs_index = ds->pebs_buffer_base;
+> +
+> +       n = top - at;
+> +       if (n <= 0)
+> +               return;
+> +
+> +       /*
+> +        * Should not happen, we program the threshold at 1 and do not
+> +        * set a reset value.
+> +        */
+> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
+> +                 "Unexpected number of pebs records %d\n", n);
+> +
+> +       return __intel_pmu_drain_pebs_nhm(iregs, at, top);
+> +}
+> +
+> +static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
+> +{
+> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +       struct debug_store *ds = cpuc->ds;
+> +       struct pebs_record_hsw *at, *top;
+> +       int n;
+> +
+> +       if (!x86_pmu.pebs_active)
+> +               return;
+> +
+> +       at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
+> +       top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
+> +
+> +       n = top - at;
+> +       if (n <= 0)
+> +               return;
+> +       /*
+> +        * Should not happen, we program the threshold at 1 and do not
+> +        * set a reset value.
+> +        */
+> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
+> +                 "Unexpected number of pebs records %d\n", n);
+> +
+> +       return __intel_pmu_drain_pebs_nhm(iregs, at, top);
+> +}
+> +
+>  /*
+>   * BTS, PEBS probe and setup
+>   */
+> @@ -723,6 +784,13 @@ void intel_ds_init(void)
+>                         x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+>                         break;
+>
+> +               case 2:
+> +                       pr_cont("PEBS fmt2%c, ", pebs_type);
+> +                       x86_pmu.pebs_record_size =
+> +                               sizeof(struct pebs_record_hsw);
+> +                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
+> +                       break;
+> +
+>                 default:
+>                         printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
+>                         x86_pmu.pebs = 0;
+> --
+> 1.7.7.6
+>
