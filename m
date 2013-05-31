@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3EaVuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 17:50:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55544 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab3EaVt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 17:49:57 -0400
-Message-ID: <1370036984.3928.144.camel@pasglop>
-Subject: Re: [PATCH] powerpc/sysfs: disable hotplug for the boot cpu
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-Cc: linuxppc-dev@lists.ozlabs.org, scottwood@freescale.com,
-        linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 07:49:44 +1000
-In-Reply-To: <1369727984-21505-2-git-send-email-chenhui.zhao@freescale.com>
-References: <1369727984-21505-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1369727984-21505-2-git-send-email-chenhui.zhao@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1757342Ab3EaVwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:52:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40867 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3EaVwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:52:15 -0400
+Date: Fri, 31 May 2013 14:52:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Youquan Song <youquan.song@intel.com>
+Cc: gregkh@linuxfoundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] core: Fix maxcpus boot option broken
+Message-Id: <20130531145214.27bb260219f55131b6e6e605@linux-foundation.org>
+In-Reply-To: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
+References: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-28 at 15:59 +0800, Zhao Chenhui wrote:
-> Some features depend on the boot cpu, for instance, hibernate/suspend.
-> So disable hotplug for the boot cpu.
+On Thu, 30 May 2013 00:00:06 -0400 Youquan Song <youquan.song@intel.com> wrote:
 
-Don't we have code to "move" the boot CPU around when that happens ?
+> maxcpus boot option to limit maximum number of CPUs on system, but this option
+> is broken at recent kernel.
 
-Ben.
+Can you help us identify which kernel versions have this bug? 
+Identifying the offending commit would be best.  Thanks.
 
-> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> ---
->  arch/powerpc/kernel/sysfs.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> Though we use maxcpus to limit CPUs number, but
+> current kernel will register all of present CPUs in sysfs.
+> udev will enumerate all registered cpu at sysfs, and it will bring up the CPU
+> if the CPU is offline. So the maxcpus option is broken.
 > 
-> diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-> index e68a845..294b1c4e 100644
-> --- a/arch/powerpc/kernel/sysfs.c
-> +++ b/arch/powerpc/kernel/sysfs.c
-> @@ -655,8 +655,10 @@ static int __init topology_init(void)
->  		 * CPU.  For instance, the boot cpu might never be valid
->  		 * for hotplugging.
->  		 */
-> -		if (ppc_md.cpu_die)
-> +		if (ppc_md.cpu_die && cpu != boot_cpuid)
->  			c->hotpluggable = 1;
-> +		else
-> +			c->hotpluggable = 0;
+> This patch will only register the CPU which is not over limitation of maxcpus 
+> option in sysfs. So it will keep the maxcpus limitation when udev enumeration
+> or other intention of bring up CPUs over the limitation by method like  
+> echo 1 > /sys/devices/system/cpu/online 
+> 
+> ...
+>
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -272,6 +272,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+>  {
+>  	int error;
 >  
->  		if (cpu_online(cpu) || c->hotpluggable) {
->  			register_cpu(c, cpu);
-
-
+> +	/* return when cpu number greater than maximum number of CPUs */
+> +	if (num >= setup_max_cpus)
+> +		return 0;
+> +
+>  	cpu->node_id = cpu_to_node(num);
+>  	memset(&cpu->dev, 0x00, sizeof(struct device));
+>  	cpu->dev.id = num;
+> -- 
+> 1.7.7.4
