@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3EaNZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:25:47 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:1686 "EHLO SMTP02.CITRIX.COM"
+	id S1755019Ab3EaNZw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:25:52 -0400
+Received: from muin.pair.com ([209.68.1.55]:56038 "EHLO muin.pair.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab3EaNZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:25:39 -0400
-X-IronPort-AV: E=Sophos;i="4.87,779,1363132800"; 
-   d="scan'208";a="27159944"
-Date: Fri, 31 May 2013 14:25:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC 2/6] arm64/xen: arm/xen header changes to compile on
- arm64
-In-Reply-To: <20130531104303.GB18045@localhost.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1305311422250.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com> <1369930713-6063-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130531104303.GB18045@localhost.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754547Ab3EaNZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 09:25:47 -0400
+Message-ID: <51A8A4ED.6070104@tabi.org>
+Date: Fri, 31 May 2013 08:26:05 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Michal Simek <michal.simek@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v3 7/8] video: xilinxfb: Fix sparse warnings
+References: <cover.1370004925.git.michal.simek@xilinx.com> <ea3d6fcbb9f7a00a9cdbd3d0a7a4d3401265ebf0.1370004925.git.michal.simek@xilinx.com>
+In-Reply-To: <ea3d6fcbb9f7a00a9cdbd3d0a7a4d3401265ebf0.1370004925.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Catalin Marinas wrote:
-> On Thu, May 30, 2013 at 05:18:29PM +0100, Stefano Stabellini wrote:
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/include/asm/xen/events.h |    4 ++++
-> >  arch/arm/include/asm/xen/page.h   |    2 ++
-> >  2 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
-> > index 8b1f37b..12e4e0b 100644
-> > --- a/arch/arm/include/asm/xen/events.h
-> > +++ b/arch/arm/include/asm/xen/events.h
-> > @@ -13,7 +13,11 @@ enum ipi_vector {
-> >  
-> >  static inline int xen_irqs_disabled(struct pt_regs *regs)
-> >  {
-> > +#ifdef CONFIG_ARM
-> >  	return raw_irqs_disabled_flags(regs->ARM_cpsr);
-> > +#else
-> > +	return raw_irqs_disabled_flags((unsigned long) regs->pstate);
-> > +#endif
-> >  }
+On 05/31/2013 07:55 AM, Michal Simek wrote:
+
+> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+> index f3d4a69..e27a4f6 100644
+> --- a/drivers/video/xilinxfb.c
+> +++ b/drivers/video/xilinxfb.c
+> @@ -131,7 +131,7 @@ struct xilinxfb_drvdata {
+>  	dcr_host_t      dcr_host;
+>  	unsigned int    dcr_len;
+>  #endif
+> -	void		*fb_virt;	/* virt. address of the frame buffer */
+> +	void __iomem	*fb_virt;	/* virt. address of the frame buffer */
+>  	dma_addr_t	fb_phys;	/* phys. address of the frame buffer */
+>  	int		fb_alloced;	/* Flag, was the fb memory alloced? */
 > 
-> At least for this part, it makes sense to live in the arch/arm64
-> directory.
+> @@ -273,8 +273,10 @@ static int xilinxfb_assign(struct platform_device *pdev,
+>  		drvdata->fb_virt = ioremap(pdata->fb_phys, fbsize);
+>  	} else {
+>  		drvdata->fb_alloced = 1;
+> -		drvdata->fb_virt = dma_alloc_coherent(dev, PAGE_ALIGN(fbsize),
+> -					&drvdata->fb_phys, GFP_KERNEL);
+> +		drvdata->fb_virt = (__force void __iomem *)
+> +				   dma_alloc_coherent(dev, PAGE_ALIGN(fbsize),
+> +						      &drvdata->fb_phys,
+> +						      GFP_KERNEL);
 
-Yes, good idea, there isn't much else in that header file anyway.
+I think this is wrong.  At least, it would be on PowerPC.
+dma_alloc_coherent() allocates regular RAM, not I/O memory.  So it
+should not be __iomem.
 
 
-> >  #define xchg_xen_ulong(ptr, val) atomic64_xchg(container_of((ptr),	\
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index 30cdacb..cb2fa15 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -1,7 +1,9 @@
-> >  #ifndef _ASM_ARM_XEN_PAGE_H
-> >  #define _ASM_ARM_XEN_PAGE_H
-> >  
-> > +#ifdef ARM
-> >  #include <asm/mach/map.h>
-> > +#endif
-> >  #include <asm/page.h>
-> >  #include <asm/pgtable.h>
-> 
-> Is there anything ARM-specific in this file?
 
-The only ARM-specific stuff here is the definition of xen_remap, like
-you have spotted in the other email. The inclusion of asm/mach/map.h is
-needed because it containes the definition of MT_MEMORY.
+-- 
+Timur Tabi
