@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404Ab3EaE7a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 00:59:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46101 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3EaE7Y (ORCPT
+	id S1751489Ab3EaFD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 01:03:27 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45745 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3EaFDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 00:59:24 -0400
-Date: Fri, 31 May 2013 14:59:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: linux-next: build failure after merge of the final tree (msm tree
- related)
-Message-Id: <20130531145915.e13b029dca07a2db098fb405@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__31_May_2013_14_59_15_+1000_WjpazMnSAZAi2bIH"
+	Fri, 31 May 2013 01:03:20 -0400
+Date: Fri, 31 May 2013 14:03:16 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "weiqi@kylinos.com.cn" <weiqi@kylinos.com.cn>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: race condition in schedule_on_each_cpu()
+Message-ID: <20130531050316.GC7720@mtj.dyndns.org>
+References: <51A7FFE8.6060204@kylinos.com.cn>
+ <20130531023246.GD30479@mtj.dyndns.org>
+ <51A821F3.1000605@kylinos.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A821F3.1000605@kylinos.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__31_May_2013_14_59_15_+1000_WjpazMnSAZAi2bIH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 31, 2013 at 12:07:15PM +0800, weiqi@kylinos.com.cn wrote:
+> 
+> >the only way for them to get stuck is if there aren't enough execution
+> >resources (ie. if a new thread can't be created) but OOM killers would
+> >have been activated if that were the case.
+> 
+> The following is a detailed description of our scenerio:
+> 
+> 1.  after turnning off the the disk array, the ps results is shown
+> in *ps*, which indicates the kworker/1:0 kworker/1:2 are stuck
+> 
+> 2.  the call stack for the kworkers are shown in *stack_xxx.txt*
+> 
+> 3.  the workqueue operations during that period is shown in
+> *out.txt*, use ftrace
+> (we added a new trace point /workqueue_queue_work_insert/,
+> immediately before insert_wq_barrier, in the function
+> start_flush_work. its implementation is shown in
+> *trace_insert_wq_barrier.txt*)
+>        from the results int *grep_kwork1:0_from_out.txt*, we can see:
+>               kworker/1:0 is stuck after start work
+> /fc_starget_delete/ at time 360.801271,  and  catch the
+> insert_wq_barrier trace_info behind this
+> 
+> 
+> 4.  from out.txt , we can see, there are altogether three
+> /fc_starget_delete/ work enqueued.
+>       atfer the point of deadlock, kworker/1:1 and kworker/1:3 is
+> executing ...
+> 
+> 
+> 5.  if we let the scsi_transport_fc uses only one worker thread,
+> i.e.,  change scsi_transport_fc.c : fc_host_setup()
+>               alloc_workqueue(fc_host->work_q_name, 0, 0) to
+>                      alloc_workqueue(fc_host->work_q_name, WQ_UNBOUND, 1)
+> 
+>               alloc_workqueue(fc_host->devloss_work_q_name, 0, 0) to
+> alloc_workqueue(fc_host->devloss_work_q_name, WQ_UNBOUND, 1)
+> 
+>      the deadlock won't occur.
+> >Can you please test a recent kernel?  How easily can you reproduce the
+> >issue?
+> >
+> it's occured every time when hot remove disk array.
+> 
+> I'll test recent kernel after a while , but  this problem in 3.0.30
+> really confused me
 
-Hi all,
+Yeah, it definitely sounds like concurrency depletion.  There have
+been some fixes and substantial changes in the area, so I really wanna
+find out whether the problem is reproducible in recent vanilla kernel
+- say, v3.9 or, even better, v3.10-rc2.  Can you please try to
+reproduce the problem with a newer kernel?
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> by the way, I'm wondering about  what's the race condition before
+> which  doesn't exist now
 
-drivers/gpio/gpio-msm-v2.c: In function 'msm_gpio_irq_domain_map':
-drivers/gpio/gpio-msm-v2.c:373:2: error: implicit declaration of function '=
-set_irq_flags' [-Werror=3Dimplicit-function-declaration]
-  set_irq_flags(irq, IRQF_VALID);
-  ^
-drivers/gpio/gpio-msm-v2.c:373:21: error: 'IRQF_VALID' undeclared (first us=
-e in this function)
-  set_irq_flags(irq, IRQF_VALID);
-                     ^
-drivers/gpio/gpio-msm-v2.c:373:21: note: each undeclared identifier is repo=
-rted only once for each function it appears in
-drivers/gpio/gpio-msm-v2.c: In function 'msm_gpio_remove':
-drivers/gpio/gpio-msm-v2.c:450:18: error: 'TLMM_SCSS_SUMMARY_IRQ' undeclare=
-d (first use in this function)
-  irq_set_handler(TLMM_SCSS_SUMMARY_IRQ, NULL);
-                  ^
+Before the commit you originally quoted, the calling thread could be
+preempted and migrated to another CPU before get_online_cpus() thus
+ending up executing the function twice on the new cpu but skipping the
+old one.
 
-Caused by commit 69cf52b46b39 ("gpio: msm: Add device tree and irqdomain
-support for gpio-msm-v2").
+Thanks.
 
-I applied the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 31 May 2013 14:54:00 +1000
-Subject: [PATCH] restore dependency on ARCH_MSM to GPIO_MSM_V2
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpio/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 2e4a21a..f471fe8 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -165,7 +165,7 @@ config GPIO_MSM_V1
-=20
- config GPIO_MSM_V2
- 	tristate "Qualcomm MSM GPIO v2"
--	depends on GPIOLIB && OF
-+	depends on GPIOLIB && OF && ARCH_MSM
- 	help
- 	  Say yes here to support the GPIO interface on ARM v7 based
- 	  Qualcomm MSM chips.  Most of the pins on the MSM can be
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__31_May_2013_14_59_15_+1000_WjpazMnSAZAi2bIH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRqC4nAAoJEECxmPOUX5FEwe8P/2aAztF7C5GkSPIJNtazhoT5
-h5yv/nz6peFTfTZxXnRtdVTUovXiv3eDEP+pg2rDrOQFmTSfvnxseK9Zv9dy3STh
-npUbKGLMgh5aRG9V2DsmUc/L1UtY9svbyryNLscoQXjK8vwueA95YXpooOpKjnqw
-PmCxlPWLrx0Ba/oeDm4SaVjxirIBFQVdGjOyG3TUVco8NkKEWmpU6rCs3KuUjGx6
-ahpDfGNUDfx4tkiHuKXs2RzENAWANd0NiUvA8VuKQC+68kT08WV7KrNZlXLuSqqy
-D1rJWeDRxOjBRmUX/V2G0b2UrT2vno3ICVvTftbKu7j89Gme1mGElMcmxKqsv+AE
-US39R0vuwlVT2dYH/2kV1UkUwdvNSMp73BTNaKFrFWCvCdTkVzSce7BY7BxyG+Iw
-w0jeRBD72qGZ+U8s1IxXvF52WH16mm2bY78e2NlMTNY7qiLnpfcGYqvfqRR9dOFM
-TLN02FdDOij3joDObd3VdL2qy7MurnLrPbL1ZFmYkvWBzo/PL8scR9dsZ6mR1nFj
-32XbrlERNEed8PjT2w6xoxvhiA365NdJ9r0OuJ8sk8JqBSuH8fkKniIKZ4s1Xwnn
-/EgzIlUT7JQu288/WuDuKT9KDVsdvxV7vurf1UrgXY7GTX2MFlgZEdgAWqzdGsts
-SArjtLPD5C5fmUXlAbgp
-=GlmU
------END PGP SIGNATURE-----
-
---Signature=_Fri__31_May_2013_14_59_15_+1000_WjpazMnSAZAi2bIH--
+-- 
+tejun
