@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3EaOZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:25:11 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:33431 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab3EaOYz (ORCPT
+	id S1754762Ab3EaO3A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:29:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37565 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904Ab3EaO2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:24:55 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/2] ARM: ux500: Enable HIGHMEM in the u8540 defconfig
-Date: Fri, 31 May 2013 15:24:32 +0100
-Message-Id: <1370010272-25520-2-git-send-email-lee.jones@linaro.org>
+	Fri, 31 May 2013 10:28:51 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 1/2] trivial: atmel_lcdfb: add missing error message
+Date: Fri, 31 May 2013 16:28:38 +0200
+Message-Id: <1370010519-18691-1-git-send-email-richard.genoud@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370010272-25520-1-git-send-email-lee.jones@linaro.org>
-References: <1370010272-25520-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to utilise all of the memory located on ux500 based devices
-we have to enable HIGHMEM. Without it the kernel truncates memory down
-to what's left after the PAGE_OFFSET has been applied, which doesn't
-leave an awful lot, especially if we're running large rootfs' such
-as full Linux desktop distributions or Android.
+When a too small framebuffer is given, the atmel_lcdfb_check_var
+silently fails.
+Adding an error message will save some head scratching.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 ---
- arch/arm/configs/u8500_defconfig |    1 +
- drivers/of/fdt.c                 |   52 +++++++-------------------------------
- 2 files changed, 10 insertions(+), 43 deletions(-)
+ drivers/video/atmel_lcdfb.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index 2d322d2..38d633a 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -1,3 +1,4 @@
-+CONFIG_HIGHMEM=y
- # CONFIG_SWAP is not set
- CONFIG_SYSVIPC=y
- CONFIG_NO_HZ=y
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 5439925..808be06 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -43,7 +43,7 @@ void *of_fdt_get_property(struct boot_param_header *blob,
- 
- 	do {
- 		u32 tag = be32_to_cpup((__be32 *)p);
--		u32 sz, noff, i;
-+		u32 sz, noff;
- 		const char *nstr;
- 
- 		p += 4;
-@@ -66,10 +66,6 @@ void *of_fdt_get_property(struct boot_param_header *blob,
- 		if (strcmp(name, nstr) == 0) {
- 			if (size)
- 				*size = sz;
--
--	print_hex_dump(KERN_ERR, "node: ", DUMP_PREFIX_ADDRESS,
--		       16, 1, (__be32 *)node, p - node, true);
--
- 			return (void *)p;
- 		}
- 		p += sz;
-@@ -624,68 +620,38 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
- 	__be32 *reg, *endp;
- 	unsigned long l;
- 
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--	printk("LEE: ******************************************* \n");
--
- 	/* We are scanning "memory" nodes only */
- 	if (type == NULL) {
--		printk("LEE: 1\n");
- 		/*
- 		 * The longtrail doesn't have a device_type on the
- 		 * /memory node, so look for the node called /memory@0.
- 		 */
--		if (depth != 1 || strcmp(uname, "memory@0") != 0) {
--			printk("LEE: 2\n");
-+		if (depth != 1 || strcmp(uname, "memory@0") != 0)
- 			return 0;
--		}
--	} else if (strcmp(type, "memory") != 0) {
--		printk("LEE: 3\n");
-+	} else if (strcmp(type, "memory") != 0)
- 		return 0;
--	}
- 
- 	reg = of_get_flat_dt_prop(node, "linux,usable-memory", &l);
--	if (reg == NULL) {
-+	if (reg == NULL)
- 		reg = of_get_flat_dt_prop(node, "reg", &l);
--		printk("LEE: This is correct \n");
--	}
--	if (reg == NULL) {
--		printk("LEE: 4\n");
--       		return 0;
--	}
--
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
--	printk("LEE: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
-+	if (reg == NULL)
-+		return 0;
- 
- 	endp = reg + (l / sizeof(__be32));
- 
--	printk("LEE: reg: 0x%p\n", reg);
--
--	printk("memory scan node %s, reg size %ld, data: %x %x %x %x,\n",
-+	pr_debug("memory scan node %s, reg size %ld, data: %x %x %x %x,\n",
- 	    uname, l, reg[0], reg[1], reg[2], reg[3]);
- 
--	printk("extras: %x %x %x %x,\n", reg[4], reg[5], reg[6], reg[7]);
--
- 	while ((endp - reg) >= (dt_root_addr_cells + dt_root_size_cells)) {
- 		u64 base, size;
- 
- 		base = dt_mem_next_cell(dt_root_addr_cells, &reg);
- 		size = dt_mem_next_cell(dt_root_size_cells, &reg);
- 
--		printk(" - %llx ,  %llx\n", (unsigned long long)base,
--		    (unsigned long long)size);
--
- 		if (size == 0)
- 			continue;
-+		pr_debug(" - %llx ,  %llx\n", (unsigned long long)base,
-+		    (unsigned long long)size);
- 
- 		early_init_dt_add_memory_arch(base, size);
+diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+index 540909d..6e6491f 100644
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -461,8 +461,11 @@ static int atmel_lcdfb_check_var(struct fb_var_screeninfo *var,
+ 	if (info->fix.smem_len) {
+ 		unsigned int smem_len = (var->xres_virtual * var->yres_virtual
+ 					 * ((var->bits_per_pixel + 7) / 8));
+-		if (smem_len > info->fix.smem_len)
++		if (smem_len > info->fix.smem_len) {
++			dev_err(dev, "Frame buffer is too small (%u) for screen size (need at least %u)\n",
++				info->fix.smem_len, smem_len);
+ 			return -EINVAL;
++		}
  	}
+ 
+ 	/* Saturate vertical and horizontal timings at maximum values */
 -- 
 1.7.10.4
 
