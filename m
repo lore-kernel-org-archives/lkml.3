@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab3EaRO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:14:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47616 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3EaROT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:14:19 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: David Gibson <david@gibson.dropbear.id.au>, jdl@jdl.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, mmarek@suse.cz, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, linux-kbuild@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] dtc: Ensure #line directives don't consume data from the next line
-Date: Fri, 31 May 2013 11:14:10 -0600
-Message-Id: <1370020450-18136-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	id S1755282Ab3EaROn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:14:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50685 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab3EaROe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 13:14:34 -0400
+Date: Fri, 31 May 2013 19:10:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Guy Streeter <streeter@redhat.com>,
+        Eric Paris <eparis@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: wait_for_auditd() should use
+	TASK_UNINTERRUPTIBLE
+Message-ID: <20130531171025.GA32387@redhat.com>
+References: <20130524173925.GA17177@redhat.com> <20130529145933.6e02f8379cf20b9c7ef30977@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130529145933.6e02f8379cf20b9c7ef30977@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On 05/29, Andrew Morton wrote:
+>
+> On Fri, 24 May 2013 19:39:25 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > audit_log_start() does wait_for_auditd() in a loop until
+> > audit_backlog_wait_time passes or audit_skb_queue has a room.
+> >
+> > If signal_pending() is true this becomes a busy-wait loop,
+> > schedule() in TASK_INTERRUPTIBLE won't block.
+>
+> And that's game over for a uniprocessor non-preempt machine, yes?
 
-Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
-could match line-break characters. If the #line directive did not contain
-the optional flags field at the end, this could cause any integer data on
-the next line to be consumed as part of the #line directive parsing. This
-could cause syntax errors (i.e. #line parsing consuming the leading 0
-from a hex constant 0x1234, leaving x1234 to be parsed as cell data,
-which is a syntax error), or invalid compilation results (i.e. simply
-consuming integer 1234 as part of the #line processing, thus removing it
-from the cell data).
+If this task is rt, yes. Otherwise schedule() still does pick_next_task()
+but this is obviously bad anyway. So I fully agree with "Cc: stable" you
+added.
 
-Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+> > Reported-by: Guy Streeter <streeter@redhat.com>
+>
+> And what did Guy report?  "that looks screwy"?  "my machine locked up"?
 
-Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-This is a patch for dtc upstream, in response to thread "DTB build
-failure due to preproccessing". If/when it's accepted into dtc, I'll
-follow up with a kernel patch that makes the same fix.
+He also investigated the problem and provided the detailed explanation ;)
 
- dtc-lexer.l               |    2 +-
- tests/line_directives.dts |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/dtc-lexer.l b/dtc-lexer.l
-index 254d5af..a3a4c69 100644
---- a/dtc-lexer.l
-+++ b/dtc-lexer.l
-@@ -71,7 +71,7 @@ static int pop_input_file(void);
- 			push_input_file(name);
- 		}
- 
--<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
-+<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}([ \t]+[0-9]+)? {
- 			char *line, *tmp, *fn;
- 			/* skip text before line # */
- 			line = yytext;
-diff --git a/tests/line_directives.dts b/tests/line_directives.dts
-index e9d0800..046ef37 100644
---- a/tests/line_directives.dts
-+++ b/tests/line_directives.dts
-@@ -8,4 +8,14 @@
- # 6 "bar.dts"
- 
- / {
-+/*
-+ * Make sure optional flags don't consume integer data on next line. The issue
-+ * was that the {WS} in the trailing ({WS}+[0-9]+)? could cross the * line-
-+ * break, and consume the leading "0" of the hex constant, leaving "x12345678"
-+ * to be parsed as a number, which is invalid syntax.
-+ */
-+	prop1 = <
-+# 10 "qux.dts"
-+		0x12345678
-+	>;
- };
--- 
-1.7.10.4
+Oleg.
 
