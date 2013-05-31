@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab3EaIpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:45:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59689 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751404Ab3EaIpo (ORCPT
+	id S1753879Ab3EaIqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:46:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52276 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab3EaIqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:45:44 -0400
-Date: Fri, 31 May 2013 09:45:08 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-Message-ID: <20130531084508.GA4928@mudshark.cambridge.arm.com>
-References: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <alpine.LFD.2.03.1305302319430.30828@syhkavp.arg>
+	Fri, 31 May 2013 04:46:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
+Date: Fri, 31 May 2013 10:45:32 +0200
+Message-ID: <1528437.8btZmmDHhd@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
+References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org> <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1305302319430.30828@syhkavp.arg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:RBoVuE2+xIp9Yc17Q/I0wknZnt+IlciEn9PhrF1PgwF
+ ijeH3QnJ5wV2Sf79XatzWWnD8OTt2bkljr8zyfLNaCQksHjcfB
+ wHHmafUlJYG8nhoIYc7jnJFMetDuOweVzdabo7VPhcf8HOI6AI
+ KfYbh4AKm0guKAJwfpXOUA9AwLYSqGacwWbflX6YKzfrfDAgdf
+ fqm7XcNcGQIZv68PTisXkeUKP4zD9RnWC1A+L9ic7IVM0XbD2w
+ AY2RAtB/RD1v0IcflYTrAzrz6z74D9xeize+CZ/Z68MR763yYi
+ H16hqWSt+kFl2Us+56ZOcOig/jCFkHIbLglRow/mxK6Bdq2DUa
+ Y/KyZbKBp4pjExmDZyI4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 04:54:56AM +0100, Nicolas Pitre wrote:
-> On Thu, 30 May 2013, Will Deacon wrote:
-> 
-> > On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
-> > > On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
-> > > > If you have some patch for this issue,
-> > > > I can do the test for it .
-> > > 
-> > > I'll have a look at cooking something which uses an exception table entry
-> > > to rewind the PC and retry the system call. That's simpler than directly
-> > > injecting a user page fault from the system call path.
-> > 
-> > Ok, please can you try the following?
-> > 
-> > Will
-> > 
-> > --->8
-> > 
-> > diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-> > index bc5bc0a..855926e 100644
-> > --- a/arch/arm/kernel/entry-common.S
-> > +++ b/arch/arm/kernel/entry-common.S
-> > @@ -361,6 +361,15 @@ ENTRY(vector_swi)
-> >  	str	r8, [sp, #S_PSR]		@ Save CPSR
-> >  	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
-> >  	zero_fp
-> > +	enable_irq
-> > +	ct_user_exit
-> > +
-> > +#ifdef CONFIG_ALIGNMENT_TRAP
-> > +	ldr	ip, __cr_alignment
-> > +	ldr	ip, [ip]
-> > +	mcr	p15, 0, ip, c1, c0		@ update control register
-> > +#endif
-> 
-> This is wrong.  you must set up the align bit in the control register 
-> _before_ enabling IRQs or an IRQ handler might run without alignment 
-> fixup.
+Can you check this part again:
 
-Okey doke, I can fix that up. I thought it was only needed for the network
-layer, but I suppose they have interrupts over there too :)
+On Tuesday 21 May 2013 20:36:35 Stephen Warren wrote:
+> diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+> index f5d84d6..7de2ca1 100644
+> --- a/drivers/spi/spi-pxa2xx.c
+> +++ b/drivers/spi/spi-pxa2xx.c
+> @@ -881,21 +881,6 @@ static int setup(struct spi_device *spi)
+>                 rx_thres = RX_THRESH_DFLT;
+>         }
+>  
+> -       if (!pxa25x_ssp_comp(drv_data)
+> -               && (spi->bits_per_word < 4 || spi->bits_per_word > 32)) {
+> -               dev_err(&spi->dev, "failed setup: ssp_type=%d, bits/wrd=%d "
+> -                               "b/w not 4-32 for type non-PXA25x_SSP\n",
+> -                               drv_data->ssp_type, spi->bits_per_word);
+> -               return -EINVAL;
+> -       } else if (pxa25x_ssp_comp(drv_data)
+> -                       && (spi->bits_per_word < 4
+> -                               || spi->bits_per_word > 16)) {
+> -               dev_err(&spi->dev, "failed setup: ssp_type=%d, bits/wrd=%d "
+> -                               "b/w not 4-16 for type PXA25x_SSP\n",
+> -                               drv_data->ssp_type, spi->bits_per_word);
+> -               return -EINVAL;
+> -       }
+> -
+>         /* Only alloc on first setup */
+>         chip = spi_get_ctldata(spi);
+>         if (!chip) {
+> @@ -1011,9 +996,6 @@ static int setup(struct spi_device *spi)
+>                 chip->n_bytes = 4;
+>                 chip->read = u32_reader;
+>                 chip->write = u32_writer;
+> -       } else {
+> -               dev_err(&spi->dev, "invalid wordsize\n");
+> -               return -ENODEV;
+>         }
+>         chip->bits_per_word = spi->bits_per_word;
+>  
+> @@ -1190,11 +1172,13 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+>         drv_data->ioaddr = ssp->mmio_base;
+>         drv_data->ssdr_physical = ssp->phys_base + SSDR;
+>         if (pxa25x_ssp_comp(drv_data)) {
+> +               master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 16);
+>                 drv_data->int_cr1 = SSCR1_TIE | SSCR1_RIE;
+>                 drv_data->dma_cr1 = 0;
+>                 drv_data->clear_sr = SSSR_ROR;
+>                 drv_data->mask_sr = SSSR_RFS | SSSR_TFS | SSSR_ROR;
+>         } else {
+> +               master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
+>                 drv_data->int_cr1 = SSCR1_TIE | SSCR1_RIE | SSCR1_TINTE;
+>                 drv_data->dma_cr1 = DEFAULT_DMA_CR1;
+>                 drv_data->clear_sr = SSSR_ROR | SSSR_TINT;
 
-> Otherwise the patch looks good to me.
+I get a new build warning
 
-Thanks Nicolas.
+drivers/spi/spi-pxa2xx.c: In function 'pxa2xx_spi_probe':
+drivers/spi/spi-pxa2xx.c:1152:3: warning: left shift count >= width of type [enabled by default]
+   master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
+   ^
 
-Will
+	Arnd
