@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab3EaFdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 01:33:09 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:42120 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3EaFdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 01:33:00 -0400
-Date: Fri, 31 May 2013 08:32:47 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Jamie Iles <jamie@jamieiles.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 2/2] clocksource: dw_apb: allow build for
- architectures other than arm
-Message-ID: <20130531053247.GX5037@tarshish>
-References: <1369570367-994-2-git-send-email-baruch@tkos.co.il>
- <51A51271.2070506@linaro.org>
- <20130530053233.GL25186@sapphire.tkos.co.il>
- <51A77A25.8080306@linaro.org>
+	id S1751045Ab3EaFfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 01:35:14 -0400
+Received: from sandeen.net ([63.231.237.45]:48639 "EHLO sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab3EaFfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 01:35:10 -0400
+Message-ID: <51A8368C.8090006@sandeen.net>
+Date: Fri, 31 May 2013 00:35:08 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A77A25.8080306@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: CAI Qian <caiqian@redhat.com>
+CC: Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: 3.9.4 Oops running xfstests (WAS Re: 3.9.3: Oops running xfstests)
+References: <510292845.4997401.1369279175460.JavaMail.root@redhat.com> <1985929268.4997720.1369279277543.JavaMail.root@redhat.com> <20130523035115.GY24543@dastard> <986348673.5787542.1369385526612.JavaMail.root@redhat.com> <20130527053608.GS29466@dastard> <1588848128.8530921.1369885528565.JavaMail.root@redhat.com> <20130530052049.GK29466@dastard> <1824023060.8558101.1369892432333.JavaMail.root@redhat.com> <1462663454.9294499.1369969415681.JavaMail.root@redhat.com>
+In-Reply-To: <1462663454.9294499.1369969415681.JavaMail.root@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-On Thu, May 30, 2013 at 09:11:17AM -0700, John Stultz wrote:
-> On 05/29/2013 10:32 PM, Baruch Siach wrote:
-> >On Tue, May 28, 2013 at 01:24:17PM -0700, John Stultz wrote:
-> >>On 05/26/2013 05:12 AM, Baruch Siach wrote:
-> >>>  static const struct of_device_id osctimer_ids[] __initconst = {
-> >>>@@ -124,3 +135,10 @@ void __init dw_apb_timer_init(void)
-> >>>  	init_sched_clock();
-> >>>  }
-> >>>+
-> >>>+#ifndef CONFIG_HAVE_SETUP_SCHED_CLOCK
-> >>>+unsigned long long notrace sched_clock()
-> >>>+{
-> >>>+	return read_sched_clock() * sched_clock_mult;
-> >>>+}
-> >>>+#endif
-> >>Also, can you try to condense the number of #ifndef
-> >>CONFIG_HAVE_SETUP_SCHED_CLOCK checks to one, and consolidate the
-> >>needed functions all in that one conditional?
-> >Thanks for your comments. I'll rework the patch and resubmit.
-> >
-> >I've just noticed that I have a bigger problem. read_sched_clock() returns
-> >u32, not u64. This means that in a rate of, say, 100MHz it will wrap around
-> >after a little more than 40 seconds. Would it make sense to put ARM's 32 bin
-> >sched_clock extension code (arch/arm/kernel/sched_clock.c) is a common place
-> >(maybe drivers/clocksource), and use that? There seems to be nothing ARM
-> >specific in this code, after all.
+On 5/30/13 10:03 PM, CAI Qian wrote:
+> OK, so the minimal workload to trigger this I found so far was to
+> run trinity, ltp and then xfstests. I have been able to easily
+> reproduced on 3 servers so far, and I'll post full logs here for
+> LKML and linux-mm as this may unrelated to XFS only. As far as
+> I can tell from the previous testing results, this has never been
+> reproduced back in 3.9 GA time. This seems also been reproduced
+> on 3.10-rc3 mostly on s390x so far.
+> CAI Qian
 > 
-> Yea, working out an actual generic sched_clock implementation is
-> something I'd like to see done.
-> 
-> Though I'd really rather we not toss yet another chunk of
-> infrastructure in the drivers/clocksource directory. Instead we
-> should probably have a kernel/time/sched_clock.c.
-> 
-> Then its just the issue of tying that and the clocksource code
-> together so you just register existing capable clocksources with a
-> SCHED_CLOCK flag or via a different registration hook.
-> 
-> I don't think it will be an easy job, but if you want to give it a
-> shot, I'd be quite interested in reviewing the patches!
 
-Although I'd very much like to contribute in this area, I'm afraid I don't 
-have time for this now. My problem is much narrower in scope, though, and I 
-think it can be solved without a generic sched_clock implementation at first 
-step. All I want is to use a 32 bit counter for sched_clock. The code enabling 
-this is currently only available for ARM (arch/arm/kernel/sched_clock.c). 
-Should this part of the code move to kernel/time/sched_clock.c?
+Can you hit it w/o trinity?   I ask because trinity's stated
+goal is to fuzz and corrupt, right - so it's quite possible
+that blowing up later in xfs is a side effect?
 
-baruch
+-Eric
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
