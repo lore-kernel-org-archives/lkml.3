@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab3EaTYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:24:03 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:64908 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3EaTX4 (ORCPT
+	id S932085Ab3EaTZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:25:40 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50298 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab3EaTZc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:23:56 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/1] i2c: omap: correct usage of the interrupt enable register
-References: <1370007211-9736-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-Date: Fri, 31 May 2013 12:23:52 -0700
-In-Reply-To: <1370007211-9736-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-	(Oleksandr Dmytryshyn's message of "Fri, 31 May 2013 16:33:30 +0300")
-Message-ID: <87vc5zymuv.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 31 May 2013 15:25:32 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1369536991-6111-1-git-send-email-acourbot@nvidia.com>
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com, Alexandre Courbot <acourbot@nvidia.com>
+References: <1369536991-6111-1-git-send-email-acourbot@nvidia.com>
+Message-ID: <20130531192528.21525.46053@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH RESEND] ARM: tegra114: correctly output clk_32k
+Date: Fri, 31 May 2013 12:25:28 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com> writes:
+Quoting Alexandre Courbot (2013-05-25 19:56:31)
+> Tegra has a blink timer register that allows to modulate the
+> clk_32k clock before outputting it. Since clk_32k is presented to the
+> kernel as a fixed clock, make sure this register does not tamper with
+> the clock frequency and that clk_32k is outputted as-is, similarly to
+> what is done on t20 and t30.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-> I've just removed unnecessary Change-Id line.
->
-> If the i2c controller during suspend will generate an interrupt, it
-> can lead to unpredictable behaviour in the kernel.
->
-> Based on the logic of the kernel code interrupts from i2c should be
-> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
-> the omap_i2c_runtime_suspend() function. In the other side kernel
-> writes saved interrupt flags to the I2C_IE register in
-> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
-> during suspend.
->
-> This works for chips with version1 registers scheme. Interrupts are
-> disabled during suspend. For chips with version2 scheme registers
-> writting 0 to the I2C_IE register does nothing (because now the
-> I2C_IRQENABLE_SET register is located at this address). This register
-> is used to enable interrupts. For disabling interrupts
-> I2C_IRQENABLE_CLR register should be used.
->
-> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
-> addresses, the interrupt enabling procedure is unchanged.
->
-> I've checked that interrupts in the i2c controller are still enabled
-> after writting 0 to the I2C_IE register. But with my patch interrupts
-> are disabled in the omap_i2c_runtime_suspend() function. 
->
-> This has been working up until now because we've just been lucky. 
+Taken into clk-next.
 
-This belongs in the changelog of the patch, not the cover letter and
-needs more detail.
+Regards,
+Mike
 
-Also, you don't need a cover letter on a 1-patch series.
-
-Kevin
-
-> Next patch fixes it.
->
-> Patch is based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> tag: v3.10-rc2
->
-> Verified on OMAP4430.
->
-> Oleksandr Dmytryshyn (1):
->   i2c: omap: correct usage of the interrupt enable register
->
->  drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
+> ---
+>  drivers/clk/tegra/clk-tegra114.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+> index d78e16e..dc76d67 100644
+> --- a/drivers/clk/tegra/clk-tegra114.c
+> +++ b/drivers/clk/tegra/clk-tegra114.c
+> @@ -127,6 +127,7 @@
+>  #define PMC_DPD_PADS_ORIDE_BLINK_ENB 20
+>  #define PMC_CTRL 0
+>  #define PMC_CTRL_BLINK_ENB 7
+> +#define PMC_BLINK_TIMER 0x40
+>  
+>  #define OSC_CTRL                       0x50
+>  #define OSC_CTRL_OSC_FREQ_SHIFT                28
+> @@ -1625,6 +1626,8 @@ static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
+>         clks[clk_out_3] = clk;
+>  
+>         /* blink */
+> +       /* clear the blink timer register to directly output clk_32k */
+> +       writel_relaxed(0, pmc_base + PMC_BLINK_TIMER);
+>         clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
+>                                 pmc_base + PMC_DPD_PADS_ORIDE,
+>                                 PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
+> -- 
+> 1.8.2.3
