@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab3EaMrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:47:23 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21322 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653Ab3EaMrQ (ORCPT
+	id S1754451Ab3EaMsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:48:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57944 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab3EaMrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:47:16 -0400
-Date: Fri, 31 May 2013 15:46:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Corey Minyard <minyard@acm.org>
-Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch v2] ipmi: info leak in compat_ipmi_ioctl()
-Message-ID: <20130531124658.GU23987@mwanda>
+	Fri, 31 May 2013 08:47:52 -0400
+Date: Fri, 31 May 2013 05:47:38 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-cbdce7b251de89deef79ec9e37b6cfa7d5595894@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mtosatti@redhat.com, jbeulich@suse.com, JBeulich@suse.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, mtosatti@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <51A60F1F02000078000D997C@nat28.tlf.novell.com>
+References: <51A60F1F02000078000D997C@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] ix86: Don't waste fixmap entries
+Git-Commit-ID: cbdce7b251de89deef79ec9e37b6cfa7d5595894
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86_64 there is a 4 byte hole between ->recv_type and ->addr.
+Commit-ID:  cbdce7b251de89deef79ec9e37b6cfa7d5595894
+Gitweb:     http://git.kernel.org/tip/cbdce7b251de89deef79ec9e37b6cfa7d5595894
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 29 May 2013 13:22:23 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 31 May 2013 13:08:18 +0200
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+ix86: Don't waste fixmap entries
+
+The vsyscall related pvclock entries can only ever be used on
+x86-64, and hence they shouldn't even get allocated for 32-bit
+kernels (the more that it is there where address space is
+relatively precious).
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Link: http://lkml.kernel.org/r/51A60F1F02000078000D997C@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-v2: fixed the changelog a little.  Also added LKML because the
-openipmi is a moderated list (and the moderator thought my email was
-spam).
+ arch/x86/include/asm/fixmap.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-index 9eb360f..8e306ac 100644
---- a/drivers/char/ipmi/ipmi_devintf.c
-+++ b/drivers/char/ipmi/ipmi_devintf.c
-@@ -810,6 +810,7 @@ static long compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
- 		struct ipmi_recv   __user *precv64;
- 		struct ipmi_recv   recv64;
- 
-+		memset(&recv64, 0, sizeof(recv64));
- 		if (get_compat_ipmi_recv(&recv64, compat_ptr(arg)))
- 			return -EFAULT;
- 
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index 0dc7d9e..e846225 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -81,11 +81,11 @@ enum fixed_addresses {
+ 			    + ((VSYSCALL_END-VSYSCALL_START) >> PAGE_SHIFT) - 1,
+ 	VVAR_PAGE,
+ 	VSYSCALL_HPET,
+-#endif
+ #ifdef CONFIG_PARAVIRT_CLOCK
+ 	PVCLOCK_FIXMAP_BEGIN,
+ 	PVCLOCK_FIXMAP_END = PVCLOCK_FIXMAP_BEGIN+PVCLOCK_VSYSCALL_NR_PAGES-1,
+ #endif
++#endif
+ 	FIX_DBGP_BASE,
+ 	FIX_EARLYCON_MEM_BASE,
+ #ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
