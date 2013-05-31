@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3EaLku (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:40:50 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:59234 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab3EaLkm (ORCPT
+	id S1755936Ab3EaLlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:41:04 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1039 "EHLO
+	smtp-out-122.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753967Ab3EaLkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:40:42 -0400
-Date: Fri, 31 May 2013 13:40:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Russ Anderson <rja@sgi.com>, joeyli <jlee@suse.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-Message-ID: <20130531114037.GC7131@gmail.com>
-References: <20130524074331.GL14575@console-pimps.org>
- <20130529210115.GC28027@sgi.com>
- <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
- <20130529224645.GA16582@sgi.com>
- <alpine.LNX.2.00.1305300048520.30576@pobox.suse.cz>
- <1369880172.17397.11.camel@linux-s257.site>
- <20130530221737.GA11105@sgi.com>
- <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
- <20130531101250.GD30394@gmail.com>
- <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
+	Fri, 31 May 2013 07:40:53 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 16046
+Message-ID: <51A88C3F.5080109@metafoo.de>
+Date: Fri, 31 May 2013 13:40:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Mark Brown <broonie@kernel.org>, Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
+References: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Kosina <jkosina@suse.cz> wrote:
-
-> On Fri, 31 May 2013, Ingo Molnar wrote:
+On 05/31/2013 11:40 AM, Geert Uytterhoeven wrote:
+> arch/blackfin/mach-bf533/boards/stamp.c:545:2: error: operator '||' has no right operand
+> arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: 'bfin_snd_resources' undeclared here (not in a function)
+> arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: negative width in bit-field '<anonymous>'
+> arch/blackfin/mach-bf533/boards/stamp.c:665:21: error: 'bfin_snd_data' undeclared here (not in a function)
+> make[4]: *** [arch/blackfin/mach-bf533/boards/stamp.o] Error 1
 > 
-> > > Unfortunately that means that you can as well throw the patch away 
-> > > completely.
-> > >
-> > > The sole point is to run the QueryVariableInfo() from the boot 
-> > > environment, in order to obtain more accurate information. And it's 
-> > > a valid thing to do, according to UEFI specification.
-> >
-> > So this change needs to be reverted or fixed.
+> Introduced by commit 15502e0ca0da651b48c7def2983e7bb464349b2a ("blackfin:
+> Remove references to the bf5x_tdm driver"), which removed two config
+> options, but only one "||".
 > 
-> I don't think anyone is arguing against that.
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-The statement I replied to above can be fairly read as arguing against it.
+(resend with Mark's new E-Mail address)
 
-Anyway, given that the fix (workaround) from Boris seems elaborate so late 
-in the v3.10 cycle, does everyone else agree with a revert as well?
+Hm, right I missed that one, thanks.
 
-Thanks,
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-	Ingo
+Mark can you queue it up in your topic/blackfin branch?
+
+> ---
+> http://kisskb.ellerman.id.au/kisskb/buildresult/8848472/
+> 
+>  arch/blackfin/mach-bf533/boards/stamp.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
+> index 1ea1dda..4a8c2e3 100644
+> --- a/arch/blackfin/mach-bf533/boards/stamp.c
+> +++ b/arch/blackfin/mach-bf533/boards/stamp.c
+> @@ -542,7 +542,7 @@ static struct platform_device bfin_dpmc = {
+>  };
+>  
+>  #if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE) || \
+> -	|| defined(CONFIG_SND_BF5XX_AC97) || \
+> +	defined(CONFIG_SND_BF5XX_AC97) || \
+>  	defined(CONFIG_SND_BF5XX_AC97_MODULE)
+>  
+>  #include <asm/bfin_sport.h>
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
