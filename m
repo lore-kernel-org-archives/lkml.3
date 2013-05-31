@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab3EaJj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:39:27 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63796 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab3EaJjW (ORCPT
+	id S1754935Ab3EaJmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:42:23 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:48860 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab3EaJmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:39:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369969893-7992-1-git-send-email-wenyou.yang@atmel.com>
-References: <1369969744-3428-1-git-send-email-wenyou.yang@atmel.com> <1369969893-7992-1-git-send-email-wenyou.yang@atmel.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Fri, 31 May 2013 11:39:01 +0200
-Message-ID: <CACQ1gAjF=L+tVcJc3QMv7HEYcny2y-HcDLGJ5N7XbM=_vL+dFQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ARM: dts: add watchdog device tree node in at91 dts files
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, wim@iguana.be,
-        linux@arm.linux.org.uk, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
-        ludovic.desroches@atmel.com, linux-kernel@vger.kernel.org,
-        jm.lin@atmel.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 May 2013 05:42:16 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
+Date: Fri, 31 May 2013 11:40:50 +0200
+Message-Id: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/31 Wenyou Yang <wenyou.yang@atmel.com>:
-> Hello,
->
-> The patches is to add watchdog device tree node for at91 SoC and board dts files.
->
-> Since the watchdog is disabled in the at91bootstrap with default configuration,
-> if you want to use the watchdog in the kernel, you must make sure the watchdog
-> doesn't be disabled in the at91bootstrap.
->
-> It is tested on at91sam9g20ek, at91sam9263ek, at91sam9g25ek
-> using Documentation/watchdog/src/watchdog-simple.c.
->
-> It is based on v3.10-rc3, tested on linux-watchdog git tree as well.
->
-> Best Regards,
-> Wenyou Yang
->
-> Wenyou Yang (2):
->   ARM: dts: add the watchdog nodes for at91 SoC
->   ARM: dts: add the watchdog nodes for at91 boards
->
->  arch/arm/boot/dts/at91sam9263ek.dts         |    4 ++++
->  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |    4 ++++
->  arch/arm/boot/dts/at91sam9m10g45ek.dts      |    4 ++++
->  arch/arm/boot/dts/at91sam9n12.dtsi          |    6 ++++++
->  arch/arm/boot/dts/at91sam9n12ek.dts         |    4 ++++
->  arch/arm/boot/dts/at91sam9x5.dtsi           |    6 ++++++
->  arch/arm/boot/dts/at91sam9x5ek.dtsi         |    4 ++++
->  7 files changed, 32 insertions(+)
->
-> --
-> 1.7.9.5
->
+arch/blackfin/mach-bf533/boards/stamp.c:545:2: error: operator '||' has no right operand
+arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: 'bfin_snd_resources' undeclared here (not in a function)
+arch/blackfin/mach-bf533/boards/stamp.c:662:3: error: negative width in bit-field '<anonymous>'
+arch/blackfin/mach-bf533/boards/stamp.c:665:21: error: 'bfin_snd_data' undeclared here (not in a function)
+make[4]: *** [arch/blackfin/mach-bf533/boards/stamp.o] Error 1
 
-Those patches haven been floating around from quite some time.
-Let's merge them !
+Introduced by commit 15502e0ca0da651b48c7def2983e7bb464349b2a ("blackfin:
+Remove references to the bf5x_tdm driver"), which removed two config
+options, but only one "||".
 
-Tested on sam9g35, v3.10-rc2
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/8848472/
 
-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+ arch/blackfin/mach-bf533/boards/stamp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
+index 1ea1dda..4a8c2e3 100644
+--- a/arch/blackfin/mach-bf533/boards/stamp.c
++++ b/arch/blackfin/mach-bf533/boards/stamp.c
+@@ -542,7 +542,7 @@ static struct platform_device bfin_dpmc = {
+ };
+ 
+ #if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE) || \
+-	|| defined(CONFIG_SND_BF5XX_AC97) || \
++	defined(CONFIG_SND_BF5XX_AC97) || \
+ 	defined(CONFIG_SND_BF5XX_AC97_MODULE)
+ 
+ #include <asm/bfin_sport.h>
+-- 
+1.7.0.4
+
