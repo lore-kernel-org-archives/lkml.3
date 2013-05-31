@@ -1,145 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab3EaMDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:03:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57191 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab3EaMDC (ORCPT
+	id S1756247Ab3EaMDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:03:22 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50789 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab3EaMDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:03:02 -0400
-Date: Fri, 31 May 2013 05:02:23 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-0e433feb109da0a174d838f0a5fb1af144848761@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1369398928-9809-8-git-send-email-jolsa@redhat.com>
-References: <1369398928-9809-8-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move libunwind check config into config/Makefile
-Git-Commit-ID: 0e433feb109da0a174d838f0a5fb1af144848761
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 31 May 2013 08:03:13 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: arnd@arndb.de, kgene.kim@samsung.com, olof@lixom.net, patches@linaro.org
+Subject: [PATCH 1/3] ARM: EXYNOS: uncompress - print debug messages if DEBUG_LL is defined
+Date: Fri, 31 May 2013 17:19:02 +0530
+Message-Id: <1370000944-19786-2-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370000944-19786-1-git-send-email-tushar.behera@linaro.org>
+References: <1370000944-19786-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0e433feb109da0a174d838f0a5fb1af144848761
-Gitweb:     http://git.kernel.org/tip/0e433feb109da0a174d838f0a5fb1af144848761
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 25 Mar 2013 00:53:03 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 14:37:17 +0300
+Printing low-level debug messages make an assumption that the specified
+UART port has been preconfigured by the bootloader. Incorrectly
+specified UART port results in system getting stalled while printing the
+message "Uncompressing Linux... done, booting the kernel"
 
-perf tools: Move libunwind check config into config/Makefile
+This UART port number is specified through S3C_LOWLEVEL_UART_PORT. Since
+the UART port might different for different board, it is not possible to
+specify it correctly for every board that use a common defconfig file.
 
-Moving libunwind check config into config/Makefile.
+Calling this print subroutine only when DEBUG_LL fixes the problem. By
+disabling DEBUG_LL in default config file, we would be able to boot
+multiple boards with different default UART ports.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-8-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+With this current approach, we miss the print "Uncompressing Linux...
+done, booting the kernel." when DEBUG_LL is not defined.
+
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- tools/perf/Makefile        | 24 ------------------------
- tools/perf/config/Makefile | 27 +++++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 24 deletions(-)
+ arch/arm/mach-exynos/include/mach/uncompress.h  |   11 ++++++++---
+ arch/arm/plat-samsung/include/plat/uncompress.h |   10 +++++++++-
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 51fac31..7dc6615 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -473,26 +473,6 @@ ifneq ($(MAKECMDGOALS),tags)
- # because maintaining the nesting to match is a pain.  If
- # we had "elif" things would have been much nicer...
+diff --git a/arch/arm/mach-exynos/include/mach/uncompress.h b/arch/arm/mach-exynos/include/mach/uncompress.h
+index 2979995..730f69f 100644
+--- a/arch/arm/mach-exynos/include/mach/uncompress.h
++++ b/arch/arm/mach-exynos/include/mach/uncompress.h
+@@ -37,11 +37,16 @@ static void arch_detect_cpu(void)
+ 	chip_id >>= 20;
+ 	chip_id &= 0xf;
  
--# There's only x86 (both 32 and 64) support for CFI unwind so far
--ifneq ($(ARCH),x86)
--	NO_LIBUNWIND := 1
--endif
++#ifdef CONFIG_DEBUG_LL
+ 	if (chip_id == 0x5)
+-		uart_base = (volatile u8 *)EXYNOS5_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
++		uart_base = (volatile u8 *)EXYNOS5_PA_UART +
++			(S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
+ 	else
+-		uart_base = (volatile u8 *)EXYNOS4_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
 -
--ifndef NO_LIBUNWIND
--# for linking with debug library, run like:
--# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--ifdef LIBUNWIND_DIR
--	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--endif
--
--FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
--ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
--	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
--	NO_LIBUNWIND := 1
--endif # Libunwind support
--endif # NO_LIBUNWIND
--
- -include arch/$(ARCH)/Makefile
++		uart_base = (volatile u8 *)EXYNOS4_PA_UART +
++			(S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
++#else
++	uart_base = NULL;
++#endif
+ 	/*
+ 	 * For preventing FIFO overrun or infinite loop of UART console,
+ 	 * fifo_max should be the minimum fifo size of all of the UART channels
+diff --git a/arch/arm/plat-samsung/include/plat/uncompress.h b/arch/arm/plat-samsung/include/plat/uncompress.h
+index 438b248..350032b 100644
+--- a/arch/arm/plat-samsung/include/plat/uncompress.h
++++ b/arch/arm/plat-samsung/include/plat/uncompress.h
+@@ -66,6 +66,9 @@ uart_rd(unsigned int reg)
  
- ifneq ($(OUTPUT),)
-@@ -521,10 +501,6 @@ endif # NO_DWARF
- endif # NO_LIBELF
+ static void putc(int ch)
+ {
++	if (!uart_base)
++		return;
++
+ 	if (uart_rd(S3C2410_UFCON) & S3C2410_UFCON_FIFOMODE) {
+ 		int level;
  
- ifndef NO_LIBUNWIND
--	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
--	EXTLIBS += $(LIBUNWIND_LIBS)
--	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
--	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
- 	LIB_OBJS += $(OUTPUT)util/unwind.o
- endif
+@@ -118,7 +121,12 @@ static void arch_decomp_error(const char *x)
+ #ifdef CONFIG_S3C_BOOT_UART_FORCE_FIFO
+ static inline void arch_enable_uart_fifo(void)
+ {
+-	u32 fifocon = uart_rd(S3C2410_UFCON);
++	u32 fifocon;
++
++	if (!uart_base)
++		return;
++
++	fifocon = uart_rd(S3C2410_UFCON);
  
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 71e737c..438574b 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -170,3 +170,30 @@ endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- 
- endif # NO_LIBELF
-+
-+# There's only x86 (both 32 and 64) support for CFI unwind so far
-+ifneq ($(ARCH),x86)
-+	NO_LIBUNWIND := 1
-+endif
-+
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
-+
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
-+	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
-+
-+ifndef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif # NO_LIBUNWIND
+ 	if (!(fifocon & S3C2410_UFCON_FIFOMODE)) {
+ 		fifocon |= S3C2410_UFCON_RESETBOTH;
+-- 
+1.7.9.5
+
