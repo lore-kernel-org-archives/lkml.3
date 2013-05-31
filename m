@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3EaKCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:02:17 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48058 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3EaKCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:02:12 -0400
-Date: Fri, 31 May 2013 12:02:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Jiri Bohac <jbohac@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] nohz fixes
-Message-ID: <20130531100207.GB30394@gmail.com>
-References: <1369845580-15273-1-git-send-email-fweisbec@gmail.com>
- <20130530233847.GA29017@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130530233847.GA29017@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754030Ab3EaKDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:03:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753397Ab3EaKDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 06:03:40 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [net-next rfc V2 0/8] Multiqueue API for macvtap
+Date: Fri, 31 May 2013 17:53:17 +0800
+Message-Id: <1369994005-5943-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+This series implements a v2 of fully tuntap compatiable API which could be used
+by userspace to manage multiple macvtap queues. The main parts is to add
+TUNSETQUEUE ioctl support for macvtap.
 
-> On Wed, May 29, 2013 at 06:39:39PM +0200, Frederic Weisbecker wrote:
-> > Ingo,
-> > 
-> > Please pull the timers/urgent-for-tip branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	timers/urgent-for-tip
-> 
-> Please rather pull timers/urgent-for-tip-v2, it removes "nohz: Prevent 
-> broadcast source from stealing full dynticks timekeeping duty" and 
-> includes "tick: Remove useless timekeeping duty attribution to broadcast 
-> source" instead, acked by Thomas.
+Patch 1 - 4 was some tuntap compatibility and misc cleanups.
+Patch 5 removes the linear search in macvtap by reshuffling the macvtaps array
+each time a queue is removed. After this, we could store both enabled and
+disabled queues in the same array without introducing extra data structure.
+Patch 6 let TUNSETIFF can create multiqueue device, nothing but some check
+were added.
+Patch 7 implement TUNSETQUEUE ioctl
+Patch 8 reports IFF_MULTI_QUEUE to userspace to notify the userspace that the
+multiqueue API is completed.
 
-Applied, thanks a lot Frederic!
+Flow caches implememtation were missed in this version, since I am doing
+rework on the tuntap flow caches. Have some some stress test with both netperf
+and pktgen.
 
-	Ingo
+Please review, thanks.
+
+Changes from V1:
+- Drop the patch of "return -EBADFD when TUNGETIFF fails" to preserve backward
+  compatibility
+- Add a small patch of optimizing macvtap_do_read() (see patch 1/8)
+- Use different functions to do tap enabling and creating
+- Use different functions to do tap disabling and closing
+- Remove the emtpy line in patch 6/8
+- Add a line in patch 3/8
+- Add a comment to explain the checking when doing TUNSETIFF with
+  IFF_MULTI_QUEUE
+- Add comments to explian the second swapping when moving taps between disabled
+  areas and enabled areas.
+- Fix the commit log of patch 7/8 ( v1 says the linked list were used which is
+  wrong )
+- Other minor bug fixes
+
+Jason Wang (8):
+  macvtap: do not add self to waitqueue if doing a nonblock read
+  macvlan: switch to use IS_ENABLED()
+  macvtap: introduce macvtap_get_vlan()
+  macvlan: change the max number of queues to 16
+  macvtap: eliminate linear search
+  macvtap: allow TUNSETIFF to create multiqueue device
+  macvtap: add TUNSETQUEUE ioctl
+  macvtap: enable multiqueue flag
+
+ drivers/net/macvtap.c      |  292 +++++++++++++++++++++++++++++++++----------
+ include/linux/if_macvlan.h |   11 ++-
+ 2 files changed, 233 insertions(+), 70 deletions(-)
+
