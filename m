@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3EaVWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 17:22:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36352 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262Ab3EaVV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 17:21:59 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: <linux-kernel@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCH 3/3] remoteproc: free carveout memories only after unmapping them
-Date: Fri, 31 May 2013 16:16:24 -0500
-Message-ID: <1370034984-29636-1-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 1.8.2
+	id S1757271Ab3EaVW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:22:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62082 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754826Ab3EaVW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:22:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Subject: Re: [PATCH] pcie-gadget-spear: fix error return code in spear_pcie_gadget_probe()
+Date: Fri, 31 May 2013 23:22:14 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+References: <CAPgLHd8ULtaP23U96nygh-Sr6ySS4-aOuuK3NkvGz1bGj8Dh_A@mail.gmail.com>
+In-Reply-To: <CAPgLHd8ULtaP23U96nygh-Sr6ySS4-aOuuK3NkvGz1bGj8Dh_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305312322.14437.arnd@arndb.de>
+X-Provags-ID: V02:K0:YgAycPwDQsFm7tvBwYoHZf+MaK48ErjAzRoMWNlJ8eE
+ 5cvBG9jK0WWHfIIg+Z3kUJfrcebClgJOozK+mosLMJ93Lz2OX6
+ YT2pvyRi9K/f0xKdXMUSEPH33VBXgTDmVx1FPLTLf+LuoltDAc
+ cu78PDt0Si7uOnAOwvT0a7vc4uKlmNuNEU2la6cuYmZWt+j8bI
+ 1iwj/I/S+99Ed1/9gnPtk5With9zVZcDVCVL6kj7jINaHXY6qx
+ Ta6CrWWNdjuH4m7i+S/7YGVyBJY4viSRPVdMQ5vNBPZB4gVAxp
+ GPUB+xsF4HtEjfzxOtXKnios+XhmNzHADx+mTf12aeT9Km1heH
+ noNMNl5aTZeQa2XT2zgU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not preferable to have the allocated pages for carveout
-memories freed before they are unmapped. The code that deals
-with the cleanup of carveout memories is therefore moved after
-the corresponding mapping entries were cleaned up.
+On Friday 31 May 2013, Wei Yongjun wrote:
+> 
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Fix to return a negative error code in the clk_get_sys() and clk_enable()
+> error handling case instead of 0, as done elsewhere in this function.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-This is mostly a no-op since the remote processors are already
-stopped when the cleanup function is called, but this will make
-the cleanup code follow the exact reverse path of allocation.
+The patch seems ok, but since you seem to have run this, would you mind
+also sending a patch that gets the driver to actually compile?
 
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- drivers/remoteproc/remoteproc_core.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index bc078c0..1ea7460 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -762,14 +762,6 @@ static void rproc_resource_cleanup(struct rproc *rproc)
- 		kfree(entry);
- 	}
- 
--	/* clean up carveout allocations */
--	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
--		dma_free_coherent(dev->parent, entry->len, entry->va,
--								entry->dma);
--		list_del(&entry->node);
--		kfree(entry);
--	}
--
- 	/* clean up iommu mapping entries */
- 	list_for_each_entry_safe(entry, tmp, &rproc->mappings, node) {
- 		size_t unmapped;
-@@ -784,6 +776,14 @@ static void rproc_resource_cleanup(struct rproc *rproc)
- 		list_del(&entry->node);
- 		kfree(entry);
- 	}
-+
-+	/* clean up carveout allocations */
-+	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
-+		dma_free_coherent(dev->parent, entry->len, entry->va,
-+								entry->dma);
-+		list_del(&entry->node);
-+		kfree(entry);
-+	}
- }
- 
- /*
--- 
-1.8.2
-
+	Arnd
