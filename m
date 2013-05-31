@@ -1,144 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab3EaGPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:15:04 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:48195 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3EaGO4 (ORCPT
+	id S1752565Ab3EaGPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:15:47 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50551 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3EaGPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:14:56 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-95-51a83fde1ec1
-Date: Fri, 31 May 2013 08:14:49 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] sched: Use do_div() for 64 bit division at power
- utilization calculation (putil)
-Message-id: <20130531081449.29511151@amdc308.digital.local>
-In-reply-to: <51A6B00A.90903@intel.com>
-References: <1369298064-14998-1-git-send-email-l.majewski@samsung.com>
- <51A6B00A.90903@intel.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd179isCDba2GFj0b/vJYtF59gmz
-	xdmmN+wWl3fNYbP43HuE0eJ24wo2i44j35gd2D0W73nJ5HHn2h42j74tqxg9Pm+SC2CJ4rJJ
-	Sc3JLEst0rdL4MrY/eYIc8EniYp5PbfZGxjbRLoYOTkkBEwkfmx8xwxhi0lcuLeerYuRi0NI
-	YDqjxPULU5ggnHYmidW7trODVLEIqErs27qMBcRmE9CT+Hz3KROILSKgKPFm+gsWkAZmgV4m
-	iVmbT4GNFRbIllj/+TYriM0rYC3xqPkkkM3BwSmgLvFlgw1IWEggWeLM2qtgc/gFJCXa//2A
-	ushO4tynDewQrYISPybfA9vLLKAlsXlbEyuELS+xec1b5gmMgrOQlM1CUjYLSdkCRuZVjKKp
-	BckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFB/0xqB+PKBotDjAIcjEo8vAdSlgcKsSaWFVfmHmKU
-	4GBWEuHtPAcU4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnV
-	wCjB6/ef1+90iWJJ8zzr8+85Szbw9R+5eqs8ba+2m+BdL+4nc05YaXUZMddtdD1QzNp6c6ND
-	Byf/xXOTe1WXeM1MOPRqQ1KghcPhh7PXWLvqi/Gfv8faJmfEM/f5E8PkSo3w1uB3f9b73/uS
-	6VLxeZWBpfUCE+6sPf/qqj6cnNijxqY43+lAiRJLcUaioRZzUXEiACp1gvl2AgAA
+	Fri, 31 May 2013 02:15:39 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: remove unnecessary cpufreq_cpu_{get|put}() calls
+Date: Fri, 31 May 2013 11:45:08 +0530
+Message-Id: <40258fb25d164a4923251d20b6d6604f190a5a32.1369980833.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+struct cpufreq_policy is already passed as argument to some routines like:
+__cpufreq_driver_getavg() and so we don't really need to do cpufreq_cpu_get()
+before and cpufreq_cpu_put() in them to get policy structure.
 
-> On 05/23/2013 04:34 PM, Lukasz Majewski wrote:
-> > Now explicit casting is done when power usage variable (putil) is
-> > calculated
-> > 
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> > This patch was developed on top of the following Alex's repository:
-> > https://github.com/alexshi/power-scheduling/commits/power-scheduling
-> > ---
-> >  kernel/sched/fair.c |    6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> 
-> 
-> Thanks for catch this issue. seems use div_u64 is better, and there
-> are 2 same bugs. so, could I rewrite the patch like following?
+Remove them.
 
-Yes, no problem. 
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-> ---
-> 
-> From 9f72c25607351981898d99822f5a66e0ca67a3da Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Wed, 29 May 2013 11:09:39 +0800
-> Subject: [PATCH 1/2] sched: fix cast on power utilization calculation
-> and use div_u64
-> 
-> Now explicit casting is done when power usage variable (putil) is
-> calculated.
-> div_u64 is optimized on u32.
-> 
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 09ae48a..3a4917c 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1504,8 +1504,8 @@ static inline void
-> update_rq_runnable_avg(struct rq *rq, int runnable)
-> __update_tg_runnable_avg(&rq->avg, &rq->cfs); 
->  	period = rq->avg.runnable_avg_period ?
-> rq->avg.runnable_avg_period : 1;
-> -	rq->util = (u64)(rq->avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT)
-> -				/ period;
-> +	rq->util = div_u64(((u64)rq->avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT),
-> +				period);
->  }
->  
->  /* Add the load generated by se into cfs_rq's child load-average */
-> @@ -3407,8 +3407,8 @@ static int is_sd_full(struct sched_domain *sd,
->  		/* p maybe a new forked task */
->  		putil = FULL_UTIL;
->  	else
-> -		putil = (u64)(p->se.avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT)
-> -				/ (p->se.avg.runnable_avg_period +
-> 1);
-> +		putil = div_u64(((u64)p->se.avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT),
-> +				p->se.avg.runnable_avg_period + 1);
->  
->  	/* Try to collect the domain's utilization */
->  	group = sd->groups;
-> @@ -3463,9 +3463,11 @@ find_leader_cpu(struct sched_group *group,
-> struct task_struct *p, int this_cpu, int vacancy, min_vacancy =
-> INT_MAX; int leader_cpu = -1;
->  	int i;
-> +
->  	/* percentage of the task's util */
-> -	unsigned putil = (u64)(p->se.avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT)
-> -				/ (p->se.avg.runnable_avg_period +
-> 1);
-> +	unsigned putil;
-> +	putil = div_u64(((u64)p->se.avg.runnable_avg_sum <<
-> SCHED_POWER_SHIFT),
-> +				p->se.avg.runnable_avg_period + 1);
->  
->  	/* bias toward local cpu */
->  	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
-
-
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index ce9273a7..f8c2860 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1572,10 +1572,6 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
+ {
+ 	int ret = -EINVAL;
+ 
+-	policy = cpufreq_cpu_get(policy->cpu);
+-	if (!policy)
+-		goto no_policy;
+-
+ 	if (unlikely(lock_policy_rwsem_write(policy->cpu)))
+ 		goto fail;
+ 
+@@ -1584,30 +1580,19 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
+ 	unlock_policy_rwsem_write(policy->cpu);
+ 
+ fail:
+-	cpufreq_cpu_put(policy);
+-no_policy:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
+ 
+ int __cpufreq_driver_getavg(struct cpufreq_policy *policy, unsigned int cpu)
+ {
+-	int ret = 0;
+-
+ 	if (cpufreq_disabled())
+-		return ret;
++		return 0;
+ 
+ 	if (!cpufreq_driver->getavg)
+ 		return 0;
+ 
+-	policy = cpufreq_cpu_get(policy->cpu);
+-	if (!policy)
+-		return -EINVAL;
+-
+-	ret = cpufreq_driver->getavg(policy, cpu);
+-
+-	cpufreq_cpu_put(policy);
+-	return ret;
++	return cpufreq_driver->getavg(policy, cpu);
+ }
+ EXPORT_SYMBOL_GPL(__cpufreq_driver_getavg);
+ 
 -- 
-Best regards,
+1.7.12.rc2.18.g61b472e
 
-Lukasz Majewski
-
-Samsung R&D Poland (SRPOL) | Linux Platform Group
