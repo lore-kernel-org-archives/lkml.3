@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3EaXl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:41:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52670 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab3EaXlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:41:20 -0400
-Message-ID: <1370043630.3928.166.camel@pasglop>
-Subject: Re: [PATCH v2] can: flexcan: remove HAVE_CAN_FLEXCAN Kconfig symbol
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        U Bhaskar-B22300 <B22300@freescale.com>, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Sat, 01 Jun 2013 09:40:30 +1000
-In-Reply-To: <519A4A00.8000109@pengutronix.de>
-References: <1368781157-4646-1-git-send-email-mkl@pengutronix.de>
-	 <20130517090949.GI8607@S2101-09.ap.freescale.net>
-	 <519A4A00.8000109@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1758000Ab3EaXuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:50:12 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:44127 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab3EaXuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 19:50:07 -0400
+Message-ID: <51A9372C.8060107@linaro.org>
+Date: Fri, 31 May 2013 16:50:04 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Baruch Siach <baruch@tkos.co.il>
+Subject: Re: [PATCH 5/4] sched: Make ARM's sched_clock generic for all architectures
+References: <1366417746-24990-1-git-send-email-sboyd@codeaurora.org> <1367369675-13535-1-git-send-email-sboyd@codeaurora.org> <51A90ACE.7070906@linaro.org> <20130531221358.GF599@codeaurora.org>
+In-Reply-To: <20130531221358.GF599@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-20 at 18:06 +0200, Marc Kleine-Budde wrote:
-> On 05/17/2013 11:09 AM, Shawn Guo wrote:
-> > On Fri, May 17, 2013 at 10:59:17AM +0200, Marc Kleine-Budde wrote:
-> >> This patch removes the Kconfig symbol HAVE_CAN_FLEXCAN from arch/{arm,powerpc}
-> >> and allowing compilation unconditionally on all arm and powerpc platforms.
-> >>
-> >> This brings a bigger compile time coverage and removes the following dependency
-> >> warning found by Arnd Bergmann:
-> >>
-> >>     warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 && IMX_HAVE_PLATFORM_FLEXCAN &&
-> >>         SOC_IMX53 && SOC_IMX6Q) selects HAVE_CAN_FLEXCAN
-> >>     which has unmet direct dependencies (NET && CAN && CAN_DEV)
-> >>
-> >> Cc: Arnd Bergmann <arnd@arndb.de>
-> >> Cc: Shawn Guo <shawn.guo@linaro.org>
-> > 
-> > Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> 
-> Thanks.
-> 
-> An Acked-by by the powerpc people would be fine. However, if nobody
-> doesn't object, I'm sending this patch via linux-can and net-next upstream.
+On 05/31/2013 03:13 PM, Stephen Boyd wrote:
+> On 05/31, John Stultz wrote:
+>> On 04/30/2013 05:54 PM, Stephen Boyd wrote:
+>>> Here's the patch to make sched_clock generic. I didn't know
+>>> where to put it so I just made a new file in kernel/sched
+>>> for now.
+>>>
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> Hey Stephen,
+>>      Baruch just asked a question about moving arm's sched_clock.c to
+>> be generic, and it sounded familiar, so I dug around and found this
+>> mail from a few months ago.
+>>
+>> Just wanted to follow up and see what the status is with this? Is
+>> this queued somewhere already?
+>>
+> As far as I know nothing has been queued. I refreshed the
+> patchset against 3.10-rc2 but haven't sent it out since it wasn't
+> clear if anyone wanted it. Shall I send it again?
 
-Sorry, missed it, if it's still out there, add my
+Please. Even if it need an eventual deeper rework to be totally generic, 
+I think we need to start moving things in that generic direction. 
+Baruch's case is a clear example where non-arm code could share it, so I 
+think that's at least a good proof point that sharing is actually needed 
+(rather then just for theoretical reasons).
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-Cheers,
-Ben.
+thanks
+-john
 
