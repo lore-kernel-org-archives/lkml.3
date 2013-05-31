@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab3EaL1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:27:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56596 "EHLO
+	id S1755440Ab3EaL22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:28:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56610 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab3EaL1F (ORCPT
+	with ESMTP id S1751152Ab3EaL2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:27:05 -0400
-Date: Fri, 31 May 2013 04:26:46 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-8f0f684b7b640caeca319f7f4e18474d099d8606@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        andi@firstfloor.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1365125198-8334-8-git-send-email-namhyung@kernel.org>
-References: <1365125198-8334-8-git-send-email-namhyung@kernel.org>
+	Fri, 31 May 2013 07:28:21 -0400
+Date: Fri, 31 May 2013 04:28:03 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-9c796ec8dbc8dbfe41ce35a1ccb1b59b47148daf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1365125198-8334-9-git-send-email-namhyung@kernel.org>
+References: <1365125198-8334-9-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Use sort__has_sym
-Git-Commit-ID: 8f0f684b7b640caeca319f7f4e18474d099d8606
+Subject: [tip:perf/core] perf hists browser: Use sort__has_sym
+Git-Commit-ID: 9c796ec8dbc8dbfe41ce35a1ccb1b59b47148daf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,16 +35,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f0f684b7b640caeca319f7f4e18474d099d8606
-Gitweb:     http://git.kernel.org/tip/8f0f684b7b640caeca319f7f4e18474d099d8606
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 5 Apr 2013 10:26:37 +0900
+Commit-ID:  9c796ec8dbc8dbfe41ce35a1ccb1b59b47148daf
+Gitweb:     http://git.kernel.org/tip/9c796ec8dbc8dbfe41ce35a1ccb1b59b47148daf
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 26 Apr 2013 14:28:46 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Tue, 28 May 2013 16:23:56 +0300
 
-perf top: Use sort__has_sym
+perf hists browser: Use sort__has_sym
 
-perf top had a similar variable sort_has_symbols for the same purpose.
+The TUI hist browser had a similar variable has_symbols for the same
+purpose.  Let's get rid of the duplication.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -55,60 +55,50 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1365125198-8334-8-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1365125198-8334-9-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 12 +++---------
- tools/perf/util/top.h    |  1 -
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ tools/perf/ui/browsers/hists.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2eb272d..df9e06a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -794,7 +794,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 				return;
- 		}
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index cad8e37..a4268ca 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -25,7 +25,6 @@ struct hist_browser {
+ 	struct map_symbol   *selection;
+ 	int		     print_seq;
+ 	bool		     show_dso;
+-	bool		     has_symbols;
+ };
  
--		if (top->sort_has_symbols)
-+		if (sort__has_sym)
- 			perf_top__record_precise_ip(top, he, evsel->idx, ip);
+ extern void hist_browser__init_hpp(void);
+@@ -1155,10 +1154,6 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 		browser->b.refresh = hist_browser__refresh;
+ 		browser->b.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
+-		if (sort__mode == SORT_MODE__BRANCH)
+-			browser->has_symbols = sort_sym_from.list.next != NULL;
+-		else
+-			browser->has_symbols = sort_sym.list.next != NULL;
  	}
  
-@@ -912,9 +912,9 @@ out_err:
- 	return -1;
- }
+ 	return browser;
+@@ -1386,7 +1381,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			 */
+ 			goto out_free_stack;
+ 		case 'a':
+-			if (!browser->has_symbols) {
++			if (!sort__has_sym) {
+ 				ui_browser__warning(&browser->b, delay_secs * 2,
+ 			"Annotation is only available for symbolic views, "
+ 			"include \"sym*\" in --sort to use it.");
+@@ -1485,7 +1480,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			continue;
+ 		}
  
--static int perf_top__setup_sample_type(struct perf_top *top)
-+static int perf_top__setup_sample_type(struct perf_top *top __maybe_unused)
- {
--	if (!top->sort_has_symbols) {
-+	if (!sort__has_sym) {
- 		if (symbol_conf.use_callchain) {
- 			ui__error("Selected -g but \"sym\" not present in --sort/-s.");
- 			return -EINVAL;
-@@ -1202,12 +1202,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+-		if (!browser->has_symbols)
++		if (!sort__has_sym)
+ 			goto add_exit_option;
  
- 	sort__setup_elide(stdout);
- 
--	/*
--	 * Avoid annotation data structures overhead when symbols aren't on the
--	 * sort list.
--	 */
--	top.sort_has_symbols = sort_sym.list.next != NULL;
--
- 	get_term_dimensions(&top.winsize);
- 	if (top.print_entries == 0) {
- 		struct sigaction act = {
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 7ebf357..f0a8625 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -26,7 +26,6 @@ struct perf_top {
- 	int		   print_entries, count_filter, delay_secs;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	bool		   use_tui, use_stdio;
--	bool		   sort_has_symbols;
- 	bool		   kptr_restrict_warned;
- 	bool		   vmlinux_warned;
- 	bool		   dump_symtab;
+ 		if (sort__mode == SORT_MODE__BRANCH) {
