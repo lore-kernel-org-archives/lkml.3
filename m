@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3EaLCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:02:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45406 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab3EaLCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:02:06 -0400
-Date: Fri, 31 May 2013 13:02:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130531110202.GB32491@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
- <20130531081052.GA32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+	id S1755165Ab3EaLC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:02:59 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:13256 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754879Ab3EaLCx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 07:02:53 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 31 May 2013 19:02:49 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5d23iAem8cNgvkR5OYkbUQGstpXQAEQ3wA
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+References: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+In-Reply-To: <20130531084638.GB4928@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 31-05-13 03:22:59, David Rientjes wrote:
-> On Fri, 31 May 2013, Michal Hocko wrote:
-[...]
-> > > If the oom notifier is in the oom cgroup, it may not be able to       
-> > > successfully read the memcg "tasks" file to even determine the set of 
-> > > eligible processes.
-> > 
-> > It would have to use preallocated buffer and have mlocked all the memory
-> > that will be used during oom event.
-> > 
+Hi  Will,
+
+I have merge your code ,
+But there is a different ,
+
++	
++	ct_user_exit
++
++#ifdef CONFIG_ALIGNMENT_TRAP
++	ldr	ip, __cr_alignment
++	ldr	ip, [ip]
++	mcr	p15, 0, ip, c1, c0		@ update control register
++#endif 
+
++	enable_irq
++	get_thread_info tsk
+
+Is this change ok ?
+
+
+Thanks 
+
+-----Original Message-----
+From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-owner@vger.kernel.org] On Behalf Of Will Deacon
+Sent: Friday, May 31, 2013 4:47 PM
+To: Wang, Yalin
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: A bug about system call on ARM
+
+On Fri, May 31, 2013 at 03:56:31AM +0100, Wang, Yalin wrote:
+> Hi Will,
 > 
-> Wrong, the kernel itself allocates memory when reading this information 
-> and that would fail in an oom memcg.
+> Thanks for your patch ,
+> 
+> But I found  I don't have ct_user_exit  macro In my 
+> arch/arm/kernel/entry-common.S
+> 
+> My kernel version is 3.4.0
 
-But that memory is not charged to a memcg, is it? So unless you are
-heading towards global OOM you should be safe.
+Well things have moved on this since then (we're approaching 3.10, so you might consider an upgrade!).
 
--- 
-Michal Hocko
-SUSE Labs
+For the purposes of this patch, you can just delete the ct_user_exit line.
+
+Will
+--
+To unsubscribe from this list: send the line "unsubscribe linux-arch" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
