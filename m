@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3EaNJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:09:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36757 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab3EaNIz convert rfc822-to-8bit (ORCPT
+	id S1754861Ab3EaNJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:09:14 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:48252 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3EaNJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:08:55 -0400
-Date: Fri, 31 May 2013 10:08:27 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Jon Arne =?UTF-8?B?SsO4cmdlbnNlbg==?= <jonarne@jonarne.no>
-Cc: Timo Teras <timo.teras@iki.fi>, Andy Walls <awalls@md.metrocast.net>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
-        g.liakhovetski@gmx.de, ezequiel.garcia@free-electrons.com
-Subject: Re: [RFC 1/3] saa7115: Set saa7113 init to values from datasheet
-Message-ID: <20130531100827.10710841@redhat.com>
-In-Reply-To: <20130530190001.GG2367@dell.arpanet.local>
-References: <1369860078-10334-1-git-send-email-jonarne@jonarne.no>
-	<1369860078-10334-2-git-send-email-jonarne@jonarne.no>
-	<20130529213554.690f7eaa@redhat.com>
-	<7454763a-75fe-4d98-b7ab-29b6649dc25e@email.android.com>
-	<20130530052136.GF2367@dell.arpanet.local>
-	<20130530083332.245e3c62@vostro>
-	<20130530190001.GG2367@dell.arpanet.local>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 31 May 2013 09:09:10 -0400
+Message-ID: <51A8A0ED.8090006@monstr.eu>
+Date: Fri, 31 May 2013 15:09:01 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Timur Tabi <timur@tabi.org>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3 1/8] video: xilinxfb: Fix OF probing on little-endian
+ systems
+References: <cover.1370004925.git.michal.simek@xilinx.com> <0a546c3de84c4650d019274debef0ded9007b36f.1370004925.git.michal.simek@xilinx.com> <51A8A016.3000306@tabi.org>
+In-Reply-To: <51A8A016.3000306@tabi.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2COALSFKQSHUSOCLLVCQF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 30 May 2013 21:00:01 +0200
-Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2COALSFKQSHUSOCLLVCQF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, May 30, 2013 at 08:33:32AM +0300, Timo Teras wrote:
-> > On Thu, 30 May 2013 07:21:36 +0200
-> > Jon Arne Jørgensen <jonarne@jonarne.no> wrote:
-> > 
-> > > On Wed, May 29, 2013 at 10:19:49PM -0400, Andy Walls wrote:
-> > > > Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
-> > > > 
-> > > > >Em Wed, 29 May 2013 22:41:16 +0200
-> > > > >Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
-> > > > >
-> > > > >> Change all default values in the initial setup table to match the
-> > > > >table
-> > > > >> in the datasheet.
-> > > > >
-> > > > >This is not a good idea, as it can produce undesired side effects
-> > > > >on the existing drivers that depend on it, and can't be easily
-> > > > >tested.
-> > > > >
-> > > > >Please, don't change the current "default". It is, of course, OK
-> > > > >to change them if needed via the information provided inside the
-> > > > >platform data.
-> > > >
-> > > > I was going to make a comment along the same line as Mauro.  
-> > > > Please leave the driver defaults alone.  It is almost impossible to
-> > > > regression test all the different devices with a SAA7113 chip, to
-> > > > ensure the change doesn't cause someone's device to not work
-> > > > properly.
-> > > >
-> > > 
-> > > You guys are totally right.
-> > > 
-> > > What if I clone the original saa7113_init table into a new one, and
-> > > make the driver use the new one if the calling driver sets
-> > > platform_data.
-> > > 
-> > > Something like this?
-> > > 
-> > >         switch (state->ident) {
-> > >         case V4L2_IDENT_SAA7111:
-> > >         case V4L2_IDENT_SAA7111A:
-> > >                 saa711x_writeregs(sd, saa7111_init);
-> > >                 break;
-> > >         case V4L2_IDENT_GM7113C:
-> > >         case V4L2_IDENT_SAA7113:
-> > > -		saa711x_writeregs(sd, saa7113_init);
-> > > +		if (client->dev.platform_data)
-> > > +			saa711x_writeregs(sd, saa7113_new_init);
-> > > +		else
-> > > +			saa711x_writeregs(sd, saa7113_init);
-> > 
-> > I would rather have the platform_data provide the new table. Or if you
-> > think bulk of the table will be the same for most users, then perhaps
-> > add there an enum saying which table to use - and name the tables
-> > according to the chip variant it applies to.
-> > 
-> 
-> I think the bulk of the table will be the same for all drivers.
-> It's one bit here and one bit there that needs changing.
-> As the driver didn't support platform data.
-> Changing to a new init table for the drivers that implement
-> platform_data shouldn't cause any regressions.
+On 05/31/2013 03:05 PM, Timur Tabi wrote:
+> On 05/31/2013 07:55 AM, Michal Simek wrote:
+>> -	p =3D (u32 *)of_get_property(op->dev.of_node, "xlnx,dcr-splb-slave-i=
+f", NULL);
+>> -	tft_access =3D p ? *p : 0;
+>> +	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
+>> +			     &tft_access);
+>=20
+> This is okay, but just FYI, you could instead have just used be32_to_cp=
+up().
 
-There are several things that are very bad on passing a table via
-platform data:
+yep. I was there in v1 but then Soren suggested to use of_property_read_u=
+32
+http://lkml.org/lkml/2013/5/29/365
 
-	1) you're adding saa711x-specific data at the bridge driver,
-	   so, the saa711x code is spread on several places at the
-	   long term;
+Thanks,
+Michal
 
-	2) some part of the saa711x code may override the data there, 
-	   as it is not aware about what bits should be preserved from
-	   the new device;
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-	3) due (2), latter changes on the code are more likely to
-	   cause regressions;
 
-	4) also due to (2), some hacks can be needed, in order to warn
-	   saa711x to handle some things differently.
 
-That's why it is a way better to add meaningful parameters telling what
-bits are needed for the driver to work with the bridge. That's also
-why we do this with all other drivers.
+------enig2COALSFKQSHUSOCLLVCQF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Regards,
-Mauro
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGooO0ACgkQykllyylKDCFm6QCfcErRgHArTC4UtNG0FXRvG0eu
+tjoAnjN4rqVV65w6mQvRKiC0wJs3csAT
+=sghZ
+-----END PGP SIGNATURE-----
+
+------enig2COALSFKQSHUSOCLLVCQF--
