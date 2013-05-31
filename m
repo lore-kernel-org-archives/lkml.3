@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3EaA4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 20:56:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59714 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3EaAzx (ORCPT
+	id S1752173Ab3EaBB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:01:29 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:34360 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab3EaBBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 20:55:53 -0400
-Date: Thu, 30 May 2013 17:55:49 -0700 (PDT)
-Message-Id: <20130530.175549.407800685811475192.davem@davemloft.net>
-To: sebastian.hesselbarth@gmail.com
-Cc: buytenh@wantstofly.org, jason@lakedaemon.net, andrew@lunn.ch,
-        benh@kernel.crashing.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 00/13] net: mv643xx_eth DT support and fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 21:01:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <51A5FE2D.9080403@synopsys.com>
+References: <1361471962-25164-3-git-send-email-vgupta@synopsys.com>
+	<51A5FE2D.9080403@synopsys.com>
+Date: Fri, 31 May 2013 05:01:22 +0400
+Message-ID: <CAMo8BfLWuTo8v83QU1s1AkoGJXmYDUQ-bnFFOVeTgjRPJzG4HA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] xtensa: Flat DeviceTree copy not future-safe
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Date: Wed, 29 May 2013 21:32:42 +0200
+Hi Vineet,
 
-> For the patches above I suggest to take Patches 1-6 through David
-> Miller's branch, and Patches 7-12 through Jason Cooper's when the
-> former have appeared on mainline linux. The patch set has been based
-> on v3.10-rc3.
+On Wed, May 29, 2013 at 5:10 PM, Vineet Gupta
+<Vineet.Gupta1@synopsys.com> wrote:
+> Hi Max,
+>
+> This patch - acked by you then, got lost in the mist of time. Care to take it in
+> via xtensa tree for 3.11
 
-Patches 1-6 applied to net-next, and patch #1 queued up for -stable.
+Oops. Thanks for the reminder. Took it to the xtensa-fixes branch.
 
-Thanks!
+> -------- Original Message --------
+> Subject: [PATCH 2/2] xtensa: Flat DeviceTree copy not future-safe
+> Date: Fri, 22 Feb 2013 00:09:22 +0530
+> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+> To: Andrew Morton <akpm@linux-foundation.org>, Chris Zankel <chris@zankel.net>,
+> Max Filippov <jcmvbkbc@gmail.com>, Marc Gauthier <marc@tensilica.com>
+> CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, <linux-xtensa@linux-xtensa.org>,
+> <linux-kernel@vger.kernel.org>
+> Newsgroups: gmane.linux.kernel
+> References: <1361471962-25164-1-git-send-email-vgupta@synopsys.com>
+
+-- 
+Thanks.
+-- Max
