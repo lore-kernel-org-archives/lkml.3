@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab3EaTZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:25:40 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50298 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab3EaTZc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:25:32 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1369536991-6111-1-git-send-email-acourbot@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com, Alexandre Courbot <acourbot@nvidia.com>
-References: <1369536991-6111-1-git-send-email-acourbot@nvidia.com>
-Message-ID: <20130531192528.21525.46053@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH RESEND] ARM: tegra114: correctly output clk_32k
-Date: Fri, 31 May 2013 12:25:28 -0700
+	id S1757189Ab3EaT0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:26:23 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60427 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754036Ab3EaT0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 15:26:16 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS fixes for 3.10-rc4
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130531192615.2D48D500B4B@whiskey.americas.sgi.com>
+Date: Fri, 31 May 2013 14:26:15 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alexandre Courbot (2013-05-25 19:56:31)
-> Tegra has a blink timer register that allows to modulate the
-> clk_32k clock before outputting it. Since clk_32k is presented to the
-> kernel as a fixed clock, make sure this register does not tamper with
-> the clock frequency and that clk_32k is outputted as-is, similarly to
-> what is done on t20 and t30.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+Hi Linus,
 
-Taken into clk-next.
+   Please pull these XFS fixes for-rc4.  There are fixes for a nested
+   transaction in quota code, clearing of suid/sgid bits on truncate, and a fix
+   for recovery.  There are also some fixes for CRC enabled filesystems: a fix
+   for the reserved block count of remote symlinks, and a fix for corruption in
+   freespace blocks.  We're adding support for userspace detection of CRC
+   enabled filesystems with a fsgeom flag, and disabling the swap extents ioctl
+   on CRC enabled filesystems since it is unimplemented and causes corruption.
 
-Regards,
-Mike
+Thanks,
+	Ben
 
-> ---
->  drivers/clk/tegra/clk-tegra114.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-> index d78e16e..dc76d67 100644
-> --- a/drivers/clk/tegra/clk-tegra114.c
-> +++ b/drivers/clk/tegra/clk-tegra114.c
-> @@ -127,6 +127,7 @@
->  #define PMC_DPD_PADS_ORIDE_BLINK_ENB 20
->  #define PMC_CTRL 0
->  #define PMC_CTRL_BLINK_ENB 7
-> +#define PMC_BLINK_TIMER 0x40
->  
->  #define OSC_CTRL                       0x50
->  #define OSC_CTRL_OSC_FREQ_SHIFT                28
-> @@ -1625,6 +1626,8 @@ static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
->         clks[clk_out_3] = clk;
->  
->         /* blink */
-> +       /* clear the blink timer register to directly output clk_32k */
-> +       writel_relaxed(0, pmc_base + PMC_BLINK_TIMER);
->         clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
->                                 pmc_base + PMC_DPD_PADS_ORIDE,
->                                 PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
-> -- 
-> 1.8.2.3
+The following changes since commit 7ae077802c9f12959a81fa1a16c1ec2842dbae05:
+
+  xfs: remote attribute lookups require the value length (2013-05-24 16:31:20 -0500)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.10-rc4
+
+for you to fetch changes up to e400d27d1690d609f203f2d7d8efebc98cbc3089:
+
+  xfs: fix dir3 freespace block corruption (2013-05-30 17:22:54 -0500)
+
+----------------------------------------------------------------
+xfs: fixes for 3.10-rc4
+
+- Fix nested transactions in xfs_qm_scall_setqlim
+- Clear suid/sgid bits when we truncate with size update
+- Fix recovery for split buffers
+- Fix block count on remote symlinks
+- Add fsgeom flag for v5 superblock support
+- Disable XFS_IOC_SWAPEXT for CRC enabled filesystems
+- Fix dirv3 freespace block corruption
+
+----------------------------------------------------------------
+Dave Chinner (7):
+      xfs: avoid nesting transactions in xfs_qm_scall_setqlim()
+      xfs: kill suid/sgid through the truncate path.
+      xfs: fix split buffer vector log recovery support
+      xfs: fix incorrect remote symlink block count
+      xfs: add fsgeom flag for v5 superblock support.
+      xfs: disable swap extents ioctl on CRC enabled filesystems
+      xfs: fix dir3 freespace block corruption
+
+ fs/xfs/xfs_buf_item.c    |  7 +------
+ fs/xfs/xfs_dfrag.c       |  8 ++++++++
+ fs/xfs/xfs_dir2_format.h |  1 +
+ fs/xfs/xfs_dir2_node.c   | 13 ++++++-------
+ fs/xfs/xfs_fs.h          |  1 +
+ fs/xfs/xfs_fsops.c       |  4 +++-
+ fs/xfs/xfs_iops.c        | 47 ++++++++++++++++++++++++++++++++---------------
+ fs/xfs/xfs_log_recover.c | 11 +++++++++++
+ fs/xfs/xfs_qm_syscalls.c | 40 +++++++++++++++++++++++-----------------
+ fs/xfs/xfs_symlink.c     | 20 ++++++--------------
+ 10 files changed, 92 insertions(+), 60 deletions(-)
