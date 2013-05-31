@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3EaQey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:34:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44650 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3EaQes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:34:48 -0400
-Date: Fri, 31 May 2013 18:34:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andrew Hunter <ahh@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [PATCH] perf: reduce stack usage of schedule_events
-Message-ID: <20130531163443.GE5910@twins.programming.kicks-ass.net>
-References: <1369332423-4400-1-git-send-email-ahh@google.com>
- <CABPqkBT6Hsq9ttSAP_c7R_GOEOCECu3Di_gjwvveFVrfVRTP+Q@mail.gmail.com>
- <20130531154815.GG27176@twins.programming.kicks-ass.net>
- <CABPqkBQ3zCMim_1vR2DAB-cOaLxMqm0CZ6uBWj6HpoJ2fZvszw@mail.gmail.com>
+	id S1755349Ab3EaQmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:42:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab3EaQma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 12:42:30 -0400
+Date: Fri, 31 May 2013 18:38:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] proc: simplify proc_task_readdir/first_tid paths
+Message-ID: <20130531163834.GA31086@redhat.com>
+References: <20130527202822.GA19288@redhat.com> <87ppwa1jn0.fsf@xmission.com> <20130529133930.GB5741@redhat.com> <878v2xzfl7.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQ3zCMim_1vR2DAB-cOaLxMqm0CZ6uBWj6HpoJ2fZvszw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <878v2xzfl7.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 05:55:05PM +0200, Stephane Eranian wrote:
-> On Fri, May 31, 2013 at 5:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, May 31, 2013 at 04:21:04PM +0200, Stephane Eranian wrote:
-> >> Hi,
-> >>
-> >> Any comment on this patch?
-> >> It does really help with stack pressure and will help fix a PEBS-LL issue.
-> >
-> > Yeah, its on my todo list, but I've been spending all of my time trying
-> > to fix all the bugs Vince has been throwing my way.
-> >
-> I have seen some of his reports but not all of them I suspect.
-> Are they all on LKML?
+Eric, sorry for delay.
 
-Yeah, they're all in the same thread. Vince just keeps finding corner
-cases in the same stuff and I'm having an increasingly difficult time
-patching them up ;-)
+On 05/29, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Why the empty "." + ".." dir is bad if the task(s) has gone away after
+> > opendir?
+>
+> Because the definition of a deleted directory that you are in is that
+> getdents will return -ENOENT.
+>
+> You can reproduce this with any linux filesystem.
+> mkdir foo
+> cd foo
+> rmdir ../foo
+> strace -f ls .
+>
+>    open(".", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 3
+>    getdents(3, 0x1851c88, 32768)           = -1 ENOENT (No such file or directory)
+>    close(3)                                = 0
+
+Heh. Indeed, vfs_readdir() checks IS_DEADDIR().
+
+Thanks.
+
+OK. But this means that even 1/3 is not 100% right, exactly because
+leader can be unhashed right before first_tid() takes rcu lock. Easy
+to fix, we should simply factor out the "nr != 0" check.
+
+And this also means that 3/3 is not right by the same reason. I'll
+make a simpler patch which only avoids the unnecessary get/put in
+proc_task_readdir().
+
+Unless we can tolerate this very unlikely rase when the leader goes
+away after initial ENOENT check at the start, of course... Or unless
+we add canceldir() which resets getdents_callback->previous so that
+we could return ENOENT after filldir() was already called ;)
+
+Thanks Eric. I'll send v2.
+
+Oleg.
 
