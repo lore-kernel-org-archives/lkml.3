@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3EaPRo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:17:44 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:20851
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753228Ab3EaPRh (ORCPT
+	id S1756149Ab3EaPS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:18:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9648 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab3EaPSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:17:37 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MNO558-01-1TP-02
-X-M-MSG: 
-Date: Fri, 31 May 2013 10:17:30 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Borislav Petkov <bp@alien8.de>, <mingo@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <fenghua.yu@intel.com>,
-        <tglx@linutronix.de>, <hpa@linux.intel.com>,
-        <linux-tip-commits@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [tip:x86/microcode] x86, microcode, amd: Early microcode patch
- loading support for AMD
-Message-ID: <20130531151730.GA14342@jshin-Toonie>
-References: <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
- <tip-757885e94a22bcc82beb9b1445c95218cb20ceab@git.kernel.org>
- <20130531084133.GA14076@nazgul.tnic>
- <20130531150241.GA12006@jshin-Toonie>
- <51A8BE05.7060008@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <51A8BE05.7060008@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 31 May 2013 11:18:50 -0400
+X-Authority-Analysis: v=2.0 cv=H9pZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=FEvprJy6j1wA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=U_bRVmVwb2QA:10 a=gHVwzikRIvfN3lRMVIkA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370013528.26799.49.camel@gandalf.local.home>
+Subject: Re: [PATCH][RFC] tracing/context-tracking: Add
+ preempt_schedule_context() for tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Fri, 31 May 2013 11:18:48 -0400
+In-Reply-To: <20130531134319.GE5932@somewhere>
+References: <1369943981.26799.43.camel@gandalf.local.home>
+	 <20130531134319.GE5932@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 08:13:09AM -0700, H. Peter Anvin wrote:
-> If you send a patch with text above the patch, please include a scissor
-> line:
-> 
-> ---8<---
-> 
-> ... above the patch so that git tools can process it.
+On Fri, 2013-05-31 at 15:43 +0200, Frederic Weisbecker wrote:
 
-Ah okay, sorry about that, will do so from now on.
+> > +void __sched notrace preempt_schedule_context(void)
+> > +{
+> > +	struct thread_info *ti = current_thread_info();
+> > +	enum ctx_state prev_ctx;
+> > +
+> > +	if (likely(ti->preempt_count || irqs_disabled()))
+> > +		return;
+> > +
+> > +	/*
+> > +	 * Need to disable preemption in case user_exit() is traced
+> > +	 * and the tracer calls preempt_enable_notrace() causing
+> > +	 * an infinite recursion.
+> > +	 */
+> > +	preempt_disable_notrace();
+> > +	prev_ctx = this_cpu_read(context_tracking.state);
+> > +	user_exit();
+> 
+> You can reuse exception_enter()
 
-Yinghai, Boris, sorry if you have to hand snip my previous fix email,
-but please do let me know if I can add your Tested-by's
+I originally did use that, but then noticed that everything else in
+context_tracking.c used context_tracking.state directly. I have no
+problems doing it this way again.
+
+> 
+> > +	preempt_enable_no_resched_notrace();
+> > +
+> > +	preempt_schedule();
+> > +
+> > +	preempt_disable_notrace();
+> > +	if (prev_ctx == IN_USER)
+> > +		user_enter();
+> 
+> And then exception_exit() here.
+> 
+> I guess this replaces your fix with schedule_preempt_user(). I liked
+> it because it seems that:
+> 
+>    if (need_resched()) {
+>       user_exit();
+>       local_irq_enable();
+>       schedule();
+>       local_irq_enable();
+>       user_enter();
+>    }
+> 
+> is a common pattern of arch user resume preemption that we can consolidate.
+> 
+> But your new patch probably makes it more widely safe for the function tracer
+> for any function that can be called and traced in IN_USER mode. Not only user preemption.
+> Think about do_notify_resume() for example if it is called after syscall_trace_leave().
+> 
+> Independantly, schedule_preempt_user() is still interesting for consolidation.
+
+And I think that patch is still valid from just a clean up point of
+view. It just didn't cover all the cases needed for tracing.
+
+I'll rewrite the patch and send it out for another review.
 
 Thanks!
+
+-- Steve
 
 
