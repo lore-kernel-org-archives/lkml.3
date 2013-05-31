@@ -1,150 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab3EaKO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:14:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57241 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab3EaKMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:12:00 -0400
-From: Hebbar Gururaja <gururaja.hebbar@ti.com>
-To: <khilman@linaro.org>, <grant.likely@linaro.org>,
-        <linus.walleij@linaro.org>, <rob.herring@calxeda.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <vaibhav.bedia@ti.com>,
-        <sudhakar.raj@ti.com>, <gururaja.hebbar@ti.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH 07/11] pwm: pwm-tiehrpwm: enhance pinctrl support
-Date: Fri, 31 May 2013 15:43:07 +0530
-Message-ID: <1369995191-20855-8-git-send-email-gururaja.hebbar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+	id S1754835Ab3EaKPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:15:09 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:44372 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab3EaKOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 06:14:43 -0400
+X-IronPort-AV: E=Sophos;i="4.87,778,1363132800"; 
+   d="scan'208";a="5198003"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Shaveta Leekha <shaveta@freescale.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Andy Fleming <afleming@freescale.com>,
+        Poonam Aggrwal <poonam.aggrwal@freescale.com>,
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc/fsl-booke: Rename b4qds.dts -> b4qds.dtsi.
+Date: Fri, 31 May 2013 11:14:40 +0100
+Message-ID: <1369995280-20863-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amend the ti ehrpwm controller to optionally take a pin control handle
-and set the state of the pins to:
+This file is a common include for B4860 and B4420 but is not a valid DTS itself:
+	  DTC     arch/powerpc/boot/b4qds.dtb
+	Error: arch/powerpc/boot/dts/b4qds.dts:35.1-2 syntax error
+	FATAL ERROR: Unable to parse input tree
+	make[1]: *** [arch/powerpc/boot/b4qds.dtb] Error 1
+	make: *** [b4qds.dtb] Error 2
 
-- "default" on boot, resume
-- "sleep" on suspend()
+I spotted in build tests of device-tree.git, announcement
+https://lkml.org/lkml/2013/4/24/209, which builds *.dts. Probably no one would
+do this this in real life on linux.git but it still seems worth fixing.
 
-By optionally putting the pins into sleep state in the suspend callback
-we can accomplish two things.
-- One is to minimize current leakage from pins and thus save power,
-- second, we can prevent the IP from driving pins output in an
-uncontrolled manner, which may happen if the power domain drops the
-domain regulator.
-
-If any of the above pin states are missing in dt, a warning message
-about the missing state is displayed.
-If certain pin-states are not available, to remove this warning message
-pass respective state name with null phandler.
-
-Todo:
-        - if an idle state is available for pins, add support for it.
-
-Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Philip, Avinash <avinashphilip@ti.com>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Shaveta Leekha <shaveta@freescale.com>
+Cc: Minghuan Lian <Minghuan.Lian@freescale.com>
+Cc: Andy Fleming <afleming@freescale.com>
+Cc: Poonam Aggrwal <poonam.aggrwal@freescale.com>
+Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
 ---
-:100644 100644 48a485c... ed55460ae. M	drivers/pwm/pwm-tiehrpwm.c
- drivers/pwm/pwm-tiehrpwm.c |   49 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 44 insertions(+), 5 deletions(-)
+ arch/powerpc/boot/dts/b4420qds.dts |    2 +-
+ arch/powerpc/boot/dts/b4860qds.dts |    2 +-
+ arch/powerpc/boot/dts/b4qds.dts    |  169 ------------------------------------
+ arch/powerpc/boot/dts/b4qds.dtsi   |  169 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 171 insertions(+), 171 deletions(-)
+ delete mode 100644 arch/powerpc/boot/dts/b4qds.dts
+ create mode 100644 arch/powerpc/boot/dts/b4qds.dtsi
 
-diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-index 48a485c..ed55460ae 100644
---- a/drivers/pwm/pwm-tiehrpwm.c
-+++ b/drivers/pwm/pwm-tiehrpwm.c
-@@ -132,6 +132,11 @@ struct ehrpwm_pwm_chip {
- 	enum pwm_polarity polarity[NUM_PWM_CHANNEL];
- 	struct	clk	*tbclk;
- 	struct ehrpwm_context ctx;
-+
-+	/* two pin states - default, sleep */
-+	struct pinctrl			*pinctrl;
-+	struct pinctrl_state		*pins_default;
-+	struct pinctrl_state		*pins_sleep;
- };
+diff --git a/arch/powerpc/boot/dts/b4420qds.dts b/arch/powerpc/boot/dts/b4420qds.dts
+index 923156d..508dbdf 100644
+--- a/arch/powerpc/boot/dts/b4420qds.dts
++++ b/arch/powerpc/boot/dts/b4420qds.dts
+@@ -33,7 +33,7 @@
+  */
  
- static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
-@@ -439,11 +444,6 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
- 	struct clk *clk;
- 	struct ehrpwm_pwm_chip *pc;
- 	u16 status;
--	struct pinctrl *pinctrl;
+ /include/ "fsl/b4420si-pre.dtsi"
+-/include/ "b4qds.dts"
++/include/ "b4qds.dtsi"
+ 
+ / {
+ 	model = "fsl,B4420QDS";
+diff --git a/arch/powerpc/boot/dts/b4860qds.dts b/arch/powerpc/boot/dts/b4860qds.dts
+index 78907f3..6bb3707 100644
+--- a/arch/powerpc/boot/dts/b4860qds.dts
++++ b/arch/powerpc/boot/dts/b4860qds.dts
+@@ -33,7 +33,7 @@
+  */
+ 
+ /include/ "fsl/b4860si-pre.dtsi"
+-/include/ "b4qds.dts"
++/include/ "b4qds.dtsi"
+ 
+ / {
+ 	model = "fsl,B4860QDS";
+diff --git a/arch/powerpc/boot/dts/b4qds.dts b/arch/powerpc/boot/dts/b4qds.dts
+deleted file mode 100644
+index e6d2f8f..0000000
+--- a/arch/powerpc/boot/dts/b4qds.dts
++++ /dev/null
+@@ -1,169 +0,0 @@
+-/*
+- * B4420DS Device Tree Source
+- *
+- * Copyright 2012 Freescale Semiconductor, Inc.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are met:
+- *     * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above copyright
+- *       notice, this list of conditions and the following disclaimer in the
+- *       documentation and/or other materials provided with the distribution.
+- *     * Neither the name of Freescale Semiconductor nor the
+- *       names of its contributors may be used to endorse or promote products
+- *       derived from this software without specific prior written permission.
+- *
+- *
+- * ALTERNATIVELY, this software may be distributed under the terms of the
+- * GNU General Public License ("GPL") as published by the Free Software
+- * Foundation, either version 2 of that License or (at your option) any
+- * later version.
+- *
+- * This software is provided by Freescale Semiconductor "as is" and any
+- * express or implied warranties, including, but not limited to, the implied
+- * warranties of merchantability and fitness for a particular purpose are
+- * disclaimed. In no event shall Freescale Semiconductor be liable for any
+- * direct, indirect, incidental, special, exemplary, or consequential damages
+- * (including, but not limited to, procurement of substitute goods or services;
+- * loss of use, data, or profits; or business interruption) however caused and
+- * on any theory of liability, whether in contract, strict liability, or tort
+- * (including negligence or otherwise) arising in any way out of the use of
+- * this software, even if advised of the possibility of such damage.
+- */
 -
--	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
--	if (IS_ERR(pinctrl))
--		dev_warn(&pdev->dev, "unable to select pin group\n");
- 
- 	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
- 	if (!pc) {
-@@ -451,6 +451,34 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	pc->pinctrl = devm_pinctrl_get(&pdev->dev);
-+	if (!IS_ERR(pc->pinctrl)) {
-+		pc->pins_default = pinctrl_lookup_state(pc->pinctrl,
-+							 PINCTRL_STATE_DEFAULT);
-+		if (IS_ERR(pc->pins_default))
-+			dev_dbg(&pdev->dev, "could not get default pinstate\n");
-+		else
-+			if (pinctrl_select_state(pc->pinctrl, pc->pins_default))
-+				dev_err(&pdev->dev,
-+					"could not set default pinstate\n");
+-/ {
+-	model = "fsl,B4QDS";
+-	compatible = "fsl,B4QDS";
+-	#address-cells = <2>;
+-	#size-cells = <2>;
+-	interrupt-parent = <&mpic>;
+-
+-	ifc: localbus@ffe124000 {
+-		reg = <0xf 0xfe124000 0 0x2000>;
+-		ranges = <0 0 0xf 0xe8000000 0x08000000
+-			  2 0 0xf 0xff800000 0x00010000
+-			  3 0 0xf 0xffdf0000 0x00008000>;
+-
+-		nor@0,0 {
+-			#address-cells = <1>;
+-			#size-cells = <1>;
+-			compatible = "cfi-flash";
+-			reg = <0x0 0x0 0x8000000>;
+-			bank-width = <2>;
+-			device-width = <1>;
+-		};
+-
+-		nand@2,0 {
+-			#address-cells = <1>;
+-			#size-cells = <1>;
+-			compatible = "fsl,ifc-nand";
+-			reg = <0x2 0x0 0x10000>;
+-
+-			partition@0 {
+-				/* This location must not be altered  */
+-				/* 1MB for u-boot Bootloader Image */
+-				reg = <0x0 0x00100000>;
+-				label = "NAND U-Boot Image";
+-				read-only;
+-			};
+-
+-			partition@100000 {
+-				/* 1MB for DTB Image */
+-				reg = <0x00100000 0x00100000>;
+-				label = "NAND DTB Image";
+-			};
+-
+-			partition@200000 {
+-				/* 10MB for Linux Kernel Image */
+-				reg = <0x00200000 0x00A00000>;
+-				label = "NAND Linux Kernel Image";
+-			};
+-
+-			partition@c00000 {
+-				/* 500MB for Root file System Image */
+-				reg = <0x00c00000 0x1F400000>;
+-				label = "NAND RFS Image";
+-			};
+-		};
+-
+-		board-control@3,0 {
+-			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
+-			reg = <3 0 0x300>;
+-		};
+-	};
+-
+-	memory {
+-		device_type = "memory";
+-	};
+-
+-	dcsr: dcsr@f00000000 {
+-		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
+-	};
+-
+-	soc: soc@ffe000000 {
+-		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
+-		reg = <0xf 0xfe000000 0 0x00001000>;
+-		spi@110000 {
+-			flash@0 {
+-				#address-cells = <1>;
+-				#size-cells = <1>;
+-				compatible = "sst,sst25wf040";
+-				reg = <0>;
+-				spi-max-frequency = <40000000>; /* input clock */
+-			};
+-		};
+-
+-		sdhc@114000 {
+-			/*Disabled as there is no sdhc connector on B4420QDS board*/
+-			status = "disabled";
+-		};
+-
+-		i2c@118000 {
+-			eeprom@50 {
+-				compatible = "at24,24c64";
+-				reg = <0x50>;
+-			};
+-			eeprom@51 {
+-				compatible = "at24,24c256";
+-				reg = <0x51>;
+-			};
+-			eeprom@53 {
+-				compatible = "at24,24c256";
+-				reg = <0x53>;
+-			};
+-			eeprom@57 {
+-				compatible = "at24,24c256";
+-				reg = <0x57>;
+-			};
+-			rtc@68 {
+-				compatible = "dallas,ds3232";
+-				reg = <0x68>;
+-			};
+-		};
+-
+-		usb@210000 {
+-			dr_mode = "host";
+-			phy_type = "ulpi";
+-		};
+-
+-	};
+-
+-	pci0: pcie@ffe200000 {
+-		reg = <0xf 0xfe200000 0 0x10000>;
+-		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
+-			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
+-		pcie@0 {
+-			ranges = <0x02000000 0 0xe0000000
+-				  0x02000000 0 0xe0000000
+-				  0 0x20000000
+-
+-				  0x01000000 0 0x00000000
+-				  0x01000000 0 0x00000000
+-				  0 0x00010000>;
+-		};
+-	};
+-
+-};
+-
+-/include/ "fsl/b4si-post.dtsi"
+diff --git a/arch/powerpc/boot/dts/b4qds.dtsi b/arch/powerpc/boot/dts/b4qds.dtsi
+new file mode 100644
+index 0000000..e6d2f8f
+--- /dev/null
++++ b/arch/powerpc/boot/dts/b4qds.dtsi
+@@ -0,0 +1,169 @@
++/*
++ * B4420DS Device Tree Source
++ *
++ * Copyright 2012 Freescale Semiconductor, Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * This software is provided by Freescale Semiconductor "as is" and any
++ * express or implied warranties, including, but not limited to, the implied
++ * warranties of merchantability and fitness for a particular purpose are
++ * disclaimed. In no event shall Freescale Semiconductor be liable for any
++ * direct, indirect, incidental, special, exemplary, or consequential damages
++ * (including, but not limited to, procurement of substitute goods or services;
++ * loss of use, data, or profits; or business interruption) however caused and
++ * on any theory of liability, whether in contract, strict liability, or tort
++ * (including negligence or otherwise) arising in any way out of the use of
++ * this software, even if advised of the possibility of such damage.
++ */
 +
-+		pc->pins_sleep = pinctrl_lookup_state(pc->pinctrl,
-+						       PINCTRL_STATE_SLEEP);
-+		if (IS_ERR(pc->pins_sleep))
-+			dev_dbg(&pdev->dev, "could not get sleep pinstate\n");
-+	} else {
-+		/*
-+		* Since we continue even when pinctrl node is not found,
-+		* Invalidate pins as not available. This is to make sure that
-+		* IS_ERR(pins_xxx) results in failure when used.
-+		*/
-+		pc->pins_default = ERR_PTR(-ENODATA);
-+		pc->pins_sleep = ERR_PTR(-ENODATA);
++/ {
++	model = "fsl,B4QDS";
++	compatible = "fsl,B4QDS";
++	#address-cells = <2>;
++	#size-cells = <2>;
++	interrupt-parent = <&mpic>;
 +
-+		dev_dbg(&pdev->dev, "did not get pins for i2c error: %li\n",
-+			PTR_ERR(pc->pinctrl));
-+	}
++	ifc: localbus@ffe124000 {
++		reg = <0xf 0xfe124000 0 0x2000>;
++		ranges = <0 0 0xf 0xe8000000 0x08000000
++			  2 0 0xf 0xff800000 0x00010000
++			  3 0 0xf 0xffdf0000 0x00008000>;
 +
- 	clk = devm_clk_get(&pdev->dev, "fck");
- 	if (IS_ERR(clk)) {
- 		dev_err(&pdev->dev, "failed to get clock\n");
-@@ -570,6 +598,12 @@ static int ehrpwm_pwm_suspend(struct device *dev)
- 		/* Disable explicitly if PWM is running */
- 		pm_runtime_put_sync(dev);
- 	}
++		nor@0,0 {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			compatible = "cfi-flash";
++			reg = <0x0 0x0 0x8000000>;
++			bank-width = <2>;
++			device-width = <1>;
++		};
 +
-+	/* Optionally let pins go into sleep states */
-+	if (!IS_ERR(pc->pins_sleep))
-+		if (pinctrl_select_state(pc->pinctrl, pc->pins_sleep))
-+			dev_err(dev, "could not set pins to sleep state\n");
++		nand@2,0 {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			compatible = "fsl,ifc-nand";
++			reg = <0x2 0x0 0x10000>;
 +
- 	return 0;
- }
- 
-@@ -578,6 +612,11 @@ static int ehrpwm_pwm_resume(struct device *dev)
- 	struct ehrpwm_pwm_chip *pc = dev_get_drvdata(dev);
- 	int i;
- 
-+	/* Optionaly enable pins to be muxed in and configured */
-+	if (!IS_ERR(pc->pins_default))
-+		if (pinctrl_select_state(pc->pinctrl, pc->pins_default))
-+			dev_err(dev, "could not set default pins\n");
++			partition@0 {
++				/* This location must not be altered  */
++				/* 1MB for u-boot Bootloader Image */
++				reg = <0x0 0x00100000>;
++				label = "NAND U-Boot Image";
++				read-only;
++			};
 +
- 	for (i = 0; i < pc->chip.npwm; i++) {
- 		struct pwm_device *pwm = &pc->chip.pwms[i];
- 
++			partition@100000 {
++				/* 1MB for DTB Image */
++				reg = <0x00100000 0x00100000>;
++				label = "NAND DTB Image";
++			};
++
++			partition@200000 {
++				/* 10MB for Linux Kernel Image */
++				reg = <0x00200000 0x00A00000>;
++				label = "NAND Linux Kernel Image";
++			};
++
++			partition@c00000 {
++				/* 500MB for Root file System Image */
++				reg = <0x00c00000 0x1F400000>;
++				label = "NAND RFS Image";
++			};
++		};
++
++		board-control@3,0 {
++			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
++			reg = <3 0 0x300>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++	};
++
++	dcsr: dcsr@f00000000 {
++		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
++	};
++
++	soc: soc@ffe000000 {
++		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
++		reg = <0xf 0xfe000000 0 0x00001000>;
++		spi@110000 {
++			flash@0 {
++				#address-cells = <1>;
++				#size-cells = <1>;
++				compatible = "sst,sst25wf040";
++				reg = <0>;
++				spi-max-frequency = <40000000>; /* input clock */
++			};
++		};
++
++		sdhc@114000 {
++			/*Disabled as there is no sdhc connector on B4420QDS board*/
++			status = "disabled";
++		};
++
++		i2c@118000 {
++			eeprom@50 {
++				compatible = "at24,24c64";
++				reg = <0x50>;
++			};
++			eeprom@51 {
++				compatible = "at24,24c256";
++				reg = <0x51>;
++			};
++			eeprom@53 {
++				compatible = "at24,24c256";
++				reg = <0x53>;
++			};
++			eeprom@57 {
++				compatible = "at24,24c256";
++				reg = <0x57>;
++			};
++			rtc@68 {
++				compatible = "dallas,ds3232";
++				reg = <0x68>;
++			};
++		};
++
++		usb@210000 {
++			dr_mode = "host";
++			phy_type = "ulpi";
++		};
++
++	};
++
++	pci0: pcie@ffe200000 {
++		reg = <0xf 0xfe200000 0 0x10000>;
++		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
++			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
++		pcie@0 {
++			ranges = <0x02000000 0 0xe0000000
++				  0x02000000 0 0xe0000000
++				  0 0x20000000
++
++				  0x01000000 0 0x00000000
++				  0x01000000 0 0x00000000
++				  0 0x00010000>;
++		};
++	};
++
++};
++
++/include/ "fsl/b4si-post.dtsi"
 -- 
-1.7.9.5
+1.7.10.4
 
