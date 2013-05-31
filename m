@@ -1,147 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3EaBMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:12:13 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:13714 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab3EaBMC (ORCPT
+	id S1752699Ab3EaBQT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:16:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41165 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3EaBQL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 21:12:02 -0400
-Message-ID: <1369962720.1751.7.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mutex: do not unnecessarily deal with waiters
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 30 May 2013 18:12:00 -0700
-In-Reply-To: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
-References: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 May 2013 21:16:11 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Daniel Tang <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        "linux@arm.linux.org.uk ARM Linux" <linux@arm.linux.org.uk>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1369480087-24786-4-git-send-email-dt.tangr@gmail.com>
+Cc: Daniel Tang <dt.tangr@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
+References: <1369480087-24786-1-git-send-email-dt.tangr@gmail.com>
+ <1369480087-24786-4-git-send-email-dt.tangr@gmail.com>
+Message-ID: <20130531011606.21525.92648@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [RFC PATCHv4 3/6] clk: TI-Nspire clock drivers
+Date: Thu, 30 May 2013 18:16:06 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+Quoting Daniel Tang (2013-05-25 04:08:04)
+> diff --git a/drivers/clk/clk-nspire.c b/drivers/clk/clk-nspire.c
+> new file mode 100644
+> index 0000000..2546f7d
+> --- /dev/null
+> +++ b/drivers/clk/clk-nspire.c
+> @@ -0,0 +1,155 @@
+> +/*
+> + *  linux/drivers/clk/clk-nspire.c
 
-On Thu, 2013-05-23 at 16:59 -0700, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> 
-> Upon entering the slowpath, we immediately attempt to acquire the lock
-> by checking if it is already unlocked. If we are lucky enough that this
-> is the case, then we don't need to deal with any waiter related logic.
-> 
-> Furthermore any checks for an empty wait_list are unnecessary as we
-> already know that count is non-negative and hence no one is waiting for
-> the lock.
-> 
-> Move the count check and xchg calls to be done before any waiters are
-> setup - including waiter debugging. Upon failure to acquire the lock,
-> the xchg sets the counter to 0, instead of -1 as it was originally.
-> This can be done here since we set it back to -1 right at the beginning
-> of the loop so other waiters are woken up when the lock is released.
-> 
-> When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
-> kernel, this patch provides some small performance benefits (+2-6%).
-> While it could be considered in the noise level, the average percentages
-> were stable across multiple runs and no performance regressions were seen.
-> Two big winners, for small amounts of users (10-100), were the short and
-> compute workloads had a +19.36% and +%15.76% in jobs per minute.
->   
-> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> ---
->  kernel/mutex.c | 26 ++++++++++++++------------
->  1 file changed, 14 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index ad53a66..a8cd741 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		owner = ACCESS_ONCE(lock->owner);
->  		if (owner && !mutex_spin_on_owner(lock, owner)) {
->  			mspin_unlock(MLOCK(lock), &node);
-> -			break;
-> +			goto slowpath;
->  		}
->  
->  		if ((atomic_read(&lock->count) == 1) &&
-> @@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  			lock_acquired(&lock->dep_map, ip);
->  			mutex_set_owner(lock);
->  			mspin_unlock(MLOCK(lock), &node);
-> -			preempt_enable();
-> -			return 0;
-> +			goto done;
->  		}
->  		mspin_unlock(MLOCK(lock), &node);
->  
-> @@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		 * the owner complete.
->  		 */
->  		if (!owner && (need_resched() || rt_task(task)))
-> -			break;
-> +			goto slowpath;
->  
->  		/*
->  		 * The cpu_relax() call is a compiler barrier which forces
-> @@ -340,6 +339,14 @@ slowpath:
->  #endif
->  	spin_lock_mutex(&lock->wait_lock, flags);
->  
-> +	/* once more, can we acquire the lock? */
-> +	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
-> +		lock_acquired(&lock->dep_map, ip);
-> +		mutex_set_owner(lock);
-> +		spin_unlock_mutex(&lock->wait_lock, flags);
-> +		goto done;
-> +	}
+Hi Daniel,
+
+It's best not to put any file path here, since it could change in the
+future.  Please remove it.
+
+> + *
+> + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + */
 > +
->  	debug_mutex_lock_common(lock, &waiter);
->  	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
->  
-> @@ -347,9 +354,6 @@ slowpath:
->  	list_add_tail(&waiter.list, &lock->wait_list);
->  	waiter.task = task;
->  
-> -	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
-> -		goto done;
-> -
->  	lock_contended(&lock->dep_map, ip);
->  
->  	for (;;) {
-> @@ -363,7 +367,7 @@ slowpath:
->  		 * other waiters:
->  		 */
->  		if (MUTEX_SHOW_NO_WAITER(lock) &&
-> -		   (atomic_xchg(&lock->count, -1) == 1))
-> +		    (atomic_xchg(&lock->count, -1) == 1))
->  			break;
->  
->  		/*
-> @@ -388,9 +392,8 @@ slowpath:
->  		spin_lock_mutex(&lock->wait_lock, flags);
->  	}
->  
-> -done:
-> +	/* got the lock - cleanup and rejoice! */
->  	lock_acquired(&lock->dep_map, ip);
-> -	/* got the lock - rejoice! */
->  	mutex_remove_waiter(lock, &waiter, current_thread_info());
->  	mutex_set_owner(lock);
->  
-> @@ -399,10 +402,9 @@ done:
->  		atomic_set(&lock->count, 0);
->  
->  	spin_unlock_mutex(&lock->wait_lock, flags);
-> -
->  	debug_mutex_free_waiter(&waiter);
-> +done:
->  	preempt_enable();
-> -
->  	return 0;
->  }
->  
+> +#include <linux/clk-provider.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +
+> +#define MHZ (1000 * 1000)
+> +
+> +#define BASE_CPU_SHIFT         1
+> +#define BASE_CPU_MASK          0x7F
+> +
+> +#define CPU_AHB_SHIFT          12
+> +#define CPU_AHB_MASK           0x07
+> +
+> +#define FIXED_BASE_SHIFT       8
+> +#define FIXED_BASE_MASK                0x01
+> +
+> +#define CLASSIC_BASE_SHIFT     16
+> +#define CLASSIC_BASE_MASK      0x1F
+> +
+> +#define CX_BASE_SHIFT          15
+> +#define CX_BASE_MASK           0x3F
+> +
+> +#define CX_UNKNOWN_SHIFT       21
+> +#define CX_UNKNOWN_MASK                0x03
+> +
+> +struct nspire_clk_info {
+> +       u32 base_clock;
+> +       u16 base_cpu_ratio;
+> +       u16 base_ahb_ratio;
+> +};
+> +
+> +
+> +#define EXTRACT(var, prop) (((var)>>prop##_SHIFT) & prop##_MASK)
+> +static void nspire_clkinfo_cx(u32 val, struct nspire_clk_info *clk)
+> +{
+> +       if (EXTRACT(val, FIXED_BASE))
+> +               clk->base_clock = 48 * MHZ;
+> +       else
+> +               clk->base_clock = 6 * EXTRACT(val, CX_BASE) * MHZ;
+> +
+> +       clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * EXTRACT(val, CX_UNKNOWN);
+> +       clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
+> +}
+> +
+> +static void nspire_clkinfo_classic(u32 val, struct nspire_clk_info *clk)
+> +{
+> +       if (EXTRACT(val, FIXED_BASE))
+> +               clk->base_clock = 27 * MHZ;
+> +       else
+> +               clk->base_clock = (300 - 6 * EXTRACT(val, CLASSIC_BASE)) * MHZ;
+> +
+> +       clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * 2;
+> +       clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
+> +}
+> +#undef EXTRACT
 
+Any particular reason for the undef?
 
+Rest looks good to me.  If you can respin this patch I'll take it into
+clk-next.
+
+Thanks,
+Mike
