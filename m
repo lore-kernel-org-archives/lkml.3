@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab3EaOlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:41:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39527 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755337Ab3EaOlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:41:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,779,1363158000"; 
-   d="scan'208";a="249120648"
-Message-ID: <51A8B686.9020603@linux.intel.com>
-Date: Fri, 31 May 2013 07:41:10 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755810Ab3EaOlz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:41:55 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:47155 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab3EaOls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 10:41:48 -0400
 MIME-Version: 1.0
-To: Russ Anderson <rja@sgi.com>
-CC: Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-References: <20130522162747.GA20816@sgi.com> <20130523115801.GJ14575@console-pimps.org> <20130523222321.GB31880@sgi.com> <20130524074544.GM14575@console-pimps.org> <20130529201616.GB28027@sgi.com>
-In-Reply-To: <20130529201616.GB28027@sgi.com>
+In-Reply-To: <1365729154-24240-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1365729154-24240-1-git-send-email-gheorghiuandru@gmail.com>
+Date: Fri, 31 May 2013 17:41:48 +0300
+Message-ID: <CAG8Ei1q7JMRAdeohptkY3eg=AH8CaGtRg4dP_QwZ4Ru9sFhNYQ@mail.gmail.com>
+Subject: Re: [PATCH] lib: digsig: Use ERR_CAST function
+From: Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: James Morris <james.l.morris@oracle.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2013 01:16 PM, Russ Anderson wrote:
-> 
-> To be more specific (now that I've dug through the code), grub2 (used
-> by rhel7) uses EFI boot stubs.  grub and elilo apparently do not use
-> EFI boot stubs, so they don't hit the problem (at least on my test
-> systems).
-> 
+Sorry. I am not at @intel.com any more. Did not see it.
+I will use my private email for now..
 
-Grub2 *can* use the EFI boot stub... as far as I know it doesn't by
-default, but the way it is used in RHEL does.
+Yes. This was bothering my eye for quite a while...
 
-Either way, we need to fix this and fix it soon.
+- Dmitry
 
-	-hpa
-
-
+On Fri, Apr 12, 2013 at 4:12 AM, Alexandru Gheorghiu
+<gheorghiuandru@gmail.com> wrote:
+>
+> Use ERR_CAST function instead of ERR_PTR and PTR_ERR.
+> Patch found using coccinelle.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  lib/digsig.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/lib/digsig.c b/lib/digsig.c
+> index 2f31e6a..8793aed 100644
+> --- a/lib/digsig.c
+> +++ b/lib/digsig.c
+> @@ -209,7 +209,7 @@ int digsig_verify(struct key *keyring, const char
+> *sig, int siglen,
+>                 kref = keyring_search(make_key_ref(keyring, 1UL),
+>                                                 &key_type_user, name);
+>                 if (IS_ERR(kref))
+> -                       key = ERR_PTR(PTR_ERR(kref));
+> +                       key = ERR_CAST(kref);
+>                 else
+>                         key = key_ref_to_ptr(kref);
+>         } else {
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
