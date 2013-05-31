@@ -1,89 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3EaM6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:58:21 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:46736 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab3EaM4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:56:03 -0400
-From: Michal Simek <michal.simek@xilinx.com>
+	id S1755752Ab3EaM6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:58:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755087Ab3EaM6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:58:08 -0400
+Date: Fri, 31 May 2013 14:59:11 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH v3 4/8] video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-Date: Fri, 31 May 2013 14:55:34 +0200
-Message-Id: <ef73f4a9d2f95a19819e1e37c0f3377033779cd6.1370004925.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1370004925.git.michal.simek@xilinx.com>
-References: <cover.1370004925.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1370004925.git.michal.simek@xilinx.com>
-References: <cover.1370004925.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-8141-1370004958-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] irqdomain: Do not reuse existing mappings
+Message-ID: <20130531125910.GA1454@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+If a freshly acquired hardware interrupt number already mapped to
+a Linux IRQ number it indicates a problem exists elsewhere, i.e.
+a device driver did not dispose the mapping. Nevertheless, the
+current code reuses such mappings and thus calls for more trouble.
 
---=_mimegpg-monstr-desktop-8141-1370004958-0001
+This fix forces irq_create_mapping() to complain loudly and bail
+out if an unexpected mapping detected.
 
-physaddr will be remove in the next patch.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
-Changes in v3:
-- New patch in this patchset based on discussions
+ Documentation/IRQ-domain.txt            |    7 +++----
+ arch/powerpc/platforms/44x/currituck.c  |    1 +
+ arch/powerpc/platforms/maple/pci.c      |    2 ++
+ arch/powerpc/platforms/pasemi/dma_lib.c |    1 +
+ arch/powerpc/platforms/pasemi/setup.c   |    1 +
+ arch/powerpc/platforms/powermac/pci.c   |    1 +
+ arch/powerpc/platforms/powermac/pic.c   |    5 ++++-
+ arch/powerpc/platforms/powermac/smp.c   |    6 +++++-
+ kernel/irq/irqdomain.c                  |    4 ++--
+ 9 files changed, 20 insertions(+), 8 deletions(-)
 
-Changes in v2: None
-
- drivers/video/xilinxfb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index d94c992..1b55f18 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -325,7 +325,7 @@ static int xilinxfb_assign(struct device *dev,
-
- 	if (drvdata->flags & BUS_ACCESS_FLAG) {
- 		/* Put a banner in the log (for DEBUG) */
--		dev_dbg(dev, "regs: phys=%lx, virt=%p\n", physaddr,
-+		dev_dbg(dev, "regs: phys=%x, virt=%p\n", drvdata->regs_phys,
- 					drvdata->regs);
+diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+index 9bc9594..0ecef75 100644
+--- a/Documentation/IRQ-domain.txt
++++ b/Documentation/IRQ-domain.txt
+@@ -47,10 +47,9 @@ the .map callback populated as a minimum.
+ In most cases, the irq_domain will begin empty without any mappings
+ between hwirq and IRQ numbers.  Mappings are added to the irq_domain
+ by calling irq_create_mapping() which accepts the irq_domain and a
+-hwirq number as arguments.  If a mapping for the hwirq doesn't already
+-exist then it will allocate a new Linux irq_desc, associate it with
+-the hwirq, and call the .map() callback so the driver can perform any
+-required hardware setup.
++hwirq number as arguments. It will allocate a new Linux irq_desc,
++associate it with the hwirq, and call the .map() callback so the
++driver can perform any required hardware setup.
+ 
+ When an interrupt is received, irq_find_mapping() function should
+ be used to find the Linux IRQ number from the hwirq number.
+diff --git a/arch/powerpc/platforms/44x/currituck.c b/arch/powerpc/platforms/44x/currituck.c
+index ecd3890..5a8682d 100644
+--- a/arch/powerpc/platforms/44x/currituck.c
++++ b/arch/powerpc/platforms/44x/currituck.c
+@@ -182,6 +182,7 @@ static void ppc47x_pci_irq_fixup(struct pci_dev *dev)
+ 	if (dev->vendor == 0x1033 && (dev->device == 0x0035 ||
+ 	                              dev->device == 0x00e0)) {
+ 		dev->irq = irq_create_mapping(NULL, 47);
++		BUG_ON(dev->irq == NO_IRQ);
+ 		pr_info("%s: Mapping irq 47 %d\n", __func__, dev->irq);
  	}
- 	/* Put a banner in the log (for DEBUG) */
-@@ -353,7 +353,7 @@ err_fbmem:
+ }
+diff --git a/arch/powerpc/platforms/maple/pci.c b/arch/powerpc/platforms/maple/pci.c
+index f7136aa..482b69d 100644
+--- a/arch/powerpc/platforms/maple/pci.c
++++ b/arch/powerpc/platforms/maple/pci.c
+@@ -554,6 +554,8 @@ void maple_pci_irq_fixup(struct pci_dev *dev)
+ 		dev->irq = irq_create_mapping(NULL, 1);
+ 		if (dev->irq != NO_IRQ)
+ 			irq_set_irq_type(dev->irq, IRQ_TYPE_LEVEL_LOW);
++		else
++			WARN_ON(1);
+ 	}
+ 
+ 	/* Hide AMD8111 IDE interrupt when in legacy mode so
+diff --git a/arch/powerpc/platforms/pasemi/dma_lib.c b/arch/powerpc/platforms/pasemi/dma_lib.c
+index f3defd8..f05e66a0 100644
+--- a/arch/powerpc/platforms/pasemi/dma_lib.c
++++ b/arch/powerpc/platforms/pasemi/dma_lib.c
+@@ -212,6 +212,7 @@ void *pasemi_dma_alloc_chan(enum pasemi_dmachan_type type,
+ 		break;
+ 	}
+ 
++	BUG_ON(chan->irq == NO_IRQ);
+ 	chan->chan_type = type;
+ 
+ 	return chan;
+diff --git a/arch/powerpc/platforms/pasemi/setup.c b/arch/powerpc/platforms/pasemi/setup.c
+index 8c54de6d..54fa2d9 100644
+--- a/arch/powerpc/platforms/pasemi/setup.c
++++ b/arch/powerpc/platforms/pasemi/setup.c
+@@ -239,6 +239,7 @@ static __init void pas_init_IRQ(void)
+ 	/* The NMI/MCK source needs to be prio 15 */
+ 	if (nmiprop) {
+ 		nmi_virq = irq_create_mapping(NULL, *nmiprop);
++		BUG_ON(nmi_virq == NO_IRQ);
+ 		mpic_irq_set_priority(nmi_virq, 15);
+ 		irq_set_irq_type(nmi_virq, IRQ_TYPE_EDGE_RISING);
+ 		mpic_unmask_irq(irq_get_irq_data(nmi_virq));
+diff --git a/arch/powerpc/platforms/powermac/pci.c b/arch/powerpc/platforms/powermac/pci.c
+index cf7009b..07c3f2b 100644
+--- a/arch/powerpc/platforms/powermac/pci.c
++++ b/arch/powerpc/platforms/powermac/pci.c
+@@ -1002,6 +1002,7 @@ void pmac_pci_irq_fixup(struct pci_dev *dev)
+ 	    dev->vendor == PCI_VENDOR_ID_DEC &&
+ 	    dev->device == PCI_DEVICE_ID_DEC_TULIP_PLUS) {
+ 		dev->irq = irq_create_mapping(NULL, 60);
++		BUG_ON(dev->irq == NO_IRQ);
+ 		irq_set_irq_type(dev->irq, IRQ_TYPE_LEVEL_LOW);
+ 	}
+ #endif /* CONFIG_PPC32 */
+diff --git a/arch/powerpc/platforms/powermac/pic.c b/arch/powerpc/platforms/powermac/pic.c
+index 31036b5..f49706a 100644
+--- a/arch/powerpc/platforms/powermac/pic.c
++++ b/arch/powerpc/platforms/powermac/pic.c
+@@ -301,6 +301,7 @@ static void __init pmac_pic_probe_oldstyle(void)
+ 	struct device_node *slave = NULL;
+ 	u8 __iomem *addr;
+ 	struct resource r;
++	unsigned int virq;
+ 
+ 	/* Set our get_irq function */
+ 	ppc_md.get_irq = pmac_pic_get_irq;
+@@ -389,7 +390,9 @@ static void __init pmac_pic_probe_oldstyle(void)
+ 
+ 	printk(KERN_INFO "irq: System has %d possible interrupts\n", max_irqs);
+ #ifdef CONFIG_XMON
+-	setup_irq(irq_create_mapping(NULL, 20), &xmon_action);
++	virq = irq_create_mapping(NULL, 20);
++	BUG_ON(virq == NO_IRQ);
++	setup_irq(virq, &xmon_action);
+ #endif
+ }
+ 
+diff --git a/arch/powerpc/platforms/powermac/smp.c b/arch/powerpc/platforms/powermac/smp.c
+index bdb738a..1c466f4 100644
+--- a/arch/powerpc/platforms/powermac/smp.c
++++ b/arch/powerpc/platforms/powermac/smp.c
+@@ -413,13 +413,17 @@ static struct irqaction psurge_irqaction = {
+ 
+ static void __init smp_psurge_setup_cpu(int cpu_nr)
+ {
++	unsigned int virq;
++
+ 	if (cpu_nr != 0 || !psurge_start)
+ 		return;
+ 
+ 	/* reset the entry point so if we get another intr we won't
+ 	 * try to startup again */
+ 	out_be32(psurge_start, 0x100);
+-	if (setup_irq(irq_create_mapping(NULL, 30), &psurge_irqaction))
++	virq = irq_create_mapping(NULL, 30);
++	BUG_ON(virq == NO_IRQ);
++	if (setup_irq(virq, &psurge_irqaction))
+ 		printk(KERN_ERR "Couldn't get primary IPI interrupt");
+ }
+ 
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 5a83dde..ca662a2 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -580,8 +580,8 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+ 	/* Check if mapping already exists */
+ 	virq = irq_find_mapping(domain, hwirq);
+ 	if (virq) {
+-		pr_debug("-> existing mapping on virq %d\n", virq);
+-		return virq;
++		pr_warning("-> existing mapping on virq %d\n", virq);
++		return 0;
+ 	}
+ 
+ 	/* Get a virtual interrupt number */
+-- 
+1.7.7.6
 
- err_map:
- 	if (drvdata->flags & BUS_ACCESS_FLAG)
--		release_mem_region(physaddr, 8);
-+		release_mem_region(drvdata->regs_phys, 8);
 
- err_region:
- 	kfree(drvdata);
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-8141-1370004958-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGond4ACgkQykllyylKDCE2MwCfRF9/Bav3CqONvZ/8bTYb+Ktj
-pGUAoII9nudByTfMZc13zPVxEtrXxDR0
-=E5bI
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-8141-1370004958-0001--
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
