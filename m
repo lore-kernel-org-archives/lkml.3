@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab3EaK5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:57:18 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:52106 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab3EaK5N (ORCPT
+	id S1755087Ab3EaLAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:00:01 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62892 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753906Ab3EaK7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:57:13 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Max Filippov <jcmvbkbc@gmail.com>,
-        "Vineet Gupta" <Vineet.Gupta1@synopsys.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/2] mm: tlb_fast_mode check missing in tlb_finish_mmu()
-Date: Fri, 31 May 2013 16:23:50 +0530
-Message-ID: <1369997630-6522-3-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369997630-6522-1-git-send-email-vgupta@synopsys.com>
-References: <1369997630-6522-1-git-send-email-vgupta@synopsys.com>
+	Fri, 31 May 2013 06:59:53 -0400
+Date: Fri, 31 May 2013 11:59:15 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC 5/6] arm64/xen: implement xen_remap on arm64
+Message-ID: <20130531105915.GC18045@localhost.cambridge.arm.com>
+References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
+ <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.154]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes some unused generated code for tlb_fast_mode() == true
+On Thu, May 30, 2013 at 05:18:32PM +0100, Stefano Stabellini wrote:
+> --- a/arch/arm/include/asm/xen/page.h
+> +++ b/arch/arm/include/asm/xen/page.h
+> @@ -90,6 +90,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+>  	return __set_phys_to_machine(pfn, mfn);
+>  }
+>  
+> +#ifdef CONFIG_ARM64
+> +#define xen_remap(cookie, size) __ioremap((cookie), (size), __pgprot(PROT_NORMAL))
+> +#else
+>  #define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
+> +#endif
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-mm@kvack.org
-Cc: linux-arch@vger.kernel.org <linux-arch@vger.kernel.org>
----
- mm/memory.c |    3 +++
- 1 file changed, 3 insertions(+)
+Now I saw the ARM-specific part. Can you not use something like
+ioremap_cached() which would give normal cacheable memory (at least on
+ARMv7).
 
-diff --git a/mm/memory.c b/mm/memory.c
-index d9d5fd9..569ffe1 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -269,6 +269,9 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
- 	/* keep the page table cache within bounds */
- 	check_pgt_cache();
- 
-+	if (tlb_fast_mode(tlb))
-+		return;
-+
- 	for (batch = tlb->local.next; batch; batch = next) {
- 		next = batch->next;
- 		free_pages((unsigned long)batch, 0);
+>  #endif /* _ASM_ARM_XEN_PAGE_H */
+> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> index 2e12258..0e9c9ac 100644
+> --- a/arch/arm64/include/asm/io.h
+> +++ b/arch/arm64/include/asm/io.h
+> @@ -228,6 +228,7 @@ extern void __iounmap(volatile void __iomem *addr);
+>  #define PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY)
+>  #define PROT_DEVICE_nGnRE	(PROT_DEFAULT | PTE_PXN | PTE_UXN | PTE_ATTRINDX(MT_DEVICE_nGnRE))
+>  #define PROT_NORMAL_NC		(PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC))
+> +#define PROT_NORMAL		(PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL))
+>  
+>  #define ioremap(addr, size)		__ioremap((addr), (size), __pgprot(PROT_DEVICE_nGnRE))
+>  #define ioremap_nocache(addr, size)	__ioremap((addr), (size), __pgprot(PROT_DEVICE_nGnRE))
+
+Of course we need to add ioremap_cached() for arm64 but until now we
+didn't need it.
+
 -- 
-1.7.10.4
-
+Catalin
