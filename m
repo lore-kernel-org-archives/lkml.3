@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab3EaP03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:26:29 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48959 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752859Ab3EaP0X (ORCPT
+	id S1756375Ab3EaP1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:27:35 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:39025 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755399Ab3EaP1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:26:23 -0400
-Date: Fri, 31 May 2013 16:25:39 +0100
-From: Catalin Marinas <Catalin.Marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm64 fixes for 3.10
-Message-ID: <20130531152539.GE15551@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 31 May 2013 11:27:32 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: tj@kernel.org, timur@tabi.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, clemens@ladisch.de,
+        sergei.shtylyov@cogentembedded.com
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH v3] ata: increase retry count but shorten duration for Calxeda controller
+Date: Fri, 31 May 2013 10:27:26 -0500
+Message-Id: <1370014046-5202-1-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The Calxeda SATA phy intermittently fails to bring up a link with Gen3
+Retrying the phy hard reset can work around the issue, but the drive
+may fail again. In less than 150 out of 15000 test runs, it took more
+than 10 tries for the link to be established (but never more than 35).
+Triple the maximum observed retry count to provide plenty of margin for
+rare events and to guarantee that the link is established.
 
-Please pull the arm64 patches below. Thanks.
+Also, the default 2 second time-out on a failed drive is too long in
+this situation. The uboot implementation of the same driver function
+uses a much shorter time-out period and never experiences a time out
+issue. Shorten the Linux time-out value for this driver to 500 ms and
+keep the other timing constants the same as the stock AHCI driver. This
+change was also tested 15000 times on 24 drives and none of them
+experienced a time out.
 
-The following changes since commit c7788792a5e7b0d5d7f96d0766b4cb6112d47d75:
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+---
+Changes from v2
+	Add static to the timing variable definition
+Changes from v1
+        Add const to the timing variable definition
+        Added more detail in why the various numbers were chosen
 
-  Linux 3.10-rc2 (2013-05-20 14:37:38 -0700)
+ drivers/ata/sata_highbank.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-are available in the git repository at:
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index b20aa96..46ccc1c 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -199,7 +199,7 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
+ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 				unsigned long deadline)
+ {
+-	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
++	static const unsigned long timing[] = { 5, 100, 500};
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
+@@ -207,7 +207,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 	bool online;
+ 	u32 sstatus;
+ 	int rc;
+-	int retry = 10;
++	int retry = 100;
+ 
+ 	ahci_stop_engine(ap);
+ 
+-- 
+1.8.1.2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
-
-for you to fetch changes up to 9955ac47f4ba1c95ecb6092aeaefb40a22e99268:
-
-  arm64: don't kill the kernel on a bad esr from el0 (2013-05-31 16:04:51 +0100)
-
-----------------------------------------------------------------
-- Module compilation issues (symbol not exported).
-- Plug a hole where user space can bring the kernel down.
-
-----------------------------------------------------------------
-Catalin Marinas (1):
-      arm64: Do not report user faults for handled signals
-
-Chen Gang (1):
-      arm64: kernel: compiling issue, need 'EXPORT_SYMBOL(clear_page)'
-
-Mark Rutland (2):
-      arm64: treat unhandled compat el0 traps as undef
-      arm64: don't kill the kernel on a bad esr from el0
-
- arch/arm64/kernel/arm64ksyms.c |  1 +
- arch/arm64/kernel/entry.S      | 10 ++++++++++
- arch/arm64/kernel/traps.c      | 17 ++++++++++++-----
- arch/arm64/mm/fault.c          |  3 ++-
- 4 files changed, 25 insertions(+), 6 deletions(-)
