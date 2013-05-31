@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab3EaHKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 03:10:45 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:15041 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab3EaHKh (ORCPT
+	id S1753327Ab3EaHOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 03:14:34 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57523 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab3EaHOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 03:10:37 -0400
-Date: Fri, 31 May 2013 09:10:29 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] There is no /sys/parameters
-Message-ID: <20130531091029.5c5074bc@endymion.delvare>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 31 May 2013 03:14:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <51A8387C.4030704@monstr.eu>
+References: <4b90b06fce0475b579cfba4d968b4778359154f6.1369826814.git.michal.simek@xilinx.com>
+	<CACRpkdY4xaCOe28nu-NrYQ7pafjhj8-xqFcJRF9iJUy3SrCVrA@mail.gmail.com>
+	<51A8387C.4030704@monstr.eu>
+Date: Fri, 31 May 2013 09:14:24 +0200
+Message-ID: <CACRpkdbHiaK6YPgXyxNgEeZxAsddK4x0vS-q3YfyXnj_BgHvuw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] GPIO: Add support for dual channel in gpio-xilinx.c
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no such path as /sys/parameters, module parameters live in
-/sys/module/*/parameters.
+On Fri, May 31, 2013 at 7:43 AM, Michal Simek <monstr@monstr.eu> wrote:
+> On 05/30/2013 09:46 PM, Linus Walleij wrote:
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
----
- include/linux/moduleparam.h |    2 +-
- kernel/params.c             |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+>> (...)
+>>> +/* Read/Write access to the GPIO registers */
+>>> +#define xgpio_readreg(offset)          __raw_readl(offset)
+>>> +#define xgpio_writereg(offset, val)    __raw_writel(val, offset)
+>>
+>> So you're swithing in_be32/out_be32 to the CPU-dependent
+>> __raw_readl/__raw_writel functions? Why?
+>
+> The reason is that this driver can be used on ARM where in_be32/out_be32
+> is not implemented.
 
---- linux-3.10-rc3.orig/include/linux/moduleparam.h	2013-04-29 02:36:01.000000000 +0200
-+++ linux-3.10-rc3/include/linux/moduleparam.h	2013-05-30 10:41:37.417314420 +0200
-@@ -439,7 +439,7 @@ extern struct kernel_param_ops param_ops
- extern int param_set_copystring(const char *val, const struct kernel_param *);
- extern int param_get_string(char *buffer, const struct kernel_param *kp);
- 
--/* for exporting parameters in /sys/parameters */
-+/* for exporting parameters in /sys/module/.../parameters */
- 
- struct module;
- 
---- linux-3.10-rc3.orig/kernel/params.c	2013-05-13 15:27:49.883223693 +0200
-+++ linux-3.10-rc3/kernel/params.c	2013-05-30 10:43:40.411316243 +0200
-@@ -787,7 +787,7 @@ static void __init kernel_add_sysfs_para
- }
- 
- /*
-- * param_sysfs_builtin - add contents in /sys/parameters for built-in modules
-+ * param_sysfs_builtin - add sysfs parameters for built-in modules
-  *
-  * Add module_parameters to sysfs for "modules" built into the kernel.
-  *
+OK I buy this (and the following explanation).
 
+I think readl/writel is always in LE (PCI) endianness anyway, which
+is likely not what you want. (I suspect the next point was about
+that.)
 
--- 
-Jean Delvare
+>> Have you documented these new bindings? It doesn't seem so.
+>> Documentation/devicetree/bindings/gpio/*...
+>>
+>> If it's undocumented so far, this is a good oppotunity to add it.
+>
+> Isn't it enough what it is in 2/2?
+
+I didn't see 2/2, I guess I wasn't on CC...
+
+Anyway I guess it's this:
+http://marc.info/?l=linux-kernel&m=136982686732560&w=2
+
+It's OK, but fix the boolean member so as to just needing to
+be present:
+
+xlnx,is-dual;
+
+Rather than
+
+xlnx,is-dual = <1>;
+
+> Or do you want to describe current binding in the first patch
+> and then extend it in this patch when dual channel is added?
+
+Nah. 2/2 is fine.
+
+>> This is basically a jam table (hardware set-up) in the device tree.
+>
+> Not sure what you mean by that. Xilinx GPIO is soft IP which can be configured
+> to different configurations before bitstream is generated.
+> At the end you will get different setting/addresses setup for every pin
+> which is described by these xlnx,X descriptions.
+>
+>> I don't exactly like this. Is this necessary?
+>
+> If you mean names or values in there that all of them are autogenerated
+> from design tools and they are reflect IP hardware description and all
+> configuration options which you can have there.
+> It means that all these values give you exact hardware description.
+>
+> Do I answer your question?
+
+Yes, this is OK, I buy that explanation. I thought it was
+something else.
+
+I think the overall problem is that I do not understand what a
+"channel" is in this context, and thus it is hard to understand the
+patch as a whole. 2/2 could add some more verbose explanation
+about the HW IP so I get comfortable and can understand the
+whole hardware block...
+
+Yours,
+Linus Walleij
