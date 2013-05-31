@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab3EaGGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:06:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36062 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3EaGGK (ORCPT
+	id S1752424Ab3EaGIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:08:42 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:61935 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3EaGIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:06:10 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: "David S. Miller" <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, Yijing Wang <wangyijing@huawei.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>, <netdev@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] net: wireless: iwlegacy: fix build error for il_pm_ops
-Date: Fri, 31 May 2013 14:05:32 +0800
-Message-ID: <1369980332-1344-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Fri, 31 May 2013 02:08:34 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Anirudha Sarangi <anirudh@xilinx.com>, netdev@vger.kernel.org,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steven Wang <steven.wang@digilentinc.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Rick Hoover <RHoover@digilentinc.com>
+Subject: [PATCH v2 0/5] Phylib changes
+Date: Fri, 31 May 2013 08:08:22 +0200
+Message-Id: <cover.1369980470.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-1654-1369980507-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build error for il_pm_ops if CONFIG_PM is set
-but CONFIG_PM_SLEEP is not set.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-ERROR: "il_pm_ops" [drivers/net/wireless/iwlegacy/iwl4965.ko] undefined!
-ERROR: "il_pm_ops" [drivers/net/wireless/iwlegacy/iwl3945.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+--=_mimegpg-monstr-desktop-1654-1369980507-0001
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org
-Cc: Jingoo Han <jg1.han@samsung.com>
----
- drivers/net/wireless/iwlegacy/common.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+We have these changes in our tree for quite a long
+time and I would like to ask you for review.
+All phys are used on xilinx zynq boards.
 
-diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
-index f8246f2..4caaf52 100644
---- a/drivers/net/wireless/iwlegacy/common.h
-+++ b/drivers/net/wireless/iwlegacy/common.h
-@@ -1832,16 +1832,16 @@ u32 il_usecs_to_beacons(struct il_priv *il, u32 usec, u32 beacon_interval);
- __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
- 			  u32 beacon_interval);
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- extern const struct dev_pm_ops il_pm_ops;
- 
- #define IL_LEGACY_PM_OPS	(&il_pm_ops)
- 
--#else /* !CONFIG_PM */
-+#else /* !CONFIG_PM_SLEEP */
- 
- #define IL_LEGACY_PM_OPS	NULL
- 
--#endif /* !CONFIG_PM */
-+#endif /* !CONFIG_PM_SLEEP */
- 
- /*****************************************************
- *  Error Handling Debugging
--- 
-1.7.1
+Thanks,
+Michal
+
+v2: Resent these phy patches without emaclite changes
+
+Changes in v2:
+- None
+
+Michal Simek (5):
+  phy: Clean coding style in vitesse phy
+  phy: Add Vitesse 8211 phy ID
+  phy: Use macros instead of hardcoded values in marvell phy driver
+  phy: Add Marvell 88E1116R phy ID
+  phy: Add Marvell 88E1510 phy ID
+
+ drivers/net/phy/marvell.c   | 108 ++++++++++++++++++++++++++++++++++++++++----
+ drivers/net/phy/vitesse.c   |  38 +++++++++++-----
+ include/linux/marvell_phy.h |   2 +
+ 3 files changed, 127 insertions(+), 21 deletions(-)
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-1654-1369980507-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGoPlsACgkQykllyylKDCE5SACfTwa2mXp9R7xXIjF9oQtqB9ju
+bP0AoJOhA95EXqxyNoI5kY5j5hN3XYOL
+=3xt5
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-1654-1369980507-0001--
