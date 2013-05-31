@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab3EaH5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 03:57:31 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:51629 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab3EaH50 convert rfc822-to-8bit (ORCPT
+	id S1753927Ab3EaH6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 03:58:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28829 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751207Ab3EaH5y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 03:57:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <51A6B7D4.7040202@huawei.com>
-References: <51A6B7D4.7040202@huawei.com>
-Date: Fri, 31 May 2013 09:57:25 +0200
-Message-ID: <CACna6rwz8fx_wBoNe2bko+Rtoq2xpfAGgCKZDFy4iBqGQuSbkg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/2] mtd: bcm47: convert kzalloc to avoid invalid access
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: dwmw2@infradead.org, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        artem.bityutskiy@linux.intel.com, Bill Pemberton <wfp5p@virginia.edu>,
-        hauke@hauke-m.de, linux-mtd@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 May 2013 03:57:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,777,1363158000"; 
+   d="scan'208";a="310448480"
+Message-ID: <1369987068.29283.238.camel@smile>
+Subject: Re: [PATCH v3 3/5] gpio-langwell: use managed functions pcim_* and
+ devm_*
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: David Cohen <david.a.cohen@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 31 May 2013 10:57:48 +0300
+In-Reply-To: <CACRpkdYE+Gy5N62HWrEFiQ-eThMBm8xubLv7-C_XLMXxGNunEQ@mail.gmail.com>
+References: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1369218014-28990-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CACRpkdYE+Gy5N62HWrEFiQ-eThMBm8xubLv7-C_XLMXxGNunEQ@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/30 Libo Chen <clbchenlibo.chen@huawei.com>:
-> mtd is just member of bcm47xxsflash, so we should free bcm47xxsflash not its member.
-> So I use devm_kazlloc instead of kazlloc to avoid it.
+On Thu, 2013-05-30 at 19:25 +0200, Linus Walleij wrote: 
+> On Wed, May 22, 2013 at 12:20 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> 
+> > This makes the error handling much more simpler than open-coding everything and
+> > in addition makes the probe function smaller an tidier.
+> >
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> 
+> Applied with Mika's ACK.
+> 
+> I had to rebase this thing since there was a patch removing the line
+> setting platform data to NULL on remove(), check that I did the right
+> thing in the result.
 
-I think you should use
-mtd: bcm47xxsflash:
-prefix for both patches, but Artem or David may want to comment on that.
-
-Nice trick with that devm_kzalloc, I didn't know it.
+Yes, that is correct. Thanks!
 
 -- 
-Rafał
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
