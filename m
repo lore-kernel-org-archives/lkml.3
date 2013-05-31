@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3EaNn5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:43:57 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:44184 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750910Ab3EaNnw (ORCPT
+	id S1755087Ab3EaNo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:44:58 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:54767 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab3EaNov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:43:52 -0400
-Date: Fri, 31 May 2013 14:10:38 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC 1/6] [HACK!] arm64/xen: create links to arch/arm
- include files and Xen code
-Message-ID: <20130531131038.GA15551@arm.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
- <1369930713-6063-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130531103617.GA18045@localhost.cambridge.arm.com>
- <alpine.DEB.2.02.1305311259090.4799@kaball.uk.xensource.com>
+	Fri, 31 May 2013 09:44:51 -0400
+Date: Fri, 31 May 2013 15:44:45 +0200
+From: Robert Richter <rric@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] perf tools: Persistent events, changes for perf tool
+ integration
+Message-ID: <20130531134445.GD2132@rric.localhost>
+References: <1369991785-10499-1-git-send-email-rric@kernel.org>
+ <20130531120720.GA7885@gmail.com>
+ <20130531122443.GB17843@nazgul.tnic>
+ <20130531124805.GA8659@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305311259090.4799@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130531124805.GA8659@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 01:02:04PM +0100, Stefano Stabellini wrote:
-> On Fri, 31 May 2013, Catalin Marinas wrote:
-> > On Thu, May 30, 2013 at 05:18:28PM +0100, Stefano Stabellini wrote:
-> > > Most of Xen support for ARM is common between ARMv7 and ARMv8.
-> > > Create links to the code under arch/arm (bleah).
-> > > 
-> > > Other, probably better alternatives:
-> > > 
-> > > - move the code to a different location, maybe the header files to
-> > > include/xen/arm and the code to drivers/xen/arm (still pretty ugly)?
-> > > 
-> > > - create a copy of the code to arch/arm64 (even worse);
-> > 
-> > KVM handles this in the Makefile by referencing back to arch/arm or even
-> > the generic kvm directory. I think that's the 'cleanest' ;)
-> 
-> Do you mean creating links in the Makefile or generating header file
-> copies from the Makefile?
-> Or do you mean using something like "-I arch/arm/include/asm/xen" in the
-> arch/arm64 Makefile?
+> > On Fri, May 31, 2013 at 02:07:20PM +0200, Ingo Molnar wrote:
+> > > For that I'd like to create a persistent event that just keeps
+> > > running, and to which I can occasionally attach to read-only to see
+> > > what's going on and maybe attach to it read-write to drain the trace
+> > > entries. I.e. basically a global trace buffer. How do I achieve that
+> > > with this new tooling?
 
-I meant C files being compiled directly from arch/arm (no links).
+Actually every system-wide event that is opened with readonly buffers
+could be shared between processes, which would be the same as
+connecting to a persistent event. I didn't want to implement this in a
+first step, but I think this could be implemented without too much
+effort.
 
-For headers, if they are specific to arm or arm64, just copy the header
-in each place (e.g. not using regs->pstate in the arch/arm code with
-#ifdef's). For the rest, if they cannot be made generic, one way is to
-have a dummy file including the arm equivalent:
+The main problem is that at least one file descriptor needs to be open
+at any time. Otherwise the event would be removed. So there is no
+concept (except enabling an in-kernel event) yet to keep the event
+running without any process having an event file discriptor open. Even
+harder will it be to release such an event, there is no distincition
+beetween detaching the event from the process or permanently removing
+the event.
 
-#include <../../arm/include/asm/xen/events.h>
+So the easiest would be to just open a system-wide event and then put
+the process into sleep until we want to remove the event. In between
+other processes (maybe duplicate on fork?) could attach to the same
+buffer. Only if no process is attached to the event enymore the event
+will be removed. Would that fit your purpose?
 
-Passing -I is dangerous as you actually need "-I arch/arm/include" which
-could bring other files.
-
--- 
-Catalin
+-Robert
