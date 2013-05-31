@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab3EaBu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:50:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30139 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3EaBuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 21:50:25 -0400
-Message-ID: <51A8015C.6020402@oracle.com>
-Date: Fri, 31 May 2013 09:48:12 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1752748Ab3EaCR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 22:17:58 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:50403 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab3EaCRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 22:17:50 -0400
+Date: Thu, 30 May 2013 21:17:49 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, joeyli <jlee@suse.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+	info to runtime code
+Message-ID: <20130531021749.GA24287@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20130524074331.GL14575@console-pimps.org> <20130529210115.GC28027@sgi.com> <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz> <20130529224645.GA16582@sgi.com> <alpine.LNX.2.00.1305300048520.30576@pobox.suse.cz> <1369880172.17397.11.camel@linux-s257.site> <20130530221737.GA11105@sgi.com> <1369952512.11620.14.camel@x230> <20130530222836.GB11105@sgi.com> <alpine.LNX.2.00.1305310029560.30576@pobox.suse.cz>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv12 2/4] zbud: add to mm/
-References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com> <1369067168-12291-3-git-send-email-sjenning@linux.vnet.ibm.com> <20130528145911.bd484cbb0bb7a27c1623c520@linux-foundation.org> <20130529154500.GB428@cerebellum> <20130529113434.b2ced4cc1e66c7a0a520d908@linux-foundation.org> <20130529204236.GD428@cerebellum> <20130529134835.58dd89774f47205da4a06202@linux-foundation.org> <754ae8a0-23af-4c87-953f-d608cba84191@default> <20130529142904.ace2a29b90a9076d0ee251fd@linux-foundation.org> <20130530174344.GA15837@medulla> <20130530212017.GB15837@medulla>
-In-Reply-To: <20130530212017.GB15837@medulla>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1305310029560.30576@pobox.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
-
-On 05/31/2013 05:20 AM, Seth Jennings wrote:
-> Andrew, Mel,
+On Fri, May 31, 2013 at 12:30:43AM +0200, Jiri Kosina wrote:
+> On Thu, 30 May 2013, Russ Anderson wrote:
 > 
-> This struct page stuffing is taking a lot of time to work out and _might_ be
-> fraught with peril when memmap peekers are considered.
+> > > > That's a great idea.  This patch moves the QueryVariableInfo()
+> > > > call from bootime to runtime, in efi_late_init().  The attached
+> > > > patch is consistent with the UEFI spec and avoids the problem.
+> > > 
+> > > No, that defeats the entire point of the original patch.
+> > 
+> > How so?  It is still calling QueryVariableInfo()
+> > before the data is used.
 > 
-> What do you think about just storing the zbud page metadata inline in the
-> memory page in the first zbud page chunk?
+> You lose information provided by QueryVariableInfo() about boot-only 
+> variables once the transition boot -> runtime has happened.
 
-How about making zswap based on SLAB? Create a PAGE_SIZE slab and when
-zswap need to alloc_page() using kmem_cache_alloc() instead.
+Is that information really more important than the ability
+to boot?
 
-So that leave SLAB layer to handler the NUMA problem and do the
-dynamical pool size for us.
+Correct me if I'm wrong, but linux was able to boot without
+the boottime QueryVariableInfo() call up until 3.9-rc7,
+and it still does on systems that do not use EFI stubs (ie
+grub and elilo).  It is only when linux uses EFI stubs (ie
+grub2) that linux makes the boottime QueryVariableInfo()
+call.  So why is that call, or whatever is dependent on it,
+more important than booting?
 
-In this way, an extra struct need to manage the zbud page metadate
-instead of using struct page.
-But I think it's easy and won't occupy many memory.
 
-> 
-> Mel, this kinda hurts you plans for making NCHUNKS = 2, since there would
-> only be one chunk available for storage and would make zbud useless.
-> 
-> Just a way to sidestep this whole issue.  What do you think?
-> 
-> Seth
-> 
 
+Thanks,
 -- 
-Regards,
--Bob
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
