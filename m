@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3EaC7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 22:59:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58482 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751741Ab3EaC7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 22:59:35 -0400
-Date: Fri, 31 May 2013 03:59:42 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1305310358200.9016@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752757Ab3EaC7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 22:59:52 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:40723 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751826Ab3EaC7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 May 2013 22:59:38 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <haojian.zhuang@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH v2] bring up pxa988 with DT
+Date: Fri, 31 May 2013 10:58:34 +0800
+Message-ID: <1369969115-4279-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-470587977-1369969182=:9016"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This patch is supposed to bring up pxa988 SMP.
+will change to use CLOCKSOURCE later.
 
---29444707-470587977-1369969182=:9016
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+ChangeLog
+V2:
+1. use early_init call for handler init.
+2. Add sanity check for maximum core count.
 
+Neil Zhang (1):
+  ARM: mmp: bring up pxa988 with device tree support
 
-Hi Linus,
+ arch/arm/boot/dts/pxa988-dkb.dts          |   36 ++++++
+ arch/arm/boot/dts/pxa988.dtsi             |  189 +++++++++++++++++++++++++++++
+ arch/arm/mach-mmp/Kconfig                 |   27 ++++
+ arch/arm/mach-mmp/Makefile                |    2 +
+ arch/arm/mach-mmp/common.c                |   11 ++-
+ arch/arm/mach-mmp/common.h                |    2 +
+ arch/arm/mach-mmp/headsmp.S               |  104 ++++++++++++++++
+ arch/arm/mach-mmp/include/mach/addr-map.h |    6 +
+ arch/arm/mach-mmp/mmpx-dt.c               |   74 +++++++++++
+ arch/arm/mach-mmp/platsmp.c               |  167 +++++++++++++++++++++++++
+ arch/arm/mach-mmp/reset.c                 |   68 ++++++++++
+ arch/arm/mach-mmp/reset.h                 |   28 +++++
+ drivers/clk/mmp/Makefile                  |    1 +
+ 13 files changed, 714 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/boot/dts/pxa988-dkb.dts
+ create mode 100644 arch/arm/boot/dts/pxa988.dtsi
+ create mode 100644 arch/arm/mach-mmp/headsmp.S
+ create mode 100644 arch/arm/mach-mmp/mmpx-dt.c
+ create mode 100644 arch/arm/mach-mmp/platsmp.c
+ create mode 100644 arch/arm/mach-mmp/reset.c
+ create mode 100644 arch/arm/mach-mmp/reset.h
 
-one qxl 32-bit warning fix, the rest is a bunch of radeon fixes from Alex 
-for some issues we've been seeing.
+-- 
+1.7.4.1
 
-Dave.
-
-The following changes since commit c89b65e7fffef745bdd36c372aa0dea778fecbab:
-
-  qxl: fix Kconfig deps - select FB_DEFERRED_IO (2013-05-28 17:03:37 +1000)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 970fa986fadb1165cf38b45b70e98302a3bee497:
-
-  drm/qxl: fix build warnings on 32-bit (2013-05-31 12:45:09 +1000)
-
-----------------------------------------------------------------
-Alex Deucher (4):
-      drm/radeon: fix typo in cu_per_sh on verde
-      drm/radeon: fix card_posted check for newer asics
-      drm/radeon: don't check crtcs in card_posted() on cards without DCE
-      drm/radeon: narrow scope of Apple re-POST hack
-
-Christian König (1):
-      drm/radeon: UVD block on SUMO2 is the same as on SUMO
-
-Dave Airlie (2):
-      Merge branch 'drm-fixes-3.10' of git://people.freedesktop.org/~agd5f/linux into drm-next
-      drm/qxl: fix build warnings on 32-bit
-
-Kleber Sacilotto de Souza (1):
-      radeon: use max_bus_speed to activate gen2 speeds
-
- drivers/gpu/drm/qxl/qxl_ioctl.c        |  4 ++--
- drivers/gpu/drm/qxl/qxl_kms.c          |  9 +++++----
- drivers/gpu/drm/radeon/evergreen.c     | 10 +++-------
- drivers/gpu/drm/radeon/r600.c          |  9 ++-------
- drivers/gpu/drm/radeon/radeon_device.c | 27 ++++++++++++++++-----------
- drivers/gpu/drm/radeon/rv770.c         | 13 +++----------
- drivers/gpu/drm/radeon/si.c            |  2 +-
- 7 files changed, 32 insertions(+), 42 deletions(-)
---29444707-470587977-1369969182=:9016--
