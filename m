@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab3EaW5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:57:40 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42570 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753129Ab3EaW5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:57:34 -0400
-Date: Fri, 31 May 2013 17:57:31 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, joeyli <jlee@suse.com>,
-        Matt Fleming <matt@console-pimps.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
-	info to runtime code
-Message-ID: <20130531225730.GB14752@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz> <20130531101250.GD30394@gmail.com> <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz> <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com> <20130531143425.GA5850@srcf.ucam.org> <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com> <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com> <20130531162815.GA8082@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130531162815.GA8082@srcf.ucam.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755330Ab3EaW6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:58:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41123 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab3EaW6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 18:58:04 -0400
+Date: Fri, 31 May 2013 15:58:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: liguang <lig.fnst@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] sys: remove kernel_shutdown_prepare's parameter
+Message-Id: <20130531155802.5d0b24958e11783553e5cd00@linux-foundation.org>
+In-Reply-To: <1369900686-5936-2-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	<1369900686-5936-2-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 05:28:16PM +0100, Matthew Garrett wrote:
-> On Fri, May 31, 2013 at 10:43:49AM -0500, Russ Anderson wrote:
+On Thu, 30 May 2013 15:58:04 +0800 liguang <lig.fnst@cn.fujitsu.com> wrote:
+
+> kernel_shutdown_prepare's parameter can be removed
+> by checking global 'system_state', so, maybe we
+> can save a register to be used :-).
 > 
-> > When did writing EFI variables to nvram become necessary to boot on 
-> > UEFI? And if it is necessary, why is it that only linux boot loaders 
-> > that use EFI stubs (generally grub2) need it?  The current kernel 
-> > boots using EFI/grub and EFI/elilo.  It is just when EFI stubs are 
-> > used that the boot fails.
-> 
-> I think you've misunderstood the problem.
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -382,11 +382,10 @@ void kernel_restart(char *cmd)
+>  }
+>  EXPORT_SYMBOL_GPL(kernel_restart);
+>  
+> -static void kernel_shutdown_prepare(enum system_states state)
+> +static void kernel_shutdown_prepare(void)
+>  {
+>  	blocking_notifier_call_chain(&reboot_notifier_list,
+> -		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
+> -	system_state = state;
+> +		(system_state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
+>  	usermodehelper_disable();
+>  	device_shutdown();
+>  }
+> @@ -397,7 +396,7 @@ static void kernel_shutdown_prepare(enum system_states state)
+>   */
+>  void kernel_halt(void)
+>  {
+> -	kernel_shutdown_prepare(SYSTEM_HALT);
+> +	kernel_shutdown_prepare();
+>  	disable_nonboot_cpus();
+>  	syscore_shutdown();
+>  	printk(KERN_EMERG "System halted.\n");
+> @@ -414,7 +413,7 @@ EXPORT_SYMBOL_GPL(kernel_halt);
+>   */
+>  void kernel_power_off(void)
+>  {
+> -	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+> +	kernel_shutdown_prepare();
+>  	if (pm_power_off_prepare)
+>  		pm_power_off_prepare();
+>  	disable_nonboot_cpus();
+> @@ -484,11 +483,13 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  		break;
+>  
+>  	case LINUX_REBOOT_CMD_HALT:
+> +		system_state = SYSTEM_HALT;
+>  		kernel_halt();
+>  		do_exit(0);
+>  		panic("cannot halt");
+>  
+>  	case LINUX_REBOOT_CMD_POWER_OFF:
+> +		system_state = SYSTEM_POWER_OFF;
+>  		kernel_power_off();
+>  		do_exit(0);
+>  		break;
 
-The problem for me is the system not booting.  I was not
-familiar with the problem you are trying to solve, but
-have now looked at the links.
+No, this changes behavior for all other callers of kernel_halt() and
+kernel_power_off(): system_state will no longer be updated for those
+callers.
 
->                                           If nvram becaomes full, some 
-> systems crash during firmware initialisation. So we can't let nvram 
-> become full. The obvious thing to do here is to look at the values from 
-> QueryVariableInfo, but many systems won't perform any garbage collection 
-> until they're almost out of space and so variables that have been 
-> deleted still show up as used space.
-
-OK.  I get nvram looks full due to lack of garbage collection
-on some systems.  Does QueryVariableInfo (at runtime) tell you
-it is full?  Is the problem that it says it is full when it
-is not, or does not tell you it is full when it is?
-
->                                       We can work around that by adding 
-> up the size of the variables ourselves, but that only gives us the value 
-> for runtime-visible variables. We also need to know how much space is 
-> used by variables that are only visible during boot,
-
-Is it valid to assume that only the kernel writes to nvram at
-runtime?  Can bios log error information to nvram on an SMM
-interrupt (for example)?
-
->                                                      hence calling 
-> QueryVariableInfo before ExitBootServices.
-
-Correct me if I am wrong, but that is called from EFI stubs,
-which is only used by some bootloaders (sometimes grub2).
-Does that mean EFI/grub and EFI/elilo will not hit the problem,
-or will not have your fix?
-
-
-> > Which means the previous patch(es) that caused the bricking should
-> > get pulled, too.
-> 
-> There are no patches that cause the bricking.
-
-I thought that was the problem you were trying to avoid.
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+And passing an argument via a global variable is not nice :(
