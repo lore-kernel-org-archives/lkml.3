@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab3EaBZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:25:26 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:40476 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3EaBZS convert rfc822-to-8bit (ORCPT
+	id S1752115Ab3EaB2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:28:35 -0400
+Received: from chaos.universe-factory.net ([5.9.180.86]:40355 "EHLO
+	chaos.universe-factory.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751309Ab3EaB23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 21:25:18 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Philippe Begnic <philippe.begnic.st@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1369658492-31358-1-git-send-email-philippe.begnic.st@gmail.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, Lee Jones <lee.jones@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        linux-kernel@vger.kernel.org, olivier.clergeaud@st.com,
-        philippe.begnic.st@gmail.com, Philippe Begnic <philippe.begnic@st.com>
-References: <1369658492-31358-1-git-send-email-philippe.begnic.st@gmail.com>
-Message-ID: <20130531012509.21525.90187@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 0/4] clk, mfd: u8540 clock tree definition
-Date: Thu, 30 May 2013 18:25:09 -0700
+	Thu, 30 May 2013 21:28:29 -0400
+From: Matthias Schiffer <mschiffer@universe-factory.net>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net/3.9] ipv6: ndisc: fix ndisc_send_redirect writing to the wrong skb
+Date: Fri, 31 May 2013 03:27:55 +0200
+Message-Id: <5578958b49fff222740711e091c2325100f5a440.1369963643.git.mschiffer@universe-factory.net>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <51A66CF3.7010202@universe-factory.net>
+References: <51A66CF3.7010202@universe-factory.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Philippe Begnic (2013-05-27 05:41:28)
-> From: Philippe Begnic <philippe.begnic@st.com>
-> 
-> Create U8540 clock tree definitions for common clock framework
-> 
+Since some refactoring in 5f5a011, ndisc_send_redirect called
+ndisc_fill_redirect_hdr_option on the wrong skb, leading to data corruption or
+in the worst case a panic when the skb_put failed.
 
-The clock changes look good to me.  How did you want to merge the
-patches?
+Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
+---
+ net/ipv6/ndisc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards,
-Mike
+diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
+index 2712ab2..ca4ffcc 100644
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -1493,7 +1493,7 @@ void ndisc_send_redirect(struct sk_buff *skb, const struct in6_addr *target)
+ 	 */
+ 
+ 	if (ha)
+-		ndisc_fill_addr_option(skb, ND_OPT_TARGET_LL_ADDR, ha);
++		ndisc_fill_addr_option(buff, ND_OPT_TARGET_LL_ADDR, ha);
+ 
+ 	/*
+ 	 *	build redirect option and copy skb over to the new packet.
+-- 
+1.8.3
 
-> Philippe Begnic (4):
->   clk: ux500: Pass clock base adresses in initcall for u8540 and u9540
->   mfd: db8500: Update register definition for u8540 clock
->   mfd: db8500: Update BML clock register for db8580
->   clk: ux500: Clocks definition for u8540
-> 
->  arch/arm/mach-ux500/cpu.c                 |    6 +-
->  drivers/clk/ux500/u8540_clk.c             |  564 ++++++++++++++++++++++++++++-
->  drivers/clk/ux500/u9540_clk.c             |    4 +-
->  drivers/mfd/db8500-prcmu.c                |    1 +
->  drivers/mfd/dbx500-prcmu-regs.h           |    1 +
->  include/linux/mfd/abx500/ab8500-sysctrl.h |    4 +-
->  include/linux/mfd/dbx500-prcmu.h          |   12 +
->  include/linux/platform_data/clk-ux500.h   |    6 +-
->  8 files changed, 587 insertions(+), 11 deletions(-)
-> 
-> -- 
-> 1.7.9.5
