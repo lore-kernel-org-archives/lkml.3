@@ -1,307 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab3EaKvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:51:35 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.173]:12556 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751814Ab3EaKv1 (ORCPT
+	id S1754668Ab3EaKwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:52:17 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:50757 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab3EaKwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:51:27 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-3.tower-39.messagelabs.com!1369997483!11817401!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 31 May 2013 12:51:23 +0200
-Date: Fri, 31 May 2013 12:53:27 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <johannes.thumshirn@men.de>
-Subject: Re: [PATCH v5 1/2] watchdog: New watchdog driver for MEN A21
- watchdogs
-Message-ID: <20130531105326.GA8983@jtlinux>
-References: <20130531085842.GA8572@jtlinux>
- <20130531103654.GB5619@roeck-us.net>
+	Fri, 31 May 2013 06:52:08 -0400
+Date: Fri, 31 May 2013 12:52:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: alex.shi@intel.com, peterz@infradead.org, preeti@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, efault@gmx.de, pjt@google.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        arjan@linux.intel.com, len.brown@intel.com, corbet@lwn.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de
+Subject: power-efficient scheduling design
+Message-ID: <20130531105204.GE30394@gmail.com>
+References: <20130530134718.GB32728@e103034-lin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130531103654.GB5619@roeck-us.net>
+In-Reply-To: <20130530134718.GB32728@e103034-lin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 31 May 2013 10:51:23.0211 (UTC) FILETIME=[CA8B39B0:01CE5DEC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 03:36:54AM -0700, Guenter Roeck wrote:
-> On Fri, May 31, 2013 at 10:58:48AM +0200, Johannes Thumshirn wrote:
-> > This patch adds the driver for the watchdog devices found on MEN Mikro
-> > Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-> > watchdog framework.
-> >
-> > Revision 2:
-> > * Removed unneeded open flag in struct a21_wdt_drv
-> > * Corrected 3bit reason code from gpio
-> > * Additional sysfs files are now part of watchdog sysfs
-> > * Changed OFF/ON delay in ping from 400ms to 10ns
-> > * Reworked timeout setting
-> > * Removed a21_wdt_ioctl(...)
-> >
-> > Revision 3:
-> > * Changed pr_{err,info} to dev_{err,info}
-> > * Removed out of memory error print
-> > * Transition from "fast" to "slow" mode not allowed by chip
-> >
-> > Revision 4:
-> > * Remove reboot_notifier and place disable code into platform_device's shutdown function
-> > * Removed sysfs interface
-> >
-> > Revision 5:
-> >
-> > * Added setting of .bootstatus on driver init
-> > * Added initial timeout on driver init
-> >
-> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-> > ---
-> >  MAINTAINERS                   |    6 ++
-> >  drivers/watchdog/Kconfig      |    8 ++
-> >  drivers/watchdog/Makefile     |    1 +
-> >  drivers/watchdog/mena21_wdt.c |  234 +++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 249 insertions(+)
-> >  create mode 100644 drivers/watchdog/mena21_wdt.c
-> >
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 7714c3c..023945a 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -5307,6 +5307,12 @@ F:	drivers/mtd/
-> >  F:	include/linux/mtd/
-> >  F:	include/uapi/mtd/
-> >
-> > +MEN A21 WATCHDOG DRIVER
-> > +M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
-> > +L:	linux-watchdog@vger.kernel.org
-> > +S:	Supported
-> > +F:	drivers/watchdog/mena21_wdt.c
-> > +
-> >  METAG ARCHITECTURE
-> >  M:	James Hogan <james.hogan@imgtec.com>
-> >  S:	Supported
-> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> > index e89fc31..192b84d 100644
-> > --- a/drivers/watchdog/Kconfig
-> > +++ b/drivers/watchdog/Kconfig
-> > @@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
-> >
-> >  	  The value can be overridden by the wdt_period command-line parameter.
-> >
-> > +config MEN_A21_WDT
-> > +       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-> > +       select WATCHDOG_CORE
-> > +       help
-> > +        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-> > +
-> > +	If unsure select N here.
-> > +
-> >  # PPC64 Architecture
-> >
-> >  config WATCHDOG_RTAS
-> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> > index a300b94..bffdcb1 100644
-> > --- a/drivers/watchdog/Makefile
-> > +++ b/drivers/watchdog/Makefile
-> > @@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
-> >  obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
-> >  obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
-> >  obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-> > +obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
-> >
-> >  # PPC64 Architecture
-> >  obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-> > diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-> > new file mode 100644
-> > index 0000000..e586c2e
-> > --- /dev/null
-> > +++ b/drivers/watchdog/mena21_wdt.c
-> > @@ -0,0 +1,234 @@
-> > +/*
-> > + * Watchdog driver for the A21 VME CPU Boards
-> > + *
-> > + * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation
-> > + */
-> > +#include <linux/module.h>
-> > +#include <linux/moduleparam.h>
-> > +#include <linux/types.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/watchdog.h>
-> > +#include <linux/uaccess.h>
-> > +#include <linux/gpio.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/bitops.h>
-> > +
-> > +#define GPIO_WD_ENAB	169
-> > +#define GPIO_WD_FAST	170
-> > +#define GPIO_WD_TRIG	171
-> > +
-> > +#define GPIO_RST_CAUSE_BASE 166
-> > +
-> > +struct a21_wdt_drv {
-> > +	struct watchdog_device wdt;
-> > +	struct mutex lock;
-> > +};
-> > +
-> > +static bool nowayout = WATCHDOG_NOWAYOUT;
-> > +module_param(nowayout, bool, 0);
-> > +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> > +			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> > +
-> > +static int a21_wdt_get_bootstatus(unsigned int *reset)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < 3; i++)
-> > +		*reset |= gpio_get_value(GPIO_RST_CAUSE_BASE + i)
-> > +			? (1 << i) : 0;
-> > +
-> > +	if (*reset >= 8)
-> > +		return -EINVAL;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int a21_wdt_start(struct watchdog_device *wdt)
-> > +{
-> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> > +
-> > +	mutex_lock(&drv->lock);
-> > +
-> > +	gpio_set_value(GPIO_WD_ENAB, 1);
-> > +
-> > +	mutex_unlock(&drv->lock);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int a21_wdt_stop(struct watchdog_device *wdt)
-> > +{
-> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> > +
-> > +	/* We don't stop if WDOG_NO_WAY_OUT is set */
-> > +	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&drv->lock);
-> > +
-> > +	gpio_set_value(GPIO_WD_ENAB, 0);
-> > +
-> > +	mutex_unlock(&drv->lock);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int a21_wdt_ping(struct watchdog_device *wdt)
-> > +{
-> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> > +
-> > +	mutex_lock(&drv->lock);
-> > +
-> > +	gpio_set_value(GPIO_WD_TRIG, 0);
-> > +	ndelay(10);
-> > +	gpio_set_value(GPIO_WD_TRIG, 1);
-> > +
-> > +	mutex_unlock(&drv->lock);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-> > +			       unsigned int timeout)
-> > +{
-> > +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> > +
-> > +	if (timeout != 1 && timeout != 30) {
-> > +		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	if (timeout == 30 && wdt->timeout == 1) {
-> > +		dev_err(wdt->dev,
-> > +			"Transition from fast to slow mode not allowed\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	mutex_lock(&drv->lock);
-> > +
-> > +	if (timeout == 1)
-> > +		gpio_set_value(GPIO_WD_FAST, 1);
-> > +	else
-> > +		gpio_set_value(GPIO_WD_FAST, 0);
-> > +
-> > +	wdt->timeout = timeout;
-> > +
-> > +	mutex_unlock(&drv->lock);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static const struct watchdog_info a21_wdt_info = {
-> > +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-> > +	.identity = "MEN A21 Watchdog",
-> > +};
-> > +
-> > +static const struct watchdog_ops a21_wdt_ops = {
-> > +	.owner = THIS_MODULE,
-> > +	.start = a21_wdt_start,
-> > +	.stop = a21_wdt_stop,
-> > +	.ping = a21_wdt_ping,
-> > +	.set_timeout = a21_wdt_set_timeout,
-> > +};
-> > +
-> > +static struct watchdog_device a21_wdt = {
-> > +	.info = &a21_wdt_info,
-> > +	.ops = &a21_wdt_ops,
-> > +	.min_timeout = 1,
-> > +	.max_timeout = 30,
-> > +};
-> > +
-> > +static int a21_wdt_probe(struct platform_device *pdev)
-> > +{
-> > +	struct a21_wdt_drv *drv;
-> > +	unsigned int reset = 0;
-> > +	int ret;
-> > +
-> > +	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-> > +
-> > +	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-> > +	if (!drv)
-> > +		return -ENOMEM;
-> > +
-> > +	mutex_init(&drv->lock);
-> > +	watchdog_set_nowayout(&a21_wdt, nowayout);
-> > +	watchdog_set_drvdata(&a21_wdt, drv);
-> > +
-> > +	ret = watchdog_register_device(&a21_wdt);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "Cannot register watchdog device\n");
-> > +		goto err_register_wd;
-> > +	}
-> > +
-> > +	a21_wdt.timeout = 30;
->
-> It would be better to use watchdog_init_timeout(), as it automatically
-> supports setting the timeout through an fdt property. It should be set
-> before registering the device with the watchdog subsystem.
 
-I thought there would be something like watchdog_init_timeout() but didn't find
-it actually. Only found watchdog_set_timeout() which isn't exported...
+* Morten Rasmussen <morten.rasmussen@arm.com> wrote:
 
-Up for the next update..
+> Hi,
+> 
+> A number of patch sets related to power-efficient scheduling have been 
+> posted over the last couple of months. Most of them do not have much 
+> data to back them up, so I decided to do some testing.
+
+Thanks, numbers are always welcome!
+
+> Measurement technique:
+> Time spent non-idle (not in idle state) for each cpu based on cpuidle
+> ftrace events. TC2 does not have per-core power-gating, so packing
+> inside the A7 cluster does not lead to any significant power savings.
+> Note that any product grade hardware (TC2 is a test-chip) will very
+> likely have per-core power-gating, so in those cases packing will have
+> an appreciable effect on power savings.
+> Measuring non-idle time rather than power should give a more clear idea
+> about the effect of the patch sets given that the idle back-end is
+> highly implementation specific.
+
+Note that I still disagree with the whole design notion of having an "idle 
+back-end" (and a 'cpufreq back end') separate from scheduler power saving 
+policy, and none of the patch-sets offered so far solve this fundamental 
+design problem.
+
+PeterZ and me tried to point out the design requirements previously, but 
+it still does not appear to be clear enough to people, so let me spell it 
+out again, in a hopefully clearer fashion.
+
+The scheduler has valuable power saving information available:
+
+ - when a CPU is busy: about how long the current task expects to run
+
+ - when a CPU is idle: how long the current CPU expects _not_ to run
+
+ - topology: it knows how the CPUs and caches interrelate and already 
+   optimizes based on that
+
+ - various high level and low level load averages and other metrics about 
+   the recent past that show how busy a particular CPU is, how busy the 
+   whole system is, and what the runtime properties of individual tasks is 
+   (how often it sleeps, etc.)
+
+so the scheduler is in an _ideal_ position to do a judgement call about 
+the near future and estimate how deep an idle state a CPU core should 
+enter into and what frequency it should run at.
+
+The scheduler is also at a high enough level to host a "I want maximum 
+performance, power does not matter to me" user policy override switch and 
+similar user policy details.
+
+No ifs and whens about that.
+
+Today the power saving landscape is fragmented and sad: we just randomly 
+interface scheduler task packing changes with some idle policy (and 
+cpufreq policy), which might or might not combine correctly.
+
+Even when the numbers improve, it's an entirely random, essentially 
+unmaintainable property: because there's no clear split (possible) between 
+'scheduler policy' and 'idle policy'. This is why we removed the old, 
+broken power saving scheduler code a year ago: to make room for something 
+_better_.
+
+So if we want to add back scheduler power saving then what should happen 
+is genuinely better code:
+
+To create a new low level idle driver mechanism the scheduler could use 
+and integrate proper power saving / idle policy into the scheduler.
+
+In that power saving framework the already existing scheduler topology 
+information should be extended with deep idle parameters:
+
+ - enumeration of idle states
+
+ - how long it takes to enter+exit a particular idle state
+
+ - [ perhaps information about how destructive to CPU caches that
+     particular idle state is. ]
+
+ - new driver entry point that allows the scheduler to enter any of the 
+   enumerated idle states. Platform code will not change this state, all 
+   policy decisions and the idle state is decided at the power saving 
+   policy level.
+
+All of this combines into a 'cost to enter and exit an idle state' 
+estimation plus a way to enter idle states. It should be presented to the 
+scheduler in a platform independent fashion, but without policy embedded: 
+a low level platform driver interface in essence.
+
+Thomas Gleixner's recent work to generalize platform idle routines will 
+further help the implementation of this. (that code is upstream already)
+
+_All_ policy, all metrics, all averaging should happen at the scheduler 
+power saving level, in a single place, and then the scheduler should 
+directly drive the new low level idle state driver mechanism.
+
+'scheduler power saving' and 'idle policy' are one and the same principle 
+and they should be handled in a single place to offer the best power 
+saving results.
+
+Note that any RFC patch-set that offers an implementation for this could 
+be structured in a gradual fashion: only implementing it for a limited CPU 
+range initially. The new framework can then be extended to more and more 
+CPUs and architectures, incorporating more complicated power saving 
+features gradually. (The old, existing idle policy code would remain 
+untouched and available - it would simply not be used when the new policy 
+is activated.)
+
+I.e. I'm not asking for a 'rewrite the world' kind of impossible task - 
+I'm providing an actionable path to get improved power saving upstream, 
+but it has to use a _sane design_.
+
+This is a "line in the sand", a 'must have' design property for any 
+scheduler power saving patches to be acceptable - and I'm NAK-ing 
+incomplete approaches that don't solve the root design cause of our power 
+saving troubles...
+
+Thanks,
+
+	Ingo
