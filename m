@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab3EaNOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:14:03 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:49578 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab3EaNNz (ORCPT
+	id S1754325Ab3EaNQl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:16:41 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:64393 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab3EaNQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:13:55 -0400
-Message-ID: <51A8A215.2030706@cogentembedded.com>
-Date: Fri, 31 May 2013 17:13:57 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 31 May 2013 09:16:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,779,1363132800"; 
+   d="scan'208";a="5206161"
+Message-ID: <1370006175.5199.143.camel@zakaz.uk.xensource.com>
+Subject: Re: DTB build failure due to preproccessing
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jon Loeliger <jdl@jdl.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-kbuild@vger.kernel.org>
+Date: Fri, 31 May 2013 14:16:15 +0100
+In-Reply-To: <E1UiOxz-0004ET-RE@jdl.com>
+References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
+	 <20130531114824.60D223E0901@localhost> <E1UiOxz-0004ET-RE@jdl.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: Timur Tabi <timur.tabi@calxeda.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
- Calxeda controller
-References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com> <51A7646B.6080203@cogentembedded.com> <51A848F1.3040301@ladisch.de>
-In-Reply-To: <51A848F1.3040301@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, 2013-05-31 at 08:01 -0500, Jon Loeliger wrote:
+> Hrm.  Is this a "that's not in the kernel's copy yet" problem? 
 
-On 31-05-2013 10:53, Clemens Ladisch wrote:
+BTW I'm using dtc.git 4e76ec796c90d44d417f82d9db2d67cfe575f8ed and not
+the kernel copy. 
 
->>>> +    const unsigned long timing[] = { 5, 100, 500};
+dtc-lexer.l in my HEAD is identical to the current master
+(2e3fc7e9b3a4722a5500afaa9faf7874c61b2e6a) according to git diff.
 
->>> You'll save space and time if you also make this array "static",
->>> otherwise the compiler will build the array every time this function is
->>> called.
-
->> No, *const* specifier is enough to not build this array every time. It will be put into the .const section.
-
-> gcc disagrees:
-
-> $ cat const_static.c
-> int f(int x) {
-> 	const unsigned long timing[] = { 5, 100, 500};
-> 	static const unsigned long timing2[] = { 5, 100, 500};
-> 	return timing[x] + timing2[x];
-> }
-> $ gcc -Os -S const_static.c
-> $ cat const_static.s
-	...
-> timing2.0:
->          .long   5
->          .long   100
->          .long   500
-> 	...
->          movl    8(%ebp), %edx
->          movl    $5, -16(%ebp)
->          movl    $100, -12(%ebp)
->          movl    $500, -8(%ebp)
->          movl    timing2.0(,%edx,4), %eax
->          addl    -16(%ebp,%edx,4), %eax
-
-    Hm, I remember I was convinced by somebody just *const* was enough 
-for the data to be put to .const section. Don't remember if he gave an 
-object code example... Well, it means that person was wrong. Mark, we 
-then need *static* as well...
-
-> Regards,
-> Clemens
-
-WBR, Sergei
+Ian.
 
