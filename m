@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3EaRmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:42:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40923 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab3EaRmL (ORCPT
+	id S1756543Ab3EaRpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:45:17 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:44216 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab3EaRpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:42:11 -0400
-Message-ID: <51A8E0EE.1040305@wwwdotorg.org>
-Date: Fri, 31 May 2013 11:42:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 31 May 2013 13:45:14 -0400
+Message-ID: <51A8E1A7.3080403@gmail.com>
+Date: Fri, 31 May 2013 12:45:11 -0500
+From: Jason Hrycay <jhrycay@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-CC: David Gibson <david@gibson.dropbear.id.au>, jdl@jdl.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, mmarek@suse.cz, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, linux-kbuild@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] dtc: Ensure #line directives don't consume data from
- the next line
-References: <1370020450-18136-1-git-send-email-swarren@wwwdotorg.org> <87sj13dp72.fsf@hase.home>
-In-Reply-To: <87sj13dp72.fsf@hase.home>
-X-Enigmail-Version: 1.4.6
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, jaegeuk.kim@samsung.com,
+        jason.hrycay@motorola.com, C.Fries@motorola.com
+Subject: f2fs: handle errors from get_node_page calls
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2013 11:38 AM, Andreas Schwab wrote:
-> Stephen Warren <swarren@wwwdotorg.org> writes:
-> 
->> Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
-> 
-> I think the other uses of {WS} shouldn't span lines either.
+Add check for error pointers returned from get_node_page in order to
+avoid dereferencing a bad address on the next use.
 
-That is true, but only the optional occurrence /should/ matter. Any
-changes to the other occurrences would only affect malformed #line
-directives, whereas changing this one occurrence would also affect
-well-formed #line directives, due to the optional nature of the trailing
-flags field.
+Signed-off-by: Jason Hrycay <jason.hrycay@motorola.com>
+---
+ fs/f2fs/xattr.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Still, it may be reasonable just to change all the occurrences anyway.
-Does anyone have a strong opinion either way?
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+index 0b02dce..ae61f35 100644
+--- a/fs/f2fs/xattr.c
++++ b/fs/f2fs/xattr.c
+@@ -218,6 +218,8 @@ int f2fs_getxattr(struct inode *inode, int
+name_index, const char *name,
+ 		return -ENODATA;
+
+ 	page = get_node_page(sbi, fi->i_xattr_nid);
++	if (IS_ERR(page))
++		return PTR_ERR(page);
+ 	base_addr = page_address(page);
+
+ 	list_for_each_xattr(entry, base_addr) {
+@@ -268,6 +270,8 @@ ssize_t f2fs_listxattr(struct dentry *dentry, char
+*buffer, size_t buffer_size)
+ 		return 0;
+
+ 	page = get_node_page(sbi, fi->i_xattr_nid);
++	if (IS_ERR(page))
++		return PTR_ERR(page);
+ 	base_addr = page_address(page);
+
+ 	list_for_each_xattr(entry, base_addr) {
+-- 
+1.8.0
