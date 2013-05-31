@@ -1,241 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab3EaLzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:55:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57033 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3EaLzG (ORCPT
+	id S1755644Ab3EaL4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:56:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33719 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab3EaLz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:55:06 -0400
-Date: Fri, 31 May 2013 04:54:31 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-095ae69b890c5b9cc87a3160b489a617554d9848@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1369398928-9809-2-git-send-email-jolsa@redhat.com>
-References: <1369398928-9809-2-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add automated make test suite
-Git-Commit-ID: 095ae69b890c5b9cc87a3160b489a617554d9848
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 31 May 2013 07:55:58 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18WRGGgfGz29+hoV2HQNlB488zlxV79nwo=
+Date: Fri, 31 May 2013 07:54:50 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Arnaud Ebalard <arno@natisbad.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v5 12/13] ARM: kirkwood: remove redundant DT board files
+Message-ID: <20130531115450.GA3803@titan.lakedaemon.net>
+References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369855975-21489-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369855975-21489-13-git-send-email-sebastian.hesselbarth@gmail.com>
+ <8738t4q1kv.fsf@natisbad.org>
+ <20130530193708.GC31290@titan.lakedaemon.net>
+ <87txlknluf.fsf@natisbad.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87txlknluf.fsf@natisbad.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  095ae69b890c5b9cc87a3160b489a617554d9848
-Gitweb:     http://git.kernel.org/tip/095ae69b890c5b9cc87a3160b489a617554d9848
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 29 Mar 2013 16:11:02 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 28 May 2013 16:24:05 +0300
+Arnaud,
 
-perf tools: Add automated make test suite
+On Fri, May 31, 2013 at 12:28:56AM +0200, Arnaud Ebalard wrote:
+> Hi,
+> 
+> Jason Cooper <jason@lakedaemon.net> writes:
+> 
+> >> For instance 6bd98481ab34 (arm: kirkwood: NETGEAR ReadyNAS Duo v2 init
+> >> PCIe via DT) currently sitting in jcooper/mvebu/pcie_kirkwood removes
+> >> the PCIE init routine in board-readynas.c, and yours remove ge00
+> >> init. With both applied, the whole file can go away.
+> >> 
+> >> AFAICT, this may be the case soon for:
+> >> 
+> >>  arch/arm/mach-kirkwood/board-iconnect.c   (36e5722089)
+> >>  arch/arm/mach-kirkwood/board-mplcec4.c    (9470fbfb8d)
+> >>  arch/arm/mach-kirkwood/board-nsa310.c     (40fa8e5da2)
+> >>  arch/arm/mach-kirkwood/board-readynas.c   (6bd98481ab)
+> >>  arch/arm/mach-kirkwood/board-ts219.c      (259e234608)
+> >
+> > Would you mind putting a patch together (for after v3.10 drops) to do
+> > this?  If you applied Sebastian's series on top of mvebu/pcie_kirkwood,
+> > that should get you almost there.  The last half of his series is going
+> > in after v3.10...
+> 
+> Something like the quick quilt-generated patch at the end of this email
+> (done after a dummy merge of Sebastian's set in mvebu/pcie_kirkwood)? 
 
-Adding automated test for testing the build process.
+yep.
 
-To run it you need to be in perf directory or specify one with PERF
-variable. It's also possible to specify optional Makefile to test via MK
-variable.
+> I will take a look at what remains after Sebastian's set hit one of
+> your branch but I guess he will have included most of what is in the
+> patch to help you with the merge.
+> 
+> Anyway, at the end here is what DT board files would remain:
+> 
+> $ ls -1 arch/arm/mach-kirkwood/board-*.c
+> arch/arm/mach-kirkwood/board-dnskw.c
 
-Whole suite is executed twice, the second time with O=/tmp/xxx option
-added.
+This one seems to just be setting a gpio to enable reboot after power
+failure.  Should be simple to move to DT.
 
-To run the whole suite:
-  $ make -f tests/make
-  - make_pure: cd . && make -f Makefile
-    test: test -x ./perf
-  - make_clean_all: cd . && make -f Makefile clean all
-    test: test -x ./perf
-  - make_python_perf_so: cd . && make -f Makefile python/perf.so
-    test: test -f ./python/perf.so
-  - make_debug: cd . && make -f Makefile DEBUG=1
-    test: test -x ./perf
-  - make_no_libperl: cd . && make -f Makefile NO_LIBPERL=1
-    test: test -x ./perf
+> arch/arm/mach-kirkwood/board-dt.c
 
-You see command line for 'make_pure' test right away, and the output is
-stored into 'make_pure' file.
+We obviously need this one. ;-)
 
-To run simple test:
-  $ make -f tests/make make_debug
-  - make_debug: cd . && make -f Makefile DEBUG=1
-    test: test -x ./perf
+> arch/arm/mach-kirkwood/board-lsxl.c
 
-At this moment tests checks for successfull build and for existence of
-several built files. Additional after-build checks could be added.
+This is taken care of in mvebu/boards
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1369398928-9809-2-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/make | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 138 insertions(+)
+  391a16c ARM: Kirkwood: Convert LSXL to restart-poweroff driver.
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-new file mode 100644
-index 0000000..c441a28
---- /dev/null
-+++ b/tools/perf/tests/make
-@@ -0,0 +1,138 @@
-+PERF := .
-+MK   := Makefile
-+
-+# standard single make variable specified
-+make_clean_all      := clean all
-+make_python_perf_so := python/perf.so
-+make_debug          := DEBUG=1
-+make_no_libperl     := NO_LIBPERL=1
-+make_no_libpython   := NO_LIBPYTHON=1
-+make_no_scripts     := NO_LIBPYTHON=1 NO_LIBPERL=1
-+make_no_newt        := NO_NEWT=1
-+make_no_slang       := NO_SLANG=1
-+make_no_gtk2        := NO_GTK2=1
-+make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
-+make_no_demangle    := NO_DEMANGLE=1
-+make_no_libelf      := NO_LIBELF=1
-+make_no_libunwind   := NO_LIBUNWIND=1
-+make_no_backtrace   := NO_BACKTRACE=1
-+make_no_libnuma     := NO_LIBNUMA=1
-+make_no_libaudit    := NO_LIBAUDIT=1
-+make_no_libbionic   := NO_LIBBIONIC=1
-+make_tags           := tags
-+make_cscope         := cscope
-+make_help           := help
-+make_doc            := doc
-+make_perf_o         := perf.o
-+make_util_map_o     := util/map.o
-+
-+# all the NO_* variable combined
-+make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
-+make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
-+make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
-+
-+# $(run) contains all available tests
-+run := make_pure
-+run += make_clean_all
-+run += make_python_perf_so
-+run += make_debug
-+run += make_no_libperl
-+run += make_no_libpython
-+run += make_no_scripts
-+run += make_no_newt
-+run += make_no_slang
-+run += make_no_gtk2
-+run += make_no_ui
-+run += make_no_demangle
-+run += make_no_libelf
-+run += make_no_libunwind
-+run += make_no_backtrace
-+run += make_no_libnuma
-+run += make_no_libaudit
-+run += make_no_libbionic
-+run += make_tags
-+run += make_cscope
-+run += make_help
-+run += make_doc
-+run += make_perf_o
-+run += make_util_map_o
-+run += make_minimal
-+
-+# $(run_O) contains same portion of $(run) tests with '_O' attached
-+# to distinguish O=... tests
-+run_O := $(addsuffix _O,$(run))
-+
-+# disable some tests for O=...
-+run_O := $(filter-out make_python_perf_so_O,$(run_O))
-+
-+# define test for each compile as 'test_NAME' variable
-+# with the test itself as a value
-+test_make_tags   = test -f tags
-+test_make_cscope = test -f cscope.out
-+
-+test_make_tags_O   := $(test_make_tags)
-+test_make_cscope_O := $(test_make_cscope)
-+
-+test_ok          := true
-+test_make_help   := $(test_ok)
-+test_make_doc    := $(test_ok)
-+test_make_help_O := $(test_ok)
-+test_make_doc_O  := $(test_ok)
-+
-+test_make_python_perf_so := test -f $(PERF)/python/perf.so
-+
-+test_make_perf_o     := test -f $(PERF)/perf.o
-+test_make_util_map_o := test -f $(PERF)/util/map.o
-+
-+# Kbuild tests only
-+#test_make_python_perf_so_O := test -f $$TMP/tools/perf/python/perf.so
-+#test_make_perf_o_O         := test -f $$TMP/tools/perf/perf.o
-+#test_make_util_map_o_O     := test -f $$TMP/tools/perf/util/map.o
-+
-+test_make_perf_o_O     := true
-+test_make_util_map_o_O := true
-+
-+test_default = test -x $(PERF)/perf
-+test = $(if $(test_$1),$(test_$1),$(test_default))
-+
-+test_default_O = test -x $$TMP/perf
-+test_O = $(if $(test_$1),$(test_$1),$(test_default_O))
-+
-+all:
-+
-+ifdef DEBUG
-+d := $(info run   $(run))
-+d := $(info run_O $(run_O))
-+endif
-+
-+MAKEFLAGS := --no-print-directory
-+
-+clean := @(cd $(PERF); make -s -f $(MK) clean >/dev/null)
-+
-+$(run):
-+	$(call clean)
-+	@cmd="cd $(PERF) && make -f $(MK) $($@)"; \
-+	echo "- $@: $$cmd" && echo $$cmd > $@ && \
-+	( eval $$cmd ) >> $@ 2>&1; \
-+	echo "  test: $(call test,$@)"; \
-+	$(call test,$@) && \
-+	rm -f $@
-+
-+$(run_O):
-+	$(call clean)
-+	@TMP=$$(mktemp -d); \
-+	cmd="cd $(PERF) && make -f $(MK) $($(patsubst %_O,%,$@)) O=$$TMP"; \
-+	echo "- $@: $$cmd" && echo $$cmd > $@ && \
-+	( eval $$cmd ) >> $@ 2>&1 && \
-+	echo "  test: $(call test_O,$@)"; \
-+	$(call test_O,$@) && \
-+	rm -f $@ && \
-+	rm -rf $$TMP
-+
-+all: $(run) $(run_O)
-+	@echo OK
-+
-+out: $(run_O)
-+	@echo OK
-+
-+.PHONY: all $(run) $(run_O) clean
+> arch/arm/mach-kirkwood/board-ts219.c
+
+Also in mvebu/boards
+
+  4350a47 ARM: Kirkwood: Make use of the QNAP Power off driver.
+
+> Just one question though: the removal of MACH_*_DT in Kconfig removes
+> the automatic selection of useful board specific options like
+> ARM_APPENDED_DTB, ARM_ATAG_DTB_COMPAT, POWER_RESET_RESTART,
+> POWER_RESET_QNAP. Is that expected?
+
+I would select POWER_RESET_QNAP and POWER_RESET_RESTART in Kconfig for
+ARCH_KIRKWOOD_DT, and put ARM_APPENDED_DTB and ARM_ATAG_DTB_COMPAT into
+the defconfig.
+
+thx,
+
+Jason.
