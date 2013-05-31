@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab3EaTqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:46:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39898 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab3EaTqM convert rfc822-to-8bit (ORCPT
+	id S1757327Ab3EaTqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:46:32 -0400
+Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:46955 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757276Ab3EaTqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:46:12 -0400
-Date: Fri, 31 May 2013 21:46:09 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: [ANNOUNCE] 3.8.13-rt10
-Message-ID: <20130531194609.GA24632@linutronix.de>
+	Fri, 31 May 2013 15:46:18 -0400
+Date: Fri, 31 May 2013 21:42:09 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PULL] FBDEV: some small fixes for 3.10-rc4
+Message-ID: <20130531194209.GS19468@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 18304317737628969786
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+Hi Linus,
 
-I'm pleased to announce the 3.8.13-rt10 release.
+	This contain some small fixes for Atmel LCDC, ps3fb and OMAPDSS
 
-changes since v3.8.13-rt9:
-- x86's mce timer was not scheduled properly due do missing µsec -> nsec
-  conversation. Fix sent by Mike Galbraith.
-- 32bit PowerPC missed to check _TIF_NEED_RESCHED and call
-  preempt_schedule_irq() if needed. Fix sent by Priyanka Jain.
+please pull
+The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
 
-Known issues:
+  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
 
-    - SLxB is broken on PowerPC, e500 based cpus. Can't repdroduce the
-      problem on mpc5200 based board.
+are available in the git repository at:
 
-The delta patch against v3.8.13-rt9 is appended below and can be found here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git tags/fbdev-for-3.10-rc4
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13-rt9-rt10.patch.xz
+for you to fetch changes up to 56c21b53ab071feb3ce93375a563ead745fa7105:
 
-The RT patch against 3.8.11 can be found here:
+  atmel_lcdfb: blank the backlight on remove (2013-06-01 03:18:55 +0800)
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13-rt10.patch.xz
+----------------------------------------------------------------
+fbdev: fixes for 3.10-rc4
 
-The split quilt queue is available at:
+This contains some small fixes
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.8.13-rt10.tar.xz
+Atmel LCDC: fix blank the backlight on remove
+ps3fb: fix compile warning
+OMAPDSS: Fix crash with DT boot
 
-Sebastian
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
-index 95b884e..086dce7 100644
---- a/arch/powerpc/kernel/entry_32.S
-+++ b/arch/powerpc/kernel/entry_32.S
-@@ -851,7 +851,7 @@ user_exc_return:		/* r10 contains MSR_KERNEL here */
- 	/* check current_thread_info, _TIF_EMULATE_STACK_STORE */
- 	CURRENT_THREAD_INFO(r9, r1)
- 	lwz	r8,TI_FLAGS(r9)
--	andis.	r8,r8,_TIF_EMULATE_STACK_STORE@h
-+	andis.	r0,r8,_TIF_EMULATE_STACK_STORE@h
- 	beq+	1f
- 
- 	addi	r8,r1,INT_FRAME_SIZE	/* Get the kprobed function entry */
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 332e133..f54c5bf 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1295,7 +1295,8 @@ static enum hrtimer_restart mce_timer_fn(struct hrtimer *timer)
- 	__this_cpu_write(mce_next_interval, iv);
- 	/* Might have become 0 after CMCI storm subsided */
- 	if (iv) {
--		hrtimer_forward_now(timer, ns_to_ktime(jiffies_to_usecs(iv)));
-+		hrtimer_forward_now(timer, ns_to_ktime(
-+					jiffies_to_usecs(iv) * 1000ULL));
- 		return HRTIMER_RESTART;
- 	}
- 	return HRTIMER_NORESTART;
-@@ -1323,7 +1324,7 @@ void mce_timer_kick(unsigned long interval)
- 		}
- 	} else {
- 		hrtimer_start_range_ns(t,
--				ns_to_ktime(jiffies_to_usecs(interval) * 1000),
-+			ns_to_ktime(jiffies_to_usecs(interval) * 1000ULL),
- 				0, HRTIMER_MODE_REL_PINNED);
- 	}
- 	if (interval < iv)
-@@ -1691,7 +1692,7 @@ static void mce_start_timer(unsigned int cpu, struct hrtimer *t)
- 	if (mca_cfg.ignore_ce || !iv)
- 		return;
- 
--	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000),
-+	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000ULL),
- 			0, HRTIMER_MODE_REL_PINNED);
- }
- 
-diff --git a/localversion-rt b/localversion-rt
-index 22746d6..d79dde6 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt9
-+-rt10
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      Merge branch 'fbdev-3.10-fixes' of git://gitorious.org/linux-omap-dss2/linux into linux-fbdev/for-3.10-fixes
+
+Richard Genoud (2):
+      trivial: atmel_lcdfb: add missing error message
+      atmel_lcdfb: blank the backlight on remove
+
+Tomi Valkeinen (2):
+      fbdev/ps3fb: fix compile warning
+      OMAPDSS: Fix crash with DT boot
+
+ drivers/gpu/drm/omapdrm/omap_drv.c       |    3 +++
+ drivers/media/platform/omap/omap_vout.c  |    3 +++
+ drivers/video/atmel_lcdfb.c              |   15 ++++++++++++---
+ drivers/video/omap2/dss/core.c           |   20 +++++++++++++++++++-
+ drivers/video/omap2/omapfb/omapfb-main.c |    3 +++
+ drivers/video/ps3fb.c                    |    2 +-
+ include/video/omapdss.h                  |    1 +
+ 7 files changed, 42 insertions(+), 5 deletions(-)
+
+Brest Regards,
+J.
