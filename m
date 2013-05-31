@@ -1,164 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3EaBRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 21:17:49 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:32975 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab3EaBRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752838Ab3EaBSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 21:18:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29778 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab3EaBRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 May 2013 21:17:42 -0400
-Date: Fri, 31 May 2013 10:17:37 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] sata highbank: add bit-banged SGPIO driver support
-Message-ID: <20130531011737.GA29975@mtj.dyndns.org>
-References: <1369945051-2582-1-git-send-email-mark.langsdorf@calxeda.com>
- <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,774,1363158000"; 
+   d="scan'208";a="322230562"
+Message-ID: <51A7FA14.70902@intel.com>
+Date: Fri, 31 May 2013 09:17:08 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: peterz@infradead.org, mingo@kernel.org, preeti@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, efault@gmx.de, pjt@google.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        arjan@linux.intel.com, len.brown@intel.com, corbet@lwn.net,
+        tglx@linutronix.de
+Subject: Re: [RFC] Comparison of power-efficient scheduling patch sets
+References: <20130530134718.GB32728@e103034-lin>
+In-Reply-To: <20130530134718.GB32728@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 03:17:31PM -0500, Mark Langsdorf wrote:
-> +static DEFINE_SPINLOCK(sgpio_lock);
-> +#define SCLOCK				0
-> +#define SLOAD				1
-> +#define SDATA				2
-> +static unsigned ecx_sgpio[3];
-> +static unsigned long ecx_sgpio_pattern;
-> +static int port_to_sgpio[] = { 4, 0, 1, 2, 3};
-> +static int n_ports;
+On 05/30/2013 09:47 PM, Morten Rasmussen wrote:
+> Hi,
+> 
+> A number of patch sets related to power-efficient scheduling have been
+> posted over the last couple of months. Most of them do not have much
+> data to back them up, so I decided to do some testing.
+> 
+> Common for all of the patch sets that I have tested, except one, is that
+> they attempt to pack tasks on as few cpus as possible to allow the
+> remaining cpus to enter deeper sleep states - a strategy that should
+> make sense on most platforms that support per-cpu power gating and
+> multi-socket machines.
+> 
+> Kernel: 3.9
+> 
+> Patch sets:
+> rlb-v4: sched: use runnable load based balance (Alex Shi)
+>         <https://lkml.org/lkml/2013/4/27/13>
 
-Please use more specific names for global constants and variables.
-Defining something like n_ports as a global variable is silly and
-can lead to silly bugs later on.
+Thanks for the valuable comparison!
 
-> +#define ACTIVITY_BITS			0x300000 // 0x7
-> +#define ACTIVITY_SHIFT			2
-> +#define LOCATE_BITS 			0x80000  // 0x38
-> +#define LOCATE_SHIFT			1
-> +#define FAULT_BITS 			0x400000 // 0x1c0
+The runnable load balance target is performance. It is still try to
+disperse tasks to as much as possible CPUs. :)
+The latest v7 version remove the 6th patch(wake_affine change) in v4.
+and plus fix a slept time double counting issue, and remove
+blocked_load_avg in tg load.
+http://comments.gmane.org/gmane.linux.kernel/1498988
+Enjoy!
+> pas-v7: sched: power aware scheduling (Alex Shi)
+>         <https://lkml.org/lkml/2013/4/3/732>
 
-No //s please and please pick and use a common prefix.  It doesn't
-have to be long or complete.  Even something as short as HB_ is fine.
+We still have some internal discussion on this patch set before update
+it. Sorry for response late on this patchset!
 
-> +#define FAULT_SHIFT			1
-> +#define SGPIO_BIT(port, shift)		1 << (3 * port_to_sgpio[(port)] + \
-> +							(shift))
+> pst-v3: sched: packing small tasks (Vincent Guittot)
+>         <https://lkml.org/lkml/2013/3/22/183>
+> pst-v4: sched: packing small tasks (Vincent Guittot)
+>         <https://lkml.org/lkml/2013/4/25/396>
+> 
+> Configuration:
+> pas-v7: Set to "powersaving" mode.
+> pst-v4: Set to "Full" packing mode.
+> 
+> Platform:
+> ARM TC2 (test-chip), 2xCortex-A15 + 3xCortex-A7. Cortex-A15s disabled.
+> 
+> Measurement technique:
+> Time spent non-idle (not in idle state) for each cpu based on cpuidle
+> ftrace events. TC2 does not have per-core power-gating, so packing
+> inside the A7 cluster does not lead to any significant power savings.
+> Note that any product grade hardware (TC2 is a test-chip) will very
+> likely have per-core power-gating, so in those cases packing will have
+> an appreciable effect on power savings.
+> Measuring non-idle time rather than power should give a more clear idea
+> about the effect of the patch sets given that the idle back-end is
+> highly implementation specific.
+> 
+> Benchmarks:
+> audio playback (Android): 30s mp3 file playback on Android.
+> bbench+audio (Android): Web page rendering while doing mp3 playback.
+> andebench_native (Android): Android benchmark running in native mode.
+> cyclictest: Short periodic tasks.
+> 
+> Results:
+> Two runs for each patch set.
+> 
+> audio playback (Android) SMP
+> non-idle %  cpu 0  cpu 1  cpu 2
+> 3.9_1       11.96   2.86   2.48
+> 3.9_2       12.64   2.81   1.88
+> rlb-v4_1    12.61   2.44   1.90
+> rlb-v4_2    12.45   2.44   1.90
+> pas-v7_1    16.17   0.03   0.24
+> pas-v7_2    16.08   0.28   0.07
+> pst-v3_1    15.18   2.76   1.70
+> pst-v3_2    15.13   0.80   0.38
+> pst-v4_1    16.14   0.05   0.00
+> pst-v4_2    16.34   0.06   0.00
+> 
+> bbench+audio (Android) SMP
+> non-idle %  cpu 0  cpu 1  cpu 2  render time
+> 3.9_1       25.00  20.73  21.22   812
+> 3.9_2       24.29  19.78  22.34   795
+> rlb-v4_1    23.84  19.36  22.74   782
+> rlb-v4_2    24.07  19.36  22.74   797
+> pas-v7_1    28.29  17.86  16.01   869
+> pas-v7_2    28.62  18.54  15.05   908
+> pst-v3_1    29.14  20.59  21.72   830
+> pst-v3_2    27.69  18.81  20.06   830
+> pst-v4_1    42.20  13.63   2.29   880
+> pst-v4_2    41.56  14.40   2.17   935
+> 
+> andebench_native (8 threads) (Android) SMP
+> non-idle %  cpu 0  cpu 1  cpu 2  Score
+> 3.9_1       99.22  98.88  99.61   4139
+> 3.9_2       99.56  99.31  99.46   4148
+> rlb-v4_1    99.49  99.61  99.53   4153
+> rlb-v4_2    99.56  99.61  99.53   4149
+> pas-v7_1    99.53  99.59  99.29   4149
+> pas-v7_2    99.42  99.63  99.48   4150
+> pst-v3_1    97.89  99.33  99.42   4097
+> pst-v3_2    99.16  99.62  99.42   4097
+> pst-v4_1    99.34  99.01  99.59   4146
+> pst-v4_2    99.49  99.52  99.20   4146
+> 
+> cyclictest SMP
+> non-idle %  cpu 0  cpu 1  cpu 2
+> 3.9_1        9.13   8.88   8.41
+> 3.9_2       10.27   8.02   6.30
+> rlb-v4_1     8.88   8.09   8.11
+> rlb-v4_2     8.49   8.09   8.11
+> pas-v7_1    10.20   0.02  11.50
+> pas-v7_2     7.86  14.31   0.02
+> pst-v3_1    20.44   8.68   7.97
+> pst-v3_2    20.41   0.78   1.00
+> pst-v4_1    21.32   0.21   0.05
+> pst-v4_2    21.56   0.21   0.04
+> 
+> Overall, pas-v7 seems to do a fairly good job at packing. The idle time
+> distribution seems to be somewhere between pst-v3 and the more
+> aggressive pst-v4 for all the benchmarks. pst-v4 manages to keep two
+> cpus nearly idle (<0.25% non-idle) for both cyclictest and audio, which
+> is better than both pst-v3 and pas-v7. pas-v7 fails to pack cyclictest.
+> Packing does come at at cost which can be seen for bbench+audio, where
+> pst-v3 and rlb-v4 get better render times than pas-v7 and pst-v4 which
+> do more aggressive packing. rlb-v4 does not pack, it is only included
+> for reference.
+> 
+> From a packing perspective pst-v4 seems to do the best job for the
+> workloads that I have tested on ARM TC2. The less aggressive packing in
+> pst-v3 may be a better choice for in terms of performance.
+> 
+> I'm well aware that these tests are heavily focused on mobile workloads.
+> I would therefore encourage people to share your test results for your
+> workloads on your platforms to complete the picture. Comments are also
+> welcome.
+> 
+> Thanks,
+> Morten
+> 
+> 
 
-Please make it a function.
-
-> +static void ecx_parse_sgpio(u32 port, u32 state)
-> +{
-> +	if (state == 0) {
-> +		ecx_sgpio_pattern &= ~(SGPIO_BIT(port, ACTIVITY_SHIFT) |
-> +					SGPIO_BIT(port, LOCATE_SHIFT) |
-> +					SGPIO_BIT(port, FAULT_SHIFT));
-> +		return;
-> +	}
-> +	if (state & ACTIVITY_BITS)
-> +		ecx_sgpio_pattern |= SGPIO_BIT(port, ACTIVITY_SHIFT);
-> +	if (state & LOCATE_BITS)
-> +		ecx_sgpio_pattern |= SGPIO_BIT(port, LOCATE_SHIFT);
-> +	if (state & FAULT_BITS)
-> +		ecx_sgpio_pattern |= SGPIO_BIT(port, FAULT_SHIFT);
-> +}
-
-Maybe I'm misunderstanding the code but things are cleared iff @state
-is zero?  Is that intentional?
-
-....
-> +static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
-> +					ssize_t size)
-> +{
-> +	struct ahci_host_priv *hpriv = ap->host->private_data;
-> +	struct ahci_port_priv *pp = ap->private_data;
-> +	unsigned long flags;
-> +	int pmp, i;
-> +	struct ahci_em_priv *emp;
-> +	u32 sgpio_out;
-> +
-> +	/* get the slot number from the message */
-> +	pmp = (state & EM_MSG_LED_PMP_SLOT) >> 8;
-> +	if (pmp < EM_MAX_SLOTS)
-> +		emp = &pp->em_priv[pmp];
-> +	else
-> +		return -EINVAL;
-> +
-> +	if (!hpriv->em_msg_type & EM_MSG_TYPE_LED) 
-
-Huh?  This can't be right.
-
-> +		return size;
-> +
-> +	spin_lock_irqsave(&sgpio_lock, flags);
-> +	ecx_parse_sgpio(ap->port_no, state);
-> +	sgpio_out = ecx_sgpio_pattern;
-
-Hmmm... global data.  Can we at least move it into host private data?
-
-> +	gpio_set_value(ecx_sgpio[SLOAD], 1);
-> +	ecx_led_cycle_clock();
-> +	gpio_set_value(ecx_sgpio[SLOAD], 0);
-> +	for (i = 0; i < (3 * n_ports); i++) {
-> +		gpio_set_value(ecx_sgpio[SDATA], sgpio_out & 1);
-> +		sgpio_out >>= 1;
-> +		ecx_led_cycle_clock();
-> +	}
-
-What's the above loop achieving?  Care to add a comment?
-
-> +
-> +	/* save off new led state for port/slot */
-> +	emp->led_state = state;
-> +
-> +	spin_unlock_irqrestore(&sgpio_lock, flags);
-> +	return size;
-> +}
-> +
-> +void highbank_set_em_messages(struct device *dev, struct ahci_host_priv *hpriv,
-> +			  struct ata_port_info *pi)
-> +{
-> +	struct device_node *np = dev->of_node;
-> +	int i;
-> +	int err;
-> +
-> +	for (i = 0;i < 3; i++) {
-
-Missing space after ; and what's this magic 3 I keep seeing?
-
-> +		ecx_sgpio[i] = of_get_named_gpio(np, "calxeda,sgpio-gpio", i);
-> +		if (IS_ERR_VALUE(ecx_sgpio[i]))
-> +		       return;
-> +
-> +	        err = gpio_request(ecx_sgpio[i], "CX SGPIO");
-> +		if (err) {
-> +			printk(KERN_ERR
-> +				"sata_highbank gpio_request %d failed: %d\n",
-> +					i, err);
-> +		                return;
-
-pr_err()?
-
-> +		}
-> +		gpio_direction_output(ecx_sgpio[i], 1);
-> +	}
-> +	/* there's a default ordering, but give it an optional override */
-> +	for (i = 0; i < n_ports; i++) {
-> +		of_property_read_u32_array(np, "calxeda,led-order", 
-> +						port_to_sgpio, i);
-> +	}
-
-{ } unnecessary.
-
-Thanks.
 
 -- 
-tejun
+Thanks
+    Alex
