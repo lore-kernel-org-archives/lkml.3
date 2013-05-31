@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3EaMs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:48:58 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:38052 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752321Ab3EaMsv (ORCPT
+	id S1754735Ab3EaMtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:49:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57957 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab3EaMtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:48:51 -0400
-To: Sergey Yanovich <ynvich@gmail.com>
-Subject: Re: [PATCH] rtc-ds1302: handle write protection
-X-PHP-Originating-Script: 0:func.inc
+	Fri, 31 May 2013 08:49:07 -0400
+Date: Fri, 31 May 2013 05:48:55 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-1d10f6ee602ec5a4bd0c1606ba5f38277da432e1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <51A610B802000078000D99A0@nat28.tlf.novell.com>
+References: <51A610B802000078000D99A0@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: __force_order doesn'
+ t need to be an actual variable
+Git-Commit-ID: 1d10f6ee602ec5a4bd0c1606ba5f38277da432e1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Date: Fri, 31 May 2013 14:48:46 +0200
-From: Marc Zyngier <maz@misterjones.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, <rtc-linux@googlegroups.com>,
-        <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Organization: Metropolis
-In-Reply-To: <1369929888.16480.5.camel@host5.omatika.ru>
-References: <1369092090-5384-1-git-send-email-ynvich@gmail.com> <20130529155311.9e35e847968f3923bc83f4cd@linux-foundation.org> <1369908882.17429.13.camel@host5.omatika.ru> <53f44a9ec4c8391288d6c132fd5689da@localhost> <1369929888.16480.5.camel@host5.omatika.ru>
-Message-ID: <76d55c94295049f87bc4f3dea64ebbb1@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: ynvich@gmail.com, akpm@linux-foundation.org, rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org, a.zummo@towertech.it, sachin.kamat@linaro.org, jg1.han@samsung.com
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 20:04:48 +0400, Sergey Yanovich <ynvich@gmail.com>
-wrote:
-> From f1cd048a066b249082752a96abce7d33a0cd4ea3 Mon Sep 17 00:00:00 2001
-> From: Sergey Yanovich <ynvich@gmail.com>
-> Date: Tue, 21 May 2013 03:06:31 +0400
-> Subject: [PATCH] rtc-ds1302: handle write protection
-> 
-> This chip has a control register and can prevent altering saved clock.
-> Without this patch we could have:
-> ----8<----
-> (arm)root@pac14:~# date
-> Tue May 21 03:08:27 MSK 2013
-> (arm)root@pac14:~# /etc/init.d/hwclock.sh show
-> Tue May 21 11:13:58 2013  -0.067322 seconds
-> (arm)root@pac14:~# /etc/init.d/hwclock.sh stop
-> [info] Saving the system clock.
-> [info] Hardware Clock updated to Tue May 21 03:09:01 MSK 2013.
-> (arm)root@pac14:~# /etc/init.d/hwclock.sh show
-> Tue May 21 11:14:15 2013  -0.624272 seconds
-> ----8<----
-> 
-> The patch enables write access to rtc before the driver tries to write
-time
-> and re-disables when time data is written.
-> 
-> Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
+Commit-ID:  1d10f6ee602ec5a4bd0c1606ba5f38277da432e1
+Gitweb:     http://git.kernel.org/tip/1d10f6ee602ec5a4bd0c1606ba5f38277da432e1
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 29 May 2013 13:29:12 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 31 May 2013 13:09:17 +0200
 
-FWIW,
+x86: __force_order doesn't need to be an actual variable
 
-Acked-by: Marc Zyngier <maz@misterjones.org>
+It being static causes over a dozen instances to be scattered
+across the kernel image, with non of them ever being referenced
+in any way. Making the variable extern without ever defining it
+works as well - all we need is to have the compiler think the
+variable is being accessed.
 
-        M.
--- 
-Who you jivin' with that Cosmik Debris?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/51A610B802000078000D99A0@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/special_insns.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/asm/special_insns.h b/arch/x86/include/asm/special_insns.h
+index 41fc93a..2f4d924 100644
+--- a/arch/x86/include/asm/special_insns.h
++++ b/arch/x86/include/asm/special_insns.h
+@@ -16,7 +16,7 @@ static inline void native_clts(void)
+  * all loads stores around it, which can hurt performance. Solution is to
+  * use a variable and mimic reads and writes to it to enforce serialization
+  */
+-static unsigned long __force_order;
++extern unsigned long __force_order;
+ 
+ static inline unsigned long native_read_cr0(void)
+ {
