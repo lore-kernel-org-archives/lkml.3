@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3EaRfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:35:06 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43604 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435Ab3EaRfD (ORCPT
+	id S1756282Ab3EaRgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:36:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32931 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753780Ab3EaRgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:35:03 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: <grant.likely@linaro.org>, <linus.walleij@linaro.org>,
-        <rob.herring@calxeda.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <vaibhav.bedia@ti.com>,
-        <sudhakar.raj@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Wolfram Sang <wsa@the-dreams.de>, <linux-omap@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH 11/11] i2c: omap: enhance pinctrl support
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
-	<1369995191-20855-12-git-send-email-gururaja.hebbar@ti.com>
-Date: Fri, 31 May 2013 10:34:59 -0700
-In-Reply-To: <1369995191-20855-12-git-send-email-gururaja.hebbar@ti.com>
-	(Hebbar Gururaja's message of "Fri, 31 May 2013 15:43:11 +0530")
-Message-ID: <87k3mf2gu4.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 31 May 2013 13:36:09 -0400
+Message-ID: <1370021732.6250.4.camel@dabdike>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Russ Anderson <rja@sgi.com>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
+        joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
+        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 31 May 2013 10:35:32 -0700
+In-Reply-To: <20130531162815.GA8082@srcf.ucam.org>
+References: <20130530221737.GA11105@sgi.com>
+	 <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
+	 <20130531101250.GD30394@gmail.com>
+	 <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
+	 <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com>
+	 <20130531143425.GA5850@srcf.ucam.org>
+	 <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com>
+	 <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com>
+	 <20130531162815.GA8082@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
+On Fri, 2013-05-31 at 17:28 +0100, Matthew Garrett wrote:
+> On Fri, May 31, 2013 at 10:43:49AM -0500, Russ Anderson wrote:
+> 
+> > When did writing EFI variables to nvram become necessary to boot on 
+> > UEFI? And if it is necessary, why is it that only linux boot loaders 
+> > that use EFI stubs (generally grub2) need it?  The current kernel 
+> > boots using EFI/grub and EFI/elilo.  It is just when EFI stubs are 
+> > used that the boot fails.
+> 
+> I think you've misunderstood the problem. If nvram becaomes full, some 
+> systems crash during firmware initialisation. So we can't let nvram 
+> become full. The obvious thing to do here is to look at the values from 
+> QueryVariableInfo, but many systems won't perform any garbage collection 
+> until they're almost out of space and so variables that have been 
+> deleted still show up as used space. We can work around that by adding 
+> up the size of the variables ourselves, but that only gives us the value 
+> for runtime-visible variables. We also need to know how much space is 
+> used by variables that are only visible during boot, hence calling 
+> QueryVariableInfo before ExitBootServices.
+> 
+> > Which means the previous patch(es) that caused the bricking should
+> > get pulled, too.
+> 
+> There are no patches that cause the bricking.
 
-> Amend the I2C omap pin controller to optionally take a pin control
-> handle and set the state of the pins to:
->
-> - "default" on boot, resume and before performing an i2c transfer
-> - "idle" after initial default, after resume default, and after each
-> i2c xfer
-> - "sleep" on suspend()
->
-> By optionally putting the pins into sleep state in the suspend callback
-> we can accomplish two things.
-> - One is to minimize current leakage from pins and thus save power,
-> - second, we can prevent the IP from driving pins output in an
-> uncontrolled manner, which may happen if the power domain drops the
-> domain regulator.
->
-> Note:
-> A .suspend & .resume callback is added which simply puts the pins to sleep
-> state upon suspend & are moved to default & idle state upon resume.
->
-> If any of the above pin states are missing in dt, a warning message
-> about the missing state is displayed.
-> If certain pin-states are not available, to remove this warning message
-> pass respective state name with null phandler.
->
-> (Changes based on i2c-nomadik.c)
->
-> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-i2c@vger.kernel.org
+This is the description of the original problem:
 
-[...]
+http://www.h-online.com/open/news/item/Booting-Linux-using-UEFI-can-brick-Samsung-laptops-1793958.html
 
-> @@ -664,7 +673,13 @@ omap_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
->  
->  out:
->  	pm_runtime_mark_last_busy(dev->dev);
-> +
->  	pm_runtime_put_autosuspend(dev->dev);
-> +	/* Optionally let pins go into idle state */
-> +	if (!IS_ERR(dev->pins_idle))
-> +		if (pinctrl_select_state(dev->pinctrl, dev->pins_idle))
-> +			dev_err(dev->dev, "could not set pins to idle state\n");
+And the further investigation:
 
-This is wrong.  You're changing the muxing before the device actually
-goes idle.  Anything you want to happen when the device actually idles
-for real has to be in runtime PM callbacks.
+http://mjg59.dreamwidth.org/22855.html
 
-Looking below, I see it's already in the callbacks, so why is it here also?
+If you read the latter, it shows you why we have to use
+QueryVariableInfo to try to work out how much space we have available.
 
-[...]
+James
 
-> @@ -1300,6 +1348,10 @@ static int omap_i2c_runtime_suspend(struct device *dev)
->  		omap_i2c_read_reg(_dev, OMAP_I2C_STAT_REG);
->  	}
->  
-> +	if (!IS_ERR(_dev->pins_idle))
-> +		if (pinctrl_select_state(_dev->pinctrl, _dev->pins_idle))
-> +			dev_err(dev, "could not set pins to idle state\n");
-> +
->  	return 0;
->  }
->  
 
-Kevin
