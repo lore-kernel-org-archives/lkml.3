@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab3EaPXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:23:52 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22705 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab3EaPXk (ORCPT
+	id S1756304Ab3EaP03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:26:29 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48959 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752859Ab3EaP0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:23:40 -0400
-X-IronPort-AV: E=Sophos;i="4.87,779,1363132800"; 
-   d="scan'208";a="27189827"
-Date: Fri, 31 May 2013 16:23:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Fri, 31 May 2013 11:26:23 -0400
+Date: Fri, 31 May 2013 16:25:39 +0100
+From: Catalin Marinas <Catalin.Marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH RFC 5/6] arm64/xen: implement xen_remap on arm64
-In-Reply-To: <alpine.DEB.2.02.1305311530440.4799@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1305311622150.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com> <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com> <20130531105915.GC18045@localhost.cambridge.arm.com> <alpine.DEB.2.02.1305311419280.4799@kaball.uk.xensource.com>
- <20130531141601.GC15551@arm.com> <alpine.DEB.2.02.1305311530440.4799@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arm64 fixes for 3.10
+Message-ID: <20130531152539.GE15551@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Stefano Stabellini wrote:
-> On Fri, 31 May 2013, Catalin Marinas wrote:
-> > On Fri, May 31, 2013 at 02:21:16PM +0100, Stefano Stabellini wrote:
-> > > On Fri, 31 May 2013, Catalin Marinas wrote:
-> > > > On Thu, May 30, 2013 at 05:18:32PM +0100, Stefano Stabellini wrote:
-> > > > > --- a/arch/arm/include/asm/xen/page.h
-> > > > > +++ b/arch/arm/include/asm/xen/page.h
-> > > > > @@ -90,6 +90,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> > > > >  	return __set_phys_to_machine(pfn, mfn);
-> > > > >  }
-> > > > >  
-> > > > > +#ifdef CONFIG_ARM64
-> > > > > +#define xen_remap(cookie, size) __ioremap((cookie), (size), __pgprot(PROT_NORMAL))
-> > > > > +#else
-> > > > >  #define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
-> > > > > +#endif
-> > > > 
-> > > > Now I saw the ARM-specific part. Can you not use something like
-> > > > ioremap_cached() which would give normal cacheable memory (at least on
-> > > > ARMv7).
-> > > 
-> > > No, I cannot because ioremap_cached uses MT_DEVICE_CACHED, while this
-> > > needs to be MT_MEMORY. It is used for normal memory pages, not device
-> > > memory.
-> > 
-> > MT_DEVICE_CACHED is Normal memory for ARMv7.
-> 
-> I didn't realize that MT_DEVICE_CACHED and MT_MEMORY end up having the
-> same AttrIndx encoding!
-> In that case yes, I should be able to use it.
-> I take that I should just implement ioremap_cached on arm64 as well?
-> 
+Hi Linus,
 
-Should just use MT_MEMORY and call it PROT_NORMAL?
+Please pull the arm64 patches below. Thanks.
 
-#define PROT_NORMAL     (PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL))
-#define ioremap_cached(addr, size)     __ioremap((addr), (size), __pgprot(PROT_NORMAL))
+The following changes since commit c7788792a5e7b0d5d7f96d0766b4cb6112d47d75:
+
+  Linux 3.10-rc2 (2013-05-20 14:37:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
+
+for you to fetch changes up to 9955ac47f4ba1c95ecb6092aeaefb40a22e99268:
+
+  arm64: don't kill the kernel on a bad esr from el0 (2013-05-31 16:04:51 +0100)
+
+----------------------------------------------------------------
+- Module compilation issues (symbol not exported).
+- Plug a hole where user space can bring the kernel down.
+
+----------------------------------------------------------------
+Catalin Marinas (1):
+      arm64: Do not report user faults for handled signals
+
+Chen Gang (1):
+      arm64: kernel: compiling issue, need 'EXPORT_SYMBOL(clear_page)'
+
+Mark Rutland (2):
+      arm64: treat unhandled compat el0 traps as undef
+      arm64: don't kill the kernel on a bad esr from el0
+
+ arch/arm64/kernel/arm64ksyms.c |  1 +
+ arch/arm64/kernel/entry.S      | 10 ++++++++++
+ arch/arm64/kernel/traps.c      | 17 ++++++++++++-----
+ arch/arm64/mm/fault.c          |  3 ++-
+ 4 files changed, 25 insertions(+), 6 deletions(-)
