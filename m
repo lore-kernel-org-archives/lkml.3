@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab3EaLC7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:02:59 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:13256 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754879Ab3EaLCx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:02:53 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 31 May 2013 19:02:49 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5d23iAem8cNgvkR5OYkbUQGstpXQAEQ3wA
-Message-ID: <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
-References: <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
- <20130531084638.GB4928@mudshark.cambridge.arm.com>
-In-Reply-To: <20130531084638.GB4928@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755214Ab3EaLDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:03:11 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62982 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753897Ab3EaLDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 07:03:05 -0400
+Date: Fri, 31 May 2013 12:02:26 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC 6/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
+ on ARM64
+Message-ID: <20130531110225.GD18045@localhost.cambridge.arm.com>
+References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
+ <1369930713-6063-6-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369930713-6063-6-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Will,
-
-I have merge your code ,
-But there is a different ,
-
-+	
-+	ct_user_exit
-+
-+#ifdef CONFIG_ALIGNMENT_TRAP
-+	ldr	ip, __cr_alignment
-+	ldr	ip, [ip]
-+	mcr	p15, 0, ip, c1, c0		@ update control register
-+#endif 
-
-+	enable_irq
-+	get_thread_info tsk
-
-Is this change ok ?
-
-
-Thanks 
-
------Original Message-----
-From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-owner@vger.kernel.org] On Behalf Of Will Deacon
-Sent: Friday, May 31, 2013 4:47 PM
-To: Wang, Yalin
-Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: A bug about system call on ARM
-
-On Fri, May 31, 2013 at 03:56:31AM +0100, Wang, Yalin wrote:
-> Hi Will,
+On Thu, May 30, 2013 at 05:18:33PM +0100, Stefano Stabellini wrote:
+> Introduce CONFIG_XEN and the implementation of hypercall.S (that is
+> the only ARMv8 specific code in Xen support for ARM).
 > 
-> Thanks for your patch ,
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/arm64/Kconfig         |   11 +++++
+>  arch/arm64/Makefile        |    1 +
+>  arch/arm64/xen/Makefile    |    1 +
+>  arch/arm64/xen/hypercall.S |  105 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 118 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm64/xen/Makefile
+>  create mode 100644 arch/arm64/xen/hypercall.S
 > 
-> But I found  I don't have ct_user_exit  macro In my 
-> arch/arm/kernel/entry-common.S
-> 
-> My kernel version is 3.4.0
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 56b3f6d..f35751f 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -182,6 +182,17 @@ config HW_PERF_EVENTS
+>  
+>  source "mm/Kconfig"
+>  
+> +config XEN_DOM0
+> +	def_bool y
+> +	depends on XEN
+> +
+> +config XEN
+> +	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
+> +	depends on ARM64 && OF
+> +	depends on !GENERIC_ATOMIC64
 
-Well things have moved on this since then (we're approaching 3.10, so you might consider an upgrade!).
+I don't think we need this depends on !GENERIC_ATOMIC64, we don't enable
+it on arm64.
 
-For the purposes of this patch, you can just delete the ct_user_exit line.
-
-Will
---
-To unsubscribe from this list: send the line "unsubscribe linux-arch" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Catalin
