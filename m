@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3EaGJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:09:30 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:50451 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab3EaGIk (ORCPT
+	id S1752960Ab3EaGJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:09:41 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:51400 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab3EaGIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 May 2013 02:08:40 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Lars-Peter Clausen <lars@metafoo.de>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        Rick Hoover <RHoover@digilentinc.com>, netdev@vger.kernel.org
-Subject: [PATCH v2 3/5] phy: Use macros instead of hardcoded values in marvell phy driver
-Date: Fri, 31 May 2013 08:08:25 +0200
-Message-Id: <1ce55f2ae709b48733bb68e05253c23a4e90f1ae.1369980470.git.michal.simek@xilinx.com>
+        netdev@vger.kernel.org
+Subject: [PATCH v2 2/5] phy: Add Vitesse 8211 phy ID
+Date: Fri, 31 May 2013 08:08:24 +0200
+Message-Id: <804de6a875a407fb0379a437f83915e7158f2f2a.1369980470.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
 References: <cover.1369980470.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
 References: <cover.1369980470.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-1703-1369980517-0001";
+    boundary="=_mimegpg-monstr-desktop-1692-1369980515-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,44 +35,54 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-1703-1369980517-0001
+--=_mimegpg-monstr-desktop-1692-1369980515-0001
 
-Use macros from linux/marvell_phy.h instead of duplicate
-magic phy ID in the driver.
+Phy is compatible with Vitesse 8221.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 Changes in v2: None
 
- drivers/net/phy/marvell.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/phy/vitesse.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-index 202fe1f..371353c 100644
---- a/drivers/net/phy/marvell.c
-+++ b/drivers/net/phy/marvell.c
-@@ -958,15 +958,15 @@ module_init(marvell_init);
- module_exit(marvell_exit);
+diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
+index d6e988f..69b482b 100644
+--- a/drivers/net/phy/vitesse.c
++++ b/drivers/net/phy/vitesse.c
+@@ -56,6 +56,7 @@
 
- static struct mdio_device_id __maybe_unused marvell_tbl[] = {
--	{ 0x01410c60, 0xfffffff0 },
--	{ 0x01410c90, 0xfffffff0 },
--	{ 0x01410cc0, 0xfffffff0 },
--	{ 0x01410e10, 0xfffffff0 },
--	{ 0x01410cb0, 0xfffffff0 },
--	{ 0x01410cd0, 0xfffffff0 },
--	{ 0x01410e50, 0xfffffff0 },
--	{ 0x01410e30, 0xfffffff0 },
--	{ 0x01410e90, 0xfffffff0 },
-+	{ MARVELL_PHY_ID_88E1101, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1112, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1111, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1118, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1121R, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1145, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
-+	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
+ #define PHY_ID_VSC8244			0x000fc6c0
+ #define PHY_ID_VSC8221			0x000fc550
++#define PHY_ID_VSC8211			0x000fc4b0
+
+ MODULE_DESCRIPTION("Vitesse PHY driver");
+ MODULE_AUTHOR("Kriston Carson");
+@@ -175,6 +176,19 @@ static struct phy_driver vsc82xx_driver[] = {
+ 	.ack_interrupt	= &vsc824x_ack_interrupt,
+ 	.config_intr	= &vsc82xx_config_intr,
+ 	.driver		= { .owner = THIS_MODULE,},
++}, {
++	/* Vitesse 8211 */
++	.phy_id		= PHY_ID_VSC8211,
++	.phy_id_mask	= 0x000ffff0,
++	.name		= "Vitesse VSC8211",
++	.features	= PHY_GBIT_FEATURES,
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_init	= &vsc8221_config_init,
++	.config_aneg	= &genphy_config_aneg,
++	.read_status	= &genphy_read_status,
++	.ack_interrupt	= &vsc824x_ack_interrupt,
++	.config_intr	= &vsc82xx_config_intr,
++	.driver		= { .owner = THIS_MODULE,},
+ } };
+
+ static int __init vsc82xx_init(void)
+@@ -195,6 +209,7 @@ module_exit(vsc82xx_exit);
+ static struct mdio_device_id __maybe_unused vitesse_tbl[] = {
+ 	{ PHY_ID_VSC8244, 0x000fffc0 },
+ 	{ PHY_ID_VSC8221, 0x000ffff0 },
++	{ PHY_ID_VSC8211, 0x000ffff0 },
  	{ }
  };
 
@@ -80,16 +90,16 @@ index 202fe1f..371353c 100644
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-1703-1369980517-0001
+--=_mimegpg-monstr-desktop-1692-1369980515-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGoPmUACgkQykllyylKDCFAjwCdHfkD8zvASDlcWCOc2T8XVMpD
-8YcAnjCVzUtd/1Vzy/N7xUKF50cHAGFK
-=m8Rz
+iEYEABECAAYFAlGoPmMACgkQykllyylKDCF1dQCdGvXQs4SIdzaVSz1XS7LEJcyk
+OPcAn04Jylzt209h9d+V5TwhhE2Dro9+
+=eTR7
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-1703-1369980517-0001--
+--=_mimegpg-monstr-desktop-1692-1369980515-0001--
