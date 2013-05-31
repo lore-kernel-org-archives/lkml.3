@@ -1,125 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3EaD7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 23:59:40 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:44312 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab3EaD7c (ORCPT
+	id S1751133Ab3EaELU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 00:11:20 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57736 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab3EaELG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 23:59:32 -0400
-Message-ID: <51A81FF9.8030403@linaro.org>
-Date: Fri, 31 May 2013 11:58:49 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Fix potential NULL pointer dereference in acpi_processor_add()
-References: <519E0F2A.4070602@linaro.org> <51A5E177.3090809@fold.natur.cuni.cz> <51A6B9A2.8090904@linaro.org> <2969934.XTKV7y9VVT@vostro.rjw.lan> <20130530222542.GD1630@kroah.com>
-In-Reply-To: <20130530222542.GD1630@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------040608000109010708060807"
+	Fri, 31 May 2013 00:11:06 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rui.zhang@intel.com, mjg@redhat.com, rjw@sisk.pl
+Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        Len Brown <lenb@kernel.org>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Dmitry Torokhov <dtor@mail.ru>, Corentin Chary <corentincj@iksaif.net>,
+        Aaron Lu <aaron.lu@intel.com>, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH v2 1/2] acpi: video: add function to support unregister backlight interface
+Date: Fri, 31 May 2013 12:10:33 +0800
+Message-Id: <1369973434-8742-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040608000109010708060807
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+There have some situation we unregister whole acpi/video driver by downstream
+driver just want to remove backlight control interface of acpi/video. It caues
+we lost other functions of acpi/video, e.g. transfer acpi event to input event.
 
-On 2013-5-31 6:25, Greg Kroah-Hartman wrote:
-> On Thu, May 30, 2013 at 03:57:58PM +0200, Rafael J. Wysocki wrote:
->> On Thursday, May 30, 2013 10:29:54 AM Hanjun Guo wrote:
->>> On 2013-5-29 19:07, Martin Mokrejs wrote:
->>>> Hanjun Guo wrote:
->>>>> On 2013-5-29 7:30, Rafael J. Wysocki wrote:
->>>>>> On Thursday, May 23, 2013 08:44:26 PM Hanjun Guo wrote:
->>>>>>> In acpi_processor_add(), get_cpu_device() will return NULL sometimes,
->>>>>>> although the chances are small, I think it should be fixed.
->>>>>>>
->>>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>>>>
->>>>>> This patch isn't necessary any more after the changes queued up for 3.11
->>>>>> in the acpi-hotplug branch of the linux-pm.git tree.
->>>>>
->>>>> Ok, I noticed your patch set, just drop my patch.
->>>>
->>>> But shouldn't this go to stable at least? I checked linux-3.9.4
->>>> and it applies fine. Whether this is relevant for other stable
->>>> series I will leave up to somebody else. ;)
->>>
->>> Hi Rafeal,
->>>
->>> What's your opinion on Martin's suggestion?
->>
->> Well, this is kind of hard to say.  We generally don't apply patches to -stable
->> that don't have mainline counterparts.
->>
->> Greg, I wonder what your opinion is?
-> 
-> We do not apply patches to -stable that are not in Linus's tree, unless
-> there is no problem in Linus's tree due to a major rewrite of the code,
-> and it has been confirmed that the same problem isn't there.
+So, this patch add a new function, find_video_unregister_backlight, it provide
+the interface let downstream driver can tell acpi/video to unregister backlight
+interface of all acpi video devices. Then we can keep functions of acpi/video
+but only remove backlight support.
 
-Hi Rafael,
+Reference: bko#35622
+        https://bugzilla.kernel.org/show_bug.cgi?id=35622
 
-I found that the problem is still there in your acpi-hotplug tree, sorry for
-I didn't noticed early. I made a patch for this again, I hope it will make
-sense to you.
+v2: Also unregister cooling devices.
 
-The patch is attached, based on your acpi-hotplug tree.
-
-Thanks
-Hanjun
-
-
-
-
---------------040608000109010708060807
-Content-Type: text/plain; charset=gb18030;
- name="0001-ACPI-processor-Fix-potential-NULL-pointer-dereferenc.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ACPI-processor-Fix-potential-NULL-pointer-dereferenc.pa";
- filename*1="tch"
-
->From 975e30f5906a883e533e4226d8eca1c449c7366b Mon Sep 17 00:00:00 2001
-From: Hanjun Guo <hanjun.guo@linaro.org>
-Date: Fri, 31 May 2013 11:36:08 +0800
-Subject: [PATCH 1/1] ACPI / processor: Fix potential NULL pointer dereference
- in acpi_processor_add()
-
-In acpi_processor_add(), get_cpu_device() will return NULL in some cases,
-and ACPI_HANDLE_SET() just use the return dev directly, this will case a
-potential NULL pointer dereference, fix it.
-
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Tested-by: Andrzej Krentosz <endrjux@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Aaron Lu <aaron.lu@intel.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- drivers/acpi/acpi_processor.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/acpi/video.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/acpi/video.h |    2 +
+ 2 files changed, 56 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index 587d2af..4466b36 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -389,6 +389,11 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device,
- 	per_cpu(processor_device_array, pr->id) = device;
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index c3932d0..f21104d 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -1861,6 +1861,60 @@ static int __init intel_opregion_present(void)
+ 	return opregion;
+ }
  
- 	dev = get_cpu_device(pr->id);
-+	if (!dev) {
-+		result = -ENODEV;
-+		goto err;
-+	}
++static acpi_status
++find_video_unregister_backlight(acpi_handle handle, u32 lvl, void *context,
++				void **rv)
++{
++	struct acpi_device *acpi_dev;
++	struct acpi_video_bus *video;
++	struct acpi_video_device *dev, *next;
 +
- 	ACPI_HANDLE_SET(dev, pr->handle);
- 	result = acpi_bind_one(dev, NULL);
- 	if (result)
++	if (acpi_bus_get_device(handle, &acpi_dev))
++		return AE_OK;
++
++	if (!acpi_match_device_ids(acpi_dev, video_device_ids)) {
++		video = acpi_driver_data(acpi_dev);
++		acpi_video_bus_stop_devices(video);
++		mutex_lock(&video->device_list_lock);
++		list_for_each_entry_safe(dev, next, &video->video_device_list,
++					entry) {
++			if (dev->backlight) {
++				backlight_device_unregister(dev->backlight);
++				dev->backlight = NULL;
++				kfree(dev->brightness->levels);
++				kfree(dev->brightness);
++			}
++			if (dev->cooling_dev) {
++				sysfs_remove_link(&dev->dev->dev.kobj,
++						  "thermal_cooling");
++				sysfs_remove_link(&dev->cooling_dev->device.kobj,
++						  "device");
++				thermal_cooling_device_unregister(dev->cooling_dev);
++				dev->cooling_dev = NULL;
++			}
++		}
++		mutex_unlock(&video->device_list_lock);
++		acpi_video_bus_start_devices(video);
++	}
++	return AE_OK;
++}
++
++void acpi_video_backlight_unregister(void)
++{
++	if (!register_count) {
++		/*
++		 * If the acpi video bus is already unloaded, don't
++		 * unregister backlight of devices and return directly.
++		 */
++		return;
++	}
++	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
++			    ACPI_UINT32_MAX, find_video_unregister_backlight,
++			    NULL, NULL, NULL);
++	return;
++}
++EXPORT_SYMBOL(acpi_video_backlight_unregister);
++
+ int acpi_video_register(void)
+ {
+ 	int result = 0;
+diff --git a/include/acpi/video.h b/include/acpi/video.h
+index 61109f2..1e810a1 100644
+--- a/include/acpi/video.h
++++ b/include/acpi/video.h
+@@ -19,11 +19,13 @@ struct acpi_device;
+ #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+ extern int acpi_video_register(void);
+ extern void acpi_video_unregister(void);
++extern void acpi_video_backlight_unregister(void);
+ extern int acpi_video_get_edid(struct acpi_device *device, int type,
+ 			       int device_id, void **edid);
+ #else
+ static inline int acpi_video_register(void) { return 0; }
+ static inline void acpi_video_unregister(void) { return; }
++static inline void acpi_video_backlight_unregister(void) { return; }
+ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
+ 				      int device_id, void **edid)
+ {
 -- 
-1.7.9.5
+1.6.4.2
 
-
---------------040608000109010708060807--
