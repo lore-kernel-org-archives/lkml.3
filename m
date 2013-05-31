@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3EaDRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 23:17:01 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:37256 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab3EaDQ4 (ORCPT
+	id S1753117Ab3EaDXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 23:23:23 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:61537 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3EaDXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 23:16:56 -0400
+	Thu, 30 May 2013 23:23:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXd=6aJwQdDL+XU9x2Pnh0V_9120iw1NHaguN1ahRhhXQ@mail.gmail.com>
-References: <cover.1368485053.git.luto@amacapital.net>
-	<CALCETrXd=6aJwQdDL+XU9x2Pnh0V_9120iw1NHaguN1ahRhhXQ@mail.gmail.com>
-Date: Fri, 31 May 2013 13:16:54 +1000
-Message-ID: <CAPM=9tx87GFyGzgC+q3daUk5hP6GOJYXcKBnRE4d2ujC_LLALA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/9] Clean up write-combining MTRR addition
-From: Dave Airlie <airlied@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <5578958b49fff222740711e091c2325100f5a440.1369963643.git.mschiffer@universe-factory.net>
+References: <51A66CF3.7010202@universe-factory.net>
+	<5578958b49fff222740711e091c2325100f5a440.1369963643.git.mschiffer@universe-factory.net>
+Date: Fri, 31 May 2013 11:23:11 +0800
+Message-ID: <CAM_iQpWNAnRTgzjPTPxLU-eqz1nWqD=zyjTgwZaaxbwcpf4KMw@mail.gmail.com>
+Subject: Re: [PATCH net/3.9] ipv6: ndisc: fix ndisc_send_redirect writing to
+ the wrong skb
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Matthias Schiffer <mschiffer@universe-factory.net>
+Cc: David Miller <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 4:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, May 13, 2013 at 4:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> A fair number of drivers (mostly graphics) add write-combining MTRRs.
->> Most ignore errors and most add the MTRR even on PAT systems which don't
->> need to use MTRRs.
->>
->> This series adds new functions arch_phys_wc_{add,del} that, on PAT-less
->> x86 systems with MTRRs, add MTRRs and report errors, and that do nothing
->> otherwise.  (Other architectures, if any, with a similar mechanism could
->> implement them.)
+On Fri, May 31, 2013 at 9:27 AM, Matthias Schiffer
+<mschiffer@universe-factory.net> wrote:
+> Since some refactoring in 5f5a011, ndisc_send_redirect called
+> ndisc_fill_redirect_hdr_option on the wrong skb, leading to data corruption or
+> in the worst case a panic when the skb_put failed.
 >
-> That's the path to upstream for this?  Should it go through drm-next?
-> (Sorry for possible noob question -- I've never sent in anything other
-> than trivial fixes to drm stuff before.)
+> Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
 
-I've pulled the v3 series into drm-next, lets see how they go for a while,
 
-I suppose I should try and boot an AGP box with them.
+Good catch!
 
-Dave.
+Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
