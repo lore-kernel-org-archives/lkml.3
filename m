@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3EaKEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:04:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2248 "EHLO mx1.redhat.com"
+	id S1754416Ab3EaKEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:04:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23598 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018Ab3EaKDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:03:55 -0400
+	id S1754266Ab3EaKEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 06:04:07 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com
 Cc: Jason Wang <jasowang@redhat.com>
-Subject: [net-next rfc V2 4/8] macvlan: change the max number of queues to 16
-Date: Fri, 31 May 2013 17:53:21 +0800
-Message-Id: <1369994005-5943-5-git-send-email-jasowang@redhat.com>
+Subject: [net-next rfc V2 6/8] macvtap: allow TUNSETIFF to create multiqueue device
+Date: Fri, 31 May 2013 17:53:23 +0800
+Message-Id: <1369994005-5943-7-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1369994005-5943-1-git-send-email-jasowang@redhat.com>
 References: <1369994005-5943-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macvtap should be at least compatible with tap, so change the max number to 16.
+Though the queue were in fact created by open(), we still need to add this check
+to be compatible with tuntap which can let mgmt software use a single API to
+manage queues. This patch only validates the device name and moves the TUNSETIFF
+to a helper.
 
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- include/linux/if_macvlan.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/macvtap.c |   51 ++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 40 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
-index e47ad46..62d8bda 100644
---- a/include/linux/if_macvlan.h
-+++ b/include/linux/if_macvlan.h
-@@ -50,7 +50,7 @@ struct macvlan_pcpu_stats {
-  * Maximum times a macvtap device can be opened. This can be used to
-  * configure the number of receive queue, e.g. for multiqueue virtio.
-  */
--#define MAX_MACVTAP_QUEUES	(NR_CPUS < 16 ? NR_CPUS : 16)
-+#define MAX_MACVTAP_QUEUES	16
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index e76484c..eac49cb 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -870,6 +870,7 @@ out:
+ 	return ret;
+ }
  
- #define MACVLAN_MC_FILTER_BITS	8
- #define MACVLAN_MC_FILTER_SZ	(1 << MACVLAN_MC_FILTER_BITS)
++
+ static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
+ {
+ 	struct macvlan_dev *vlan;
+@@ -888,6 +889,44 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
+ 	dev_put(vlan->dev);
+ }
+ 
++static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
++{
++	struct macvtap_queue *q = file->private_data;
++	struct net *net = current->nsproxy->net_ns;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev, *dev2;
++	struct ifreq ifr;
++
++	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
++		return -EFAULT;
++
++	/* To keep the same behavior of tuntap, validate ifr_name */
++	if (ifr.ifr_flags & IFF_MULTI_QUEUE) {
++		dev = __dev_get_by_name(net, ifr.ifr_name);
++		if (!dev)
++			return -EINVAL;
++
++		dev2 = dev_get_by_macvtap_minor(iminor(inode));
++		if (!dev2)
++			return -EINVAL;
++
++		if (dev != dev2) {
++			dev_put(dev2);
++			return -EINVAL;
++		}
++
++		dev_put(dev2);
++	}
++
++	if ((ifr.ifr_flags & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
++	    (IFF_NO_PI | IFF_TAP))
++		return -EINVAL;
++	else
++		q->flags = ifr.ifr_flags;
++
++	return 0;
++}
++
+ /*
+  * provide compatibility with generic tun/tap interface
+  */
+@@ -906,17 +945,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	switch (cmd) {
+ 	case TUNSETIFF:
+-		/* ignore the name, just look at flags */
+-		if (get_user(u, &ifr->ifr_flags))
+-			return -EFAULT;
+-
+-		ret = 0;
+-		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
+-			ret = -EINVAL;
+-		else
+-			q->flags = u;
+-
+-		return ret;
++		return macvtap_set_iff(file, ifr);
+ 
+ 	case TUNGETIFF:
+ 		vlan = macvtap_get_vlan(q);
 -- 
 1.7.1
 
