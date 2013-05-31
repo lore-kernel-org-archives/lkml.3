@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3EaMZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:25:14 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:61608 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab3EaMZF (ORCPT
+	id S1756497Ab3EaM0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:26:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57601 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab3EaMZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:25:05 -0400
+	Fri, 31 May 2013 08:25:56 -0400
+Date: Fri, 31 May 2013 05:25:31 -0700
+From: tip-bot for Michael Ellerman <tipbot@zytor.com>
+Message-ID: <tip-fd851780e61ac36e8d59fe87cca01a2e673930ff@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, michael@ellerman.id.au, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, michael@ellerman.id.au, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1368199980-20283-1-git-send-email-jolsa@redhat.com>
+References: <1368199980-20283-1-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Expand definition of sysfs format attribute
+Git-Commit-ID: fd851780e61ac36e8d59fe87cca01a2e673930ff
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com> <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 31 May 2013 20:24:43 +0800
-Message-ID: <CAGsJ_4z65+SOCQM2XKmrda+5Hu9wRuZviSvW3As1ROa0SmdXqw@mail.gmail.com>
-Subject: Re: [PATCH v1 1/2] ARM:prima2: move sirfsoc_of_rstc_init to .init_early
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Barry Song <baohua.song@csr.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/31 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> This patch moves sirfsoc_of_rstc_init from early_initcall to .init_early
-> in machine descriptor, doing this way a multi_v7 kernel will not crash
-> on non-prima2 SOCs.
->
-> Without this patch the multi_v7 kernel panics if we boot it on any non
-> prima2 parts with below log:
->
-> Kernel panic - not syncing: unable to find compatible rstc node in dtb
->
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc3-00535-gc3cc4ac #62
-> [<c001387c>] (unwind_backtrace+0x0/0xf8) from [<c00111cc>]
-> (show_stack+0x10/0x14)
-> [<c00111cc>] (show_stack+0x10/0x14) from [<c03417f4>] (panic+0x90/0x1e4)
-> [<c03417f4>] (panic+0x90/0x1e4) from [<c04256d0>]
-> (sirfsoc_of_rstc_init+0x24/0x5c)
-> [<c04256d0>] (sirfsoc_of_rstc_init+0x24/0x5c) from [<c041f854>]
-> (do_one_initcall+0x90/0x150)
-> [<c041f854>] (do_one_initcall+0x90/0x150) from [<c041f978>]
-> (kernel_init_freeable+0x64/0x1c4)
-> [<c041f978>] (kernel_init_freeable+0x64/0x1c4) from [<c033d344>]
-> (kernel_init+0x8/0xe4)
-> [<c033d344>] (kernel_init+0x8/0xe4) from [<c000ded8>]
-> (ret_from_fork+0x14/0x3c)
->
-> Initially detected when booting Stih415 SOC with multi_v7_defconfig.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Commit-ID:  fd851780e61ac36e8d59fe87cca01a2e673930ff
+Gitweb:     http://git.kernel.org/tip/fd851780e61ac36e8d59fe87cca01a2e673930ff
+Author:     Michael Ellerman <michael@ellerman.id.au>
+AuthorDate: Fri, 10 May 2013 17:33:00 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 May 2013 16:11:40 +0300
 
-hi Sriniva,
-i think my "arm: prima2: move to generic reset controller driver
-framework" fixs this too:
-http://www.spinics.net/lists/arm-kernel/msg246206.html
+perf: Expand definition of sysfs format attribute
 
-Arnd, will you ack that one so that i will send a pull request with that.
+Make it explicit that the format attributes may define overlapping bit
+ranges. Unfortunately this was left unspecified originally, and all the
+examples show non-overlapping ranges. I don't believe this is an ABI
+change, as we are defining something that was previously undefined, but
+others may disagree.
 
--barry
+The POWER8 PMU would like to define overlapping ranges, as bit ranges in
+the event code have different meanings for certain events. It will also
+allow us to define an overarching "event" field, that encompasses all
+others.
+
+As far as I can see perf is comfortable with this change, however I am
+not sure if there are any other users of the interface.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1368199980-20283-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-bus-event_source-devices-format | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+index 079afc7..77f47ff 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+@@ -9,6 +9,12 @@ Description:
+ 		we want to export, so that userspace can deal with sane
+ 		name/value pairs.
+ 
++		Userspace must be prepared for the possibility that attributes
++		define overlapping bit ranges. For example:
++			attr1 = 'config:0-23'
++			attr2 = 'config:0-7'
++			attr3 = 'config:12-35'
++
+ 		Example: 'config1:1,6-10,44'
+ 		Defines contents of attribute that occupies bits 1,6-10,44 of
+ 		perf_event_attr::config1.
