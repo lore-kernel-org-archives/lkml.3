@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab3EaQXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:23:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52500 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab3EaQXK (ORCPT
+	id S1757051Ab3EaQX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:23:29 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:43134 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756784Ab3EaQXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:23:10 -0400
-Message-ID: <1370017269.4135.2.camel@weser.hi.pengutronix.de>
-Subject: Re: [RFC][PATCH 0/2] dma-buf: add importer private data for
- reimporting
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: =?UTF-8?Q?=EA=B9=80=EC=8A=B9=EC=9A=B0?= <sw0312.kim@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Date: Fri, 31 May 2013 18:21:09 +0200
-In-Reply-To: <20130531152956.GX15743@phenom.ffwll.local>
-References: <1369990487-23510-1-git-send-email-sw0312.kim@samsung.com>
-	 <CAKMK7uHYLG3iNphE+g4BBB-LuUM67NRvbQPBvCHE2FN71-GLnA@mail.gmail.com>
-	 <51A879E0.3080106@samsung.com> <20130531152956.GX15743@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 31 May 2013 12:23:14 -0400
+Date: Fri, 31 May 2013 18:23:12 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v5
+Message-ID: <20130531162312.GO6123@two.firstfloor.org>
+References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
+ <1363895995-12967-2-git-send-email-andi@firstfloor.org>
+ <CABPqkBSuiWCLyXkNhuq6wXFP2G+4rOQv_H4134R55CqcVFAAUA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSuiWCLyXkNhuq6wXFP2G+4rOQv_H4134R55CqcVFAAUA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 31.05.2013, 17:29 +0200 schrieb Daniel Vetter:
-> On Fri, May 31, 2013 at 07:22:24PM +0900, 김승우 wrote:
-> > Hello Daniel,
-> > 
-> > Thanks for your comment.
-> > 
-> > On 2013년 05월 31일 18:14, Daniel Vetter wrote:
-> > > On Fri, May 31, 2013 at 10:54 AM, Seung-Woo Kim <sw0312.kim@samsung.com> wrote:
-> > >> importer private data in dma-buf attachment can be used by importer to
-> > >> reimport same dma-buf.
-> > >>
-> > >> Seung-Woo Kim (2):
-> > >>   dma-buf: add importer private data to attachment
-> > >>   drm/prime: find gem object from the reimported dma-buf
-> > > 
-> > > Self-import should already work (at least with the latest refcount
-> > > fixes merged). At least the tests to check both re-import on the same
-> > > drm fd and on a different all work as expected now.
-> > 
-> > Currently, prime works well for all case including self-importing,
-> > importing, and reimporting as you describe. Just, importing dma-buf from
-> > other driver twice with different drm_fd, each import create its own gem
-> > object even two import is done for same buffer because prime_priv is in
-> > struct drm_file. This means mapping to the device is done also twice.
-> > IMHO, these duplicated creations and maps are not necessary if drm can
-> > find previous import in different prime_priv.
+On Fri, May 31, 2013 at 03:02:29PM +0200, Stephane Eranian wrote:
+> Hi,
 > 
-> Well, that's imo a bug with the other driver. If it doesn't export
-> something really simple (e.g. contiguous memory which doesn't require any
-> mmio resources at all) it should have a cache of exported dma_buf fds so
-> that it hands out the same dma_buf every time.
+> So looked at this patch again. There is nothing wrong with the code.
+> But there is something bothering me with the usage model. I think
+> the choice of having pebs->ip for precise=1 or pebs->real_ip for
+> precise=2 is too restrictive.
+> 
+> There are situations where you want BOTH the real_ip AND the
+> off-by-one ip. This is when you're sampling call branches.
+> The real_ip gives you the call site, the off-by-one gives you
+> the target of the branch. This is very handy because you do
+> not need to use the LBR to get this, unlike with SandyBridge.
 
-I agree with the reasoning here.
+It's also useful for TSX: critical section versus abort point
+inside transaction.
 
-Though it would be nice to have this "expected driver behavior" put down
-somewhere in the documentation. Any volunteers?
+> So we need to find an extension or a way to return both IPs
+> without invoking LBR. Easiest would be to add another
+> PERF_SAMPLE_*.
+> 
+> Any better idea?
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.                           | Lucas Stach                 |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-5076 |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+For TSX I just use two different events. It works.
 
+I'm not disagreeing with it, but I think it's an orthogonal issue to my
+patchkit.   Adding a new SAMPLE type seems reasonable to me.
+
+-Andi
