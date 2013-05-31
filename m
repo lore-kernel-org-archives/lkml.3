@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3EaNuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:50:21 -0400
-Received: from jdl.com ([208.123.74.7]:40612 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271Ab3EaNuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:50:18 -0400
-X-Greylist: delayed 2891 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 May 2013 09:50:18 EDT
-Message-Id: <E1UiOxz-0004ET-RE@jdl.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kbuild@vger.kernel.org
-Subject: Re: DTB build failure due to preproccessing
-In-reply-to: <20130531114824.60D223E0901@localhost>
-References: <1369996170.5199.68.camel@zakaz.uk.xensource.com> <20130531114824.60D223E0901@localhost>
-Comments: In-reply-to Grant Likely <grant.likely@secretlab.ca>
-   message dated "Fri, 31 May 2013 12:48:24 +0100."
-Date: Fri, 31 May 2013 08:01:59 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: 0.8
+	id S1753873Ab3EaN5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:57:44 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:63367 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab3EaN5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 09:57:36 -0400
+Message-ID: <51A8AC4B.906@monstr.eu>
+Date: Fri, 31 May 2013 15:57:31 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: Export of_irq_count for using in modules
+References: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com> <20130530201714.GE19834@game.jcrosoft.org> <51A85BEE.4000009@monstr.eu> <20130531110045.GF19834@game.jcrosoft.org>
+In-Reply-To: <20130531110045.GF19834@game.jcrosoft.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2GBJHVWBMTVNJMQHHRBQP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >         
-> > Line 374 is the "IDSEL 0x16..." line here:
-> > 			interrupt-map = <
-> > 				/* IRQ mapping for pci slots and ALI M1533
-> > 				 ...
-> > 				 * management core also isn't used.
-> > 				 */
-> > 
-> > 				/* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
-> > 				0x3000 0 0 1 &xps_intc_0 3 2
-> > 				0x3000 0 0 2 &xps_intc_0 2 2
-> > 				0x3000 0 0 3 &xps_intc_0 5 2
-> > 				0x3000 0 0 4 &xps_intc_0 4 2
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2GBJHVWBMTVNJMQHHRBQP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Can you show me the original source without mods here, please?
-Or is the "..." purely elided comments?
+On 05/31/2013 01:00 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 10:14 Fri 31 May     , Michal Simek wrote:
+>> Hi Jean-Christophe,
+>>
+>> On 05/30/2013 10:17 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>> On 15:49 Thu 30 May     , Michal Simek wrote:
+>>>> Export of_irq_count for modules.
+>>>
+>>> can you explain why do you need to call of_irq_count
+>>
+>> I need to count number of irq written in the DTS node.
+>> It is not fixed size that's why I need to proper way how to
+>> find it out.
+>>
+>> I am using this loop.
+>> 	count =3D of_irq_count(pdev->dev.of_node);
+>> 	/* Alloc IRQ based on DTS to be sure that no other driver will use it=
+ */
+>> 	while (count--) {
+>> 		tmp->irq =3D irq_of_parse_and_map(pdev->dev.of_node, count);
+>> 		dev_info(&pdev->dev, "%d: Alloc irq: %d\n", count, tmp->irq);
+>> 		ret =3D request_irq(tmp->irq, zynq_remoteproc_interrupt, 0,
+>> 					dev_name(&pdev->dev), &pdev->dev);
+>> 		if (ret) {
+>> 			...
+>> 		}
+>> 	}
+>>
+>> But of course if you think that this is incorrect to export it
+>> I can use what it is in of_irq_count body
+>> 368 int of_irq_count(struct device_node *dev)
+>> 369 {
+>> 370         int nr =3D 0;
+>> 371
+>> 372         while (of_irq_to_resource(dev, nr, NULL))
+>> 373                 nr++;
+>> 374
+>> 375         return nr;
+>> 376 }
+>>
+>> Because of_irq_to_resource is exported for modules.
+>> Or is there any better way how to loop over all interrupts in DT node?=
 
-> > Which gets preprocessed into:
-> >            interrupt-map = <
-> >         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
-> >             0x3000 0 0 1 &xps_intc_0 3 2
-> >             0x3000 0 0 2 &xps_intc_0 2 2
-> >             0x3000 0 0 3 &xps_intc_0 5 2
-> >             0x3000 0 0 4 &xps_intc_0 4 2
+>=20
+> can just explain me why you need to call irq_of_parse_and_map in your d=
+river?
+>=20
+> as the irq will be provided in the resources normally
 
+It is quite a long time I have written this driver on v3.1 or 3.3.
+But is this better?
 
-> dtc is only able to track line numbers when the native /include/
-> directive is used. The #include directive doesn't help it. It should be
-> added, but until it is the following patch solves the problem:
+	struct resource *res;
+	int i =3D 0;
+	do {
+		res =3D platform_get_resource(pdev, IORESOURCE_IRQ, i++);
+		if (res)
+			do something
+	} while(res);
 
-It's supposed to do better than that, I think.
-This, from dtc-lexer.l
+Also what about of_irq_to_resource()? Is it deprecated and all drivers
+shouldn't use it?
 
-<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
-                        char *line, *tmp, *fn;
-                        /* skip text before line # */
-                        line = yytext;
-                        while (!isdigit(*line))
-                                line++;
-                        /* skip digits in line # */
-                        tmp = line;
-                        while (!isspace(*tmp))
-                                tmp++;
-                        /* "NULL"-terminate line # */
-                        *tmp = '\0';
-                        /* start of filename */
-                        fn = strchr(tmp + 1, '"') + 1;
-                        /* strip trailing " from filename */
-                        tmp = strchr(fn, '"');
-                        *tmp = 0;
-                        /* -1 since #line is the number of the next line */
-                        srcpos_set_line(xstrdup(fn), atoi(line) - 1);
-                }
-
-Hrm.  Is this a "that's not in the kernel's copy yet" problem?
-Or did this fail to match the offending '# <line> <file>' somehow?
-(Like, is that '# 375' really in column 1?)
+I have no problem to rewrite the driver to use platform_get_resource.
 
 Thanks,
-jdl
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2GBJHVWBMTVNJMQHHRBQP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGorEsACgkQykllyylKDCFD3ACfWn/f6RJnAymjf57U/1IT4vNV
+540AniZhKJCj2ddhIo94mdxKnGHoVxYh
+=vjJM
+-----END PGP SIGNATURE-----
+
+------enig2GBJHVWBMTVNJMQHHRBQP--
