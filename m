@@ -1,152 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3EaMEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:04:10 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:33356 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3EaMDT (ORCPT
+	id S1756332Ab3EaMEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:04:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57216 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417Ab3EaMEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:03:19 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: arnd@arndb.de, kgene.kim@samsung.com, olof@lixom.net, patches@linaro.org
-Subject: [PATCH 2/3] ARM: SAMSUNG: Consolidate uncompress subroutine
-Date: Fri, 31 May 2013 17:19:03 +0530
-Message-Id: <1370000944-19786-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370000944-19786-1-git-send-email-tushar.behera@linaro.org>
-References: <1370000944-19786-1-git-send-email-tushar.behera@linaro.org>
+	Fri, 31 May 2013 08:04:25 -0400
+Date: Fri, 31 May 2013 05:03:40 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-a8279525f42b4073e06b8b0061be1e55be29a023@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, sam@ravnborg.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, bp@alien8.de,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, sam@ravnborg.org, bp@alien8.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1369398928-9809-9-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-9-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Move libaudit check config into config/Makefile
+Git-Commit-ID: a8279525f42b4073e06b8b0061be1e55be29a023
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For mach-exynos, uart_base is a pointer and the value is calculated
-in the machine folder. For other machines, uart_base is defined as
-a macro in platform directory. For symmetry, the uart_base macro
-definition is removed and the uart_base calculation is moved to
-specific machine folders.
+Commit-ID:  a8279525f42b4073e06b8b0061be1e55be29a023
+Gitweb:     http://git.kernel.org/tip/a8279525f42b4073e06b8b0061be1e55be29a023
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 25 Mar 2013 00:54:36 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 May 2013 14:38:45 +0300
 
-This would help us consolidating uncompress subroutine for s5p64x0.
+perf tools: Move libaudit check config into config/Makefile
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Moving libaudit check config into config/Makefile.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1369398928-9809-9-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/mach-exynos/include/mach/uncompress.h  |    3 ---
- arch/arm/mach-s3c24xx/include/mach/uncompress.h |    7 +++++++
- arch/arm/mach-s3c64xx/include/mach/uncompress.h |    7 +++++++
- arch/arm/mach-s5pc100/include/mach/uncompress.h |    6 ++++++
- arch/arm/mach-s5pv210/include/mach/uncompress.h |    6 ++++++
- arch/arm/plat-samsung/include/plat/uncompress.h |    6 ++----
- 6 files changed, 28 insertions(+), 7 deletions(-)
+ tools/perf/Makefile        |  9 +--------
+ tools/perf/config/Makefile | 11 +++++++++++
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/include/mach/uncompress.h b/arch/arm/mach-exynos/include/mach/uncompress.h
-index 730f69f..30592fd 100644
---- a/arch/arm/mach-exynos/include/mach/uncompress.h
-+++ b/arch/arm/mach-exynos/include/mach/uncompress.h
-@@ -15,9 +15,6 @@
- #include <asm/mach-types.h>
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7dc6615..57d39ed 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -505,14 +505,7 @@ ifndef NO_LIBUNWIND
+ endif
  
- #include <mach/map.h>
--
--volatile u8 *uart_base;
--
- #include <plat/uncompress.h>
+ ifndef NO_LIBAUDIT
+-	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
+-	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+-		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+-	else
+-		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
+-		BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
+-		EXTLIBS += -laudit
+-	endif
++	BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
+ endif
  
- static unsigned int __raw_readl(unsigned int ptr)
-diff --git a/arch/arm/mach-s3c24xx/include/mach/uncompress.h b/arch/arm/mach-s3c24xx/include/mach/uncompress.h
-index 8b283f8..638893e 100644
---- a/arch/arm/mach-s3c24xx/include/mach/uncompress.h
-+++ b/arch/arm/mach-s3c24xx/include/mach/uncompress.h
-@@ -49,6 +49,13 @@ static void arch_detect_cpu(void)
- 		fifo_mask = S3C2410_UFSTAT_TXMASK;
- 		fifo_max = 15 << S3C2410_UFSTAT_TXSHIFT;
- 	}
+ ifndef NO_SLANG
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 438574b..02e58ff 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -197,3 +197,14 @@ ifndef NO_LIBUNWIND
+ 	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
+ 	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
+ endif # NO_LIBUNWIND
 +
-+#ifdef CONFIG_DEBUG_LL
-+	uart_base = (volatile u8 *) S3C_PA_UART +
-+		(S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
-+#else
-+	uart_base = NULL;
-+#endif
- }
- 
- #endif /* __ASM_ARCH_UNCOMPRESS_H */
-diff --git a/arch/arm/mach-s3c64xx/include/mach/uncompress.h b/arch/arm/mach-s3c64xx/include/mach/uncompress.h
-index c6a82a2..d6f9188 100644
---- a/arch/arm/mach-s3c64xx/include/mach/uncompress.h
-+++ b/arch/arm/mach-s3c64xx/include/mach/uncompress.h
-@@ -23,6 +23,13 @@ static void arch_detect_cpu(void)
- 	/* we do not need to do any cpu detection here at the moment. */
- 	fifo_mask = S3C2440_UFSTAT_TXMASK;
- 	fifo_max = 63 << S3C2440_UFSTAT_TXSHIFT;
-+
-+#ifdef CONFIG_DEBUG_LL
-+	uart_base = (volatile u8 *)S3C_PA_UART +
-+		(S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
-+#else
-+	uart_base = NULL;
-+#endif
- }
- 
- #endif /* __ASM_ARCH_UNCOMPRESS_H */
-diff --git a/arch/arm/mach-s5pc100/include/mach/uncompress.h b/arch/arm/mach-s5pc100/include/mach/uncompress.h
-index 01ccf53..c1242df 100644
---- a/arch/arm/mach-s5pc100/include/mach/uncompress.h
-+++ b/arch/arm/mach-s5pc100/include/mach/uncompress.h
-@@ -23,6 +23,12 @@ static void arch_detect_cpu(void)
- 	/* we do not need to do any cpu detection here at the moment. */
- 	fifo_mask = S3C2440_UFSTAT_TXMASK;
- 	fifo_max = 63 << S3C2440_UFSTAT_TXSHIFT;
-+
-+#ifdef CONFIG_DEBUG_LL
-+	uart_base = (volatile u8 *)S5P_PA_UART(CONFIG_S3C_LOWLEVEL_UART_PORT);
-+#else
-+	uart_base = NULL;
-+#endif
- }
- 
- #endif /* __ASM_ARCH_UNCOMPRESS_H */
-diff --git a/arch/arm/mach-s5pv210/include/mach/uncompress.h b/arch/arm/mach-s5pv210/include/mach/uncompress.h
-index ef977ea..2193812 100644
---- a/arch/arm/mach-s5pv210/include/mach/uncompress.h
-+++ b/arch/arm/mach-s5pv210/include/mach/uncompress.h
-@@ -21,6 +21,12 @@ static void arch_detect_cpu(void)
- 	/* we do not need to do any cpu detection here at the moment. */
- 	fifo_mask = S5PV210_UFSTAT_TXMASK;
- 	fifo_max = 63 << S5PV210_UFSTAT_TXSHIFT;
-+
-+#ifdef CONFIG_DEBUG_LL
-+	uart_base = (volatile u8 *)S5P_PA_UART(CONFIG_S3C_LOWLEVEL_UART_PORT);
-+#else
-+	uart_base = NULL;
-+#endif
- }
- 
- #endif /* __ASM_ARCH_UNCOMPRESS_H */
-diff --git a/arch/arm/plat-samsung/include/plat/uncompress.h b/arch/arm/plat-samsung/include/plat/uncompress.h
-index 350032b..78274eb 100644
---- a/arch/arm/plat-samsung/include/plat/uncompress.h
-+++ b/arch/arm/plat-samsung/include/plat/uncompress.h
-@@ -21,6 +21,8 @@ typedef unsigned int upf_t;	/* cannot include linux/serial_core.h */
- unsigned int fifo_mask;
- unsigned int fifo_max;
- 
-+volatile u8 *uart_base;
-+
- /* forward declerations */
- 
- static void arch_detect_cpu(void);
-@@ -37,10 +39,6 @@ static void arch_detect_cpu(void);
- /* how many bytes we allow into the FIFO at a time in FIFO mode */
- #define FIFO_MAX	 (14)
- 
--#ifdef S3C_PA_UART
--#define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
--#endif
--
- static __inline__ void
- uart_wr(unsigned int reg, unsigned int val)
- {
--- 
-1.7.9.5
-
++ifndef NO_LIBAUDIT
++	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
++	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
++		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
++		NO_LIBAUDIT := 1
++	else
++		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
++		EXTLIBS += -laudit
++	endif
++endif
