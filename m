@@ -1,202 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab3EaSjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:39:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16598 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756964Ab3EaSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:38:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,780,1363158000"; 
-   d="scan'208";a="346421527"
-Subject: [v4][PATCH 2/6] mm: swap: make 'struct page' and swp_entry_t variants of swapcache_free().
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
-        tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 31 May 2013 11:38:58 -0700
-References: <20130531183855.44DDF928@viggo.jf.intel.com>
-In-Reply-To: <20130531183855.44DDF928@viggo.jf.intel.com>
-Message-Id: <20130531183858.3C8C10C7@viggo.jf.intel.com>
+	id S1757234Ab3EaSkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:40:19 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:32793 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757071Ab3EaSkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 14:40:08 -0400
+Message-ID: <51A8EE85.9030405@linaro.org>
+Date: Fri, 31 May 2013 11:40:05 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [RFC] clocksource: Add clocksource drivers menu.
+References: <1369994378-28163-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1369994378-28163-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/31/2013 02:59 AM, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> This patch adds "Clocksource drivers" menu to clocksource drivers.
+> The reason to add this is because, some of the clocksource Kconfig
+> options like *SHED_CLK ones are selectable and they appear at random
+> places in the device drivers menu.
+> These options can be more than one option for multiplatform case, so I
+> think it will be neat to get a menu to clocksource drivers itself.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Sigh. So I've done a poor job at being a maintainer[1], and sort of left 
+the barn door open here.
 
-swapcache_free() takes two arguments:
+I'd *really* like to avoid having a clocksource config menu. Looking at 
+the existing RTC menu as an example, there's just a ton of random 
+hardware names that the user has to try to figure out if it applies to 
+their system or not. For instance, on x86 I have to filter through 90% 
+of the RTC drivers that aren't ever even an option on any x86 hardware.
 
-	void swapcache_free(swp_entry_t entry, struct page *page)
+It just turns into a needless config headache.
 
-Most of its callers (5/7) are from error handling paths haven't even
-instantiated a page, so they pass page=NULL.  Both of the callers
-that call in with a 'struct page' create and pass in a temporary
-swp_entry_t.
+And only just now did I notice that there are user-prompts in the 
+drivers/clocksource/Kconfig.
 
-Now that we are deferring clearing page_private() until after
-swapcache_free() has been called, we can just create a variant
-that takes a 'struct page' and does the temporary variable in
-the helper.
+I suspect the platform support options can safely select the proper 
+clocksource config options without requiring the user to configure it. 
+For the most part this is the case, even so folks still introduced some 
+unnecessary clocksource config options (unnecessary as they don't prompt 
+the user, default to y and depend on another config).
 
-That leaves all the other callers doing
+It looks like only: CLKSRC_DBX500_PRCMU & 
+CLKSRC_DBX500_PRCMU_SCHED_CLOCK prompt the user right now.
 
-	swapcache_free(entry, NULL)
+Can you explain why its necessary the user has to be prompted here?
 
-so create another helper for them that makes it clear that they
-need only pass in a swp_entry_t.
+I know the situation isn't your fault, and you're just trying to clean 
+things up here. However I'd much prefer removing the user-prompt and 
+trying to remove unnecessary configs over creating a new config menu. 
+And if there must be a user-selected config, I'd much rather it be a 
+platform config option rather then some generic-seeming driver config.
 
-One downside here is that delete_from_swap_cache() now does
-an extra swap_address_space() call.  But, those are pretty
-cheap (just some array index arithmetic).
+thanks
+-john
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/drivers/staging/zcache/zcache-main.c |    2 +-
- linux.git-davehans/include/linux/swap.h                 |    3 ++-
- linux.git-davehans/mm/shmem.c                           |    2 +-
- linux.git-davehans/mm/swap_state.c                      |   15 +++++----------
- linux.git-davehans/mm/swapfile.c                        |   15 ++++++++++++++-
- linux.git-davehans/mm/vmscan.c                          |    5 +----
- 6 files changed, 24 insertions(+), 18 deletions(-)
-
-diff -puN drivers/staging/zcache/zcache-main.c~make-page-and-swp_entry_t-variants drivers/staging/zcache/zcache-main.c
---- linux.git/drivers/staging/zcache/zcache-main.c~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.898091196 -0700
-+++ linux.git-davehans/drivers/staging/zcache/zcache-main.c	2013-05-30 16:07:50.910091724 -0700
-@@ -961,7 +961,7 @@ static int zcache_get_swap_cache_page(in
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 		/* FIXME: is it possible to get here without err==-ENOMEM?
- 		 * If not, we can dispense with the do loop, use goto retry */
- 	} while (err != -ENOMEM);
-diff -puN include/linux/swap.h~make-page-and-swp_entry_t-variants include/linux/swap.h
---- linux.git/include/linux/swap.h~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.900091284 -0700
-+++ linux.git-davehans/include/linux/swap.h	2013-05-30 16:07:50.911091768 -0700
-@@ -385,7 +385,8 @@ extern void swap_shmem_alloc(swp_entry_t
- extern int swap_duplicate(swp_entry_t);
- extern int swapcache_prepare(swp_entry_t);
- extern void swap_free(swp_entry_t);
--extern void swapcache_free(swp_entry_t, struct page *page);
-+extern void swapcache_free_entry(swp_entry_t entry);
-+extern void swapcache_free_page_entry(struct page *page);
- extern int free_swap_and_cache(swp_entry_t);
- extern int swap_type_of(dev_t, sector_t, struct block_device **);
- extern unsigned int count_swap_pages(int, int);
-diff -puN mm/shmem.c~make-page-and-swp_entry_t-variants mm/shmem.c
---- linux.git/mm/shmem.c~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.902091372 -0700
-+++ linux.git-davehans/mm/shmem.c	2013-05-30 16:07:50.912091812 -0700
-@@ -872,7 +872,7 @@ static int shmem_writepage(struct page *
- 	}
- 
- 	mutex_unlock(&shmem_swaplist_mutex);
--	swapcache_free(swap, NULL);
-+	swapcache_free_entry(swap);
- redirty:
- 	set_page_dirty(page);
- 	if (wbc->for_reclaim)
-diff -puN mm/swapfile.c~make-page-and-swp_entry_t-variants mm/swapfile.c
---- linux.git/mm/swapfile.c~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.904091460 -0700
-+++ linux.git-davehans/mm/swapfile.c	2013-05-30 16:07:50.913091856 -0700
-@@ -637,7 +637,7 @@ void swap_free(swp_entry_t entry)
- /*
-  * Called after dropping swapcache to decrease refcnt to swap entries.
-  */
--void swapcache_free(swp_entry_t entry, struct page *page)
-+static void __swapcache_free(swp_entry_t entry, struct page *page)
- {
- 	struct swap_info_struct *p;
- 	unsigned char count;
-@@ -651,6 +651,19 @@ void swapcache_free(swp_entry_t entry, s
- 	}
- }
- 
-+void swapcache_free_entry(swp_entry_t entry)
-+{
-+	__swapcache_free(entry, NULL);
-+}
-+
-+void swapcache_free_page_entry(struct page *page)
-+{
-+	swp_entry_t entry = { .val = page_private(page) };
-+	__swapcache_free(entry, page);
-+	set_page_private(page, 0);
-+	ClearPageSwapCache(page);
-+}
-+
- /*
-  * How many references to page are currently swapped out?
-  * This does not give an exact answer when swap count is continued,
-diff -puN mm/swap_state.c~make-page-and-swp_entry_t-variants mm/swap_state.c
---- linux.git/mm/swap_state.c~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.905091504 -0700
-+++ linux.git-davehans/mm/swap_state.c	2013-05-30 16:07:50.914091900 -0700
-@@ -174,7 +174,7 @@ int add_to_swap(struct page *page, struc
- 
- 	if (unlikely(PageTransHuge(page)))
- 		if (unlikely(split_huge_page_to_list(page, list))) {
--			swapcache_free(entry, NULL);
-+			swapcache_free_entry(entry);
- 			return 0;
- 		}
- 
-@@ -200,7 +200,7 @@ int add_to_swap(struct page *page, struc
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 		return 0;
- 	}
- }
-@@ -213,19 +213,14 @@ int add_to_swap(struct page *page, struc
-  */
- void delete_from_swap_cache(struct page *page)
- {
--	swp_entry_t entry;
- 	struct address_space *address_space;
- 
--	entry.val = page_private(page);
--
--	address_space = swap_address_space(entry);
-+	address_space = page_mapping(page);
- 	spin_lock_irq(&address_space->tree_lock);
- 	__delete_from_swap_cache(page);
- 	spin_unlock_irq(&address_space->tree_lock);
- 
--	swapcache_free(entry, page);
--	set_page_private(page, 0);
--	ClearPageSwapCache(page);
-+	swapcache_free_page_entry(page);
- 	page_cache_release(page);
- }
- 
-@@ -370,7 +365,7 @@ struct page *read_swap_cache_async(swp_e
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 	} while (err != -ENOMEM);
- 
- 	if (new_page)
-diff -puN mm/vmscan.c~make-page-and-swp_entry_t-variants mm/vmscan.c
---- linux.git/mm/vmscan.c~make-page-and-swp_entry_t-variants	2013-05-30 16:07:50.907091592 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:50.915091944 -0700
-@@ -490,12 +490,9 @@ static int __remove_mapping(struct addre
- 	}
- 
- 	if (PageSwapCache(page)) {
--		swp_entry_t swap = { .val = page_private(page) };
- 		__delete_from_swap_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
--		swapcache_free(swap, page);
--		set_page_private(page, 0);
--		ClearPageSwapCache(page);
-+		swapcache_free_page_entry(page);
- 	} else {
- 		void (*freepage)(struct page *);
- 
-_
+[1] I'm no good at flames. Linus does a much better job covering this topic:
+     http://lkml.indiana.edu/hypermail/linux/kernel/1304.3/02435.html
