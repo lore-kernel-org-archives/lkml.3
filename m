@@ -1,82 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3EaUuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 16:50:09 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:36320 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab3EaUuD (ORCPT
+	id S1756761Ab3EaUwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 16:52:47 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:60525 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab3EaUwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 16:50:03 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] usb: musb: Fix format specifier warning
-Date: Fri, 31 May 2013 22:49:49 +0200
-Message-Id: <1370033389-27131-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 31 May 2013 16:52:41 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, <b.brezillon@overkiz.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>, <manabian@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] ARM: at91/dt: add pinctrl definition for at91 tc blocks
+Date: Fri, 31 May 2013 22:52:37 +0200
+Message-ID: <1370033557-17114-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1369389956-30466-1-git-send-email-b.brezillon@overkiz.com>
+References: <1369389956-30466-1-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a format specifier warning. dma_addr_t can be either
-u32 or u64 so we should cast to the largest type and change the format
-specifier to %llx.
-The addition of urb->transfer_dma and urb->actual_length is also done a
-few lines below. I have moved this code up and pass the variable buf to
-dev_dbg.
+From: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Sparse output:
-drivers/usb/musb/musb_host.c:1761:4: warning:
-	format ‘%x’ expects argument of type ‘unsigned int’,
-	but argument 6 has type ‘dma_addr_t’ [-Wformat]
+This patch adds pinctrl configurations for at91 Timer Counter blocks.
+These pin definitions can be referenced by "atmel,tcb-pwm" devices to
+setup pins as PWM output for instance.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+[nicolas.ferre@atmel.com: switch to pinctrl pre-processor macros]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
-v2: Added missing braces according to Doc/CodingStyle
+Hi Boris,
 
- drivers/usb/musb/musb_host.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+Here is your patch modified with pinctrl macros used.
+I plan to stack it on top of our at91-3.11-dt branch now.
 
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index 094cf80..45c4e8b 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -1756,11 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 			dma_addr_t		buf;
+Thanks and best regards,
+
+Nicolas Ferre
+
+ arch/arm/boot/dts/at91rm9200.dtsi  | 76 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9260.dtsi | 76 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263.dtsi | 38 +++++++++++++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi | 76 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9n12.dtsi | 76 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9x5.dtsi  | 76 ++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 418 insertions(+)
+
+diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
+index 4aad0d9..b91cf78 100644
+--- a/arch/arm/boot/dts/at91rm9200.dtsi
++++ b/arch/arm/boot/dts/at91rm9200.dtsi
+@@ -398,6 +398,82 @@
+ 					};
+ 				};
  
- 			rx_count = musb_readw(epio, MUSB_RXCOUNT);
-+			buf = urb->transfer_dma + urb->actual_length;
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOA 13 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOA 14 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOA 15 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOA 17 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOA 19 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOA 21 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOA 18 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOA 20 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
++				tcb1 {
++					pinctrl_tcb1_tclk0: tcb1_tclk0-0 {
++						atmel,pins = <AT91_PIOA 27 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk1: tcb1_tclk1-0 {
++						atmel,pins = <AT91_PIOA 28 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk2: tcb1_tclk2-0 {
++						atmel,pins = <AT91_PIOA 29 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa0: tcb1_tioa0-0 {
++						atmel,pins = <AT91_PIOB 6 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa1: tcb1_tioa1-0 {
++						atmel,pins = <AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa2: tcb1_tioa2-0 {
++						atmel,pins = <AT91_PIOB 10 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob0: tcb1_tiob0-0 {
++						atmel,pins = <AT91_PIOB 7 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob1: tcb1_tiob1-0 {
++						atmel,pins = <AT91_PIOB 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob2: tcb1_tiob2-0 {
++						atmel,pins = <AT91_PIOB 11 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+index de571d9..899a7cf 100644
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -355,6 +355,82 @@
+ 					};
+ 				};
  
--			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%x len %d/%d\n",
-+			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
- 					epnum, rx_count,
--					urb->transfer_dma
--						+ urb->actual_length,
-+					(unsigned long long)buf,
- 					qh->offset,
- 					urb->transfer_buffer_length);
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOB 6 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOB 7 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOC 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOC 7 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOC 6 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++				};
++
++				tcb1 {
++					pinctrl_tcb1_tclk0: tcb1_tclk0-0 {
++						atmel,pins = <AT91_PIOB 16 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk1: tcb1_tclk1-0 {
++						atmel,pins = <AT91_PIOB 17 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk2: tcb1_tclk2-0 {
++						atmel,pins = <AT91_PIOC 22 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa0: tcb1_tioa0-0 {
++						atmel,pins = <AT91_PIOB 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa1: tcb1_tioa1-0 {
++						atmel,pins = <AT91_PIOB 2 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa2: tcb1_tioa2-0 {
++						atmel,pins = <AT91_PIOB 3 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob0: tcb1_tiob0-0 {
++						atmel,pins = <AT91_PIOB 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob1: tcb1_tiob1-0 {
++						atmel,pins = <AT91_PIOB 18 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob2: tcb1_tiob2-0 {
++						atmel,pins = <AT91_PIOB 19 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index d9cf51a..ff63811 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -324,6 +324,44 @@
+ 					};
+ 				};
  
-@@ -1785,14 +1785,13 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 					    rx_count, d->length);
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOB 28 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOC 28 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOE 18 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOE 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOB 17 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOE 19 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOE 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOB 18 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff200 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff200 0x200>;
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index f0091af..faec17d 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -344,6 +344,82 @@
+ 					};
+ 				};
  
- 					length = d->length;
--				} else
-+				} else {
- 					length = rx_count;
-+				}
- 				d->status = d_status;
- 				buf = urb->transfer_dma + d->offset;
- 			} else {
- 				length = rx_count;
--				buf = urb->transfer_dma +
--						urb->actual_length;
- 			}
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOD 23 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOD 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOC 10 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOD 20 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOD 21 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOD 22 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOD 30 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOD 31 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOA 26 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
++				tcb1 {
++					pinctrl_tcb1_tclk0: tcb1_tclk0-0 {
++						atmel,pins = <AT91_PIOA 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk1: tcb1_tclk1-0 {
++						atmel,pins = <AT91_PIOA 3 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk2: tcb1_tclk2-0 {
++						atmel,pins = <AT91_PIOD 9 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa0: tcb1_tioa0-0 {
++						atmel,pins = <AT91_PIOA 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa1: tcb1_tioa1-0 {
++						atmel,pins = <AT91_PIOA 4 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa2: tcb1_tioa2-0 {
++						atmel,pins = <AT91_PIOD 7 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob0: tcb1_tiob0-0 {
++						atmel,pins = <AT91_PIOA 2 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob1: tcb1_tiob1-0 {
++						atmel,pins = <AT91_PIOA 5 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob2: tcb1_tiob2-0 {
++						atmel,pins = <AT91_PIOD 8 AT91_PERIPH_B AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff200 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff200 0x200>;
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index d12da33..3166e1d 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -285,6 +285,82 @@
+ 					};
+ 				};
  
- 			dma->desired_mode = 0;
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOA 21 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOA 22 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOA 23 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOA 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++				};
++
++				tcb1 {
++					pinctrl_tcb1_tclk0: tcb1_tclk0-0 {
++						atmel,pins = <AT91_PIOC 4 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk1: tcb1_tclk1-0 {
++						atmel,pins = <AT91_PIOC 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk2: tcb1_tclk2-0 {
++						atmel,pins = <AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa0: tcb1_tioa0-0 {
++						atmel,pins = <AT91_PIOC 2 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa1: tcb1_tioa1-0 {
++						atmel,pins = <AT91_PIOC 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa2: tcb1_tioa2-0 {
++						atmel,pins = <AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob0: tcb1_tiob0-0 {
++						atmel,pins = <AT91_PIOC 3 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob1: tcb1_tiob1-0 {
++						atmel,pins = <AT91_PIOC 6 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob2: tcb1_tiob2-0 {
++						atmel,pins = <AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index 5635064..e77106e 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -414,6 +414,82 @@
+ 					};
+ 				};
+ 
++				tcb0 {
++					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
++						atmel,pins = <AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk1: tcb0_tclk1-0 {
++						atmel,pins = <AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tclk2: tcb0_tclk2-0 {
++						atmel,pins = <AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa0: tcb0_tioa0-0 {
++						atmel,pins = <AT91_PIOA 21 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa1: tcb0_tioa1-0 {
++						atmel,pins = <AT91_PIOA 22 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tioa2: tcb0_tioa2-0 {
++						atmel,pins = <AT91_PIOA 23 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob0: tcb0_tiob0-0 {
++						atmel,pins = <AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob1: tcb0_tiob1-0 {
++						atmel,pins = <AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb0_tiob2: tcb0_tiob2-0 {
++						atmel,pins = <AT91_PIOA 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++				};
++
++				tcb1 {
++					pinctrl_tcb1_tclk0: tcb1_tclk0-0 {
++						atmel,pins = <AT91_PIOC 4 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk1: tcb1_tclk1-0 {
++						atmel,pins = <AT91_PIOC 7 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tclk2: tcb1_tclk2-0 {
++						atmel,pins = <AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa0: tcb1_tioa0-0 {
++						atmel,pins = <AT91_PIOC 2 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa1: tcb1_tioa1-0 {
++						atmel,pins = <AT91_PIOC 5 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tioa2: tcb1_tioa2-0 {
++						atmel,pins = <AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob0: tcb1_tiob0-0 {
++						atmel,pins = <AT91_PIOC 3 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob1: tcb1_tiob1-0 {
++						atmel,pins = <AT91_PIOC 6 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_tcb1_tiob2: tcb1_tiob2-0 {
++						atmel,pins = <AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
 -- 
-1.7.10.4
+1.8.0
 
