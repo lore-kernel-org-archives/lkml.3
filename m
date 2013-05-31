@@ -1,95 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab3EaQP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:15:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38246 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab3EaQPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:15:22 -0400
-Date: Fri, 31 May 2013 18:15:16 +0200
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, lwoodman@redhat.com, riel@redhat.com,
-        jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3 10/13] x86, acpi, numa, mem-hotplug: Introduce
- MEMBLK_HOTPLUGGABLE to mark and reserve hotpluggable memory.
-Message-ID: <20130531161516.GA4407@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
- <1369387762-17865-11-git-send-email-tangchen@cn.fujitsu.com>
+	id S1756998Ab3EaQS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:18:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40915 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756884Ab3EaQSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 12:18:18 -0400
+Date: Fri, 31 May 2013 09:18:07 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: [PATCH] clean up scary strncpy(dst, src, strlen(src)) uses
+Message-ID: <20130531161807.GA9536@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369387762-17865-11-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 05:29:19PM +0800, Tang Chen wrote:
-> We mark out movable memory ranges and reserve them with MEMBLK_HOTPLUGGABLE flag in
-> memblock.reserved. This should be done after the memory mapping is initialized
-> because the kernel now supports allocate pagetable pages on local node, which
-> are kernel pages.
-> 
-> The reserved hotpluggable will be freed to buddy when memory initialization
-> is done.
-> 
-> And also, ensure all the nodes which the kernel resides in are un-hotpluggable.
-> 
-> This idea is from Wen Congyang <wency@cn.fujitsu.com> and Jiang Liu <jiang.liu@huawei.com>.
-> 
-> Suggested-by: Jiang Liu <jiang.liu@huawei.com>
-> Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-> ---
->  arch/x86/mm/numa.c       |   29 +++++++++++++++++++++++++++++
->  include/linux/memblock.h |    3 +++
->  mm/memblock.c            |   19 +++++++++++++++++++
->  3 files changed, 51 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index b28baf3..73f9ade 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -727,6 +727,33 @@ static void __init early_x86_numa_init_mapping(void)
->  }
->  #endif
->  
-> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> +static void __init early_mem_hotplug_init()
-> +{
-> +	int i, nid;
-> +	phys_addr_t start, end;
-> +
-> +	if (!movablecore_enable_srat)
-> +		return;
-> +
-> +	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-> +		nid = numa_meminfo.blk[i].nid;
-> +		start = numa_meminfo.blk[i].start;
-> +		end = numa_meminfo.blk[i].end;
-> +
-> +		if (!numa_meminfo.blk[i].hotpluggable ||
-> +		    memblock_is_kernel_node(nid))
-> +			continue;
+Fix various weird constructions of strncpy(dst, src, strlen(src)). Length
+limits should be about the space available in the destination, not
+repurposed as a method to either always include or always exclude
+a trailing NULL byte. Either the NULL should always be copied
+(using strlcpy), or it should not be copied (using something like
+memcpy). Readable code should not depend on the weird behavior of strncpy
+when it hits the length limit. Better to avoid the anti-pattern entirely.
 
-In my v2 testing, I had a seabios bug: *all* memory was marked as hotpluggable
-and the first if condition clause above always returned true.
-I have a fixed seabios version that only sets hotplug bit to 1 for extra dimms
-(see my v2 reply on how to use it with qemu):
-https://github.com/vliaskov/seabios/commits/memhp-v4
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+This is a follow-up to the anti-pattern being fixed in iscsi-target,
+which was exploitable:
+"iscsi-target: fix heap buffer overflow on error"
+http://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?id=cea4dcfdad926a27a18e188720efe0f2c9403456
+---
+ Documentation/accounting/getdelays.c             |    3 ++-
+ drivers/acpi/sysfs.c                             |    3 +--
+ drivers/s390/net/qeth_l3_sys.c                   |    6 ++----
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |    3 +--
+ fs/hppfs/hppfs.c                                 |   11 ++++++-----
+ 5 files changed, 12 insertions(+), 14 deletions(-)
 
-I think there is another problem with mark_kernel_nodes though, see my comment
-for 7/13.
+diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
+index f8ebcde..5e4773d 100644
+--- a/Documentation/accounting/getdelays.c
++++ b/Documentation/accounting/getdelays.c
+@@ -23,6 +23,7 @@
+ #include <sys/socket.h>
+ #include <sys/wait.h>
+ #include <signal.h>
++#include <bsd/string.h>
+ 
+ #include <linux/genetlink.h>
+ #include <linux/taskstats.h>
+@@ -299,7 +300,7 @@ int main(int argc, char *argv[])
+ 			break;
+ 		case 'C':
+ 			containerset = 1;
+-			strncpy(containerpath, optarg, strlen(optarg) + 1);
++			strlcpy(containerpath, optarg, sizeof(containerpath));
+ 			break;
+ 		case 'w':
+ 			logfile = strdup(optarg);
+diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
+index fcae5fa..193745d 100644
+--- a/drivers/acpi/sysfs.c
++++ b/drivers/acpi/sysfs.c
+@@ -677,10 +677,9 @@ void acpi_irq_stats_init(void)
+ 		else
+ 			sprintf(buffer, "bug%02X", i);
+ 
+-		name = kzalloc(strlen(buffer) + 1, GFP_KERNEL);
++		name = kstrdup(buffer, GFP_KERNEL);
+ 		if (name == NULL)
+ 			goto fail;
+-		strncpy(name, buffer, strlen(buffer) + 1);
+ 
+ 		sysfs_attr_init(&counter_attrs[i].attr);
+ 		counter_attrs[i].attr.name = name;
+diff --git a/drivers/s390/net/qeth_l3_sys.c b/drivers/s390/net/qeth_l3_sys.c
+index e70af24..d1c8025 100644
+--- a/drivers/s390/net/qeth_l3_sys.c
++++ b/drivers/s390/net/qeth_l3_sys.c
+@@ -315,10 +315,8 @@ static ssize_t qeth_l3_dev_hsuid_store(struct device *dev,
+ 	if (qeth_configure_cq(card, QETH_CQ_ENABLED))
+ 		return -EPERM;
+ 
+-	for (i = 0; i < 8; i++)
+-		card->options.hsuid[i] = ' ';
+-	card->options.hsuid[8] = '\0';
+-	strncpy(card->options.hsuid, tmp, strlen(tmp));
++	snprintf(card->options.hsuid, sizeof(card->options.hsuid),
++		 "%-8s", tmp);
+ 	ASCEBC(card->options.hsuid, 8);
+ 	if (card->dev)
+ 		memcpy(card->dev->perm_addr, card->options.hsuid, 9);
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index df0f37e..c4d632c 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -421,12 +421,11 @@ static int omap3_bridge_startup(struct platform_device *pdev)
+ 	drv_datap->tc_wordswapon = tc_wordswapon;
+ 
+ 	if (base_img) {
+-		drv_datap->base_img = kmalloc(strlen(base_img) + 1, GFP_KERNEL);
++		drv_datap->base_img = kstrdup(base_img, GFP_KERNEL);
+ 		if (!drv_datap->base_img) {
+ 			err = -ENOMEM;
+ 			goto err2;
+ 		}
+-		strncpy(drv_datap->base_img, base_img, strlen(base_img) + 1);
+ 	}
+ 
+ 	dev_set_drvdata(bridge, drv_datap);
+diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
+index cd3e389..d619b83 100644
+--- a/fs/hppfs/hppfs.c
++++ b/fs/hppfs/hppfs.c
+@@ -69,7 +69,7 @@ static char *dentry_name(struct dentry *dentry, int extra)
+ 	struct dentry *parent;
+ 	char *root, *name;
+ 	const char *seg_name;
+-	int len, seg_len;
++	int len, seg_len, root_len;
+ 
+ 	len = 0;
+ 	parent = dentry;
+@@ -81,7 +81,8 @@ static char *dentry_name(struct dentry *dentry, int extra)
+ 	}
+ 
+ 	root = "proc";
+-	len += strlen(root);
++	root_len = strlen(root);
++	len += root_len;
+ 	name = kmalloc(len + extra + 1, GFP_KERNEL);
+ 	if (name == NULL)
+ 		return NULL;
+@@ -91,7 +92,7 @@ static char *dentry_name(struct dentry *dentry, int extra)
+ 	while (parent->d_parent != parent) {
+ 		if (is_pid(parent)) {
+ 			seg_name = "pid";
+-			seg_len = strlen("pid");
++			seg_len = strlen(seg_name);
+ 		}
+ 		else {
+ 			seg_name = parent->d_name.name;
+@@ -100,10 +101,10 @@ static char *dentry_name(struct dentry *dentry, int extra)
+ 
+ 		len -= seg_len + 1;
+ 		name[len] = '/';
+-		strncpy(&name[len + 1], seg_name, seg_len);
++		memcpy(&name[len + 1], seg_name, seg_len);
+ 		parent = parent->d_parent;
+ 	}
+-	strncpy(name, root, strlen(root));
++	memcpy(name, root, root_len);
+ 	return name;
+ }
+ 
+-- 
+1.7.9.5
 
-thanks,
 
-- Vasilis
+-- 
+Kees Cook
+Chrome OS Security
