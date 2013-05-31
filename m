@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab3FAB6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 21:58:06 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49195 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3FAB6D (ORCPT
+	id S932127Ab3FACoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 22:44:09 -0400
+Received: from lycasmtp.lycamobile.co.uk ([217.118.119.180]:53129 "EHLO
+	lycasmtp.lycamobile.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3FACoD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 21:58:03 -0400
+	Fri, 31 May 2013 22:44:03 -0400
+Message-Id: <201305312220.r4VK31nX029482@lycasmtp.lycamobile.co.uk>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <1370038972-2318779-8-git-send-email-arnd@arndb.de>
-References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
-	<1370038972-2318779-8-git-send-email-arnd@arndb.de>
-Date: Sat, 1 Jun 2013 07:28:01 +0530
-Message-ID: <CAKohpomzoGsOoQ__fd0V651bjWt2=JTC10wGSQzX2yyTcWZmvA@mail.gmail.com>
-Subject: Re: [PATCH 07/15] cpufreq: spear needs cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, patches@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: =?utf-8?q?Your_Email_ID_has_won_=C2=A31=2C000=2C000=2E00_GBP_in_our_UK_NA?=
+ =?utf-8?q?TIONAL_Online_splash_Promo=2C_For_claims_send_info=3A?=
+To: Recipients <uk@inf.net>
+From: uk@inf.net
+Date: Sat, 01 Jun 2013 03:58:41 +0530
+Reply-To: inf.greene@hotmail.co.uk
+X-plintron-MailScanner-Information: Please contact the ISP for more information
+X-plintron-MailScanner-ID: r4VK31nX029482
+X-plintron-MailScanner: Found to be clean
+X-plintron-MailScanner-SpamScore: sss
+X-plintron-MailScanner-From: uk@inf.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 June 2013 03:52, Arnd Bergmann <arnd@arndb.de> wrote:
-> Like a lot of the other cpufreq drivers, this one needs to
-> select CONFIG_CPU_FREQ_TABLE to avoid a build error like
->
-> drivers/built-in.o: In function `spear_cpufreq_exit':
-> spear-cpufreq.c:198: undefined reference to `cpufreq_frequency_table_put_attr'
-> drivers/built-in.o: In function `spear_cpufreq_verify':
-> spear-cpufreq.c:35: undefined reference to `cpufreq_frequency_table_verify'
-> drivers/built-in.o: In function `spear_cpufreq_init':
-> spear-cpufreq.c:181: undefined reference to `cpufreq_frequency_table_cpuinfo'
-> spear-cpufreq.c:187: undefined reference to `cpufreq_frequency_table_get_attr'
-> drivers/built-in.o: In function `spear_cpufreq_target':
-> spear-cpufreq.c:120: undefined reference to `cpufreq_frequency_table_target'
-> drivers/built-in.o:(.data+0x5e63c): undefined reference to `cpufreq_freq_attr_scaling_available_freqs'
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: cpufreq@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> ---
->  drivers/cpufreq/Kconfig.arm | 1 +
->  1 file changed, 1 insertion(+)
+File No: Ref NO.: XYL/26510460037/06
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Names:.............
+Tel/Mobile:........
+Address:...........
+Country:...........
+Age:............
 
-BTW, you want me to apply this one or take it through arm-soc tree?
+Congratulation once again,
+Dr.Jones Green 
+Email: inf.greene@hotmail.co.uk
+
+
