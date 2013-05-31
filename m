@@ -1,244 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3EaJ1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:27:50 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:40529 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3EaJ1m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:27:42 -0400
-From: Daniel Tang <dt.tangr@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv2] Add TI-Nspire clock drivers
-Date: Fri, 31 May 2013 19:27:33 +1000
-Message-Id: <8A6F4A19-35D4-4D60-B9EA-9DE51E938B8C@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-To: Mike Turquette <mturquette@linaro.org>
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Mailer: Apple Mail (2.1503)
+	id S1753353Ab3EaJ2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:28:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39812 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754364Ab3EaJ1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 05:27:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,777,1363158000"; 
+   d="scan'208";a="346174789"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH v1.1] gpiolib: append SFI helpers for GPIO API
+Date: Fri, 31 May 2013 12:27:19 +0300
+Message-Id: <1369992439-5421-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+In-Reply-To: <CACRpkdZbCytqaWTK7HvfU2aMpPQVZWX2uf-NXL-rUPGJ6DQ-mQ@mail.gmail.com>
+References: <CACRpkdZbCytqaWTK7HvfU2aMpPQVZWX2uf-NXL-rUPGJ6DQ-mQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a basic clock driver for the TI-Nspire calculator series.
+To support some (legacy) firmwares and platforms let's make life easier for
+their customers.
 
-Changes from v1:
-* Removed filename in header comment
-* Removed unnecessary #undef EXTRACT statement
+This patch extracts SFI GPIO API from arch/x86/platform/mrst/mrst.c.
 
-Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Len Brown <len.brown@intel.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- .../devicetree/bindings/clock/nspire-clock.txt     |  24 ++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-nspire.c                           | 153 +++++++++++++++++++++
- 3 files changed, 178 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/nspire-clock.txt
- create mode 100644 drivers/clk/clk-nspire.c
+Since v1:
+ - address Linus' comments: self-descriptive error codes, removal of __init in
+   header, better title in c-file.
 
-diff --git a/Documentation/devicetree/bindings/clock/nspire-clock.txt b/Documentation/devicetree/bindings/clock/nspire-clock.txt
+ drivers/gpio/Kconfig       |  4 +++
+ drivers/gpio/Makefile      |  1 +
+ drivers/gpio/gpiolib-sfi.c | 76 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/sfi/sfi_core.c     |  7 +++++
+ include/linux/sfi_gpio.h   | 27 ++++++++++++++++
+ 5 files changed, 115 insertions(+)
+ create mode 100644 drivers/gpio/gpiolib-sfi.c
+ create mode 100644 include/linux/sfi_gpio.h
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index f471fe8..a615d47 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -51,6 +51,10 @@ config OF_GPIO
+ 	def_bool y
+ 	depends on OF
+ 
++config GPIO_SFI
++	def_bool y
++	depends on SFI
++
+ config GPIO_ACPI
+ 	def_bool y
+ 	depends on ACPI
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0cb2d65..63d2abd 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -5,6 +5,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ obj-$(CONFIG_GPIO_DEVRES)	+= devres.o
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_GPIO_SFI)		+= gpiolib-sfi.o
+ obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+diff --git a/drivers/gpio/gpiolib-sfi.c b/drivers/gpio/gpiolib-sfi.c
 new file mode 100644
-index 0000000..7c3bc8b
+index 0000000..cccdc0f
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nspire-clock.txt
-@@ -0,0 +1,24 @@
-+TI-NSPIRE Clocks
-+
-+Required properties:
-+- compatible: Valid compatible properties include:
-+	"lsi,nspire-cx-ahb-divider" for the AHB divider in the CX model
-+	"lsi,nspire-classic-ahb-divider" for the AHB divider in the older model
-+	"lsi,nspire-cx-clock" for the base clock in the CX model
-+	"lsi,nspire-classic-clock" for the base clock in the older model
-+
-+- reg: Physical base address of the controller and length of memory mapped
-+	region.
-+
-+Optional:
-+- clocks: For the "nspire-*-ahb-divider" compatible clocks, this is the parent
-+	clock where it divides the rate from.
-+
-+Example:
-+
-+ahb_clk {
-+	#clock-cells = <0>;
-+	compatible = "lsi,nspire-cx-clock";
-+	reg = <0x900B0000 0x4>;
-+	clocks = <&base_clk>;
-+};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 137d3e7..72ebbe1 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
-+obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
- obj-$(CONFIG_ARCH_MXS)		+= mxs/
- obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/clk/clk-nspire.c b/drivers/clk/clk-nspire.c
-new file mode 100644
-index 0000000..a378db7
---- /dev/null
-+++ b/drivers/clk/clk-nspire.c
-@@ -0,0 +1,153 @@
++++ b/drivers/gpio/gpiolib-sfi.c
+@@ -0,0 +1,76 @@
 +/*
++ * Simple Firmware Interface (SFI) helpers for GPIO API
 + *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
++ * Copyright (C) 2013, Intel Corporation
++ * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
++ *
++ * Based on work done for Intel MID platforms (mrst.c)
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
++ * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
 + */
 +
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
++#define pr_fmt(fmt) "SFI: GPIO: " fmt
 +
-+#define MHZ (1000 * 1000)
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++#include <linux/export.h>
++#include <linux/sfi_gpio.h>
++#include <linux/sfi.h>
 +
-+#define BASE_CPU_SHIFT		1
-+#define BASE_CPU_MASK		0x7F
++static struct sfi_gpio_table_entry *sfi_gpio_table;
++static int sfi_gpio_num_entry;
 +
-+#define CPU_AHB_SHIFT		12
-+#define CPU_AHB_MASK		0x07
-+
-+#define FIXED_BASE_SHIFT	8
-+#define FIXED_BASE_MASK		0x01
-+
-+#define CLASSIC_BASE_SHIFT	16
-+#define CLASSIC_BASE_MASK	0x1F
-+
-+#define CX_BASE_SHIFT		15
-+#define CX_BASE_MASK		0x3F
-+
-+#define CX_UNKNOWN_SHIFT	21
-+#define CX_UNKNOWN_MASK		0x03
-+
-+struct nspire_clk_info {
-+	u32 base_clock;
-+	u16 base_cpu_ratio;
-+	u16 base_ahb_ratio;
-+};
-+
-+
-+#define EXTRACT(var, prop) (((var)>>prop##_SHIFT) & prop##_MASK)
-+static void nspire_clkinfo_cx(u32 val, struct nspire_clk_info *clk)
++int sfi_get_gpio_by_name(const char *name)
 +{
-+	if (EXTRACT(val, FIXED_BASE))
-+		clk->base_clock = 48 * MHZ;
-+	else
-+		clk->base_clock = 6 * EXTRACT(val, CX_BASE) * MHZ;
++	struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
++	int i;
 +
-+	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * EXTRACT(val, CX_UNKNOWN);
-+	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
++	if (!pentry)
++		return -EINVAL;
++
++	for (i = 0; i < sfi_gpio_num_entry; i++, pentry++) {
++		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
++			return pentry->pin_no;
++	}
++
++	return -ENODEV;
++}
++EXPORT_SYMBOL_GPL(sfi_get_gpio_by_name);
++
++static int __init sfi_gpio_parse(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb = (struct sfi_table_simple *)table;
++	struct sfi_gpio_table_entry *pentry;
++	int num, i;
++
++	if (sfi_gpio_table)
++		return 0;
++
++	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
++	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
++
++	sfi_gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
++	if (!sfi_gpio_table)
++		return -ENOMEM;
++
++	memcpy(sfi_gpio_table, pentry, num * sizeof(*pentry));
++	sfi_gpio_num_entry = num;
++
++	pr_debug("Pin info:\n");
++	for (i = 0; i < num; i++, pentry++)
++		pr_debug("[%2d] chip = %16.16s, name = %16.16s, pin=%d\n", i,
++			 pentry->controller_name, pentry->pin_name,
++			 pentry->pin_no);
++
++	return 0;
 +}
 +
-+static void nspire_clkinfo_classic(u32 val, struct nspire_clk_info *clk)
++int __init sfi_gpio_init(void)
 +{
-+	if (EXTRACT(val, FIXED_BASE))
-+		clk->base_clock = 27 * MHZ;
-+	else
-+		clk->base_clock = (300 - 6 * EXTRACT(val, CLASSIC_BASE)) * MHZ;
++	return sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_gpio_parse);
++}
+diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
+index 296db7a..2828da0 100644
+--- a/drivers/sfi/sfi_core.c
++++ b/drivers/sfi/sfi_core.c
+@@ -67,6 +67,7 @@
+ #include <linux/acpi.h>
+ #include <linux/init.h>
+ #include <linux/sfi.h>
++#include <linux/sfi_gpio.h>
+ #include <linux/slab.h>
+ 
+ #include "sfi_core.h"
+@@ -512,6 +513,12 @@ void __init sfi_init_late(void)
+ 	syst_va = sfi_map_memory(syst_pa, length);
+ 
+ 	sfi_acpi_init();
 +
-+	clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * 2;
-+	clk->base_ahb_ratio = clk->base_cpu_ratio * (EXTRACT(val, CPU_AHB) + 1);
++	/*
++	 * Parsing GPIO table first, since the DEVS table will need this table
++	 * to map the pin name to the actual pin.
++	 */
++	sfi_gpio_init();
+ }
+ 
+ /*
+diff --git a/include/linux/sfi_gpio.h b/include/linux/sfi_gpio.h
+new file mode 100644
+index 0000000..02ae6df
+--- /dev/null
++++ b/include/linux/sfi_gpio.h
+@@ -0,0 +1,27 @@
++#ifndef _LINUX_SFI_GPIO_H_
++#define _LINUX_SFI_GPIO_H_
++
++#include <linux/errno.h>
++#include <linux/gpio.h>
++#include <linux/sfi.h>
++
++#ifdef CONFIG_GPIO_SFI
++
++int sfi_get_gpio_by_name(const char *name);
++int sfi_gpio_init(void);
++
++#else /* CONFIG_GPIO_SFI */
++
++static inline int sfi_get_gpio_by_name(const char *name);
++{
++	return -ENODEV;
 +}
 +
-+static void __init nspire_ahbdiv_setup(struct device_node *node,
-+		void (*get_clkinfo)(u32, struct nspire_clk_info *))
++static inline int sfi_gpio_init(void)
 +{
-+	u32 val;
-+	void __iomem *io;
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	struct nspire_clk_info info;
-+
-+	io = of_iomap(node, 0);
-+	if (!io)
-+		return;
-+	val = readl(io);
-+	iounmap(io);
-+
-+	get_clkinfo(val, &info);
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+	parent_name = of_clk_get_parent_name(node, 0);
-+
-+	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
-+					1, info.base_ahb_ratio);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++	return -ENODEV;
 +}
 +
-+static void __init nspire_ahbdiv_setup_cx(struct device_node *node)
-+{
-+	nspire_ahbdiv_setup(node, nspire_clkinfo_cx);
-+}
++#endif /* CONFIG_GPIO_SFI */
 +
-+static void __init nspire_ahbdiv_setup_classic(struct device_node *node)
-+{
-+	nspire_ahbdiv_setup(node, nspire_clkinfo_classic);
-+}
-+
-+CLK_OF_DECLARE(nspire_ahbdiv_cx, "lsi,nspire-cx-ahb-divider",
-+		nspire_ahbdiv_setup_cx);
-+CLK_OF_DECLARE(nspire_ahbdiv_classic, "lsi,nspire-classic-ahb-divider",
-+		nspire_ahbdiv_setup_classic);
-+
-+static void __init nspire_clk_setup(struct device_node *node,
-+		void (*get_clkinfo)(u32, struct nspire_clk_info *))
-+{
-+	u32 val;
-+	void __iomem *io;
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	struct nspire_clk_info info;
-+
-+	io = of_iomap(node, 0);
-+	if (!io)
-+		return;
-+	val = readl(io);
-+	iounmap(io);
-+
-+	get_clkinfo(val, &info);
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT,
-+			info.base_clock);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	else
-+		return;
-+
-+	pr_info("TI-NSPIRE Base: %uMHz CPU: %uMHz AHB: %uMHz\n",
-+		info.base_clock / MHZ,
-+		info.base_clock / info.base_cpu_ratio / MHZ,
-+		info.base_clock / info.base_ahb_ratio / MHZ);
-+}
-+
-+static void __init nspire_clk_setup_cx(struct device_node *node)
-+{
-+	nspire_clk_setup(node, nspire_clkinfo_cx);
-+}
-+
-+static void __init nspire_clk_setup_classic(struct device_node *node)
-+{
-+	nspire_clk_setup(node, nspire_clkinfo_classic);
-+}
-+
-+CLK_OF_DECLARE(nspire_clk_cx, "lsi,nspire-cx-clock", nspire_clk_setup_cx);
-+CLK_OF_DECLARE(nspire_clk_classic, "lsi,nspire-classic-clock",
-+		nspire_clk_setup_classic);
++#endif /* _LINUX_SFI_GPIO_H_ */
 -- 
-1.8.1.3
+1.8.2.rc0.22.gb3600c3
 
