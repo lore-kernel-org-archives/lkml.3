@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3EaGxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:53:47 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.95]:42246 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab3EaGxl (ORCPT
+	id S1753419Ab3EaGzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:55:46 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:51586 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3EaGzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:53:41 -0400
-Message-ID: <51A848F1.3040301@ladisch.de>
-Date: Fri, 31 May 2013 08:53:37 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 31 May 2013 02:55:38 -0400
+Date: Fri, 31 May 2013 07:55:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Philippe Begnic <philippe.begnic.st@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        linux-kernel@vger.kernel.org, olivier.clergeaud@st.com,
+        Philippe Begnic <philippe.begnic@st.com>
+Subject: Re: [PATCH 0/4] clk, mfd: u8540 clock tree definition
+Message-ID: <20130531065532.GA10355@gmail.com>
+References: <1369658492-31358-1-git-send-email-philippe.begnic.st@gmail.com>
+ <20130531012509.21525.90187@quantum>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Timur Tabi <timur.tabi@calxeda.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
- Calxeda controller
-References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com> <51A7646B.6080203@cogentembedded.com>
-In-Reply-To: <51A7646B.6080203@cogentembedded.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130531012509.21525.90187@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergei Shtylyov wrote:
-> On 30-05-2013 18:26, Timur Tabi wrote:
->>> +    const unsigned long timing[] = { 5, 100, 500};
->
->> You'll save space and time if you also make this array "static",
->> otherwise the compiler will build the array every time this function is
->> called.
->
-> No, *const* specifier is enough to not build this array every time. It will be put into the .const section.
+On Thu, 30 May 2013, Mike Turquette wrote:
 
-gcc disagrees:
+> Quoting Philippe Begnic (2013-05-27 05:41:28)
+> > From: Philippe Begnic <philippe.begnic@st.com>
+> > 
+> > Create U8540 clock tree definitions for common clock framework
+> > 
+> 
+> The clock changes look good to me.  How did you want to merge the
+> patches?
 
-$ cat const_static.c
-int f(int x) {
-	const unsigned long timing[] = { 5, 100, 500};
-	static const unsigned long timing2[] = { 5, 100, 500};
-	return timing[x] + timing2[x];
-}
-$ gcc -Os -S const_static.c
-$ cat const_static.s
-	...
-timing2.0:
-        .long   5
-        .long   100
-        .long   500
-	...
-        movl    8(%ebp), %edx
-        movl    $5, -16(%ebp)
-        movl    $100, -12(%ebp)
-        movl    $500, -8(%ebp)
-        movl    timing2.0(,%edx,4), %eax
-        addl    -16(%ebp,%edx,4), %eax
+You may as well take them through your tree Mike.
 
+> > Philippe Begnic (4):
+> >   clk: ux500: Pass clock base adresses in initcall for u8540 and u9540
+> >   mfd: db8500: Update register definition for u8540 clock
+> >   mfd: db8500: Update BML clock register for db8580
+> >   clk: ux500: Clocks definition for u8540
+> > 
+> >  arch/arm/mach-ux500/cpu.c                 |    6 +-
+> >  drivers/clk/ux500/u8540_clk.c             |  564 ++++++++++++++++++++++++++++-
+> >  drivers/clk/ux500/u9540_clk.c             |    4 +-
+> >  drivers/mfd/db8500-prcmu.c                |    1 +
+> >  drivers/mfd/dbx500-prcmu-regs.h           |    1 +
+> >  include/linux/mfd/abx500/ab8500-sysctrl.h |    4 +-
+> >  include/linux/mfd/dbx500-prcmu.h          |   12 +
+> >  include/linux/platform_data/clk-ux500.h   |    6 +-
+> >  8 files changed, 587 insertions(+), 11 deletions(-)
+> > 
 
-Regards,
-Clemens
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
