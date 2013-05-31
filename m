@@ -1,31 +1,59 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab3EaPJO (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Fri, 31 May 2013 11:09:14 -0400
-Received: from hm1831-31.locaweb.com.br ([189.126.112.51]:30706 "EHLO
-	hm1831-31.locaweb.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab3EaPJH convert rfc822-to-8bit (ORCPT
+	id S1758775Ab3FCPdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:33:39 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47156 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756694Ab3FCPde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:09:07 -0400
-X-Greylist: delayed 1895 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 May 2013 11:09:07 EDT
-X-LocaWeb-COR: locaweb_2009_x-mail
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 3 Jun 2013 11:33:34 -0400
+Date: Fri, 31 May 2013 12:58:28 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2013-05-30
+Message-ID: <20130531165827.GA2072@tuxdriver.com>
+References: <20130530225232.GB14083@joana>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: I can help you with the loan you need,
- If interested in any financial assistance contact:
- colemanloanfirm001@hotmail.com for more information
-To: Recipients <silvajardim@cosemsrj.org.br>
-From: Coleman <silvajardim@cosemsrj.org.br>
-Date: Fri, 31 May 2013 15:36:54 +0100
-Reply-To: colemanloanfirm001@hotmail.com
-Message-Id: <20130531143717.912A215C44A@bart0027.correio.biz>
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=H/lsNZki c=1 sm=1 a=6504+UB5zYAcxsnNeOsE7A==:17
-	a=vdk-dY-Yk1kA:10 a=-Lletq7_IZ0A:10 a=WHsXhg87phMA:10 a=8nJEP1OIZ-IA:10
-	a=69EAbJreAAAA:8 a=jHyoAsWMAAAA:8 a=d1P6KyE2AAAA:8 a=EZI7O7tSEKAA:10
-	a=2jgVqM0YjS8kqSq/eiWkmg==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130530225232.GB14083@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 30, 2013 at 07:52:32PM -0300, Gustavo Padovan wrote:
+> Hi John,
+> 
+> The following patches are important bug fixes for 3.10, plus the support for a
+> new device. We do have three fixes from Johan. The first one is a fix to avoid
+> LE-only devices to rely on the (inexistent) extended features data. The second
+> patch fixes length checks on incoming L2CAP signalling PDUs so we can discard
+> PDU whose size doesn't match the one reported in the header.
+> The last one fixes the handling of power on failures, we now report proper
+> errors to mgmt when hci_dev_open().
+> 
+> Please pull or let me know of any issues! Thanks.
+> 
+> 	Gustavo
+> 
+> ---
+> 
+> The following changes since commit f942d116b80feb3ae618a0d8ce2df6e853526d3c:
+> 
+>   brcmsmac: fix regression observed in 3.10-rc1 (2013-05-29 14:46:51 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+> 
+> for you to fetch changes up to 0f9e216b0e12971af8a1d39c98c353c76533283b:
+> 
+>   Bluetooth: Fix mgmt handling of power on failures (2013-05-30 18:36:08 -0300)
+
+Pulling now...
+
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
