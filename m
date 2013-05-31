@@ -1,77 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab3EaSkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:40:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20199 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757097Ab3EaSjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:39:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,780,1363158000"; 
-   d="scan'208";a="249209191"
-Subject: [v4][PATCH 6/6] mm: vmscan: drain batch list during long operations
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
-        tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 31 May 2013 11:39:04 -0700
-References: <20130531183855.44DDF928@viggo.jf.intel.com>
-In-Reply-To: <20130531183855.44DDF928@viggo.jf.intel.com>
-Message-Id: <20130531183904.76C2B57D@viggo.jf.intel.com>
+	id S1757161Ab3EaSr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:47:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58420 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab3EaSrV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 14:47:21 -0400
+From: Jan Luebbe <jlu@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jan Luebbe <jlu@pengutronix.de>
+Subject: [PATCH] pps-gpio: add device-tree binding and support
+Date: Fri, 31 May 2013 20:46:55 +0200
+Message-Id: <1370026015-9584-1-git-send-email-jlu@pengutronix.de>
+X-Mailer: git-send-email 1.8.2.rc2
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: jlu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-From: Dave Hansen <dave.hansen@linux.intel.com>
-
-This was a suggestion from Mel:
-
-	http://lkml.kernel.org/r/20120914085634.GM11157@csn.ul.ie
-
-Any pages we collect on 'batch_for_mapping_removal' will have
-their lock_page() held during the duration of their stay on the
-list.  If some other user is trying to get at them during this
-time, they might end up having to wait.
-
-This ensures that we drain the batch if we are about to perform a
-pageout() or congestion_wait(), either of which will take some
-time.  We expect this to help mitigate the worst of the latency
-increase that the batching could cause.
-
-I added some statistics to the __remove_mapping_batch() code to
-track how large the lists are that we pass in to it.  With this
-patch, the average list length drops about 10% (from about 4.1 to
-3.8).  The workload here was a make -j4 kernel compile on a VM
-with 200MB of RAM.
-
-I've still got the statistics patch around if anyone is
-interested.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
 ---
+This patch depends on my two recent pps-gpio patches, which are currently
+in Andrew Morton's mmotm. So it should probably also go via Andrew if it
+is acceptable.
 
- linux.git-davehans/mm/vmscan.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ Documentation/devicetree/bindings/pps/pps-gpio.txt |   20 +++++++
+ drivers/pps/clients/pps-gpio.c                     |   55 +++++++++++++++++++-
+ 2 files changed, 73 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pps/pps-gpio.txt
 
-diff -puN mm/vmscan.c~drain-batch-list-during-long-operations mm/vmscan.c
---- linux.git/mm/vmscan.c~drain-batch-list-during-long-operations	2013-05-30 16:07:51.962138013 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:51.966138189 -0700
-@@ -1003,6 +1003,16 @@ static unsigned long shrink_page_list(st
- 			if (!sc->may_writepage)
- 				goto keep_locked;
- 
-+			/*
-+			 * We hold a bunch of page locks on the batch.
-+			 * pageout() can take a while, so drain the
-+			 * batch before we perform pageout.
-+			 */
-+			nr_reclaimed +=
-+		               __remove_mapping_batch(&batch_for_mapping_rm,
-+		                                      &ret_pages,
-+		                                      &free_pages);
+diff --git a/Documentation/devicetree/bindings/pps/pps-gpio.txt b/Documentation/devicetree/bindings/pps/pps-gpio.txt
+new file mode 100644
+index 0000000..40bf9c3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pps/pps-gpio.txt
+@@ -0,0 +1,20 @@
++Device-Tree Bindings for a PPS Signal on GPIO
 +
- 			/* Page is dirty, try to write it out here */
- 			switch (pageout(page, mapping, sc)) {
- 			case PAGE_KEEP:
-_
++These properties describe a PPS (pulse-per-second) signal connected to
++a GPIO pin.
++
++Required properties:
++- compatible: should be "pps-gpio"
++- gpios: one PPS GPIO in the format described by ../gpio/gpio.txt
++
++Optional properties:
++- assert-falling-edge: when present, assert is indicated by a falling edge
++                       (instead of by a rising edge)
++
++Example:
++	pps {
++		compatible = "pps-gpio";
++		gpios = <&gpio2 6 0>;
++
++		assert-falling-edge;
++	};
+diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
+index 6768f95..b5806da 100644
+--- a/drivers/pps/clients/pps-gpio.c
++++ b/drivers/pps/clients/pps-gpio.c
+@@ -33,6 +33,8 @@
+ #include <linux/pps-gpio.h>
+ #include <linux/gpio.h>
+ #include <linux/list.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ 
+ /* Info for each registered platform device */
+ struct pps_gpio_device_data {
+@@ -103,14 +105,62 @@ get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
+ 	return flags;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id pps_gpio_dt_ids[] = {
++	{ .compatible = "pps-gpio", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, pps_gpio_dt_ids);
++
++static struct pps_gpio_platform_data *
++of_get_pps_gpio_pdata(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct pps_gpio_platform_data *pdata;
++	int ret;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	ret = of_get_gpio(np, 0);
++	if (ret < 0) {
++		pr_err("failed to get GPIO from device tree\n");
++		return NULL;
++	}
++
++	pdata->gpio_pin = ret;
++	pdata->gpio_label = PPS_GPIO_NAME;
++
++	if (of_get_property(np, "assert-falling-edge", NULL))
++		pdata->assert_falling_edge = true;
++
++	return pdata;
++}
++#else
++static struct pps_gpio_platform_data *
++of_get_pps_gpio_pdata(struct platform_device *pdev)
++{
++	return NULL;
++}
++#endif
++
+ static int pps_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct pps_gpio_device_data *data;
+ 	int irq;
+ 	int ret;
+ 	int pps_default_params;
+-	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
++	struct pps_gpio_platform_data *pdata;
++	const struct of_device_id *match;
++
++	match = of_match_device(pps_gpio_dt_ids, &pdev->dev);
++	if (match)
++		pdev->dev.platform_data = of_get_pps_gpio_pdata(pdev);
++	pdata = pdev->dev.platform_data;
+ 
++	if (!pdata)
++		return -ENODEV;
+ 
+ 	/* GPIO setup */
+ 	ret = pps_gpio_setup(pdev);
+@@ -184,7 +234,8 @@ static struct platform_driver pps_gpio_driver = {
+ 	.remove		= pps_gpio_remove,
+ 	.driver		= {
+ 		.name	= PPS_GPIO_NAME,
+-		.owner	= THIS_MODULE
++		.owner	= THIS_MODULE,
++		.of_match_table	= of_match_ptr(pps_gpio_dt_ids),
+ 	},
+ };
+ 
+-- 
+1.7.10.4
+
