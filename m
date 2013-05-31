@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3EaQ06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:26:58 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:60195 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111Ab3EaQ0v (ORCPT
+	id S1754272Ab3EaQ2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:28:40 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39230 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab3EaQ2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:26:51 -0400
-Message-ID: <51A8CF48.2080801@gmail.com>
-Date: Fri, 31 May 2013 12:26:48 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 31 May 2013 12:28:32 -0400
+Date: Fri, 31 May 2013 17:28:16 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Russ Anderson <rja@sgi.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, joeyli <jlee@suse.com>,
+        Matt Fleming <matt@console-pimps.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Message-ID: <20130531162815.GA8082@srcf.ucam.org>
+References: <20130530221737.GA11105@sgi.com>
+ <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
+ <20130531101250.GD30394@gmail.com>
+ <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
+ <20130531123015.GC17843@nazgul.tnic>
+ <20130531124356.GA8212@gmail.com>
+ <20130531143425.GA5850@srcf.ucam.org>
+ <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com>
+ <20130531144826.GB5850@srcf.ucam.org>
+ <20130531154348.GA17145@sgi.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v5 0/8] posix timers fixlet
-References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130531154348.GA17145@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/26/13 5:35 PM), kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Glibc's posix timer testcase found a lot of bugs in posix timer code.
-> This series, hopefully, fixes all of them. All patches are independent
-> each other logically.
-> 
-> Changes from v4
->   - [1/8] comments colarification, fix account_group_{user_system}_time too.
->   - [8/8] added CPUCLOCK_VIRT and CPUCLOCK_PROF timer initialization fix
+On Fri, May 31, 2013 at 10:43:49AM -0500, Russ Anderson wrote:
 
-Ping?
+> When did writing EFI variables to nvram become necessary to boot on 
+> UEFI? And if it is necessary, why is it that only linux boot loaders 
+> that use EFI stubs (generally grub2) need it?  The current kernel 
+> boots using EFI/grub and EFI/elilo.  It is just when EFI stubs are 
+> used that the boot fails.
 
-Thomas, Could you pick them up into your tree?
+I think you've misunderstood the problem. If nvram becaomes full, some 
+systems crash during firmware initialisation. So we can't let nvram 
+become full. The obvious thing to do here is to look at the values from 
+QueryVariableInfo, but many systems won't perform any garbage collection 
+until they're almost out of space and so variables that have been 
+deleted still show up as used space. We can work around that by adding 
+up the size of the variables ourselves, but that only gives us the value 
+for runtime-visible variables. We also need to know how much space is 
+used by variables that are only visible during boot, hence calling 
+QueryVariableInfo before ExitBootServices.
 
+> Which means the previous patch(es) that caused the bricking should
+> get pulled, too.
+
+There are no patches that cause the bricking.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
