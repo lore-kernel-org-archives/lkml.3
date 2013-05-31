@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab3EaDrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 May 2013 23:47:33 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:52292 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3EaDr2 (ORCPT
+	id S1752848Ab3EaDzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 May 2013 23:55:03 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:44444 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3EaDy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 May 2013 23:47:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <b1c6c2652b302431a4d4cff46ac872db8e520b6a.1368485053.git.luto@amacapital.net>
-References: <cover.1368485053.git.luto@amacapital.net>
-	<b1c6c2652b302431a4d4cff46ac872db8e520b6a.1368485053.git.luto@amacapital.net>
-Date: Fri, 31 May 2013 13:47:26 +1000
-Message-ID: <CAPM=9tx+pdFmXnLzZKpa1VcvH_6siydZckhLVSWOM_aJAj0WUg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/9] drm: Update drm_addmap and drm_mmap to use PAT WC
- instead of MTRRs
-From: Dave Airlie <airlied@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 30 May 2013 23:54:58 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 30 May 2013 23:54:56 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: A bug about system call on ARM
+In-reply-to: <20130530114112.GH7483@mudshark.cambridge.arm.com>
+Message-id: <alpine.LFD.2.03.1305302319430.30828@syhkavp.arg>
+References: <35FD53F367049845BC99AC72306C23D1610991B85B@CNBJMBX05.corpusers.net>
+ <CAFLxGvy39xWdZmtiVHP+y=zH1coCVmMuREcmD25wSb=w-VK7Xg@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1610991B85D@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 9:58 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Previously, DRM_FRAME_BUFFER mappings, as well as DRM_REGISTERS
-> mappings with DRM_WRITE_COMBINING set, resulted in an unconditional
-> MTRR being added but the actual mappings being created as UC-.
->
-> Now these mappings have the MTRR added only if needed, but they will
-> be mapped with pgprot_writecombine.
->
-> The non-WC DRM_REGISTERS case now uses pgprot_noncached instead of
-> hardcoding the bit twiddling.
->
-> The DRM_AGP case is unchanged for now.
+On Thu, 30 May 2013, Will Deacon wrote:
 
-Just FYI this breaks on powerpc build, I've fixed it up and pushed the
-fixed version to
-drm-next-staging, I'll push that to drm-next in a couple of days, once
-kbuild robot hits it.
+> On Thu, May 30, 2013 at 10:09:49AM +0100, Will Deacon wrote:
+> > On Thu, May 30, 2013 at 02:41:42AM +0100, Wang, Yalin wrote:
+> > > If you have some patch for this issue,
+> > > I can do the test for it .
+> > 
+> > I'll have a look at cooking something which uses an exception table entry
+> > to rewind the PC and retry the system call. That's simpler than directly
+> > injecting a user page fault from the system call path.
+> 
+> Ok, please can you try the following?
+> 
+> Will
+> 
+> --->8
+> 
+> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+> index bc5bc0a..855926e 100644
+> --- a/arch/arm/kernel/entry-common.S
+> +++ b/arch/arm/kernel/entry-common.S
+> @@ -361,6 +361,15 @@ ENTRY(vector_swi)
+>  	str	r8, [sp, #S_PSR]		@ Save CPSR
+>  	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
+>  	zero_fp
+> +	enable_irq
+> +	ct_user_exit
+> +
+> +#ifdef CONFIG_ALIGNMENT_TRAP
+> +	ldr	ip, __cr_alignment
+> +	ldr	ip, [ip]
+> +	mcr	p15, 0, ip, c1, c0		@ update control register
+> +#endif
 
-Dave.
+This is wrong.  you must set up the align bit in the control register 
+_before_ enabling IRQs or an IRQ handler might run without alignment 
+fixup.
+
+Otherwise the patch looks good to me.
+
+
+Nicolas
