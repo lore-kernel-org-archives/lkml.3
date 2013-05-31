@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3EaM2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:28:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57632 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab3EaM2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:28:17 -0400
-Date: Fri, 31 May 2013 05:28:05 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-0817df08d31cd961be225e601d8ec92acac62027@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1369525839-1261-1-git-send-email-dsahern@gmail.com>
-References: <1369525839-1261-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist:
-  Reset SIGTERM handler in workload child process
-Git-Commit-ID: 0817df08d31cd961be225e601d8ec92acac62027
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756492Ab3EaMaP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:30:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35689 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755917Ab3EaMaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 08:30:09 -0400
+Date: Fri, 31 May 2013 14:30:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Ingo Molnar <mingo@kernel.org>, Russ Anderson <rja@sgi.com>,
+        joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Message-ID: <20130531123015.GC17843@nazgul.tnic>
+References: <20130524074331.GL14575@console-pimps.org>
+ <20130529210115.GC28027@sgi.com>
+ <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz>
+ <20130529224645.GA16582@sgi.com>
+ <alpine.LNX.2.00.1305300048520.30576@pobox.suse.cz>
+ <1369880172.17397.11.camel@linux-s257.site>
+ <20130530221737.GA11105@sgi.com>
+ <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
+ <20130531101250.GD30394@gmail.com>
+ <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0817df08d31cd961be225e601d8ec92acac62027
-Gitweb:     http://git.kernel.org/tip/0817df08d31cd961be225e601d8ec92acac62027
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sat, 25 May 2013 17:50:39 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 30 May 2013 14:34:56 +0300
+On Fri, May 31, 2013 at 01:06:09PM +0200, Jiri Kosina wrote:
+> (*) If one would be naive enough, he'd believe that the pressure
+> should be put on the BIOS writers instead of OS to fix the bug :)
 
-perf evlist: Reset SIGTERM handler in workload child process
-
-Jiri reported hanging perf tests on latest acme's perf/core and bisected
-it to 87f303a9f:
-
-[jolsa@krava2 perf]$ cat /proc/sys/kernel/perf_event_paranoid
-1
-[jolsa@krava2 perf]$ ./perf record -C 0 kill
-Error:
-You may not have permission to collect %sstats.
-Consider tweaking /proc/sys/kernel/perf_event_paranoid:
- -1 - Not paranoid at all
-  0 - Disallow raw tracepoint access for unpriv
-  1 - Disallow cpu events for unpriv
-  2 - Disallow kernel profiling for unpriv
-
-Need to let default handling kickin for workload process.
-
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1369525839-1261-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evlist.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index f7c7278..99b43dd 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -776,6 +776,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 		if (pipe_output)
- 			dup2(2, 1);
- 
-+		signal(SIGTERM, SIG_DFL);
-+
- 		close(child_ready_pipe[0]);
- 		close(go_pipe[1]);
- 		fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
+Oh, definitely pressure on BIOS dudes. If they're in violation of the
+spec and they still can fix it in time, they better. I'm sick and tired
+of having to deal with BIOS idiocy in kernel code.
