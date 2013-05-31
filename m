@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3EaPxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:53:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38353 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab3EaPxe (ORCPT
+	id S1756564Ab3EaPyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:54:13 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:29371
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752843Ab3EaPyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:53:34 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] x86: Fix adjust_range_size_mask calling position
-Date: Fri, 31 May 2013 08:53:07 -0700
-Message-Id: <1370015587-20835-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <20130531113441.GB7131@gmail.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 31 May 2013 11:54:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+X-WSS-ID: 0MNO6U4-01-4BH-02
+X-M-MSG: 
+Date: Fri, 31 May 2013 10:54:02 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
+ support for AMD
+Message-ID: <20130531155402.GA15667@jshin-Toonie>
+References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
+ <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+ <20130531042649.GA4488@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130531042649.GA4488@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8d57470d cause a kernel panic while setting mem=2G.
-     [mem 0x00000000-0x000fffff] page 4k
-     [mem 0x7fe00000-0x7fffffff] page 1G
-     [mem 0x7c000000-0x7fdfffff] page 1G
-     [mem 0x00100000-0x001fffff] page 4k
-     [mem 0x00200000-0x7bffffff] page 2M
+On Fri, May 31, 2013 at 01:26:49AM -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 30 May 2013, Jacob Shin wrote:
+> >  mkdir initrd
+> >  cd initrd
+> > -mkdir kernel
+> > -mkdir kernel/x86
+> > -mkdir kernel/x86/microcode
+> > -cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
+> > -find .|cpio -oc >../ucode.cpio
+> > +mkdir -p kernel/x86/microcode
+> > +cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
+> 
+> Can I just 
+> 'cat /lib/firmware/amd-ucode/*bin >kernel/x86/microcode/AuthenticAMD.bin' 
+> to get a valid microcode container for all amd processors?
+> 
+> The answer for Intel is "yes".  I sure hope it is the same for AMD...
 
-for last entry is not what we want, we should have
-     [mem 0x00200000-0x3fffffff] page 2M
-     [mem 0x40000000-0x7bffffff] page 1G
+Hm. I have not thought about that, I will investigate and follow up
+with a patch if needed.
 
-Actually we merge the continuous ranges with same page size too early.
-in this case, before merging we have
-     [mem 0x00200000-0x3fffffff] page 2M
-     [mem 0x40000000-0x7bffffff] page 2M
-after merging them, will get
-     [mem 0x00200000-0x7bffffff] page 2M
-even we can use 1G page to map
-     [mem 0x40000000-0x7bffffff]
+Thanks,
 
-that will cause problem, because we already map
-     [mem 0x7fe00000-0x7fffffff] page 1G
-     [mem 0x7c000000-0x7fdfffff] page 1G
-with 1G page, aka [0x40000000-0x7fffffff] is mapped with 1G page already.
-During phys_pud_init() for [0x40000000-0x7bffffff], it will not
-reuse existing that pud page, and allocate new one then try to use
-2M page to map it instead, as page_size_mask does not include
-PG_LEVEL_1G. At end will have [7c000000-0x7fffffff] not mapped, loop
-in phys_pmd_init stop mapping at 0x7bffffff.
-
-That is right behavoir, it maps exact range with exact page size that
-we ask, and we should explicitly call it to map [7c000000-0x7fffffff]
-before or after mapping 0x40000000-0x7bffffff.
-Anyway we need to make sure ranges' page_size_mask correct and consistent
-after split_mem_range for each range.
-
-Fix that by calling adjust_range_size_mask before merging range
-with same page size.
-
-We need this one for v3.9 stable.
-
--v2: update change log.
--v3: add more explanation why [7c000000-0x7fffffff] is not mapped, and
-    it causes panic.
-
-Bisected-by: "Xie, ChanglongX" <changlongx.xie@intel.com>
-Bisected-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Reported-and-tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/mm/init.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/init.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init.c
-+++ linux-2.6/arch/x86/mm/init.c
-@@ -277,6 +277,9 @@ static int __meminit split_mem_range(str
- 	end_pfn = limit_pfn;
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 
-+	if (!after_bootmem)
-+		adjust_range_page_size_mask(mr, nr_range);
-+
- 	/* try to merge same page size and continuous */
- 	for (i = 0; nr_range > 1 && i < nr_range - 1; i++) {
- 		unsigned long old_start;
-@@ -291,9 +294,6 @@ static int __meminit split_mem_range(str
- 		nr_range--;
- 	}
- 
--	if (!after_bootmem)
--		adjust_range_page_size_mask(mr, nr_range);
--
- 	for (i = 0; i < nr_range; i++)
- 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
- 				mr[i].start, mr[i].end - 1,
