@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab3EaVNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 17:13:37 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:39049 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab3EaVNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 17:13:31 -0400
+	id S1756181Ab3EaVO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:14:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39229 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755058Ab3EaVOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:14:51 -0400
+Date: Sat, 1 Jun 2013 00:13:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Emil Goode <emilgoode@gmail.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: musb: Fix format specifier warning
+Message-ID: <20130531211358.GC11520@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1370033389-27131-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1515063.BZy7p4GtyV@vostro.rjw.lan>
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
-	<3006354.hOxNuWCXu4@vostro.rjw.lan>
-	<CAME+o4kJYD2K_aL4xNi-jNP1Q8R+seDNZDwsGBhvU00ArR0Skg@mail.gmail.com>
-	<1515063.BZy7p4GtyV@vostro.rjw.lan>
-Date: Fri, 31 May 2013 14:13:30 -0700
-Message-ID: <CAME+o4kn=xBToxV2xfC5L0b5wVbQ27EA8+tDt9jT44BvBPeSTA@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch
- drivers which lockup during suspend/resume.
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i7F3eY7HS/tUJxUd"
+Content-Disposition: inline
+In-Reply-To: <1370033389-27131-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> We could do cancel_work_sync() as a recovery, but that call blocks until the
->> running async task is flushed, which might never happen. So doing a panic()
->> is pretty much the only option for recovering.
->
-> Well, its usefulness is quite limited, then.  That said I'm still not convinced
-> that this actually is the case.
+--i7F3eY7HS/tUJxUd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It does block in my environment, AFAICS. Looking a bit further in the
-code, it looks like dpm_suspend() does an async_synchronize_full()
-which would wait for all async tasks to complete. This is a
-show-stopper because (under the circumstances) the assumption that
-every async suspend routine eventually completes doesn't hold.
+Hi,
 
-We could possibly select which async tasks to wait for, but this would
-add unnecessary complexity to a feature targeted for debugging. It
-seems that this approach - although sounding reasonable - needs to
-wait until we have a mechanism to cancel an async task.
+On Fri, May 31, 2013 at 10:49:49PM +0200, Emil Goode wrote:
+> This patch fixes a format specifier warning. dma_addr_t can be either
+> u32 or u64 so we should cast to the largest type and change the format
+> specifier to %llx.
+> The addition of urb->transfer_dma and urb->actual_length is also done a
+> few lines below. I have moved this code up and pass the variable buf to
+> dev_dbg.
+>=20
+> Sparse output:
+> drivers/usb/musb/musb_host.c:1761:4: warning:
+> 	format =E2=80=98%x=E2=80=99 expects argument of type =E2=80=98unsigned i=
+nt=E2=80=99,
+> 	but argument 6 has type =E2=80=98dma_addr_t=E2=80=99 [-Wformat]
+>=20
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 
-Regards, Zoran
+already sent this one yesterday:
+
+http://marc.info/?l=3Dlinux-usb&m=3D136987256218081
+
+--=20
+balbi
+
+--i7F3eY7HS/tUJxUd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRqRKWAAoJEIaOsuA1yqRErn4QAKw9IO81oFtXWLd3YlbkobIf
+YUs87SlrDnk+yvpv7gvNkoQi5Bk5OryA15dYvmy1ZXtmRIlJ8I+BYfqoL6Ojj5KL
+uIRJlKgIuVbPB5CcCxPWFGHUudi57QtrgFpg6leDwDe/606KlBsvLor+UlYaQlVn
+NUnPvzkUmRbSZJhkQEJTzg5TZaE/c94Lip+eFLM8ozEkYcWS+QaNUSBi80V+fQF+
+9oLChG/oexDQr7RSJC87rB9TwAXxsjQmouDcCdC6xLOntHLC7HycYkFUjC1MOwoW
+djL79T13vZ4alb16Q6DR8gqzdQh7e6KZhvptEoCOs6aSj9B5qk72d20JKHvN2nLF
+ZpAWmhLGLxTLXerTqxIGFCnWDACHgs/Zu3bpnlE42JKbC3s8Kunp0TvCNo8m+VjM
+5MVVi/8N9a/PKjRr89jRveiWC1SDwW6zwN4f5qwpqwrnSy3Ew42H7EYRnCvUPRPA
+LRVDVvzEqufK+JlC2gggc1sTBhbDAzCfa9GaYCY9lneLhQ4rqXAAKfQqDxGP1fLd
+bqFJ8DL9Aq3O5yh4ERS8i8dpvQflNHFtigHdAX3Nc4y5zI0WQVkAi+HVVQQQtsSC
+Ki3LFgq2sdNXHGVz+jiH0GR5H2DkoIQ1KzUGWjF9LWuNoCKQGm/3FC50PUzmEFVS
+kOmAbDD4tsJmFgP28kR3
+=/ltM
+-----END PGP SIGNATURE-----
+
+--i7F3eY7HS/tUJxUd--
