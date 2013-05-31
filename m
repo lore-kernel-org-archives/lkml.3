@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab3EaRgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:36:18 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32931 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753780Ab3EaRgJ (ORCPT
+	id S1756511Ab3EaRjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:39:19 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48593 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3EaRjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:36:09 -0400
-Message-ID: <1370021732.6250.4.camel@dabdike>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Russ Anderson <rja@sgi.com>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
-        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 31 May 2013 10:35:32 -0700
-In-Reply-To: <20130531162815.GA8082@srcf.ucam.org>
-References: <20130530221737.GA11105@sgi.com>
-	 <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
-	 <20130531101250.GD30394@gmail.com>
-	 <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz>
-	 <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com>
-	 <20130531143425.GA5850@srcf.ucam.org>
-	 <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com>
-	 <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com>
-	 <20130531162815.GA8082@srcf.ucam.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 31 May 2013 13:39:13 -0400
+X-Auth-Info: GDtXjbLYED4G5v4y7agZDRuC6TXS+ZbQHmbAGzbnfpY=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>, jdl@jdl.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, mmarek@suse.cz, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, linux-kbuild@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] dtc: Ensure #line directives don't consume data from the next line
+References: <1370020450-18136-1-git-send-email-swarren@wwwdotorg.org>
+X-Yow: Give them RADAR-GUIDED SKEE-BALL LANES and VELVEETA BURRITOS!!
+Date: Fri, 31 May 2013 19:38:57 +0200
+In-Reply-To: <1370020450-18136-1-git-send-email-swarren@wwwdotorg.org>
+	(Stephen Warren's message of "Fri, 31 May 2013 11:14:10 -0600")
+Message-ID: <87sj13dp72.fsf@hase.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-31 at 17:28 +0100, Matthew Garrett wrote:
-> On Fri, May 31, 2013 at 10:43:49AM -0500, Russ Anderson wrote:
-> 
-> > When did writing EFI variables to nvram become necessary to boot on 
-> > UEFI? And if it is necessary, why is it that only linux boot loaders 
-> > that use EFI stubs (generally grub2) need it?  The current kernel 
-> > boots using EFI/grub and EFI/elilo.  It is just when EFI stubs are 
-> > used that the boot fails.
-> 
-> I think you've misunderstood the problem. If nvram becaomes full, some 
-> systems crash during firmware initialisation. So we can't let nvram 
-> become full. The obvious thing to do here is to look at the values from 
-> QueryVariableInfo, but many systems won't perform any garbage collection 
-> until they're almost out of space and so variables that have been 
-> deleted still show up as used space. We can work around that by adding 
-> up the size of the variables ourselves, but that only gives us the value 
-> for runtime-visible variables. We also need to know how much space is 
-> used by variables that are only visible during boot, hence calling 
-> QueryVariableInfo before ExitBootServices.
-> 
-> > Which means the previous patch(es) that caused the bricking should
-> > get pulled, too.
-> 
-> There are no patches that cause the bricking.
+Stephen Warren <swarren@wwwdotorg.org> writes:
 
-This is the description of the original problem:
+> Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
 
-http://www.h-online.com/open/news/item/Booting-Linux-using-UEFI-can-brick-Samsung-laptops-1793958.html
+I think the other uses of {WS} shouldn't span lines either.
 
-And the further investigation:
+Andreas.
 
-http://mjg59.dreamwidth.org/22855.html
-
-If you read the latter, it shows you why we have to use
-QueryVariableInfo to try to work out how much space we have available.
-
-James
-
-
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
