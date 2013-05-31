@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3EaRGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 13:06:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59234 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751992Ab3EaRGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 13:06:38 -0400
-Message-ID: <1370019998.10556.82.camel@joe-AO722>
-Subject: Re: [alsa-devel] Improving or replacing snd_printk()
-From: Joe Perches <joe@perches.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Fri, 31 May 2013 10:06:38 -0700
-In-Reply-To: <s5hwqqf1an3.wl%tiwai@suse.de>
-References: <s5ha9nbinre.wl%tiwai@suse.de>
-	 <Pine.LNX.4.44L0.1305311014330.1276-100000@iolanthe.rowland.org>
-	 <s5hwqqf1an3.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755882Ab3EaRJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 13:09:20 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:38655 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752493Ab3EaRJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 13:09:12 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: a.zummo@towertech.it, rafael.j.wysocki@intel.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v2] drivers/rtc/class: Convert from Legacy pm ops to dev_pm_ops
+Date: Fri, 31 May 2013 11:08:42 -0600
+Message-Id: <1370020122-29869-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-31 at 16:34 +0200, Takashi Iwai wrote:
-> Also, another expected problem is that neither card->card_dev nor
-> card->dev are set when snd_card_err() is called.  Many drivers set the
-> device pointers at the late stage just before the device
-> registration.  So, systematic replacements won't work as expected in
-> many cases.  (The same is applied for replacement with dev_*(), too.)
+Convert drivers/rtc/class to use dev_pm_ops for power management and
+remove Legacy PM ops hooks. With this change, rtc class registers
+suspend/resume callbacks via class->pm (dev_pm_ops) instead of Legacy
+class->suspend/resume. When __device_suspend() runs call-backs, it will
+find class->pm ops for the rtc class.
 
-If all the pointers are null, then the logging function could
-use pr_<level> and %pf, __builtin_return_addr() or another
-method to look up the module name.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+Cc: Shuah Khan <shuahkhan@gmail.com> 
+---
+ drivers/rtc/class.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 6638540..f379bff 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -47,7 +47,7 @@ int rtc_hctosys_ret = -ENODEV;
+ static struct timespec old_rtc, old_system, old_delta;
+ 
+ 
+-static int rtc_suspend(struct device *dev, pm_message_t mesg)
++static int rtc_suspend(struct device *dev)
+ {
+ 	struct rtc_device	*rtc = to_rtc_device(dev);
+ 	struct rtc_time		tm;
+@@ -135,9 +135,9 @@ static int rtc_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(rtc_class_dev_pm_ops, rtc_suspend, rtc_resume);
+ #else
+-#define rtc_suspend	NULL
+-#define rtc_resume	NULL
++#define rtc_class_dev_pm_ops	NULL
+ #endif
+ 
+ 
+@@ -336,8 +336,7 @@ static int __init rtc_init(void)
+ 		pr_err("couldn't create class\n");
+ 		return PTR_ERR(rtc_class);
+ 	}
+-	rtc_class->suspend = rtc_suspend;
+-	rtc_class->resume = rtc_resume;
++	rtc_class->pm = &rtc_class_dev_pm_ops;
+ 	rtc_dev_init();
+ 	rtc_sysfs_init(rtc_class);
+ 	return 0;
+-- 
+1.7.10.4
 
