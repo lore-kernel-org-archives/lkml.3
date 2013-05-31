@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3EaLrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:47:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56917 "EHLO
+	id S1755399Ab3EaLsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:48:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56933 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3EaLrP (ORCPT
+	with ESMTP id S1751152Ab3EaLsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:47:15 -0400
-Date: Fri, 31 May 2013 04:44:46 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-367c53c08f84bb554a3aae18b65e5419fe4b164a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1355404152-16523-2-git-send-email-jolsa@redhat.com>
-References: <1355404152-16523-2-git-send-email-jolsa@redhat.com>
+	Fri, 31 May 2013 07:48:01 -0400
+Date: Fri, 31 May 2013 04:47:21 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-dzy9nl1ku7a5umddvdic4ibl@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf diff:
-  Use internal rb tree for hists__precompute
-Git-Commit-ID: 367c53c08f84bb554a3aae18b65e5419fe4b164a
+Subject: [tip:perf/core] perf test: Fix typo
+Git-Commit-ID: ffcbaa1490ab0efcb7bff684f9abd04b91e34221
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,62 +33,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  367c53c08f84bb554a3aae18b65e5419fe4b164a
-Gitweb:     http://git.kernel.org/tip/367c53c08f84bb554a3aae18b65e5419fe4b164a
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 13 Dec 2012 14:08:59 +0100
+Commit-ID:  ffcbaa1490ab0efcb7bff684f9abd04b91e34221
+Gitweb:     http://git.kernel.org/tip/ffcbaa1490ab0efcb7bff684f9abd04b91e34221
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 23 May 2013 12:08:38 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 28 May 2013 16:24:02 +0300
+CommitDate: Tue, 28 May 2013 16:24:03 +0300
 
-perf diff: Use internal rb tree for hists__precompute
+perf test: Fix typo
 
-There's missing change for hists__precompute to iterate either
-entries_collapsed or entries_in tree. The change was initiated
-for hists_compute_resort function in commit:
+Its 'multiple', not 'mutliple', noticed while preparing a talk for
+Linuxtag'13.
 
-  66f97ed perf diff: Use internal rb tree for compute resort
-
-but was missing for hists__precompute function changes.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1355404152-16523-2-git-send-email-jolsa@redhat.com
-[ committer note: Reduce patch size, no functional change ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-dzy9nl1ku7a5umddvdic4ibl@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ tools/perf/tests/builtin-test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index a9d63c1..da8f8eb 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -323,13 +323,20 @@ static void hists__baseline_only(struct hists *hists)
- 
- static void hists__precompute(struct hists *hists)
- {
--	struct rb_node *next = rb_first(&hists->entries);
-+	struct rb_root *root;
-+	struct rb_node *next;
-+
-+	if (sort__need_collapse)
-+		root = &hists->entries_collapsed;
-+	else
-+		root = hists->entries_in;
- 
-+	next = rb_first(root);
- 	while (next != NULL) {
--		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
-+		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node_in);
- 		struct hist_entry *pair = hist_entry__next_pair(he);
- 
--		next = rb_next(&he->rb_node);
-+		next = rb_next(&he->rb_node_in);
- 		if (!pair)
- 			continue;
- 
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 0918ada..35b45f1466 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -70,7 +70,7 @@ static struct test {
+ 		.func = test__attr,
+ 	},
+ 	{
+-		.desc = "Test matching and linking mutliple hists",
++		.desc = "Test matching and linking multiple hists",
+ 		.func = test__hists_link,
+ 	},
+ 	{
