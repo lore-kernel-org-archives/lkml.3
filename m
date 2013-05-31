@@ -1,146 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab3EaQbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:31:08 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39588 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3EaQbE (ORCPT
+	id S1754056Ab3EaQcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:32:16 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:55536 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab3EaQcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:31:04 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: rdunlap@infradead.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] [trivial] treewide: Fix typo in printk
-Date: Sat,  1 Jun 2013 01:30:56 +0900
-Message-Id: <1370017856-32266-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.3.101.g727a46b
-In-Reply-To: <1369925065-16604-1-git-send-email-standby24x7@gmail.com>
-References: <1369925065-16604-1-git-send-email-standby24x7@gmail.com>
+	Fri, 31 May 2013 12:32:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <51A8CA15.4070504@wwwdotorg.org>
+References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
+ <20130531114824.60D223E0901@localhost> <51A8CA15.4070504@wwwdotorg.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 31 May 2013 17:31:39 +0100
+X-Google-Sender-Auth: znOJYALP0Vg9B8_kfrX2u8zYa5M
+Message-ID: <CACxGe6vWtofRb3ysPueJ73e3O18vNegiLapcTg_JZ9eRmPL5BA@mail.gmail.com>
+Subject: Re: DTB build failure due to preproccessing
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Michal Marek <mmarek@suse.cz>, Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>, JonLoeliger <jdl@jdl.com>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in printk within various drivers.
+On Fri, May 31, 2013 at 5:04 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/31/2013 05:48 AM, Grant Likely wrote:
+>> On Fri, 31 May 2013 11:29:30 +0100, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+>>> This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
+>>> actually a more general issue:
+>>>
+>>>         $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb
+>>>           CC      scripts/mod/devicetable-offsets.s
+>>>           GEN     scripts/mod/devicetable-offsets.h
+>>>           HOSTCC  scripts/mod/file2alias.o
+>>>           HOSTLD  scripts/mod/modpost
+>>>           DTC     arch/powerpc/boot/virtex440-ml510.dtb
+>>>         Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
+>>>         FATAL ERROR: Unable to parse input tree
+>>>         make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
+>>>         make: *** [virtex440-ml510.dtb] Error 2
+>>>
+>>> Line 374 is the "IDSEL 0x16..." line here:
+>>>                      interrupt-map = <
+>>>                              /* IRQ mapping for pci slots and ALI M1533
+>>>                               ...
+>>>                               * management core also isn't used.
+>>>                               */
+>>>
+>>>                              /* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
+>>>                              0x3000 0 0 1 &xps_intc_0 3 2
+>>>                              0x3000 0 0 2 &xps_intc_0 2 2
+>>>                              0x3000 0 0 3 &xps_intc_0 5 2
+>>>                              0x3000 0 0 4 &xps_intc_0 4 2
+>>>
+>>> Which gets preprocessed into:
+>>>            interrupt-map = <
+>>>         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
+>>>             0x3000 0 0 1 &xps_intc_0 3 2
+>>>             0x3000 0 0 2 &xps_intc_0 2 2
+>>>             0x3000 0 0 3 &xps_intc_0 5 2
+>>>             0x3000 0 0 4 &xps_intc_0 4 2
+>>>
+>>> If I manually remove the "# 375 " line then that fixes the error
+>>> (although there is then a subsequent one of the same type).
+>>>
+>>> I suppose this is a bug in dtc? It appears to have at least some
+>>> awareness of these preprocessor line number comments since it manages to
+>>> report the original source line number.
+>>
+>> dtc is only able to track line numbers when the native /include/
+>> directive is used. The #include directive doesn't help it. It should be
+>> added, but until it is the following patch solves the problem:
+>>
+>> I've got this patch in my tree. Either Rob or I will push it to Linus in
+>> the next few days.
+>>
+>> g.
+>>
+>> ---
+>> commit d01dccdcb3ea8233b09efb9c24db9f057fbd3b37
+>> Author: Grant Likely <grant.likely@linaro.org>
+>> Date:   Fri May 31 12:45:18 2013 +0100
+>>
+>>     dtc: Suppress cpp linemarker annotations
+>>
+>>     DTC isn't able to parse cpp linemarker annotations, so suppress them in
+>>     the cpp output by adding the -P flag to the cpp options.
+>
+> That's not true; it explicitly does have code to parse the line markers.
+> I'll have to investigate why it isn't working in this case.
+>
+> If you apply this patch, then anyone who has switched to #include rther
+> than /include/ will get incorrect line numbers in dtc error messages.
+> Admittedly that's a smaller population right now though. Perhaps we
+> should just do a kernel-wide conversion though.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+My mistake. I tested the wrong thing. I've dropped the patch.
 
----
- drivers/acpi/acpica/utobject.c                 | 2 +-
- drivers/cpufreq/s3c2416-cpufreq.c              | 2 +-
- drivers/net/ethernet/mellanox/mlx4/main.c      | 2 +-
- drivers/net/ethernet/neterion/vxge/vxge-main.c | 2 +-
- drivers/net/wireless/ath/ath9k/Kconfig         | 2 +-
- drivers/scsi/libiscsi_tcp.c                    | 2 +-
- drivers/scsi/pmcraid.c                         | 2 +-
- lib/Kconfig.kgdb                               | 4 ++--
- 8 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/acpi/acpica/utobject.c b/drivers/acpi/acpica/utobject.c
-index 1099f5c..61a113c 100644
---- a/drivers/acpi/acpica/utobject.c
-+++ b/drivers/acpi/acpica/utobject.c
-@@ -354,7 +354,7 @@ u8 acpi_ut_valid_internal_object(void *object)
- 
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "%p is not not an ACPI operand obj [%s]\n",
-+				  "%p is not an ACPI operand obj [%s]\n",
- 				  object, acpi_ut_get_descriptor_name(object)));
- 		break;
- 	}
-diff --git a/drivers/cpufreq/s3c2416-cpufreq.c b/drivers/cpufreq/s3c2416-cpufreq.c
-index 4f1881e..e594c62 100644
---- a/drivers/cpufreq/s3c2416-cpufreq.c
-+++ b/drivers/cpufreq/s3c2416-cpufreq.c
-@@ -205,7 +205,7 @@ static int s3c2416_cpufreq_leave_dvs(struct s3c2416_data *s3c_freq, int idx)
- 		ret = s3c2416_cpufreq_set_armdiv(s3c_freq,
- 					clk_get_rate(s3c_freq->hclk) / 1000);
- 		if (ret < 0) {
--			pr_err("cpufreq: Failed to to set the armdiv to %lukHz: %d\n",
-+			pr_err("cpufreq: Failed to set the armdiv to %lukHz: %d\n",
- 			       clk_get_rate(s3c_freq->hclk) / 1000, ret);
- 			return ret;
- 		}
-diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
-index 0d32a82..c8595ec 100644
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -98,7 +98,7 @@ MODULE_PARM_DESC(log_num_mgm_entry_size, "log mgm size, that defines the num"
- static bool enable_64b_cqe_eqe;
- module_param(enable_64b_cqe_eqe, bool, 0444);
- MODULE_PARM_DESC(enable_64b_cqe_eqe,
--		 "Enable 64 byte CQEs/EQEs when the the FW supports this");
-+		 "Enable 64 byte CQEs/EQEs when the FW supports this");
- 
- #define HCA_GLOBAL_CAP_MASK            0
- 
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-index cbfaed5..5a20eaf 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-@@ -3444,7 +3444,7 @@ static int vxge_device_register(struct __vxge_hw_device *hldev,
- 	}
- 
- 	vxge_debug_init(vxge_hw_device_trace_level_get(hldev),
--		"%s : checksuming enabled", __func__);
-+		"%s : checksumming enabled", __func__);
- 
- 	if (high_dma) {
- 		ndev->features |= NETIF_F_HIGHDMA;
-diff --git a/drivers/net/wireless/ath/ath9k/Kconfig b/drivers/net/wireless/ath/ath9k/Kconfig
-index 3b07851..b8fe237 100644
---- a/drivers/net/wireless/ath/ath9k/Kconfig
-+++ b/drivers/net/wireless/ath/ath9k/Kconfig
-@@ -28,7 +28,7 @@ config ATH9K
- 	  Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
- 	  of chipsets. For a specific list of supported external
- 	  cards, laptops that already ship with these cards and
--	  APs that come with these cards refer to to ath9k wiki
-+	  APs that come with these cards refer to ath9k wiki
- 	  products page:
- 
- 	  http://wireless.kernel.org/en/users/Drivers/ath9k/products
-diff --git a/drivers/scsi/libiscsi_tcp.c b/drivers/scsi/libiscsi_tcp.c
-index 552e8a2..92deec5 100644
---- a/drivers/scsi/libiscsi_tcp.c
-+++ b/drivers/scsi/libiscsi_tcp.c
-@@ -558,7 +558,7 @@ static int iscsi_tcp_r2t_rsp(struct iscsi_conn *conn, struct iscsi_task *task)
- 	if (!rc) {
- 		iscsi_conn_printk(KERN_ERR, conn, "Could not allocate R2T. "
- 				  "Target has sent more R2Ts than it "
--				  "negotiated for or driver has has leaked.\n");
-+				  "negotiated for or driver has leaked.\n");
- 		return ISCSI_ERR_PROTO;
- 	}
- 
-diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
-index 8e1b737..1eb7b028 100644
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -6092,7 +6092,7 @@ static int __init pmcraid_init(void)
- 
- 	if (IS_ERR(pmcraid_class)) {
- 		error = PTR_ERR(pmcraid_class);
--		pmcraid_err("failed to register with with sysfs, error = %x\n",
-+		pmcraid_err("failed to register with sysfs, error = %x\n",
- 			    error);
- 		goto out_unreg_chrdev;
- 	}
-diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-index 140e878..358eb81 100644
---- a/lib/Kconfig.kgdb
-+++ b/lib/Kconfig.kgdb
-@@ -64,8 +64,8 @@ config KGDB_LOW_LEVEL_TRAP
-        default n
-        help
-          This will add an extra call back to kgdb for the breakpoint
--         exception handler on which will will allow kgdb to step
--         through a notify handler.
-+         exception handler which will allow kgdb to step through a
-+         notify handler.
- 
- config KGDB_KDB
- 	bool "KGDB_KDB: include kdb frontend for kgdb"
--- 
-1.8.3.101.g727a46b
-
+g.
