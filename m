@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab3EaP4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:56:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58459 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab3EaP4r (ORCPT
+	id S1756744Ab3EaP5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:57:07 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48940 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756760Ab3EaP46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:56:47 -0400
-Date: Fri, 31 May 2013 17:56:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH][RFC] tracing/context-tracking: Add
- preempt_schedule_context() for tracing
-Message-ID: <20130531155643.GL5932@somewhere>
-References: <1369943981.26799.43.camel@gandalf.local.home>
- <20130531134319.GE5932@somewhere>
- <1370013528.26799.49.camel@gandalf.local.home>
+	Fri, 31 May 2013 11:56:58 -0400
+Date: Fri, 31 May 2013 16:56:13 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC 5/6] arm64/xen: implement xen_remap on arm64
+Message-ID: <20130531155613.GF15551@arm.com>
+References: <alpine.DEB.2.02.1305301705500.4799@kaball.uk.xensource.com>
+ <1369930713-6063-5-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130531105915.GC18045@localhost.cambridge.arm.com>
+ <alpine.DEB.2.02.1305311419280.4799@kaball.uk.xensource.com>
+ <20130531141601.GC15551@arm.com>
+ <alpine.DEB.2.02.1305311530440.4799@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1305311622150.4799@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370013528.26799.49.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1305311622150.4799@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:18:48AM -0400, Steven Rostedt wrote:
-> On Fri, 2013-05-31 at 15:43 +0200, Frederic Weisbecker wrote:
+On Fri, May 31, 2013 at 04:23:20PM +0100, Stefano Stabellini wrote:
+> On Fri, 31 May 2013, Stefano Stabellini wrote:
+> > On Fri, 31 May 2013, Catalin Marinas wrote:
+> > > On Fri, May 31, 2013 at 02:21:16PM +0100, Stefano Stabellini wrote:
+> > > > On Fri, 31 May 2013, Catalin Marinas wrote:
+> > > > > On Thu, May 30, 2013 at 05:18:32PM +0100, Stefano Stabellini wrote:
+> > > > > > --- a/arch/arm/include/asm/xen/page.h
+> > > > > > +++ b/arch/arm/include/asm/xen/page.h
+> > > > > > @@ -90,6 +90,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> > > > > >  	return __set_phys_to_machine(pfn, mfn);
+> > > > > >  }
+> > > > > >  
+> > > > > > +#ifdef CONFIG_ARM64
+> > > > > > +#define xen_remap(cookie, size) __ioremap((cookie), (size), __pgprot(PROT_NORMAL))
+> > > > > > +#else
+> > > > > >  #define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
+> > > > > > +#endif
+> > > > > 
+> > > > > Now I saw the ARM-specific part. Can you not use something like
+> > > > > ioremap_cached() which would give normal cacheable memory (at least on
+> > > > > ARMv7).
+> > > > 
+> > > > No, I cannot because ioremap_cached uses MT_DEVICE_CACHED, while this
+> > > > needs to be MT_MEMORY. It is used for normal memory pages, not device
+> > > > memory.
+> > > 
+> > > MT_DEVICE_CACHED is Normal memory for ARMv7.
+> > 
+> > I didn't realize that MT_DEVICE_CACHED and MT_MEMORY end up having the
+> > same AttrIndx encoding!
+> > In that case yes, I should be able to use it.
+> > I take that I should just implement ioremap_cached on arm64 as well?
+> > 
 > 
-> > > +void __sched notrace preempt_schedule_context(void)
-> > > +{
-> > > +	struct thread_info *ti = current_thread_info();
-> > > +	enum ctx_state prev_ctx;
-> > > +
-> > > +	if (likely(ti->preempt_count || irqs_disabled()))
-> > > +		return;
-> > > +
-> > > +	/*
-> > > +	 * Need to disable preemption in case user_exit() is traced
-> > > +	 * and the tracer calls preempt_enable_notrace() causing
-> > > +	 * an infinite recursion.
-> > > +	 */
-> > > +	preempt_disable_notrace();
-> > > +	prev_ctx = this_cpu_read(context_tracking.state);
-> > > +	user_exit();
-> > 
-> > You can reuse exception_enter()
+> Should just use MT_MEMORY and call it PROT_NORMAL?
 > 
-> I originally did use that, but then noticed that everything else in
-> context_tracking.c used context_tracking.state directly. I have no
-> problems doing it this way again.
+> #define PROT_NORMAL     (PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL))
+> #define ioremap_cached(addr, size)     __ioremap((addr), (size), __pgprot(PROT_NORMAL))
 
-It's more about the fact that exception_*() APIs already implement
-part of what you're doing. And yeah as a bonus it's also better to keep
-context_tracking internals in context_tracking.c
+Looks fine.
 
-> 
-> > 
-> > > +	preempt_enable_no_resched_notrace();
-> > > +
-> > > +	preempt_schedule();
-> > > +
-> > > +	preempt_disable_notrace();
-> > > +	if (prev_ctx == IN_USER)
-> > > +		user_enter();
-> > 
-> > And then exception_exit() here.
-> > 
-> > I guess this replaces your fix with schedule_preempt_user(). I liked
-> > it because it seems that:
-> > 
-> >    if (need_resched()) {
-> >       user_exit();
-> >       local_irq_enable();
-> >       schedule();
-> >       local_irq_enable();
-> >       user_enter();
-> >    }
-> > 
-> > is a common pattern of arch user resume preemption that we can consolidate.
-> > 
-> > But your new patch probably makes it more widely safe for the function tracer
-> > for any function that can be called and traced in IN_USER mode. Not only user preemption.
-> > Think about do_notify_resume() for example if it is called after syscall_trace_leave().
-> > 
-> > Independantly, schedule_preempt_user() is still interesting for consolidation.
-> 
-> And I think that patch is still valid from just a clean up point of
-> view. It just didn't cover all the cases needed for tracing.
-
-Right.
-
-Thanks.
+-- 
+Catalin
