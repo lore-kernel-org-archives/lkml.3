@@ -1,26 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab3EaIZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:25:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38572 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab3EaIZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:25:40 -0400
+	id S1754104Ab3EaI0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:26:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51793 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab3EaI0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 04:26:33 -0400
+From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/1] i2c: omap: correct usage of the interrupt enable register
+Date: Fri, 31 May 2013 11:26:27 +0300
+Message-ID: <1369988788-23987-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+X-Mailer: git-send-email 1.8.2.rc2
 MIME-Version: 1.0
-In-Reply-To: <1369729014-20974-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369729014-20974-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 31 May 2013 11:25:38 +0300
-Message-ID: <CAHp75VcAWSRsvu64q1krWmA55afBoOx-15eg3T43c7dMiWe4nQ@mail.gmail.com>
-Subject: Re: [PATCH, resend 1/3] sfi: fix compiler warnings
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: sfi-devel@simplefirmware.org, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please, drop this one away.
-Sathyanarayanan Kuppuswamy will take care of this in his patch series.
+I've just renamed OMAP_I2C_INTERRUPTS_MASK to the
+OMAP_I2C_IP_V2_INTERRUPTS_MASK.
+
+If the i2c controller during suspend will generate an interrupt, it
+can lead to unpredictable behaviour in the kernel.
+
+Based on the logic of the kernel code interrupts from i2c should be
+prohibited during suspend. Kernel writes 0 to the I2C_IE register in
+the omap_i2c_runtime_suspend() function. In the other side kernel
+writes saved interrupt flags to the I2C_IE register in
+omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
+during suspend.
+
+This works for chips with version1 registers scheme. Interrupts are
+disabled during suspend. For chips with version2 scheme registers
+writting 0 to the I2C_IE register does nothing (because now the
+I2C_IRQENABLE_SET register is located at this address). This register
+is used to enable interrupts. For disabling interrupts
+I2C_IRQENABLE_CLR register should be used.
+
+Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
+addresses, the interrupt enabling procedure is unchanged.
+
+I've checked that interrupts in the i2c controller are still enabled
+after writting 0 to the I2C_IE register. But with my patch interrupts
+are disabled in the omap_i2c_runtime_suspend() function. 
+
+This has been working up until now because we've just been lucky. 
+
+Next patch fixes it.
+
+Patch is based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+tag: v3.10-rc2
+
+Verified on OMAP4430.
+
+Oleksandr Dmytryshyn (1):
+  i2c: omap: correct usage of the interrupt enable register
+
+ drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+-- 
+1.8.2.rc2
+
