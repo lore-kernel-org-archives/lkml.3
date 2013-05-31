@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3EaV4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 17:56:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44988 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752017Ab3EaV4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 17:56:39 -0400
-Message-ID: <1370037388.10556.86.camel@joe-AO722>
-Subject: Re: [PATCH 2/3] pktcdvd: Convert printk to pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 31 May 2013 14:56:28 -0700
-In-Reply-To: <CAHp75Vdt22imDXu0phvbAVz=D-ctXH_JV6eMZ457e4d+=Tj0=Q@mail.gmail.com>
-References: <alpine.LNX.2.00.1305291537120.30576@pobox.suse.cz>
-	 <cover.1369947186.git.joe@perches.com>
-	 <be5d8d48c70deec2d883e122732522ced3bd6246.1369947186.git.joe@perches.com>
-	 <CAHp75Vdt22imDXu0phvbAVz=D-ctXH_JV6eMZ457e4d+=Tj0=Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757377Ab3EaV74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:59:56 -0400
+Received: from forward14.mail.yandex.net ([95.108.130.92]:39398 "EHLO
+	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3EaV7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:59:48 -0400
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 May 2013 17:59:48 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        =?utf-8?B?VHJlcMOhayBWaWxtb3M=?= <trepo@netcomga.sk>
+Subject: [PATCH]hp-wmi: Fix gps support in hp_wmi_rfkill_setup()
+MIME-Version: 1.0
+Message-Id: <1360371370037208@web3f.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 01 Jun 2013 01:53:28 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-31 at 22:44 +0300, Andy Shevchenko wrote:
-> On Thu, May 30, 2013 at 11:57 PM, Joe Perches <joe@perches.com> wrote:
-> > Use a more current logging style and add messages levels
-> > to the logging messages.
-> >
-> > Convert bare printks to pr_cont where appropriate and
-> > add a simple function to emit the sense string.
-> 
-> Few comments below.
-> 
-> Why not dev_dbg wherever it's possible?
+Current gps support in hp_wmi_rfkill_setup() looks like bad copy/past.
+It leads to kernel panic on my HP530 laptop. So I did:
 
-Because dev_<level> conversions are not appropriate for a
-first pass.  The "struct pktcdvd *" needs to be available
-for more function calls and that's more work / less
-automatic and this pass is more easily verified.
+1)Fix wwan/gps register_*_error label order
+2)Fix rfkill_set_hw_state() wrong argument in case of gps
 
-> > -       printk(DRIVER_NAME":");
-> > +       pr_err("");
-> >         for (i = 0; i < CDROM_PACKET_SIZE; i++)
-> > -               printk(" %02x", cgc->cmd[i]);
-> > -       printk(" - ");
-> > +               pr_cont(" %02x", cgc->cmd[i]);
-> 
-> This one is actually %*ph.
-> 
-> Like: pr_info("%*ph", CDROM_PACKET_SIZE, cgc->cmd);
-> 
-> And what is the level of this message? debug?
-
-pr_err and good point about %*ph, I've fixed it and
-the stupid typo around the #include here.
-
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Matthew Garrett <matthew.garrett@nebula.com>
+CC: Trepák Vilmos <trepo@netcomga.sk>
+---
+ drivers/platform/x86/hp-wmi.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+index 45cacf7..cdb8afb 100644
+--- a/drivers/platform/x86/hp-wmi.c
++++ b/drivers/platform/x86/hp-wmi.c
+@@ -658,7 +658,7 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+ 					   (void *) HPWMI_WWAN);
+ 		if (!wwan_rfkill) {
+ 			err = -ENOMEM;
+-			goto register_gps_error;
++			goto register_bluetooth_error;
+ 		}
+ 		rfkill_init_sw_state(wwan_rfkill,
+ 				     hp_wmi_get_sw_state(HPWMI_WWAN));
+@@ -666,7 +666,7 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+ 				    hp_wmi_get_hw_state(HPWMI_WWAN));
+ 		err = rfkill_register(wwan_rfkill);
+ 		if (err)
+-			goto register_wwan_err;
++			goto register_wwan_error;
+ 	}
+ 
+ 	if (wireless & 0x8) {
+@@ -676,11 +676,11 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+ 						(void *) HPWMI_GPS);
+ 		if (!gps_rfkill) {
+ 			err = -ENOMEM;
+-			goto register_bluetooth_error;
++			goto register_wwan_error;
+ 		}
+ 		rfkill_init_sw_state(gps_rfkill,
+ 				     hp_wmi_get_sw_state(HPWMI_GPS));
+-		rfkill_set_hw_state(bluetooth_rfkill,
++		rfkill_set_hw_state(gps_rfkill,
+ 				    hp_wmi_get_hw_state(HPWMI_GPS));
+ 		err = rfkill_register(gps_rfkill);
+ 		if (err)
+@@ -688,16 +688,16 @@ static int hp_wmi_rfkill_setup(struct platform_device *device)
+ 	}
+ 
+ 	return 0;
+-register_wwan_err:
+-	rfkill_destroy(wwan_rfkill);
+-	wwan_rfkill = NULL;
+-	if (gps_rfkill)
+-		rfkill_unregister(gps_rfkill);
+ register_gps_error:
+ 	rfkill_destroy(gps_rfkill);
+ 	gps_rfkill = NULL;
+ 	if (bluetooth_rfkill)
+ 		rfkill_unregister(bluetooth_rfkill);
++register_wwan_error:
++	rfkill_destroy(wwan_rfkill);
++	wwan_rfkill = NULL;
++	if (gps_rfkill)
++		rfkill_unregister(gps_rfkill);
+ register_bluetooth_error:
+ 	rfkill_destroy(bluetooth_rfkill);
+ 	bluetooth_rfkill = NULL;
