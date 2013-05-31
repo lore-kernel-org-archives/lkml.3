@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3EaKMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 06:12:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57251 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113Ab3EaKMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 06:12:02 -0400
+	id S1754810Ab3EaKMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 06:12:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56834 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754104Ab3EaKMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 06:12:14 -0400
 From: Hebbar Gururaja <gururaja.hebbar@ti.com>
 To: <khilman@linaro.org>, <grant.likely@linaro.org>,
         <linus.walleij@linaro.org>, <rob.herring@calxeda.com>
@@ -14,12 +15,11 @@ CC: <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
         <linux-kernel@vger.kernel.org>, <vaibhav.bedia@ti.com>,
         <sudhakar.raj@ti.com>, <gururaja.hebbar@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH 06/11] usb: musb: dsps: Adopt pinctrl support
-Date: Fri, 31 May 2013 15:43:06 +0530
-Message-ID: <1369995191-20855-7-git-send-email-gururaja.hebbar@ti.com>
+        Mark Brown <broonie@kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>
+Subject: [PATCH 05/11] spi: omap2-mcspi: enhance pinctrl support
+Date: Fri, 31 May 2013 15:43:05 +0530
+Message-ID: <1369995191-20855-6-git-send-email-gururaja.hebbar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
 References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
@@ -29,10 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amend the musb controller to optionally take a pin control handle and
-set the state of the pins to:
+Amend the spi omap controller to optionally take a pin control
+handle and set the state of the pins to:
 
-- "default" on boot, resume
+- "default" on boot, resume and before performing an spi transfer
+- "idle" after initial default, after resume default, and after each
+spi xfer
 - "sleep" on suspend()
 
 By optionally putting the pins into sleep state in the suspend callback
@@ -47,62 +49,106 @@ about the missing state is displayed.
 If certain pin-states are not available, to remove this warning message
 pass respective state name with null phandler.
 
-Todo:
-        - if an idle state is available for pins, add support for it.
+(Changes based on i2c-nomadik.c & spi-pl022.c)
+
+Note:
+A .suspend callback is added which simply puts the pins to sleep state.
+They are moved to default & idle state by the .resume callback.
 
 Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: spi-devel-general@lists.sourceforge.net
 ---
-:100644 100644 e1b661d... a9580fe... M	drivers/usb/musb/musb_dsps.c
- drivers/usb/musb/musb_dsps.c |   46 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+:100644 100644 86d2158... 146dd16... M	drivers/spi/spi-omap2-mcspi.c
+ drivers/spi/spi-omap2-mcspi.c |   89 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 84 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index e1b661d..a9580fe 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -39,6 +39,7 @@
- #include <linux/usb/nop-usb-xceiv.h>
- #include <linux/platform_data/usb-omap.h>
- #include <linux/sizes.h>
-+#include <linux/pinctrl/consumer.h>
- 
- #include <linux/of.h>
- #include <linux/of_device.h>
-@@ -124,6 +125,11 @@ struct dsps_glue {
- 	struct timer_list timer[2];	/* otg_workaround timer */
- 	unsigned long last_timer[2];    /* last timer data for each instance */
- 	u32 __iomem *usb_ctrl[2];
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 86d2158..146dd16 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -130,6 +130,12 @@ struct omap2_mcspi {
+ 	struct device		*dev;
+ 	struct omap2_mcspi_regs ctx;
+ 	unsigned int		pin_dir:1;
 +
-+	/* two pin states - default, sleep */
++	/* Three pin states - default, idle & sleep */
 +	struct pinctrl			*pinctrl;
 +	struct pinctrl_state		*pins_default;
++	struct pinctrl_state		*pins_idle;
 +	struct pinctrl_state		*pins_sleep;
  };
  
- #define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
-@@ -636,6 +642,36 @@ static int dsps_probe(struct platform_device *pdev)
- 		ret = -ENOMEM;
- 		goto err1;
- 	}
+ struct omap2_mcspi_cs {
+@@ -267,6 +273,12 @@ static int omap2_prepare_transfer(struct spi_master *master)
+ 	struct omap2_mcspi *mcspi = spi_master_get_devdata(master);
+ 
+ 	pm_runtime_get_sync(mcspi->dev);
 +
-+	glue->pinctrl = devm_pinctrl_get(&pdev->dev);
-+	if (!IS_ERR(glue->pinctrl)) {
-+		glue->pins_default = pinctrl_lookup_state(glue->pinctrl,
++	/* Optionaly enable pins to be muxed in and configured */
++	if (!IS_ERR(mcspi->pins_default))
++		if (pinctrl_select_state(mcspi->pinctrl, mcspi->pins_default))
++			dev_err(mcspi->dev, "could not set default pins\n");
++
+ 	return 0;
+ }
+ 
+@@ -274,6 +286,12 @@ static int omap2_unprepare_transfer(struct spi_master *master)
+ {
+ 	struct omap2_mcspi *mcspi = spi_master_get_devdata(master);
+ 
++	/* Optionally let pins go into idle state */
++	if (!IS_ERR(mcspi->pins_idle))
++		if (pinctrl_select_state(mcspi->pinctrl, mcspi->pins_idle))
++			dev_err(mcspi->dev,
++				"could not set pins to idle state\n");
++
+ 	pm_runtime_mark_last_busy(mcspi->dev);
+ 	pm_runtime_put_autosuspend(mcspi->dev);
+ 	return 0;
+@@ -1186,7 +1204,6 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 	static int		bus_num = 1;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	const struct of_device_id *match;
+-	struct pinctrl *pinctrl;
+ 
+ 	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
+ 	if (master == NULL) {
+@@ -1284,10 +1301,46 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 	if (status < 0)
+ 		goto dma_chnl_free;
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl))
+-		dev_warn(&pdev->dev,
+-				"pins are not configured from the driver\n");
++	mcspi->pinctrl = devm_pinctrl_get(&pdev->dev);
++	if (!IS_ERR(mcspi->pinctrl)) {
++		mcspi->pins_default = pinctrl_lookup_state(mcspi->pinctrl,
 +							 PINCTRL_STATE_DEFAULT);
-+		if (IS_ERR(glue->pins_default))
++		if (IS_ERR(mcspi->pins_default))
 +			dev_dbg(&pdev->dev, "could not get default pinstate\n");
 +		else
-+			if (pinctrl_select_state(glue->pinctrl,
-+						 glue->pins_default))
++			if (pinctrl_select_state(mcspi->pinctrl,
++						 mcspi->pins_default))
 +				dev_err(&pdev->dev,
 +					"could not set default pinstate\n");
 +
-+		glue->pins_sleep = pinctrl_lookup_state(glue->pinctrl,
++		mcspi->pins_idle = pinctrl_lookup_state(mcspi->pinctrl,
++						      PINCTRL_STATE_IDLE);
++		if (IS_ERR(mcspi->pins_idle))
++			dev_dbg(&pdev->dev, "could not get idle pinstate\n");
++		else
++			/* If possible, let's idle until the first transfer */
++			if (pinctrl_select_state(mcspi->pinctrl,
++						 mcspi->pins_idle))
++				dev_err(&pdev->dev,
++					"could not set idle pinstate\n");
++
++		mcspi->pins_sleep = pinctrl_lookup_state(mcspi->pinctrl,
 +						       PINCTRL_STATE_SLEEP);
-+		if (IS_ERR(glue->pins_sleep))
++		if (IS_ERR(mcspi->pins_sleep))
 +			dev_dbg(&pdev->dev, "could not get sleep pinstate\n");
 +	} else {
 +		/*
@@ -110,39 +156,68 @@ index e1b661d..a9580fe 100644
 +		* Invalidate pins as not available. This is to make sure that
 +		* IS_ERR(pins_xxx) results in failure when used.
 +		*/
-+		glue->pins_default = ERR_PTR(-ENODATA);
-+		glue->pins_sleep = ERR_PTR(-ENODATA);
++		mcspi->pins_default = ERR_PTR(-ENODATA);
++		mcspi->pins_idle = ERR_PTR(-ENODATA);
++		mcspi->pins_sleep = ERR_PTR(-ENODATA);
 +
 +		dev_dbg(&pdev->dev, "did not get pins for i2c error: %li\n",
-+			PTR_ERR(glue->pinctrl));
++			PTR_ERR(mcspi->pinctrl));
 +	}
+ 
+ 	pm_runtime_use_autosuspend(&pdev->dev);
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+@@ -1335,6 +1388,18 @@ static int omap2_mcspi_remove(struct platform_device *pdev)
+ MODULE_ALIAS("platform:omap2_mcspi");
+ 
+ #ifdef	CONFIG_SUSPEND
++static int omap2_mcspi_suspend(struct device *dev)
++{
++	struct spi_master	*master = dev_get_drvdata(dev);
++	struct omap2_mcspi	*mcspi = spi_master_get_devdata(master);
 +
- 	platform_set_drvdata(pdev, glue);
- 
- 	/* enable the usbss clocks */
-@@ -700,6 +736,11 @@ static int dsps_suspend(struct device *dev)
- 	for (i = 0; i < wrp->instances; i++)
- 		musb_dsps_phy_control(glue, i, 0);
- 
-+	/* Optionally let pins go into sleep states */
-+	if (!IS_ERR(glue->pins_sleep))
-+		if (pinctrl_select_state(glue->pinctrl, glue->pins_sleep))
++	if (!IS_ERR(mcspi->pins_sleep))
++		if (pinctrl_select_state(mcspi->pinctrl, mcspi->pins_sleep))
 +			dev_err(dev, "could not set pins to sleep state\n");
 +
++	return 0;
++}
++
+ /*
+  * When SPI wake up from off-mode, CS is in activate state. If it was in
+  * unactive state when driver was suspend, then force it to unactive state at
+@@ -1348,6 +1413,17 @@ static int omap2_mcspi_resume(struct device *dev)
+ 	struct omap2_mcspi_cs	*cs;
+ 
+ 	pm_runtime_get_sync(mcspi->dev);
++
++	/* First go to the default state */
++	if (!IS_ERR(mcspi->pins_default))
++		if (pinctrl_select_state(mcspi->pinctrl, mcspi->pins_default))
++			dev_err(dev, "could not set pins to default state\n");
++
++	/* Then let's idle the pins until the next transfer happens */
++	if (!IS_ERR(mcspi->pins_idle))
++		if (pinctrl_select_state(mcspi->pinctrl, mcspi->pins_idle))
++			dev_err(dev, "could not set pins to idle state\n");
++
+ 	list_for_each_entry(cs, &ctx->cs, node) {
+ 		if ((cs->chconf0 & OMAP2_MCSPI_CHCONF_FORCE) == 0) {
+ 			/*
+@@ -1364,12 +1440,15 @@ static int omap2_mcspi_resume(struct device *dev)
+ 	pm_runtime_put_autosuspend(mcspi->dev);
  	return 0;
  }
- 
-@@ -710,6 +751,11 @@ static int dsps_resume(struct device *dev)
- 	const struct dsps_musb_wrapper *wrp = glue->wrp;
- 	int i;
- 
-+	/* Optionaly enable pins to be muxed in and configured */
-+	if (!IS_ERR(glue->pins_default))
-+		if (pinctrl_select_state(glue->pinctrl, glue->pins_default))
-+			dev_err(dev, "could not set default pins\n");
 +
- 	for (i = 0; i < wrp->instances; i++)
- 		musb_dsps_phy_control(glue, i, 1);
+ #else
++#define	omap2_mcspi_suspend	NULL
+ #define	omap2_mcspi_resume	NULL
+ #endif
+ 
+ static const struct dev_pm_ops omap2_mcspi_pm_ops = {
+ 	.resume = omap2_mcspi_resume,
++	.suspend = omap2_mcspi_suspend,
+ 	.runtime_resume	= omap_mcspi_runtime_resume,
+ };
  
 -- 
 1.7.9.5
