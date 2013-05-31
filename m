@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3EaM0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 08:26:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57601 "EHLO
+	id S1756543Ab3EaM1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 08:27:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57615 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab3EaMZ4 (ORCPT
+	with ESMTP id S1752321Ab3EaM1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 08:25:56 -0400
-Date: Fri, 31 May 2013 05:25:31 -0700
-From: tip-bot for Michael Ellerman <tipbot@zytor.com>
-Message-ID: <tip-fd851780e61ac36e8d59fe87cca01a2e673930ff@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, michael@ellerman.id.au, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, michael@ellerman.id.au, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1368199980-20283-1-git-send-email-jolsa@redhat.com>
-References: <1368199980-20283-1-git-send-email-jolsa@redhat.com>
+	Fri, 31 May 2013 08:27:03 -0400
+Date: Fri, 31 May 2013 05:26:48 -0700
+From: tip-bot for Dimitri Sivanich <tipbot@zytor.com>
+Message-ID: <tip-879d5ad0dc3b096170c8f985b1465de5dca88de8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, travis@sgi.com, sivanich@sgi.com, rja@sgi.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
+        linux-kernel@vger.kernel.org, travis@sgi.com, sivanich@sgi.com,
+        rja@sgi.com, suresh.b.siddha@intel.com, tglx@linutronix.de
+In-Reply-To: <20130529155609.GB22917@sgi.com>
+References: <20130529155609.GB22917@sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Expand definition of sysfs format attribute
-Git-Commit-ID: fd851780e61ac36e8d59fe87cca01a2e673930ff
+Subject: [tip:x86/uv] x86/UV: Add GRU distributed mode mappings
+Git-Commit-ID: 879d5ad0dc3b096170c8f985b1465de5dca88de8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,59 +33,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd851780e61ac36e8d59fe87cca01a2e673930ff
-Gitweb:     http://git.kernel.org/tip/fd851780e61ac36e8d59fe87cca01a2e673930ff
-Author:     Michael Ellerman <michael@ellerman.id.au>
-AuthorDate: Fri, 10 May 2013 17:33:00 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 29 May 2013 16:11:40 +0300
+Commit-ID:  879d5ad0dc3b096170c8f985b1465de5dca88de8
+Gitweb:     http://git.kernel.org/tip/879d5ad0dc3b096170c8f985b1465de5dca88de8
+Author:     Dimitri Sivanich <sivanich@sgi.com>
+AuthorDate: Wed, 29 May 2013 10:56:09 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 30 May 2013 09:46:09 +0200
 
-perf: Expand definition of sysfs format attribute
+x86/UV: Add GRU distributed mode mappings
 
-Make it explicit that the format attributes may define overlapping bit
-ranges. Unfortunately this was left unspecified originally, and all the
-examples show non-overlapping ranges. I don't believe this is an ABI
-change, as we are defining something that was previously undefined, but
-others may disagree.
+GRU hardware will support an optional distributed mode that will
+allow  per-node address mapping of local GRU space, as opposed
+to mapping all GRU hardware to the same contiguous high space.
 
-The POWER8 PMU would like to define overlapping ranges, as bit ranges in
-the event code have different meanings for certain events. It will also
-allow us to define an overarching "event" field, that encompasses all
-others.
+If GRU distributed mode is selected, setup per-node page table
+mappings.
 
-As far as I can see perf is comfortable with this change, however I am
-not sure if there are any other users of the interface.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1368199980-20283-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Mike Travis <travis@sgi.com>
+Link: http://lkml.kernel.org/r/20130529155609.GB22917@sgi.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/ABI/testing/sysfs-bus-event_source-devices-format | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/apic/x2apic_uv_x.c | 66 ++++++++++++++++++++++++++++++++++----
+ 1 file changed, 59 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-index 079afc7..77f47ff 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-@@ -9,6 +9,12 @@ Description:
- 		we want to export, so that userspace can deal with sane
- 		name/value pairs.
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 794f6eb..39cc7f7 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -51,6 +51,8 @@ DEFINE_PER_CPU(int, x2apic_extra_bits);
  
-+		Userspace must be prepared for the possibility that attributes
-+		define overlapping bit ranges. For example:
-+			attr1 = 'config:0-23'
-+			attr2 = 'config:0-7'
-+			attr3 = 'config:12-35'
+ static enum uv_system_type uv_system_type;
+ static u64 gru_start_paddr, gru_end_paddr;
++static u64 gru_dist_base, gru_first_node_paddr = -1LL, gru_last_node_paddr;
++static u64 gru_dist_lmask, gru_dist_umask;
+ static union uvh_apicid uvh_apicid;
+ int uv_min_hub_revision_id;
+ EXPORT_SYMBOL_GPL(uv_min_hub_revision_id);
+@@ -72,7 +74,20 @@ static unsigned long __init uv_early_read_mmr(unsigned long addr)
+ 
+ static inline bool is_GRU_range(u64 start, u64 end)
+ {
+-	return start >= gru_start_paddr && end <= gru_end_paddr;
++	if (gru_dist_base) {
++		u64 su = start & gru_dist_umask; /* upper (incl pnode) bits */
++		u64 sl = start & gru_dist_lmask; /* base offset bits */
++		u64 eu = end & gru_dist_umask;
++		u64 el = end & gru_dist_lmask;
 +
- 		Example: 'config1:1,6-10,44'
- 		Defines contents of attribute that occupies bits 1,6-10,44 of
- 		perf_event_attr::config1.
++		/* Must reside completely within a single GRU range */
++		return (sl == gru_dist_base && el == gru_dist_base &&
++			su >= gru_first_node_paddr &&
++			su <= gru_last_node_paddr &&
++			eu == su);
++	} else {
++		return start >= gru_start_paddr && end <= gru_end_paddr;
++	}
+ }
+ 
+ static bool uv_is_untracked_pat_range(u64 start, u64 end)
+@@ -463,26 +478,63 @@ static __init void map_high(char *id, unsigned long base, int pshift,
+ 		pr_info("UV: Map %s_HI base address NULL\n", id);
+ 		return;
+ 	}
+-	pr_info("UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr, paddr + bytes);
++	pr_debug("UV: Map %s_HI 0x%lx - 0x%lx\n", id, paddr, paddr + bytes);
+ 	if (map_type == map_uc)
+ 		init_extra_mapping_uc(paddr, bytes);
+ 	else
+ 		init_extra_mapping_wb(paddr, bytes);
+ }
+ 
++static __init void map_gru_distributed(unsigned long c)
++{
++	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
++	u64 paddr;
++	unsigned long bytes;
++	int nid;
++
++	gru.v = c;
++	/* only base bits 42:28 relevant in dist mode */
++	gru_dist_base = gru.v & 0x000007fff0000000UL;
++	if (!gru_dist_base) {
++		pr_info("UV: Map GRU_DIST base address NULL\n");
++		return;
++	}
++	bytes = 1UL << UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
++	gru_dist_lmask = ((1UL << uv_hub_info->m_val) - 1) & ~(bytes - 1);
++	gru_dist_umask = ~((1UL << uv_hub_info->m_val) - 1);
++	gru_dist_base &= gru_dist_lmask; /* Clear bits above M */
++	for_each_online_node(nid) {
++		paddr = ((u64)uv_node_to_pnode(nid) << uv_hub_info->m_val) |
++				gru_dist_base;
++		init_extra_mapping_wb(paddr, bytes);
++		gru_first_node_paddr = min(paddr, gru_first_node_paddr);
++		gru_last_node_paddr = max(paddr, gru_last_node_paddr);
++	}
++	/* Save upper (63:M) bits of address only for is_GRU_range */
++	gru_first_node_paddr &= gru_dist_umask;
++	gru_last_node_paddr &= gru_dist_umask;
++	pr_debug("UV: Map GRU_DIST base 0x%016llx  0x%016llx - 0x%016llx\n",
++		gru_dist_base, gru_first_node_paddr, gru_last_node_paddr);
++}
++
+ static __init void map_gru_high(int max_pnode)
+ {
+ 	union uvh_rh_gam_gru_overlay_config_mmr_u gru;
+ 	int shift = UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR_BASE_SHFT;
+ 
+ 	gru.v = uv_read_local_mmr(UVH_RH_GAM_GRU_OVERLAY_CONFIG_MMR);
+-	if (gru.s.enable) {
+-		map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
+-		gru_start_paddr = ((u64)gru.s.base << shift);
+-		gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
+-	} else {
++	if (!gru.s.enable) {
+ 		pr_info("UV: GRU disabled\n");
++		return;
++	}
++
++	if (is_uv3_hub() && gru.s3.mode) {
++		map_gru_distributed(gru.v);
++		return;
+ 	}
++	map_high("GRU", gru.s.base, shift, shift, max_pnode, map_wb);
++	gru_start_paddr = ((u64)gru.s.base << shift);
++	gru_end_paddr = gru_start_paddr + (1UL << shift) * (max_pnode + 1);
+ }
+ 
+ static __init void map_mmr_high(int max_pnode)
