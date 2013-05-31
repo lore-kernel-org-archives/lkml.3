@@ -1,352 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab3EaW1S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:27:18 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:34366 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757462Ab3EaW1H (ORCPT
+	id S1757589Ab3EaW2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:28:03 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:34014 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab3EaW1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:27:07 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Generic percpu refcounting
-Date: Fri, 31 May 2013 15:26:45 -0700
-Message-Id: <1370039205-14071-1-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 31 May 2013 18:27:55 -0400
+Message-ID: <51A923E6.5060207@candelatech.com>
+Date: Fri, 31 May 2013 15:27:50 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.9.4+ watchdog overflow and migration lockup soon after boot
+ (cpu_stopper_thread related?)
+References: <51A8F875.8070606@candelatech.com> <51A918B7.3030302@candelatech.com>
+In-Reply-To: <51A918B7.3030302@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements a refcount with similar semantics to
-atomic_get()/atomic_dec_and_test() - but percpu.
+On 05/31/2013 02:40 PM, Ben Greear wrote:
+> On 05/31/2013 12:22 PM, Ben Greear wrote:
+>> While trying to verify that the kobject patch
+>> (see "Please add to stable:  module: don't unlink the module until we've removed all exposure." email)
+>> fixed the problems I was seeing, I hit what I believe is a different problem.  Much harder to reproduce
+>> (maybe 15-20 reboots before I saw this..haven't seen it since).
+>>
+>> This was on a kernel with additional non-upstream patches, but it's not obviously related to anything
+>> I've been hacking on.  I'm trying to reproduce now on standard 3.9.4 plus the kobj patch,
+>> but this seems to be quite rare, so not sure how long it will take.
+>
+> I reproduced this with only stock 3.9.4 and the kobj patch, so looks like it's
+> a real bug.  The info looks basically identical to what I posted previously.
+>
+> I have logs if someone wants to see it.
+>
+> It took around 20-30 reboots to hit the problem.
 
-It also implements two stage shutdown, as we need it to tear down the
-percpu counts.  Before dropping the initial refcount, you must call
-percpu_ref_kill(); this puts the refcount in "shutting down mode" and
-switches back to a single atomic refcount with the appropriate barriers
-(synchronize_rcu()).
+I added some printk debugging, and if I'm not mistaken, the
+curstate and smdata->state is both '1' (STOPMACHINE_PREPARE)
+in the stop_machine_cpu_stop method.  Once you are in that state,
+that method loops forever as far as I can tell.
 
-It's also legal to call percpu_ref_kill() multiple times - it only returns
-true once, so callers don't have to reimplement shutdown synchronization.
+Also, I was trying to manually rate-limit messages here based on
+the jiffies timer...but it seems jiffies is not updating?
 
-[akpm@linux-foundation.org: fix build]
-[akpm@linux-foundation.org: coding-style tweak]
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Zach Brown <zab@redhat.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Selvan Mani <smani@micron.com>
-Cc: Sam Bradshaw <sbradshaw@micron.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- include/linux/percpu-refcount.h | 122 ++++++++++++++++++++++++++++++++++++++
- lib/Makefile                    |   2 +-
- lib/percpu-refcount.c           | 128 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 251 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/percpu-refcount.h
- create mode 100644 lib/percpu-refcount.c
+Any ideas?
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-new file mode 100644
-index 0000000..24b31ef
---- /dev/null
-+++ b/include/linux/percpu-refcount.h
-@@ -0,0 +1,122 @@
-+/*
-+ * Percpu refcounts:
-+ * (C) 2012 Google, Inc.
-+ * Author: Kent Overstreet <koverstreet@google.com>
-+ *
-+ * This implements a refcount with similar semantics to atomic_t - atomic_inc(),
-+ * atomic_dec_and_test() - but percpu.
-+ *
-+ * There's one important difference between percpu refs and normal atomic_t
-+ * refcounts; you have to keep track of your initial refcount, and then when you
-+ * start shutting down you call percpu_ref_kill() _before_ dropping the initial
-+ * refcount.
-+ *
-+ * The refcount will have a range of 0 to ((1U << 31) - 1), i.e. one bit less
-+ * than an atomic_t - this is because of the way shutdown works, see
-+ * percpu_ref_kill()/PCPU_COUNT_BIAS.
-+ *
-+ * Before you call percpu_ref_kill(), percpu_ref_put() does not check for the
-+ * refcount hitting 0 - it can't, if it was in percpu mode. percpu_ref_kill()
-+ * puts the ref back in single atomic_t mode, collecting the per cpu refs and
-+ * issuing the appropriate barriers, and then marks the ref as shutting down so
-+ * that percpu_ref_put() will check for the ref hitting 0.  After it returns,
-+ * it's safe to drop the initial ref.
-+ *
-+ * USAGE:
-+ *
-+ * See fs/aio.c for some example usage; it's used there for struct kioctx, which
-+ * is created when userspaces calls io_setup(), and destroyed when userspace
-+ * calls io_destroy() or the process exits.
-+ *
-+ * In the aio code, kill_ioctx() is called when we wish to destroy a kioctx; it
-+ * calls percpu_ref_kill(), then hlist_del_rcu() and sychronize_rcu() to remove
-+ * the kioctx from the proccess's list of kioctxs - after that, there can't be
-+ * any new users of the kioctx (from lookup_ioctx()) and it's then safe to drop
-+ * the initial ref with percpu_ref_put().
-+ *
-+ * Code that does a two stage shutdown like this often needs some kind of
-+ * explicit synchronization to ensure the initial refcount can only be dropped
-+ * once - percpu_ref_kill() does this for you, it returns true once and false if
-+ * someone else already called it. The aio code uses it this way, but it's not
-+ * necessary if the code has some other mechanism to synchronize teardown.
-+ * around.
-+ */
-+
-+#ifndef _LINUX_PERCPU_REFCOUNT_H
-+#define _LINUX_PERCPU_REFCOUNT_H
-+
-+#include <linux/atomic.h>
-+#include <linux/kernel.h>
-+#include <linux/percpu.h>
-+#include <linux/rcupdate.h>
-+
-+struct percpu_ref;
-+typedef void (percpu_ref_release)(struct percpu_ref *);
-+
-+struct percpu_ref {
-+	atomic_t		count;
-+	/*
-+	 * The low bit of the pointer indicates whether the ref is in percpu
-+	 * mode; if set, then get/put will manipulate the atomic_t (this is a
-+	 * hack because we need to keep the pointer around for
-+	 * percpu_ref_kill_rcu())
-+	 */
-+	unsigned __percpu	*pcpu_count;
-+	percpu_ref_release	*release;
-+	struct rcu_head		rcu;
-+};
-+
-+int percpu_ref_init(struct percpu_ref *, percpu_ref_release *);
-+void percpu_ref_kill(struct percpu_ref *ref);
-+
-+#define PCPU_STATUS_BITS	2
-+#define PCPU_STATUS_MASK	((1 << PCPU_STATUS_BITS) - 1)
-+#define PCPU_REF_PTR		0
-+#define PCPU_REF_DEAD		1
-+
-+#define REF_STATUS(count)	(((unsigned long) count) & PCPU_STATUS_MASK)
-+
-+/**
-+ * percpu_ref_get - increment a percpu refcount
-+ *
-+ * Analagous to atomic_inc().
-+  */
-+static inline void percpu_ref_get(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+
-+	preempt_disable();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
-+		__this_cpu_inc(*pcpu_count);
-+	else
-+		atomic_inc(&ref->count);
-+
-+	preempt_enable();
-+}
-+
-+/**
-+ * percpu_ref_put - decrement a percpu refcount
-+ *
-+ * Decrement the refcount, and if 0, call the release function (which was passed
-+ * to percpu_ref_init())
-+ */
-+static inline void percpu_ref_put(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+
-+	preempt_disable();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
-+		__this_cpu_dec(*pcpu_count);
-+	else if (unlikely(atomic_dec_and_test(&ref->count)))
-+		ref->release(ref);
-+
-+	preempt_enable();
-+}
-+
-+#endif
-diff --git a/lib/Makefile b/lib/Makefile
-index c55a037..386db4b 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o percpu-refcount.o
- 
- obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-new file mode 100644
-index 0000000..6f0ffd7
---- /dev/null
-+++ b/lib/percpu-refcount.c
-@@ -0,0 +1,128 @@
-+#define pr_fmt(fmt) "%s: " fmt "\n", __func__
-+
-+#include <linux/kernel.h>
-+#include <linux/percpu-refcount.h>
-+
-+/*
-+ * Initially, a percpu refcount is just a set of percpu counters. Initially, we
-+ * don't try to detect the ref hitting 0 - which means that get/put can just
-+ * increment or decrement the local counter. Note that the counter on a
-+ * particular cpu can (and will) wrap - this is fine, when we go to shutdown the
-+ * percpu counters will all sum to the correct value
-+ *
-+ * (More precisely: because moduler arithmatic is commutative the sum of all the
-+ * pcpu_count vars will be equal to what it would have been if all the gets and
-+ * puts were done to a single integer, even if some of the percpu integers
-+ * overflow or underflow).
-+ *
-+ * The real trick to implementing percpu refcounts is shutdown. We can't detect
-+ * the ref hitting 0 on every put - this would require global synchronization
-+ * and defeat the whole purpose of using percpu refs.
-+ *
-+ * What we do is require the user to keep track of the initial refcount; we know
-+ * the ref can't hit 0 before the user drops the initial ref, so as long as we
-+ * convert to non percpu mode before the initial ref is dropped everything
-+ * works.
-+ *
-+ * Converting to non percpu mode is done with some RCUish stuff in
-+ * percpu_ref_kill. Additionally, we need a bias value so that the atomic_t
-+ * can't hit 0 before we've added up all the percpu refs.
-+ */
-+
-+#define PCPU_COUNT_BIAS		(1U << 31)
-+
-+/**
-+ * percpu_ref_init - initialize a percpu refcount
-+ * @ref:	ref to initialize
-+ * @release:	function which will be called when refcount hits 0
-+ *
-+ * Initializes the refcount in single atomic counter mode with a refcount of 1;
-+ * analagous to atomic_set(ref, 1).
-+ *
-+ * Note that @release must not sleep - it may potentially be called from RCU
-+ * callback context by percpu_ref_kill().
-+ */
-+int percpu_ref_init(struct percpu_ref *ref, percpu_ref_release *release)
-+{
-+	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
-+
-+	ref->pcpu_count = alloc_percpu(unsigned);
-+	if (!ref->pcpu_count)
-+		return -ENOMEM;
-+
-+	ref->release = release;
-+	return 0;
-+}
-+
-+static void percpu_ref_kill_rcu(struct rcu_head *rcu)
-+{
-+	struct percpu_ref *ref = container_of(rcu, struct percpu_ref, rcu);
-+	unsigned __percpu *pcpu_count;
-+	unsigned count = 0;
-+	int cpu;
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	/* Mask out PCPU_REF_DEAD */
-+	pcpu_count = (unsigned __percpu *)
-+		(((unsigned long) pcpu_count) & ~PCPU_STATUS_MASK);
-+
-+	for_each_possible_cpu(cpu)
-+		count += *per_cpu_ptr(pcpu_count, cpu);
-+
-+	free_percpu(pcpu_count);
-+
-+	pr_debug("global %i pcpu %i", atomic_read(&ref->count), (int) count);
-+
-+	/*
-+	 * It's crucial that we sum the percpu counters _before_ adding the sum
-+	 * to &ref->count; since gets could be happening on one cpu while puts
-+	 * happen on another, adding a single cpu's count could cause
-+	 * @ref->count to hit 0 before we've got a consistent value - but the
-+	 * sum of all the counts will be consistent and correct.
-+	 *
-+	 * Subtracting the bias value then has to happen _after_ adding count to
-+	 * &ref->count; we need the bias value to prevent &ref->count from
-+	 * reaching 0 before we add the percpu counts. But doing it at the same
-+	 * time is equivalent and saves us atomic operations:
-+	 */
-+
-+	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
-+
-+	/*
-+	 * Now we're in single atomic_t mode with a consistent refcount, so it's
-+	 * safe to drop our initial ref:
-+	 */
-+	percpu_ref_put(ref);
-+}
-+
-+/**
-+ * percpu_ref_kill - safely drop initial ref
-+ *
-+ * Must be used to drop the initial ref on a percpu refcount; must be called
-+ * precisely once before shutdown.
-+ *
-+ * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
-+ * percpu counters and dropping the initial ref.
-+ */
-+void percpu_ref_kill(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count, *old, *new;
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	do {
-+		if (REF_STATUS(pcpu_count) == PCPU_REF_DEAD) {
-+			WARN(1, "percpu_ref_kill() called more than once!\n");
-+			return;
-+		}
-+
-+		old = pcpu_count;
-+		new = (unsigned __percpu *)
-+			(((unsigned long) pcpu_count)|PCPU_REF_DEAD);
-+
-+		pcpu_count = cmpxchg(&ref->pcpu_count, old, new);
-+	} while (pcpu_count != old);
-+
-+	call_rcu(&ref->rcu, percpu_ref_kill_rcu);
-+}
+Thanks,
+Ben
+
+
+
+>
+> I'm thinking the cpu_stopper_thread is stuck in a loop..here are some of
+> the stack points decoded:
+>
+> (gdb) l *(stop_machine_cpu_stop+0x68)
+> 0xffffffff81103875 is in stop_machine_cpu_stop (/home/greearb/git/linux-2.6.linus/kernel/stop_machine.c:427).
+> 422
+> 423        /* Simple state machine */
+> 424        do {
+> 425            /* Chill out and ensure we re-read stopmachine_state. */
+> 426            cpu_relax();
+> 427            if (smdata->state != curstate) {
+> 428                curstate = smdata->state;
+> 429                switch (curstate) {
+> 430                case STOPMACHINE_DISABLE_IRQ:
+> 431                    local_irq_disable();
+> (gdb) l *(cpu_stopper_thread+0xbd)
+> 0xffffffff81103574 is in cpu_stopper_thread (/home/greearb/git/linux-2.6.linus/kernel/stop_machine.c:286).
+> 281
+> 282            /* cpu stop callbacks are not allowed to sleep */
+> 283            preempt_disable();
+> 284
+> 285            ret = fn(arg);
+> 286            if (ret)
+> 287                done->ret = ret;
+> 288
+> 289            /* restore preemption and check it's still balanced */
+> 290            preempt_enable();
+> (gdb)
+>
+>
+> SysRq : Show backtrace of all active CPUs
+> sending NMI to all CPUs:
+> NMI backtrace for cpu 3
+> CPU 3
+> Pid: 29, comm: migration/3 Tainted: G        WC   3.9.4+ #6 To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M.
+> RIP: 0010:[<ffffffff81103875>]  [<ffffffff81103875>] stop_machine_cpu_stop+0x68/0xfb
+> RSP: 0018:ffff8802223f3cc8  EFLAGS: 00000093
+> RAX: 0000000000000002 RBX: ffff880219ac3e18 RCX: 0000000000000000
+> RDX: ffff8802223ec2c0 RSI: 0000000000000040 RDI: ffffffff81103898
+> RBP: ffff8802223f3d08 R08: 0000000000000000 R09: ffff8802223f3b98
+> R10: ffffffff81cfc860 R11: 0000000000000002 R12: 0000000000000292
+> R13: 0000000000000002 R14: ffff880219ac3e3c R15: 0000000000000000
+> FS:  0000000000000000(0000) GS:ffff88022bd80000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000003397a07cc0 CR3: 000000021b7ce000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process migration/3 (pid: 29, threadinfo ffff8802223f2000, task ffff8802223ec2c0)
+> Stack:
+>   ffff88022bd8e5b0 00ff88022bd8e610 ffff8802223f3ce8 ffff88022bd8e5b0
+>   ffff880219ac3d58 ffff8802223f2000 ffff8802223f2000 ffffffff8110380d
+>   ffff8802223f3de8 ffffffff81103574 ffff8802223f3fd8 ffff8802223f2010
+> Call Trace:
+>   [<ffffffff8110380d>] ? stop_one_cpu_nowait+0x30/0x30
+>   [<ffffffff81103574>] cpu_stopper_thread+0xbd/0x176
+>   [<ffffffff815e8db7>] ? __schedule+0x5e7/0x62f
+>   [<ffffffff815ea223>] ? _raw_spin_unlock_irqrestore+0x47/0x77
+>   [<ffffffff810e7e6a>] ? trace_hardirqs_on_caller+0x123/0x15a
+>   [<ffffffff810e7eae>] ? trace_hardirqs_on+0xd/0xf
+>   [<ffffffff815ea245>] ? _raw_spin_unlock_irqrestore+0x69/0x77
+>   [<ffffffff810bdcb2>] smpboot_thread_fn+0x217/0x21d
+>   [<ffffffff810bda9b>] ? test_ti_thread_flag.clone.0+0x11/0x11
+>   [<ffffffff810b6a86>] kthread+0xc7/0xcf
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+>   [<ffffffff815f0cac>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+> Code: 40 00 00 00 e8 f5 ad 20 00 41 39 c5 0f 94 45 cf eb 0e 44 0f a3 28 45 19 ed 45 85 ed 0f 95 45 cf 4c 8d 73 24 45 31 ff 31 c0 f3 90 <44> 8b 6b 20 41 39 c5 74
+> 44 41 83 fd 02 74 08 41 83 fd 03 75 1f
+> NMI backtrace for cpu 1
+> CPU 1
+> Pid: 17, comm: migration/1 Tainted: G        WC   3.9.4+ #6 To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M.
+> RIP: 0010:[<ffffffff81103875>]  [<ffffffff81103875>] stop_machine_cpu_stop+0x68/0xfb
+> RSP: 0018:ffff88022230fcc8  EFLAGS: 00000093
+> RAX: 0000000000000002 RBX: ffff880219ac3e18 RCX: 0000000000000000
+> RDX: ffff8802223142c0 RSI: 0000000000000040 RDI: ffffffff81103898
+> RBP: ffff88022230fd08 R08: 0000000000000000 R09: ffff88022230fb98
+> R10: ffff880219ac3cf8 R11: ffff8802223ec2c0 R12: 0000000000000292
+> R13: 0000000000000002 R14: ffff880219ac3e3c R15: 0000000000000000
+> FS:  0000000000000000(0000) GS:ffff88022bc80000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000440b70 CR3: 000000021a03b000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process migration/1 (pid: 17, threadinfo ffff88022230e000, task ffff8802223142c0)
+> Stack:
+>   ffff88022bc8e5b0 00ff88022bc8e610 ffff88022230fce8 ffff88022bc8e5b0
+>   ffff880219ac3d58 ffff88022230e000 ffff88022230e000 ffffffff8110380d
+>   ffff88022230fde8 ffffffff81103574 ffff88022230ffd8 ffff88022230e010
+> Call Trace:
+>   [<ffffffff8110380d>] ? stop_one_cpu_nowait+0x30/0x30
+>   [<ffffffff81103574>] cpu_stopper_thread+0xbd/0x176
+>   [<ffffffff815e8db7>] ? __schedule+0x5e7/0x62f
+>   [<ffffffff815ea223>] ? _raw_spin_unlock_irqrestore+0x47/0x77
+>   [<ffffffff810e7e6a>] ? trace_hardirqs_on_caller+0x123/0x15a
+>   [<ffffffff810e7eae>] ? trace_hardirqs_on+0xd/0xf
+>   [<ffffffff815ea245>] ? _raw_spin_unlock_irqrestore+0x69/0x77
+>   [<ffffffff810bdcb2>] smpboot_thread_fn+0x217/0x21d
+>   [<ffffffff810bda9b>] ? test_ti_thread_flag.clone.0+0x11/0x11
+>   [<ffffffff810b6a86>] kthread+0xc7/0xcf
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+>   [<ffffffff815f0cac>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+> Code: 40 00 00 00 e8 f5 ad 20 00 41 39 c5 0f 94 45 cf eb 0e 44 0f a3 28 45 19 ed 45 85 ed 0f 95 45 cf 4c 8d 73 24 45 31 ff 31 c0 f3 90 <44> 8b 6b 20 41 39 c5 74
+> 44 41 83 fd 02 74 08 41 83 fd 03 75 1f
+> NMI backtrace for cpu 2
+> CPU 2
+> Pid: 23, comm: migration/2 Tainted: G        WC   3.9.4+ #6 To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M.
+> RIP: 0010:[<ffffffff81016549>]  [<ffffffff81016549>] native_read_tsc+0x14/0x16
+> RSP: 0000:ffff88022bd03b40  EFLAGS: 00000006
+> RAX: 00000057e22024ac RBX: ffff8802223b4000 RCX: 00000000e22024ac
+> RDX: 0000000000000057 RSI: 0000000000000002 RDI: 0000000000289789
+> RBP: ffff88022bd03b40 R08: 0000000000000002 R09: 0000000000000000
+> R10: ffff88022bd03a90 R11: 0000000000000006 R12: 000000000000006c
+> R13: 0000000000000002 R14: 0000000000000086 R15: 0000000000000001
+> FS:  0000000000000000(0000) GS:ffff88022bd00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000574fe0 CR3: 0000000214ca8000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process migration/2 (pid: 23, threadinfo ffff8802223b4000, task ffff8802223bc2c0)
+> Stack:
+>   ffff88022bd03ba0 ffffffff81309ea2 ffff88022bd03b70 0000000000000046
+>   ffff88022bd03b70 00289789810e5676 ffff88022bd03ba0 0000000000000001
+>   000000000000006c 0000000000000007 0000000000000086 0000000000000001
+> Call Trace:
+>   <IRQ>
+>   [<ffffffff81309ea2>] delay_tsc+0x40/0xee
+>   [<ffffffff81309e35>] __const_udelay+0x28/0x2a
+>   [<ffffffff8103053d>] arch_trigger_all_cpu_backtrace+0x66/0x7d
+>   [<ffffffff813c467a>] sysrq_handle_showallcpus+0xe/0x10
+>   [<ffffffff813c49ab>] __handle_sysrq+0xbf/0x15b
+>   [<ffffffff813c4d68>] handle_sysrq+0x2c/0x2e
+>   [<ffffffff813d8fcc>] serial8250_rx_chars+0x145/0x1c5
+>   [<ffffffff813d90be>] serial8250_handle_irq+0x72/0xa8
+>   [<ffffffff813d917f>] serial8250_default_handle_irq+0x23/0x28
+>   [<ffffffff813d7e14>] serial8250_interrupt+0x4d/0xc6
+>   [<ffffffff8110e760>] handle_irq_event_percpu+0x7a/0x1ea
+>   [<ffffffff8110e911>] handle_irq_event+0x41/0x61
+>   [<ffffffff8111113c>] handle_edge_irq+0xa6/0xcb
+>   [<ffffffff81011dd7>] handle_irq+0x24/0x2d
+>   [<ffffffff815f2a4d>] do_IRQ+0x4d/0xb4
+>   [<ffffffff815ea872>] common_interrupt+0x72/0x72
+>   [<ffffffff815ea937>] ? retint_restore_args+0x13/0x13
+>   [<ffffffff811146d2>] ? rcu_sched_qs+0x22/0x22
+>   [<ffffffff8109e4f1>] ? __do_softirq+0x185/0x25a
+>   [<ffffffff8109e68f>] irq_exit+0x5f/0xbc
+>   [<ffffffff815f2a9d>] do_IRQ+0x9d/0xb4
+>   [<ffffffff815ea872>] common_interrupt+0x72/0x72
+>   <EOI>
+>   [<ffffffff815ea937>] ? retint_restore_args+0x13/0x13
+>   [<ffffffff81103875>] ? stop_machine_cpu_stop+0x68/0xfb
+>   [<ffffffff81103853>] ? stop_machine_cpu_stop+0x46/0xfb
+>   [<ffffffff8110380d>] ? stop_one_cpu_nowait+0x30/0x30
+>   [<ffffffff81103574>] cpu_stopper_thread+0xbd/0x176
+>   [<ffffffff815e8db7>] ? __schedule+0x5e7/0x62f
+>   [<ffffffff815ea223>] ? _raw_spin_unlock_irqrestore+0x47/0x77
+>   [<ffffffff810e7e6a>] ? trace_hardirqs_on_caller+0x123/0x15a
+>   [<ffffffff810e7eae>] ? trace_hardirqs_on+0xd/0xf
+>   [<ffffffff815ea245>] ? _raw_spin_unlock_irqrestore+0x69/0x77
+>   [<ffffffff810bdcb2>] smpboot_thread_fn+0x217/0x21d
+>   [<ffffffff810bda9b>] ? test_ti_thread_flag.clone.0+0x11/0x11
+>   [<ffffffff810b6a86>] kthread+0xc7/0xcf
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+>   [<ffffffff815f0cac>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+> Code: 31 c9 48 c1 ef 0a 48 01 f8 c3 55 48 89 e5 e8 33 0a 00 00 66 90 c9 c3 55 48 89 e5 0f 31 89 c1 48 89 d0 48 c1 e0 20 89 c9 48 09 c8 <c9> c3 55 8b 05 12 c3 ad
+> 00 48 89 e5 c9 c3 55 b8 ed ff ff ff 48
+> NMI backtrace for cpu 0
+> CPU 0
+> Pid: 8, comm: migration/0 Tainted: G        WC   3.9.4+ #6 To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M.
+> RIP: 0010:[<ffffffff81103879>]  [<ffffffff81103879>] stop_machine_cpu_stop+0x6c/0xfb
+> RSP: 0018:ffff8802222abcc8  EFLAGS: 00000093
+> RAX: 0000000000000002 RBX: ffff880219ac3e18 RCX: 0000000000000000
+> RDX: ffff8802222a42c0 RSI: 0000000000000040 RDI: ffffffff81103898
+> RBP: ffff8802222abd08 R08: 0000000000000000 R09: ffff8802222abb98
+> R10: ffffffff81a01ec8 R11: 0000000000000000 R12: 0000000000000292
+> R13: 0000000000000002 R14: ffff880219ac3e3c R15: 0000000000000000
+> FS:  0000000000000000(0000) GS:ffff88022bc00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007fff998bbff0 CR3: 0000000001a0c000 CR4: 00000000000007f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process migration/0 (pid: 8, threadinfo ffff8802222aa000, task ffff8802222a42c0)
+> Stack:
+>   ffff88022bc0e5b0 01ff88022bc0e610 ffff8802222abce8 ffff88022bc0e5b0
+>   ffff880219ac3d58 ffff8802222aa000 ffff8802222aa000 ffffffff8110380d
+>   ffff8802222abde8 ffffffff81103574 ffff8802222abfd8 ffff8802222aa010
+> Call Trace:
+>   [<ffffffff8110380d>] ? stop_one_cpu_nowait+0x30/0x30
+>   [<ffffffff81103574>] cpu_stopper_thread+0xbd/0x176
+>   [<ffffffff815e8db7>] ? __schedule+0x5e7/0x62f
+>   [<ffffffff815ea223>] ? _raw_spin_unlock_irqrestore+0x47/0x77
+>   [<ffffffff810e7e6a>] ? trace_hardirqs_on_caller+0x123/0x15a
+>   [<ffffffff810e7eae>] ? trace_hardirqs_on+0xd/0xf
+>   [<ffffffff815ea245>] ? _raw_spin_unlock_irqrestore+0x69/0x77
+>   [<ffffffff810bdcb2>] smpboot_thread_fn+0x217/0x21d
+>   [<ffffffff810bda9b>] ? test_ti_thread_flag.clone.0+0x11/0x11
+>   [<ffffffff810b6a86>] kthread+0xc7/0xcf
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+>   [<ffffffff815f0cac>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff810b69bf>] ? __init_kthread_worker+0x5b/0x5b
+> Code: e8 f5 ad 20 00 41 39 c5 0f 94 45 cf eb 0e 44 0f a3 28 45 19 ed 45 85 ed 0f 95 45 cf 4c 8d 73 24 45 31 ff 31 c0 f3 90 44 8b 6b 20 <41> 39 c5 74 44 41 83 fd
+> 02 74 08 41 83 fd 03 75 1f eb 0e fa 66
+>
+> Thanks,
+> Ben
+>
+
+
 -- 
-1.8.2.1
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
