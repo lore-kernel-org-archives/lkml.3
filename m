@@ -1,62 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab3EaQX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:23:29 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:43134 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab3EaQXO (ORCPT
+	id S1757070Ab3EaQYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:24:19 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51596 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3EaQYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:23:14 -0400
-Date: Fri, 31 May 2013 18:23:12 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v5
-Message-ID: <20130531162312.GO6123@two.firstfloor.org>
-References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
- <1363895995-12967-2-git-send-email-andi@firstfloor.org>
- <CABPqkBSuiWCLyXkNhuq6wXFP2G+4rOQv_H4134R55CqcVFAAUA@mail.gmail.com>
+	Fri, 31 May 2013 12:24:08 -0400
+Date: Fri, 31 May 2013 18:24:01 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, lwoodman@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 07/13] x86, numa, mem-hotplug: Mark nodes which the
+ kernel resides in.
+Message-ID: <20130531162401.GA31139@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1369387762-17865-8-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBSuiWCLyXkNhuq6wXFP2G+4rOQv_H4134R55CqcVFAAUA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1369387762-17865-8-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 03:02:29PM +0200, Stephane Eranian wrote:
-> Hi,
+Hi,
+
+On Fri, May 24, 2013 at 05:29:16PM +0800, Tang Chen wrote:
+> If all the memory ranges in SRAT are hotpluggable, we should not
+> arrange them all in ZONE_MOVABLE. Otherwise the kernel won't have
+> enough memory to boot.
 > 
-> So looked at this patch again. There is nothing wrong with the code.
-> But there is something bothering me with the usage model. I think
-> the choice of having pebs->ip for precise=1 or pebs->real_ip for
-> precise=2 is too restrictive.
+> This patch introduce a global variable kernel_nodemask to mark
+> all the nodes the kernel resides in. And no matter if they are
+> hotpluggable, we arrange them as un-hotpluggable.
 > 
-> There are situations where you want BOTH the real_ip AND the
-> off-by-one ip. This is when you're sampling call branches.
-> The real_ip gives you the call site, the off-by-one gives you
-> the target of the branch. This is very handy because you do
-> not need to use the LBR to get this, unlike with SandyBridge.
-
-It's also useful for TSX: critical section versus abort point
-inside transaction.
-
-> So we need to find an extension or a way to return both IPs
-> without invoking LBR. Easiest would be to add another
-> PERF_SAMPLE_*.
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  arch/x86/mm/numa.c       |    6 ++++++
+>  include/linux/memblock.h |    1 +
+>  mm/memblock.c            |   20 ++++++++++++++++++++
+>  3 files changed, 27 insertions(+), 0 deletions(-)
 > 
-> Any better idea?
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index fec5ff8..8357c75 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -654,6 +654,12 @@ static bool srat_used __initdata;
+>   */
+>  static void __init early_x86_numa_init(void)
+>  {
+> +	/*
+> +	 * Need to find out which nodes the kernel resides in, and arrange
+> +	 * them as un-hotpluggable when parsing SRAT.
+> +	 */
+> +	memblock_mark_kernel_nodes();
+> +
+>  	if (!numa_off) {
+>  #ifdef CONFIG_X86_NUMAQ
+>  		if (!numa_init(numaq_numa_init))
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index c63a66e..5064eed 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -66,6 +66,7 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
+>  int memblock_free(phys_addr_t base, phys_addr_t size);
+>  int memblock_reserve(phys_addr_t base, phys_addr_t size);
+>  void memblock_trim_memory(phys_addr_t align);
+> +void memblock_mark_kernel_nodes(void);
+>  
+>  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+>  void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 63924ae..1b93a5d 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -35,6 +35,9 @@ struct memblock memblock __initdata_memblock = {
+>  	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+>  };
+>  
+> +/* Mark which nodes the kernel resides in. */
+> +static nodemask_t memblock_kernel_nodemask __initdata_memblock;
+> +
+>  int memblock_debug __initdata_memblock;
+>  static int memblock_can_resize __initdata_memblock;
+>  static int memblock_memory_in_slab __initdata_memblock = 0;
+> @@ -787,6 +790,23 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+>  	memblock_merge_regions(type);
+>  	return 0;
+>  }
+> +
+> +void __init_memblock memblock_mark_kernel_nodes()
+> +{
+> +	int i, nid;
+> +	struct memblock_type *reserved = &memblock.reserved;
+> +
+> +	for (i = 0; i < reserved->cnt; i++)
+> +		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+> +			nid = memblock_get_region_node(&reserved->regions[i]);
+> +			node_set(nid, memblock_kernel_nodemask);
+> +		}
+> +}
 
-For TSX I just use two different events. It works.
+I think there is a problem here because memblock_set_region_node is sometimes
+called with nid == MAX_NUMNODES. This means the correct node is not properly
+masked in the memblock_kernel_nodemask bitmap.
+E.g. in a VM test, memblock_mark_kernel_nodes with extra pr_warn calls iterates
+over the following memblocks (ranges below are memblks base-(base+size)):
 
-I'm not disagreeing with it, but I think it's an orthogonal issue to my
-patchkit.   Adding a new SAMPLE type seems reasonable to me.
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000000000-0x00000000010000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000098000-0x00000000100000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000001000000-0x00000001a5a000
+[    0.000000] memblock_mark_kernel_nodes nid=64 0x00000037000000-0x000000377f8000
 
--Andi
+where MAX_NUMNODES is 64 because CONFIG_NODES_SHIFT=6.
+The ranges above belong to node 0, but the node's bit is never marked.
+
+With a buggy bios that marks all memory as hotpluggable, this results in a
+panic, because both checks against hotpluggable bit and memblock_kernel_bitmask
+(in early_mem_hotplug_init) fail, the numa regions have all been merged together
+and memblock_reserve_hotpluggable is called for all memory. 
+
+With a correct bios (some part of initial memory is not hotplug-able) the kernel
+can boot since the hotpluggable bit check works ok, but extra dimms on node 0
+will still be allowed to be in MOVABLE_ZONE.
+
+Actually this behaviour (being able to have MOVABLE memory on nodes with kernel
+reserved memblocks) sort of matches the policy I requested in v2 :). But i
+suspect that is not your intent i.e. you want memblock_kernel_nodemask_bitmap to
+prevent movable reservations for the whole node where kernel has reserved
+memblocks.
+
+Is there a way to get accurate nid information for memblocks at early boot? I
+suspect pfn_to_nid doesn't work yet at this stage (i got a panic when I
+attempted iirc)
+
+I used the hack below but it depends on CONFIG_NUMA, hopefully there is a
+cleaner general way:
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index cfd8c2f..af8ad2a 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -133,6 +133,19 @@ void __init setup_node_to_cpumask_map(void)
+ 	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
+ }
+ 
++int __init numa_find_range_nid(u64 start, u64 size)
++{
++	unsigned int i;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	for (i = 0; i < mi->nr_blks; i++) {
++		if (start >= mi->blk[i].start && start + size -1 <= mi->blk[i].end)
++		 return mi->blk[i].nid;
++	}
++	return -1;
++}
++EXPORT_SYMBOL(numa_find_range_nid);
++
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 				     bool hotpluggable,
+ 				     struct numa_meminfo *mi)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 77a71fb..194b7c7 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1600,6 +1600,9 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ #endif
+ 
++#ifdef CONFIG_NUMA
++int __init numa_find_range_nid(u64 start, u64 size);
++#endif
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a6b7845..284aced 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -834,15 +834,26 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+ 
+ void __init_memblock memblock_mark_kernel_nodes()
+ {
+-	int i, nid;
++	int i, nid, tmpnid;
+ 	struct memblock_type *reserved = &memblock.reserved;
+ 
+ 	for (i = 0; i < reserved->cnt; i++)
+ 		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+ 			nid = memblock_get_region_node(&reserved->regions[i]);
++		if (nid == MAX_NUMNODES) {
++			tmpnid = numa_find_range_nid(reserved->regions[i].base,
++				reserved->regions[i].size);
++			if (tmpnid >= 0)
++				nid = tmpnid;
++		}
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index e862311..84d6e64 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -667,11 +667,7 @@ static bool srat_used __initdata;
+  */
+ static void __init early_x86_numa_init(void)
+ {
+-	/*
+-	 * Need to find out which nodes the kernel resides in, and arrange
+-	 * them as un-hotpluggable when parsing SRAT.
+-	 */
+-	memblock_mark_kernel_nodes();
+ 
+ 	if (!numa_off) {
+ #ifdef CONFIG_X86_NUMAQ
+@@ -779,6 +775,12 @@ void __init early_initmem_init(void)
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ 
++	/*
++	 * Need to find out which nodes the kernel resides in, and arrange
++	 * them as un-hotpluggable when parsing SRAT.
++	 */
++
++	memblock_mark_kernel_nodes();
+ 	early_mem_hotplug_init();
+ 
+ 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+-- 
+
+
