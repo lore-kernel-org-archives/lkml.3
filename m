@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab3EaWQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:16:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33870 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab3EaWQe (ORCPT
+	id S1757446Ab3EaWS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:18:26 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:37110 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394Ab3EaWSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:16:34 -0400
-Date: Fri, 31 May 2013 15:16:33 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv6 00/11] Remove ARM local timer API
-Message-ID: <20130531221633.GG599@codeaurora.org>
-References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
- <20130531174526.GD599@codeaurora.org>
- <51A8E71D.1000407@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51A8E71D.1000407@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 31 May 2013 18:18:18 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+In-Reply-To: <alpine.LFD.2.02.1305311835040.2905@ionos>
+References: <20130530211944.05F4D3E0A90@localhost> <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com> <alpine.LFD.2.02.1305311835040.2905@ionos>
+Date: Fri, 31 May 2013 23:18:14 +0100
+Message-Id: <20130531221814.534DF3E08FE@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31, John Stultz wrote:
-> On 05/31/2013 10:45 AM, Stephen Boyd wrote:
-> >Comments have been light for this round so I think we're about
-> >ready to merge. John/Thomas, can you pick up these patches or
-> >shall I route them through arm-soc or something else?
+On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 31 May 2013, Christian Ruppert wrote:
 > 
+> > The SOC interrupt controller driver for the Abilis Systems TB10x series of
+> > SOCs based on ARC700 CPUs.
+> > 
+> > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
+> > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
 > 
-> So there looks to be a fair amount of additions in the ARM tree, do
-> those already have acks from Arnd/Olof/other folks? (I think I was
-> only cc'ed on the first two patches).
-
-I'm still missing acks from Kukjin and Barry.
-
+> That branch can be pulled into ARC as well. It only contains the
+> changes, which are necessary for the irq domain support of the generic
+> irq chip.
 > 
-> Daniel (cc'ed) has just started helping out here, and should be able
-> to review and hopefully ack or pick up the timer related
-> drivers/clocksource changes to feed to Thomas' tree. Not sure if
-> he's got them in his mailbox so you might want to resend them and
-> make sure he's CC'ed.
+> > +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
+> > +{
+> > +	struct irq_domain *domain = irq_desc_get_handler_data(desc);
+> > +
+> > +	generic_handle_irq(irq_find_mapping(domain, irq));
+> > +}
 > 
-> If Arnd/Olof/whomever else from the arm side has acked things,
-> Daniel probably could queue the arm changes too, but it might be
-> better just to get Daniel's ack on the drivers/clocksource changes
-> and then queue things via arm-soc?
+> ...
+> 
+> > +	for (i = 0; i < nrirqs; i++) {
+> > +		unsigned int irq = irq_of_parse_and_map(ictl, i);
+> > +
+> > +		irq_set_handler_data(irq, domain);
+> > +		irq_set_chained_handler(irq, tb10x_irq_cascade);
+> > +	}
+> 
+> I might be completely confused, but this does not make any sense at
+> all.
+> 
+> You allocate a linear domain and then map the interrupts in the
+> domain. The mapping function retrieves the hardware interrupt number
+> and creates a virtual interrupt number, installs the chip and the
+> handler for the interrupt and finally returns the virtual interrupt
+> number.
+> 
+> Now you take that virtual interrupt number and install
+> tb10x_irq_cascade as the handler. irq_set_chained_handler() will
+> startup (unmask) the interrupt right away.
+> 
+> In the cascade handler you take the virtual interrupt number, which
+> you get as argument, and find the mapping, i.e. the matching VIRTUAL
+> interrupt number for the VIRTUAL interrupt number and then call the
+> handler.
+> 
+> How is this supposed to work?
 
-Either way works for me. I would just like to see this merged
-into 3.11. I guess I will resend one more time.
+I think what is going on here is that the tb10x interrupt controller
+appears to be more of a front-end to another interrupt controller with
+each input wired up 1:1 to the interrupt inputs of the other controller.
+(I don't know why someone would design an interrupt controller that way,
+but that's another issue). The loop above is mapping each of the
+interrupt inputs on the parent controller so that each child controller
+can be chained to it as an input. I can't think of how else it could be
+set up with the current code if the drivers were kept separate.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Christian, what is the parent interrupt controller for this SoC? It
+really feels like the tb10x-ictl belongs as part of the parent
+controller. I went and looked at the parent node, and I saw this:
+
+		intc: interrupt-controller {
+				compatible = "snps,arc700-intc";
+				interrupt-controller;
+				#interrupt-cells = <1>;
+		};
+
+I noticed the conspicuous absence of a reg property. Is this something
+architectural? If I were working on this system I'd drop the
+snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
+encapsulated the properties of both (you would of course want to share
+handler functions for the 'normal' inputs without the custom features).
+That would eliminate the goofyness of listing 27 separate interrupts in
+the abilis,tb10x-ictl interrupts property.
+
+g.
+
