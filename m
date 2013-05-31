@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3EaQmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:42:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab3EaQma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:42:30 -0400
-Date: Fri, 31 May 2013 18:38:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
-        Sha Zhengju <handai.szj@taobao.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] proc: simplify proc_task_readdir/first_tid paths
-Message-ID: <20130531163834.GA31086@redhat.com>
-References: <20130527202822.GA19288@redhat.com> <87ppwa1jn0.fsf@xmission.com> <20130529133930.GB5741@redhat.com> <878v2xzfl7.fsf@xmission.com>
+	id S1752954Ab3EaQpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:45:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34270 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3EaQpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 12:45:14 -0400
+Message-ID: <51A8D1D7.4000807@wwwdotorg.org>
+Date: Fri, 31 May 2013 10:37:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878v2xzfl7.fsf@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Michal Marek <mmarek@suse.cz>, Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, JonLoeliger <jdl@jdl.com>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: DTB build failure due to preproccessing
+References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric, sorry for delay.
+On 05/31/2013 04:29 AM, Ian Campbell wrote:
+> This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
+> actually a more general issue:
+> 
+>         $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb 
+>           CC      scripts/mod/devicetable-offsets.s
+>           GEN     scripts/mod/devicetable-offsets.h
+>           HOSTCC  scripts/mod/file2alias.o
+>           HOSTLD  scripts/mod/modpost
+>           DTC     arch/powerpc/boot/virtex440-ml510.dtb
+>         Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
+>         FATAL ERROR: Unable to parse input tree
+>         make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
+>         make: *** [virtex440-ml510.dtb] Error 2
+...
+>            interrupt-map = <
+>         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
+>             0x3000 0 0 1 &xps_intc_0 3 2
+>             0x3000 0 0 2 &xps_intc_0 2 2
+>             0x3000 0 0 3 &xps_intc_0 5 2
+>             0x3000 0 0 4 &xps_intc_0 4 2
 
-On 05/29, Eric W. Biederman wrote:
->
-> Oleg Nesterov <oleg@redhat.com> writes:
->
-> > Why the empty "." + ".." dir is bad if the task(s) has gone away after
-> > opendir?
->
-> Because the definition of a deleted directory that you are in is that
-> getdents will return -ENOENT.
->
-> You can reproduce this with any linux filesystem.
-> mkdir foo
-> cd foo
-> rmdir ../foo
-> strace -f ls .
->
->    open(".", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 3
->    getdents(3, 0x1851c88, 32768)           = -1 ENOENT (No such file or directory)
->    close(3)                                = 0
+I /think/ what's happening here is that dtc's rule for #line parsing
+allows the formats:
 
-Heh. Indeed, vfs_readdir() checks IS_DEADDIR().
+# LINE FILENAME
+or:
+#LINE FILENAME FLAGS
 
-Thanks.
+where FLAGS is an integer
 
-OK. But this means that even 1/3 is not 100% right, exactly because
-leader can be unhashed right before first_tid() takes rcu lock. Easy
-to fix, we should simply factor out the "nr != 0" check.
+The lexer rule that optionally consumes flags requires some WS
+(white-space) between the filename and flags. It looks like this
+whitespace can actually cross a line boundary, so it ends up consuming
+the first "0" of the hex constant on the next line, which then leaves
+"x3000" to be parsed as cell data, which is a syntax error.
 
-And this also means that 3/3 is not right by the same reason. I'll
-make a simpler patch which only avoids the unnecessary get/put in
-proc_task_readdir().
+You can hack around this for testing by doing one of a few things:
 
-Unless we can tolerate this very unlikely rase when the leader goes
-away after initial ENOENT check at the start, of course... Or unless
-we add canceldir() which resets getdents_callback->previous so that
-we could return ENOENT after filldir() was already called ;)
+a) Add an extra integer on to the end of the problematic #line directives.
 
-Thanks Eric. I'll send v2.
+b) Remove the leading "0x" from the constants following the #line
+directives. I think this will still mean dtc eats the 3000 as part of
+the #line directive, but hides the syntax error.
 
-Oleg.
+The solution here is to make dtc's #line matching regex:
 
+<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
+
+... use someting other than {WS} in the final instance; some kind of
+{WS} that won't match/cross line boundaries. I'll see if I can cook up a
+patch for this.
