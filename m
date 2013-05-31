@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3EaGE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:04:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49663 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab3EaGEt convert rfc822-to-8bit (ORCPT
+	id S1752278Ab3EaGGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:06:17 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36062 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab3EaGGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:04:49 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>
-Subject: RE: [PATCH V3 0/2] Add DT support for tps6507x touchscreen
-Thread-Topic: [PATCH V3 0/2] Add DT support for tps6507x touchscreen
-Thread-Index: AQHOVgCI6izTHA2740yHd1GR/6IyMJkexdQA
-Date: Fri, 31 May 2013 06:04:32 +0000
-Message-ID: <A4887BF146CD57468F700B415D2F470159C239@DBDE04.ent.ti.com>
-References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
-In-Reply-To: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
-Accept-Language: en-IN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 31 May 2013 02:06:10 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <liuj97@gmail.com>, Yijing Wang <wangyijing@huawei.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>, <netdev@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] net: wireless: iwlegacy: fix build error for il_pm_ops
+Date: Fri, 31 May 2013 14:05:32 +0800
+Message-ID: <1369980332-1344-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry
-Please let me know, are there any review comments on this patch series?
+Fix build error for il_pm_ops if CONFIG_PM is set
+but CONFIG_PM_SLEEP is not set.
 
-Thanks
-Manish Badarkhe
+ERROR: "il_pm_ops" [drivers/net/wireless/iwlegacy/iwl4965.ko] undefined!
+ERROR: "il_pm_ops" [drivers/net/wireless/iwlegacy/iwl3945.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-On Tue, May 21, 2013 at 14:24:16, Vishwanathrao Badarkhe, Manish wrote:
-> Patch set adds DT support for tps6507x based touchscreen.
-> Also, add DT data for tps6507x touchscreen in da850-evm by
-> providing touchscreen node inside tps6507x mfd device.
-> 
-> This patch series applies on top of linux-next tree and depends on [1].
-> 
-> [1]tps6507x-ts: update to devm_* API
->    https://patchwork.kernel.org/patch/2324441/
-> 
-> Tested on da850-evm board.
-> 
-> Changes since V2:
->  - Updated tps6507x documentation.
->  - Removed unnecessary code.
-> 
-> Changes since V1:
->  - Updated tps6507x documentation.
->  - Updated commit message.
->  - return proper error value in absence platform and DT data
->    for touchscreen.
-> 
-> Vishwanathrao Badarkhe, Manish (2):
->   tps6507x-ts: Add DT support
->   ARM: davinci: da850: add tps6507x touchscreen DT data
-> 
->  Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
->  arch/arm/boot/dts/da850-evm.dts                    |    9 ++
->  drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
->  3 files changed, 104 insertions(+), 31 deletions(-)
-> 
-> -- 
-> 1.7.4.1
-> 
-> 
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-wireless@vger.kernel.org
+Cc: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/net/wireless/iwlegacy/common.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
+index f8246f2..4caaf52 100644
+--- a/drivers/net/wireless/iwlegacy/common.h
++++ b/drivers/net/wireless/iwlegacy/common.h
+@@ -1832,16 +1832,16 @@ u32 il_usecs_to_beacons(struct il_priv *il, u32 usec, u32 beacon_interval);
+ __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
+ 			  u32 beacon_interval);
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ extern const struct dev_pm_ops il_pm_ops;
+ 
+ #define IL_LEGACY_PM_OPS	(&il_pm_ops)
+ 
+-#else /* !CONFIG_PM */
++#else /* !CONFIG_PM_SLEEP */
+ 
+ #define IL_LEGACY_PM_OPS	NULL
+ 
+-#endif /* !CONFIG_PM */
++#endif /* !CONFIG_PM_SLEEP */
+ 
+ /*****************************************************
+ *  Error Handling Debugging
+-- 
+1.7.1
 
 
-Regards, 
-Manish
