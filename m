@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab3EaTcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 15:32:16 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:59570 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3EaTcH (ORCPT
+	id S1756907Ab3EaThL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 15:37:11 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:41098 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab3EaThH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 15:32:07 -0400
-Date: Fri, 31 May 2013 21:32:00 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
- support for AMD
-Message-ID: <20130531193200.GA8346@alberich>
-References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
- <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
- <20130531042649.GA4488@khazad-dum.debian.net>
+	Fri, 31 May 2013 15:37:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130531042649.GA4488@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hbo7rowq5.wl%tiwai@suse.de>
+References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
+ <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
+ <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
+ <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
+ <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
+ <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
+ <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
+ <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
+ <s5h1u8wtsk9.wl%tiwai@suse.de> <CALxABCZdm=qd1E63NeabcqmD0csnL1FcuUBCFTwa1yDOVRVXyg@mail.gmail.com>
+ <s5h1u8w8f82.wl%tiwai@suse.de> <CALxABCbJ-4_UPNX5qNAOy-PdQ+tp+vVBDE535nLyfjgzDjjebQ@mail.gmail.com>
+ <s5h1u8p7pxi.wl%tiwai@suse.de> <CALxABCbBYRJDsXMw0Y0BLs+RuXNMa_RMOAF5i4rmWDaYPa2H0Q@mail.gmail.com>
+ <s5hehcn2tc3.wl%tiwai@suse.de> <CALxABCaQ_drc+jKP4wZ5S_5wZVcE7rVXW_LZdVJ8tqZUai-=UQ@mail.gmail.com>
+ <s5hbo7rowq5.wl%tiwai@suse.de>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Fri, 31 May 2013 21:36:45 +0200
+Message-ID: <CALxABCZVDrLMH+Y=b6CP8rehM5q7vikjoGNgi=S5jHKZuSSGsw@mail.gmail.com>
+Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
+ HDA, codec VIA VT1802
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 01:26:49AM -0300, Henrique de Moraes Holschuh wrote:
-> On Thu, 30 May 2013, Jacob Shin wrote:
-> >  mkdir initrd
-> >  cd initrd
-> > -mkdir kernel
-> > -mkdir kernel/x86
-> > -mkdir kernel/x86/microcode
-> > -cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
-> > -find .|cpio -oc >../ucode.cpio
-> > +mkdir -p kernel/x86/microcode
-> > +cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
-> 
-> Can I just 
-> 'cat /lib/firmware/amd-ucode/*bin >kernel/x86/microcode/AuthenticAMD.bin' 
-> to get a valid microcode container for all amd processors?
-> 
-> The answer for Intel is "yes".  I sure hope it is the same for AMD...
+On Fri, May 31, 2013 at 8:00 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 31 May 2013 17:32:16 +0200, Alex Riesen wrote:
+>> On Fri, May 31, 2013 at 3:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > Below is a series of patches.  For simplicity, I just attach them, not
+>> > inlining to the mail.  They should be applicable cleanly to 3.9.4 as
+>> > well.  Let me know if this works.  If this still doesn't work, I need
+>> > to rewrite the patch to correct the pin-ctl / EAPD of the headphone
+>> > pin after changing the speaker pin.
+>>
+>> Still does not work. The results are for 3.9.4 + patches:
+>>
+>>   http://familie-riesen.de/~raa/public/test/dpc-automute-vol-pinctl.tar.bz2
+>>
+>
+> Grrr, EAPD on 0x25 seems reset by EAPD on 0x24 being turned off.
+> We need to apply the patch of the last week again in the end.
+> The revised one is below.  Please apply it on the top of the previous
+> three patches.
 
-No, this doesn't work for AMD.
+Nope. Logs:
 
-The container file includes a header section with information how to
-map CPU F/M/S to microcode revisions provided with a container
-file. Concatenating several container files will not create an
-all-embracing header section.
-
-More details were available on the amd64.org web pages.  But it seems
-that the web site is not available anymore ...
-
-
-Andreas
+  http://familie-riesen.de/~raa/public/test/keep_eapd_on.tar.bz2
