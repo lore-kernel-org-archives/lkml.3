@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3EaPu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:50:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56650 "EHLO mga02.intel.com"
+	id S1756767Ab3EaPvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:51:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34211 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756508Ab3EaPuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:50:39 -0400
+	id S1753885Ab3EaPuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 11:50:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,779,1363158000"; 
-   d="scan'208";a="322504455"
+   d="scan'208";a="346235022"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
         spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [RFC PATCH v0 1/2] dma: move dw_dmac driver to an own directory
-Date: Fri, 31 May 2013 18:50:31 +0300
-Message-Id: <1370015432-17259-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [RFC PATCH v0 2/2] dma: dw: split driver to library part and platform code
+Date: Fri, 31 May 2013 18:50:32 +0300
+Message-Id: <1370015432-17259-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 In-Reply-To: <1370015432-17259-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1370015432-17259-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -23,139 +23,904 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac driver is going to be split into multiple files. To make this more
-convenient move it to an own directory.
+To simplify the driver development let's split driver to library and platform
+code parts. It helps us to add PCI driver in future.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- MAINTAINERS                         |  3 +--
- drivers/dma/Kconfig                 | 20 +-------------------
- drivers/dma/Makefile                |  2 +-
- drivers/dma/dw/Kconfig              | 23 +++++++++++++++++++++++
- drivers/dma/dw/Makefile             |  1 +
- drivers/dma/{ => dw}/dw_dmac.c      |  2 +-
- drivers/dma/{ => dw}/dw_dmac_regs.h |  0
- 7 files changed, 28 insertions(+), 23 deletions(-)
- create mode 100644 drivers/dma/dw/Kconfig
- create mode 100644 drivers/dma/dw/Makefile
- rename drivers/dma/{ => dw}/dw_dmac.c (99%)
- rename drivers/dma/{ => dw}/dw_dmac_regs.h (100%)
+ drivers/dma/Makefile                      |   2 +-
+ drivers/dma/dw/Kconfig                    |   8 +-
+ drivers/dma/dw/Makefile                   |   6 +-
+ drivers/dma/dw/{dw_dmac.c => core.c}      | 299 ++++-------------------------
+ drivers/dma/dw/internal.h                 |  50 +++++
+ drivers/dma/dw/platform.c                 | 306 ++++++++++++++++++++++++++++++
+ drivers/dma/dw/{dw_dmac_regs.h => regs.h} |   1 +
+ 7 files changed, 402 insertions(+), 270 deletions(-)
+ rename drivers/dma/dw/{dw_dmac.c => core.c} (86%)
+ create mode 100644 drivers/dma/dw/internal.h
+ create mode 100644 drivers/dma/dw/platform.c
+ rename drivers/dma/dw/{dw_dmac_regs.h => regs.h} (99%)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fdd0544..0b24126 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6991,8 +6991,7 @@ SYNOPSYS DESIGNWARE DMAC DRIVER
- M:	Viresh Kumar <viresh.linux@gmail.com>
- S:	Maintained
- F:	include/linux/dw_dmac.h
--F:	drivers/dma/dw_dmac_regs.h
--F:	drivers/dma/dw_dmac.c
-+F:	drivers/dma/dw/
- 
- SYNOPSYS DESIGNWARE MMC/SD/SDIO DRIVER
- M:	Seungwon Jeon <tgih.jun@samsung.com>
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index e992489..146a1d8 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -79,25 +79,7 @@ config INTEL_IOP_ADMA
- 	help
- 	  Enable support for the Intel(R) IOP Series RAID engines.
- 
--config DW_DMAC
--	tristate "Synopsys DesignWare AHB DMA support"
--	depends on GENERIC_HARDIRQS
--	select DMA_ENGINE
--	default y if CPU_AT32AP7000
--	help
--	  Support the Synopsys DesignWare AHB DMA controller.  This
--	  can be integrated in chips such as the Atmel AT32ap7000.
--
--config DW_DMAC_BIG_ENDIAN_IO
--	bool "Use big endian I/O register access"
--	default y if AVR32
--	depends on DW_DMAC
--	help
--	  Say yes here to use big endian I/O access when reading and writing
--	  to the DMA controller registers. This is needed on some platforms,
--	  like the Atmel AVR32 architecture.
--
--	  If unsure, use the default setting.
-+source "drivers/dma/dw/Kconfig"
- 
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
 diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index a2b0df5..ac44ca0 100644
+index ac44ca0..6e2a521 100644
 --- a/drivers/dma/Makefile
 +++ b/drivers/dma/Makefile
 @@ -15,7 +15,7 @@ obj-$(CONFIG_FSL_DMA) += fsldma.o
  obj-$(CONFIG_MPC512X_DMA) += mpc512x_dma.o
  obj-$(CONFIG_PPC_BESTCOMM) += bestcomm/
  obj-$(CONFIG_MV_XOR) += mv_xor.o
--obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-+obj-$(CONFIG_DW_DMAC) += dw/
+-obj-$(CONFIG_DW_DMAC) += dw/
++obj-$(CONFIG_DW_DMAC_CORE) += dw/
  obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
  obj-$(CONFIG_MX3_IPU) += ipu/
  obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
 diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
-new file mode 100644
-index 0000000..38a215a
---- /dev/null
+index 38a215a..efd9e02 100644
+--- a/drivers/dma/dw/Kconfig
 +++ b/drivers/dma/dw/Kconfig
-@@ -0,0 +1,23 @@
-+#
-+# DMA engine configuration for dw
-+#
+@@ -2,10 +2,14 @@
+ # DMA engine configuration for dw
+ #
+ 
+-config DW_DMAC
++config DW_DMAC_CORE
+ 	tristate "Synopsys DesignWare AHB DMA support"
+ 	depends on GENERIC_HARDIRQS
+ 	select DMA_ENGINE
 +
 +config DW_DMAC
-+	tristate "Synopsys DesignWare AHB DMA support"
-+	depends on GENERIC_HARDIRQS
-+	select DMA_ENGINE
-+	default y if CPU_AT32AP7000
-+	help
-+	  Support the Synopsys DesignWare AHB DMA controller. This
-+	  can be integrated in chips such as the Atmel AT32ap7000.
-+
-+config DW_DMAC_BIG_ENDIAN_IO
-+	bool "Use big endian I/O register access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes here to use big endian I/O access when reading and writing
-+	  to the DMA controller registers. This is needed on some platforms,
-+	  like the Atmel AVR32 architecture.
-+
-+	  If unsure, use the default setting.
++	tristate "Synopsys DesignWare AHB DMA platform driver"
++	select DW_DMAC_CORE
+ 	default y if CPU_AT32AP7000
+ 	help
+ 	  Support the Synopsys DesignWare AHB DMA controller. This
+@@ -14,7 +18,7 @@ config DW_DMAC
+ config DW_DMAC_BIG_ENDIAN_IO
+ 	bool "Use big endian I/O register access"
+ 	default y if AVR32
+-	depends on DW_DMAC
++	depends on DW_DMAC_CORE
+ 	help
+ 	  Say yes here to use big endian I/O access when reading and writing
+ 	  to the DMA controller registers. This is needed on some platforms,
 diff --git a/drivers/dma/dw/Makefile b/drivers/dma/dw/Makefile
-new file mode 100644
-index 0000000..dd8d993
---- /dev/null
+index dd8d993..47f3674 100644
+--- a/drivers/dma/dw/Makefile
 +++ b/drivers/dma/dw/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw/dw_dmac.c
-similarity index 99%
-rename from drivers/dma/dw_dmac.c
-rename to drivers/dma/dw/dw_dmac.c
-index 2b65ba6..15f3f4f 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw/dw_dmac.c
-@@ -28,8 +28,8 @@
- #include <linux/acpi.h>
- #include <linux/acpi_dma.h>
+@@ -1 +1,5 @@
+-obj-$(CONFIG_DW_DMAC) += dw_dmac.o
++obj-$(CONFIG_DW_DMAC_CORE)	+= dw_dmac_core.o
++dw_dmac_core-objs	:= core.o
++
++obj-$(CONFIG_DW_DMAC)		+= dw_dmac.o
++dw_dmac-objs		:= platform.o
+diff --git a/drivers/dma/dw/dw_dmac.c b/drivers/dma/dw/core.c
+similarity index 86%
+rename from drivers/dma/dw/dw_dmac.c
+rename to drivers/dma/dw/core.c
+index 15f3f4f..d89fc31 100644
+--- a/drivers/dma/dw/dw_dmac.c
++++ b/drivers/dma/dw/core.c
+@@ -3,6 +3,7 @@
+  *
+  * Copyright (C) 2007-2008 Atmel Corporation
+  * Copyright (C) 2010-2011 ST Microelectronics
++ * Copyright (C) 2013 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -19,17 +20,12 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+-#include <linux/of.h>
+-#include <linux/of_dma.h>
+ #include <linux/mm.h>
+ #include <linux/module.h>
+-#include <linux/platform_device.h>
+ #include <linux/slab.h>
+-#include <linux/acpi.h>
+-#include <linux/acpi_dma.h>
  
-+#include "../dmaengine.h"
- #include "dw_dmac_regs.h"
--#include "dmaengine.h"
+ #include "../dmaengine.h"
+-#include "dw_dmac_regs.h"
++#include "internal.h"
  
  /*
   * This supports the Synopsys "DesignWare AHB Central DMA Controller",
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw/dw_dmac_regs.h
-similarity index 100%
-rename from drivers/dma/dw_dmac_regs.h
-rename to drivers/dma/dw/dw_dmac_regs.h
+@@ -1225,99 +1221,6 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
+ 	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
+ }
+ 
+-/*----------------------------------------------------------------------*/
+-
+-struct dw_dma_of_filter_args {
+-	struct dw_dma *dw;
+-	unsigned int req;
+-	unsigned int src;
+-	unsigned int dst;
+-};
+-
+-static bool dw_dma_of_filter(struct dma_chan *chan, void *param)
+-{
+-	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+-	struct dw_dma_of_filter_args *fargs = param;
+-
+-	/* Ensure the device matches our channel */
+-        if (chan->device != &fargs->dw->dma)
+-                return false;
+-
+-	dwc->request_line = fargs->req;
+-	dwc->src_master	= fargs->src;
+-	dwc->dst_master	= fargs->dst;
+-
+-	return true;
+-}
+-
+-static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
+-					struct of_dma *ofdma)
+-{
+-	struct dw_dma *dw = ofdma->of_dma_data;
+-	struct dw_dma_of_filter_args fargs = {
+-		.dw = dw,
+-	};
+-	dma_cap_mask_t cap;
+-
+-	if (dma_spec->args_count != 3)
+-		return NULL;
+-
+-	fargs.req = dma_spec->args[0];
+-	fargs.src = dma_spec->args[1];
+-	fargs.dst = dma_spec->args[2];
+-
+-	if (WARN_ON(fargs.req >= DW_DMA_MAX_NR_REQUESTS ||
+-		    fargs.src >= dw->nr_masters ||
+-		    fargs.dst >= dw->nr_masters))
+-		return NULL;
+-
+-	dma_cap_zero(cap);
+-	dma_cap_set(DMA_SLAVE, cap);
+-
+-	/* TODO: there should be a simpler way to do this */
+-	return dma_request_channel(cap, dw_dma_of_filter, &fargs);
+-}
+-
+-#ifdef CONFIG_ACPI
+-static bool dw_dma_acpi_filter(struct dma_chan *chan, void *param)
+-{
+-	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+-	struct acpi_dma_spec *dma_spec = param;
+-
+-	if (chan->device->dev != dma_spec->dev ||
+-	    chan->chan_id != dma_spec->chan_id)
+-		return false;
+-
+-	dwc->request_line = dma_spec->slave_id;
+-	dwc->src_master = dwc_get_sms(NULL);
+-	dwc->dst_master = dwc_get_dms(NULL);
+-
+-	return true;
+-}
+-
+-static void dw_dma_acpi_controller_register(struct dw_dma *dw)
+-{
+-	struct device *dev = dw->dma.dev;
+-	struct acpi_dma_filter_info *info;
+-	int ret;
+-
+-	info = devm_kzalloc(dev, sizeof(*info), GFP_KERNEL);
+-	if (!info)
+-		return;
+-
+-	dma_cap_zero(info->dma_cap);
+-	dma_cap_set(DMA_SLAVE, info->dma_cap);
+-	info->filter_fn = dw_dma_acpi_filter;
+-
+-	ret = devm_acpi_dma_controller_register(dev, acpi_dma_simple_xlate,
+-						info);
+-	if (ret)
+-		dev_err(dev, "could not register acpi_dma_controller\n");
+-}
+-#else /* !CONFIG_ACPI */
+-static inline void dw_dma_acpi_controller_register(struct dw_dma *dw) {}
+-#endif /* !CONFIG_ACPI */
+-
+ /* --------------------- Cyclic DMA API extensions -------------------- */
+ 
+ /**
+@@ -1598,101 +1501,24 @@ static void dw_dma_off(struct dw_dma *dw)
+ 		dw->chan[i].initialized = false;
+ }
+ 
+-#ifdef CONFIG_OF
+-static struct dw_dma_platform_data *
+-dw_dma_parse_dt(struct platform_device *pdev)
+-{
+-	struct device_node *np = pdev->dev.of_node;
+-	struct dw_dma_platform_data *pdata;
+-	u32 tmp, arr[4];
+-
+-	if (!np) {
+-		dev_err(&pdev->dev, "Missing DT data\n");
+-		return NULL;
+-	}
+-
+-	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+-	if (!pdata)
+-		return NULL;
+-
+-	if (of_property_read_u32(np, "dma-channels", &pdata->nr_channels))
+-		return NULL;
+-
+-	if (of_property_read_bool(np, "is_private"))
+-		pdata->is_private = true;
+-
+-	if (!of_property_read_u32(np, "chan_allocation_order", &tmp))
+-		pdata->chan_allocation_order = (unsigned char)tmp;
+-
+-	if (!of_property_read_u32(np, "chan_priority", &tmp))
+-		pdata->chan_priority = tmp;
+-
+-	if (!of_property_read_u32(np, "block_size", &tmp))
+-		pdata->block_size = tmp;
+-
+-	if (!of_property_read_u32(np, "dma-masters", &tmp)) {
+-		if (tmp > 4)
+-			return NULL;
+-
+-		pdata->nr_masters = tmp;
+-	}
+-
+-	if (!of_property_read_u32_array(np, "data_width", arr,
+-				pdata->nr_masters))
+-		for (tmp = 0; tmp < pdata->nr_masters; tmp++)
+-			pdata->data_width[tmp] = arr[tmp];
+-
+-	return pdata;
+-}
+-#else
+-static inline struct dw_dma_platform_data *
+-dw_dma_parse_dt(struct platform_device *pdev)
+-{
+-	return NULL;
+-}
+-#endif
+-
+-static int dw_probe(struct platform_device *pdev)
++int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ {
+-	struct dw_dma_platform_data *pdata;
+-	struct resource		*io;
+ 	struct dw_dma		*dw;
+ 	size_t			size;
+-	void __iomem		*regs;
+ 	bool			autocfg;
+ 	unsigned int		dw_params;
+ 	unsigned int		nr_channels;
+ 	unsigned int		max_blk_size = 0;
+-	int			irq;
+ 	int			err;
+ 	int			i;
+ 
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0)
+-		return irq;
+-
+-	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	regs = devm_ioremap_resource(&pdev->dev, io);
+-	if (IS_ERR(regs))
+-		return PTR_ERR(regs);
+-
+-	/* Apply default dma_mask if needed */
+-	if (!pdev->dev.dma_mask) {
+-		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+-		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+-	}
+-
+-	dw_params = dma_read_byaddr(regs, DW_PARAMS);
++	dw_params = dma_read_byaddr(chip->regs, DW_PARAMS);
+ 	autocfg = dw_params >> DW_PARAMS_EN & 0x1;
+ 
+-	dev_dbg(&pdev->dev, "DW_PARAMS: 0x%08x\n", dw_params);
+-
+-	pdata = dev_get_platdata(&pdev->dev);
+-	if (!pdata)
+-		pdata = dw_dma_parse_dt(pdev);
++	dev_dbg(chip->dev, "DW_PARAMS: 0x%08x\n", dw_params);
+ 
+ 	if (!pdata && autocfg) {
+-		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++		pdata = devm_kzalloc(chip->dev, sizeof(*pdata), GFP_KERNEL);
+ 		if (!pdata)
+ 			return -ENOMEM;
+ 
+@@ -1709,16 +1535,17 @@ static int dw_probe(struct platform_device *pdev)
+ 		nr_channels = pdata->nr_channels;
+ 
+ 	size = sizeof(struct dw_dma) + nr_channels * sizeof(struct dw_dma_chan);
+-	dw = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
++	dw = devm_kzalloc(chip->dev, size, GFP_KERNEL);
+ 	if (!dw)
+ 		return -ENOMEM;
+ 
+-	dw->clk = devm_clk_get(&pdev->dev, "hclk");
++	dw->clk = devm_clk_get(chip->dev, "hclk");
+ 	if (IS_ERR(dw->clk))
+ 		return PTR_ERR(dw->clk);
+ 	clk_prepare_enable(dw->clk);
+ 
+-	dw->regs = regs;
++	dw->regs = chip->regs;
++	chip->dw = dw;
+ 
+ 	/* Get hardware configuration parameters */
+ 	if (autocfg) {
+@@ -1743,18 +1570,16 @@ static int dw_probe(struct platform_device *pdev)
+ 	/* Disable BLOCK interrupts as well */
+ 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 
+-	err = devm_request_irq(&pdev->dev, irq, dw_dma_interrupt, 0,
++	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt, 0,
+ 			       "dw_dmac", dw);
+ 	if (err)
+ 		return err;
+ 
+-	platform_set_drvdata(pdev, dw);
+-
+ 	/* Create a pool of consistent memory blocks for hardware descriptors */
+-	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", &pdev->dev,
++	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", chip->dev,
+ 					 sizeof(struct dw_desc), 4, 0);
+ 	if (!dw->desc_pool) {
+-		dev_err(&pdev->dev, "No memory for descriptors dma pool\n");
++		dev_err(chip->dev, "No memory for descriptors dma pool\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1795,12 +1620,12 @@ static int dw_probe(struct platform_device *pdev)
+ 		/* Hardware configuration */
+ 		if (autocfg) {
+ 			unsigned int dwc_params;
++			void __iomem *addr = chip->regs + r * sizeof(u32);
+ 
+-			dwc_params = dma_read_byaddr(regs + r * sizeof(u32),
+-						     DWC_PARAMS);
++			dwc_params = dma_read_byaddr(addr, DWC_PARAMS);
+ 
+-			dev_dbg(&pdev->dev, "DWC_PARAMS[%d]: 0x%08x\n", i,
+-					    dwc_params);
++			dev_dbg(chip->dev, "DWC_PARAMS[%d]: 0x%08x\n", i,
++					   dwc_params);
+ 
+ 			/* Decode maximum block size for given channel. The
+ 			 * stored 4 bit value represents blocks from 0x00 for 3
+@@ -1831,7 +1656,7 @@ static int dw_probe(struct platform_device *pdev)
+ 	dma_cap_set(DMA_SLAVE, dw->dma.cap_mask);
+ 	if (pdata->is_private)
+ 		dma_cap_set(DMA_PRIVATE, dw->dma.cap_mask);
+-	dw->dma.dev = &pdev->dev;
++	dw->dma.dev = chip->dev;
+ 	dw->dma.device_alloc_chan_resources = dwc_alloc_chan_resources;
+ 	dw->dma.device_free_chan_resources = dwc_free_chan_resources;
+ 
+@@ -1845,32 +1670,20 @@ static int dw_probe(struct platform_device *pdev)
+ 
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
+ 
+-	dev_info(&pdev->dev, "DesignWare DMA Controller, %d channels\n",
++	dev_info(chip->dev, "DesignWare DMA Controller, %d channels\n",
+ 		 nr_channels);
+ 
+ 	dma_async_device_register(&dw->dma);
+ 
+-	if (pdev->dev.of_node) {
+-		err = of_dma_controller_register(pdev->dev.of_node,
+-						 dw_dma_of_xlate, dw);
+-		if (err)
+-			dev_err(&pdev->dev,
+-				"could not register of_dma_controller\n");
+-	}
+-
+-	if (ACPI_HANDLE(&pdev->dev))
+-		dw_dma_acpi_controller_register(dw);
+-
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(dw_dma_probe);
+ 
+-static int dw_remove(struct platform_device *pdev)
++int dw_dma_remove(struct dw_dma_chip *chip)
+ {
+-	struct dw_dma		*dw = platform_get_drvdata(pdev);
++	struct dw_dma		*dw = chip->dw;
+ 	struct dw_dma_chan	*dwc, *_dwc;
+ 
+-	if (pdev->dev.of_node)
+-		of_dma_controller_free(pdev->dev.of_node);
+ 	dw_dma_off(dw);
+ 	dma_async_device_unregister(&dw->dma);
+ 
+@@ -1884,86 +1697,40 @@ static int dw_remove(struct platform_device *pdev)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(dw_dma_remove);
+ 
+-static void dw_shutdown(struct platform_device *pdev)
++void dw_dma_shutdown(struct dw_dma_chip *chip)
+ {
+-	struct dw_dma	*dw = platform_get_drvdata(pdev);
++	struct dw_dma *dw = chip->dw;
+ 
+ 	dw_dma_off(dw);
+ 	clk_disable_unprepare(dw->clk);
+ }
++EXPORT_SYMBOL_GPL(dw_dma_shutdown);
+ 
+-static int dw_suspend_noirq(struct device *dev)
++int dw_dma_suspend_noirq(struct dw_dma_chip *chip)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct dw_dma	*dw = platform_get_drvdata(pdev);
++	struct dw_dma *dw = chip->dw;
+ 
+ 	dw_dma_off(dw);
+ 	clk_disable_unprepare(dw->clk);
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(dw_dma_suspend_noirq);
+ 
+-static int dw_resume_noirq(struct device *dev)
++int dw_dma_resume_noirq(struct dw_dma_chip *chip)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct dw_dma	*dw = platform_get_drvdata(pdev);
++	struct dw_dma *dw = chip->dw;
+ 
+ 	clk_prepare_enable(dw->clk);
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
+ 
+ 	return 0;
+ }
+-
+-static const struct dev_pm_ops dw_dev_pm_ops = {
+-	.suspend_noirq = dw_suspend_noirq,
+-	.resume_noirq = dw_resume_noirq,
+-	.freeze_noirq = dw_suspend_noirq,
+-	.thaw_noirq = dw_resume_noirq,
+-	.restore_noirq = dw_resume_noirq,
+-	.poweroff_noirq = dw_suspend_noirq,
+-};
+-
+-#ifdef CONFIG_OF
+-static const struct of_device_id dw_dma_of_id_table[] = {
+-	{ .compatible = "snps,dma-spear1340" },
+-	{}
+-};
+-MODULE_DEVICE_TABLE(of, dw_dma_of_id_table);
+-#endif
+-
+-#ifdef CONFIG_ACPI
+-static const struct acpi_device_id dw_dma_acpi_id_table[] = {
+-	{ "INTL9C60", 0 },
+-	{ }
+-};
+-#endif
+-
+-static struct platform_driver dw_driver = {
+-	.probe		= dw_probe,
+-	.remove		= dw_remove,
+-	.shutdown	= dw_shutdown,
+-	.driver = {
+-		.name	= "dw_dmac",
+-		.pm	= &dw_dev_pm_ops,
+-		.of_match_table = of_match_ptr(dw_dma_of_id_table),
+-		.acpi_match_table = ACPI_PTR(dw_dma_acpi_id_table),
+-	},
+-};
+-
+-static int __init dw_init(void)
+-{
+-	return platform_driver_register(&dw_driver);
+-}
+-subsys_initcall(dw_init);
+-
+-static void __exit dw_exit(void)
+-{
+-	platform_driver_unregister(&dw_driver);
+-}
+-module_exit(dw_exit);
++EXPORT_SYMBOL_GPL(dw_dma_resume_noirq);
+ 
+ MODULE_LICENSE("GPL v2");
+-MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
++MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller core driver");
+ MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+ MODULE_AUTHOR("Viresh Kumar <viresh.linux@gmail.com>");
+diff --git a/drivers/dma/dw/internal.h b/drivers/dma/dw/internal.h
+new file mode 100644
+index 0000000..0d7dbbd
+--- /dev/null
++++ b/drivers/dma/dw/internal.h
+@@ -0,0 +1,50 @@
++/*
++ * Driver for the Synopsys DesignWare AHB DMA Controller
++ *
++ * Copyright (C) 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _DW_DMAC_INTERNAL_H
++#define _DW_DMAC_INTERNAL_H
++
++#include <linux/device.h>
++#include <linux/dw_dmac.h>
++
++#include "regs.h"
++
++/**
++ * struct dw_dma_chip - representation of DesignWare DMA controller hardware
++ * @dev:		struct device of the DMA controller
++ * @irq:		irq line
++ * @regs:		memory mapped I/O space
++ * @dw:			struct dw_dma that is filed by dw_dma_init()
++ */
++struct dw_dma_chip {
++	struct device	*dev;
++	int		irq;
++	void __iomem	*regs;
++	struct dw_dma	*dw;
++};
++
++/* Export to the platform drivers */
++int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata);
++int dw_dma_remove(struct dw_dma_chip *chip);
++void dw_dma_shutdown(struct dw_dma_chip *chip);
++
++#ifdef CONFIG_PM_SLEEP
++
++int dw_dma_suspend_noirq(struct dw_dma_chip *chip);
++int dw_dma_resume_noirq(struct dw_dma_chip *chip);
++
++#else /* !CONFIG_PM_SLEEP */
++
++#define dw_dma_suspend_noirq	NULL
++#define dw_dma_resume_noirq	NULL
++
++#endif /* !CONFIG_PM_SLEEP */
++
++#endif /* _DW_DMAC_INTERNAL_H */
+diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
+new file mode 100644
+index 0000000..febfe5d
+--- /dev/null
++++ b/drivers/dma/dw/platform.c
+@@ -0,0 +1,306 @@
++/*
++ * Platform driver for the Synopsys DesignWare DMA Controller
++ *
++ * Copyright (C) 2007-2008 Atmel Corporation
++ * Copyright (C) 2010-2011 ST Microelectronics
++ * Copyright (C) 2013 Intel Corporation
++ *
++ * Some parts of this driver are derived from the original dw_dmac.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/of.h>
++#include <linux/of_dma.h>
++#include <linux/acpi.h>
++#include <linux/acpi_dma.h>
++
++#include "internal.h"
++
++struct dw_dma_of_filter_args {
++	struct dw_dma *dw;
++	unsigned int req;
++	unsigned int src;
++	unsigned int dst;
++};
++
++static bool dw_dma_of_filter(struct dma_chan *chan, void *param)
++{
++	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
++	struct dw_dma_of_filter_args *fargs = param;
++
++	/* Ensure the device matches our channel */
++        if (chan->device != &fargs->dw->dma)
++                return false;
++
++	dwc->request_line = fargs->req;
++	dwc->src_master	= fargs->src;
++	dwc->dst_master	= fargs->dst;
++
++	return true;
++}
++
++static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
++					struct of_dma *ofdma)
++{
++	struct dw_dma *dw = ofdma->of_dma_data;
++	struct dw_dma_of_filter_args fargs = {
++		.dw = dw,
++	};
++	dma_cap_mask_t cap;
++
++	if (dma_spec->args_count != 3)
++		return NULL;
++
++	fargs.req = dma_spec->args[0];
++	fargs.src = dma_spec->args[1];
++	fargs.dst = dma_spec->args[2];
++
++	if (WARN_ON(fargs.req >= DW_DMA_MAX_NR_REQUESTS ||
++		    fargs.src >= dw->nr_masters ||
++		    fargs.dst >= dw->nr_masters))
++		return NULL;
++
++	dma_cap_zero(cap);
++	dma_cap_set(DMA_SLAVE, cap);
++
++	/* TODO: there should be a simpler way to do this */
++	return dma_request_channel(cap, dw_dma_of_filter, &fargs);
++}
++
++#ifdef CONFIG_ACPI
++static bool dw_dma_acpi_filter(struct dma_chan *chan, void *param)
++{
++	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
++	struct acpi_dma_spec *dma_spec = param;
++
++	if (chan->device->dev != dma_spec->dev ||
++	    chan->chan_id != dma_spec->chan_id)
++		return false;
++
++	dwc->request_line = dma_spec->slave_id;
++	dwc->src_master = dwc_get_sms(NULL);
++	dwc->dst_master = dwc_get_dms(NULL);
++
++	return true;
++}
++
++static void dw_dma_acpi_controller_register(struct dw_dma *dw)
++{
++	struct device *dev = dw->dma.dev;
++	struct acpi_dma_filter_info *info;
++	int ret;
++
++	info = devm_kzalloc(dev, sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return;
++
++	dma_cap_zero(info->dma_cap);
++	dma_cap_set(DMA_SLAVE, info->dma_cap);
++	info->filter_fn = dw_dma_acpi_filter;
++
++	ret = devm_acpi_dma_controller_register(dev, acpi_dma_simple_xlate,
++						info);
++	if (ret)
++		dev_err(dev, "could not register acpi_dma_controller\n");
++}
++#else /* !CONFIG_ACPI */
++static inline void dw_dma_acpi_controller_register(struct dw_dma *dw) {}
++#endif /* !CONFIG_ACPI */
++
++#ifdef CONFIG_OF
++static struct dw_dma_platform_data *
++dw_dma_parse_dt(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct dw_dma_platform_data *pdata;
++	u32 tmp, arr[4];
++
++	if (!np) {
++		dev_err(&pdev->dev, "Missing DT data\n");
++		return NULL;
++	}
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	if (of_property_read_u32(np, "dma-channels", &pdata->nr_channels))
++		return NULL;
++
++	if (of_property_read_bool(np, "is_private"))
++		pdata->is_private = true;
++
++	if (!of_property_read_u32(np, "chan_allocation_order", &tmp))
++		pdata->chan_allocation_order = (unsigned char)tmp;
++
++	if (!of_property_read_u32(np, "chan_priority", &tmp))
++		pdata->chan_priority = tmp;
++
++	if (!of_property_read_u32(np, "block_size", &tmp))
++		pdata->block_size = tmp;
++
++	if (!of_property_read_u32(np, "dma-masters", &tmp)) {
++		if (tmp > 4)
++			return NULL;
++
++		pdata->nr_masters = tmp;
++	}
++
++	if (!of_property_read_u32_array(np, "data_width", arr,
++				pdata->nr_masters))
++		for (tmp = 0; tmp < pdata->nr_masters; tmp++)
++			pdata->data_width[tmp] = arr[tmp];
++
++	return pdata;
++}
++#else
++static inline struct dw_dma_platform_data *
++dw_dma_parse_dt(struct platform_device *pdev)
++{
++	return NULL;
++}
++#endif
++
++static int dw_probe(struct platform_device *pdev)
++{
++	struct dw_dma_chip *chip;
++	struct device *dev = &pdev->dev;
++	struct resource *mem;
++	struct dw_dma_platform_data *pdata;
++	int err;
++
++	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->irq = platform_get_irq(pdev, 0);
++	if (chip->irq < 0)
++		return chip->irq;
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	chip->regs = devm_ioremap_resource(dev, mem);
++	if (IS_ERR(chip->regs))
++		return PTR_ERR(chip->regs);
++
++	/* Apply default dma_mask if needed */
++	if (!dev->dma_mask) {
++		dev->dma_mask = &dev->coherent_dma_mask;
++		dev->coherent_dma_mask = DMA_BIT_MASK(32);
++	}
++
++	pdata = dev_get_platdata(dev);
++	if (!pdata)
++		pdata = dw_dma_parse_dt(pdev);
++
++	chip->dev = dev;
++
++	err = dw_dma_probe(chip, pdata);
++	if (err)
++		return err;
++
++	platform_set_drvdata(pdev, chip);
++
++	if (pdev->dev.of_node) {
++		err = of_dma_controller_register(pdev->dev.of_node,
++						 dw_dma_of_xlate, chip->dw);
++		if (err)
++			dev_err(&pdev->dev,
++				"could not register of_dma_controller\n");
++	}
++
++	if (ACPI_HANDLE(pdev->dev))
++		dw_dma_acpi_controller_register(chip->dw);
++
++	return 0;
++}
++
++static int dw_remove(struct platform_device *pdev)
++{
++	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
++
++	if (pdev->dev.of_node)
++		of_dma_controller_free(pdev->dev.of_node);
++
++	return dw_dma_remove(chip);
++}
++
++static void dw_shutdown(struct platform_device *pdev)
++{
++	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
++
++	dw_dma_shutdown(chip);
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id dw_dma_of_id_table[] = {
++	{ .compatible = "snps,dma-spear1340" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, dw_dma_of_id_table);
++#endif
++
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id dw_dma_acpi_id_table[] = {
++	{ "INTL9C60", 0 },
++	{ }
++};
++#endif
++
++static int dw_suspend_noirq(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
++
++	return dw_dma_suspend_noirq(chip);
++}
++
++static int dw_resume_noirq(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
++
++	return dw_dma_resume_noirq(chip);
++}
++
++static const struct dev_pm_ops dw_dev_pm_ops = {
++	.suspend_noirq = dw_suspend_noirq,
++	.resume_noirq = dw_resume_noirq,
++	.freeze_noirq = dw_suspend_noirq,
++	.thaw_noirq = dw_resume_noirq,
++	.restore_noirq = dw_resume_noirq,
++	.poweroff_noirq = dw_suspend_noirq,
++};
++
++static struct platform_driver dw_driver = {
++	.probe		= dw_probe,
++	.remove		= dw_remove,
++	.shutdown	= dw_shutdown,
++	.driver = {
++		.name	= "dw_dmac",
++		.pm	= &dw_dev_pm_ops,
++		.of_match_table = of_match_ptr(dw_dma_of_id_table),
++		.acpi_match_table = ACPI_PTR(dw_dma_acpi_id_table),
++	},
++};
++
++static int __init dw_init(void)
++{
++	return platform_driver_register(&dw_driver);
++}
++subsys_initcall(dw_init);
++
++static void __exit dw_exit(void)
++{
++	platform_driver_unregister(&dw_driver);
++}
++module_exit(dw_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller platform driver");
+diff --git a/drivers/dma/dw/dw_dmac_regs.h b/drivers/dma/dw/regs.h
+similarity index 99%
+rename from drivers/dma/dw/dw_dmac_regs.h
+rename to drivers/dma/dw/regs.h
+index 9d41720..07c5a6e 100644
+--- a/drivers/dma/dw/dw_dmac_regs.h
++++ b/drivers/dma/dw/regs.h
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/interrupt.h>
+ #include <linux/dmaengine.h>
+ #include <linux/dw_dmac.h>
+ 
 -- 
 1.8.2.rc0.22.gb3600c3
 
