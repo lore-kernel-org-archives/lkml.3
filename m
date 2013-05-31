@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3EaILG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 04:11:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab3EaIKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 04:10:55 -0400
-Date: Fri, 31 May 2013 10:10:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130531081052.GA32491@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+	id S1753934Ab3EaIOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 04:14:54 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:47158 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3EaIOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 04:14:42 -0400
+Message-ID: <51A85BEE.4000009@monstr.eu>
+Date: Fri, 31 May 2013 10:14:38 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: Export of_irq_count for using in modules
+References: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com> <20130530201714.GE19834@game.jcrosoft.org>
+In-Reply-To: <20130530201714.GE19834@game.jcrosoft.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WUSGCNSSCTXIHIQWTIFL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 30-05-13 13:47:30, David Rientjes wrote:
-> On Thu, 30 May 2013, Michal Hocko wrote:
-> 
-> > > Completely disabling the oom killer for a memcg is problematic if
-> > > userspace is unable to address the condition itself, usually because it
-> > > is unresponsive. 
-> > 
-> > Isn't this a bug in the userspace oom handler? Why is it unresponsive? It
-> > shouldn't allocated any memory so nothing should prevent it from running (if
-> > other tasks are preempting it permanently then the priority of the handler
-> > should be increased).
-> > 
-> 
-> Unresponsiveness isn't necessarily only because of memory constraints, you 
-> may have your oom notifier in a parent cgroup that isn't oom. 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WUSGCNSSCTXIHIQWTIFL
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I have always discouraged people from running oom handler in the same
-memcg (or even in the same hierarchy).
+Hi Jean-Christophe,
 
-> If a process is stuck on mm->mmap_sem in the oom cgroup, though, the
-> oom notifier may not be able to scrape /proc/pid and attain necessary
-> information in making an oom kill decision.
+On 05/30/2013 10:17 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 15:49 Thu 30 May     , Michal Simek wrote:
+>> Export of_irq_count for modules.
+>=20
+> can you explain why do you need to call of_irq_count
 
-Yes, mmap_sem is tricky. Nothing in the proc code should take it for
-writing and charges are done with mmap_sem held for reading but that
-doesn't prevent from non-oom thread to try to get it for writing which
-would block also all future readers. We have also seen i_mutex being
-held during charge so you have to be careful about that one as well but
-I am not aware of other locks that could be a problem.
+I need to count number of irq written in the DTS node.
+It is not fixed size that's why I need to proper way how to
+find it out.
 
-The question is, do you really need to open any /proc/<pid>/ files which
-depend on mmap_sem (e.g. maps, smaps). /proc/<pid>/status should tell you
-about used memory. Or put it another way around. What kind of data you
-need for your OOM handler?
+I am using this loop.
+	count =3D of_irq_count(pdev->dev.of_node);
+	/* Alloc IRQ based on DTS to be sure that no other driver will use it */=
 
-I might be thinking about different use cases but user space OOM
-handlers I have seen so far had quite a good idea what is going on
-in the group and who to kill. So it was more a decision based on the
-workload and its semantic rather than based on the used memory (which
-is done quite sensibly with the in kernel handler already) or something
-that would trip over mmap_sem when trying to get information.
+	while (count--) {
+		tmp->irq =3D irq_of_parse_and_map(pdev->dev.of_node, count);
+		dev_info(&pdev->dev, "%d: Alloc irq: %d\n", count, tmp->irq);
+		ret =3D request_irq(tmp->irq, zynq_remoteproc_interrupt, 0,
+					dev_name(&pdev->dev), &pdev->dev);
+		if (ret) {
+			...
+		}
+	}
 
-> If the oom notifier is in the oom cgroup, it may not be able to       
-> successfully read the memcg "tasks" file to even determine the set of 
-> eligible processes.
+But of course if you think that this is incorrect to export it
+I can use what it is in of_irq_count body
+368 int of_irq_count(struct device_node *dev)
+369 {
+370         int nr =3D 0;
+371
+372         while (of_irq_to_resource(dev, nr, NULL))
+373                 nr++;
+374
+375         return nr;
+376 }
 
-It would have to use preallocated buffer and have mlocked all the memory
-that will be used during oom event.
+Because of_irq_to_resource is exported for modules.
+Or is there any better way how to loop over all interrupts in DT node?
 
-> There is also no guarantee that the userspace oom handler will have
-> the necessary memory to even re-enable the oom killer in the memcg
-> under oom which would allow the kernel to make forward progress.
+Thanks,
+Michal
 
-Why it wouldn't have enough memory to write to the file? Assuming that
-the oom handler has the file handle (for limit_in_bytes) open, it has
-mlocked all the necessary memory (code + buffers) then I do not see what
-would prevent it from writing it to limit_in_bytes.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-> We've used this for a few years as a complement to oom notifiers so that a 
-> process would have a grace period to deal with the oom condition itself 
-> before allowing the kernel to terminate a process and free memory.  We've 
-> simply had no alternative in the presence of kernel constraints that 
-> prevent it from being done in any other way.  We _want_ userspace to deal 
-> with the issue but when it cannot collect the necessary information (and 
-> we're not tracing every fork() that every process in a potentially oom 
-> memcg does) to deal with the condition, we want the kernel to step in 
-> instead of relying on an admin to login or a global oom condition.
-> 
-> If you'd like to debate this issue, I'd be more than happy to do so and 
-> show why this patch is absolutely necessary for inclusion, but I'd ask 
-> that you'd present the code from your userspace oom handler so I can 
-> understand how it works without needing such backup support.
 
-I usually do not write those things myself as I am supporting others so
-I do not have any code handy right now. But I can come up with a simple
-handler which implements your timeout based killer for peak workloads
-you have mentioned earlier. That one should be quite easy to do.
--- 
-Michal Hocko
-SUSE Labs
+
+------enig2WUSGCNSSCTXIHIQWTIFL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGoW+4ACgkQykllyylKDCE+WQCfRaCIjTDTNtlGJRaqw9CQvHeW
+RBEAnj7CELDQ+XLUZV+sqkEa04Ky6ndc
+=kFse
+-----END PGP SIGNATURE-----
+
+------enig2WUSGCNSSCTXIHIQWTIFL--
