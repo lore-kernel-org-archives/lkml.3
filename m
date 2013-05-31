@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3EaO3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:29:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37565 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab3EaO2v (ORCPT
+	id S1755178Ab3EaO3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:29:09 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:34021 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab3EaO25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:28:51 -0400
+	Fri, 31 May 2013 10:28:57 -0400
 From: Richard Genoud <richard.genoud@gmail.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 1/2] trivial: atmel_lcdfb: add missing error message
-Date: Fri, 31 May 2013 16:28:38 +0200
-Message-Id: <1370010519-18691-1-git-send-email-richard.genoud@gmail.com>
+Subject: [PATCH 2/2] atmel_lcdfb: blank the backlight on remove
+Date: Fri, 31 May 2013 16:28:39 +0200
+Message-Id: <1370010519-18691-2-git-send-email-richard.genoud@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370010519-18691-1-git-send-email-richard.genoud@gmail.com>
+References: <1370010519-18691-1-git-send-email-richard.genoud@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a too small framebuffer is given, the atmel_lcdfb_check_var
-silently fails.
-Adding an error message will save some head scratching.
+When removing atmel_lcdfb module, the backlight is unregistered but not
+blanked. (only for CONFIG_BACKLIGHT_ATMEL_LCDC case).
+This can result in the screen going full white depending on how the PWM
+is wired.
 
 Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 ---
- drivers/video/atmel_lcdfb.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/video/atmel_lcdfb.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index 540909d..6e6491f 100644
+index 6e6491f..e00318f 100644
 --- a/drivers/video/atmel_lcdfb.c
 +++ b/drivers/video/atmel_lcdfb.c
-@@ -461,8 +461,11 @@ static int atmel_lcdfb_check_var(struct fb_var_screeninfo *var,
- 	if (info->fix.smem_len) {
- 		unsigned int smem_len = (var->xres_virtual * var->yres_virtual
- 					 * ((var->bits_per_pixel + 7) / 8));
--		if (smem_len > info->fix.smem_len)
-+		if (smem_len > info->fix.smem_len) {
-+			dev_err(dev, "Frame buffer is too small (%u) for screen size (need at least %u)\n",
-+				info->fix.smem_len, smem_len);
- 			return -EINVAL;
-+		}
- 	}
+@@ -223,8 +223,13 @@ static void init_backlight(struct atmel_lcdfb_info *sinfo)
  
- 	/* Saturate vertical and horizontal timings at maximum values */
+ static void exit_backlight(struct atmel_lcdfb_info *sinfo)
+ {
+-	if (sinfo->backlight)
++	if (sinfo->backlight) {
++		if (sinfo->backlight->ops) {
++			sinfo->backlight->props.power = FB_BLANK_POWERDOWN;
++			sinfo->backlight->ops->update_status(sinfo->backlight);
++		}
+ 		backlight_device_unregister(sinfo->backlight);
++	}
+ }
+ 
+ #else
 -- 
 1.7.10.4
 
