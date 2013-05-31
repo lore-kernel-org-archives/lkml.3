@@ -1,85 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3EaLVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:21:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46143 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755228Ab3EaLVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:21:19 -0400
-Date: Fri, 31 May 2013 13:21:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130531112116.GC32491@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
- <20130531081052.GA32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+	id S1755300Ab3EaLW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:22:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56514 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab3EaLWW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 07:22:22 -0400
+Date: Fri, 31 May 2013 04:21:38 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-08e71542fd0f4a0e30b4e3794329d63ae891e0c0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        andi@firstfloor.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1364991979-3008-11-git-send-email-namhyung@kernel.org>
+References: <1364991979-3008-11-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf sort: Consolidate sort_entry__setup_elide()
+Git-Commit-ID: 08e71542fd0f4a0e30b4e3794329d63ae891e0c0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 31-05-13 03:22:59, David Rientjes wrote:
-> On Fri, 31 May 2013, Michal Hocko wrote:
-> 
-> > I have always discouraged people from running oom handler in the same
-> > memcg (or even in the same hierarchy).
-> > 
-> 
-> We allow users to control their own memcgs by chowning them, so they must 
-> be run in the same hierarchy if they want to run their own userspace oom 
-> handler.  There's nothing in the kernel that prevents that and the user 
-> has no other option but to run in a parent cgroup.
+Commit-ID:  08e71542fd0f4a0e30b4e3794329d63ae891e0c0
+Gitweb:     http://git.kernel.org/tip/08e71542fd0f4a0e30b4e3794329d63ae891e0c0
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 3 Apr 2013 21:26:19 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:23:54 +0300
 
-If the access to the oom_control file is controlled by the file
-permissions then the oom handler can live inside root cgroup. Why do you
-need "must be in the same hierarchy" requirement?
+perf sort: Consolidate sort_entry__setup_elide()
 
-> > Yes, mmap_sem is tricky. Nothing in the proc code should take it for
-> > writing and charges are done with mmap_sem held for reading but that
-> > doesn't prevent from non-oom thread to try to get it for writing which
-> > would block also all future readers. We have also seen i_mutex being
-> > held during charge so you have to be careful about that one as well but
-> > I am not aware of other locks that could be a problem.
-> > 
-> > The question is, do you really need to open any /proc/<pid>/ files which
-> > depend on mmap_sem (e.g. maps, smaps). /proc/<pid>/status should tell you
-> > about used memory. Or put it another way around. What kind of data you
-> > need for your OOM handler?
-> > 
-> 
-> It's too easy to simply do even a "ps ax" in an oom memcg and make that 
-> thread completely unresponsive because it allocates memory.
+The same code was duplicate to places, factor them out to common
+sort__setup_elide().
 
-Yes, but we are talking about oom handler and that one has to be really
-careful about what it does. So doing something that simply allocates is
-dangerous.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1364991979-3008-11-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-diff.c   |  4 +---
+ tools/perf/builtin-report.c | 20 +-------------------
+ tools/perf/builtin-top.c    |  4 +---
+ tools/perf/util/sort.c      | 45 +++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/sort.h      |  3 +--
+ 5 files changed, 47 insertions(+), 29 deletions(-)
 
-> > I might be thinking about different use cases but user space OOM
-> > handlers I have seen so far had quite a good idea what is going on
-> > in the group and who to kill.
-> 
-> Then perhaps I'm raising constraints that you've never worked with, I 
-> don't know.  We choose to have a priority-based approach that is inherited 
-> by children; this priority is kept in userspace and and the oom handler 
-> would naturally need to know the set of tasks in the oom memcg at the time 
-> of oom and their parent-child relationship.  These priorities are 
-> completely independent of memory usage.
-
-OK, but both reading tasks file and readdir should be doable without
-userspace (aka charged) allocations. Moreover if you run those oom
-handlers under the root cgroup then it should be even easier.
--- 
-Michal Hocko
-SUSE Labs
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 2d0462d..cabbea5 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -611,9 +611,7 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	setup_pager();
+ 
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", NULL);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", NULL);
++	sort__setup_elide(NULL);
+ 
+ 	return __cmd_diff();
+ }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 669405c..d45bf9b 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -937,25 +937,7 @@ repeat:
+ 		report.symbol_filter_str = argv[0];
+ 	}
+ 
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
+-		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
+-		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
+-		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
+-	} else {
+-		if (report.mem_mode) {
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
+-		}
+-		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
+-	}
++	sort__setup_elide(stdout);
+ 
+ 	ret = __cmd_report(&report);
+ 	if (ret == K_SWITCH_INPUT_DATA) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 67bdb9f..2eb272d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1200,9 +1200,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
++	sort__setup_elide(stdout);
+ 
+ 	/*
+ 	 * Avoid annotation data structures overhead when symbols aren't on the
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1dbf169..701ab1d 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1,5 +1,6 @@
+ #include "sort.h"
+ #include "hist.h"
++#include "symbol.h"
+ 
+ regex_t		parent_regex;
+ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+@@ -1009,8 +1010,9 @@ int setup_sorting(void)
+ 	return ret;
+ }
+ 
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp)
++static void sort_entry__setup_elide(struct sort_entry *self,
++				    struct strlist *list,
++				    const char *list_name, FILE *fp)
+ {
+ 	if (list && strlist__nr_entries(list) == 1) {
+ 		if (fp != NULL)
+@@ -1019,3 +1021,42 @@ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+ 		self->elide = true;
+ 	}
+ }
++
++void sort__setup_elide(FILE *output)
++{
++	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++				"dso", output);
++	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
++				"comm", output);
++	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
++				"symbol", output);
++
++	if (sort__mode == SORT_MODE__BRANCH) {
++		sort_entry__setup_elide(&sort_dso_from,
++					symbol_conf.dso_from_list,
++					"dso_from", output);
++		sort_entry__setup_elide(&sort_dso_to,
++					symbol_conf.dso_to_list,
++					"dso_to", output);
++		sort_entry__setup_elide(&sort_sym_from,
++					symbol_conf.sym_from_list,
++					"sym_from", output);
++		sort_entry__setup_elide(&sort_sym_to,
++					symbol_conf.sym_to_list,
++					"sym_to", output);
++	} else if (sort__mode == SORT_MODE__MEMORY) {
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"symbol_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"dso_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"mem", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"local_weight", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"tlb", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"snoop", output);
++	}
++
++}
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 0232d47..51f1b5a 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -181,7 +181,6 @@ extern struct list_head hist_entry__sort_list;
+ 
+ int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp);
++void sort__setup_elide(FILE *fp);
+ 
+ #endif	/* __PERF_SORT_H */
