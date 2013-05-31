@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab3EaSkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 14:40:19 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:32793 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab3EaSkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 14:40:08 -0400
-Message-ID: <51A8EE85.9030405@linaro.org>
-Date: Fri, 31 May 2013 11:40:05 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [RFC] clocksource: Add clocksource drivers menu.
-References: <1369994378-28163-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1369994378-28163-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757299Ab3EaSkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 14:40:45 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20199 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757097Ab3EaSjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 14:39:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,780,1363158000"; 
+   d="scan'208";a="249209191"
+Subject: [v4][PATCH 6/6] mm: vmscan: drain batch list during long operations
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
+        tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 31 May 2013 11:39:04 -0700
+References: <20130531183855.44DDF928@viggo.jf.intel.com>
+In-Reply-To: <20130531183855.44DDF928@viggo.jf.intel.com>
+Message-Id: <20130531183904.76C2B57D@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2013 02:59 AM, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> This patch adds "Clocksource drivers" menu to clocksource drivers.
-> The reason to add this is because, some of the clocksource Kconfig
-> options like *SHED_CLK ones are selectable and they appear at random
-> places in the device drivers menu.
-> These options can be more than one option for multiplatform case, so I
-> think it will be neat to get a menu to clocksource drivers itself.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Sigh. So I've done a poor job at being a maintainer[1], and sort of left 
-the barn door open here.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-I'd *really* like to avoid having a clocksource config menu. Looking at 
-the existing RTC menu as an example, there's just a ton of random 
-hardware names that the user has to try to figure out if it applies to 
-their system or not. For instance, on x86 I have to filter through 90% 
-of the RTC drivers that aren't ever even an option on any x86 hardware.
+This was a suggestion from Mel:
 
-It just turns into a needless config headache.
+	http://lkml.kernel.org/r/20120914085634.GM11157@csn.ul.ie
 
-And only just now did I notice that there are user-prompts in the 
-drivers/clocksource/Kconfig.
+Any pages we collect on 'batch_for_mapping_removal' will have
+their lock_page() held during the duration of their stay on the
+list.  If some other user is trying to get at them during this
+time, they might end up having to wait.
 
-I suspect the platform support options can safely select the proper 
-clocksource config options without requiring the user to configure it. 
-For the most part this is the case, even so folks still introduced some 
-unnecessary clocksource config options (unnecessary as they don't prompt 
-the user, default to y and depend on another config).
+This ensures that we drain the batch if we are about to perform a
+pageout() or congestion_wait(), either of which will take some
+time.  We expect this to help mitigate the worst of the latency
+increase that the batching could cause.
 
-It looks like only: CLKSRC_DBX500_PRCMU & 
-CLKSRC_DBX500_PRCMU_SCHED_CLOCK prompt the user right now.
+I added some statistics to the __remove_mapping_batch() code to
+track how large the lists are that we pass in to it.  With this
+patch, the average list length drops about 10% (from about 4.1 to
+3.8).  The workload here was a make -j4 kernel compile on a VM
+with 200MB of RAM.
 
-Can you explain why its necessary the user has to be prompted here?
+I've still got the statistics patch around if anyone is
+interested.
 
-I know the situation isn't your fault, and you're just trying to clean 
-things up here. However I'd much prefer removing the user-prompt and 
-trying to remove unnecessary configs over creating a new config menu. 
-And if there must be a user-selected config, I'd much rather it be a 
-platform config option rather then some generic-seeming driver config.
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-thanks
--john
+ linux.git-davehans/mm/vmscan.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-[1] I'm no good at flames. Linus does a much better job covering this topic:
-     http://lkml.indiana.edu/hypermail/linux/kernel/1304.3/02435.html
+diff -puN mm/vmscan.c~drain-batch-list-during-long-operations mm/vmscan.c
+--- linux.git/mm/vmscan.c~drain-batch-list-during-long-operations	2013-05-30 16:07:51.962138013 -0700
++++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:51.966138189 -0700
+@@ -1003,6 +1003,16 @@ static unsigned long shrink_page_list(st
+ 			if (!sc->may_writepage)
+ 				goto keep_locked;
+ 
++			/*
++			 * We hold a bunch of page locks on the batch.
++			 * pageout() can take a while, so drain the
++			 * batch before we perform pageout.
++			 */
++			nr_reclaimed +=
++		               __remove_mapping_batch(&batch_for_mapping_rm,
++		                                      &ret_pages,
++		                                      &free_pages);
++
+ 			/* Page is dirty, try to write it out here */
+ 			switch (pageout(page, mapping, sc)) {
+ 			case PAGE_KEEP:
+_
