@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab3EaPUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 11:20:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49729 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756181Ab3EaPU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 11:20:27 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v9] ARM: dts: omap4-panda: Update the LED support for the panda DTS
-Date: Fri, 31 May 2013 10:19:51 -0500
-Message-ID: <1370013591-25957-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756210Ab3EaPXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 11:23:42 -0400
+Received: from mo5.mail-out.ovh.net ([178.32.228.5]:35404 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab3EaPXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 11:23:35 -0400
+Date: Fri, 31 May 2013 17:19:26 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 2/2] atmel_lcdfb: blank the backlight on remove
+Message-ID: <20130531151926.GR19468@game.jcrosoft.org>
+References: <1370010519-18691-1-git-send-email-richard.genoud@gmail.com>
+ <1370010519-18691-2-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370010519-18691-2-git-send-email-richard.genoud@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13876716353891249061
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-are different.
+On 16:28 Fri 31 May     , Richard Genoud wrote:
+> When removing atmel_lcdfb module, the backlight is unregistered but not
+> blanked. (only for CONFIG_BACKLIGHT_ATMEL_LCDC case).
+> This can result in the screen going full white depending on how the PWM
+> is wired.
+> 
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/video/atmel_lcdfb.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+> index 6e6491f..e00318f 100644
+> --- a/drivers/video/atmel_lcdfb.c
+> +++ b/drivers/video/atmel_lcdfb.c
+> @@ -223,8 +223,13 @@ static void init_backlight(struct atmel_lcdfb_info *sinfo)
+>  
+>  static void exit_backlight(struct atmel_lcdfb_info *sinfo)
+>  {
+> -	if (sinfo->backlight)
+> +	if (sinfo->backlight) {
+if (!sinfo->backlight)
+	return;
 
-A1-A3 = gpio_wk7
-ES = gpio_110
+	other look ok 
 
-There is no change to LED D2
+if you want ot hte next RC you have 3h to send a v2 before I work off for few
+days
 
-Abstract away the pinmux and the LED definitions for the two boards into
-the respective DTS files.
-
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
-v9 - Removed comments for mux config - https://patchwork.kernel.org/patch/2644391/
-v8 - Rebase to latest and use pinctrl macros - https://patchwork.kernel.org/patch/2629351/
-v7 - Update headline to add spaces - https://patchwork.kernel.org/patch/2583661/
-v6 - Review comments updated - https://patchwork.kernel.org/patch/2582771/
-v5 - Provide pincrtl phandle to the gpio-led driver - https://patchwork.kernel.org/patch/2573981/
- arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
- arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index d5d144a..800fa4e 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -16,8 +16,13 @@
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
- 
--	leds {
-+	leds: leds {
- 		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <
-+			&led_wkgpio_pins
-+		>;
-+
- 		heartbeat {
- 			label = "pandaboard::status1";
- 			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-@@ -157,6 +162,15 @@
- 	};
- };
- 
-+&omap4_pmx_wkup {
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk7 */
-+			0x1c (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk8 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index 5cfdf19..0a7812f 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -34,3 +34,31 @@
- 		0x5e (PIN_INPUT | MUX_MODE0)		/* hdmi_sda.hdmi_sda */
- 		>;
- };
-+
-+&omap4_pmx_core {
-+	led_gpio_pins: gpio_led_pmx {
-+		pinctrl-single,pins = <
-+			0xb6 (PIN_OUTPUT | MUX_MODE3)	/* gpio_110 */
-+		>;
-+	};
-+};
-+
-+&led_wkgpio_pins {
-+	pinctrl-single,pins = <
-+		0x1c (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk8 */
-+	>;
-+};
-+
-+&leds {
-+	pinctrl-0 = <
-+		&led_gpio_pins
-+		&led_wkgpio_pins
-+	>;
-+
-+	heartbeat {
-+		gpios = <&gpio4 14 0>;
-+	};
-+	mmc {
-+		gpios = <&gpio1 8 0>;
-+	};
-+};
--- 
-1.7.5.4
-
+Best Regards,
+J.
