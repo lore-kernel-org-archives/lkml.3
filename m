@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab3EaGJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:09:41 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:51400 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab3EaGIk (ORCPT
+	id S1752622Ab3EaGK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:10:28 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:37759 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab3EaGKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:08:40 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH v2 2/5] phy: Add Vitesse 8211 phy ID
-Date: Fri, 31 May 2013 08:08:24 +0200
-Message-Id: <804de6a875a407fb0379a437f83915e7158f2f2a.1369980470.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
-References: <cover.1369980470.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1369980470.git.michal.simek@xilinx.com>
-References: <cover.1369980470.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-1692-1369980515-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 31 May 2013 02:10:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <tip-757885e94a22bcc82beb9b1445c95218cb20ceab@git.kernel.org>
+References: <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+	<tip-757885e94a22bcc82beb9b1445c95218cb20ceab@git.kernel.org>
+Date: Thu, 30 May 2013 23:10:23 -0700
+X-Google-Sender-Auth: _w-ohNIvhzFr9IoTA12xJ0doREc
+Message-ID: <CAE9FiQWJbM=4WOzTfrAbNLgatkH_TXavK8vp1ZXHjw=bs-Obvg@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86, microcode, amd: Early microcode patch
+ loading support for AMD
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, Jacob Shin <jacob.shin@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Thu, May 30, 2013 at 8:31 PM, tip-bot for Jacob Shin
+<tipbot@zytor.com> wrote:
+> Commit-ID:  757885e94a22bcc82beb9b1445c95218cb20ceab
+> Gitweb:     http://git.kernel.org/tip/757885e94a22bcc82beb9b1445c95218cb20ceab
+> Author:     Jacob Shin <jacob.shin@amd.com>
+> AuthorDate: Thu, 30 May 2013 14:09:19 -0500
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Thu, 30 May 2013 20:19:25 -0700
+>
+> x86, microcode, amd: Early microcode patch loading support for AMD
+>
+> Add early microcode patch loading support for AMD.
+>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> Link: http://lkml.kernel.org/r/1369940959-2077-5-git-send-email-jacob.shin@amd.com
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  Documentation/x86/early-microcode.txt  |  11 +-
+>  arch/x86/Kconfig                       |  14 ++-
+>  arch/x86/include/asm/microcode_amd.h   |  14 +++
+>  arch/x86/kernel/Makefile               |   1 +
+>  arch/x86/kernel/microcode_amd.c        |  22 ++++
+>  arch/x86/kernel/microcode_amd_early.c  | 222 +++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/microcode_core_early.c |  43 ++++++-
+>  7 files changed, 310 insertions(+), 17 deletions(-)
+>
 
---=_mimegpg-monstr-desktop-1692-1369980515-0001
-
-Phy is compatible with Vitesse 8221.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Changes in v2: None
-
- drivers/net/phy/vitesse.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
-index d6e988f..69b482b 100644
---- a/drivers/net/phy/vitesse.c
-+++ b/drivers/net/phy/vitesse.c
-@@ -56,6 +56,7 @@
-
- #define PHY_ID_VSC8244			0x000fc6c0
- #define PHY_ID_VSC8221			0x000fc550
-+#define PHY_ID_VSC8211			0x000fc4b0
-
- MODULE_DESCRIPTION("Vitesse PHY driver");
- MODULE_AUTHOR("Kriston Carson");
-@@ -175,6 +176,19 @@ static struct phy_driver vsc82xx_driver[] = {
- 	.ack_interrupt	= &vsc824x_ack_interrupt,
- 	.config_intr	= &vsc82xx_config_intr,
- 	.driver		= { .owner = THIS_MODULE,},
-+}, {
-+	/* Vitesse 8211 */
-+	.phy_id		= PHY_ID_VSC8211,
-+	.phy_id_mask	= 0x000ffff0,
-+	.name		= "Vitesse VSC8211",
-+	.features	= PHY_GBIT_FEATURES,
-+	.flags		= PHY_HAS_INTERRUPT,
-+	.config_init	= &vsc8221_config_init,
-+	.config_aneg	= &genphy_config_aneg,
-+	.read_status	= &genphy_read_status,
-+	.ack_interrupt	= &vsc824x_ack_interrupt,
-+	.config_intr	= &vsc82xx_config_intr,
-+	.driver		= { .owner = THIS_MODULE,},
- } };
-
- static int __init vsc82xx_init(void)
-@@ -195,6 +209,7 @@ module_exit(vsc82xx_exit);
- static struct mdio_device_id __maybe_unused vitesse_tbl[] = {
- 	{ PHY_ID_VSC8244, 0x000fffc0 },
- 	{ PHY_ID_VSC8221, 0x000ffff0 },
-+	{ PHY_ID_VSC8211, 0x000ffff0 },
- 	{ }
- };
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-1692-1369980515-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGoPmMACgkQykllyylKDCF1dQCdGvXQs4SIdzaVSz1XS7LEJcyk
-OPcAn04Jylzt209h9d+V5TwhhE2Dro9+
-=eTR7
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-1692-1369980515-0001--
+WARNING: arch/x86/kernel/built-in.o(.cpuinit.text+0x7115): Section
+mismatch in reference from the function load_ucode_amd_ap() to the
+function .init.text:find_ucode_in_initrd()
+The function __cpuinit load_ucode_amd_ap() references
+a function __init find_ucode_in_initrd().
+If find_ucode_in_initrd is only used by load_ucode_amd_ap then
+annotate find_ucode_in_initrd with a matching annotation.
