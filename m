@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab3EaXDK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:03:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41134 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab3EaXDB (ORCPT
+	id S1757540Ab3EaXDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:03:20 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46553 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757360Ab3EaXDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:03:01 -0400
-Date: Fri, 31 May 2013 16:02:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] sys/reboot: boolize C_A_D
-Message-Id: <20130531160259.553761ddeb6095d22e8cea0d@linux-foundation.org>
-In-Reply-To: <1369900686-5936-3-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	<1369900686-5936-3-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Fri, 31 May 2013 19:03:04 -0400
+Message-ID: <1370041594.6949.155.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target fixes for v3.10-rc4
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>,
+        Roland Dreier <roland@kernel.org>
+Date: Fri, 31 May 2013 16:06:34 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 15:58:05 +0800 liguang <lig.fnst@cn.fujitsu.com> wrote:
+Hello Linus,
 
-> --- a/include/linux/reboot.h
-> +++ b/include/linux/reboot.h
-> @@ -35,7 +35,7 @@ extern void kernel_restart(char *cmd);
->  extern void kernel_halt(void);
->  extern void kernel_power_off(void);
->  
-> -extern int C_A_D; /* for sysctl */
-> +extern bool C_A_D; /* for sysctl */
->  void ctrl_alt_del(void);
+Here is the current set of target-pending fixes for v3.10-rc4 code.
 
-This means that the pointer in kernel/sysctl.c:kern_table.data now
-points at a bool but is declared to have size sizeof(int).
+Please go ahead and pull from:
 
-That happens to work with current gcc verions, but there's no rule
-which states that sizeof(bool) must equal sizeof(int).
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-And I'm not sure that changing kern_table to use sizeof(bool) is really
-worth all the bother.
+The highlights include:
+
+  - Re-instate sess->wait_list in target_wait_for_sess_cmds() for active
+    I/O shutdown handling in fabrics using se_cmd->cmd_kref
+  - Make ib_srpt call target_sess_cmd_list_set_waiting() during session shutdown
+  - Fix FILEIO off-by-one READ_CAPACITY bug for !S_ISBLK export
+  - Fix iscsi-target login error heap buffer overflow (Kees)
+  - Fix iscsi-target active I/O shutdown handling regression in v3.10-rc1
+
+A big thanks to Kees Cook for fixing a long standing login error buffer
+overflow bug.
+
+All patches are CC'ed to stable with the exception of the v3.10-rc1
+specific regression + other minor target cleanup.
+
+Thank you,
+
+--nab
+
+Joern Engel (1):
+  target: Remove unused wait_for_tasks bit in target_wait_for_sess_cmds
+
+Kees Cook (1):
+  iscsi-target: fix heap buffer overflow on error
+
+Nicholas Bellinger (5):
+  target: Re-instate sess_wait_list for target_wait_for_sess_cmds
+  ib_srpt: Call target_sess_cmd_list_set_waiting during
+    shutdown_session
+  target/file: Fix off-by-one READ_CAPACITY bug for !S_ISBLK export
+  target: Propigate up ->cmd_kref put return via
+    transport_generic_free_cmd
+  iscsi-target: Fix iscsit_free_cmd() se_cmd->cmd_kref shutdown
+    handling
+
+ drivers/infiniband/ulp/srpt/ib_srpt.c          |   34 ++++++++---
+ drivers/infiniband/ulp/srpt/ib_srpt.h          |    1 +
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c             |    2 +-
+ drivers/target/iscsi/iscsi_target.c            |   12 ++--
+ drivers/target/iscsi/iscsi_target_erl2.c       |   12 ++--
+ drivers/target/iscsi/iscsi_target_parameters.c |    8 +--
+ drivers/target/iscsi/iscsi_target_parameters.h |    4 +-
+ drivers/target/iscsi/iscsi_target_util.c       |   50 ++++++++++++----
+ drivers/target/iscsi/iscsi_target_util.h       |    2 +-
+ drivers/target/target_core_file.c              |   11 ++--
+ drivers/target/target_core_transport.c         |   74 +++++++++++-------------
+ include/target/target_core_base.h              |    1 +
+ include/target/target_core_fabric.h            |    4 +-
+ 13 files changed, 126 insertions(+), 89 deletions(-)
+
+-- 
+1.7.2.5
+
