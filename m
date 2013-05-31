@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3EaGpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:45:22 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:41947 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab3EaGpL (ORCPT
+	id S1753275Ab3EaGr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:47:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46702 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab3EaGrt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:45:11 -0400
+	Fri, 31 May 2013 02:47:49 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "zonque@gmail.com" <zonque@gmail.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/2] rtc: omap: add option to indicate wakeup support
+ through DT
+Thread-Topic: [PATCH 1/2] rtc: omap: add option to indicate wakeup support
+ through DT
+Thread-Index: AQHOXch/BNPfWUFEYEK7eB5cu8HcGZkeUv0AgACGb6A=
+Date: Fri, 31 May 2013 06:46:42 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC1E168@DBDE04.ent.ti.com>
+References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com>
+ <1369982005-8572-2-git-send-email-gururaja.hebbar@ti.com>
+ <CA+V-a8vAM_4qC20Fpipu3tROs65dERoFgV-ypyJh336rir-0EQ@mail.gmail.com>
+In-Reply-To: <CA+V-a8vAM_4qC20Fpipu3tROs65dERoFgV-ypyJh336rir-0EQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Fri, 31 May 2013 12:15:10 +0530
-Message-ID: <CAK9yfHyZH3DSg2ZLbPN2bjQppWZSMR+2hQE+OU76eqSJoWAWGA@mail.gmail.com>
-Subject: Regression introduced by commit "lib/bitmap.c: speed up bitmap_find_free_region"
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, chanho.min@lge.com,
-        Kamil Debski <k.debski@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Arun Kumar K <arun.kk@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 31, 2013 at 12:14:44, Prabhakar Lad wrote:
+> Hi Gururaja,
+> 
+> Thanks for the patch.
+> 
+> On Fri, May 31, 2013 at 12:03 PM, Hebbar Gururaja
+> <gururaja.hebbar@ti.com> wrote:
+> > Even though RTC-IP is wakeup capable, Not all Boards support it.
+> >
+> > For example
+> > The rtc alarm wakeup is available in rtc-ip since omap1 days but alarm
+> > was not wired properly in previous ompa1 boards.
+> >
+> [snip]
+> >
+> > +Optional properties:
+> > +- ti,wakeup_capable: Inform the rtc driver that this module is wake-up
+> For devicetree properties '-' is preferred over '_'.
 
-While testing MFC decoder on Exynos machines, I encountered some
-memory allocation errors due to failure of dma_alloc_coherent().
-File: drivers/media/platform/s5p-mfc/s5p_mfc_ctrl.c Line: 38.
+Thanks for the review. I will make the correction. But will wait for some 
+more time (so others can review) and then send V2
 
-Git bisect pointed me to the following commit as the first bad commit
-(linux-next tree of 20130531):
+> 
+> Regards,
+> --Prabhakar Lad
+> 
 
-commit 3d5272d9b289cd0930b2ea9984406d757a72f4dd
-Author: Chanho Min <chanho.min@lge.com>
-Date:   Thu May 23 10:37:28 2013 +1000
-    lib/bitmap.c: speed up bitmap_find_free_region
 
-Reverting this (and the commit 197e1cf7
-("ib-bitmapc-speed-up-bitmap_find_free_region-fix") ) fixes this
-issue.
-
-Looks like some regression has been introduced by the above patch?
-
----
-With warm regards,
-Sachin
+Regards, 
+Gururaja
