@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab3EaLap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:30:45 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:13759 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755710Ab3EaLam convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:30:42 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 31 May 2013 19:30:38 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5d7+dtduvJQq2bSgyQsgXTePIUogAAk0Lg
-Message-ID: <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
- <20130531084638.GB4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
- <20130531111305.GI4928@mudshark.cambridge.arm.com>
-In-Reply-To: <20130531111305.GI4928@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755821Ab3EaLa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:30:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56654 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab3EaLay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 07:30:54 -0400
+Date: Fri, 31 May 2013 04:30:37 -0700
+From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
+Message-ID: <tip-b3539d214f6000217aae97b5ae32df5b03faf850@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
+        jolsa@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
+        jolsa@redhat.com
+In-Reply-To: <20130426173320.GA7029@us.ibm.com>
+References: <20130426173320.GA7029@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests: Fix compile errors in bp_signal files
+Git-Commit-ID: b3539d214f6000217aae97b5ae32df5b03faf850
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Commit-ID:  b3539d214f6000217aae97b5ae32df5b03faf850
+Gitweb:     http://git.kernel.org/tip/b3539d214f6000217aae97b5ae32df5b03faf850
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Fri, 26 Apr 2013 10:17:56 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 28 May 2013 16:23:57 +0300
 
-I see,
-I will make one more test .
+perf tests: Fix compile errors in bp_signal files
 
-Thanks for your clarification .
+When building on powerpc,  we get compile errors in bp_signal.c and
+bp_signal_overflow.c due to __u64 and '%llx'.
 
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: Friday, May 31, 2013 7:13 PM
-To: Wang, Yalin
-Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: A bug about system call on ARM
+Powerpc, needs __SANE_USERSPACE_TYPES__ to be defined so we pick up
+<asm-generic/int-ll64.h> and define __u64 as unsigned long long.
 
-On Fri, May 31, 2013 at 12:02:49PM +0100, Wang, Yalin wrote:
-> Hi  Will,
-> 
-> I have merge your code ,
-> But there is a different ,
-> 
-> +	
-> +	ct_user_exit
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20130426173320.GA7029@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/bp_signal.c          | 6 ++++++
+ tools/perf/tests/bp_signal_overflow.c | 6 ++++++
+ 2 files changed, 12 insertions(+)
 
-I thought you didn't have ct_user_exit? In which case, just delete this line.
-
-> +#ifdef CONFIG_ALIGNMENT_TRAP
-> +	ldr	ip, __cr_alignment
-> +	ldr	ip, [ip]
-> +	mcr	p15, 0, ip, c1, c0		@ update control register
-> +#endif
-> 
-> +	enable_irq
-> +	get_thread_info tsk
-
-Hard to tell without context. You can take a look at my git tree if you like (I fixed it up based on Nico's comment):
-
-  https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=misc-patches
-
-Will
+diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
+index 68daa28..aba0954 100644
+--- a/tools/perf/tests/bp_signal.c
++++ b/tools/perf/tests/bp_signal.c
+@@ -4,6 +4,12 @@
+  * (git://github.com/deater/perf_event_tests)
+  */
+ 
++/*
++ * Powerpc needs __SANE_USERSPACE_TYPES__ before <linux/types.h> to select
++ * 'int-ll64.h' and avoid compile warnings when printing __u64 with %llu.
++ */
++#define __SANE_USERSPACE_TYPES__
++
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
+diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+index fe7ed28..44ac821 100644
+--- a/tools/perf/tests/bp_signal_overflow.c
++++ b/tools/perf/tests/bp_signal_overflow.c
+@@ -3,6 +3,12 @@
+  * perf_event_tests (git://github.com/deater/perf_event_tests)
+  */
+ 
++/*
++ * Powerpc needs __SANE_USERSPACE_TYPES__ before <linux/types.h> to select
++ * 'int-ll64.h' and avoid compile warnings when printing __u64 with %llu.
++ */
++#define __SANE_USERSPACE_TYPES__
++
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
