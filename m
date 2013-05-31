@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3EaNJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:09:14 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:48252 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab3EaNJK (ORCPT
+	id S1752431Ab3EaNOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:14:03 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:49578 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab3EaNNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:09:10 -0400
-Message-ID: <51A8A0ED.8090006@monstr.eu>
-Date: Fri, 31 May 2013 15:09:01 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 31 May 2013 09:13:55 -0400
+Message-ID: <51A8A215.2030706@cogentembedded.com>
+Date: Fri, 31 May 2013 17:13:57 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Timur Tabi <timur@tabi.org>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 1/8] video: xilinxfb: Fix OF probing on little-endian
- systems
-References: <cover.1370004925.git.michal.simek@xilinx.com> <0a546c3de84c4650d019274debef0ded9007b36f.1370004925.git.michal.simek@xilinx.com> <51A8A016.3000306@tabi.org>
-In-Reply-To: <51A8A016.3000306@tabi.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2COALSFKQSHUSOCLLVCQF"
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: Timur Tabi <timur.tabi@calxeda.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
+ Calxeda controller
+References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com> <51A7646B.6080203@cogentembedded.com> <51A848F1.3040301@ladisch.de>
+In-Reply-To: <51A848F1.3040301@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2COALSFKQSHUSOCLLVCQF
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-On 05/31/2013 03:05 PM, Timur Tabi wrote:
-> On 05/31/2013 07:55 AM, Michal Simek wrote:
->> -	p =3D (u32 *)of_get_property(op->dev.of_node, "xlnx,dcr-splb-slave-i=
-f", NULL);
->> -	tft_access =3D p ? *p : 0;
->> +	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
->> +			     &tft_access);
->=20
-> This is okay, but just FYI, you could instead have just used be32_to_cp=
-up().
+On 31-05-2013 10:53, Clemens Ladisch wrote:
 
-yep. I was there in v1 but then Soren suggested to use of_property_read_u=
-32
-http://lkml.org/lkml/2013/5/29/365
+>>>> +    const unsigned long timing[] = { 5, 100, 500};
 
-Thanks,
-Michal
+>>> You'll save space and time if you also make this array "static",
+>>> otherwise the compiler will build the array every time this function is
+>>> called.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+>> No, *const* specifier is enough to not build this array every time. It will be put into the .const section.
 
+> gcc disagrees:
 
+> $ cat const_static.c
+> int f(int x) {
+> 	const unsigned long timing[] = { 5, 100, 500};
+> 	static const unsigned long timing2[] = { 5, 100, 500};
+> 	return timing[x] + timing2[x];
+> }
+> $ gcc -Os -S const_static.c
+> $ cat const_static.s
+	...
+> timing2.0:
+>          .long   5
+>          .long   100
+>          .long   500
+> 	...
+>          movl    8(%ebp), %edx
+>          movl    $5, -16(%ebp)
+>          movl    $100, -12(%ebp)
+>          movl    $500, -8(%ebp)
+>          movl    timing2.0(,%edx,4), %eax
+>          addl    -16(%ebp,%edx,4), %eax
 
-------enig2COALSFKQSHUSOCLLVCQF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+    Hm, I remember I was convinced by somebody just *const* was enough 
+for the data to be put to .const section. Don't remember if he gave an 
+object code example... Well, it means that person was wrong. Mark, we 
+then need *static* as well...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> Regards,
+> Clemens
 
-iEYEARECAAYFAlGooO0ACgkQykllyylKDCFm6QCfcErRgHArTC4UtNG0FXRvG0eu
-tjoAnjN4rqVV65w6mQvRKiC0wJs3csAT
-=sghZ
------END PGP SIGNATURE-----
+WBR, Sergei
 
-------enig2COALSFKQSHUSOCLLVCQF--
