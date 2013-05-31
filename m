@@ -1,247 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3EaOVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 10:21:16 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:59961 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3EaOVF (ORCPT
+	id S1753265Ab3EaOVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 10:21:43 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:58762 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab3EaOVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 10:21:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369332423-4400-1-git-send-email-ahh@google.com>
-References: <1369332423-4400-1-git-send-email-ahh@google.com>
-Date: Fri, 31 May 2013 16:21:04 +0200
-Message-ID: <CABPqkBT6Hsq9ttSAP_c7R_GOEOCECu3Di_gjwvveFVrfVRTP+Q@mail.gmail.com>
-Subject: Re: [PATCH] perf: reduce stack usage of schedule_events
-From: Stephane Eranian <eranian@google.com>
-To: Andrew Hunter <ahh@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 May 2013 10:21:35 -0400
+Date: Fri, 31 May 2013 16:21:27 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+Message-ID: <20130531162127.6d512233@holzheu>
+In-Reply-To: <20130530203847.GB5968@redhat.com>
+References: <20130524143644.GD18218@redhat.com>
+	<20130524170626.2ac06efe@holzheu>
+	<20130524152849.GF18218@redhat.com>
+	<87mwrkatgu.fsf@xmission.com>
+	<51A006CF.90105@gmail.com>
+	<87k3mnahkf.fsf@xmission.com>
+	<51A076FE.3060604@gmail.com>
+	<20130525145217.0549138a@holzheu>
+	<20130528135500.GC7088@redhat.com>
+	<20130529135144.7f95c4c0@holzheu>
+	<20130530203847.GB5968@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13053114-6892-0000-0000-0000054D93C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 30 May 2013 16:38:47 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Any comment on this patch?
-It does really help with stack pressure and will help fix a PEBS-LL issue.
-Thanks.
+> On Wed, May 29, 2013 at 01:51:44PM +0200, Michael Holzheu wrote:
+> 
+> [..]
+> > >>> START QUOTE
+> > 
+> > [PATCH v3 1/3] kdump: Introduce ELF header in new memory feature
+> > 
+> > Currently for s390 we create the ELF core header in the 2nd kernel
+> > with a small trick. We relocate the addresses in the ELF header in
+> > a way that for the /proc/vmcore code it seems to be in the 1st
+> > kernel (old) memory and the read_from_oldmem() returns the correct
+> > data. This allows the /proc/vmcore code to use the ELF header in
+> > the 2nd kernel.
+> > 
+> > >>> END QUOTE
+> > 
+> > For our current zfcpdump project (see "[PATCH 3/3]s390/kdump: Use
+> > vmcore for zfcpdump") we could no longer use this trick. Therefore
+> > we sent you the patches to get a clean interface for ELF header
+> > creation in the 2nd kernel.
+> 
+> Hi Michael,
+> 
+> Few more questions.
+> 
+> - What's the difference between zfcpdump and kdump. I thought zfcpdump
+>   just boots specific kernel from fixed drive? If yes, why can't that
+>   kernel prepare headers in similar way as regular kdump kernel does
+>   and gain from kdump kernel swap trick?
 
-On Thu, May 23, 2013 at 8:07 PM, Andrew Hunter <ahh@google.com> wrote:
-> schedule_events caches event constraints on the stack during
-> scheduling.  Given the number of possible events, this is 512 bytes of
-> stack; since it can be invoked under schedule() under god-knows-what,
-> this is causing stack blowouts.
+Correct, the zfcpdump kernel is booted from a fixed disk drive. The
+difference is that the zfcpdump HSA memory is not mapped into real
+memory. It is accessed using a read memory interface "memcpy_hsa()"
+that copies memory from the hypervisor owned HSA memory into the Linux
+memory.
+
+So it looks like the following:
+
++----------+                 +------------+
+|          |   memcpy_hsa()  |            |
+| zfcpdump | <-------------- | HSA memory |
+|          |                 |            |
++----------+                 +------------+
+|          |
+| old mem  |
+|          |
++----------+
+
+In the copy_oldmem_page() function for zfcpdump we do the following:
+
+copy_oldmem_page_zfcpdump(...)
+{
+	if (src < ZFCPDUMP_HSA_SIZE) {
+		if (memcpy_hsa(buf, src, csize, userbuf) < 0)
+			return -EINVAL;
+	} else {
+		if (userbuf)
+			copy_to_user_real((buf, src, csize);
+		else
+			memcpy_real(buf, src, csize);
+	}
+}
+
+So I think for zfcpdump we only can use the read() interface
+of /proc/vmcore. But this is sufficient for us since we also provide
+the s390 specific zfcpdump user space that copies /proc/vmcore.
+
+> Also, we are accessing the contents of elf headers using physical
+> address. If that's the case, does it make a difference if data is
+> in old kernel's memory or new kernel's memory. We will use the
+> physical address and create a temporary mapping and it should not
+> make a difference whether same physical page is already mapped in
+> current kernel or not.
 >
-> Trade some space usage for stack safety: add a place to cache the
-> constraint pointer to struct perf_event.  For 8 bytes per event (1% of
-> its size) we can save the giant stack frame.
->
-> This shouldn't change any aspect of scheduling whatsoever and while in
-> theory the locality's a tiny bit worse, I doubt we'll see any
-> performance impact either.
->
-> Tested: `perf stat whatever` does not blow up and produces
-> results that aren't hugely obviously wrong.  I'm not sure how to run
-> particularly good tests of perf code, but this should not produce any
-> functional change whatsoever.
->
-> Signed-off-by: Andrew Hunter <ahh@google.com>
-> Reviewed-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c              | 28 ++++++++++++++-------------
->  arch/x86/kernel/cpu/perf_event.h              |  2 +-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 10 ++++++----
->  include/linux/perf_event.h                    |  4 ++++
->  4 files changed, 26 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index bf0f01a..e4bfc2b 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -562,7 +562,7 @@ struct sched_state {
->  struct perf_sched {
->         int                     max_weight;
->         int                     max_events;
-> -       struct event_constraint **constraints;
-> +       struct perf_event       **events;
->         struct sched_state      state;
->         int                     saved_states;
->         struct sched_state      saved[SCHED_STATES_MAX];
-> @@ -571,7 +571,7 @@ struct perf_sched {
->  /*
->   * Initialize interator that runs through all events and counters.
->   */
-> -static void perf_sched_init(struct perf_sched *sched, struct event_constraint **c,
-> +static void perf_sched_init(struct perf_sched *sched, struct perf_event **events,
->                             int num, int wmin, int wmax)
->  {
->         int idx;
-> @@ -579,10 +579,10 @@ static void perf_sched_init(struct perf_sched *sched, struct event_constraint **
->         memset(sched, 0, sizeof(*sched));
->         sched->max_events       = num;
->         sched->max_weight       = wmax;
-> -       sched->constraints      = c;
-> +       sched->events           = events;
->
->         for (idx = 0; idx < num; idx++) {
-> -               if (c[idx]->weight == wmin)
-> +               if (events[idx]->hw.constraint->weight == wmin)
->                         break;
->         }
->
-> @@ -629,8 +629,7 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
->         if (sched->state.event >= sched->max_events)
->                 return false;
->
-> -       c = sched->constraints[sched->state.event];
-> -
-> +       c = sched->events[sched->state.event]->hw.constraint;
->         /* Prefer fixed purpose counters */
->         if (c->idxmsk64 & (~0ULL << INTEL_PMC_IDX_FIXED)) {
->                 idx = INTEL_PMC_IDX_FIXED;
-> @@ -688,7 +687,7 @@ static bool perf_sched_next_event(struct perf_sched *sched)
->                         if (sched->state.weight > sched->max_weight)
->                                 return false;
->                 }
-> -               c = sched->constraints[sched->state.event];
-> +               c = sched->events[sched->state.event]->hw.constraint;
->         } while (c->weight != sched->state.weight);
->
->         sched->state.counter = 0;       /* start with first counter */
-> @@ -699,12 +698,12 @@ static bool perf_sched_next_event(struct perf_sched *sched)
->  /*
->   * Assign a counter for each event.
->   */
-> -int perf_assign_events(struct event_constraint **constraints, int n,
-> +int perf_assign_events(struct perf_event **events, int n,
->                         int wmin, int wmax, int *assign)
->  {
->         struct perf_sched sched;
->
-> -       perf_sched_init(&sched, constraints, n, wmin, wmax);
-> +       perf_sched_init(&sched, events, n, wmin, wmax);
->
->         do {
->                 if (!perf_sched_find_counter(&sched))
-> @@ -718,7 +717,7 @@ int perf_assign_events(struct event_constraint **constraints, int n,
->
->  int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
->  {
-> -       struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
-> +       struct event_constraint *c;
->         unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
->         int i, wmin, wmax, num = 0;
->         struct hw_perf_event *hwc;
-> @@ -726,8 +725,10 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
->         bitmap_zero(used_mask, X86_PMC_IDX_MAX);
->
->         for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
-> +               hwc = &cpuc->event_list[i]->hw;
->                 c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
-> -               constraints[i] = c;
-> +               hwc->constraint = c;
-> +
->                 wmin = min(wmin, c->weight);
->                 wmax = max(wmax, c->weight);
->         }
-> @@ -737,7 +738,7 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
->          */
->         for (i = 0; i < n; i++) {
->                 hwc = &cpuc->event_list[i]->hw;
-> -               c = constraints[i];
-> +               c = hwc->constraint;
->
->                 /* never assigned */
->                 if (hwc->idx == -1)
-> @@ -758,7 +759,8 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
->
->         /* slow path */
->         if (i != n)
-> -               num = perf_assign_events(constraints, n, wmin, wmax, assign);
-> +               num = perf_assign_events(cpuc->event_list, n, wmin,
-> +                                        wmax, assign);
->
->         /*
->          * scheduling failed or is just a simulation,
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 7f5c75c..7a5fcd4 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -483,7 +483,7 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
->
->  void x86_pmu_enable_all(int added);
->
-> -int perf_assign_events(struct event_constraint **constraints, int n,
-> +int perf_assign_events(struct perf_event **events, int n,
->                         int wmin, int wmax, int *assign);
->  int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index b43200d..bf07530 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -2058,15 +2058,16 @@ static void uncore_put_event_constraint(struct intel_uncore_box *box, struct per
->  static int uncore_assign_events(struct intel_uncore_box *box, int assign[], int n)
->  {
->         unsigned long used_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
-> -       struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
-> +       struct event_constraint *c;
->         int i, wmin, wmax, ret = 0;
->         struct hw_perf_event *hwc;
->
->         bitmap_zero(used_mask, UNCORE_PMC_IDX_MAX);
->
->         for (i = 0, wmin = UNCORE_PMC_IDX_MAX, wmax = 0; i < n; i++) {
-> +               hwc = &box->event_list[i]->hw;
->                 c = uncore_get_event_constraint(box, box->event_list[i]);
-> -               constraints[i] = c;
-> +               hwc->constraint = c;
->                 wmin = min(wmin, c->weight);
->                 wmax = max(wmax, c->weight);
->         }
-> @@ -2074,7 +2075,7 @@ static int uncore_assign_events(struct intel_uncore_box *box, int assign[], int
->         /* fastpath, try to reuse previous register */
->         for (i = 0; i < n; i++) {
->                 hwc = &box->event_list[i]->hw;
-> -               c = constraints[i];
-> +               c = hwc->constraint;
->
->                 /* never assigned */
->                 if (hwc->idx == -1)
-> @@ -2094,7 +2095,8 @@ static int uncore_assign_events(struct intel_uncore_box *box, int assign[], int
->         }
->         /* slow path */
->         if (i != n)
-> -               ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-> +               ret = perf_assign_events(box->event_list, n,
-> +                                        wmin, wmax, assign);
->
->         if (!assign || ret) {
->                 for (i = 0; i < n; i++)
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 1d795df..7fcc4ab 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -114,6 +114,8 @@ struct hw_perf_event_extra {
->         int             idx;    /* index in shared_regs->regs[] */
->  };
->
-> +struct event_constraint;
-> +
->  /**
->   * struct hw_perf_event - performance event hardware details:
->   */
-> @@ -131,6 +133,8 @@ struct hw_perf_event {
->
->                         struct hw_perf_event_extra extra_reg;
->                         struct hw_perf_event_extra branch_reg;
-> +
-> +                       struct event_constraint *constraint;
->                 };
->                 struct { /* software */
->                         struct hrtimer  hrtimer;
-> --
-> 1.8.2.1
->
+> Only restriction this places is that all ELF header needs to be
+> contiguous. I see that s390 code already creates elf headers using
+> kzalloc_panic(). So memory allocated should by physically contiguous.
+> 
+> So can't we just put __pa(elfcorebuf) in elfcorehdr_addr. And same
+> is true for p_offset fields in PT_NOTE headers and everything should
+> work fine?
+> 
+> Only problem we can face is that at some point of time kzalloc() might
+> not be able to contiguous memory request. We can handle that once s390
+> runs into those issues. You are anyway allocating memory using
+> kzalloc().
+> 
+> And if this works for s390 kdump, it should work for zfcpdump too?
+
+So your suggestion is that copy_oldmem_page() should also be used for
+copying memory from the new kernel, correct?
+
+For kdump on s390 I think this will work with the new "ELF header swap"
+patch. With that patch access to [0, OLDMEM_SIZE] will uniquely identify
+an address in the new kernel and access to [OLDMEM_BASE, OLDMEM_BASE +
+OLDMEM_SIZE] will identify an address in the old kernel.
+
+For zfcpdump currently we add a load from [0, HSA_SIZE] where p_offset
+equals p_paddr. Therefore we can't distinguish in copy_oldmem_page() if
+we read from oldmem (HSA) or newmem. The range [0, HSA_SIZE] is used
+twice. As a workaroun we could use an artificial p_offset for the HSA
+memory chunk that is not used by the 1st kernel physical memory. This
+is not really beautiful, but probably doable.
+
+When I tried to implement this for kdump, I noticed another problem
+with the vmcore mmap patches. Our copy_oldmem_page() function uses
+memcpy_real() to access the old 1st kernel memory. This function
+switches to real mode and therefore does not require any page tables.
+But as a side effect of that we can't copy to vmalloc memory. The mmap
+patches use vmalloc memory for "notes_buf". So currently using our
+copy_oldmem_page() fails here.
+
+If copy_oldmem_page() now also must be able to copy to vmalloc memory,
+we would have to add new code for that:
+
+* oldmem -> newmem (real): Use direct memcpy_real()
+* oldmem -> newmem (vmalloc): Use intermediate buffer with memcpy_real()
+* newmem -> newmem: Use memcpy()
+
+What do you think?
+
+Best Regards,
+Michael
+
