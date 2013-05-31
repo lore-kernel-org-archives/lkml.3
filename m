@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3EaLs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 07:48:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56943 "EHLO
+	id S1755459Ab3EaLuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 07:50:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56969 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab3EaLst (ORCPT
+	with ESMTP id S1754144Ab3EaLub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 07:48:49 -0400
-Date: Fri, 31 May 2013 04:48:38 -0700
+	Fri, 31 May 2013 07:50:31 -0400
+Date: Fri, 31 May 2013 04:49:54 -0700
 From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-b69e63a45f2d96a0dfe930ed20385058d4574d2f@git.kernel.org>
+Message-ID: <tip-6ca5f3081f903e2b25e58a061ddad486f846561e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        runzhen@linux.vnet.ibm.com, jolsa@redhat.com, fweisbec@gmail.com,
+        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1369526040-1368-1-git-send-email-dsahern@gmail.com>
-References: <1369526040-1368-1-git-send-email-dsahern@gmail.com>
+        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, runzhen@linux.vnet.ibm.com, fweisbec@gmail.com,
+        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1369527896-3650-7-git-send-email-dsahern@gmail.com>
+References: <1369527896-3650-7-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Fix printing of perf_event_paranoid message
-Git-Commit-ID: b69e63a45f2d96a0dfe930ed20385058d4574d2f
+Subject: [tip:perf/core] perf kvm: Handle realloc failures
+Git-Commit-ID: 6ca5f3081f903e2b25e58a061ddad486f846561e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,45 +37,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b69e63a45f2d96a0dfe930ed20385058d4574d2f
-Gitweb:     http://git.kernel.org/tip/b69e63a45f2d96a0dfe930ed20385058d4574d2f
+Commit-ID:  6ca5f3081f903e2b25e58a061ddad486f846561e
+Gitweb:     http://git.kernel.org/tip/6ca5f3081f903e2b25e58a061ddad486f846561e
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sat, 25 May 2013 17:54:00 -0600
+AuthorDate: Sat, 25 May 2013 18:24:46 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 28 May 2013 16:24:03 +0300
+CommitDate: Tue, 28 May 2013 16:24:04 +0300
 
-perf evsel: Fix printing of perf_event_paranoid message
+perf kvm: Handle realloc failures
 
-message is currently shown as:
-
-  Error:
-  You may not have permission to collect %sstats.
-  Consider tweaking /proc/sys/kernel/perf_event_paranoid:
-
-Note the %sstats. With patch this becomes:
-
-  Error:
-  You may not have permission to collect stats.
-  Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+Save previous pointer and free on failure.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1369526040-1368-1-git-send-email-dsahern@gmail.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1369527896-3650-7-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-kvm.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 07b1a3a..63b6f8c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1514,7 +1514,7 @@ int perf_evsel__open_strerror(struct perf_evsel *evsel,
- 	switch (err) {
- 	case EPERM:
- 	case EACCES:
--		return scnprintf(msg, size, "%s",
-+		return scnprintf(msg, size,
- 		 "You may not have permission to collect %sstats.\n"
- 		 "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
- 		 " -1 - Not paranoid at all\n"
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 533501e..24b78ae 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -328,6 +328,7 @@ static int kvm_events_hash_fn(u64 key)
+ static bool kvm_event_expand(struct kvm_event *event, int vcpu_id)
+ {
+ 	int old_max_vcpu = event->max_vcpu;
++	void *prev;
+ 
+ 	if (vcpu_id < event->max_vcpu)
+ 		return true;
+@@ -335,9 +336,11 @@ static bool kvm_event_expand(struct kvm_event *event, int vcpu_id)
+ 	while (event->max_vcpu <= vcpu_id)
+ 		event->max_vcpu += DEFAULT_VCPU_NUM;
+ 
++	prev = event->vcpu;
+ 	event->vcpu = realloc(event->vcpu,
+ 			      event->max_vcpu * sizeof(*event->vcpu));
+ 	if (!event->vcpu) {
++		free(prev);
+ 		pr_err("Not enough memory\n");
+ 		return false;
+ 	}
