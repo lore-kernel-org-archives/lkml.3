@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab3EaXJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 19:09:06 -0400
-Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:15558
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756836Ab3EaXJA (ORCPT
+	id S1757633Ab3EaXRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 19:17:43 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63552 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756951Ab3EaXRf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 19:09:00 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I1432I4015Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MNOQYT-02-8ZG-02
-X-M-MSG: 
-Message-ID: <51A92D85.9040901@amd.com>
-Date: Fri, 31 May 2013 18:08:53 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 31 May 2013 19:17:35 -0400
 MIME-Version: 1.0
-To: <suravee.suthikulpanit@amd.com>, <joro@8bytes.org>
-CC: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH 0/2 V4] perf/x86/amd: IOMMU Performance Counter Support
-References: <1369781112-2198-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1369781112-2198-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+In-Reply-To: <1369217581-16285-4-git-send-email-serban.constantinescu@arm.com>
+References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
+	<1369217581-16285-4-git-send-email-serban.constantinescu@arm.com>
+Date: Fri, 31 May 2013 16:17:34 -0700
+Message-ID: <CAMP5XgeBsr63tcHxoMb2D5dJPuetyLnxNVi8_2V0FM69+AwFbQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] staging: android: binder: fix BINDER_SET_MAX_THREADS
+ declaration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jorge,
-
-Please let me know if you have any other questions/concerns.
-
-Thanks,
-
-Suravee
-
-On 5/28/2013 5:45 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
+<serban.constantinescu@arm.com> wrote:
+> This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
+> instead of size_t for setting the max threads. Thus using the same
+> handler for 32 and 64bit kernels.
 >
-> These patches implement the AMD IOMMU Performance Counter functionality
-> via custom perf PMU and implement static counting for various IOMMU
-> translations.
+> This value is stored internally in struct binder_proc and set to 15
+> on open_binder() in the libbinder API(thus no need for a 64bit size_t
+> on 64bit platforms).
 >
->      1) Extend the AMD IOMMU initialization to include performance
->         counter enablement.
+> The change does not affect existing 32bit ABI.
 >
->      2) The perf AMD IOMMU PMU to manage performance counters, which
->         interface with the AMD IOMMU core driver.
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> ---
+>  drivers/staging/android/binder.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Steven L Kinney (1):
->    perf/x86/amd: Adding IOMMU PC resource management
+> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+> index 2f94d16..1761541 100644
+> --- a/drivers/staging/android/binder.h
+> +++ b/drivers/staging/android/binder.h
+> @@ -86,7 +86,7 @@ struct binder_version {
 >
-> Suravee Suthikulpanit (1):
->    perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
->
->   arch/x86/kernel/cpu/Makefile               |    4 +
->   arch/x86/kernel/cpu/perf_event_amd_iommu.c |  500 ++++++++++++++++++++++++++++
->   arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
->   drivers/iommu/amd_iommu_init.c             |  140 +++++++-
->   drivers/iommu/amd_iommu_proto.h            |    7 +
->   drivers/iommu/amd_iommu_types.h            |   15 +-
->   6 files changed, 694 insertions(+), 12 deletions(-)
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
+>  #define BINDER_WRITE_READ              _IOWR('b', 1, struct binder_write_read)
+>  #define        BINDER_SET_IDLE_TIMEOUT         _IOW('b', 3, __s64)
+> -#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, size_t)
+> +#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, __u32)
+>  #define        BINDER_SET_IDLE_PRIORITY        _IOW('b', 6, __s32)
+>  #define        BINDER_SET_CONTEXT_MGR          _IOW('b', 7, __s32)
+>  #define        BINDER_THREAD_EXIT              _IOW('b', 8, __s32)
+> --
+> 1.7.9.5
 >
 
+Acked-by: Arve Hjønnevåg <arve@android.com>
 
+--
+Arve Hjønnevåg
