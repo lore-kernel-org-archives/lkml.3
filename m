@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab3EaGvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 02:51:05 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50239 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab3EaGvA (ORCPT
+	id S1753379Ab3EaGxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 02:53:47 -0400
+Received: from smtprelay06.ispgateway.de ([80.67.31.95]:42246 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab3EaGxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 02:51:00 -0400
+	Fri, 31 May 2013 02:53:41 -0400
+Message-ID: <51A848F1.3040301@ladisch.de>
+Date: Fri, 31 May 2013 08:53:37 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1369982005-8572-3-git-send-email-gururaja.hebbar@ti.com>
-References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com> <1369982005-8572-3-git-send-email-gururaja.hebbar@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 31 May 2013 12:20:39 +0530
-Message-ID: <CA+V-a8tpPV35Z22YCNKOvCP36+v1sF8+9Fiy_Wrk4T-iCVv4nw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] rtc: omap: add rtc wakeup support to alarm events
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: akpm@linux-foundation.org, a.zummo@towertech.it,
-        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
-        rtc-linux@googlegroups.com, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, zonque@gmail.com, rob@landley.net,
-        grant.likely@linaro.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Timur Tabi <timur.tabi@calxeda.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2] ata: increase retry count but shorten duration for
+ Calxeda controller
+References: <1369923509-3246-1-git-send-email-mark.langsdorf@calxeda.com> <51A76197.9080708@calxeda.com> <51A7646B.6080203@cogentembedded.com>
+In-Reply-To: <51A7646B.6080203@cogentembedded.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gururaja,
-
-Thanks for the patch.
-
-On Fri, May 31, 2013 at 12:03 PM, Hebbar Gururaja
-<gururaja.hebbar@ti.com> wrote:
-> On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
-[snip]
->  - ti,wakeup_capable: Inform the rtc driver that this module is wake-up
->    capable so that rtcwake and suspend tests can work.
-> +- ti,has_irq_wake_enb: Inform rtc driver that this module has a a
-same comment applies here as well.
-s/has a a/ has a
-
-> +  special register to enable Wakeup feature for Alarm events.
+Sergei Shtylyov wrote:
+> On 30-05-2013 18:26, Timur Tabi wrote:
+>>> +    const unsigned long timing[] = { 5, 100, 500};
 >
->  Example:
+>> You'll save space and time if you also make this array "static",
+>> otherwise the compiler will build the array every time this function is
+>> called.
 >
-> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-> index 000a02f..5e9c0dd 100644
-> --- a/drivers/rtc/rtc-omap.c
-> +++ b/drivers/rtc/rtc-omap.c
-> @@ -72,6 +72,8 @@
->  #define OMAP_RTC_KICK0_REG             0x6c
->  #define OMAP_RTC_KICK1_REG             0x70
->
-> +#define OMAP_RTC_IRQWAKEEN             0x7C
-> +
-why not have the hex values in smaller case as done in the rest of the file ?
+> No, *const* specifier is enough to not build this array every time. It will be put into the .const section.
+
+gcc disagrees:
+
+$ cat const_static.c
+int f(int x) {
+	const unsigned long timing[] = { 5, 100, 500};
+	static const unsigned long timing2[] = { 5, 100, 500};
+	return timing[x] + timing2[x];
+}
+$ gcc -Os -S const_static.c
+$ cat const_static.s
+	...
+timing2.0:
+        .long   5
+        .long   100
+        .long   500
+	...
+        movl    8(%ebp), %edx
+        movl    $5, -16(%ebp)
+        movl    $100, -12(%ebp)
+        movl    $500, -8(%ebp)
+        movl    timing2.0(,%edx,4), %eax
+        addl    -16(%ebp,%edx,4), %eax
+
 
 Regards,
---Prabhakar Lad
+Clemens
