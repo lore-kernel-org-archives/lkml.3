@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3EaQcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 12:32:16 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:55536 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab3EaQcC (ORCPT
+	id S1756732Ab3EaQdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 12:33:18 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:47167 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435Ab3EaQdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 12:32:02 -0400
+	Fri, 31 May 2013 12:33:09 -0400
+Message-ID: <51A8D0BC.4080107@monstr.eu>
+Date: Fri, 31 May 2013 18:33:00 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <51A8CA15.4070504@wwwdotorg.org>
-References: <1369996170.5199.68.camel@zakaz.uk.xensource.com>
- <20130531114824.60D223E0901@localhost> <51A8CA15.4070504@wwwdotorg.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 31 May 2013 17:31:39 +0100
-X-Google-Sender-Auth: znOJYALP0Vg9B8_kfrX2u8zYa5M
-Message-ID: <CACxGe6vWtofRb3ysPueJ73e3O18vNegiLapcTg_JZ9eRmPL5BA@mail.gmail.com>
-Subject: Re: DTB build failure due to preproccessing
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Michal Marek <mmarek@suse.cz>, Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>, JonLoeliger <jdl@jdl.com>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Timur Tabi <timur@tabi.org>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v3 7/8] video: xilinxfb: Fix sparse warnings
+References: <cover.1370004925.git.michal.simek@xilinx.com> <1466524.sgAzczhnBg@wuerfel> <51A8BC83.6050809@tabi.org> <4930944.aMQtpv2nTI@wuerfel>
+In-Reply-To: <4930944.aMQtpv2nTI@wuerfel>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WFGXFMHGDXUQSENQVGFC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 5:04 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/31/2013 05:48 AM, Grant Likely wrote:
->> On Fri, 31 May 2013 11:29:30 +0100, Ian Campbell <Ian.Campbell@citrix.com> wrote:
->>> This affects arch/powerpc/boot/dts/virtex440-ml510.dts but I think it is
->>> actually a more general issue:
->>>
->>>         $ make ARCH=powerpc CROSS_COMPILE=powerpc-linux- virtex440-ml510.dtb
->>>           CC      scripts/mod/devicetable-offsets.s
->>>           GEN     scripts/mod/devicetable-offsets.h
->>>           HOSTCC  scripts/mod/file2alias.o
->>>           HOSTLD  scripts/mod/modpost
->>>           DTC     arch/powerpc/boot/virtex440-ml510.dtb
->>>         Error: arch/powerpc/boot/dts/virtex440-ml510.dts:374.6-7 syntax error
->>>         FATAL ERROR: Unable to parse input tree
->>>         make[1]: *** [arch/powerpc/boot/virtex440-ml510.dtb] Error 1
->>>         make: *** [virtex440-ml510.dtb] Error 2
->>>
->>> Line 374 is the "IDSEL 0x16..." line here:
->>>                      interrupt-map = <
->>>                              /* IRQ mapping for pci slots and ALI M1533
->>>                               ...
->>>                               * management core also isn't used.
->>>                               */
->>>
->>>                              /* IDSEL 0x16 / dev=6, bus=0 / PCI slot 3 */
->>>                              0x3000 0 0 1 &xps_intc_0 3 2
->>>                              0x3000 0 0 2 &xps_intc_0 2 2
->>>                              0x3000 0 0 3 &xps_intc_0 5 2
->>>                              0x3000 0 0 4 &xps_intc_0 4 2
->>>
->>> Which gets preprocessed into:
->>>            interrupt-map = <
->>>         # 375 "arch/powerpc/boot/dts/virtex440-ml510.dts"
->>>             0x3000 0 0 1 &xps_intc_0 3 2
->>>             0x3000 0 0 2 &xps_intc_0 2 2
->>>             0x3000 0 0 3 &xps_intc_0 5 2
->>>             0x3000 0 0 4 &xps_intc_0 4 2
->>>
->>> If I manually remove the "# 375 " line then that fixes the error
->>> (although there is then a subsequent one of the same type).
->>>
->>> I suppose this is a bug in dtc? It appears to have at least some
->>> awareness of these preprocessor line number comments since it manages to
->>> report the original source line number.
->>
->> dtc is only able to track line numbers when the native /include/
->> directive is used. The #include directive doesn't help it. It should be
->> added, but until it is the following patch solves the problem:
->>
->> I've got this patch in my tree. Either Rob or I will push it to Linus in
->> the next few days.
->>
->> g.
->>
->> ---
->> commit d01dccdcb3ea8233b09efb9c24db9f057fbd3b37
->> Author: Grant Likely <grant.likely@linaro.org>
->> Date:   Fri May 31 12:45:18 2013 +0100
->>
->>     dtc: Suppress cpp linemarker annotations
->>
->>     DTC isn't able to parse cpp linemarker annotations, so suppress them in
->>     the cpp output by adding the -P flag to the cpp options.
->
-> That's not true; it explicitly does have code to parse the line markers.
-> I'll have to investigate why it isn't working in this case.
->
-> If you apply this patch, then anyone who has switched to #include rther
-> than /include/ will get incorrect line numbers in dtc error messages.
-> Admittedly that's a smaller population right now though. Perhaps we
-> should just do a kernel-wide conversion though.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WFGXFMHGDXUQSENQVGFC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-My mistake. I tested the wrong thing. I've dropped the patch.
+On 05/31/2013 05:29 PM, Arnd Bergmann wrote:
+> On Friday 31 May 2013 10:06:43 Timur Tabi wrote:
+>> On 05/31/2013 09:56 AM, Arnd Bergmann wrote:
+>>> Yes, unfortunately, this is what all other frame buffer drivers do
+>>> at the moment. It is technically not correct, but most architectures
+>>> are able to call readl/writel on regular memory, or dereference
+>>> __iomem tokens, so we often get away with it. It's probably not
+>>> worth fixing it in the fbdev code base as that would be a huge
+>>> change, and people are migrating to DRM/KMS.
+>>
+>> But why bother fixing this bug if it just makes things worse?  Sparse =
+is
+>> supposed to warn us about bad code.  This patch doesn't fix the bug, i=
+t
+>> just masks the warnings!
+>=20
+> Yes, good point. It's probably best cast the ioremap() output to
+> a regular pointer here, as that is actually just uncached RAM,
+> not an MMIO register.
 
-g.
+ok. It means I will just remove this patch from this patchset.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2WFGXFMHGDXUQSENQVGFC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGo0LwACgkQykllyylKDCFsZQCeJurxGsrrgx/tiqqtMnWys2uv
+fpEAnRU/TrO2BgevXrXTEGs4h0pLhM/V
+=gC46
+-----END PGP SIGNATURE-----
+
+------enig2WFGXFMHGDXUQSENQVGFC--
