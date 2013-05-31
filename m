@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3EaWXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 18:23:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56329 "EHLO
+	id S1757606Ab3EaWX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 18:23:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59428 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757399Ab3EaWXF (ORCPT
+	with ESMTP id S1757504Ab3EaWXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 18:23:05 -0400
+	Fri, 31 May 2013 18:23:10 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: patches@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Dom Cobley <popcornmix@gmail.com>,
-        Lubomir Rintel <lkundrak@v3.sk>,
-        Stephen Warren <swarren@wwwdotorg.org>, Matt Mackall <mpm@selenic.com>,
-        linux-rpi-kernel@lists.infradead.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH 05/15] hwrng: bcm2835: fix MODULE_LICENSE tag
-Date: Sat,  1 Jun 2013 00:22:42 +0200
-Message-Id: <1370038972-2318779-6-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Ben Gamari <bgamari@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 09/15] drm: always provide debugfs function prototypes
+Date: Sat,  1 Jun 2013 00:22:46 +0200
+Message-Id: <1370038972-2318779-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
 References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:7/pU8daD/QexAl/ATCX3TTei/ggtOuNYkKVejNK2Hz4
- 8zC9pxxO/kZ/UA1txb5gq5GFYwnEccQe3sDkonTo8WSTPo1ChJ
- /nzHExPM48mhL76h761wkmMX9Z51SwxspMJpeaGsQRNMUiRttX
- VJk3n9aRmTGA0nNZ4KHyaEOqI3zWHsd6aMqnW80EOJn/XLLj5Q
- RhExcMrDs1rQDB/hRAby6GYVYb5Mx/FbVjSdHCXuC6lnTkseBN
- hNpAKdULgeUbAvZKuz0sR9eyXvrYgRN1b8UjrCxBDQ5mkDuEit
- jVi0GzZ14hxg5f0oGgMdDY/9XXfpmIqB0LvxoA1jqQciymWloC
- FGwjaQ7mQ3h66EynjmFFcs+fTJvWzL+Tzx9VMjN8o
+X-Provags-ID: V02:K0:OqXP3GBBXb/1eUm1dkeW5iMhWKJ4NpGdAvCnuvNQ4cp
+ nTfUcQZnmpq2r6IEZ1h/UWhK9tt6+hyEhyLInmK7Q1PgDrmDmo
+ 0OTIDAWDulDn3DPNhd0PN69oSYuJ9crAJO42sX79nMPdsnPDDM
+ eGum7ypV0p3KCnw7f3Njr/wViZcFgHGSpxpmGtaVU1V0Kvl78N
+ 4o8dppv7QegYUE+4xi/MhwK+TgKhlwDsrti4sRhqViXe1xoVw9
+ mn/4fiy5A3s7uIhCCkHEMwyj3w+wVwxtqhUggBCiYi1OCboMa8
+ Q5IYQGehZvvt6C5kO04tEmLJU5+GmqWWJHNHxBaKzJwGPiQ0SG
+ fbhEwvTmMmUvHrl5KAbIvS9kHVGhEkCKxIMKi/aOn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MODULE_LICENSE macro invocation must use either "GPL" or "GPL v2",
-but not "GPLv2" in order to be detected by the module loader.
+It is generally considered bad style to enclose function prototypes
+in header files in #ifdef. This case illustrates why that is:
+The tegra host1x driver calls into the debugfs functions if
+CONFIG_DEBUG_FS is enabled, but that code is otherwise already
+discarded by the compiler, so leaving the prototype in place
+actually makes everything work.
 
-This fixes the allmodconfig build error:
+drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_init':
+drivers/gpu/host1x/drm/dc.c:1004:2: error: implicit declaration of function 'drm_debugfs_create_files' [-Werror=implicit-function-declaration]
+drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_exit': drivers/gpu/host1x/drm/dc.c:1026:2: error: implicit declaration of function 'drm_debugfs_remove_files' [-Werror=implicit-function-declaration]
 
-FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
-
+Cc: Ben Gamari <bgamari@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dom Cobley <popcornmix@gmail.com>
-Cc: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: linux-rpi-kernel@lists.infradead.org
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
 ---
- drivers/char/hw_random/bcm2835-rng.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/drm/drmP.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
-index eb7f147..43577ca 100644
---- a/drivers/char/hw_random/bcm2835-rng.c
-+++ b/drivers/char/hw_random/bcm2835-rng.c
-@@ -110,4 +110,4 @@ module_platform_driver(bcm2835_rng_driver);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 63d17ee..8bc105e 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1551,7 +1551,7 @@ extern int drm_proc_init(struct drm_minor *minor, struct proc_dir_entry *root);
+ extern int drm_proc_cleanup(struct drm_minor *minor, struct proc_dir_entry *root);
  
- MODULE_AUTHOR("Lubomir Rintel <lkundrak@v3.sk>");
- MODULE_DESCRIPTION("BCM2835 Random Number Generator (RNG) driver");
--MODULE_LICENSE("GPLv2");
-+MODULE_LICENSE("GPL v2");
+ 				/* Debugfs support */
+-#if defined(CONFIG_DEBUG_FS)
++
+ extern int drm_debugfs_init(struct drm_minor *minor, int minor_id,
+ 			    struct dentry *root);
+ extern int drm_debugfs_create_files(struct drm_info_list *files, int count,
+@@ -1559,7 +1559,6 @@ extern int drm_debugfs_create_files(struct drm_info_list *files, int count,
+ extern int drm_debugfs_remove_files(struct drm_info_list *files, int count,
+                                     struct drm_minor *minor);
+ extern int drm_debugfs_cleanup(struct drm_minor *minor);
+-#endif
+ 
+ 				/* Info file support */
+ extern int drm_name_info(struct seq_file *m, void *data);
 -- 
 1.8.1.2
 
