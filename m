@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3EaVwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 17:52:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40867 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3EaVwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 17:52:15 -0400
-Date: Fri, 31 May 2013 14:52:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Youquan Song <youquan.song@intel.com>
-Cc: gregkh@linuxfoundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] core: Fix maxcpus boot option broken
-Message-Id: <20130531145214.27bb260219f55131b6e6e605@linux-foundation.org>
-In-Reply-To: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
-References: <1369886406-14079-1-git-send-email-youquan.song@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1757354Ab3EaV4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 17:56:46 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44988 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752017Ab3EaV4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 17:56:39 -0400
+Message-ID: <1370037388.10556.86.camel@joe-AO722>
+Subject: Re: [PATCH 2/3] pktcdvd: Convert printk to pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 31 May 2013 14:56:28 -0700
+In-Reply-To: <CAHp75Vdt22imDXu0phvbAVz=D-ctXH_JV6eMZ457e4d+=Tj0=Q@mail.gmail.com>
+References: <alpine.LNX.2.00.1305291537120.30576@pobox.suse.cz>
+	 <cover.1369947186.git.joe@perches.com>
+	 <be5d8d48c70deec2d883e122732522ced3bd6246.1369947186.git.joe@perches.com>
+	 <CAHp75Vdt22imDXu0phvbAVz=D-ctXH_JV6eMZ457e4d+=Tj0=Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 May 2013 00:00:06 -0400 Youquan Song <youquan.song@intel.com> wrote:
-
-> maxcpus boot option to limit maximum number of CPUs on system, but this option
-> is broken at recent kernel.
-
-Can you help us identify which kernel versions have this bug? 
-Identifying the offending commit would be best.  Thanks.
-
-> Though we use maxcpus to limit CPUs number, but
-> current kernel will register all of present CPUs in sysfs.
-> udev will enumerate all registered cpu at sysfs, and it will bring up the CPU
-> if the CPU is offline. So the maxcpus option is broken.
+On Fri, 2013-05-31 at 22:44 +0300, Andy Shevchenko wrote:
+> On Thu, May 30, 2013 at 11:57 PM, Joe Perches <joe@perches.com> wrote:
+> > Use a more current logging style and add messages levels
+> > to the logging messages.
+> >
+> > Convert bare printks to pr_cont where appropriate and
+> > add a simple function to emit the sense string.
 > 
-> This patch will only register the CPU which is not over limitation of maxcpus 
-> option in sysfs. So it will keep the maxcpus limitation when udev enumeration
-> or other intention of bring up CPUs over the limitation by method like  
-> echo 1 > /sys/devices/system/cpu/online 
+> Few comments below.
 > 
-> ...
->
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -272,6 +272,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
->  {
->  	int error;
->  
-> +	/* return when cpu number greater than maximum number of CPUs */
-> +	if (num >= setup_max_cpus)
-> +		return 0;
-> +
->  	cpu->node_id = cpu_to_node(num);
->  	memset(&cpu->dev, 0x00, sizeof(struct device));
->  	cpu->dev.id = num;
-> -- 
-> 1.7.7.4
+> Why not dev_dbg wherever it's possible?
+
+Because dev_<level> conversions are not appropriate for a
+first pass.  The "struct pktcdvd *" needs to be available
+for more function calls and that's more work / less
+automatic and this pass is more easily verified.
+
+> > -       printk(DRIVER_NAME":");
+> > +       pr_err("");
+> >         for (i = 0; i < CDROM_PACKET_SIZE; i++)
+> > -               printk(" %02x", cgc->cmd[i]);
+> > -       printk(" - ");
+> > +               pr_cont(" %02x", cgc->cmd[i]);
+> 
+> This one is actually %*ph.
+> 
+> Like: pr_info("%*ph", CDROM_PACKET_SIZE, cgc->cmd);
+> 
+> And what is the level of this message? debug?
+
+pr_err and good point about %*ph, I've fixed it and
+the stupid typo around the #include here.
+
