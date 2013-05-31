@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab3EaJCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 05:02:16 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.148]:55100 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751334Ab3EaJCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 05:02:06 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-16.tower-178.messagelabs.com!1369990923!25032349!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 31 May 2013 11:02:03 +0200
-Date: Fri, 31 May 2013 11:04:07 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/2] watchdog: New watchdog driver for MEN A21
- watchdogs
-Message-ID: <20130531090406.GA7256@jtlinux>
-References: <20130531085842.GA8572@jtlinux>
+	id S1754222Ab3EaJFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 05:05:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50690 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab3EaJFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 05:05:16 -0400
+Date: Fri, 31 May 2013 11:05:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Robert Richter <rric@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@calxeda.com>
+Subject: Re: [PATCH 01/16] perf, persistent: Fix build error for
+ no-tracepoints configs
+Message-ID: <20130531090527.GB14076@nazgul.tnic>
+References: <1369990056-10310-1-git-send-email-rric@kernel.org>
+ <1369990056-10310-2-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130531085842.GA8572@jtlinux>
+In-Reply-To: <1369990056-10310-2-git-send-email-rric@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 31 May 2013 09:02:03.0413 (UTC) FILETIME=[84997C50:01CE5DDD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 10:58:48AM +0200, Johannes Thumshirn wrote:
-> This patch adds the driver for the watchdog devices found on MEN Mikro
-> Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-> watchdog framework.
-[...]
-> +MODULE_DESCRIPTION("MEN A21 Watchdog");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:a21-watchdog");
-> --
-> 1.7.9.5
->
+On Fri, May 31, 2013 at 10:47:21AM +0200, Robert Richter wrote:
+> From: Robert Richter <robert.richter@calxeda.com>
+> 
+> The mce_record tracepoint needs tracepoints to be enabled. Fixing
+> build error for no-tracepoints configs.
+> 
+> Signed-off-by: Robert Richter <robert.richter@calxeda.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 0ecf4a2..d421937 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1987,6 +1987,8 @@ int __init mcheck_init(void)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_TRACEPOINTS
+> +
+>  int __init mcheck_init_tp(void)
+>  {
+>  	if (perf_add_persistent_event_by_id(event_mce_record.event.type)) {
+> @@ -2001,6 +2003,8 @@ int __init mcheck_init_tp(void)
+>   */
+>  fs_initcall_sync(mcheck_init_tp);
+>  
+> +#endif /* CONFIG_TRACEPOINTS */
+> +
 
+Right, since my persistent patches are in no tree yet, we should merge
+this one with, I think, the last one in my set and keep them all
+together.
 
-Args, sorry messed up the thread :-(.
-
-I'm not so firm with using mutt for patches, but git send-email doesn't seem
-to like Exchange here...
-
-
-Johannes
+Thanks.
