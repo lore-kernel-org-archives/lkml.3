@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab3EaEL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 00:11:29 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:42118 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3EaELJ (ORCPT
+	id S1751152Ab3EaE06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 00:26:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43517 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750788Ab3EaE0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 00:11:09 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rui.zhang@intel.com, mjg@redhat.com, rjw@sisk.pl
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Len Brown <lenb@kernel.org>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Dmitry Torokhov <dtor@mail.ru>, Corentin Chary <corentincj@iksaif.net>,
-        Aaron Lu <aaron.lu@intel.com>, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH v2 2/2] acer-wmi: add Acer Aspire 5750G to video vendor list but keep acpi video driver
-Date: Fri, 31 May 2013 12:10:34 +0800
-Message-Id: <1369973434-8742-2-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <1369973434-8742-1-git-send-email-jlee@suse.com>
-References: <1369973434-8742-1-git-send-email-jlee@suse.com>
+	Fri, 31 May 2013 00:26:53 -0400
+X-Sasl-enc: exONko62d1QzFCAq2EYCPuIz7czdbVO7n4wR2vEbxoCE 1369974411
+Date: Fri, 31 May 2013 01:26:49 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
+ support for AMD
+Message-ID: <20130531042649.GA4488@khazad-dum.debian.net>
+References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
+ <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After Andrzej's testing, we found the acpi backlight methods broken on Acer
-Aspire 5750G but the i915 backlight control works when we set to vendor mode.
-And, we still want to keep the acpi/video driver for transfer acpi event to key
-event but not unregister whole acpi/video driver.
+On Thu, 30 May 2013, Jacob Shin wrote:
+>  mkdir initrd
+>  cd initrd
+> -mkdir kernel
+> -mkdir kernel/x86
+> -mkdir kernel/x86/microcode
+> -cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin
+> -find .|cpio -oc >../ucode.cpio
+> +mkdir -p kernel/x86/microcode
+> +cp ../microcode.bin kernel/x86/microcode/GenuineIntel.bin (or AuthenticAMD.bin)
 
-This patch introduced a new capability flag is ACER_CAP_KEEP_VIDEO_KEY, it
-indicates the machine works fine with acpi/video driver for key event but want
-to unregister the backlight interface of acpi/video.
+Can I just 
+'cat /lib/firmware/amd-ucode/*bin >kernel/x86/microcode/AuthenticAMD.bin' 
+to get a valid microcode container for all amd processors?
 
-Reference: bko#35622
-        https://bugzilla.kernel.org/show_bug.cgi?id=35622
+The answer for Intel is "yes".  I sure hope it is the same for AMD...
 
-v2: changed the information statement of keeping acpi video driver.
-
-Tested-by: Andrzej Krentosz <endrjux@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lu@intel.com>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/platform/x86/acer-wmi.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index c9076bd..a81c9ed 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -207,6 +207,7 @@ struct hotkey_function_type_aa {
- #define ACER_CAP_BRIGHTNESS		(1<<3)
- #define ACER_CAP_THREEG			(1<<4)
- #define ACER_CAP_ACCEL			(1<<5)
-+#define ACER_CAP_KEEP_VIDEO_KEY		(1<<6)
- #define ACER_CAP_ANY			(0xFFFFFFFF)
- 
- /*
-@@ -539,6 +540,15 @@ static int video_set_backlight_video_vendor(const struct dmi_system_id *d)
- 	return 0;
- }
- 
-+static int video_set_backlight_video_vendor_keep_acpi_video(
-+		const struct dmi_system_id *d)
-+{
-+	video_set_backlight_video_vendor(d);
-+	interface->capability |= ACER_CAP_KEEP_VIDEO_KEY;
-+	pr_info("Keeping acpi video driver active to emit backlight brightness change key events\n");
-+	return 0;
-+}
-+
- static const struct dmi_system_id video_vendor_dmi_table[] = {
- 	{
- 		.callback = video_set_backlight_video_vendor,
-@@ -572,6 +582,14 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
- 		},
- 	},
-+	{
-+		.callback = video_set_backlight_video_vendor_keep_acpi_video,
-+		.ident = "Acer Aspire 5750G",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750G"),
-+		},
-+	},
- 	{}
- };
- 
-@@ -2228,6 +2246,8 @@ static int __init acer_wmi_init(void)
- 	if (acpi_video_backlight_support()) {
- 		interface->capability &= ~ACER_CAP_BRIGHTNESS;
- 		pr_info("Brightness must be controlled by acpi video driver\n");
-+	} else if (interface->capability & ACER_CAP_KEEP_VIDEO_KEY) {
-+		acpi_video_backlight_unregister();
- 	} else {
- 		pr_info("Disabling ACPI video driver\n");
- 		acpi_video_unregister();
 -- 
-1.6.4.2
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
