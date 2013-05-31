@@ -1,368 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3EaNaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 09:30:19 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.164]:59716 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478Ab3EaNaN (ORCPT
+	id S1751207Ab3EaNdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 09:33:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38928 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab3EaNdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 09:30:13 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-13.tower-38.messagelabs.com!1370007009!14372469!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 31 May 2013 15:30:10 +0200
-Date: Fri, 31 May 2013 15:32:14 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
-Subject: [PATCH v7] watchdog: New watchdog driver for MEN A21 watchdogs
-Message-ID: <20130531133209.GA20399@jtlinux>
-References: <20130531114037.GA13533@roeck-us.net>
+	Fri, 31 May 2013 09:33:36 -0400
+From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 0/1] i2c: omap: correct usage of the interrupt enable register
+Date: Fri, 31 May 2013 16:33:30 +0300
+Message-ID: <1370007211-9736-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+X-Mailer: git-send-email 1.8.2.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130531114037.GA13533@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 31 May 2013 13:30:09.0597 (UTC) FILETIME=[F8B65ED0:01CE5E02]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the driver for the watchdog devices found on MEN Mikro
-Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-watchdog framework.
+I've just removed unnecessary Change-Id line.
 
-Revision 2:
-* Removed unneeded open flag in struct a21_wdt_drv
-* Corrected 3bit reason code from gpio
-* Additional sysfs files are now part of watchdog sysfs
-* Changed OFF/ON delay in ping from 400ms to 10ns
-* Reworked timeout setting
-* Removed a21_wdt_ioctl(...)
+If the i2c controller during suspend will generate an interrupt, it
+can lead to unpredictable behaviour in the kernel.
 
-Revision 3:
-* Changed pr_{err,info} to dev_{err,info}
-* Removed out of memory error print
-* Transition from "fast" to "slow" mode not allowed by chip
+Based on the logic of the kernel code interrupts from i2c should be
+prohibited during suspend. Kernel writes 0 to the I2C_IE register in
+the omap_i2c_runtime_suspend() function. In the other side kernel
+writes saved interrupt flags to the I2C_IE register in
+omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
+during suspend.
 
-Revision 4:
-* Remove reboot_notifier and place disable code into platform_device's shutdown function
-* Removed sysfs interface
+This works for chips with version1 registers scheme. Interrupts are
+disabled during suspend. For chips with version2 scheme registers
+writting 0 to the I2C_IE register does nothing (because now the
+I2C_IRQENABLE_SET register is located at this address). This register
+is used to enable interrupts. For disabling interrupts
+I2C_IRQENABLE_CLR register should be used.
 
-Revision 5:
+Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
+addresses, the interrupt enabling procedure is unchanged.
 
-* Added setting of .bootstatus on driver init
-* Added initial timeout on driver init
+I've checked that interrupts in the i2c controller are still enabled
+after writting 0 to the I2C_IE register. But with my patch interrupts
+are disabled in the omap_i2c_runtime_suspend() function. 
 
-Revision 6:
-* Use watchdog_init_timeout() to initialize timeout
+This has been working up until now because we've just been lucky. 
 
-Revision 7:
-* Fix possible get_bootstatus race condition
+Next patch fixes it.
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- MAINTAINERS                   |    6 ++
- drivers/watchdog/Kconfig      |    8 ++
- drivers/watchdog/Makefile     |    1 +
- drivers/watchdog/mena21_wdt.c |  234 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 249 insertions(+)
- create mode 100644 drivers/watchdog/mena21_wdt.c
+Patch is based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+tag: v3.10-rc2
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7714c3c..023945a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5307,6 +5307,12 @@ F:	drivers/mtd/
- F:	include/linux/mtd/
- F:	include/uapi/mtd/
+Verified on OMAP4430.
 
-+MEN A21 WATCHDOG DRIVER
-+M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
-+L:	linux-watchdog@vger.kernel.org
-+S:	Supported
-+F:	drivers/watchdog/mena21_wdt.c
-+
- METAG ARCHITECTURE
- M:	James Hogan <james.hogan@imgtec.com>
- S:	Supported
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index e89fc31..192b84d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+Oleksandr Dmytryshyn (1):
+  i2c: omap: correct usage of the interrupt enable register
 
- 	  The value can be overridden by the wdt_period command-line parameter.
+ drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-+config MEN_A21_WDT
-+       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-+       select WATCHDOG_CORE
-+       help
-+        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-+
-+	If unsure select N here.
-+
- # PPC64 Architecture
-
- config WATCHDOG_RTAS
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..bffdcb1 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
- obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
- obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
- obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-+obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
-
- # PPC64 Architecture
- obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-new file mode 100644
-index 0000000..dec35ec
---- /dev/null
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -0,0 +1,234 @@
-+/*
-+ * Watchdog driver for the A21 VME CPU Boards
-+ *
-+ * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation
-+ */
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+#include <linux/uaccess.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
-+#include <linux/bitops.h>
-+
-+#define GPIO_WD_ENAB	169
-+#define GPIO_WD_FAST	170
-+#define GPIO_WD_TRIG	171
-+
-+#define GPIO_RST_CAUSE_BASE 166
-+
-+struct a21_wdt_drv {
-+	struct watchdog_device wdt;
-+	struct mutex lock;
-+};
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+static int a21_wdt_get_bootstatus(unsigned int *reset)
-+{
-+	int i;
-+
-+	for (i = 0; i < 3; i++)
-+		*reset |= gpio_get_value(GPIO_RST_CAUSE_BASE + i)
-+			? (1 << i) : 0;
-+
-+	if (*reset >= 8)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_start(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	/* We don't stop if WDOG_NO_WAY_OUT is set */
-+	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-+		return -EINVAL;
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 0);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_TRIG, 0);
-+	ndelay(10);
-+	gpio_set_value(GPIO_WD_TRIG, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-+			       unsigned int timeout)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	if (timeout != 1 && timeout != 30) {
-+		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
-+		return -EINVAL;
-+	}
-+
-+	if (timeout == 30 && wdt->timeout == 1) {
-+		dev_err(wdt->dev,
-+			"Transition from fast to slow mode not allowed\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&drv->lock);
-+
-+	if (timeout == 1)
-+		gpio_set_value(GPIO_WD_FAST, 1);
-+	else
-+		gpio_set_value(GPIO_WD_FAST, 0);
-+
-+	wdt->timeout = timeout;
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static const struct watchdog_info a21_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "MEN A21 Watchdog",
-+};
-+
-+static const struct watchdog_ops a21_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = a21_wdt_start,
-+	.stop = a21_wdt_stop,
-+	.ping = a21_wdt_ping,
-+	.set_timeout = a21_wdt_set_timeout,
-+};
-+
-+static struct watchdog_device a21_wdt = {
-+	.info = &a21_wdt_info,
-+	.ops = &a21_wdt_ops,
-+	.min_timeout = 1,
-+	.max_timeout = 30,
-+};
-+
-+static int a21_wdt_probe(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv;
-+	unsigned int reset = 0;
-+	int ret;
-+
-+	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-+
-+	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-+	if (!drv)
-+		return -ENOMEM;
-+
-+	mutex_init(&drv->lock);
-+	watchdog_init_timeout(&a21_wdt, 30, &pdev->dev);
-+	watchdog_set_nowayout(&a21_wdt, nowayout);
-+	watchdog_set_drvdata(&a21_wdt, drv);
-+
-+	ret = a21_wdt_get_bootstatus(&reset);
-+	if (ret)
-+		dev_warn(&pdev->dev, "Reset Cause contains invalid data\n");
-+	else {
-+		if (reset == 2)
-+			a21_wdt.bootstatus |= WDIOF_EXTERN1;
-+		else if (reset == 4)
-+			a21_wdt.bootstatus |= WDIOF_CARDRESET;
-+		else if (reset == 5)
-+			a21_wdt.bootstatus |= WDIOF_POWERUNDER;
-+		else if (reset == 7)
-+			a21_wdt.bootstatus |= WDIOF_EXTERN2;
-+	}
-+
-+	ret = watchdog_register_device(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot register watchdog device\n");
-+		goto err_register_wd;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, drv);
-+
-+	return 0;
-+
-+err_register_wd:
-+	mutex_destroy(&drv->lock);
-+
-+	return ret;
-+}
-+
-+static int a21_wdt_remove(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-+
-+	dev_warn(&pdev->dev,
-+		"Unregistering A21 watchdog driver, board may reboot\n");
-+
-+
-+	watchdog_unregister_device(&drv->wdt);
-+
-+	mutex_destroy(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_shutdown(struct platform_device *pdev)
-+{
-+	gpio_set_value(GPIO_WD_ENAB, 0);
-+}
-+
-+static const struct of_device_id a21_wdt_ids[] = {
-+	{ .compatible = "men,a021-wdt" },
-+	{ },
-+};
-+
-+static struct platform_driver a21_wdt_driver = {
-+	.probe = a21_wdt_probe,
-+	.remove = a21_wdt_remove,
-+	.shutdown = a21_wdt_shutdown,
-+	.driver = {
-+		.name = "a21-watchdog",
-+		.of_match_table = a21_wdt_ids,
-+	},
-+};
-+
-+module_platform_driver(a21_wdt_driver);
-+
-+MODULE_AUTHOR("MEN Mikro Elektronik");
-+MODULE_DESCRIPTION("MEN A21 Watchdog");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:a21-watchdog");
---
-1.7.9.5
+-- 
+1.8.2.rc2
 
