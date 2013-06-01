@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab3FAV3Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 17:29:25 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63171 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755715Ab3FAV3Y (ORCPT
+	id S1756122Ab3FAVsE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 17:48:04 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:62916 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3FAVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 17:29:24 -0400
+	Sat, 1 Jun 2013 17:47:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130601211045.GV16790@sirena.org.uk>
-References: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
-	<51A88C3F.5080109@metafoo.de>
-	<20130601190328.GL16790@sirena.org.uk>
-	<CAMuHMdX09zeshD4_TbU4MN1LjooeJKDUaAxsZ4CjNF1+Yp+STQ@mail.gmail.com>
-	<20130601211045.GV16790@sirena.org.uk>
-Date: Sat, 1 Jun 2013 23:29:23 +0200
-X-Google-Sender-Auth: HA7Qt4G5DwlfpFJ2o3uqydwoSHs
-Message-ID: <CAMuHMdWN6Ur47fBu3oZpah4fTaV+mV4Y_Q=SvV_jet-3FiZEUQ@mail.gmail.com>
-Subject: Re: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mike Frysinger <vapier@gentoo.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+From: Frederic Riss <frederic.riss@gmail.com>
+Date: Sat, 1 Jun 2013 23:47:37 +0200
+Message-ID: <CAKk_3s_P18a3ZUb835ysa-MS3c-_TBT20MVsJLvPrsYKETS_-w@mail.gmail.com>
+Subject: mount + pid namespacing broken ?
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hello,
 
-On Sat, Jun 1, 2013 at 11:10 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Sat, Jun 01, 2013 at 10:48:05PM +0200, Geert Uytterhoeven wrote:
->> On Sat, Jun 1, 2013 at 9:03 PM, Mark Brown <broonie@kernel.org> wrote:
->> > Only if someone were to send me the patch.  Geert, you should *ALWAYS*
->> > CC maintainers.
->
->> Sorry, I sent it to your Wolfson address, as suggested by get_maintainter.pl:
->
->> Mark Brown <broonie@opensource.wolfsonmicro.com> (commit_signer:3/4=75%)
->
-> You're not using a current version of the tree you're submitting
-> against (which you should always do)...
+I had a little application making use of pid and mount namespaces to
+isolate some processes on some machines. This all worked well on 3.7
+boxes. A coworker upgraded his machine and noticed that things weren't
+working anymore on 3.8. The symptom he noticed is that remounting
+/proc inside the namespaced process broke the /proc of the original
+namespace. (Remounting /proc is necessary for the pid namespace to be
+really effective)
 
-I'm using next-20130531.
+There is a simple way to reproduce the issue if you have a new enough
+util-linux where the unshare utility accepts the --pid option. Try
+that:
 
->> I've forwarded the original email to your kernel.org address.
->
-> Please submit the patch normally so that it can be applied by tools
-> without hand editing.
+bash-4.2$ unshare --pid --mount
+-bash-4.2$ sudo mount -t proc /proc /proc
+[sudo] password for friss:
+sudo: unable to send audit message: Operation not permitted
+-bash-4.2$
 
-Two acks added and resubmitted to the new address.
-Thanks for applying!
+[ The audit failure is already a sign of something going wrong more on
+that bellow. ]
+Then in another terminal running in the root namesapce:
 
-Gr{oetje,eeting}s,
+bash-4.2$ ls -l /proc/self
+ls: cannot read symbolic link /proc/self: No such file or directory
+lrwxrwxrwx 1 root root 0 Jun  1 23:37 /proc/self
 
-                        Geert
+As you see, remounting /proc in the private namespace broke the root /proc...
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Now the namespace isn't functional anyway even if /proc doesn't get remounted:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+bash-4.2$ unshare --pid --mount
+-bash-4.2$ id
+uid=1001(friss) gid=1001(friss) groups=1001(friss),10(wheel)
+-bash-4.2$ id
+-bash: fork: Cannot allocate memory
+-bash-4.2$
+
+It's able to run one process, but every following invocation will
+fail. I suppose the audit issue mentioned above is just another
+symptom.
+
+All of this was working fine on 3.7 kernels. I tried it on latest 3.8
+and 3.9 and it fails on both. My application didn't make use of
+unshare, but instead forked a new process with the namespacing flags.
+The symptoms are identical in both cases.
+
+Fred.
