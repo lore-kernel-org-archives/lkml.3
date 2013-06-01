@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab3FASZy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 14:25:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753727Ab3FASZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 14:25:37 -0400
-Date: Sat, 1 Jun 2013 20:21:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/2] hw_breakpoint: Use cpu_possible_mask in
-	{reserve,release}_bp_slot()
-Message-ID: <20130601182139.GC4861@redhat.com>
-References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130601182057.GA4861@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601182057.GA4861@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754006Ab3FAS3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 14:29:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49906 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752629Ab3FAS3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 14:29:11 -0400
+Message-ID: <1370111350.2098.1.camel@joe-AO722>
+Subject: Re: [PATCH] usb: musb: use the new %pa format specifier for
+ dma_addr_t
+From: Joe Perches <joe@perches.com>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:29:10 -0700
+In-Reply-To: <1370109747-18821-1-git-send-email-emilgoode@gmail.com>
+References: <1370109747-18821-1-git-send-email-emilgoode@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fetch_bp_busy_slots() and toggle_bp_slot() use for_each_online_cpu(),
-this is obviously wrong wrt cpu_up() or cpu_down(), we can over/under
-account the per-cpu numbers.
+On Sat, 2013-06-01 at 20:02 +0200, Emil Goode wrote:
+> This patch makes use of the new format specifier %pa that was introduced
+> by the following commit.
+> 
+> 7d7992108d02aa92ad4c77e5d9ce14088c942e75
+> ("lib/vsprintf.c: add %pa format specifier for phys_addr_t types")
+[]
+> diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+[]
+> @@ -1756,12 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+[]
+> -			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
+> +			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%pa len %d/%d\n",
 
-For example:
+This would emit 0x0x<addr>
 
-	# echo 0 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10 -p 1 &
-	# echo 1 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
-	# taskset -p 0x2 1
-
-triggers the same WARN_ONCE("Can't find any breakpoint slot") in
-arch_install_hw_breakpoint().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: <stable@vger.kernel.org>
----
- kernel/events/hw_breakpoint.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 29d3abe..4407e43 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -149,7 +149,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		return;
- 	}
- 
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		unsigned int nr;
- 
- 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
-@@ -235,7 +235,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	if (cpu >= 0) {
- 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	} else {
--		for_each_online_cpu(cpu)
-+		for_each_possible_cpu(cpu)
- 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	}
- 
--- 
-1.5.5.1
+When you use %pa, don't add 0x
 
 
