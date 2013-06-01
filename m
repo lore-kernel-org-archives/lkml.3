@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3FACoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 22:44:09 -0400
-Received: from lycasmtp.lycamobile.co.uk ([217.118.119.180]:53129 "EHLO
-	lycasmtp.lycamobile.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3FACoD convert rfc822-to-8bit (ORCPT
+	id S932233Ab3FACzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 22:55:38 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:57611 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757104Ab3FACza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 22:44:03 -0400
-Message-Id: <201305312220.r4VK31nX029482@lycasmtp.lycamobile.co.uk>
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 31 May 2013 22:55:30 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: =?utf-8?q?Your_Email_ID_has_won_=C2=A31=2C000=2C000=2E00_GBP_in_our_UK_NA?=
- =?utf-8?q?TIONAL_Online_splash_Promo=2C_For_claims_send_info=3A?=
-To: Recipients <uk@inf.net>
-From: uk@inf.net
-Date: Sat, 01 Jun 2013 03:58:41 +0530
-Reply-To: inf.greene@hotmail.co.uk
-X-plintron-MailScanner-Information: Please contact the ISP for more information
-X-plintron-MailScanner-ID: r4VK31nX029482
-X-plintron-MailScanner: Found to be clean
-X-plintron-MailScanner-SpamScore: sss
-X-plintron-MailScanner-From: uk@inf.net
+In-Reply-To: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
+References: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
+Date: Fri, 31 May 2013 19:55:29 -0700
+X-Google-Sender-Auth: OMOpxzWEChYXAaLuRN5lvxd0XsQ
+Message-ID: <CALiw-2FddAk=4ykYcrc1_EimyZC7-qq2rwNuJCuvU_GayE9CZA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] usb: misc: usb3503: Fix up usb3503 driver
+From: Olof Johansson <olofj@chromium.org>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dongjin Kim <tobetter@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File No: Ref NO.: XYL/26510460037/06
+2013/5/31 Julius Werner <jwerner@chromium.org>:
+> This patch set contains a few minor changes to the recently added SMSC
+> USB3503 driver. It addresses issues that seem to be either left-over
+> stopgaps from an early development stage or board-specific hacks,
+> changing them to defaults that should be most sane and useable for all
+> platforms that contain this chip.
+>
+> Julius Werner (3):
+>   usb: misc: usb3503: Fix up whitespace
+>   usb: misc: usb3503: Remove hardcoded disabling of ports 2 and 3
+>   usb: misc: usb3503: Remove 100ms sleep on reset, conform to data
+>     sheet
+>
+>  drivers/usb/misc/usb3503.c | 16 +++-------------
+>  1 file changed, 3 insertions(+), 13 deletions(-)
 
-Names:.............
-Tel/Mobile:........
-Address:...........
-Country:...........
-Age:............
+Series:
 
-Congratulation once again,
-Dr.Jones Green 
-Email: inf.greene@hotmail.co.uk
+Acked-by: Olof Johansson <olof@lixom.net>
 
 
+-Olof
