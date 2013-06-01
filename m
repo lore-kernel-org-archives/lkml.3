@@ -1,143 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab3FAEVM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 00:21:12 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:39937 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750759Ab3FAEVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 00:21:03 -0400
-Date: Fri, 31 May 2013 23:20:59 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, joeyli <jlee@suse.com>,
-        Matt Fleming <matt@console-pimps.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
-	info to runtime code
-Message-ID: <20130601042058.GB15199@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz> <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com> <20130531143425.GA5850@srcf.ucam.org> <1370011357.1913.15.camel@dabdike.int.hansenpartnership.com> <20130531144826.GB5850@srcf.ucam.org> <20130531154348.GA17145@sgi.com> <20130531162815.GA8082@srcf.ucam.org> <20130531225730.GB14752@sgi.com> <20130601000311.GA15126@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601000311.GA15126@srcf.ucam.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1754051Ab3FAEko (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 00:40:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53449 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab3FAEki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 00:40:38 -0400
+Message-ID: <1370061602.3766.22.camel@pasglop>
+Subject: Re: [PATCH v3 0/8] Nvram-to-pstore
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
+        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
+        cbouatmailru@gmail.com, keescook@chromium.org
+Date: Sat, 01 Jun 2013 14:40:02 +1000
+In-Reply-To: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
+References: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 01, 2013 at 01:03:11AM +0100, Matthew Garrett wrote:
-> On Fri, May 31, 2013 at 05:57:31PM -0500, Russ Anderson wrote:
-> > On Fri, May 31, 2013 at 05:28:16PM +0100, Matthew Garrett wrote:
-> > >                                           If nvram becaomes full, some 
-> > > systems crash during firmware initialisation. So we can't let nvram 
-> > > become full. The obvious thing to do here is to look at the values from 
-> > > QueryVariableInfo, but many systems won't perform any garbage collection 
-> > > until they're almost out of space and so variables that have been 
-> > > deleted still show up as used space.
-> > 
-> > OK.  I get nvram looks full due to lack of garbage collection
-> > on some systems.  Does QueryVariableInfo (at runtime) tell you
-> > it is full?  Is the problem that it says it is full when it
-> > is not, or does not tell you it is full when it is?
+On Thu, 2013-04-25 at 15:47 +0530, Aruna Balakrishnaiah wrote:
+> Currently the kernel provides the contents of p-series NVRAM only as a
+> simple stream of bytes via /dev/nvram, which must be interpreted in user
+> space by the nvram command in the powerpc-utils package. This patch set
+> exploits the pstore subsystem to expose each partition in NVRAM as a
+> separate file in /dev/pstore. For instance Oops messages will stored in a
+> file named [dmesg-nvram-2].
+
+We will need the same stuff for powernv. This is not a blocker for this
+patch series which I'm happy to apply (after I give it another round of
+review, hopefully today) but I would very much like you to, on top of
+this, start moving some of the basic pseries partition nvram handling
+to a generic place, along with your pstore bits, and use it on powernv
+as well.
+
+In fact, this applies to at least all the BookS server platforms...
+
+Things that come to mind:
+
+ - nvram_64.c duplicates generic_nvram.c as far as the user accessors
+are concerned, it should be possible to get rid of code there. Either
+the arch or the generic one (*)
+
+ - The nvram partition management should move to generic. While at it
+factor in the powermac variant (same stuff, mostly duplicated code)
+
+ - powernv wants all the goodies that pseries has, as does cell.
+
+(*) I wonder about that generic stuff... userspace might want to start
+doing things like resizing the common partition if not big enough etc...
+For that we might want to add more specific ioctl's. Is anybody other
+than us using generic_nvram ? I don't like adding ioctl's like that
+to a generic driver, maybe we could just make it call into something
+like arch_nvram_ioctl() and have an empty weak variant instead of the
+current ifdef game.
+
+Cheers,
+Ben.
+
+> Changes from v2:
+> 	- Fix renaming of pstore type ids in nvram.c
 > 
-> QueryVariableInfo reports the amount used *including garbage*. This 
-> makes it useless for determining how much space is available for the 
-> firmware to use.
-
-So when QueryVariableInfo reports there is space available, the
-write works and everything is fine.
-
-And when QueryVariableInfo reports insufficient space, don't write
-and everything is fine.
-
-But when QueryVariableInfo reports insufficient space and you
-write anyway, the system can get bricked.  Is that the problem?
-
-
-
-According to the UEFI spec for QueryVariableInfo()
-
-  RemainingVariableStorageSize
-                      Returns the remaining size of the storage
-                      space available for EFI variables associated
-                      with the attributes specified.
-
-It also says:
-
-   The returned MaximumVariableStorageSize, RemainingVariableStorageSize,
-   MaximumVariableSize information may change immediately after
-   the call based on other runtime activities including asynchronous
-   error events. Also, these values associated with different
-   attributes are not additive in nature.
-
-Note that "other runtime activities including asynchronous error
-events."  That means runtime services may be using nvram without
-the OS knowing about it.
-
-
-Some bios implementation may be "*including garbage*", but can
-you definitively say ALL do?  The spec explicitly says "the
-implementation of variable storage is not defined in this
-specification".  You can't assume any form of garbage collection.
-
-   7.2 Variable Services
-
-   Although the implementation of variable storage is not defined
-   in this specification, variables must be persistent in most cases.
-   This implies that the EFI implementation on a platform must arrange
-   it so that variables passed in for storage are retained and
-   available for use each time the system boots, at least until they
-   are explicitly deleted or overwritten. Provision of this type of
-   nonvolatile storage may be very limited on some platforms, so
-   variables should be used sparingly in cases where other means of
-   communicating information cannot be used.
-
-I don't see anything in here about the OS being free to use
-more nvram than QueryVariableInfo() reported as being available.
-What happened to following the spec?
-
-
-> > >                                       We can work around that by adding 
-> > > up the size of the variables ourselves, but that only gives us the value 
-> > > for runtime-visible variables. We also need to know how much space is 
-> > > used by variables that are only visible during boot,
-> > 
-> > Is it valid to assume that only the kernel writes to nvram at
-> > runtime?  Can bios log error information to nvram on an SMM
-> > interrupt (for example)?
+> Changes from v1:
+> 	- Reduce #ifdefs by and remove forward declarations of pstore callbacks
+> 	- Handle return value of nvram_write_os_partition
+> 	- Remove empty pstore callbacks and register pstore only when pstore
+> 	  is configured
+> ---
 > 
-> There's a limited number of situations where the firmware can write to 
-> nvram, but they're basically uninteresting. Practically speaking, it's 
-> always via the kernel once ExitBootServices() has been called.
-
-How can you say "they're basically uninteresting"???
-Do you know what EVERY bios implementation does???
-
-
-> > >                                                      hence calling 
-> > > QueryVariableInfo before ExitBootServices.
-> > 
-> > Correct me if I am wrong, but that is called from EFI stubs,
-> > which is only used by some bootloaders (sometimes grub2).
-> > Does that mean EFI/grub and EFI/elilo will not hit the problem,
-> > or will not have your fix?
+> Aruna Balakrishnaiah (8):
+>       powerpc/pseries: Remove syslog prefix in uncompressed oops text
+>       powerpc/pseries: Add version and timestamp to oops header
+>       powerpc/pseries: Introduce generic read function to read nvram-partitions
+>       powerpc/pseries: Read/Write oops nvram partition via pstore
+>       powerpc/pseries: Read rtas partition via pstore
+>       powerpc/pseries: Distinguish between a os-partition and non-os partition
+>       powerpc/pseries: Read of-config partition via pstore
+>       powerpc/pseries: Read common partition via pstore
 > 
-> Will not have the fix. Boot EFI systems via the EFI stub.
+> 
+>  arch/powerpc/platforms/pseries/nvram.c |  353 +++++++++++++++++++++++++++-----
+>  fs/pstore/inode.c                      |    9 +
+>  include/linux/pstore.h                 |    4 
+>  3 files changed, 313 insertions(+), 53 deletions(-)
+> 
 
-Thanks for that clarification.
 
-> Boot EFI systems via the EFI stub.
-
-Fortunately all our shipping systems are EFI/grub and EFI/elilo
-right now, so they boot.
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
