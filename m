@@ -1,123 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab3FATud (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 15:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63935 "EHLO mx1.redhat.com"
+	id S1752882Ab3FAUCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 16:02:33 -0400
+Received: from mout.gmx.net ([212.227.17.21]:53560 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab3FATu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 15:50:29 -0400
-Date: Sat, 1 Jun 2013 21:46:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/3] hw_breakpoint: Introduce cpumask_of_bp()
-Message-ID: <20130601194626.GD27149@redhat.com>
-References: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu> <20130601194526.GA27149@redhat.com>
-MIME-Version: 1.0
+	id S1751491Ab3FAUC0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 16:02:26 -0400
+X-Authenticated: #25030245
+X-Provags-ID: V01U2FsdGVkX18tYOBIJIwtqHjbpQkBaCZEfqeEdVyJ6b0KK2Yz+k
+	d+dPzX8fdeKZAL
+From: Hannes Weisbach <hannes_weisbach@gmx.net>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601194526.GA27149@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] lp: implement proper detach function for parport_driver lp 
+Date: Sat, 1 Jun 2013 22:02:21 +0200
+Message-Id: <2009349A-75FD-4D5F-8F25-F8FD78F1A5D8@gmx.net>
+Cc: linux-kernel@vger.kernel.org
+To: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
+Mime-Version: 1.0 (Apple Message framework v1085)
+X-Mailer: Apple Mail (2.1085)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the trivial helper which simply returns cpumask_of() or
-cpu_possible_mask depending on bp->cpu.
+From: Hannes Weisbach <hannes_weisbach@gmx.net>
 
-Change fetch_bp_busy_slots() and toggle_bp_slot() to always do
-for_each_cpu(cpumask_of_bp) to simplify the code and avoid the
-code duplication.
+The lp pardevice driver does not have a proper detach function. Consequently, parport_unregister_device() is not called when the underlying parport driver calls parport_remove_port(). As a result, the ref count of the parport driver's module does not go to zero and the driver module cannot be unloaded.
+The attached patch unregisters all lp pardevices which are on the to-be-detached parport.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Hannes Weisbach <hannes_weisbach@gmx.net>
 ---
- kernel/events/hw_breakpoint.c |   43 ++++++++++++++++------------------------
- 1 files changed, 17 insertions(+), 26 deletions(-)
+Granted, for normal parport drivers this is usually not an issue, because the device does not go away. However, I am currently writing a Linux device driver for a USB to parallel port converter [0] and therefore need proper detaching. Additionally, the wrong ref count keeps me from simply rmmod my driver and insmod a new version while developing and testing.
 
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 2f4d7c4..57efe5d 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -127,6 +127,13 @@ static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
- 	return count;
- }
+ drivers/char/lp.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+diff --git a/drivers/char/lp.c b/drivers/char/lp.c
+index 0913d79..57e6941 100644
+--- a/drivers/char/lp.c
++++ b/drivers/char/lp.c
+@@ -930,7 +930,17 @@ static void lp_attach (struct parport *port)
  
-+static const struct cpumask *cpumask_of_bp(struct perf_event *bp)
-+{
-+	if (bp->cpu >= 0)
-+		return cpumask_of(bp->cpu);
-+	return cpu_possible_mask;
-+}
+ static void lp_detach (struct parport *port)
+ {
+-	/* Write this some day. */
++	int offset;
 +
- /*
-  * Report the number of pinned/un-pinned breakpoints we have in
-  * a given cpu (cpu > -1) or in all of them (cpu = -1).
-@@ -135,25 +142,13 @@ static void
- fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		    enum bp_type_idx type)
- {
--	int cpu = bp->cpu;
--	struct task_struct *tsk = bp->hw.bp_target;
--
--	if (cpu >= 0) {
--		slots->pinned = per_cpu(nr_cpu_bp_pinned[type], cpu);
--		if (!tsk)
--			slots->pinned += max_task_bp_pinned(cpu, type);
--		else
--			slots->pinned += task_bp_pinned(cpu, bp, type);
--		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
--
--		return;
--	}
-+	const struct cpumask *cpumask = cpumask_of_bp(bp);
-+	int cpu;
- 
--	for_each_possible_cpu(cpu) {
--		unsigned int nr;
-+	for_each_cpu(cpu, cpumask) {
-+		unsigned int nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
- 
--		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
--		if (!tsk)
-+		if (!bp->hw.bp_target)
- 			nr += max_task_bp_pinned(cpu, type);
- 		else
- 			nr += task_bp_pinned(cpu, bp, type);
-@@ -205,25 +200,21 @@ static void
- toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	       int weight)
- {
--	int cpu = bp->cpu;
--	struct task_struct *tsk = bp->hw.bp_target;
-+	const struct cpumask *cpumask = cpumask_of_bp(bp);
-+	int cpu;
- 
- 	if (!enable)
- 		weight = -weight;
- 
- 	/* Pinned counter cpu profiling */
--	if (!tsk) {
--		per_cpu(nr_cpu_bp_pinned[type], cpu) += weight;
-+	if (!bp->hw.bp_target) {
-+		per_cpu(nr_cpu_bp_pinned[type], bp->cpu) += weight;
- 		return;
- 	}
- 
- 	/* Pinned counter task profiling */
--	if (cpu >= 0) {
-+	for_each_cpu(cpu, cpumask)
- 		toggle_bp_task_slot(bp, cpu, type, weight);
--	} else {
--		for_each_possible_cpu(cpu)
--			toggle_bp_task_slot(bp, cpu, type, weight);
--	}
- 
- 	if (enable)
- 		list_add_tail(&bp->hw.bp_list, &bp_task_head);
--- 
-1.5.5.1
-
++	for (offset = 0; offset < LP_NO; offset++) {
++		if (lp_table[offset].dev == NULL)
++			continue;
++		if (lp_table[offset].dev->port == port) {
++			device_destroy(lp_class, MKDEV(LP_MAJOR, offset));
++			parport_unregister_device(lp_table[offset].dev);
++		}
++	}
++
+ #ifdef CONFIG_LP_CONSOLE
+ 	if (console_registered == port) {
+ 		unregister_console(&lpcons);
 
