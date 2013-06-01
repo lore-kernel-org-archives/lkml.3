@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758326Ab3FABgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 21:36:25 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49870 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab3FABfx (ORCPT
+	id S1758199Ab3FAB6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 21:58:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49195 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330Ab3FAB6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 21:35:53 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dongjin Kim <tobetter@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Simon Glass <sjg@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH 1/3] usb: misc: usb3503: Fix up whitespace
-Date: Fri, 31 May 2013 18:34:50 -0700
-Message-Id: <1370050492-6046-2-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
-References: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
+	Fri, 31 May 2013 21:58:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370038972-2318779-8-git-send-email-arnd@arndb.de>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
+	<1370038972-2318779-8-git-send-email-arnd@arndb.de>
+Date: Sat, 1 Jun 2013 07:28:01 +0530
+Message-ID: <CAKohpomzoGsOoQ__fd0V651bjWt2=JTC10wGSQzX2yyTcWZmvA@mail.gmail.com>
+Subject: Re: [PATCH 07/15] cpufreq: spear needs cpufreq table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, patches@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove an erroneous tab that should be a space.
+On 1 June 2013 03:52, Arnd Bergmann <arnd@arndb.de> wrote:
+> Like a lot of the other cpufreq drivers, this one needs to
+> select CONFIG_CPU_FREQ_TABLE to avoid a build error like
+>
+> drivers/built-in.o: In function `spear_cpufreq_exit':
+> spear-cpufreq.c:198: undefined reference to `cpufreq_frequency_table_put_attr'
+> drivers/built-in.o: In function `spear_cpufreq_verify':
+> spear-cpufreq.c:35: undefined reference to `cpufreq_frequency_table_verify'
+> drivers/built-in.o: In function `spear_cpufreq_init':
+> spear-cpufreq.c:181: undefined reference to `cpufreq_frequency_table_cpuinfo'
+> spear-cpufreq.c:187: undefined reference to `cpufreq_frequency_table_get_attr'
+> drivers/built-in.o: In function `spear_cpufreq_target':
+> spear-cpufreq.c:120: undefined reference to `cpufreq_frequency_table_target'
+> drivers/built-in.o:(.data+0x5e63c): undefined reference to `cpufreq_freq_attr_scaling_available_freqs'
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: cpufreq@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> ---
+>  drivers/cpufreq/Kconfig.arm | 1 +
+>  1 file changed, 1 insertion(+)
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/misc/usb3503.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-index d3a1cce..73aeb87 100644
---- a/drivers/usb/misc/usb3503.c
-+++ b/drivers/usb/misc/usb3503.c
-@@ -208,7 +208,7 @@ static int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 		hub->gpio_connect = of_get_named_gpio(np, "intn-gpios", 0);
- 		if (hub->gpio_connect == -EPROBE_DEFER)
- 			return -EPROBE_DEFER;
--		hub->gpio_reset	= of_get_named_gpio(np, "reset-gpios", 0);
-+		hub->gpio_reset = of_get_named_gpio(np, "reset-gpios", 0);
- 		if (hub->gpio_reset == -EPROBE_DEFER)
- 			return -EPROBE_DEFER;
- 		of_property_read_u32(np, "initial-mode", &mode);
--- 
-1.7.12.4
-
+BTW, you want me to apply this one or take it through arm-soc tree?
