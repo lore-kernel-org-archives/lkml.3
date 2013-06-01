@@ -1,117 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3FAMo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 08:44:57 -0400
-Received: from mail1.hu.edu.jo ([87.236.232.205]:43149 "EHLO mail1.hu.edu.jo"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab3FAMot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 08:44:49 -0400
-From: "FROM MRS LIRAMANDOZA" <liramandoza@gmail.com>
-Reply-To: liramandoza@gmail.com
-Message-ID: <7560d8d19aaf.51a9f6a5@hu.edu.jo>
-Date: Sat, 01 Jun 2013 13:27:01 +0200
-X-Mailer: Oracle Communications Messenger Express 7u4-20.01 64bit (built
- Nov 21 2010)
+	id S1756906Ab3FAMuN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 08:50:13 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:37678 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756026Ab3FAMuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 08:50:06 -0400
+Message-ID: <51A9EDFA.3050901@semaphore.gr>
+Date: Sat, 01 Jun 2013 15:50:02 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Language: en
-Subject: =?UTF-8?B?KioqU1BBTSoqKkhPVyBBUkUgWU9VLFBMRUFTRSBBU1NJ?=
-	=?UTF-8?B?U1RBTkNFIE1FIFRISVMgQlVTSU5FU1Mu?=
-X-Accept-Language: en
-Content-Type: multipart/mixed; boundary="--463044a4128ee696d383b"
-To: undisclosed-recipients:;
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19908.006
-X-TM-AS-Result: Yes-32.212-5.0-31-11
-X-imss-scan-details: Yes-32.212-5.0-31-11
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19908.006
-X-TMASE-Result: 11-32.212200-5.000000
-X-TMASE-MatchedRID: VIrUe9vhGkgCc6ZU8BiwfIP881QlTLun4l5Yn/tbekGuDBpYBOPTOrE6
-	Wo7K0O0T8g1KYVj2lXK4fQO5h3xGjgD6KmsoyolHiQy4MG/9Stk+puI/aJRhepjKCdnVgKh5vFb
-	FMrdmu3pQm3v37+bi11ve34SzmeYzNJJGkW74XWHZ80yRkHXo6voLR4+zsDTtBv3BwF3sroc=
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
+References: <51A7BFA6.3070800@semaphore.gr> <CAKohpo=oD9Wgr0Y9zA3aVCdMq5MUC5GESWyL45h=izRyp9-CLA@mail.gmail.com> <51A8D0C2.1080801@semaphore.gr> <4850488.DDEIRKBtQx@vostro.rjw.lan>
+In-Reply-To: <4850488.DDEIRKBtQx@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On 06/01/2013 03:27 PM, Rafael J. Wysocki wrote:
+> On Friday, May 31, 2013 07:33:06 PM Stratos Karafotis wrote:
+>> On 05/31/2013 11:51 AM, Viresh Kumar wrote:
+>>>> ---
+>>>>    arch/x86/include/asm/processor.h   | 29 ----------------------
+>>>>    drivers/cpufreq/Makefile           |  2 +-
+>>>>    drivers/cpufreq/acpi-cpufreq.c     |  5 ----
+>>>>    drivers/cpufreq/cpufreq.c          | 21 ----------------
+>>>>    drivers/cpufreq/cpufreq_governor.c | 10 +-------
+>>>>    drivers/cpufreq/cpufreq_governor.h |  1 -
+>>>>    drivers/cpufreq/cpufreq_ondemand.c | 39 ++++++-----------------------
+>>>>    drivers/cpufreq/mperf.c            | 51 --------------------------------------
+>>>>    drivers/cpufreq/mperf.h            |  9 -------
+>>>>    include/linux/cpufreq.h            |  6 -----
+>>>>    10 files changed, 9 insertions(+), 164 deletions(-)
+>>>>    delete mode 100644 drivers/cpufreq/mperf.c
+>>>>    delete mode 100644 drivers/cpufreq/mperf.h
+>>>
+>>> I believe you should have removed other users of getavg() in a separate
+>>> patch and also cc'd relevant people so that you can some review comments
+>>> from  them.
+>>
+>> I will split the patch in two. If it's OK, I will keep the removal of
+>> __cpufreq_driver_getavg in the original patch and move the clean up of
+>> APERF/MPERF support in a second patch. I will also cc relevant people.
+>>
+>>
+>>>>           /* Check for frequency increase */
+>>>> -       if (load_freq > od_tuners->up_threshold * policy->cur) {
+>>>> +       if (load > od_tuners->up_threshold) {
+>>>
+>>> Chances of this getting hit are minimal now.. I don't know if keeping
+>>> this will change anything now :)
+>>
+>> Actually, no. This getting hit pretty often.
+>> Please find attached the cpufreq statistics - trans_table during build
+>> of 3.4 kernel. With default up_threshold (95), the transition to max
+>> happened many times because of load was greater than up_threshold.
+>> I also thought to keep this code to leave up_threshold functionality unaffected.
+>>   
+>> On 05/31/2013 03:42 PM, Rafael J. Wysocki wrote:
+>>> On Friday, May 31, 2013 02:24:59 PM Viresh Kumar wrote:
+>>>>> +       } else {
+>>>>> +               /* Calculate the next frequency proportional to load */
+>>>>>                   unsigned int freq_next;
+>>>>> -               freq_next = load_freq / od_tuners->adj_up_threshold;
+>>>>> +               freq_next = load * policy->max / 100;
+>>>>
+>>>> Rafael asked why you believe this is the right formula and I really couldn't
+>>>> find an appropriate answer to that, sorry :(
+>>>
+>>> Right, it would be good to explain that.
+>>>
+>>> "Proportional to load" means C * load, so why is "policy->max / 100" *the* right C?
+>>>
+>>
+>> I think, finally(?) I see your point. The right C should be "policy->cpuinfo.max_freq / 100".
+>> This way the target frequency will be proportional to load and the calculation will
+>> "map" the load to CPU freq table.
+> 
+> That seems to mean "take the percentage of policy->cpuinfo.max_freq proportional
+> to the current load and use the available frequency closest to that".  Is that
+> correct?
+> 
+> Rafael
+> 
+> 
 
-----463044a4128ee696d383b
-Content-Type: application/octet-stream; charset=UTF-8
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="FROM MS. LIRA MANDOZA..rtf"
+In my opinion, yes. I thought, yesterday, after your question, to normalize load
+to policy->min - policy->max. But I think it's a more correct approach to take 
+the percentage of cpuinfo.max, as you said.
+Actually, I did my tests on the percentage of policy->max that was equal to 
+cpuinfo.max.
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYw
-XGZzY3JpcHRcZnBycTJcZmNoYXJzZXQwIENvbWljIFNhbnMgTVM7fX0NCntcKlxnZW5lcmF0
-b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxwYXJkXGJcZjBcZnMy
-MiBGUk9NOiBNUlMuIExJUkEgTUFORE9aQVxwYXINClNVSVRFIDEyMCBDSVRZIFNRQVVSRVxw
-YXINClNBTkRUT04sIEpPSEFOTkVTQlVSR1xwYXINClNPVVRIIEFGUklDQVxwYXINCkVtYWls
-OmxpcmFtYW5kb3phYW5kc29uQGdtYWlsLmNvbVxwYXINCiBccGFyDQpTVFJJQ1RMWSBDT05G
-SURFTlRJQUxccGFyDQpccGFyDQpNeSBEZWFyZXN0IGluIENocmlzdCxccGFyDQpXaXRoIGR1
-ZSByZXNwZWN0LCB0cnVzdCBhbmQgaHVtaWxpdHksIEkgd3JpdGUgeW91IHRoaXMgcHJvcG9z
-YWwsIHdoaWNoIEkgYmVsaWV2ZSB3b3VsZCBiZSBvZiBncmVhdFxwYXINCmludGVyZXN0IHRv
-IHlvdS4gSSBmb3VuZCB5b3VyIGNvbnRhY3Qgd2hpbGUgSSB3YXMgZG9pbmcgYSBwcml2YXRl
-IHJlc2VhcmNoIG9uIHRoZSBJbnRlcm5ldCBmb3IgYVxwYXINCnJlbGlhYmxlIGFuZCBjYXBh
-YmxlIGZvcmVpZ24gcGFydG5lciB0aGF0IHdpbGwgYXNzaXN0IG1lIGFuZCBteSBvbmx5IHNv
-biBKb2huc29uLlxwYXINCk15IG5hbWUgaXMgTXJzLiBMaXJhIE1hbmRvemEgYSBuYXRpb25h
-bGl0eSBvZiBTb3V0aCBBZnJpY2E7IEkgUmV0aXJlZCB3aXRoIFNvdXRoIEFmcmljYW4gV29t
-ZW4gaW5ccGFyDQpDb25zdHJ1Y3Rpb24gQXNzb2NpYXRpb24uIFZpZXcgdGhlIHByb2ZpbGUg
-b2YgU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rpb24gYXQgKHdlYnNpdGUgYnlc
-cGFyDQpjbGlja2luZyAoaHR0cDovL3d3dy5zYXdpYy5vcmcvKSBhbmQgcmVhZCBhYm91dCB1
-cy4gSSBhbSBtYXJyaWVkIHRvIGxhdGUgTXIuIEpvaG4gTWFuZG96YTsgd2VccGFyDQp3ZXJl
-IG1hcnJpZWQgZm9yIHR3ZW50eSB5ZWFycyB3aXRoIGEgY2hpbGQuIEhlIGRpZWQgYWZ0ZXIg
-YW4gaWxsbmVzcyB0aGF0IGxhc3RlZCBmb3IgZm91ciB3ZWVrcy5ccGFyDQpQbGVhc2UgSSBr
-bm93IHRoaXMgbWF5IGNvbWUgdG8geW91IGJ5IHN1cnByaXNlLCBiZWNhdXNlIHlvdSBkaWQg
-bm90IGtub3cgbWUsIEkgbmVlZGVkIHlvdXJccGFyDQphc3Npc3RhbmNlIHRoYXQgd2FzIHdo
-eSBJIHdyaXRlIHRvIHlvdSB0aHJvdWdoIGRpdmluZSBkaXJlY3Rpb24sIGl0IGlzIG15IGRl
-c2lyZSBvZiBnb2luZyBpbnRvXHBhcg0KcmVsYXRpb25zaGlwIHdpdGggeW91LlxwYXINClxw
-YXINCkJlZm9yZSBteSBodXNiYW5kJ3MgZGVhdGggaGUgY29uZm91bmQgdG8gbWUgdGhhdCBo
-ZSBkZXBvc2l0ZWQgdGhlIHN1bSBvZiBVU0QkMzAuNU0oVGhpcnR5XHBhcg0KTWlsbGlvbiBG
-aXZlIEh1bmRyZWQgVGhvdXNhbmQgVS5TLkRvbGxhcnMpIHdpdGggRmluYW5jZS9iYW5rIFBy
-ZXNlbnRseSwgVGhpcyBmdW5kIGVtYW5hdGVkIGFzIGFccGFyDQpyZXN1bHQgb2YgYW4gb3Zl
-ci1pbnZvaWNlZCBjb250cmFjdCB3aGljaCBoZSBleGVjdXRlZCB3aXRoIHRoZSBTb3V0aCBB
-ZnJpY2FuIFdvbWVuIGluXHBhcg0KY29uc3RydWN0aW9uIC4gVGhvdWdoIEkgYXNzaXN0ZWQg
-aGltIGluIGdldHRpbmcgdGhpcyBjb250cmFjdCBidXQgSSBuZXZlciBrbmV3IHRoYXQgaXQg
-d2FzIG92ZXJpbnZvaWNlZCBieSBoaW0uIEkgYW0gYWZyYWlkIHRoYXQgdGhlIGdvdmVybm1l
-bnQgb2YgU291dGggQWZyaWNhIG1pZ2h0IHN0YXJ0IHRvIGludmVzdGlnYXRlIG9uXHBhcg0K
-Y29udHJhY3RzIGF3YXJkZWQgdG8gU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rp
-b24sdGhpcyBtb25leSBpcyBzdGlsbCB3aXRoIHRoZSBiYW5rLiBEdWVccGFyDQp0byB0aGUg
-Y29uZGl0aW9uIG9mIG15IGhlYWx0aCBteSBkb2N0b3IgdG9sZCBtZSB0aGF0IGkgd2lsbCBu
-b3QgbGl2ZSB1cHRvIHRocmVlIG1vbnRocywgYmVjYXVzZSBvZlxwYXINCm15IGNhbmNlciBw
-cm9ibGVtLCB0aG91Z2ggd2hhdCBkaXN0dXJicyBtZSBtb3N0IGlzIG15IHN0cm9rZS4gSGF2
-aW5nIGtub3duIG15IGNvbmRpdGlvbiBJXHBhcg0KZGVjaWRlZCB0byBkb25hdGUgdGhpcyBm
-dW5kIHRvIGNodXJjaCBvciBiZXR0ZXIgc3RpbGwgYSBDaHJpc3RpYW4gaW5kaXZpZHVhbCB0
-aGF0IHdpbGwgdXRpbGl6ZSB0aGlzXHBhcg0KbW9uZXkgdGhlIHdheSBJIGFtIGdvaW5nIHRv
-IGluc3RydWN0IGhlcmUgaW4uIEkgd2FudCBhIHBlcnNvbiBvciBjaHVyY2ggdGhhdCB3aWxs
-IHRha2UgY2FyZSBvZiBteVxwYXINCm9ubHkgc29uIGFuZCBhbHNvIHVzZSB0aGlzIGZ1bmQg
-dG8gY2h1cmNoZXMsIG9ycGhhbmFnZXMsIHJlc2VhcmNoIGNlbnRlcnMgYW5kIHdpZG93cyBh
-bmQgYWxzb1xwYXINClxwYXINCnByb3BhZ2F0ZSB0aGUgd29yZCBvZiBHb2QgYW5kIHRvIGVu
-c3VyZSB0aGF0IHRoZSBob3VzZSBvZiBHb2QgaXMgbWFpbnRhaW5lZC5ccGFyDQpJIHRvb2sg
-dGhpcyBkZWNpc2lvbiBiZWNhdXNlIEkgaGF2ZSBhIGNoaWxkIHRoYXQgd2lsbCBpbmhlcml0
-IHRoaXMgbW9uZXkgYnV0IG15IHNvbiBjYW4gbm90IGNhcnJ5b3V0XHBhcg0KdGhpcyB3b3Jr
-IGR1ZSB0byBoaXMgYWdlLiBJIGFuZCBteSBsYXRlIGh1c2JhbmQgZGVjaWRlZCB0byB1c2Ug
-c29tZSBvZiB0aGUgbW9uZXkgdG8gd29yayBmb3JccGFyDQpHb2QgYW5kIGxpdmUgc29tZSBm
-b3Igb3VyIHNvbiB0byBoYXZlIGEgYmV0dGVyIGxpdmUuIE91ciBzb24gaXMganVzdCAxNnll
-YXIgb2xkIG5vdyBhbmQgYmVlbiBncm93XHBhcg0KdXAgaW4gQWZyaWNhLCBoZSBoYXZlIGxv
-dyBtYXR1cml0eSBIZW5jZSB0aGUgcmVhc29uIGZvciB0YWtpbmcgdGhpcyBib2xkIGRlY2lz
-aW9uLiBJIGFtIG5vdCBhZnJhaWQgb2ZccGFyDQpkZWF0aCBoZW5jZSBJIGtub3cgdGhhdCBJ
-IGFtIGdvaW5nIHRvIGJlIGluIHRoZSBib3NvbSBvZiB0aGUgTG9yZC5ccGFyDQpccGFyDQpO
-b3RlIHRoYXQgbXkgY29udGFjdCB0byB5b3UgaXMgYSBkaXZpbmUgZGlyZWN0aW9uOyBBcyBz
-b29uIGFzIEkgcmVjZWl2ZSB5b3VyIHJlcGx5IEkgd2lsbCBnaXZlIHlvdSB0aGVccGFyDQpj
-b250YWN0IG9mIHRoZSBGaW5hbmNlL2JhbmsuIEkgd2lsbCBhbHNvIGlzc3VlIHlvdSBhIGxl
-dHRlciBvZiBhdXRob3JpdHkgdGhhdCB3aWxsIGVtcG93ZXIgeW91IGFzIHRoZVxwYXINCm5l
-dyBiZW5lZmljaWFyeSBvZiB0aGlzIGZ1bmQuIE15IGhhcHBpbmVzcyBpcyB0aGF0IEkgbGl2
-ZSBhIGxpZmUgb2YgYSB3b3J0aHkgQ2hyaXN0aWFuLiBBbnkgZGVsYXkgaW5ccGFyDQp5b3Vy
-IHJlcGx5IHdpbGwgZ2l2ZSBtZSByb29tIGluIHNvdXJjaW5nIGZvciBhIGNodXJjaCBvciBD
-aHJpc3RpYW4gaW5kaXZpZHVhbCBmb3IgdGhpcyBzYW1lXHBhcg0KcHVycG9zZS5ccGFyDQpQ
-bGVhc2UgYXNzdXJlIG1lIHRoYXQgeW91IHdpbGwgYWN0IGFjY29yZGluZ2x5IGFzIEkgc3Rh
-dGVkIGhlcmUgYW5kIFBsZWFzZSBJIHdpbGwgbGlrZSB5b3UgdG8gY29udGFjdFxwYXINCm1l
-IGltbWVkaWF0ZWx5IHlvdSByZWNlaXZlIHRoaXMgbWFpbCBzbyB0aGF0IEkgd2lsbCBpbnN0
-cnVjdCB0aGUgRmluYW5jZS9iYW5rIHRvISBUcmFuc2ZlciB0aGlzIGZ1bmRccGFyDQppbnRv
-IHlvdXIgYWNjb3VudC4gQ29ycmVzcG9uZGVuY2UgbXVzdCBiZSBieSBlbWFpbCB0byBhbnkg
-b2YgbXkgcHJpdmF0ZSBlLW1haWwgYWRkcmVzc2VzLlxwYXINClJlbWFpbiBibGVzc2VkIGlu
-IHRoZSBuYW1lIG9mIHRoZSBMb3JkLlxwYXINClxwYXINCk1ycy4gTGlyYSBNYW5kb3phIGFu
-ZCBTb24gSm9obnNvbi5ccGFyDQpFbWFpbDogbGlyYW1hbmRvemFhbmRzb25AZ21haWwuY29t
-XHBhcg0KfQ0KAA==
+Unless, I miss something here. :)
 
-----463044a4128ee696d383b--
-
+Thanks,
+Stratos
