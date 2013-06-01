@@ -1,132 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab3FATSX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 15:18:23 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:51470 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab3FATSP (ORCPT
+	id S1755330Ab3FATSj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 15:18:39 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:42766 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab3FATSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 15:18:15 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
-        <riel@redhat.com>, <drjones@redhat.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Sun, 02 Jun 2013 00:52:29 +0530
-Message-Id: <20130601192229.5966.49935.sendpatchset@codeblue>
-In-Reply-To: <20130601192125.5966.35563.sendpatchset@codeblue>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
-Subject: [PATCH RFC V9 3/19]  x86/ticketlock: Collapse a layer of functions
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060119-4790-0000-0000-000008937E44
+	Sat, 1 Jun 2013 15:18:17 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] usb: musb: use the new %pa format specifier for dma_addr_t
+Date: Sat,  1 Jun 2013 21:18:05 +0200
+Message-Id: <1370114285-14238-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86/ticketlock: Collapse a layer of functions
+This patch makes use of the new format specifier %pa that was introduced
+by the following commit.
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+7d7992108d02aa92ad4c77e5d9ce14088c942e75
+("lib/vsprintf.c: add %pa format specifier for phys_addr_t types")
 
-Now that the paravirtualization layer doesn't exist at the spinlock
-level any more, we can collapse the __ticket_ functions into the arch_
-functions.
+The addition of urb->transfer_dma and urb->actual_length is also done a
+few lines below. I have moved this code up and pass the variable buf to
+dev_dbg.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Tested-by: Attilio Rao <attilio.rao@citrix.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- arch/x86/include/asm/spinlock.h |   35 +++++------------------------------
- 1 file changed, 5 insertions(+), 30 deletions(-)
+v2: Remove 0x from string as it will print as 0x0x
+This applies on top of commit 43d5ad743c6f
+("usb: musb: host: fix build warning")
+I also added braces to the else statement for consistency.
+(Didn't want to send a separate patch for that)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 4d54244..7442410 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -76,7 +76,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
-  * in the high part, because a wide xadd increment of the low part would carry
-  * up and contaminate the high part.
-  */
--static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
-+static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
- {
- 	register struct __raw_tickets inc = { .tail = 1 };
+ drivers/usb/musb/musb_host.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index a9695f5..ee7730a 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -1756,12 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 			dma_addr_t		buf;
  
-@@ -96,7 +96,7 @@ static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
- out:	barrier();	/* make sure nothing creeps before the lock is taken */
- }
+ 			rx_count = musb_readw(epio, MUSB_RXCOUNT);
++			buf = urb->transfer_dma + urb->actual_length;
  
--static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
-+static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
- {
- 	arch_spinlock_t old, new;
+-			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
++			dev_dbg(musb->controller, "RX%d count %d, buffer %pa len %d/%d\n",
+ 					epnum, rx_count,
+-					(unsigned long long) urb->transfer_dma
+-					+ urb->actual_length,
+-					qh->offset,
++					&buf, qh->offset,
+ 					urb->transfer_buffer_length);
  
-@@ -110,7 +110,7 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
- }
+ 			c = musb->dma_controller;
+@@ -1785,14 +1784,13 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 					    rx_count, d->length);
  
--static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
-+static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
- {
- 	__ticket_t next = lock->tickets.head + 1;
+ 					length = d->length;
+-				} else
++				} else {
+ 					length = rx_count;
++				}
+ 				d->status = d_status;
+ 				buf = urb->transfer_dma + d->offset;
+ 			} else {
+ 				length = rx_count;
+-				buf = urb->transfer_dma +
+-						urb->actual_length;
+ 			}
  
-@@ -118,46 +118,21 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 	__ticket_unlock_kick(lock, next);
- }
- 
--static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
-+static inline int arch_spin_is_locked(arch_spinlock_t *lock)
- {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
- 	return tmp.tail != tmp.head;
- }
- 
--static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
-+static inline int arch_spin_is_contended(arch_spinlock_t *lock)
- {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
- 	return (__ticket_t)(tmp.tail - tmp.head) > 1;
- }
--
--static inline int arch_spin_is_locked(arch_spinlock_t *lock)
--{
--	return __ticket_spin_is_locked(lock);
--}
--
--static inline int arch_spin_is_contended(arch_spinlock_t *lock)
--{
--	return __ticket_spin_is_contended(lock);
--}
- #define arch_spin_is_contended	arch_spin_is_contended
- 
--static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
--{
--	__ticket_spin_lock(lock);
--}
--
--static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
--{
--	return __ticket_spin_trylock(lock);
--}
--
--static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
--{
--	__ticket_spin_unlock(lock);
--}
--
- static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- 						  unsigned long flags)
- {
+ 			dma->desired_mode = 0;
+-- 
+1.7.10.4
 
