@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab3FADIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 23:08:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab3FADIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 23:08:11 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
-Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v1 02/11] locks: make generic_add_lease and generic_delete_lease static
-Date: Fri, 31 May 2013 23:07:25 -0400
-Message-Id: <1370056054-25449-3-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	id S932493Ab3FADML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 23:12:11 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:41403 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab3FADIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 23:08:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370050492-6046-4-git-send-email-jwerner@chromium.org>
+References: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
+	<1370050492-6046-4-git-send-email-jwerner@chromium.org>
+Date: Sat, 1 Jun 2013 12:08:48 +0900
+Message-ID: <CADoNuNfuQQneRLi7mX0pjZU+eSuBdJ4M9sude=f1Y1dPTkwAPA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] usb: misc: usb3503: Remove 100ms sleep on reset,
+ conform to data sheet
+From: Dongjin Kim <tobetter@gmail.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Simon Glass <sjg@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 7a02064..e3140b8 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1337,7 +1337,7 @@ int fcntl_getlease(struct file *filp)
- 	return type;
- }
- 
--int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
-+static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
- {
- 	struct file_lock *fl, **before, **my_before = NULL, *lease;
- 	struct dentry *dentry = filp->f_path.dentry;
-@@ -1402,7 +1402,7 @@ out:
- 	return error;
- }
- 
--int generic_delete_lease(struct file *filp, struct file_lock **flp)
-+static int generic_delete_lease(struct file *filp, struct file_lock **flp)
- {
- 	struct file_lock *fl, **before;
- 	struct dentry *dentry = filp->f_path.dentry;
--- 
-1.7.1
-
+On Sat, Jun 1, 2013 at 10:34 AM, Julius Werner <jwerner@chromium.org> wrote:
+> The usb3503 driver sleeps a flat 100ms when resetting the chip, with a
+> comment about waiting for the reference clock. This seems to be a
+> board-specific detail that should not hold up boot across all platforms.
+> This patch reduces the sleep to the 4ms initialization delay that the
+> chip itself actually requires (as per its data sheet). If certain boards
+> require more time to set up the reference clock, they should change this
+> through local patches or add a proper, configurable synchronization
+> mechanism.
+>
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  drivers/usb/misc/usb3503.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
+> index a647a2e..a1d509f 100644
+> --- a/drivers/usb/misc/usb3503.c
+> +++ b/drivers/usb/misc/usb3503.c
+> @@ -107,11 +107,9 @@ static int usb3503_reset(int gpio_reset, int state)
+>         if (gpio_is_valid(gpio_reset))
+>                 gpio_set_value(gpio_reset, state);
+>
+> -       /* Wait RefClk when RESET_N is released, otherwise Hub will
+> -        * not transition to Hub Communication Stage.
+> -        */
+> +       /* Wait T_HUBINIT == 4ms for hub logic to stabilize */
+>         if (state)
+> -               msleep(100);
+> +               usleep_range(4000, 10000);
+>
+>         return 0;
+>  }
+> --
+> 1.7.12.4
+>
