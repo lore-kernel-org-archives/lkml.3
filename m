@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab3FAO2c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 10:28:32 -0400
-Received: from mail1.hu.edu.jo ([87.236.232.205]:41283 "EHLO mail1.hu.edu.jo"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab3FAO21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 10:28:27 -0400
-From: "FROM MRS LIRAMANDOZA" <liramandoza@gmail.com>
-Reply-To: liramandoza@gmail.com
-Message-ID: <7500f1c1c7ef.51a9ea75@hu.edu.jo>
-Date: Sat, 01 Jun 2013 12:35:01 +0200
-X-Mailer: Oracle Communications Messenger Express 7u4-20.01 64bit (built
- Nov 21 2010)
+	id S1756840Ab3FAOj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 10:39:57 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:42098 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab3FAOjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 10:39:49 -0400
+Message-ID: <51AA07B7.4020901@cogentembedded.com>
+Date: Sat, 01 Jun 2013 18:39:51 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Language: en
-Subject: =?UTF-8?B?KioqU1BBTSoqKkhPVyBBUkUgWU9VLFBMRUFTRSBBU1NJ?=
-	=?UTF-8?B?U1RBTkNFIE1FIFRISVMgQlVTSU5FU1Mu?=
-X-Accept-Language: en
-Content-Type: multipart/mixed; boundary="--441544f911ffc1d5a7e69"
-To: undisclosed-recipients:;
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19908.006
-X-TM-AS-Result: Yes-32.212-5.0-31-11
-X-imss-scan-details: Yes-32.212-5.0-31-11
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19908.006
-X-TMASE-Result: 11-32.212200-5.000000
-X-TMASE-MatchedRID: VIrUe9vhGkgCc6ZU8BiwfIP881QlTLun4l5Yn/tbekGuDBpYBOPTOrE6
-	Wo7K0O0T8g1KYVj2lXK4fQO5h3xGjgD6KmsoyolHiQy4MG/9Stk+puI/aJRhepjKCdnVgKh5vFb
-	FMrdmu3pQm3v37+bi11ve34SzmeYzNJJGkW74XWHZ80yRkHXo6voLR4+zsDTtBv3BwF3sroc=
+To: "B, Ravi" <ravibabu@ti.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for am33xx
+References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-9-git-send-email-ravibabu@ti.com> <519E275A.5020200@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE3EBF@DBDE04.ent.ti.com> <519E5D58.5020002@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE52A3@DBDE04.ent.ti.com>
+In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EAE52A3@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hello.
 
-----441544f911ffc1d5a7e69
-Content-Type: application/octet-stream; charset=UTF-8
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="FROM MS. LIRA MANDOZA..rtf"
+On 24-05-2013 9:34, B, Ravi wrote:
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYw
-XGZzY3JpcHRcZnBycTJcZmNoYXJzZXQwIENvbWljIFNhbnMgTVM7fX0NCntcKlxnZW5lcmF0
-b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxwYXJkXGJcZjBcZnMy
-MiBGUk9NOiBNUlMuIExJUkEgTUFORE9aQVxwYXINClNVSVRFIDEyMCBDSVRZIFNRQVVSRVxw
-YXINClNBTkRUT04sIEpPSEFOTkVTQlVSR1xwYXINClNPVVRIIEFGUklDQVxwYXINCkVtYWls
-OmxpcmFtYW5kb3phYW5kc29uQGdtYWlsLmNvbVxwYXINCiBccGFyDQpTVFJJQ1RMWSBDT05G
-SURFTlRJQUxccGFyDQpccGFyDQpNeSBEZWFyZXN0IGluIENocmlzdCxccGFyDQpXaXRoIGR1
-ZSByZXNwZWN0LCB0cnVzdCBhbmQgaHVtaWxpdHksIEkgd3JpdGUgeW91IHRoaXMgcHJvcG9z
-YWwsIHdoaWNoIEkgYmVsaWV2ZSB3b3VsZCBiZSBvZiBncmVhdFxwYXINCmludGVyZXN0IHRv
-IHlvdS4gSSBmb3VuZCB5b3VyIGNvbnRhY3Qgd2hpbGUgSSB3YXMgZG9pbmcgYSBwcml2YXRl
-IHJlc2VhcmNoIG9uIHRoZSBJbnRlcm5ldCBmb3IgYVxwYXINCnJlbGlhYmxlIGFuZCBjYXBh
-YmxlIGZvcmVpZ24gcGFydG5lciB0aGF0IHdpbGwgYXNzaXN0IG1lIGFuZCBteSBvbmx5IHNv
-biBKb2huc29uLlxwYXINCk15IG5hbWUgaXMgTXJzLiBMaXJhIE1hbmRvemEgYSBuYXRpb25h
-bGl0eSBvZiBTb3V0aCBBZnJpY2E7IEkgUmV0aXJlZCB3aXRoIFNvdXRoIEFmcmljYW4gV29t
-ZW4gaW5ccGFyDQpDb25zdHJ1Y3Rpb24gQXNzb2NpYXRpb24uIFZpZXcgdGhlIHByb2ZpbGUg
-b2YgU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rpb24gYXQgKHdlYnNpdGUgYnlc
-cGFyDQpjbGlja2luZyAoaHR0cDovL3d3dy5zYXdpYy5vcmcvKSBhbmQgcmVhZCBhYm91dCB1
-cy4gSSBhbSBtYXJyaWVkIHRvIGxhdGUgTXIuIEpvaG4gTWFuZG96YTsgd2VccGFyDQp3ZXJl
-IG1hcnJpZWQgZm9yIHR3ZW50eSB5ZWFycyB3aXRoIGEgY2hpbGQuIEhlIGRpZWQgYWZ0ZXIg
-YW4gaWxsbmVzcyB0aGF0IGxhc3RlZCBmb3IgZm91ciB3ZWVrcy5ccGFyDQpQbGVhc2UgSSBr
-bm93IHRoaXMgbWF5IGNvbWUgdG8geW91IGJ5IHN1cnByaXNlLCBiZWNhdXNlIHlvdSBkaWQg
-bm90IGtub3cgbWUsIEkgbmVlZGVkIHlvdXJccGFyDQphc3Npc3RhbmNlIHRoYXQgd2FzIHdo
-eSBJIHdyaXRlIHRvIHlvdSB0aHJvdWdoIGRpdmluZSBkaXJlY3Rpb24sIGl0IGlzIG15IGRl
-c2lyZSBvZiBnb2luZyBpbnRvXHBhcg0KcmVsYXRpb25zaGlwIHdpdGggeW91LlxwYXINClxw
-YXINCkJlZm9yZSBteSBodXNiYW5kJ3MgZGVhdGggaGUgY29uZm91bmQgdG8gbWUgdGhhdCBo
-ZSBkZXBvc2l0ZWQgdGhlIHN1bSBvZiBVU0QkMzAuNU0oVGhpcnR5XHBhcg0KTWlsbGlvbiBG
-aXZlIEh1bmRyZWQgVGhvdXNhbmQgVS5TLkRvbGxhcnMpIHdpdGggRmluYW5jZS9iYW5rIFBy
-ZXNlbnRseSwgVGhpcyBmdW5kIGVtYW5hdGVkIGFzIGFccGFyDQpyZXN1bHQgb2YgYW4gb3Zl
-ci1pbnZvaWNlZCBjb250cmFjdCB3aGljaCBoZSBleGVjdXRlZCB3aXRoIHRoZSBTb3V0aCBB
-ZnJpY2FuIFdvbWVuIGluXHBhcg0KY29uc3RydWN0aW9uIC4gVGhvdWdoIEkgYXNzaXN0ZWQg
-aGltIGluIGdldHRpbmcgdGhpcyBjb250cmFjdCBidXQgSSBuZXZlciBrbmV3IHRoYXQgaXQg
-d2FzIG92ZXJpbnZvaWNlZCBieSBoaW0uIEkgYW0gYWZyYWlkIHRoYXQgdGhlIGdvdmVybm1l
-bnQgb2YgU291dGggQWZyaWNhIG1pZ2h0IHN0YXJ0IHRvIGludmVzdGlnYXRlIG9uXHBhcg0K
-Y29udHJhY3RzIGF3YXJkZWQgdG8gU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rp
-b24sdGhpcyBtb25leSBpcyBzdGlsbCB3aXRoIHRoZSBiYW5rLiBEdWVccGFyDQp0byB0aGUg
-Y29uZGl0aW9uIG9mIG15IGhlYWx0aCBteSBkb2N0b3IgdG9sZCBtZSB0aGF0IGkgd2lsbCBu
-b3QgbGl2ZSB1cHRvIHRocmVlIG1vbnRocywgYmVjYXVzZSBvZlxwYXINCm15IGNhbmNlciBw
-cm9ibGVtLCB0aG91Z2ggd2hhdCBkaXN0dXJicyBtZSBtb3N0IGlzIG15IHN0cm9rZS4gSGF2
-aW5nIGtub3duIG15IGNvbmRpdGlvbiBJXHBhcg0KZGVjaWRlZCB0byBkb25hdGUgdGhpcyBm
-dW5kIHRvIGNodXJjaCBvciBiZXR0ZXIgc3RpbGwgYSBDaHJpc3RpYW4gaW5kaXZpZHVhbCB0
-aGF0IHdpbGwgdXRpbGl6ZSB0aGlzXHBhcg0KbW9uZXkgdGhlIHdheSBJIGFtIGdvaW5nIHRv
-IGluc3RydWN0IGhlcmUgaW4uIEkgd2FudCBhIHBlcnNvbiBvciBjaHVyY2ggdGhhdCB3aWxs
-IHRha2UgY2FyZSBvZiBteVxwYXINCm9ubHkgc29uIGFuZCBhbHNvIHVzZSB0aGlzIGZ1bmQg
-dG8gY2h1cmNoZXMsIG9ycGhhbmFnZXMsIHJlc2VhcmNoIGNlbnRlcnMgYW5kIHdpZG93cyBh
-bmQgYWxzb1xwYXINClxwYXINCnByb3BhZ2F0ZSB0aGUgd29yZCBvZiBHb2QgYW5kIHRvIGVu
-c3VyZSB0aGF0IHRoZSBob3VzZSBvZiBHb2QgaXMgbWFpbnRhaW5lZC5ccGFyDQpJIHRvb2sg
-dGhpcyBkZWNpc2lvbiBiZWNhdXNlIEkgaGF2ZSBhIGNoaWxkIHRoYXQgd2lsbCBpbmhlcml0
-IHRoaXMgbW9uZXkgYnV0IG15IHNvbiBjYW4gbm90IGNhcnJ5b3V0XHBhcg0KdGhpcyB3b3Jr
-IGR1ZSB0byBoaXMgYWdlLiBJIGFuZCBteSBsYXRlIGh1c2JhbmQgZGVjaWRlZCB0byB1c2Ug
-c29tZSBvZiB0aGUgbW9uZXkgdG8gd29yayBmb3JccGFyDQpHb2QgYW5kIGxpdmUgc29tZSBm
-b3Igb3VyIHNvbiB0byBoYXZlIGEgYmV0dGVyIGxpdmUuIE91ciBzb24gaXMganVzdCAxNnll
-YXIgb2xkIG5vdyBhbmQgYmVlbiBncm93XHBhcg0KdXAgaW4gQWZyaWNhLCBoZSBoYXZlIGxv
-dyBtYXR1cml0eSBIZW5jZSB0aGUgcmVhc29uIGZvciB0YWtpbmcgdGhpcyBib2xkIGRlY2lz
-aW9uLiBJIGFtIG5vdCBhZnJhaWQgb2ZccGFyDQpkZWF0aCBoZW5jZSBJIGtub3cgdGhhdCBJ
-IGFtIGdvaW5nIHRvIGJlIGluIHRoZSBib3NvbSBvZiB0aGUgTG9yZC5ccGFyDQpccGFyDQpO
-b3RlIHRoYXQgbXkgY29udGFjdCB0byB5b3UgaXMgYSBkaXZpbmUgZGlyZWN0aW9uOyBBcyBz
-b29uIGFzIEkgcmVjZWl2ZSB5b3VyIHJlcGx5IEkgd2lsbCBnaXZlIHlvdSB0aGVccGFyDQpj
-b250YWN0IG9mIHRoZSBGaW5hbmNlL2JhbmsuIEkgd2lsbCBhbHNvIGlzc3VlIHlvdSBhIGxl
-dHRlciBvZiBhdXRob3JpdHkgdGhhdCB3aWxsIGVtcG93ZXIgeW91IGFzIHRoZVxwYXINCm5l
-dyBiZW5lZmljaWFyeSBvZiB0aGlzIGZ1bmQuIE15IGhhcHBpbmVzcyBpcyB0aGF0IEkgbGl2
-ZSBhIGxpZmUgb2YgYSB3b3J0aHkgQ2hyaXN0aWFuLiBBbnkgZGVsYXkgaW5ccGFyDQp5b3Vy
-IHJlcGx5IHdpbGwgZ2l2ZSBtZSByb29tIGluIHNvdXJjaW5nIGZvciBhIGNodXJjaCBvciBD
-aHJpc3RpYW4gaW5kaXZpZHVhbCBmb3IgdGhpcyBzYW1lXHBhcg0KcHVycG9zZS5ccGFyDQpQ
-bGVhc2UgYXNzdXJlIG1lIHRoYXQgeW91IHdpbGwgYWN0IGFjY29yZGluZ2x5IGFzIEkgc3Rh
-dGVkIGhlcmUgYW5kIFBsZWFzZSBJIHdpbGwgbGlrZSB5b3UgdG8gY29udGFjdFxwYXINCm1l
-IGltbWVkaWF0ZWx5IHlvdSByZWNlaXZlIHRoaXMgbWFpbCBzbyB0aGF0IEkgd2lsbCBpbnN0
-cnVjdCB0aGUgRmluYW5jZS9iYW5rIHRvISBUcmFuc2ZlciB0aGlzIGZ1bmRccGFyDQppbnRv
-IHlvdXIgYWNjb3VudC4gQ29ycmVzcG9uZGVuY2UgbXVzdCBiZSBieSBlbWFpbCB0byBhbnkg
-b2YgbXkgcHJpdmF0ZSBlLW1haWwgYWRkcmVzc2VzLlxwYXINClJlbWFpbiBibGVzc2VkIGlu
-IHRoZSBuYW1lIG9mIHRoZSBMb3JkLlxwYXINClxwYXINCk1ycy4gTGlyYSBNYW5kb3phIGFu
-ZCBTb24gSm9obnNvbi5ccGFyDQpFbWFpbDogbGlyYW1hbmRvemFhbmRzb25AZ21haWwuY29t
-XHBhcg0KfQ0KAA==
+>>>> +		phy1: usbphy-gs70@44e10620 {
+>>>> +			compatible = "ti,dsps-usbphy";
+>>>> +			reg = <0x44e10620 0x8
+>>>> +			       0x44e10648 0x4>;
+>>>> +			reg-names = "phy_ctrl","phy_wkup";
+>>>> +			id = <0>;
+>>>> +		};
+>>>> +
+>>>> +		phy2: usbphy-gs70@44e10628 {
+>>>> +			compatible = "ti,dsps-usbphy";
+>>>> +			reg = <0x44e10628 0x8
+>>>> +			       0x44e10648 0x4>;
+>>> The second register conflicts with phy1.
 
-----441544f911ffc1d5a7e69--
+>> The two instances of phy uses common phy wakeup register.
+
+>>>      That's why there is a resource conflict. Have you actually tried to instantiate the devices out of such tree?
+>>> This register should be declared somewhere above the PHYs I think...
+
+> I did not face any problem with this, I have tested both instances of phy used by dual instance controller, worked fine.
+
+    How your /proc/iomem looks like with that?
+
+> What do you suggest, in case of common register which both phy have to use this for wakeup functionality.
+> The DT should support this.  What do you suggest in such case?
+
+    I'd probably have to create a third device for this shared register...
+
+> --
+> Ravi B
+
+WBR, Sergei
+
 
