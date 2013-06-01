@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3FAJpb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:45:31 -0400
-Received: from www17.your-server.de ([213.133.104.17]:59356 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758711Ab3FAJpZ (ORCPT
+	id S1758771Ab3FAJpp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:45:45 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:60985 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758719Ab3FAJp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:45:25 -0400
-Message-ID: <1370079920.29224.17.camel@localhost.localdomain>
-Subject: [PATCH] block: Cocci spatch "ptr_ret.spatch"
-From: Thomas Meyer <thomas@m3y3r.de>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:45:20 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Sat, 1 Jun 2013 05:45:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <2104181.OHBofkq3lH@wuerfel>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
+	<1370038972-2318779-8-git-send-email-arnd@arndb.de>
+	<CAKohpomzoGsOoQ__fd0V651bjWt2=JTC10wGSQzX2yyTcWZmvA@mail.gmail.com>
+	<2104181.OHBofkq3lH@wuerfel>
+Date: Sat, 1 Jun 2013 15:15:26 +0530
+Message-ID: <CAKohponkPNBA2kWnpPyNmmJw2t03x63uUSbZkiDfUZzpqqxSKw@mail.gmail.com>
+Subject: Re: [PATCH 07/15] cpufreq: spear needs cpufreq table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, patches@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1 June 2013 14:33, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 01 June 2013 07:28:01 Viresh Kumar wrote:
+>> On 1 June 2013 03:52, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > Like a lot of the other cpufreq drivers, this one needs to
+>> > select CONFIG_CPU_FREQ_TABLE to avoid a build error like
+>> >
+>> > drivers/built-in.o: In function `spear_cpufreq_exit':
+>> > spear-cpufreq.c:198: undefined reference to `cpufreq_frequency_table_put_attr'
+>> > drivers/built-in.o: In function `spear_cpufreq_verify':
+>> > spear-cpufreq.c:35: undefined reference to `cpufreq_frequency_table_verify'
+>> > drivers/built-in.o: In function `spear_cpufreq_init':
+>> > spear-cpufreq.c:181: undefined reference to `cpufreq_frequency_table_cpuinfo'
+>> > spear-cpufreq.c:187: undefined reference to `cpufreq_frequency_table_get_attr'
+>> > drivers/built-in.o: In function `spear_cpufreq_target':
+>> > spear-cpufreq.c:120: undefined reference to `cpufreq_frequency_table_target'
+>> > drivers/built-in.o:(.data+0x5e63c): undefined reference to `cpufreq_freq_attr_scaling_available_freqs'
+>> >
+>> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>> > Cc: cpufreq@vger.kernel.org
+>> > Cc: linux-pm@vger.kernel.org
+>> > ---
+>> >  drivers/cpufreq/Kconfig.arm | 1 +
+>> >  1 file changed, 1 insertion(+)
+>>
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>>
+>> BTW, you want me to apply this one or take it through arm-soc tree?
+>
+> As I said in the introductory mail, I would prefer it if you
+> can pick it up. Thanks!
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
+I saw that mail later :(
 
-diff -u -p a/block/blk-core.c b/block/blk-core.c
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1626,7 +1626,7 @@ static int __init fail_make_request_debu
- 	struct dentry *dir = fault_create_debugfs_attr("fail_make_request",
- 						NULL, &fail_make_request);
- 
--	return IS_ERR(dir) ? PTR_ERR(dir) : 0;
-+	return PTR_RET(dir);
- }
- 
- late_initcall(fail_make_request_debugfs);
-diff -u -p a/block/blk-timeout.c b/block/blk-timeout.c
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -31,7 +31,7 @@ static int __init fail_io_timeout_debugf
- 	struct dentry *dir = fault_create_debugfs_attr("fail_io_timeout",
- 						NULL, &fail_io_timeout);
- 
--	return IS_ERR(dir) ? PTR_ERR(dir) : 0;
-+	return PTR_RET(dir);
- }
- 
- late_initcall(fail_io_timeout_debugfs);
-diff -u -p a/block/ioctl.c b/block/ioctl.c
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -64,7 +64,7 @@ static int blkpg_ioctl(struct block_devi
- 			part = add_partition(disk, partno, start, length,
- 					     ADDPART_FLAG_NONE, NULL);
- 			mutex_unlock(&bdev->bd_mutex);
--			return IS_ERR(part) ? PTR_ERR(part) : 0;
-+			return PTR_RET(part);
- 		case BLKPG_DEL_PARTITION:
- 			part = disk_get_part(disk, partno);
- 			if (!part)
-
-
+Applied to cpufreq-next. Thanks.
