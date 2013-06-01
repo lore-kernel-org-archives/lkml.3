@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab3FAAQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 20:16:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56115 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab3FAAQn (ORCPT
+	id S1757907Ab3FAAWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 20:22:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39832 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab3FAAWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 20:16:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130530174727.GE3767@intel.com>
-References: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130530174727.GE3767@intel.com>
-Date: Fri, 31 May 2013 17:09:51 -0700
-X-Google-Sender-Auth: nvJfhTzc7hawBIDLSOMBmIeyFvQ
-Message-ID: <CAA9_cmdNiLfJjv-8Mh-Xb1ifZb4aw_9NGCVW6aWsfq6BN-DYyQ@mail.gmail.com>
-Subject: Re: [PATCH 00/12] dma: various minor clean ups for slave drivers
-From: Dan Williams <djbw@fb.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 May 2013 20:22:07 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv4 0/3] Cleanup MSM_GPIOMUX and add DT support for gpio-msm
+Date: Fri, 31 May 2013 17:21:58 -0700
+Message-Id: <1370046121-7835-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 10:47 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Mon, May 27, 2013 at 03:14:30PM +0300, Andy Shevchenko wrote:
->> Here is a set of small independent patches that clean up or fix minor things
->> across DMA slave drivers.
-> The series looks fine. I am going to wait a day more and apply, pls speak up if
-> you disagree and ack if you agree
+v4:
+for gpio-msm-v2 patch
+* Made summary_irq and tlmm_base part of msm_gpio_dev
+* Fixed the bitmap allocation
+* Fixed some compile issues with non-ARM
 
-Looks ok to me.  Reminds we can probably take this one step further
-and provide a generic implementation for the common case.  It's just a
-bit inconsistent though that some engines will poll the completion
-handler (try to advance the state of the last completed cookie)
-whereas others just assume things will be completed asynchronously.
+Rohit Vaswani (3):
+  ARM: msm: Remove gpiomux-v2 and re-organize MSM_GPIOMUX configs
+  ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
+  gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
 
---
-Dan
+ .../devicetree/bindings/gpio/gpio-msm.txt          |   26 +++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   11 +
+ arch/arm/boot/dts/msm8960-cdp.dts                  |   11 +
+ arch/arm/mach-msm/Kconfig                          |   13 +-
+ arch/arm/mach-msm/Makefile                         |    6 +-
+ arch/arm/mach-msm/gpiomux-8x60.c                   |   19 --
+ arch/arm/mach-msm/gpiomux-v2.c                     |   25 ---
+ arch/arm/mach-msm/gpiomux-v2.h                     |   61 ------
+ arch/arm/mach-msm/gpiomux.c                        |   15 ++
+ arch/arm/mach-msm/gpiomux.h                        |    5 -
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |    4 -
+ drivers/gpio/Kconfig                               |    2 +-
+ drivers/gpio/gpio-msm-v2.c                         |  199 ++++++++++++--------
+ 13 files changed, 189 insertions(+), 208 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-msm.txt
+ delete mode 100644 arch/arm/mach-msm/gpiomux-8x60.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-v2.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-v2.h
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
