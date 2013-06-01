@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3FAOJB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 10:09:01 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:36251 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab3FAOIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 10:08:54 -0400
+	id S1756309Ab3FAO2c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 10:28:32 -0400
+Received: from mail1.hu.edu.jo ([87.236.232.205]:41283 "EHLO mail1.hu.edu.jo"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab3FAO21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 10:28:27 -0400
+From: "FROM MRS LIRAMANDOZA" <liramandoza@gmail.com>
+Reply-To: liramandoza@gmail.com
+Message-ID: <7500f1c1c7ef.51a9ea75@hu.edu.jo>
+Date: Sat, 01 Jun 2013 12:35:01 +0200
+X-Mailer: Oracle Communications Messenger Express 7u4-20.01 64bit (built
+ Nov 21 2010)
 MIME-Version: 1.0
-In-Reply-To: <1370038972-2318779-16-git-send-email-arnd@arndb.de>
-References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
-	<1370038972-2318779-16-git-send-email-arnd@arndb.de>
-Date: Sat, 1 Jun 2013 09:01:07 -0500
-Message-ID: <CAL_Jsq+-7RizbVQSA-JnJRZFc9-3RFCXuCOXP=GfCin2Losfeg@mail.gmail.com>
-Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Language: en
+Subject: =?UTF-8?B?KioqU1BBTSoqKkhPVyBBUkUgWU9VLFBMRUFTRSBBU1NJ?=
+	=?UTF-8?B?U1RBTkNFIE1FIFRISVMgQlVTSU5FU1Mu?=
+X-Accept-Language: en
+Content-Type: multipart/mixed; boundary="--441544f911ffc1d5a7e69"
+To: undisclosed-recipients:;
+X-TM-AS-MML: No
+X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19908.006
+X-TM-AS-Result: Yes-32.212-5.0-31-11
+X-imss-scan-details: Yes-32.212-5.0-31-11
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19908.006
+X-TMASE-Result: 11-32.212200-5.000000
+X-TMASE-MatchedRID: VIrUe9vhGkgCc6ZU8BiwfIP881QlTLun4l5Yn/tbekGuDBpYBOPTOrE6
+	Wo7K0O0T8g1KYVj2lXK4fQO5h3xGjgD6KmsoyolHiQy4MG/9Stk+puI/aJRhepjKCdnVgKh5vFb
+	FMrdmu3pQm3v37+bi11ve34SzmeYzNJJGkW74XWHZ80yRkHXo6voLR4+zsDTtBv3BwF3sroc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 5:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> A lot of code uses the functions from of_platform.h when built for
-> devicetree-enabled platforms but can also be built without them.
-> In order to avoid using #ifdef everywhere in drivers, this
-> makes all the function declarations visible, which means we
-> can use "if (IS_ENABLED(CONFIG_OF))" in driver code and get build
-> coverage over the code but let the compiler drop the reference
-> in the object code.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
+This is a multi-part message in MIME format.
 
-I've got a more complete series for 3.11 that removes OF_DEVICE and
-of_platform_driver completely. I'm waiting on ack from Ben H.
+----441544f911ffc1d5a7e69
+Content-Type: application/octet-stream; charset=UTF-8
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="FROM MS. LIRA MANDOZA..rtf"
 
-Rob
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYw
+XGZzY3JpcHRcZnBycTJcZmNoYXJzZXQwIENvbWljIFNhbnMgTVM7fX0NCntcKlxnZW5lcmF0
+b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxwYXJkXGJcZjBcZnMy
+MiBGUk9NOiBNUlMuIExJUkEgTUFORE9aQVxwYXINClNVSVRFIDEyMCBDSVRZIFNRQVVSRVxw
+YXINClNBTkRUT04sIEpPSEFOTkVTQlVSR1xwYXINClNPVVRIIEFGUklDQVxwYXINCkVtYWls
+OmxpcmFtYW5kb3phYW5kc29uQGdtYWlsLmNvbVxwYXINCiBccGFyDQpTVFJJQ1RMWSBDT05G
+SURFTlRJQUxccGFyDQpccGFyDQpNeSBEZWFyZXN0IGluIENocmlzdCxccGFyDQpXaXRoIGR1
+ZSByZXNwZWN0LCB0cnVzdCBhbmQgaHVtaWxpdHksIEkgd3JpdGUgeW91IHRoaXMgcHJvcG9z
+YWwsIHdoaWNoIEkgYmVsaWV2ZSB3b3VsZCBiZSBvZiBncmVhdFxwYXINCmludGVyZXN0IHRv
+IHlvdS4gSSBmb3VuZCB5b3VyIGNvbnRhY3Qgd2hpbGUgSSB3YXMgZG9pbmcgYSBwcml2YXRl
+IHJlc2VhcmNoIG9uIHRoZSBJbnRlcm5ldCBmb3IgYVxwYXINCnJlbGlhYmxlIGFuZCBjYXBh
+YmxlIGZvcmVpZ24gcGFydG5lciB0aGF0IHdpbGwgYXNzaXN0IG1lIGFuZCBteSBvbmx5IHNv
+biBKb2huc29uLlxwYXINCk15IG5hbWUgaXMgTXJzLiBMaXJhIE1hbmRvemEgYSBuYXRpb25h
+bGl0eSBvZiBTb3V0aCBBZnJpY2E7IEkgUmV0aXJlZCB3aXRoIFNvdXRoIEFmcmljYW4gV29t
+ZW4gaW5ccGFyDQpDb25zdHJ1Y3Rpb24gQXNzb2NpYXRpb24uIFZpZXcgdGhlIHByb2ZpbGUg
+b2YgU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rpb24gYXQgKHdlYnNpdGUgYnlc
+cGFyDQpjbGlja2luZyAoaHR0cDovL3d3dy5zYXdpYy5vcmcvKSBhbmQgcmVhZCBhYm91dCB1
+cy4gSSBhbSBtYXJyaWVkIHRvIGxhdGUgTXIuIEpvaG4gTWFuZG96YTsgd2VccGFyDQp3ZXJl
+IG1hcnJpZWQgZm9yIHR3ZW50eSB5ZWFycyB3aXRoIGEgY2hpbGQuIEhlIGRpZWQgYWZ0ZXIg
+YW4gaWxsbmVzcyB0aGF0IGxhc3RlZCBmb3IgZm91ciB3ZWVrcy5ccGFyDQpQbGVhc2UgSSBr
+bm93IHRoaXMgbWF5IGNvbWUgdG8geW91IGJ5IHN1cnByaXNlLCBiZWNhdXNlIHlvdSBkaWQg
+bm90IGtub3cgbWUsIEkgbmVlZGVkIHlvdXJccGFyDQphc3Npc3RhbmNlIHRoYXQgd2FzIHdo
+eSBJIHdyaXRlIHRvIHlvdSB0aHJvdWdoIGRpdmluZSBkaXJlY3Rpb24sIGl0IGlzIG15IGRl
+c2lyZSBvZiBnb2luZyBpbnRvXHBhcg0KcmVsYXRpb25zaGlwIHdpdGggeW91LlxwYXINClxw
+YXINCkJlZm9yZSBteSBodXNiYW5kJ3MgZGVhdGggaGUgY29uZm91bmQgdG8gbWUgdGhhdCBo
+ZSBkZXBvc2l0ZWQgdGhlIHN1bSBvZiBVU0QkMzAuNU0oVGhpcnR5XHBhcg0KTWlsbGlvbiBG
+aXZlIEh1bmRyZWQgVGhvdXNhbmQgVS5TLkRvbGxhcnMpIHdpdGggRmluYW5jZS9iYW5rIFBy
+ZXNlbnRseSwgVGhpcyBmdW5kIGVtYW5hdGVkIGFzIGFccGFyDQpyZXN1bHQgb2YgYW4gb3Zl
+ci1pbnZvaWNlZCBjb250cmFjdCB3aGljaCBoZSBleGVjdXRlZCB3aXRoIHRoZSBTb3V0aCBB
+ZnJpY2FuIFdvbWVuIGluXHBhcg0KY29uc3RydWN0aW9uIC4gVGhvdWdoIEkgYXNzaXN0ZWQg
+aGltIGluIGdldHRpbmcgdGhpcyBjb250cmFjdCBidXQgSSBuZXZlciBrbmV3IHRoYXQgaXQg
+d2FzIG92ZXJpbnZvaWNlZCBieSBoaW0uIEkgYW0gYWZyYWlkIHRoYXQgdGhlIGdvdmVybm1l
+bnQgb2YgU291dGggQWZyaWNhIG1pZ2h0IHN0YXJ0IHRvIGludmVzdGlnYXRlIG9uXHBhcg0K
+Y29udHJhY3RzIGF3YXJkZWQgdG8gU291dGggQWZyaWNhbiBXb21lbiBpbiBjb25zdHJ1Y3Rp
+b24sdGhpcyBtb25leSBpcyBzdGlsbCB3aXRoIHRoZSBiYW5rLiBEdWVccGFyDQp0byB0aGUg
+Y29uZGl0aW9uIG9mIG15IGhlYWx0aCBteSBkb2N0b3IgdG9sZCBtZSB0aGF0IGkgd2lsbCBu
+b3QgbGl2ZSB1cHRvIHRocmVlIG1vbnRocywgYmVjYXVzZSBvZlxwYXINCm15IGNhbmNlciBw
+cm9ibGVtLCB0aG91Z2ggd2hhdCBkaXN0dXJicyBtZSBtb3N0IGlzIG15IHN0cm9rZS4gSGF2
+aW5nIGtub3duIG15IGNvbmRpdGlvbiBJXHBhcg0KZGVjaWRlZCB0byBkb25hdGUgdGhpcyBm
+dW5kIHRvIGNodXJjaCBvciBiZXR0ZXIgc3RpbGwgYSBDaHJpc3RpYW4gaW5kaXZpZHVhbCB0
+aGF0IHdpbGwgdXRpbGl6ZSB0aGlzXHBhcg0KbW9uZXkgdGhlIHdheSBJIGFtIGdvaW5nIHRv
+IGluc3RydWN0IGhlcmUgaW4uIEkgd2FudCBhIHBlcnNvbiBvciBjaHVyY2ggdGhhdCB3aWxs
+IHRha2UgY2FyZSBvZiBteVxwYXINCm9ubHkgc29uIGFuZCBhbHNvIHVzZSB0aGlzIGZ1bmQg
+dG8gY2h1cmNoZXMsIG9ycGhhbmFnZXMsIHJlc2VhcmNoIGNlbnRlcnMgYW5kIHdpZG93cyBh
+bmQgYWxzb1xwYXINClxwYXINCnByb3BhZ2F0ZSB0aGUgd29yZCBvZiBHb2QgYW5kIHRvIGVu
+c3VyZSB0aGF0IHRoZSBob3VzZSBvZiBHb2QgaXMgbWFpbnRhaW5lZC5ccGFyDQpJIHRvb2sg
+dGhpcyBkZWNpc2lvbiBiZWNhdXNlIEkgaGF2ZSBhIGNoaWxkIHRoYXQgd2lsbCBpbmhlcml0
+IHRoaXMgbW9uZXkgYnV0IG15IHNvbiBjYW4gbm90IGNhcnJ5b3V0XHBhcg0KdGhpcyB3b3Jr
+IGR1ZSB0byBoaXMgYWdlLiBJIGFuZCBteSBsYXRlIGh1c2JhbmQgZGVjaWRlZCB0byB1c2Ug
+c29tZSBvZiB0aGUgbW9uZXkgdG8gd29yayBmb3JccGFyDQpHb2QgYW5kIGxpdmUgc29tZSBm
+b3Igb3VyIHNvbiB0byBoYXZlIGEgYmV0dGVyIGxpdmUuIE91ciBzb24gaXMganVzdCAxNnll
+YXIgb2xkIG5vdyBhbmQgYmVlbiBncm93XHBhcg0KdXAgaW4gQWZyaWNhLCBoZSBoYXZlIGxv
+dyBtYXR1cml0eSBIZW5jZSB0aGUgcmVhc29uIGZvciB0YWtpbmcgdGhpcyBib2xkIGRlY2lz
+aW9uLiBJIGFtIG5vdCBhZnJhaWQgb2ZccGFyDQpkZWF0aCBoZW5jZSBJIGtub3cgdGhhdCBJ
+IGFtIGdvaW5nIHRvIGJlIGluIHRoZSBib3NvbSBvZiB0aGUgTG9yZC5ccGFyDQpccGFyDQpO
+b3RlIHRoYXQgbXkgY29udGFjdCB0byB5b3UgaXMgYSBkaXZpbmUgZGlyZWN0aW9uOyBBcyBz
+b29uIGFzIEkgcmVjZWl2ZSB5b3VyIHJlcGx5IEkgd2lsbCBnaXZlIHlvdSB0aGVccGFyDQpj
+b250YWN0IG9mIHRoZSBGaW5hbmNlL2JhbmsuIEkgd2lsbCBhbHNvIGlzc3VlIHlvdSBhIGxl
+dHRlciBvZiBhdXRob3JpdHkgdGhhdCB3aWxsIGVtcG93ZXIgeW91IGFzIHRoZVxwYXINCm5l
+dyBiZW5lZmljaWFyeSBvZiB0aGlzIGZ1bmQuIE15IGhhcHBpbmVzcyBpcyB0aGF0IEkgbGl2
+ZSBhIGxpZmUgb2YgYSB3b3J0aHkgQ2hyaXN0aWFuLiBBbnkgZGVsYXkgaW5ccGFyDQp5b3Vy
+IHJlcGx5IHdpbGwgZ2l2ZSBtZSByb29tIGluIHNvdXJjaW5nIGZvciBhIGNodXJjaCBvciBD
+aHJpc3RpYW4gaW5kaXZpZHVhbCBmb3IgdGhpcyBzYW1lXHBhcg0KcHVycG9zZS5ccGFyDQpQ
+bGVhc2UgYXNzdXJlIG1lIHRoYXQgeW91IHdpbGwgYWN0IGFjY29yZGluZ2x5IGFzIEkgc3Rh
+dGVkIGhlcmUgYW5kIFBsZWFzZSBJIHdpbGwgbGlrZSB5b3UgdG8gY29udGFjdFxwYXINCm1l
+IGltbWVkaWF0ZWx5IHlvdSByZWNlaXZlIHRoaXMgbWFpbCBzbyB0aGF0IEkgd2lsbCBpbnN0
+cnVjdCB0aGUgRmluYW5jZS9iYW5rIHRvISBUcmFuc2ZlciB0aGlzIGZ1bmRccGFyDQppbnRv
+IHlvdXIgYWNjb3VudC4gQ29ycmVzcG9uZGVuY2UgbXVzdCBiZSBieSBlbWFpbCB0byBhbnkg
+b2YgbXkgcHJpdmF0ZSBlLW1haWwgYWRkcmVzc2VzLlxwYXINClJlbWFpbiBibGVzc2VkIGlu
+IHRoZSBuYW1lIG9mIHRoZSBMb3JkLlxwYXINClxwYXINCk1ycy4gTGlyYSBNYW5kb3phIGFu
+ZCBTb24gSm9obnNvbi5ccGFyDQpFbWFpbDogbGlyYW1hbmRvemFhbmRzb25AZ21haWwuY29t
+XHBhcg0KfQ0KAA==
 
-> ---
->  include/linux/of_platform.h | 14 +++-----------
->  1 file changed, 3 insertions(+), 11 deletions(-)
->
-> diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-> index 2a93b64..7747ad0 100644
-> --- a/include/linux/of_platform.h
-> +++ b/include/linux/of_platform.h
-> @@ -13,8 +13,6 @@
->
->  #include <linux/device.h>
->  #include <linux/mod_devicetable.h>
-> -
-> -#ifdef CONFIG_OF_DEVICE
->  #include <linux/pm.h>
->  #include <linux/of_device.h>
->  #include <linux/platform_device.h>
-> @@ -82,7 +80,6 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
->                                          struct device *parent);
->  extern struct platform_device *of_find_device_by_node(struct device_node *np);
->
-> -#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
->  /* Platform devices and busses creation */
->  extern struct platform_device *of_platform_device_create(struct device_node *np,
->                                                    const char *bus_id,
-> @@ -91,17 +88,12 @@ extern struct platform_device *of_platform_device_create(struct device_node *np,
->  extern int of_platform_bus_probe(struct device_node *root,
->                                  const struct of_device_id *matches,
->                                  struct device *parent);
-> +#ifdef CONFIG_OF_ADDRESS
->  extern int of_platform_populate(struct device_node *root,
->                                 const struct of_device_id *matches,
->                                 const struct of_dev_auxdata *lookup,
->                                 struct device *parent);
-> -#endif /* CONFIG_OF_ADDRESS */
-> -
-> -#endif /* CONFIG_OF_DEVICE */
-> -
-> -#if !defined(CONFIG_OF_ADDRESS)
-> -struct of_dev_auxdata;
-> -struct device_node;
-> +#else
->  static inline int of_platform_populate(struct device_node *root,
->                                         const struct of_device_id *matches,
->                                         const struct of_dev_auxdata *lookup,
-> @@ -109,6 +101,6 @@ static inline int of_platform_populate(struct device_node *root,
->  {
->         return -ENODEV;
->  }
-> -#endif /* !CONFIG_OF_ADDRESS */
-> +#endif
->
->  #endif /* _LINUX_OF_PLATFORM_H */
-> --
-> 1.8.1.2
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+----441544f911ffc1d5a7e69--
+
