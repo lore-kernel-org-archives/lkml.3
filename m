@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab3FATRZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 15:17:25 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37368 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab3FATRO (ORCPT
+	id S1754979Ab3FATRr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 15:17:47 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:32805 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab3FATRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 15:17:14 -0400
+	Sat, 1 Jun 2013 15:17:39 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
         <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
@@ -22,329 +22,318 @@ Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
         <riel@redhat.com>, <drjones@redhat.com>,
         <virtualization@lists.linux-foundation.org>,
         <srivatsa.vaddagiri@gmail.com>
-Date: Sun, 02 Jun 2013 00:51:25 +0530
-Message-Id: <20130601192125.5966.35563.sendpatchset@codeblue>
-Subject: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-X-TM-AS-MML: No
+Date: Sun, 02 Jun 2013 00:51:38 +0530
+Message-Id: <20130601192138.5966.62276.sendpatchset@codeblue>
+In-Reply-To: <20130601192125.5966.35563.sendpatchset@codeblue>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+Subject: [PATCH RFC V9 1/19]  x86/spinlock: Replace pv spinlocks with pv ticketlocks
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060119-8256-0000-0000-000007BF25BB
+x-cbid: 13060119-9264-0000-0000-000003DB40B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+x86/spinlock: Replace pv spinlocks with pv ticketlocks
 
-This series replaces the existing paravirtualized spinlock mechanism
-with a paravirtualized ticketlock mechanism. The series provides
-implementation for both Xen and KVM.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Changes in V9:
-- Changed spin_threshold to 32k to avoid excess halt exits that are
-   causing undercommit degradation (after PLE handler improvement).
-- Added  kvm_irq_delivery_to_apic (suggested by Gleb)
-- Optimized halt exit path to use PLE handler
+Rather than outright replacing the entire spinlock implementation in
+order to paravirtualize it, keep the ticket lock implementation but add
+a couple of pvops hooks on the slow patch (long spin on lock, unlocking
+a contended lock).
 
-V8 of PVspinlock was posted last year. After Avi's suggestions to look
-at PLE handler's improvements, various optimizations in PLE handling
-have been tried.
-
-With this series we see that we could get little more improvements on top
-of that. 
-
-Ticket locks have an inherent problem in a virtualized case, because
-the vCPUs are scheduled rather than running concurrently (ignoring
-gang scheduled vCPUs).  This can result in catastrophic performance
-collapses when the vCPU scheduler doesn't schedule the correct "next"
-vCPU, and ends up scheduling a vCPU which burns its entire timeslice
-spinning.  (Note that this is not the same problem as lock-holder
-preemption, which this series also addresses; that's also a problem,
-but not catastrophic).
+Ticket locks have a number of nice properties, but they also have some
+surprising behaviours in virtual environments.  They enforce a strict
+FIFO ordering on cpus trying to take a lock; however, if the hypervisor
+scheduler does not schedule the cpus in the correct order, the system can
+waste a huge amount of time spinning until the next cpu can take the lock.
 
 (See Thomas Friebel's talk "Prevent Guests from Spinning Around"
 http://www.xen.org/files/xensummitboston08/LHP.pdf for more details.)
 
-Currently we deal with this by having PV spinlocks, which adds a layer
-of indirection in front of all the spinlock functions, and defining a
-completely new implementation for Xen (and for other pvops users, but
-there are none at present).
+To address this, we add two hooks:
+ - __ticket_spin_lock which is called after the cpu has been
+   spinning on the lock for a significant number of iterations but has
+   failed to take the lock (presumably because the cpu holding the lock
+   has been descheduled).  The lock_spinning pvop is expected to block
+   the cpu until it has been kicked by the current lock holder.
+ - __ticket_spin_unlock, which on releasing a contended lock
+   (there are more cpus with tail tickets), it looks to see if the next
+   cpu is blocked and wakes it if so.
 
-PV ticketlocks keeps the existing ticketlock implemenentation
-(fastpath) as-is, but adds a couple of pvops for the slow paths:
+When compiled with CONFIG_PARAVIRT_SPINLOCKS disabled, a set of stub
+functions causes all the extra code to go away.
 
-- If a CPU has been waiting for a spinlock for SPIN_THRESHOLD
-  iterations, then call out to the __ticket_lock_spinning() pvop,
-  which allows a backend to block the vCPU rather than spinning.  This
-  pvop can set the lock into "slowpath state".
-
-- When releasing a lock, if it is in "slowpath state", the call
-  __ticket_unlock_kick() to kick the next vCPU in line awake.  If the
-  lock is no longer in contention, it also clears the slowpath flag.
-
-The "slowpath state" is stored in the LSB of the within the lock tail
-ticket.  This has the effect of reducing the max number of CPUs by
-half (so, a "small ticket" can deal with 128 CPUs, and "large ticket"
-32768).
-
-For KVM, one hypercall is introduced in hypervisor,that allows a vcpu to kick
-another vcpu out of halt state.
-The blocking of vcpu is done using halt() in (lock_spinning) slowpath.
-
-Overall, it results in a large reduction in code, it makes the native
-and virtualized cases closer, and it removes a layer of indirection
-around all the spinlock functions.
-
-The fast path (taking an uncontended lock which isn't in "slowpath"
-state) is optimal, identical to the non-paravirtualized case.
-
-The inner part of ticket lock code becomes:
-	inc = xadd(&lock->tickets, inc);
-	inc.tail &= ~TICKET_SLOWPATH_FLAG;
-
-	if (likely(inc.head == inc.tail))
-		goto out;
-	for (;;) {
-		unsigned count = SPIN_THRESHOLD;
-		do {
-			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
-				goto out;
-			cpu_relax();
-		} while (--count);
-		__ticket_lock_spinning(lock, inc.tail);
-	}
-out:	barrier();
-which results in:
-	push   %rbp
-	mov    %rsp,%rbp
-
-	mov    $0x200,%eax
-	lock xadd %ax,(%rdi)
-	movzbl %ah,%edx
-	cmp    %al,%dl
-	jne    1f	# Slowpath if lock in contention
-
-	pop    %rbp
-	retq   
-
-	### SLOWPATH START
-1:	and    $-2,%edx
-	movzbl %dl,%esi
-
-2:	mov    $0x800,%eax
-	jmp    4f
-
-3:	pause  
-	sub    $0x1,%eax
-	je     5f
-
-4:	movzbl (%rdi),%ecx
-	cmp    %cl,%dl
-	jne    3b
-
-	pop    %rbp
-	retq   
-
-5:	callq  *__ticket_lock_spinning
-	jmp    2b
-	### SLOWPATH END
-
-with CONFIG_PARAVIRT_SPINLOCKS=n, the code has changed slightly, where
-the fastpath case is straight through (taking the lock without
-contention), and the spin loop is out of line:
-
-	push   %rbp
-	mov    %rsp,%rbp
-
-	mov    $0x100,%eax
-	lock xadd %ax,(%rdi)
-	movzbl %ah,%edx
-	cmp    %al,%dl
-	jne    1f
-
-	pop    %rbp
-	retq   
-
-	### SLOWPATH START
-1:	pause  
-	movzbl (%rdi),%eax
-	cmp    %dl,%al
-	jne    1b
-
-	pop    %rbp
-	retq   
-	### SLOWPATH END
-
-The unlock code is complicated by the need to both add to the lock's
-"head" and fetch the slowpath flag from "tail".  This version of the
-patch uses a locked add to do this, followed by a test to see if the
-slowflag is set.  The lock prefix acts as a full memory barrier, so we
-can be sure that other CPUs will have seen the unlock before we read
-the flag (without the barrier the read could be fetched from the
-store queue before it hits memory, which could result in a deadlock).
-
-This is is all unnecessary complication if you're not using PV ticket
-locks, it also uses the jump-label machinery to use the standard
-"add"-based unlock in the non-PV case.
-
-	if (TICKET_SLOWPATH_FLAG &&
-	     static_key_false(&paravirt_ticketlocks_enabled))) {
-		arch_spinlock_t prev;
-		prev = *lock;
-		add_smp(&lock->tickets.head, TICKET_LOCK_INC);
-
-		/* add_smp() is a full mb() */
-		if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
-			__ticket_unlock_slowpath(lock, prev);
-	} else
-		__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
-which generates:
-	push   %rbp
-	mov    %rsp,%rbp
-
-	nop5	# replaced by 5-byte jmp 2f when PV enabled
-
-	# non-PV unlock
-	addb   $0x2,(%rdi)
-
-1:	pop    %rbp
-	retq   
-
-### PV unlock ###
-2:	movzwl (%rdi),%esi	# Fetch prev
-
-	lock addb $0x2,(%rdi)	# Do unlock
-
-	testb  $0x1,0x1(%rdi)	# Test flag
-	je     1b		# Finished if not set
-
-### Slow path ###
-	add    $2,%sil		# Add "head" in old lock state
-	mov    %esi,%edx
-	and    $0xfe,%dh	# clear slowflag for comparison
-	movzbl %dh,%eax
-	cmp    %dl,%al		# If head == tail (uncontended)
-	je     4f		# clear slowpath flag
-
-	# Kick next CPU waiting for lock
-3:	movzbl %sil,%esi
-	callq  *pv_lock_ops.kick
-
-	pop    %rbp
-	retq   
-
-	# Lock no longer contended - clear slowflag
-4:	mov    %esi,%eax
-	lock cmpxchg %dx,(%rdi)	# cmpxchg to clear flag
-	cmp    %si,%ax
-	jne    3b		# If clear failed, then kick
-
-	pop    %rbp
-	retq   
-
-So when not using PV ticketlocks, the unlock sequence just has a
-5-byte nop added to it, and the PV case is reasonable straightforward
-aside from requiring a "lock add".
-
-
-Results:
-=======
-base = 3.10-rc2 kernel
-patched = base + this series
-
-The test was on 32 core (model: Intel(R) Xeon(R) CPU X7560) HT disabled
-with 32 KVM guest vcpu 8GB RAM.
-
-+-----------+-----------+-----------+------------+-----------+
-               ebizzy (records/sec) higher is better
-+-----------+-----------+-----------+------------+-----------+
-    base        stdev        patched    stdev        %improvement
-+-----------+-----------+-----------+------------+-----------+
-1x  5574.9000   237.4997    5618.0000    94.0366     0.77311
-2x  2741.5000   561.3090    3332.0000   102.4738    21.53930
-3x  2146.2500   216.7718    2302.3333    76.3870     7.27237
-4x  1663.0000   141.9235    1753.7500    83.5220     5.45701
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-              dbench  (Throughput) higher is better
-+-----------+-----------+-----------+------------+-----------+
-    base        stdev        patched    stdev        %improvement
-+-----------+-----------+-----------+------------+-----------+
-1x 14111.5600   754.4525   14645.9900   114.3087     3.78718
-2x  2481.6270    71.2665    2667.1280    73.8193     7.47498
-3x  1510.2483    31.8634    1503.8792    36.0777    -0.42173
-4x  1029.4875    16.9166    1039.7069    43.8840     0.99267
-+-----------+-----------+-----------+------------+-----------+
-
-Your suggestions and comments are welcome.
-
-github link: https://github.com/ktraghavendra/linux/tree/pvspinlock_v9
-
-
-Please note that we set SPIN_THRESHOLD = 32k with this series,
-that would eatup little bit of overcommit performance of PLE machines
-and overall performance of non-PLE machines. 
-
-The older series was tested by Attilio for Xen implementation [1].
-
-Jeremy Fitzhardinge (9):
- x86/spinlock: Replace pv spinlocks with pv ticketlocks
- x86/ticketlock: Collapse a layer of functions
- xen: Defer spinlock setup until boot CPU setup
- xen/pvticketlock: Xen implementation for PV ticket locks
- xen/pvticketlocks: Add xen_nopvspin parameter to disable xen pv ticketlocks
- x86/pvticketlock: Use callee-save for lock_spinning
- x86/pvticketlock: When paravirtualizing ticket locks, increment by 2
- x86/ticketlock: Add slowpath logic
- xen/pvticketlock: Allow interrupts to be enabled while blocking
-
-Andrew Jones (1):
- Split jumplabel ratelimit
-
-Stefano Stabellini (1):
- xen: Enable PV ticketlocks on HVM Xen
-
-Srivatsa Vaddagiri (3):
- kvm hypervisor : Add a hypercall to KVM hypervisor to support pv-ticketlocks
- kvm guest : Add configuration support to enable debug information for KVM Guests
- kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
-
-Raghavendra K T (5):
- x86/ticketlock: Don't inline _spin_unlock when using paravirt spinlocks
- kvm : Fold pv_unhalt flag into GET_MP_STATE ioctl to aid migration
- Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
- Documentation/kvm : Add documentation on Hypercalls and features used for PV spinlock
- Add directed yield in vcpu block path
-
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Tested-by: Attilio Rao <attilio.rao@citrix.com>
+[ Raghavendra: Changed SPIN_THRESHOLD ]
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
-Link in V8 has links to previous patch series and also whole history.
+ arch/x86/include/asm/paravirt.h       |   32 ++++----------------
+ arch/x86/include/asm/paravirt_types.h |   10 ++----
+ arch/x86/include/asm/spinlock.h       |   53 +++++++++++++++++++++++++++------
+ arch/x86/include/asm/spinlock_types.h |    4 --
+ arch/x86/kernel/paravirt-spinlocks.c  |   15 +--------
+ arch/x86/xen/spinlock.c               |    8 ++++-
+ 6 files changed, 61 insertions(+), 61 deletions(-)
 
-V8 PV Ticketspinlock for Xen/KVM link:
-[1] https://lkml.org/lkml/2012/5/2/119
-
- Documentation/virtual/kvm/cpuid.txt      |   4 +
- Documentation/virtual/kvm/hypercalls.txt |  13 ++
- arch/ia64/include/asm/kvm_host.h         |   5 +
- arch/powerpc/include/asm/kvm_host.h      |   5 +
- arch/s390/include/asm/kvm_host.h         |   5 +
- arch/x86/Kconfig                         |  10 +
- arch/x86/include/asm/kvm_host.h          |   7 +-
- arch/x86/include/asm/kvm_para.h          |  14 +-
- arch/x86/include/asm/paravirt.h          |  32 +--
- arch/x86/include/asm/paravirt_types.h    |  10 +-
- arch/x86/include/asm/spinlock.h          | 128 +++++++----
- arch/x86/include/asm/spinlock_types.h    |  16 +-
- arch/x86/include/uapi/asm/kvm_para.h     |   1 +
- arch/x86/kernel/kvm.c                    | 256 +++++++++++++++++++++
- arch/x86/kernel/paravirt-spinlocks.c     |  18 +-
- arch/x86/kvm/cpuid.c                     |   3 +-
- arch/x86/kvm/lapic.c                     |   5 +-
- arch/x86/kvm/x86.c                       |  39 +++-
- arch/x86/xen/smp.c                       |   3 +-
- arch/x86/xen/spinlock.c                  | 384 ++++++++++---------------------
- include/linux/jump_label.h               |  26 +--
- include/linux/jump_label_ratelimit.h     |  34 +++
- include/linux/kvm_host.h                 |   2 +-
- include/linux/perf_event.h               |   1 +
- include/uapi/linux/kvm_para.h            |   1 +
- kernel/jump_label.c                      |   1 +
- virt/kvm/kvm_main.c                      |   6 +-
- 27 files changed, 645 insertions(+), 384 deletions(-)
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index cfdc9ee..040e72d 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -712,36 +712,16 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_PARAVIRT_SPINLOCKS)
+ 
+-static inline int arch_spin_is_locked(struct arch_spinlock *lock)
++static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
++							__ticket_t ticket)
+ {
+-	return PVOP_CALL1(int, pv_lock_ops.spin_is_locked, lock);
++	PVOP_VCALL2(pv_lock_ops.lock_spinning, lock, ticket);
+ }
+ 
+-static inline int arch_spin_is_contended(struct arch_spinlock *lock)
++static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
++							__ticket_t ticket)
+ {
+-	return PVOP_CALL1(int, pv_lock_ops.spin_is_contended, lock);
+-}
+-#define arch_spin_is_contended	arch_spin_is_contended
+-
+-static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
+-{
+-	PVOP_VCALL1(pv_lock_ops.spin_lock, lock);
+-}
+-
+-static __always_inline void arch_spin_lock_flags(struct arch_spinlock *lock,
+-						  unsigned long flags)
+-{
+-	PVOP_VCALL2(pv_lock_ops.spin_lock_flags, lock, flags);
+-}
+-
+-static __always_inline int arch_spin_trylock(struct arch_spinlock *lock)
+-{
+-	return PVOP_CALL1(int, pv_lock_ops.spin_trylock, lock);
+-}
+-
+-static __always_inline void arch_spin_unlock(struct arch_spinlock *lock)
+-{
+-	PVOP_VCALL1(pv_lock_ops.spin_unlock, lock);
++	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
+ }
+ 
+ #endif
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 0db1fca..d5deb6d 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -327,13 +327,11 @@ struct pv_mmu_ops {
+ };
+ 
+ struct arch_spinlock;
++#include <asm/spinlock_types.h>
++
+ struct pv_lock_ops {
+-	int (*spin_is_locked)(struct arch_spinlock *lock);
+-	int (*spin_is_contended)(struct arch_spinlock *lock);
+-	void (*spin_lock)(struct arch_spinlock *lock);
+-	void (*spin_lock_flags)(struct arch_spinlock *lock, unsigned long flags);
+-	int (*spin_trylock)(struct arch_spinlock *lock);
+-	void (*spin_unlock)(struct arch_spinlock *lock);
++	void (*lock_spinning)(struct arch_spinlock *lock, __ticket_t ticket);
++	void (*unlock_kick)(struct arch_spinlock *lock, __ticket_t ticket);
+ };
+ 
+ /* This contains all the paravirt structures: we get a convenient
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 33692ea..4d54244 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -34,6 +34,35 @@
+ # define UNLOCK_LOCK_PREFIX
+ #endif
+ 
++/* How long a lock should spin before we consider blocking */
++#define SPIN_THRESHOLD	(1 << 15)
++
++#ifndef CONFIG_PARAVIRT_SPINLOCKS
++
++static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
++							__ticket_t ticket)
++{
++}
++
++static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
++							 __ticket_t ticket)
++{
++}
++
++#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
++
++
++/*
++ * If a spinlock has someone waiting on it, then kick the appropriate
++ * waiting cpu.
++ */
++static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
++							__ticket_t next)
++{
++	if (unlikely(lock->tickets.tail != next))
++		____ticket_unlock_kick(lock, next);
++}
++
+ /*
+  * Ticket locks are conceptually two parts, one indicating the current head of
+  * the queue, and the other indicating the current tail. The lock is acquired
+@@ -47,19 +76,24 @@
+  * in the high part, because a wide xadd increment of the low part would carry
+  * up and contaminate the high part.
+  */
+-static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
++static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
+ {
+ 	register struct __raw_tickets inc = { .tail = 1 };
+ 
+ 	inc = xadd(&lock->tickets, inc);
+ 
+ 	for (;;) {
+-		if (inc.head == inc.tail)
+-			break;
+-		cpu_relax();
+-		inc.head = ACCESS_ONCE(lock->tickets.head);
++		unsigned count = SPIN_THRESHOLD;
++
++		do {
++			if (inc.head == inc.tail)
++				goto out;
++			cpu_relax();
++			inc.head = ACCESS_ONCE(lock->tickets.head);
++		} while (--count);
++		__ticket_lock_spinning(lock, inc.tail);
+ 	}
+-	barrier();		/* make sure nothing creeps before the lock is taken */
++out:	barrier();	/* make sure nothing creeps before the lock is taken */
+ }
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+@@ -78,7 +112,10 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ 
+ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ {
++	__ticket_t next = lock->tickets.head + 1;
++
+ 	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
++	__ticket_unlock_kick(lock, next);
+ }
+ 
+ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+@@ -95,8 +132,6 @@ static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
+ 	return (__ticket_t)(tmp.tail - tmp.head) > 1;
+ }
+ 
+-#ifndef CONFIG_PARAVIRT_SPINLOCKS
+-
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+ {
+ 	return __ticket_spin_is_locked(lock);
+@@ -129,8 +164,6 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
+ 	arch_spin_lock(lock);
+ }
+ 
+-#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
+-
+ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ {
+ 	while (arch_spin_is_locked(lock))
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index ad0ad07..83fd3c7 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -1,10 +1,6 @@
+ #ifndef _ASM_X86_SPINLOCK_TYPES_H
+ #define _ASM_X86_SPINLOCK_TYPES_H
+ 
+-#ifndef __LINUX_SPINLOCK_TYPES_H
+-# error "please don't include this file directly"
+-#endif
+-
+ #include <linux/types.h>
+ 
+ #if (CONFIG_NR_CPUS < 256)
+diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
+index 676b8c7..c2e010e 100644
+--- a/arch/x86/kernel/paravirt-spinlocks.c
++++ b/arch/x86/kernel/paravirt-spinlocks.c
+@@ -7,21 +7,10 @@
+ 
+ #include <asm/paravirt.h>
+ 
+-static inline void
+-default_spin_lock_flags(arch_spinlock_t *lock, unsigned long flags)
+-{
+-	arch_spin_lock(lock);
+-}
+-
+ struct pv_lock_ops pv_lock_ops = {
+ #ifdef CONFIG_SMP
+-	.spin_is_locked = __ticket_spin_is_locked,
+-	.spin_is_contended = __ticket_spin_is_contended,
+-
+-	.spin_lock = __ticket_spin_lock,
+-	.spin_lock_flags = default_spin_lock_flags,
+-	.spin_trylock = __ticket_spin_trylock,
+-	.spin_unlock = __ticket_spin_unlock,
++	.lock_spinning = paravirt_nop,
++	.unlock_kick = paravirt_nop,
+ #endif
+ };
+ EXPORT_SYMBOL(pv_lock_ops);
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 3002ec1..d6481a9 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -138,6 +138,9 @@ struct xen_spinlock {
+ 	xen_spinners_t spinners;	/* count of waiting cpus */
+ };
+ 
++static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
++
++#if 0
+ static int xen_spin_is_locked(struct arch_spinlock *lock)
+ {
+ 	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+@@ -165,7 +168,6 @@ static int xen_spin_trylock(struct arch_spinlock *lock)
+ 	return old == 0;
+ }
+ 
+-static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
+ static DEFINE_PER_CPU(struct xen_spinlock *, lock_spinners);
+ 
+ /*
+@@ -352,6 +354,7 @@ static void xen_spin_unlock(struct arch_spinlock *lock)
+ 	if (unlikely(xl->spinners))
+ 		xen_spin_unlock_slow(xl);
+ }
++#endif
+ 
+ static irqreturn_t dummy_handler(int irq, void *dev_id)
+ {
+@@ -413,13 +416,14 @@ void __init xen_init_spinlocks(void)
+ 		return;
+ 
+ 	BUILD_BUG_ON(sizeof(struct xen_spinlock) > sizeof(arch_spinlock_t));
+-
++#if 0
+ 	pv_lock_ops.spin_is_locked = xen_spin_is_locked;
+ 	pv_lock_ops.spin_is_contended = xen_spin_is_contended;
+ 	pv_lock_ops.spin_lock = xen_spin_lock;
+ 	pv_lock_ops.spin_lock_flags = xen_spin_lock_flags;
+ 	pv_lock_ops.spin_trylock = xen_spin_trylock;
+ 	pv_lock_ops.spin_unlock = xen_spin_unlock;
++#endif
+ }
+ 
+ #ifdef CONFIG_XEN_DEBUG_FS
 
