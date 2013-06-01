@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab3FAEMp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 00:12:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53433 "EHLO
+	id S1755497Ab3FAEM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 00:12:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47825 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755761Ab3FAEMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 00:12:39 -0400
+	id S1755021Ab3FAEMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 00:12:22 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V2 8/8] pktcdvd: Add struct pktcdvd_device * to pkt_dump_sense()
-Date: Fri, 31 May 2013 21:11:29 -0700
-Message-Id: <8e73470813ef6ee6fa9845f42623785ebf35de97.1370048648.git.joe@perches.com>
+Subject: [PATCH V2 6/8] pktcdvd: Convert pr_notice to pkt_notice
+Date: Fri, 31 May 2013 21:11:27 -0700
+Message-Id: <57c43b1b2fdcec5bc95d22654bd4f34df6cc1faf.1370048648.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1370048648.git.joe@perches.com>
 References: <1369978679.10556.36.camel@joe-AO722> <cover.1370048648.git.joe@perches.com>
@@ -21,123 +21,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the device name to be emitted with pkt_err when
-logging the sense data.
+Add a new pkt_notice macro to prefix the name to the logging output.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/block/pktcdvd.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/block/pktcdvd.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 995d688..5a6710f 100644
+index 07ff878..3815f01 100644
 --- a/drivers/block/pktcdvd.c
 +++ b/drivers/block/pktcdvd.c
-@@ -756,17 +756,18 @@ static const char *sense_key_string(__u8 index)
-  * A generic sense dump / resolve mechanism should be implemented across
-  * all ATAPI + SCSI devices.
-  */
--static void pkt_dump_sense(struct packet_command *cgc)
-+static void pkt_dump_sense(struct pktcdvd_device *pd,
-+			   struct packet_command *cgc)
- {
- 	struct request_sense *sense = cgc->sense;
+@@ -71,17 +71,19 @@
  
- 	if (sense)
--		pr_err("%*ph - sense %02x.%02x.%02x (%s)\n",
--		       CDROM_PACKET_SIZE, cgc->cmd,
--		       sense->sense_key, sense->asc, sense->ascq,
--		       sense_key_string(sense->sense_key));
-+		pkt_err(pd, "%*ph - sense %02x.%02x.%02x (%s)\n",
-+			CDROM_PACKET_SIZE, cgc->cmd,
-+			sense->sense_key, sense->asc, sense->ascq,
-+			sense_key_string(sense->sense_key));
- 	else
--		pr_err("%*ph - no sense\n", CDROM_PACKET_SIZE, cgc->cmd);
-+		pkt_err(pd, "%*ph - no sense\n", CDROM_PACKET_SIZE, cgc->cmd);
- }
+ #define DRIVER_NAME	"pktcdvd"
  
- /*
-@@ -809,7 +810,7 @@ static noinline_for_stack int pkt_set_speed(struct pktcdvd_device *pd,
- 	cgc.cmd[5] = write_speed & 0xff;
++#define pkt_err(pd, fmt, ...)						\
++	pr_err("%s: " fmt, pd->name, ##__VA_ARGS__)
++#define pkt_notice(pd, fmt, ...)					\
++	pr_notice("%s: " fmt, pd->name, ##__VA_ARGS__)
++
+ #define pkt_dbg(level, pd, fmt, ...)					\
+ do {									\
+ 	if (level == 2 && PACKET_DEBUG >= 2)				\
+-		pr_notice("%s: %s():" fmt,				\
+-			  pd->name, __func__, ##__VA_ARGS__);		\
++		pkt_notice(pd, "%s(): " fmt, __func__, ##__VA_ARGS__);	\
+ 	else if (level == 1 && PACKET_DEBUG >= 1)			\
+-		pr_notice("%s: " fmt, pd->name, ##__VA_ARGS__);		\
++		pkt_notice(pd, fmt, ##__VA_ARGS__);			\
+ } while (0)
  
- 	if ((ret = pkt_generic_packet(pd, &cgc)))
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
+-#define pkt_err(pd, fmt, ...)						\
+-	pr_err("%s: " fmt, pd->name, ##__VA_ARGS__)
  
- 	return ret;
- }
-@@ -1703,7 +1704,7 @@ static noinline_for_stack int pkt_set_write_settings(struct pktcdvd_device *pd)
- 	init_cdrom_command(&cgc, buffer, sizeof(*wp), CGC_DATA_READ);
- 	cgc.sense = &sense;
- 	if ((ret = pkt_mode_sense(pd, &cgc, GPMODE_WRITE_PARMS_PAGE, 0))) {
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
- 		return ret;
+ #define MAX_SPEED 0xffff
+ 
+@@ -1821,7 +1823,7 @@ static int pkt_writable_disc(struct pktcdvd_device *pd, disc_information *di)
+ 	 * but i'm not sure, should we leave this to user apps? probably.
+ 	 */
+ 	if (di->disc_type == 0xff) {
+-		pr_notice("unknown disc - no track?\n");
++		pkt_notice(pd, "unknown disc - no track?\n");
+ 		return 0;
  	}
  
-@@ -1718,7 +1719,7 @@ static noinline_for_stack int pkt_set_write_settings(struct pktcdvd_device *pd)
- 	init_cdrom_command(&cgc, buffer, size, CGC_DATA_READ);
- 	cgc.sense = &sense;
- 	if ((ret = pkt_mode_sense(pd, &cgc, GPMODE_WRITE_PARMS_PAGE, 0))) {
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
- 		return ret;
+@@ -1831,7 +1833,7 @@ static int pkt_writable_disc(struct pktcdvd_device *pd, disc_information *di)
  	}
  
-@@ -1760,7 +1761,7 @@ static noinline_for_stack int pkt_set_write_settings(struct pktcdvd_device *pd)
- 
- 	cgc.buflen = cgc.cmd[8] = size;
- 	if ((ret = pkt_mode_select(pd, &cgc))) {
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
- 		return ret;
+ 	if (di->erasable == 0) {
+-		pr_notice("disc not erasable\n");
++		pkt_notice(pd, "disc not erasable\n");
+ 		return 0;
  	}
  
-@@ -1972,7 +1973,7 @@ static noinline_for_stack int pkt_write_caching(struct pktcdvd_device *pd,
- 	ret = pkt_mode_select(pd, &cgc);
- 	if (ret) {
+@@ -1887,7 +1889,7 @@ static noinline_for_stack int pkt_probe_settings(struct pktcdvd_device *pd)
+ 	 */
+ 	pd->settings.size = be32_to_cpu(ti.fixed_packet_size) << 2;
+ 	if (pd->settings.size == 0) {
+-		pr_notice("detected zero packet size!\n");
++		pkt_notice(pd, "detected zero packet size!\n");
+ 		return -ENXIO;
+ 	}
+ 	if (pd->settings.size > PACKET_MAX_SECTORS) {
+@@ -1970,7 +1972,7 @@ static noinline_for_stack int pkt_write_caching(struct pktcdvd_device *pd,
  		pkt_err(pd, "write caching control failed\n");
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
+ 		pkt_dump_sense(&cgc);
  	} else if (!ret && set)
- 		pkt_notice(pd, "enabled write caching\n");
- 	return ret;
-@@ -2010,7 +2011,7 @@ static noinline_for_stack int pkt_get_max_speed(struct pktcdvd_device *pd,
- 			     sizeof(struct mode_page_header);
- 		ret = pkt_mode_sense(pd, &cgc, GPMODE_CAPABILITIES_PAGE, 0);
- 		if (ret) {
--			pkt_dump_sense(&cgc);
-+			pkt_dump_sense(pd, &cgc);
- 			return ret;
- 		}
- 	}
-@@ -2069,7 +2070,7 @@ static noinline_for_stack int pkt_media_speed(struct pktcdvd_device *pd,
- 	cgc.cmd[8] = 2;
- 	ret = pkt_generic_packet(pd, &cgc);
- 	if (ret) {
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
- 		return ret;
- 	}
- 	size = ((unsigned int) buf[0]<<8) + buf[1] + 2;
-@@ -2084,7 +2085,7 @@ static noinline_for_stack int pkt_media_speed(struct pktcdvd_device *pd,
- 	cgc.cmd[8] = size;
- 	ret = pkt_generic_packet(pd, &cgc);
- 	if (ret) {
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
- 		return ret;
- 	}
- 
-@@ -2139,7 +2140,7 @@ static noinline_for_stack int pkt_perform_opc(struct pktcdvd_device *pd)
- 	cgc.cmd[0] = GPCMD_SEND_OPC;
- 	cgc.cmd[1] = 1;
- 	if ((ret = pkt_generic_packet(pd, &cgc)))
--		pkt_dump_sense(&cgc);
-+		pkt_dump_sense(pd, &cgc);
+-		pr_notice("enabled write caching on %s\n", pd->name);
++		pkt_notice(pd, "enabled write caching\n");
  	return ret;
  }
+ 
+@@ -2085,11 +2087,11 @@ static noinline_for_stack int pkt_media_speed(struct pktcdvd_device *pd,
+ 	}
+ 
+ 	if (!(buf[6] & 0x40)) {
+-		pr_notice("disc type is not CD-RW\n");
++		pkt_notice(pd, "disc type is not CD-RW\n");
+ 		return 1;
+ 	}
+ 	if (!(buf[6] & 0x4)) {
+-		pr_notice("A1 values on media are not valid, maybe not CDRW?\n");
++		pkt_notice(pd, "A1 values on media are not valid, maybe not CDRW?\n");
+ 		return 1;
+ 	}
+ 
+@@ -2109,14 +2111,14 @@ static noinline_for_stack int pkt_media_speed(struct pktcdvd_device *pd,
+ 			*speed = us_clv_to_speed[sp];
+ 			break;
+ 		default:
+-			pr_notice("unknown disc sub-type %d\n", st);
++			pkt_notice(pd, "unknown disc sub-type %d\n", st);
+ 			return 1;
+ 	}
+ 	if (*speed) {
+ 		pr_info("maximum media speed: %d\n", *speed);
+ 		return 0;
+ 	} else {
+-		pr_notice("unknown speed %d for sub-type %d\n", sp, st);
++		pkt_notice(pd, "unknown speed %d for sub-type %d\n", sp, st);
+ 		return 1;
+ 	}
+ }
+@@ -2382,8 +2384,8 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
+ 	}
+ 
+ 	if (!test_bit(PACKET_WRITABLE, &pd->flags)) {
+-		pr_notice("WRITE for ro device %s (%llu)\n",
+-			  pd->name, (unsigned long long)bio->bi_sector);
++		pkt_notice(pd, "WRITE for ro device (%llu)\n",
++			   (unsigned long long)bio->bi_sector);
+ 		goto end_io;
+ 	}
  
 -- 
 1.8.1.2.459.gbcd45b4.dirty
