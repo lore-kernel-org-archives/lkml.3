@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab3FAJv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:51:26 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60066 "EHLO
+	id S1758190Ab3FAJwF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:52:05 -0400
+Received: from www17.your-server.de ([213.133.104.17]:60119 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3FAJvU (ORCPT
+	with ESMTP id S932381Ab3FAJv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:51:20 -0400
-Message-ID: <1370080273.29224.21.camel@localhost.localdomain>
-Subject: [PATCH] s390/ap: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 05:51:56 -0400
+Message-ID: <1370080312.29224.22.camel@localhost.localdomain>
+Subject: [PATCH] ethernet: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:51:13 +0200
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:51:52 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -25,26 +25,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
---- a/drivers/s390/crypto/ap_bus.c
-+++ b/drivers/s390/crypto/ap_bus.c
-@@ -1795,7 +1795,7 @@ static int ap_poll_thread_start(void)
- 	mutex_lock(&ap_poll_thread_mutex);
- 	if (!ap_poll_kthread) {
- 		ap_poll_kthread = kthread_run(ap_poll_thread, NULL, "appoll");
--		rc = IS_ERR(ap_poll_kthread) ? PTR_ERR(ap_poll_kthread) : 0;
-+		rc = PTR_RET(ap_poll_kthread);
- 		if (rc)
- 			ap_poll_kthread = NULL;
- 	}
-@@ -1904,7 +1904,7 @@ int __init ap_module_init(void)
+diff -u -p a/drivers/net/ethernet/8390/apne.c b/drivers/net/ethernet/8390/apne.c
+--- a/drivers/net/ethernet/8390/apne.c
++++ b/drivers/net/ethernet/8390/apne.c
+@@ -551,9 +551,7 @@ static struct net_device *apne_dev;
+ static int __init apne_module_init(void)
+ {
+ 	apne_dev = apne_probe(-1);
+-	if (IS_ERR(apne_dev))
+-		return PTR_ERR(apne_dev);
+-	return 0;
++	return PTR_RET(apne_dev);
+ }
  
- 	/* Create /sys/devices/ap. */
- 	ap_root_device = root_device_register("ap");
--	rc = IS_ERR(ap_root_device) ? PTR_ERR(ap_root_device) : 0;
-+	rc = PTR_RET(ap_root_device);
- 	if (rc)
- 		goto out_bus;
- 
+ static void __exit apne_module_exit(void)
 
 
