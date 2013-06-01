@@ -1,80 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab3FAENm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 00:13:42 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:44776 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab3FAENd (ORCPT
+	id S1757894Ab3FAEPB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 00:15:01 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57990 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3FAEOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 00:13:33 -0400
-X-AuditID: cbfee68e-b7f276d000002279-5f-51a974ebe1da
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Shuah Khan'" <shuah.kh@samsung.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
-        rafael.j.wysocki@intel.com
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, Jingoo Han <jg1.han@samsung.com>
-References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
-In-reply-to: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
-Date: Sat, 01 Jun 2013 13:13:31 +0900
-Message-id: <005901ce5e7e$60212c00$20638400$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKufEKA6p8I2U1wmqekrAqHkz8ropdgA5Gw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zI93XJSsDDbavlLTonHmN0eLywkus
-	Fif6PrBaXN41h81i3cMXTBaPV7xlt9i96ymrxZfPXBZffzpYrJ9/i82By2PnrLvsHh8+xnks
-	3vOSyePVhTssHnvm/2D16NuyitHj+I3tTB6fN8kFcERx2aSk5mSWpRbp2yVwZczv/8JUcIml
-	YubrZ0wNjI+Zuxg5OCQETCRe7OXpYuQEMsUkLtxbz9bFyMUhJLCMUeLV3q1sEAkTidaJPewQ
-	iUWMEve7tzOBJIQEfjFKXO7XB7HZBNQkvnw5DFYkAlJ0Z147M0iCWaBM4tuR/VANzhIbXx1h
-	A9nMKeAicWFrLEhYWMBbouPMGrASFgFViU9r/zGBlPAKWEr83y0OEuYVEJT4MfkeC8RELYn1
-	O48zQdjyEpvXvGWGuFNBYsfZ14wgtoiAkcTSk+8YIWpEJPa9ALG5gGqmckh8vXaTDWKXgMS3
-	yYdYIAEhK7HpANQcSYmDK26wTGCUmIVk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi4z0ihNz
-	i0vz0vWS83M3MUIivm8H480D1ocYk4HWT2SWEk3OByaMvJJ4Q2MzIwtTE1NjI3NLM9KElcR5
-	1VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwlnJPnZJ3a7afxWqjuM8S3vaf9p59bKat
-	9nni6vMTI12WZ2h2+pf/Xm+tG5DUOpPjxevaUqOb4o47V7Mt/cfvtMHrW8eN+qTf0R8k5fpb
-	tNOElqRfKT+trKZq0rFPQI5nd9uZl6++fT+7efee7mkLGoOLQs5/2iSQtFBW8sHLrjn2le7q
-	PvU8SizFGYmGWsxFxYkA2xt7xg4DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJKsWRmVeSWpSXmKPExsVy+t9jAd3XJSsDDR5tEbHonHmN0eLywkus
-	Fif6PrBaXN41h81i3cMXTBaPV7xlt9i96ymrxZfPXBZffzpYrJ9/i82By2PnrLvsHh8+xnks
-	3vOSyePVhTssHnvm/2D16NuyitHj+I3tTB6fN8kFcEQ1MNpkpCampBYppOYl56dk5qXbKnkH
-	xzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAJ2opFCWmFMKFApILC5W0rfDNCE0xE3XAqYx
-	Qtc3JAiux8gADSSsY8yY3/+FqeASS8XM18+YGhgfM3cxcnJICJhItE7sYYewxSQu3FvP1sXI
-	xSEksIhR4n73diaQhJDAL0aJy/36IDabgJrEly+H2UGKRECK7sxrB5vELFAm8e3IfqgGZ4mN
-	r44ATeLg4BRwkbiwNRYkLCzgLdFxZg1YCYuAqsSntf+YQEp4BSwl/u8WBwnzCghK/Jh8jwVi
-	opbE+p3HmSBseYnNa95C3awgsePsa0YQW0TASGLpyXeMEDUiEvtevGOcwCg0C8moWUhGzUIy
-	ahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxghPKM6kdjCsbLA4xCnAwKvHwGqxY
-	ESjEmlhWXJl7iFGCg1lJhDd/DlCINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84HJLq8k3tDY
-	xMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGI8pTHtlHF1zcc5vi2nX
-	Hj958frjcZ2oqSvcNGsrFx5lzrW1Pxr4xnbBootf7R58+rdk99r/xltupp88seHaJWbe/u2s
-	3VJLKq7k5rQUvav3ed4ucsxD8clmFZVIpcXWqlHaeRrb5V4vW/5igbGeSNlb0VWRBcycBx66
-	rJi7JUvmjo4L707Ghz5KLMUZiYZazEXFiQC34JF0bAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sat, 1 Jun 2013 00:14:53 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Fri, 31 May 2013 23:14:50 -0500
+X-Originating-IP: 108.223.40.66
+Date: Fri, 31 May 2013 21:15:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: wim@iguana.be, guenter@roeck-us.net, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130601041523.GB4081@roeck-us.net>
+References: <20130531103654.GB5619@roeck-us.net>
+ <20130531110846.GA15707@jtlinux>
+ <20130531114037.GA13533@roeck-us.net>
+ <20130531125519.GB8983@jtlinux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130531125519.GB8983@jtlinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 14, 2040 8:27 PM, Shuah Khan wrote:
+On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
+> Hi Guenther,
+> On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
+> > > +#define GPIO_WD_ENAB	169
+> > > +#define GPIO_WD_FAST	170
+> > > +#define GPIO_WD_TRIG	171
+> > > +
+> > > +#define GPIO_RST_CAUSE_BASE 166
+> > > +
+> >
+> > I think I asked that before ... as you are supporting devicetree, gpio pins
+> > should really be provided through devicetree properties and not be hardcoded.
+> >
+> Yes you did and I didn't come up with a solution to this problem yet. I understand
+> and agree to your concerns but I'm lacking example code/documentation for it, maybe
+> you can point me to an example on that and then I'll update my code accordingly.
 > 
-> Convert drivers/video/backlight/class to use dev_pm_ops for power
-> management and remove Legacy PM ops hooks. With this change, rtc class
 
-There is still the typo.
+Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
+drivers/hwmon/gpio-fan.c.
 
-Please fix it. 
- rtc class -> backlight class
-
-
-> registers suspend/resume callbacks via class->pm (dev_pm_ops) instead of
-> Legacy class->suspend/resume. When __device_suspend() runs call-backs,
-> it will find class->pm ops for the backlight class.
+> > > +struct a21_wdt_drv {
+> > > +	struct watchdog_device wdt;
+> > > +	struct mutex lock;
+> > > +	}
+> > > +
+> > > +	if (timeout == 30 && wdt->timeout == 1) {
+> > > +		dev_err(wdt->dev,
+> > > +			"Transition from fast to slow mode not allowed\n");
+> > > +		return -EINVAL;
+> > > +	}
+> > > +
+> > I dislike that [2 .. 29] timeout values are not supported, and would rather have
+> > you accept that range and set the timeout to 30. Also, it is somewhat undesirable
+> > that the timeout can not be changed back to 30 after being set to 1.
 > 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> Cc: Shuah Khan <shuahkhan@gmail.com>
+> The not changing back issue was a hardware design criterion and I have no
+> influence on that one. I've already checked with the IC developer and he said,
+> this is intended. I don't quite understand why I should accept the timeout and
+> set it to 30? In my opinion this only introduces some magic the user won't
+> understand. Instead failing and giving an error message is something a user can
+> take as a hint for investigating.
+> 
+On the other side you expect the user to know about the 1 / 30 limitation, which
+I think is worse. The value actually set is returned by the ioctl per API, so
+the application can check the actually configured value. As such, it is not
+entirely true that the behavior would be unexpected.
 
+> > As Wim recommended, a softdog on top of the hardware watchdog would be the best
+> > solution. I'll leave it up to him to decide if he wants to accept the code
+> > as-is.
+> 
+> Yes let's see what he's saying.
+> 
+Agreed.
 
+> >
+> > > +	mutex_lock(&drv->lock);
+> > > +
+> > > +	ret = watchdog_register_device(&a21_wdt);
+> > > +	if (ret) {
+> > > +		dev_err(&pdev->dev, "Cannot register watchdog device\n");
+> > > +		goto err_register_wd;
+> > > +	}
+> > > +
+> > > +	ret = a21_wdt_get_bootstatus(&reset);
+> > > +	if (ret)
+> > > +		dev_warn(&pdev->dev, "Reset Cause contains invalid data\n");
+> > > +	else {
+> > > +		if (reset == 2)
+> > > +			a21_wdt.bootstatus |= WDIOF_EXTERN1;
+> > > +		else if (reset == 4)
+> > > +			a21_wdt.bootstatus |= WDIOF_CARDRESET;
+> > > +		else if (reset == 5)
+> > > +			a21_wdt.bootstatus |= WDIOF_POWERUNDER;
+> > > +		else if (reset == 7)
+> > > +			a21_wdt.bootstatus |= WDIOF_EXTERN2;
+> >
+> > What about other causes ? No useful match ?
+> >
+> 
+> None I could find. Actually WDIOF_EXTERN[12] already are a pretty creative
+> mapping in my opinion. EXTERN1 is a "Push Button" event, EXTERN2 is a reset
+> caused by a JTAG/BDM adapter...
+> 
+ok.
+
+> > I think bootstatus should be set prior to registering the watchdog device
+> > to avoid race conditions where an application reads it prior to being set.
+> >
+> Agreed, didn't see that one *doh*, must be fixed before inclusion.
+
+Happens to me all the time :)
+
+Guenter
