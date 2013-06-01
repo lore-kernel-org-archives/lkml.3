@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3FADCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 23:02:15 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:52825 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab3FADCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 23:02:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370050492-6046-3-git-send-email-jwerner@chromium.org>
-References: <1370050492-6046-1-git-send-email-jwerner@chromium.org>
-	<1370050492-6046-3-git-send-email-jwerner@chromium.org>
-Date: Sat, 1 Jun 2013 12:01:59 +0900
-Message-ID: <CADoNuNdsOCf0YKK4FksGJUfnkq_w5jxMKymZ4n67R3i4xA9Xpw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] usb: misc: usb3503: Remove hardcoded disabling of
- ports 2 and 3
-From: Dongjin Kim <tobetter@gmail.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Simon Glass <sjg@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758123Ab3FADIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 23:08:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44485 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754752Ab3FADIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 23:08:11 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
+Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
+        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: [PATCH v1 03/11] locks: comment cleanups and clarifications
+Date: Fri, 31 May 2013 23:07:26 -0400
+Message-Id: <1370056054-25449-4-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c         |   24 +++++++++++++++++++-----
+ include/linux/fs.h |    6 ++++++
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
-I have sent two patches for the same issue, these two are merged into
-Greg's tree. Please review the patches.
+diff --git a/fs/locks.c b/fs/locks.c
+index e3140b8..a7d2253 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -150,6 +150,16 @@ static int target_leasetype(struct file_lock *fl)
+ int leases_enable = 1;
+ int lease_break_time = 45;
+ 
++/*
++ * The i_flock list is ordered by:
++ *
++ * 1) lock type -- FL_LEASEs first, then FL_FLOCK, and finally FL_POSIX
++ * 2) lock owner
++ * 3) lock range start
++ * 4) lock range end
++ *
++ * Obviously, the last two criteria only matter for POSIX locks.
++ */
+ #define for_each_lock(inode, lockp) \
+ 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
+ 
+@@ -806,6 +816,11 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 	}
+ 
+ 	lock_flocks();
++	/*
++	 * New lock request. Walk all POSIX locks and look for conflicts. If
++	 * there are any, either return -EAGAIN or put the request on the
++	 * blocker's list of waiters.
++	 */
+ 	if (request->fl_type != F_UNLCK) {
+ 		for_each_lock(inode, before) {
+ 			fl = *before;
+@@ -844,7 +859,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		before = &fl->fl_next;
+ 	}
+ 
+-	/* Process locks with this owner.  */
++	/* Process locks with this owner. */
+ 	while ((fl = *before) && posix_same_owner(request, fl)) {
+ 		/* Detect adjacent or overlapping regions (if same lock type)
+ 		 */
+@@ -930,10 +945,9 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 	}
+ 
+ 	/*
+-	 * The above code only modifies existing locks in case of
+-	 * merging or replacing.  If new lock(s) need to be inserted
+-	 * all modifications are done bellow this, so it's safe yet to
+-	 * bail out.
++	 * The above code only modifies existing locks in case of merging or
++	 * replacing. If new lock(s) need to be inserted all modifications are
++	 * done below this, so it's safe yet to bail out.
+ 	 */
+ 	error = -ENOLCK; /* "no luck" */
+ 	if (right && left == right && !new_fl2)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b9d7816..ae377e9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -926,6 +926,12 @@ int locks_in_grace(struct net *);
+ /* that will die - we need it for nfs_lock_info */
+ #include <linux/nfs_fs_i.h>
+ 
++/*
++ * struct file_lock represents a generic "file lock". It's used to represent
++ * POSIX byte range locks, BSD (flock) locks, and leases. It's important to
++ * note that the same struct is used to represent both a request for a lock and
++ * the lock itself, but the same object is never used for both.
++ */
+ struct file_lock {
+ 	struct file_lock *fl_next;	/* singly linked list for this inode  */
+ 	struct list_head fl_link;	/* doubly linked list of all locks */
+-- 
+1.7.1
 
-[1] https://patchwork.kernel.org/patch/2599021
-[2] https://patchwork.kernel.org/patch/2599031
-
-Many thanks,
-Dongjin.
-
-On Sat, Jun 1, 2013 at 10:34 AM, Julius Werner <jwerner@chromium.org> wrote:
-> The usb3503 driver currently disables port 2 and 3 without explaination.
-> It doesn't make sense to do this in a mainline Linux driver that should
-> support all platforms which use this chip. If specific use cases really
-> require ports to be disabled, this should either be done through local
-> patches or a configurable mechanism (such as a device tree property).
-> Until then, let's keep all ports enabled.
->
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/misc/usb3503.c | 8 --------
->  1 file changed, 8 deletions(-)
->
-> diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-> index 73aeb87..a647a2e 100644
-> --- a/drivers/usb/misc/usb3503.c
-> +++ b/drivers/usb/misc/usb3503.c
-> @@ -134,14 +134,6 @@ static int usb3503_switch_mode(struct usb3503 *hub, enum usb3503_mode mode)
->                         goto err_hubmode;
->                 }
->
-> -               /* PDS : Port2,3 Disable For Self Powered Operation */
-> -               err = usb3503_set_bits(i2c, USB3503_PDS,
-> -                               (USB3503_PORT2 | USB3503_PORT3));
-> -               if (err < 0) {
-> -                       dev_err(&i2c->dev, "PDS failed (%d)\n", err);
-> -                       goto err_hubmode;
-> -               }
-> -
->                 /* CFG1 : SELF_BUS_PWR -> Self-Powerd operation */
->                 err = usb3503_set_bits(i2c, USB3503_CFG1, USB3503_SELF_BUS_PWR);
->                 if (err < 0) {
-> --
-> 1.7.12.4
->
