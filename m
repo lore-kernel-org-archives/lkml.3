@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab3FAXWV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 19:22:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42605 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752012Ab3FAXWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 19:22:19 -0400
-Message-ID: <1370128938.2098.14.camel@joe-AO722>
-Subject: Re: [PATCH] usb: musb: use the new %pa format specifier for
- dma_addr_t
-From: Joe Perches <joe@perches.com>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>, balbi@ti.com,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Sat, 01 Jun 2013 16:22:18 -0700
-In-Reply-To: <CA+0zTV-LtE0zZRBtOdqRm0bbT10XkGURvmddR6unWU0O0XutWQ@mail.gmail.com>
-References: <1370109747-18821-1-git-send-email-emilgoode@gmail.com>
-	 <1370111350.2098.1.camel@joe-AO722> <20130601190926.GA5541@debian>
-	 <1370118685.2098.7.camel@joe-AO722> <51AA6E1F.7080003@infradead.org>
-	 <1370124960.2098.9.camel@joe-AO722>
-	 <CA+0zTV-LtE0zZRBtOdqRm0bbT10XkGURvmddR6unWU0O0XutWQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753376Ab3FAXxb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 19:53:31 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:58083 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab3FAXx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 19:53:28 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] frontswap: fix incorrect zeroing and allocation size for frontswap_map
+Date: Sun,  2 Jun 2013 08:52:57 +0900
+Message-Id: <1370130777-6707-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-06-02 at 01:06 +0200, Emil Goode wrote:
-> Maybe there should be another format specifier %da and Randy's
-> clarifying comment
+The bitmap accessed by bitops must have enough size to hold the required
+numbers of bits rounded up to a multiple of BITS_PER_LONG.  And the bitmap
+must not be zeroed by memset() if the number of bits cleared is not
+a multiple of BITS_PER_LONG.
 
-maybe %pad but I think the whole thing isn't much necessary.
-It seems there are a grand total of 3 uses of %pa today.
+This fixes incorrect zeroing and allocation size for frontswap_map.
+The incorrect zeroing part doesn't cause any problem because
+frontswap_map is freed just after zeroing.  But the wrongly calculated
+allocation size may cause the problem.
 
-Maybe:
+For 32bit systems, the allocation size of frontswap_map is about twice as
+large as required size.  For 64bit systems, the allocation size is smaller
+than requeired if the number of bits is not a multiple of BITS_PER_LONG.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- Documentation/printk-formats.txt |  7 +++++++
- lib/vsprintf.c                   | 19 +++++++++++++++----
- 2 files changed, 22 insertions(+), 4 deletions(-)
+ mm/frontswap.c | 2 +-
+ mm/swapfile.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 3af5ae6..fa48403 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -63,6 +63,13 @@ Physical addresses:
- 	resource_size_t) which can vary based on build options, regardless of
- 	the width of the CPU data path. Passed by reference.
- 
-+dma_addr_t addresses:
-+
-+	%pad	0x01234567 or 0x0123456789abcdef
-+
-+	For printing a dma_addr_t type which can vary based on build options,
-+	regardless of the width of the CPU data path. Passed by reference.
-+
- Raw buffer as a hex string:
- 	%*ph	00 01 02  ...  3f
- 	%*phC	00:01:02: ... :3f
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 7d84676..b6b8390 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1039,6 +1039,7 @@ int kptr_restrict __read_mostly;
-  *            The maximum supported length is 64 bytes of the input. Consider
-  *            to use print_hex_dump() for the larger input.
-  * - 'a' For a phys_addr_t type and its derivative types (passed by reference)
-+ * - 'ad' For a dma_addr_t type
-  *
-  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
-  * function pointers are really function descriptors, which contain a
-@@ -1129,12 +1130,22 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 			return netdev_feature_string(buf, end, ptr, spec);
- 		}
- 		break;
--	case 'a':
-+	case 'a': {
-+		unsigned long long val;
- 		spec.flags |= SPECIAL | SMALL | ZEROPAD;
--		spec.field_width = sizeof(phys_addr_t) * 2 + 2;
- 		spec.base = 16;
--		return number(buf, end,
--			      (unsigned long long) *((phys_addr_t *)ptr), spec);
-+		switch (fmt[1]) {
-+		case 'd':
-+			spec.field_width = sizeof(dma_addr_t) * 2 + 2;
-+			val = (unsigned long long)*((dma_addr_t *)ptr);
-+			break;
-+		default:
-+			spec.field_width = sizeof(phys_addr_t) * 2 + 2;
-+			val = (unsigned long long)*((phys_addr_t *)ptr);
-+			break;
-+		}
-+		return number(buf, end, val, spec);
-+	}
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index 538367e..1b24bdc 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -319,7 +319,7 @@ void __frontswap_invalidate_area(unsigned type)
+ 			return;
+ 		frontswap_ops->invalidate_area(type);
+ 		atomic_set(&sis->frontswap_pages, 0);
+-		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
++		bitmap_zero(sis->frontswap_map, sis->max);
  	}
- 	spec.flags |= SMALL;
- 	if (spec.field_width == -1) {
-
+ 	clear_bit(type, need_init);
+ }
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 6c340d9..746af55b 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2116,7 +2116,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 	}
+ 	/* frontswap enabled? set up bit-per-page map for frontswap */
+ 	if (frontswap_enabled)
+-		frontswap_map = vzalloc(maxpages / sizeof(long));
++		frontswap_map = vzalloc(BITS_TO_LONGS(maxpages) * sizeof(long));
+ 
+ 	if (p->bdev) {
+ 		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
+-- 
+1.8.1.4
 
