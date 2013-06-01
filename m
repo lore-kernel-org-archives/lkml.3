@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab3FAKF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 06:05:28 -0400
-Received: from mout.gmx.net ([212.227.17.20]:61375 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758684Ab3FAKFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 06:05:22 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19YuJxEv55YbOnVY5F5BX9BF9pHpFfR11aL2xvZ+t
-	euBLmijIFcs5YK
-Message-ID: <1370081116.7268.7.camel@marge.simpson.net>
-Subject: Re: [PATCH 2/4] ipc/sem: seperate wait-for-zero and alter tasks
- into seperate queues
-From: Mike Galbraith <efault@gmx.de>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 01 Jun 2013 12:05:16 +0200
-In-Reply-To: <1370080999.7268.5.camel@marge.simpson.net>
-References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
-	 <1369559335-13491-3-git-send-email-manfred@colorfullife.com>
-	 <51A39E71.70900@redhat.com> <51A9BCDA.9040006@colorfullife.com>
-	 <1370080999.7268.5.camel@marge.simpson.net>
+	id S1758285Ab3FAKI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 06:08:58 -0400
+Received: from www17.your-server.de ([213.133.104.17]:34422 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758681Ab3FAKIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 06:08:48 -0400
+Message-ID: <1370081325.29224.42.camel@localhost.localdomain>
+Subject: [PATCH] usb: gadget: Cocci spatch "err_cast.spatch"
+From: Thomas Meyer <thomas@m3y3r.de>
+To: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 12:08:45 +0200
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-01 at 12:03 +0200, Mike Galbraith wrote:
 
-> -rtm is with our patches added, -rt is backport without.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
-'y' key in 'your' not fully depressed.
+diff -u -p a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1138,7 +1138,7 @@ struct usb_string *usb_gstrings_attach(s
+ 
+ 	uc = copy_gadget_strings(sp, n_gstrings, n_strings);
+ 	if (IS_ERR(uc))
+-		return ERR_PTR(PTR_ERR(uc));
++		return ERR_CAST(uc);
+ 
+ 	n_gs = get_containers_gs(uc);
+ 	ret = usb_string_ids_tab(cdev, n_gs[0]->strings);
+
+diff -u -p a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
+--- a/drivers/usb/gadget/configfs.c
++++ b/drivers/usb/gadget/configfs.c
+@@ -557,7 +557,7 @@ static struct config_group *function_mak
+ 
+ 	fi = usb_get_function_instance(func_name);
+ 	if (IS_ERR(fi))
+-		return ERR_PTR(PTR_ERR(fi));
++		return ERR_CAST(fi);
+ 
+ 	ret = config_item_set_name(&fi->group.cg_item, name);
+ 	if (ret) {
+
 
