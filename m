@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab3FAJkr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:40:47 -0400
-Received: from www17.your-server.de ([213.133.104.17]:58838 "EHLO
+	id S1758588Ab3FAJlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:41:09 -0400
+Received: from www17.your-server.de ([213.133.104.17]:58887 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758283Ab3FAJkj (ORCPT
+	with ESMTP id S1757085Ab3FAJlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:40:39 -0400
-Message-ID: <1370079631.29224.9.camel@localhost.localdomain>
-Subject: [PATCH] HID: hyperv: Cocci spatch "memdup.spatch"
+	Sat, 1 Jun 2013 05:41:03 -0400
+Message-ID: <1370079657.29224.10.camel@localhost.localdomain>
+Subject: [PATCH] memstick: Cocci spatch "memdup.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: kys@microsoft.com, haiyangz@microsoft.com, jkosina@suse.cz,
-        devel@linuxdriverproject.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:40:31 +0200
+To: linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:40:57 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -27,23 +25,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
---- a/drivers/hid/hid-hyperv.c
-+++ b/drivers/hid/hid-hyperv.c
-@@ -199,13 +199,11 @@ static void mousevsc_on_receive_device_i
- 	if (desc->bLength == 0)
- 		goto cleanup;
+diff -u -p a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -1032,12 +1032,11 @@ static int mspro_block_read_attributes(s
+ 	}
+ 	msb->attr_group.name = "media_attributes";
  
--	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
-+	input_device->hid_desc = kmemdup(desc, desc->bLength, GFP_ATOMIC);
+-	buffer = kmalloc(attr_len, GFP_KERNEL);
++	buffer = kmemdup((char *)attr, attr_len, GFP_KERNEL);
+ 	if (!buffer) {
+ 		rc = -ENOMEM;
+ 		goto out_free_attr;
+ 	}
+-	memcpy(buffer, (char *)attr, attr_len);
  
- 	if (!input_device->hid_desc)
- 		goto cleanup;
- 
--	memcpy(input_device->hid_desc, desc, desc->bLength);
--
- 	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
- 	if (input_device->report_desc_size == 0) {
- 		input_device->dev_info_status = -EINVAL;
+ 	for (cnt = 0; cnt < attr_count; ++cnt) {
+ 		s_attr = kzalloc(sizeof(struct mspro_sys_attr), GFP_KERNEL);
 
 
