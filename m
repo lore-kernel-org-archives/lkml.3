@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab3FASwW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 14:52:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38894 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3FASwP (ORCPT
+	id S1753870Ab3FATBl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 15:01:41 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2151 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab3FATBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 14:52:15 -0400
-Date: Sat, 1 Jun 2013 19:52:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20130601185204.GF16790@sirena.org.uk>
-References: <1369931042-9755-1-git-send-email-vinod.koul@intel.com>
- <1369931042-9755-2-git-send-email-vinod.koul@intel.com>
+	Sat, 1 Jun 2013 15:01:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 01 Jun 2013 12:01:35 -0700
+Message-ID: <51AA456E.3030307@nvidia.com>
+Date: Sun, 2 Jun 2013 00:33:10 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R6sEYoIZpp9JErk7"
-Content-Disposition: inline
-In-Reply-To: <1369931042-9755-2-git-send-email-vinod.koul@intel.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regmap: fix return of uninitialized value
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Mark Brown <broonie@kernel.org>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "balbi@ti.com" <balbi@ti.com>
+Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
+References: <1369911393-25747-1-git-send-email-kishon@ti.com> <20130530113247.GI5180@sirena.org.uk> <51A74D70.5060303@nvidia.com> <20130601184511.GC16790@sirena.org.uk>
+In-Reply-To: <20130601184511.GC16790@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 02 June 2013 12:15 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, May 30, 2013 at 06:30:32PM +0530, Laxman Dewangan wrote:
+>
+>> Palma have SMPS10 regulator which can generate two voltage level
+>> 3.75 and 5V.
+>> This SMPS10 has the two outputs OUT1 and OUT2 and having one input IN1.
+>> SMPS10-OUT2 is always connected to SMPS10-IN1 via following logic:
+>> - Through parasitic diode (no sw control)
+>> - In bypass mode (bit  configuration is there to enable/disable Bypass)
+>> - In Boost mode (bit configuration is there to enable/disable Boost mode)
+>> SMPS10-OUT1 is connected to the SMPS10-OUT2 pin through Switch (SW
+>> control for enabling/disabling this switch).
+>> So I think:
+>> regualtor enable/disable, we should toggle the bit for SWITCH.
+>> In STANDBY mode, it should be BYPASS disable and Boost disable.
+>> In Idle/Normal mode, BYPASS enable and Boost disable.
+>> In Fast mode, it should be bypass disable and Boost enable.
+> No, that makes no sense at all to me.  Why do you think this maps onto
+> the set mode API?  Modes are all about accuracy of regulation.
 
---R6sEYoIZpp9JErk7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I mapped this to the regulation under different load, Fast mode is in 
+heavy load and so boost enable, normal/idle mode for normal load and so 
+bypass.
 
-On Thu, May 30, 2013 at 09:54:02PM +0530, Vinod Koul wrote:
 
->  	struct regmap_debugfs_off_cache *c = NULL;
->  	loff_t p = 0;
-> -	unsigned int i, ret;
-> +	unsigned int i, ret = 0;
-
-Two problems here.  One is that we shouldn't mix initialised and
-non-initialised declarations on one line and the other is that just
-squashing a value in isn't a great fix for this sort of thing - it's
-just shutting the warning up but perhaps the compiler has actually
-spotted some control flow error and there's more wrong than just a
-missing initialisation.
-
---R6sEYoIZpp9JErk7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRqkLRAAoJELSic+t+oim9IU4QAIOLrlkcfc/Be2A8KL4cS1sd
-AGKhqGxP5ic2GIRoh1TkWHwKKCujOwEQ4aLR0XugtTiqH8+9r/QxyMaeiXXiwnAl
-HphaSM82THRQzT0OF2oOAUZWksuRaRybdx+R+UypgZNO8KStqH1oJo3MdfCcsomr
-3OZ6IYiWMCoCGnNKyeS0P5b0aEaga1/5aY/qqiGP7BW6dJKpqwuAChO0dGBQla97
-4F4XlbUmH+ZENkpF9agLXyDN6iLgh2HSiHdjg9PSmUWoDFMTPpVVUyplYsZVc5eQ
-XXSZbH1DYr11c7B1Ph/+jo9UzuhU5Pl5NjeqDOQcWhul8GSqvUqglmlQWHD/FPXo
-QDD4QsfuUQtCuOeZ1FfJGmz941jWRqb72nkbp1Qn3Ch3/C+AE+nG2QJBYgFJjkZs
-1zkFbMow48vxPTo/EIoGFsqyyxIHcqcr6rA3Jrf+cPFMS74jkti1jOUk+sDFIujF
-ke6XY2XHL8j9Wtb1UQi5bRadKynj7HYkbNOPyeAl/wKUU9HdpnYeOevMQ5xdP+lU
-xzXx70GmUA6cWdAaF6czlU6TYg5LqXSE1Gja8Nvc5LgNx97vUtEqHTAc0+s/mwVM
-SNRNVENgTIT6kTP5VyT8c6N4CtZCQnRGI8OB9szJ/MzFBm+dKhjNgGHZ2eWNXIWl
-OpRwnZKzRQ/uwvx3SSsa
-=EfQN
------END PGP SIGNATURE-----
-
---R6sEYoIZpp9JErk7--
