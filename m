@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab3FAUCd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 16:02:33 -0400
-Received: from mout.gmx.net ([212.227.17.21]:53560 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab3FAUC0 convert rfc822-to-8bit (ORCPT
+	id S1751817Ab3FAUEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 16:04:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64348 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3FAUE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 16:02:26 -0400
-X-Authenticated: #25030245
-X-Provags-ID: V01U2FsdGVkX18tYOBIJIwtqHjbpQkBaCZEfqeEdVyJ6b0KK2Yz+k
-	d+dPzX8fdeKZAL
-From: Hannes Weisbach <hannes_weisbach@gmx.net>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] lp: implement proper detach function for parport_driver lp 
-Date: Sat, 1 Jun 2013 22:02:21 +0200
-Message-Id: <2009349A-75FD-4D5F-8F25-F8FD78F1A5D8@gmx.net>
-Cc: linux-kernel@vger.kernel.org
-To: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Mime-Version: 1.0 (Apple Message framework v1085)
-X-Mailer: Apple Mail (2.1085)
-X-Y-GMX-Trusted: 0
+	Sat, 1 Jun 2013 16:04:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
+Date: Sat, 1 Jun 2013 22:03:38 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de> <1370038972-2318779-16-git-send-email-arnd@arndb.de> <CAL_Jsq+-7RizbVQSA-JnJRZFc9-3RFCXuCOXP=GfCin2Losfeg@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+-7RizbVQSA-JnJRZFc9-3RFCXuCOXP=GfCin2Losfeg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306012203.39133.arnd@arndb.de>
+X-Provags-ID: V02:K0:j6YMU0IZsT79b9HWXbWMa899Q2+O9kUF+fMeW0fDeVX
+ GxJhCz8aIo6vdx8LNaO3dosXfcy5eh/bxmfmWeUzh7GXed9Mwy
+ KE8us5tLOHuGhdH7xhYvCRrvQ5WnhY0vt5oUc/cTwF289PkmJ1
+ zOCm9nSxx8POpkKmU0GWC0wVllQd8WLbwuTgsdWvvoimTocfAd
+ 25/lTd8173x9zc4KsoNsQ+1Bx+d60VJuyWeZQW1Dy99O1u7HTx
+ hpx9rL3ohP2fKb7qngmlqquPf16tRqqT/wP99kWRDR8Trk5PWo
+ y/nboPkO19BiULsNPMAMNtU7GqeA5DBhxkwH92qbww8wa2Hvrb
+ 6sIrt1b1Rv+ucOjuxQUM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Weisbach <hannes_weisbach@gmx.net>
+On Saturday 01 June 2013, Rob Herring wrote:
+> On Fri, May 31, 2013 at 5:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > A lot of code uses the functions from of_platform.h when built for
+> > devicetree-enabled platforms but can also be built without them.
+> > In order to avoid using #ifdef everywhere in drivers, this
+> > makes all the function declarations visible, which means we
+> > can use "if (IS_ENABLED(CONFIG_OF))" in driver code and get build
+> > coverage over the code but let the compiler drop the reference
+> > in the object code.
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> 
+> I've got a more complete series for 3.11 that removes OF_DEVICE and
+> of_platform_driver completely. I'm waiting on ack from Ben H.
 
-The lp pardevice driver does not have a proper detach function. Consequently, parport_unregister_device() is not called when the underlying parport driver calls parport_remove_port(). As a result, the ref count of the parport driver's module does not go to zero and the driver module cannot be unloaded.
-The attached patch unregisters all lp pardevices which are on the to-be-detached parport.
+Ok. Does your series also remove the #ifdef CONFIG_OF part from this
+header?
 
-Signed-off-by: Hannes Weisbach <hannes_weisbach@gmx.net>
----
-Granted, for normal parport drivers this is usually not an issue, because the device does not go away. However, I am currently writing a Linux device driver for a USB to parallel port converter [0] and therefore need proper detaching. Additionally, the wrong ref count keeps me from simply rmmod my driver and insmod a new version while developing and testing.
-
- drivers/char/lp.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-diff --git a/drivers/char/lp.c b/drivers/char/lp.c
-index 0913d79..57e6941 100644
---- a/drivers/char/lp.c
-+++ b/drivers/char/lp.c
-@@ -930,7 +930,17 @@ static void lp_attach (struct parport *port)
- 
- static void lp_detach (struct parport *port)
- {
--	/* Write this some day. */
-+	int offset;
-+
-+	for (offset = 0; offset < LP_NO; offset++) {
-+		if (lp_table[offset].dev == NULL)
-+			continue;
-+		if (lp_table[offset].dev->port == port) {
-+			device_destroy(lp_class, MKDEV(LP_MAJOR, offset));
-+			parport_unregister_device(lp_table[offset].dev);
-+		}
-+	}
-+
- #ifdef CONFIG_LP_CONSOLE
- 	if (console_registered == port) {
- 		unregister_console(&lpcons);
-
+	Arnd
