@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab3FAJyN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:54:13 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60378 "EHLO
+	id S1758763Ab3FAJz4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:55:56 -0400
+Received: from www17.your-server.de ([213.133.104.17]:60626 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3FAJyH (ORCPT
+	with ESMTP id S1756741Ab3FAJzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:54:07 -0400
-Message-ID: <1370080441.29224.27.camel@localhost.localdomain>
-Subject: [PATCH] pnpbios: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 05:55:48 -0400
+Message-ID: <1370080542.29224.28.camel@localhost.localdomain>
+Subject: [PATCH] netdev: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: rafael.j.wysocki@intel.com, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:54:01 +0200
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:55:42 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -26,20 +25,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/pnp/pnpbios/core.c b/drivers/pnp/pnpbios/core.c
---- a/drivers/pnp/pnpbios/core.c
-+++ b/drivers/pnp/pnpbios/core.c
-@@ -572,10 +572,7 @@ static int __init pnpbios_thread_init(vo
- 
- 	init_completion(&unload_sem);
- 	task = kthread_run(pnp_dock_thread, NULL, "kpnpbiosd");
--	if (IS_ERR(task))
--		return PTR_ERR(task);
--
+diff -u -p a/drivers/net/ethernet/i825xx/82596.c b/drivers/net/ethernet/i825xx/82596.c
+--- a/drivers/net/ethernet/i825xx/82596.c
++++ b/drivers/net/ethernet/i825xx/82596.c
+@@ -1527,9 +1527,7 @@ int __init init_module(void)
+ 	if (debug >= 0)
+ 		i596_debug = debug;
+ 	dev_82596 = i82596_probe(-1);
+-	if (IS_ERR(dev_82596))
+-		return PTR_ERR(dev_82596);
 -	return 0;
-+	return PTR_RET(task);
++	return PTR_RET(dev_82596);
  }
  
- /* Start the kernel thread later: */
+ void __exit cleanup_module(void)
 
 
