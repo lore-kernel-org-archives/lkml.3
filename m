@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab3FAHaT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 03:30:19 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43348 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3FAHaI (ORCPT
+	id S1757433Ab3FAHb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 03:31:59 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:61272 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab3FAHbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 03:30:08 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-3a-51a9a2ff0833
+	Sat, 1 Jun 2013 03:31:53 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-79-51a9a367c241
 From: Jingoo Han <jg1.han@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "'Jiri Slaby'" <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] tty: replace strict_strtoul() with kstrtoul()
-Date: Sat, 01 Jun 2013 16:30:06 +0900
-Message-id: <001301ce5e99$d6e60890$84b219b0$@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] rtc: rtc-pcf2123: replace strict_strtoul() with kstrtoul()
+Date: Sat, 01 Jun 2013 16:31:51 +0900
+Message-id: <001501ce5e9a$15731080$40593180$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5embmJY/DFsKXtTLe2WlpgB4HffQ==
+Thread-index: Ac5emgnPTMAf8udqS2aQjcADsTLdsA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t8zQ93/i1YGGiw8JGDRvHg9m8XlhZdY
-	LT7/3sVqcXnXHDYHFo/9c9ewe/RtWcXocWbBEXaPz5vkAliiuGxSUnMyy1KL9O0SuDKO7m9i
-	K9jJUfF92UOWBsaPbF2MnBwSAiYSf281M0LYYhIX7q0HinNxCAksY5SY8fY6C0xR14vlTBCJ
-	6YwSfyfvYoFwfjFKTLo7hxmkik1ATeLLl8PsILaIgLFE/9lZYDazQLLEkgfPmEBsYQE7ibOL
-	loOtZhFQlVh27g9YnFfAUuLHj5UsELagxI/J91ggerUk1u88zgRhy0tsXvOWGeIiBYkdZ18z
-	QuzSA6pZD7VLRGLfi3eMIMdJCKxjl5g/axYzxDIBiW+TDwEN5QBKyEpsOgA1R1Li4IobLBMY
-	xWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYyQSOvfwXj3gPUh
-	xmSg9ROZpUST84GRmlcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlO
-	avEhRiYOTqkGxpxNZ50X3NjHlWr3n+X455fic3PvCSu9Foi9blN8aaVyx5LKzJ+Js+u3r/3Y
-	bJroUDg9Vik84eH1+sMsDUK2RiWp095eeKh7/aXi8cRjYb9/ThW2yAhbX717ir/VNNUP36o/
-	/3vsNL/GRnNOQdemp7Iz6rVq3meJb/7R4azjFS6a+tnLQsMkU4mlOCPRUIu5qDgRAAMefZDK	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jQd3/i1YGGnz7xmPRvHg9m8XlhZdY
-	LT7/3sVqcXnXHDYHFo/9c9ewe/RtWcXocWbBEXaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
-	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJ6xgzju5vYivYyVHxfdlDlgbGj2xdjJwcEgImEl0vljNB2GISF+6t
-	B4pzcQgJTGeU+Dt5FwuE84tRYtLdOcwgVWwCahJfvhxmB7FFBIwl+s/OArOZBZIlljx4BjZJ
-	WMBO4uyi5WAbWARUJZad+wMW5xWwlPjxYyULhC0o8WPyPRaIXi2J9TuPM0HY8hKb17xlhrhI
-	QWLH2deMELv0gGrWQ+0Skdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERzHz6R3MK5qsDjEKMDBqMTDa7BiRaAQa2JZcWXuIUYJDmYlEd6VC1YG
-	CvGmJFZWpRblxxeV5qQWH2JMBvp0IrOUaHI+MMXklcQbGpuYGVkamVkYmZibkyasJM57sNU6
-	UEggPbEkNTs1tSC1CGYLEwenVAOjfqzP81T9m9bpYn5/Vu3UfX7jzbyrD2ae99hc8fhvp46B
-	vBvD0652jaAlr8JdLi3w+lFu212/h+njpg/amx7dXWr7Xeb6DIb13H8vB3vu4XQPYPn0Q27y
-	zLt9XIGzn8SvqWy+bbnrElPUzq9cmsuO3t39PZbx/YOsoljuvJWPbRg6fcMvOddtVWIpzkg0
-	1GIuKk4EAIqO1yknAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zA930xSsDDRbutbZYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoErY2PvQeaCpxwVKz+cYm1gXMDexcjBISFgInHnkmkXIyeQKSZx4d56ti5GLg4hgWWM
+	Ei8/3WOGSJhIPH52hxUiMZ1R4tG5XcwQzi9GiW/b/7KAVLEJqEl8+XIYbKqIgL5EW4sGSA2z
+	QC+jxJne3ewgNcIC3hK9W+4ygtgsAqoSHzcfAqvnFbCUmHrAGiTMKyAo8WPyPbCRzAJaEut3
+	HmeCsOUlNq95C3WQgsSOs6/BxogI6EkcXnoKqkZEYt+Ld4wgeyUETrFLXLvZyQSxS0Di2+RD
+	LBAfy0psOgA1R1Li4IobLBMYxWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CITveLE3OLS
+	vHS95PzcTYyQyJuwg/HeAetDjMlA6ycyS4km5wMjN68k3tDYzMjC1MTU2Mjc0ow0YSVxXvUW
+	60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjKKzYiS3Cj5ukRGV/3GiZ8fGCKO7D4SjHqYW
+	HV/MxfqhR//91PZWngf797i9DLn5Yd0k/RNTfm3oX2hXem19eMfhjJLXLZzur+KOWi32+7tt
+	cYHf113/pH7uFDDKXMjPbvk9hil0VjCz2TGFuSvTS6y+X2dabuFsLrGBdeaezbYeTq8/xi0R
+	2K/EUpyRaKjFXFScCACaEiTq0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd30xSsDDbbfNLdYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWNj70HmgqccFSs/nGJtYFzA3sXIySEhYCLx
+	+NkdVghbTOLCvfVsXYxcHEIC0xklHp3bxQzh/GKU+Lb9LwtIFZuAmsSXL4eBujk4RAT0Jdpa
+	NEBqmAV6GSXO9O4Gmyos4C3Ru+UuI4jNIqAq8XHzIbB6XgFLiakHrEHCvAKCEj8m3wMbySyg
+	JbF+53EmCFteYvOat8wQBylI7Dj7GmyMiICexOGlp6BqRCT2vXjHOIFRYBaSUbOQjJqFZNQs
+	JC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH9jOpHYwrGywOMQpwMCrx8BqsWBEo
+	xJpYVlyZe4hRgoNZSYR35YKVgUK8KYmVValF+fFFpTmpxYcYk4EencgsJZqcD0w6eSXxhsYm
+	ZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAWOczufnv7OO/Pu9ctJY5
+	RmLepkcqB6xN3XyWv7ZjWXrhoIOeIaOca+aZk/Wi08QPP1ZS/zH1nRLXnZOR0hO+5wUsdSlI
+	eRGYsungYkPLi2ci5i7x2LPwv8WvOxnW7mv+TW7n6L5pcDNFd+I5sRabE9ttvPctn1lk9Puk
+	hdNty2v5Hf2VvEfkzyqxFGckGmoxFxUnAgCmK/2XMAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,36 +59,32 @@ used.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/tty/hvc/hvc_iucv.c |    2 +-
- drivers/tty/sysrq.c        |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-pcf2123.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_iucv.c b/drivers/tty/hvc/hvc_iucv.c
-index b6f7d52..9d47f50 100644
---- a/drivers/tty/hvc/hvc_iucv.c
-+++ b/drivers/tty/hvc/hvc_iucv.c
-@@ -1328,7 +1328,7 @@ out_error:
-  */
- static	int __init hvc_iucv_config(char *val)
- {
--	 return strict_strtoul(val, 10, &hvc_iucv_devices);
-+	 return kstrtoul(val, 10, &hvc_iucv_devices);
- }
+diff --git a/drivers/rtc/rtc-pcf2123.c b/drivers/rtc/rtc-pcf2123.c
+index b2a78a0..4130e6b 100644
+--- a/drivers/rtc/rtc-pcf2123.c
++++ b/drivers/rtc/rtc-pcf2123.c
+@@ -94,7 +94,7 @@ static ssize_t pcf2123_show(struct device *dev, struct device_attribute *attr,
  
+ 	r = container_of(attr, struct pcf2123_sysfs_reg, attr);
  
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index b51c154..5f68f2c 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -932,7 +932,7 @@ static int sysrq_reset_seq_param_set(const char *buffer,
- 	unsigned long val;
- 	int error;
+-	if (strict_strtoul(r->name, 16, &reg))
++	if (kstrtoul(r->name, 16, &reg))
+ 		return -EINVAL;
  
--	error = strict_strtoul(buffer, 0, &val);
-+	error = kstrtoul(buffer, 0, &val);
- 	if (error < 0)
- 		return error;
+ 	txbuf[0] = PCF2123_READ | reg;
+@@ -117,8 +117,7 @@ static ssize_t pcf2123_store(struct device *dev, struct device_attribute *attr,
  
+ 	r = container_of(attr, struct pcf2123_sysfs_reg, attr);
+ 
+-	if (strict_strtoul(r->name, 16, &reg)
+-		|| strict_strtoul(buffer, 10, &val))
++	if (kstrtoul(r->name, 16, &reg) || kstrtoul(buffer, 10, &val))
+ 		return -EINVAL;
+ 
+ 	txbuf[0] = PCF2123_WRITE | reg;
 -- 
 1.7.10.4
 
