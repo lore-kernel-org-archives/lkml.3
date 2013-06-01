@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab3FAJ7O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:59:14 -0400
-Received: from www17.your-server.de ([213.133.104.17]:32906 "EHLO
+	id S932555Ab3FAJ7W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:59:22 -0400
+Received: from www17.your-server.de ([213.133.104.17]:33049 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3FAJ7E (ORCPT
+	with ESMTP id S932530Ab3FAJ7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:59:04 -0400
-Message-ID: <1370080739.29224.36.camel@localhost.localdomain>
-Subject: [PATCH] x86, msr/cpuid: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 05:59:16 -0400
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Jun 2013 05:59:16 EDT
+Message-ID: <1370080751.29224.37.camel@localhost.localdomain>
+Subject: [PATCH] netdev: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:58:59 +0200
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:59:11 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -26,29 +26,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
---- a/arch/x86/kernel/cpuid.c
-+++ b/arch/x86/kernel/cpuid.c
-@@ -143,7 +143,7 @@ static __cpuinit int cpuid_device_create
+diff -u -p a/drivers/net/ethernet/smsc/smc9194.c b/drivers/net/ethernet/smsc/smc9194.c
+--- a/drivers/net/ethernet/smsc/smc9194.c
++++ b/drivers/net/ethernet/smsc/smc9194.c
+@@ -1571,9 +1571,7 @@ int __init init_module(void)
  
- 	dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
- 			    "cpu%d", cpu);
--	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
-+	return PTR_RET(dev);
+ 	/* copy the parameters from insmod into the device structure */
+ 	devSMC9194 = smc_init(-1);
+-	if (IS_ERR(devSMC9194))
+-		return PTR_ERR(devSMC9194);
+-	return 0;
++	return PTR_RET(devSMC9194);
  }
  
- static void cpuid_device_destroy(int cpu)
-diff -u -p a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -206,7 +206,7 @@ static int __cpuinit msr_device_create(i
- 
- 	dev = device_create(msr_class, NULL, MKDEV(MSR_MAJOR, cpu), NULL,
- 			    "msr%d", cpu);
--	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
-+	return PTR_RET(dev);
- }
- 
- static void msr_device_destroy(int cpu)
+ void __exit cleanup_module(void)
 
 
