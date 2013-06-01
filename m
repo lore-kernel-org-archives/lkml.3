@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab3FAKAN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 06:00:13 -0400
-Received: from www17.your-server.de ([213.133.104.17]:33284 "EHLO
+	id S1759127Ab3FAKAV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 06:00:21 -0400
+Received: from www17.your-server.de ([213.133.104.17]:33320 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab3FAJ75 (ORCPT
+	with ESMTP id S932628Ab3FAKAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:59:57 -0400
-Message-ID: <1370080791.29224.40.camel@localhost.localdomain>
-Subject: [PATCH] [S390] hypfs: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 06:00:11 -0400
+Message-ID: <1370080803.29224.41.camel@localhost.localdomain>
+Subject: [PATCH] gpu: host1x: drm: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:59:51 +0200
+To: linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 12:00:03 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -25,30 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/arch/s390/hypfs/hypfs_diag.c b/arch/s390/hypfs/hypfs_diag.c
---- a/arch/s390/hypfs/hypfs_diag.c
-+++ b/arch/s390/hypfs/hypfs_diag.c
-@@ -651,9 +651,7 @@ static int hypfs_create_cpu_files(struct
- 	}
- 	diag224_idx2name(cpu_info__ctidx(diag204_info_type, cpu_info), buffer);
- 	rc = hypfs_create_str(sb, cpu_dir, "type", buffer);
--	if (IS_ERR(rc))
--		return PTR_ERR(rc);
+diff -u -p a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
+--- a/drivers/gpu/host1x/drm/drm.c
++++ b/drivers/gpu/host1x/drm/drm.c
+@@ -328,10 +328,7 @@ static int tegra_gem_create(struct drm_d
+ 
+ 	bo = tegra_bo_create_with_handle(file, drm, args->size,
+ 					 &args->handle);
+-	if (IS_ERR(bo))
+-		return PTR_ERR(bo);
+-
 -	return 0;
-+	return PTR_RET(rc);
++	return PTR_RET(bo);
  }
  
- static void *hypfs_create_lpar_files(struct super_block *sb,
-@@ -702,9 +700,7 @@ static int hypfs_create_phys_cpu_files(s
- 		return PTR_ERR(rc);
- 	diag224_idx2name(phys_cpu__ctidx(diag204_info_type, cpu_info), buffer);
- 	rc = hypfs_create_str(sb, cpu_dir, "type", buffer);
--	if (IS_ERR(rc))
--		return PTR_ERR(rc);
+ static int tegra_gem_mmap(struct drm_device *drm, void *data,
+diff -u -p a/drivers/gpu/host1x/drm/gem.c b/drivers/gpu/host1x/drm/gem.c
+--- a/drivers/gpu/host1x/drm/gem.c
++++ b/drivers/gpu/host1x/drm/gem.c
+@@ -205,10 +205,7 @@ int tegra_bo_dumb_create(struct drm_file
+ 
+ 	bo = tegra_bo_create_with_handle(file, drm, args->size,
+ 					    &args->handle);
+-	if (IS_ERR(bo))
+-		return PTR_ERR(bo);
+-
 -	return 0;
-+	return PTR_RET(rc);
++	return PTR_RET(bo);
  }
  
- static void *hypfs_create_phys_files(struct super_block *sb,
+ int tegra_bo_dumb_map_offset(struct drm_file *file, struct drm_device *drm,
 
 
