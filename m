@@ -1,131 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab3FAAkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 20:40:08 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43480 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab3FAAkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 20:40:05 -0400
-Date: Fri, 31 May 2013 19:28:05 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] rsxx: Individual workqueues for interruptible events.
-Message-ID: <20130601002805.GB3051@oc6784271780.ibm.com>
+	id S932163Ab3FAAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 20:50:59 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:13152 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755098Ab3FAAuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 May 2013 20:50:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,782,1363158000"; 
+   d="asc'?scan'208";a="60211468"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Mailing List Linux NFS <linux-nfs@vger.kernel.org>,
+        Linux linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull 2 NFS client bugfixes
+Thread-Topic: [GIT PULL] Please pull 2 NFS client bugfixes
+Thread-Index: AQHOXmIRuqec7BUSRk+nTe+l/HybTA==
+Date: Sat, 1 Jun 2013 00:50:53 +0000
+Message-ID: <1370047853.21304.3.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.118]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-KHKRvsopKdTsupmT/0x+"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060100-7282-0000-0000-000017C40255
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+--=-KHKRvsopKdTsupmT/0x+
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Giving all interrupt based events their own workqueue to complete
-tasks on.
+Hi Linus,
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+The following changes since commit 83c168bf8017212a9d502536f9dcd0b54d24e330=
+:
+
+  NFS: Fix SETCLIENTID fallback if GSS is not available (2013-05-23 18:50:4=
+0 -0400)
+
+are available in the git repository at:
+
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.10-=
+4
+
+for you to fetch changes up to eb54d43707c69340581940e1fcaecb4d7d17b814:
+
+  NFS: Fix security flavor negotiation with legacy binary mounts (2013-05-3=
+0 16:31:34 -0400)
+
+----------------------------------------------------------------
+NFS client fixes:
+
+- Fix a regression that broke NFS mounting using klibc and busybox
+- Stable fix to check access modes correctly on NFSv4 delegated open()
+
+----------------------------------------------------------------
+Chuck Lever (1):
+      NFS: Fix security flavor negotiation with legacy binary mounts
+
+Trond Myklebust (1):
+      NFSv4: Fix a thinko in nfs4_try_open_cached
+
+ fs/nfs/nfs4proc.c | 2 +-
+ fs/nfs/super.c    | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
 
-diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
---- linux-block-vanilla/drivers/block/rsxx/core.c	2013-05-31 14:57:49.404326499 -0500
-+++ linux-block/drivers/block/rsxx/core.c	2013-05-31 15:05:02.770182971 -0500
-@@ -163,12 +163,13 @@ static irqreturn_t rsxx_isr(int irq, voi
- 		}
- 
- 		if (isr & CR_INTR_CREG) {
--			schedule_work(&card->creg_ctrl.done_work);
-+			queue_work(card->creg_ctrl.creg_wq,
-+				   &card->creg_ctrl.done_work);
- 			handled++;
- 		}
- 
- 		if (isr & CR_INTR_EVENT) {
--			schedule_work(&card->event_work);
-+			queue_work(card->event_wq, &card->event_work);
- 			rsxx_disable_ier_and_isr(card, CR_INTR_EVENT);
- 			handled++;
- 		}
-@@ -610,7 +611,11 @@ static int rsxx_pci_probe(struct pci_dev
- 	}
- 
- 	/************* Setup Processor Command Interface *************/
--	rsxx_creg_setup(card);
-+	st = rsxx_creg_setup(card);
-+	if (st) {
-+		dev_err(CARD_TO_DEV(card), "Failed to setup creg interface.\n");
-+		goto failed_creg_setup;
-+	}
- 
- 	spin_lock_irq(&card->irq_lock);
- 	rsxx_enable_ier_and_isr(card, CR_INTR_CREG);
-@@ -650,6 +655,12 @@ static int rsxx_pci_probe(struct pci_dev
- 	}
- 
- 	/************* Setup Card Event Handler *************/
-+	card->event_wq = create_singlethread_workqueue(DRIVER_NAME"_event");
-+	if (!card->event_wq) {
-+		dev_err(CARD_TO_DEV(card), "Failed card event setup.\n");
-+		goto failed_event_handler;
-+	}
-+
- 	INIT_WORK(&card->event_work, card_event_handler);
- 
- 	st = rsxx_setup_dev(card);
-@@ -688,9 +699,15 @@ static int rsxx_pci_probe(struct pci_dev
- 	return 0;
- 
- failed_create_dev:
-+	destroy_workqueue(card->event_wq);
-+	card->event_wq = NULL;
-+failed_event_handler:
- 	rsxx_dma_destroy(card);
- failed_dma_setup:
- failed_compatiblity_check:
-+	destroy_workqueue(card->creg_ctrl.creg_wq);
-+	card->creg_ctrl.creg_wq = NULL;
-+failed_creg_setup:
- 	spin_lock_irq(&card->irq_lock);
- 	rsxx_disable_ier_and_isr(card, CR_INTR_ALL);
- 	spin_unlock_irq(&card->irq_lock);
-diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/cregs.c linux-block/drivers/block/rsxx/cregs.c
---- linux-block-vanilla/drivers/block/rsxx/cregs.c	2013-05-31 14:57:49.407047063 -0500
-+++ linux-block/drivers/block/rsxx/cregs.c	2013-05-31 15:05:44.355016386 -0500
-@@ -727,6 +727,11 @@ int rsxx_creg_setup(struct rsxx_cardinfo
- {
- 	card->creg_ctrl.active_cmd = NULL;
- 
-+	card->creg_ctrl.creg_wq =
-+			create_singlethread_workqueue(DRIVER_NAME"_creg");
-+	if (!card->creg_ctrl.creg_wq)
-+		return -ENOMEM;
-+
- 	INIT_WORK(&card->creg_ctrl.done_work, creg_cmd_done);
- 	mutex_init(&card->creg_ctrl.reset_lock);
- 	INIT_LIST_HEAD(&card->creg_ctrl.queue);
-diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-31 14:57:49.411326932 -0500
-+++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-31 15:06:51.577016400 -0500
-@@ -134,6 +134,7 @@ struct rsxx_cardinfo {
- 		spinlock_t		lock;
- 		bool			active;
- 		struct creg_cmd		*active_cmd;
-+		struct workqueue_struct	*creg_wq;
- 		struct work_struct	done_work;
- 		struct list_head	queue;
- 		unsigned int		q_depth;
-@@ -154,6 +155,7 @@ struct rsxx_cardinfo {
- 		int buf_len;
- 	} log;
- 
-+	struct workqueue_struct	*event_wq;
- 	struct work_struct	event_work;
- 	unsigned int		state;
- 	u64			size8;
+--=20
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+--=-KHKRvsopKdTsupmT/0x+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAABAgAGBQJRqUVtAAoJEGcL54qWCgDy9FIP/0WVGX2idVpyh8Pe5YdocAii
+pByiMsVSSDVLgIiRdugkNdHUTZ+gsvRr9lcM3lD5+A4W7RUlM3zuXoyUyXtUdfJW
+sMTz9pXTCHY0TDQw412USAUKfr4K3dT2gbMkb63Ca3TnsLolI67TXS1FmEqVTPn5
+XWDGuxdQveF3wDXGhRhXFiIbQaXQYY4qpn1XlwcdUuVYpvqiZObG/iFrbsRg+pFx
+uGxcYEYiNby6pcfgrU/NYsMQOQ/t7LzxEDBhO8+JWzQM1H8/4tVtOjptwxYOLgKX
+sFJ2h7xyJx0sb1du7i8zh9x39v6VfPyBHI4qoDRl6bPOQSIOk1o3+PX3NEHNx9y4
+LfqLiO9VdkGR1TndRuLiU5gXGwqllGbjiOuo95/hwMoGTNHK3hSd/ZWFbbGH0Fb1
+oxUynI3HOFwza5scSOv9q91bLgj60XcDlXzcgU/S41yplN4MEFcyBBQIomaDzfZZ
+tgMGHhosGrLD1DWXtx2oUqh6AlhADTDvPMwQIuZ08UlnbF6ll+zprnjt40S7W1yD
+IG78jDbGhvuBEKEgUicfAabJcKq6N2LmSDRl0RG4+jH5oXyvl2NLldmNQrMUSrrd
+DlU3VSYCuy57s+RU8MBFe1JXsjEsZ8UWf1Flv7oCPktUE575r8gYWa4ycpxTJd82
+ye1ysDHMtdgySWVmyxeY
+=lQIH
+-----END PGP SIGNATURE-----
+
+--=-KHKRvsopKdTsupmT/0x+--
