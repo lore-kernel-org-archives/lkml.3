@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3FAV55 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 17:57:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39662 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab3FAV5w (ORCPT
+	id S1756083Ab3FAWHF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 18:07:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37151 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3FAWHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 17:57:52 -0400
-Message-ID: <51AA6E1F.7080003@infradead.org>
-Date: Sat, 01 Jun 2013 14:56:47 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 1 Jun 2013 18:07:01 -0400
+Date: Sat, 1 Jun 2013 23:06:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mike Frysinger <vapier@gentoo.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130601220627.GW16790@sirena.org.uk>
+References: <1369993250-6461-1-git-send-email-geert@linux-m68k.org>
+ <51A88C3F.5080109@metafoo.de>
+ <20130601190328.GL16790@sirena.org.uk>
+ <CAMuHMdX09zeshD4_TbU4MN1LjooeJKDUaAxsZ4CjNF1+Yp+STQ@mail.gmail.com>
+ <20130601211045.GV16790@sirena.org.uk>
+ <CAMuHMdWN6Ur47fBu3oZpah4fTaV+mV4Y_Q=SvV_jet-3FiZEUQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Emil Goode <emilgoode@gmail.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>, balbi@ti.com,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] usb: musb: use the new %pa format specifier for dma_addr_t
-References: <1370109747-18821-1-git-send-email-emilgoode@gmail.com>  <1370111350.2098.1.camel@joe-AO722> <20130601190926.GA5541@debian> <1370118685.2098.7.camel@joe-AO722>
-In-Reply-To: <1370118685.2098.7.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ItroYk2LVxvwOvi/"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWN6Ur47fBu3oZpah4fTaV+mV4Y_Q=SvV_jet-3FiZEUQ@mail.gmail.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH -next] blackfin: bf533-stamp: Remove bogus "||"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/13 13:31, Joe Perches wrote:
-> On Sat, 2013-06-01 at 21:09 +0200, Emil Goode wrote:
->> I see, will send a second version.
-> 
-> Hey Emil.
-> 
-> I believe you can not use %pa with a dma_addr_t
-> because that could be a different size than a
-> phy_addr_t.
-> 
-> (the vsprintf cast and deref is to a phy_addr_t)
 
-Hi Joe,
+--ItroYk2LVxvwOvi/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thank you for pointing that out.  It's a bit of a shame that this
-comment was deleted from include/asm-generic/types.h in commit
-3e50594e8e72932ad4cfcb0b3cbdf58fc3bce416:
+On Sat, Jun 01, 2013 at 11:29:23PM +0200, Geert Uytterhoeven wrote:
+> On Sat, Jun 1, 2013 at 11:10 PM, Mark Brown <broonie@kernel.org> wrote:
 
--/*
-- * DMA addresses may be very different from physical addresses
-- * and pointers. i386 and powerpc may have 64 bit DMA on 32 bit
-- * systems, while sparc64 uses 32 bit DMA addresses for 64 bit
-- * physical addresses.
-- * This default defines dma_addr_t to have the same size as
-- * phys_addr_t, which is the most common way.
-- * Do not define the dma64_addr_t type, which never really
-- * worked.
-- */
+> >> Sorry, I sent it to your Wolfson address, as suggested by get_maintainter.pl:
 
+> >> Mark Brown <broonie@opensource.wolfsonmicro.com> (commit_signer:3/4=75%)
 
-> The definitions are: (types.h)
-> 
-> #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-> typedef u64 dma_addr_t;
-> #else
-> typedef u32 dma_addr_t;
-> #endif /* dma_addr_t */
-> 
-> []
-> 
-> #ifdef CONFIG_PHYS_ADDR_T_64BIT
-> typedef u64 phys_addr_t;
-> #else
-> typedef u32 phys_addr_t;
-> #endif
-> 
-> On Sat, Jun 01, 2013 at 11:29:10AM -0700, Joe Perches wrote:
->> On Sat, 2013-06-01 at 20:02 +0200, Emil Goode wrote:
->>> This patch makes use of the new format specifier %pa that was introduced
->>> by the following commit.
->>>
->>> 7d7992108d02aa92ad4c77e5d9ce14088c942e75
->>> ("lib/vsprintf.c: add %pa format specifier for phys_addr_t types")
->> []
->>> diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
->> []
->>> @@ -1756,12 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
->> []
->>> -                   dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
->>> +                   dev_dbg(musb->controller, "RX%d count %d, buffer 0x%pa len %d/%d\n",
->>
->> This would emit 0x0x<addr>
+> > You're not using a current version of the tree you're submitting
+> > against (which you should always do)...
 
+> I'm using next-20130531.
 
--- 
-~Randy
+Which has broonie@kernel.org listed as the maintainer address...  the
+commit signer information isn't awfully reliable at the best of times,
+it's got a big tendency to throw up false positives for things like
+people doing cleanup work.
+
+--ItroYk2LVxvwOvi/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRqnBfAAoJELSic+t+oim9ycwP/1VWitWVWrHlPUlUuA3waXl6
+xYuMkFAnfI4hf10OTTU5QQ1rZEJZxps9dv06XUtvJETdpu3ysjJ4+7GOkv0aM6jo
+aiQBEcvfCbAS/VKDHiiWOyNLMa0gGnQLItjUmWU2p8MkA8oaPlJDYPPBvi6T/pkL
+z7Ce46m4V8lUYYOnpjmUiWkKQd/uLCZQEYBOEDmkIvGa6mZ2HWF9zKyfQohe768x
+8SFtc3WMas2B4gy8qOsW4oo1vU6DYcVorNasyhy4EaugFcnZDLcSLLP9HgLKWr/I
+snuEeoqjQfoTpfRsOaFquvIkOd7uEz1nkaQhqXWh89hDelqvikBjWl8z3pywg+W1
+IQ2MrHNW8WQeAZxI0ZxpAeRyi3Zh34kMU6MXSarO9Dgn8LXT2ShSSNPndKRyO8Dr
+9a3geszJQ7Kri5UFFF0NI126HZESuA5HS+BmcThbG9oW8SWchIaGpqM7k3WeBbLT
+7Y4n1dh/rXIdz2BWyesMAFC6kuFfz+lhdS2xzUVgsGkCm1wEcwsm6OP00vMI1RCm
+HSl82qQKkA9BX6CW2LPVyr4kkqc7HgNETJJOpAYT3Do0fxpia5iC2ndBFTAR4Jj3
+YNQ5RTTXmeE1czxYQY5G01u0kY6a4dE9H+MHFmX0IhcK/JNhpaQKWkQ1ZhLVFfYo
+qN6nz/A0bCvAfmYSG447
+=MCiP
+-----END PGP SIGNATURE-----
+
+--ItroYk2LVxvwOvi/--
