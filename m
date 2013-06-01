@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab3FAO44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 10:56:56 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:55964 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679Ab3FAO4s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 10:56:48 -0400
+	id S1751997Ab3FAPP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 11:15:56 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46189 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab3FAPPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 11:15:47 -0400
+Date: Sat, 1 Jun 2013 11:15:37 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130601151537.GD15576@cmpxchg.org>
+References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
+ <20130530150539.GA18155@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601061151.GC15576@cmpxchg.org>
+ <20130601102905.GB19474@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <51A8D0C2.1080801@semaphore.gr>
-References: <51A7BFA6.3070800@semaphore.gr>
-	<CAKohpo=oD9Wgr0Y9zA3aVCdMq5MUC5GESWyL45h=izRyp9-CLA@mail.gmail.com>
-	<51A8D0C2.1080801@semaphore.gr>
-Date: Sat, 1 Jun 2013 20:26:47 +0530
-Message-ID: <CAKohpokmn-Rf-1w2aQHMMMkMbJqxokWXm5ye3DNuc-yzzk=7pQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130601102905.GB19474@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2013 22:03, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> On 05/31/2013 11:51 AM, Viresh Kumar wrote:
->> I believe you should have removed other users of getavg() in a separate
->> patch and also cc'd relevant people so that you can some review comments
->> from  them.
->
-> I will split the patch in two. If it's OK, I will keep the removal of
-> __cpufreq_driver_getavg in the original patch and move the clean up of
-> APERF/MPERF support in a second patch. I will also cc relevant people.
+On Sat, Jun 01, 2013 at 12:29:05PM +0200, Michal Hocko wrote:
+> On Sat 01-06-13 02:11:51, Johannes Weiner wrote:
+> [...]
+> > I'm currently messing around with the below patch.  When a task faults
+> > and charges under OOM, the memcg is remembered in the task struct and
+> > then made to sleep on the memcg's OOM waitqueue only after unwinding
+> > the page fault stack.  With the kernel OOM killer disabled, all tasks
+> > in the OOMing group sit nicely in
+> > 
+> >   mem_cgroup_oom_synchronize
+> >   pagefault_out_of_memory
+> >   mm_fault_error
+> >   __do_page_fault
+> >   page_fault
+> >   0xffffffffffffffff
+> > 
+> > regardless of whether they were faulting anon or file.  They do not
+> > even hold the mmap_sem anymore at this point.
+> > 
+> > [ I kept syscalls really simple for now and just have them return
+> >   -ENOMEM, never trap them at all (just like the global OOM case).
+> >   It would be more work to have them wait from a flatter stack too,
+> >   but it should be doable if necessary. ]
+> > 
+> > I suggested this at the MM summit and people were essentially asking
+> > if I was feeling well, so maybe I'm still missing a gaping hole in
+> > this idea.
+> 
+> I didn't get to look at the patch (will do on Monday) but it doesn't
+> sounds entirely crazy. Well, we would have to drop mmap_sem so things
+> have to be rechecked but we are doing that already with VM_FAULT_RETRY
+> in some archs so it should work.
 
-Even removal of __cpufreq_driver_getavg() should be done in a separate
-patch, so that it can be reverted easily if required later.
+The global OOM case has been doing this for a long time (1c0fe6e mm:
+invoke oom-killer from page fault), way before VM_FAULT_RETRY.  The
+fault is aborted with VM_FAULT_OOM and the oom killer is invoked.
+Either the task gets killed or it'll just retrigger the fault.  The
+only difference is that a memcg OOM kill may take longer because of
+userspace handling, so memcg needs a waitqueue where the global case
+simply does a trylock (try_set_zonelist_oom) and restarts the fault
+immediately if somebody else is handling the situation.
 
->> "Proportional to load" means C * load, so why is "policy->max / 100" *the* right C?
->
-> I think, finally(?) I see your point. The right C should be "policy->cpuinfo.max_freq / 100".
+In fact, when Nick added the page fault OOM invocation, KAME merged
+something similar to my patch, which tried to catch memcg OOM kills
+from pagefault_out_of_memory() (a636b32 memcg: avoid unnecessary
+system-wide-oom-killer).
 
-Why are you changing it to cpuinfo.max_freq?? This is fixed once a driver is
-initialized.. but user may request a lower max freq for a governor or policy.
-Which is actually reflected in policy->max I believe.
-
-Over that why keeping following check is useful anymore?
-
-if (load_freq > od_tuners->up_threshold)
-    goto max.
-
-As, if load is over 95, then even policy->max * 95 / 100 will even give almost
-the same freq.
+Only when he reworked the whole memcg OOM synchronization, added the
+ability to disable OOM and the waitqueues etc, the OOMs were trapped
+right there in the charge context (867578c memcg: fix oom kill
+behavior).  But I see no reason why we shouldn't be able to keep the
+waitqueues and still go back to synchronizing from the bottom of the
+page fault stack.
