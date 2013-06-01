@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab3FAH1R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 03:27:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56207 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3FAH1J (ORCPT
+	id S1756367Ab3FAHaT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 03:30:19 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:43348 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3FAHaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 03:27:09 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-fb-51a9a24cc2bd
+	Sat, 1 Jun 2013 03:30:08 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-3a-51a9a2ff0833
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Anton Vorontsov'" <cbou@mail.ru>
-Cc: Anton Vorontsov <avorontsov@ru.mvista.com>,
-        "'David Woodhouse'" <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] power: replace strict_strtoul() with kstrtoul()
-Date: Sat, 01 Jun 2013 16:27:08 +0900
-Message-id: <001101ce5e99$6c8efb00$45acf100$@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "'Jiri Slaby'" <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] tty: replace strict_strtoul() with kstrtoul()
+Date: Sat, 01 Jun 2013 16:30:06 +0900
+Message-id: <001301ce5e99$d6e60890$84b219b0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5emTdmkVe1JZhLQ5O8hRub2p9CXQ==
+Thread-index: Ac5embmJY/DFsKXtTLe2WlpgB4HffQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zI12fRSsDDf59VrPYe/Uuk8WvnduY
-	LSaunMxscXnhJVaLy7vmsDmwemxeoeUxZe4RVo85x+axePRtWcXo8XmTXABrFJdNSmpOZllq
-	kb5dAlfG+RNz2Qsm8VXcnrKauYHxNHcXIyeHhICJxMd5E9ggbDGJC/fWA9lcHEICyxgl3jR8
-	Zocpmvn8LTNEYhGjxIxPtxkhnF+MEs3XV4BVsQmoSXz5chjMFhFQkZh57xATSBGzwGxGic89
-	D1lAEsICDhJfvnYBjeLgYBFQlXiyVBMkzCtgKXHq/CVWCFtQ4sfke2DlzAJaEut3HmeCsOUl
-	Nq8BuQLkIgWJHWdfM0Ls0pPY9GE1K0SNiMS+F+/AjpMQOMYusbmvEyzBIiAg8W3yIRaQvRIC
-	shKbDkDNkZQ4uOIGywRGsVlIVs9CsnoWktWzkKxYwMiyilE0tSC5oDgpvchErzgxt7g0L10v
-	OT93EyMk9ibsYLx3wPoQYzLQ+onMUqLJ+cDYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBI
-	ID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD43rV8I9+zufC3f8pnnondfRBefQJ46CNmaat5ZFO
-	c5okEjmys74/CVq3K+eWYzPXwVlp7rGrblu5dK7MOe/UdnL79pOvsnTdyjznb/Av31p/5e/C
-	pmzj93Yh7Sc7A398nXrEfLqQzvkll0On3A19eHTvWunpe0+f2RdhHM9ZP3d3AldezIIvu5VY
-	ijMSDbWYi4oTAXTMXbDTAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAV2fRSsDDbZ0KVvsvXqXyeLXzm3M
-	FhNXTma2uLzwEqvF5V1z2BxYPTav0PKYMvcIq8ecY/NYPPq2rGL0+LxJLoA1qoHRJiM1MSW1
-	SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdouZJCWWJOKVAoILG4
-	WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/yJuewFk/gqbk9ZzdzAeJq7i5GTQ0LARGLm
-	87fMELaYxIV769m6GLk4hAQWMUrM+HSbEcL5xSjRfH0FO0gVm4CaxJcvh8FsEQEViZn3DjGB
-	FDELzGaU+NzzkAUkISzgIPHlaxfQWA4OFgFViSdLNUHCvAKWEqfOX2KFsAUlfky+B1bOLKAl
-	sX7ncSYIW15i8xqYixQkdpx9zQixS09i04fVrBA1IhL7XrxjnMAoMAvJqFlIRs1CMmoWkpYF
-	jCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYIj+5nUDsaVDRaHGAU4GJV4eA1WrAgUYk0s
-	K67MPcQowcGsJMK7csHKQCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OByadvJJ4Q2MTMyNL
-	IzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg1OluZXI3OXZQp32nCcPNZ0Gr
-	MjbcSZ6as+WRIH/gvZKSu/5X7gsauMiLiHYvVNm58eOOmnLpSRaTbZjUdp9++e3XHE/JAykL
-	92/msbh2l28f77FYJ4Fwq0SOyR8eHH1R37Nz65fi7YoGC9YlhO1fJPDw47GpoRe+uCyQ1ttt
-	e/busbubW/eeElFiKc5INNRiLipOBAD9eGEEMAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t8zQ93/i1YGGiw8JGDRvHg9m8XlhZdY
+	LT7/3sVqcXnXHDYHFo/9c9ewe/RtWcXocWbBEXaPz5vkAliiuGxSUnMyy1KL9O0SuDKO7m9i
+	K9jJUfF92UOWBsaPbF2MnBwSAiYSf281M0LYYhIX7q0HinNxCAksY5SY8fY6C0xR14vlTBCJ
+	6YwSfyfvYoFwfjFKTLo7hxmkik1ATeLLl8PsILaIgLFE/9lZYDazQLLEkgfPmEBsYQE7ibOL
+	loOtZhFQlVh27g9YnFfAUuLHj5UsELagxI/J91ggerUk1u88zgRhy0tsXvOWGeIiBYkdZ18z
+	QuzSA6pZD7VLRGLfi3eMIMdJCKxjl5g/axYzxDIBiW+TDwEN5QBKyEpsOgA1R1Li4IobLBMY
+	xWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYyQSOvfwXj3gPUh
+	xmSg9ROZpUST84GRmlcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlO
+	avEhRiYOTqkGxpxNZ50X3NjHlWr3n+X455fic3PvCSu9Foi9blN8aaVyx5LKzJ+Js+u3r/3Y
+	bJroUDg9Vik84eH1+sMsDUK2RiWp095eeKh7/aXi8cRjYb9/ThW2yAhbX717ir/VNNUP36o/
+	/3vsNL/GRnNOQdemp7Iz6rVq3meJb/7R4azjFS6a+tnLQsMkU4mlOCPRUIu5qDgRAAMefZDK	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jQd3/i1YGGnz7xmPRvHg9m8XlhZdY
+	LT7/3sVqcXnXHDYHFo/9c9ewe/RtWcXocWbBEXaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
+	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJ6xgzju5vYivYyVHxfdlDlgbGj2xdjJwcEgImEl0vljNB2GISF+6t
+	B4pzcQgJTGeU+Dt5FwuE84tRYtLdOcwgVWwCahJfvhxmB7FFBIwl+s/OArOZBZIlljx4BjZJ
+	WMBO4uyi5WAbWARUJZad+wMW5xWwlPjxYyULhC0o8WPyPRaIXi2J9TuPM0HY8hKb17xlhrhI
+	QWLH2deMELv0gGrWQ+0Skdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RX
+	nJhbXJqXrpecn7uJERzHz6R3MK5qsDjEKMDBqMTDa7BiRaAQa2JZcWXuIUYJDmYlEd6VC1YG
+	CvGmJFZWpRblxxeV5qQWH2JMBvp0IrOUaHI+MMXklcQbGpuYGVkamVkYmZibkyasJM57sNU6
+	UEggPbEkNTs1tSC1CGYLEwenVAOjfqzP81T9m9bpYn5/Vu3UfX7jzbyrD2ae99hc8fhvp46B
+	vBvD0652jaAlr8JdLi3w+lFu212/h+njpg/amx7dXWr7Xeb6DIb13H8vB3vu4XQPYPn0Q27y
+	zLt9XIGzn8SvqWy+bbnrElPUzq9cmsuO3t39PZbx/YOsoljuvJWPbRg6fcMvOddtVWIpzkg0
+	1GIuKk4EAIqO1yknAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,53 +58,35 @@ used.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/ab8500_fg.c        |    4 ++--
- drivers/power/pcf50633-charger.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/tty/hvc/hvc_iucv.c |    2 +-
+ drivers/tty/sysrq.c        |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index c5391f5..6207b5e 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -2467,7 +2467,7 @@ static ssize_t charge_full_store(struct ab8500_fg *di, const char *buf,
- 	unsigned long charge_full;
- 	ssize_t ret = -EINVAL;
+diff --git a/drivers/tty/hvc/hvc_iucv.c b/drivers/tty/hvc/hvc_iucv.c
+index b6f7d52..9d47f50 100644
+--- a/drivers/tty/hvc/hvc_iucv.c
++++ b/drivers/tty/hvc/hvc_iucv.c
+@@ -1328,7 +1328,7 @@ out_error:
+  */
+ static	int __init hvc_iucv_config(char *val)
+ {
+-	 return strict_strtoul(val, 10, &hvc_iucv_devices);
++	 return kstrtoul(val, 10, &hvc_iucv_devices);
+ }
  
--	ret = strict_strtoul(buf, 10, &charge_full);
-+	ret = kstrtoul(buf, 10, &charge_full);
  
- 	dev_dbg(di->dev, "Ret %zd charge_full %lu", ret, charge_full);
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index b51c154..5f68f2c 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -932,7 +932,7 @@ static int sysrq_reset_seq_param_set(const char *buffer,
+ 	unsigned long val;
+ 	int error;
  
-@@ -2489,7 +2489,7 @@ static ssize_t charge_now_store(struct ab8500_fg *di, const char *buf,
- 	unsigned long charge_now;
- 	ssize_t ret;
- 
--	ret = strict_strtoul(buf, 10, &charge_now);
-+	ret = kstrtoul(buf, 10, &charge_now);
- 
- 	dev_dbg(di->dev, "Ret %zd charge_now %lu was %d",
- 		ret, charge_now, di->bat_cap.prev_mah);
-diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
-index 17fd77f..92f0ea0 100644
---- a/drivers/power/pcf50633-charger.c
-+++ b/drivers/power/pcf50633-charger.c
-@@ -191,7 +191,7 @@ static ssize_t set_usblim(struct device *dev,
- 	unsigned long ma;
- 	int ret;
- 
--	ret = strict_strtoul(buf, 10, &ma);
-+	ret = kstrtoul(buf, 10, &ma);
- 	if (ret)
- 		return -EINVAL;
- 
-@@ -228,7 +228,7 @@ static ssize_t set_chglim(struct device *dev,
- 	if (!mbc->pcf->pdata->charger_reference_current_ma)
- 		return -ENODEV;
- 
--	ret = strict_strtoul(buf, 10, &ma);
-+	ret = kstrtoul(buf, 10, &ma);
- 	if (ret)
- 		return -EINVAL;
+-	error = strict_strtoul(buffer, 0, &val);
++	error = kstrtoul(buffer, 0, &val);
+ 	if (error < 0)
+ 		return error;
  
 -- 
 1.7.10.4
