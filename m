@@ -1,173 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab3FATWm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 15:22:42 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49780 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125Ab3FATWg (ORCPT
+	id S1755300Ab3FAT2K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 15:28:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43099 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab3FAT2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 15:22:36 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
-        <riel@redhat.com>, <drjones@redhat.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Sun, 02 Jun 2013 00:56:45 +0530
-Message-Id: <20130601192645.5966.42685.sendpatchset@codeblue>
-In-Reply-To: <20130601192125.5966.35563.sendpatchset@codeblue>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
-Subject: [PATCH RFC V9 19/19] kvm hypervisor: Add directed yield in vcpu block path
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060119-7014-0000-0000-0000031A8173
+	Sat, 1 Jun 2013 15:28:07 -0400
+Date: Sat, 1 Jun 2013 20:27:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Cc: khilman@linaro.org, grant.likely@linaro.org, linus.walleij@linaro.org,
+        rob.herring@calxeda.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, vaibhav.bedia@ti.com,
+        sudhakar.raj@ti.com, spi-devel-general@lists.sourceforge.net
+Message-ID: <20130601192726.GS16790@sirena.org.uk>
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+ <1369995191-20855-6-git-send-email-gururaja.hebbar@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jesV4P1FjH8FXPjZ"
+Content-Disposition: inline
+In-Reply-To: <1369995191-20855-6-git-send-email-gururaja.hebbar@ti.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 05/11] spi: omap2-mcspi: enhance pinctrl support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm hypervisor: Add directed yield in vcpu block path
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+--jesV4P1FjH8FXPjZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We use the improved PLE handler logic in vcpu block patch for
-scheduling rather than plain schedule, so that we can make
-intelligent decisions
+On Fri, May 31, 2013 at 03:43:05PM +0530, Hebbar Gururaja wrote:
+> Amend the spi omap controller to optionally take a pin control
+> handle and set the state of the pins to:
+>=20
+> - "default" on boot, resume and before performing an spi transfer
+> - "idle" after initial default, after resume default, and after each
+> spi xfer
+> - "sleep" on suspend()
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- arch/ia64/include/asm/kvm_host.h    |    5 +++++
- arch/powerpc/include/asm/kvm_host.h |    5 +++++
- arch/s390/include/asm/kvm_host.h    |    5 +++++
- arch/x86/include/asm/kvm_host.h     |    2 +-
- arch/x86/kvm/x86.c                  |    8 ++++++++
- include/linux/kvm_host.h            |    2 +-
- virt/kvm/kvm_main.c                 |    6 ++++--
- 7 files changed, 29 insertions(+), 4 deletions(-)
+Looking at this code I can't really see what's OMAP-specific about it -
+exactly the same flow should apply to pretty much any SPI controller,
+especially given that the code will happily ignore missing states.
+We're just setting the idle state when not actively transferring data
+which seems sensible and generic.
 
-diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-index 989dd3f..999ab15 100644
---- a/arch/ia64/include/asm/kvm_host.h
-+++ b/arch/ia64/include/asm/kvm_host.h
-@@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
- int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
- void kvm_sal_emul(struct kvm_vcpu *vcpu);
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- #define __KVM_HAVE_ARCH_VM_ALLOC 1
- struct kvm *kvm_arch_alloc_vm(void);
- void kvm_arch_free_vm(struct kvm *kvm);
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index af326cd..1aeecc0 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
- #define __KVM_HAVE_ARCH_WQP
- #define __KVM_HAVE_CREATE_DEVICE
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- #endif /* __POWERPC_KVM_HOST_H__ */
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index 16bd5d1..db09a56 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -266,4 +266,9 @@ struct kvm_arch{
- };
- 
- extern int sie64a(struct kvm_s390_sie_block *, u64 *);
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- #endif
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 95702de..72ff791 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -1042,5 +1042,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
- int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
- void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
- void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
--
-+void kvm_do_schedule(struct kvm_vcpu *vcpu);
- #endif /* _ASM_X86_KVM_HOST_H */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b963c86..d26c4be 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7281,6 +7281,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
- 			kvm_x86_ops->interrupt_allowed(vcpu);
- }
- 
-+void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	/* We try to yield to a kikced vcpu else do a schedule */
-+	if (kvm_vcpu_on_spin(vcpu) <= 0)
-+		schedule();
-+}
-+EXPORT_SYMBOL_GPL(kvm_do_schedule);
-+
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index f0eea07..39efc18 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -565,7 +565,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
- void kvm_vcpu_block(struct kvm_vcpu *vcpu);
- void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
- bool kvm_vcpu_yield_to(struct kvm_vcpu *target);
--void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-+bool kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
- void kvm_resched(struct kvm_vcpu *vcpu);
- void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
- void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 302681c..8387247 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1685,7 +1685,7 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
- 		if (signal_pending(current))
- 			break;
- 
--		schedule();
-+		kvm_do_schedule(vcpu);
- 	}
- 
- 	finish_wait(&vcpu->wq, &wait);
-@@ -1786,7 +1786,7 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
- }
- #endif
- 
--void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-+bool kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
- 	struct kvm_vcpu *vcpu;
-@@ -1835,6 +1835,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 
- 	/* Ensure vcpu is not eligible during next spinloop */
- 	kvm_vcpu_set_dy_eligible(me, false);
-+
-+	return yielded;
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
- 
+This suggests to me that we should be adding this code into the core,
+probably joined up with the transfer_one_message stuff, so that any
+hardware which has an idle state will be able to get the benefit.  Can
+anyone think of a reason why we shouldn't do that?
 
+--jesV4P1FjH8FXPjZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRqksbAAoJELSic+t+oim9YPkP/2Mh8qGtSUuoR0QFZSiQ4T0V
+1Dw8LcOQ6mUYD9jvhF/pQDV92oLx3nTHJc/Nj0uJ4dk5gxDgVe8ubndW6xAS1ICs
+GbbN5y72QjzUwi3S2EI3Ucfe0M9TlvUIRKzgdox8rBIm3BS+JSNj4r+UYu++o+7G
+qvzyURyiwvje/9/BBcAo8iGlzVOq/QIvKog5lxZPZX64wXjNgINoZ4dMRU8c8FM3
+dlPRkab1PpIlTUGZ9FdTUKdLwe4/NZ3TwVEQsyrU1/zcssNsW4t++ihObZpyz9nS
+74VSBvbnOdqxFTUOUQ9y54uGjET8PwJ7DBK+Kx9o8/IRg00X15JCbsU2lh2ddqly
+flQ9IWz5il0e9B9O9zz6bjOOQAXUWeeuf2ss9Y1CGXHHfLANLHIJPD66hvwPfwUu
+2GZPEE+njNWVJK2UKXmtCXHZ6j27n6ce2vJWYm01uQgEfkwb+CO/MgGn/h4b7EdT
+d9LSK4INXQXtLhrpJ2G4BovRAuz426EjGe5dDYZPwc/NEuASRNEEIKnkP7fZ4wrj
+sYUVIK3aO+T+z7Mi51IGN4OFdfC0iyDOCwCvRjL1fJOl58lzA5gFOimI38mvdvq6
+moZpOV4sXJ/rNIR7px23rFvA5w08DgJhzOEleHN9fSqek4jnpx10veTRhj4Oo06o
+l33gdt855JQlLuOqEa7m
+=IGvf
+-----END PGP SIGNATURE-----
+
+--jesV4P1FjH8FXPjZ--
