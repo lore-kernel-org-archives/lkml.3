@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3FAN5n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 09:57:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59688 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab3FAN5g (ORCPT
+	id S1755623Ab3FAOJB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 10:09:01 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:36251 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab3FAOIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 09:57:36 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 1 Jun 2013 06:58:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Chen Yuanquan-B41889 <B41889@freescale.com>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
-        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
-Subject: Re: [PATCH] powerpc/pci: Improve device hotplug initialization
-Message-ID: <20130601135809.GA6395@roeck-us.net>
-References: <1369762514-27352-1-git-send-email-linux@roeck-us.net>
- <51A5CAC1.6030800@freescale.com>
- <20130531051423.GA15505@roeck-us.net>
- <1369979047.3928.112.camel@pasglop>
+	Sat, 1 Jun 2013 10:08:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369979047.3928.112.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370038972-2318779-16-git-send-email-arnd@arndb.de>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
+	<1370038972-2318779-16-git-send-email-arnd@arndb.de>
+Date: Sat, 1 Jun 2013 09:01:07 -0500
+Message-ID: <CAL_Jsq+-7RizbVQSA-JnJRZFc9-3RFCXuCOXP=GfCin2Losfeg@mail.gmail.com>
+Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 03:44:07PM +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-05-30 at 22:14 -0700, Guenter Roeck wrote:
-> > On Wed, May 29, 2013 at 05:30:41PM +0800, Chen Yuanquan-B41889 wrote:
-> > > On 05/29/2013 01:35 AM, Guenter Roeck wrote:
-> > > >bios_add_device(). Drop explicit calls to pcibios_setup_device();
-> > > >this makes pcibios_setup_bus_devices() a noop function which could
-> > > >eve
-> > > 
-> > > Yeah, it's more reasonable to do the irq and DMA related initialization
-> > > in one code path for all devices.
-> > > 
-> > Any comments / feedback on the code itself ?
-> 
-> Sorry, I haven't had a chance to review it yet, I'm fairly bogged down
-> at the moment. I want to tread carefully because the previous iteration
-> of changing that stuff did break a few platforms in the end.
-> 
-Hi Ben,
+On Fri, May 31, 2013 at 5:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> A lot of code uses the functions from of_platform.h when built for
+> devicetree-enabled platforms but can also be built without them.
+> In order to avoid using #ifdef everywhere in drivers, this
+> makes all the function declarations visible, which means we
+> can use "if (IS_ENABLED(CONFIG_OF))" in driver code and get build
+> coverage over the code but let the compiler drop the reference
+> in the object code.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
 
-the comment was actuially directed towards Yuanquan.
+I've got a more complete series for 3.11 that removes OF_DEVICE and
+of_platform_driver completely. I'm waiting on ack from Ben H.
 
-No problem, take your time. I did my best to test it, but I agree that this is a
-critical area of the code, and it would be desirable to get additional scrutiny
-and test feedback.
+Rob
 
-The code has been running in our system (P2020 and P5040) for several months.
-I was preparing a patch for upstream submission when I noticed commit 37f02195b.
-After testing ithis commit, I noticed the problems with it and wrote this patch,
-which aligns the code with our initial patch. I tested it as good as I could on
-our systems as well as with a P5040 evaluation board and an Intel GE PCIe
-card.
-
-Thanks,
-Guenter
+> ---
+>  include/linux/of_platform.h | 14 +++-----------
+>  1 file changed, 3 insertions(+), 11 deletions(-)
+>
+> diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+> index 2a93b64..7747ad0 100644
+> --- a/include/linux/of_platform.h
+> +++ b/include/linux/of_platform.h
+> @@ -13,8 +13,6 @@
+>
+>  #include <linux/device.h>
+>  #include <linux/mod_devicetable.h>
+> -
+> -#ifdef CONFIG_OF_DEVICE
+>  #include <linux/pm.h>
+>  #include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+> @@ -82,7 +80,6 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
+>                                          struct device *parent);
+>  extern struct platform_device *of_find_device_by_node(struct device_node *np);
+>
+> -#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
+>  /* Platform devices and busses creation */
+>  extern struct platform_device *of_platform_device_create(struct device_node *np,
+>                                                    const char *bus_id,
+> @@ -91,17 +88,12 @@ extern struct platform_device *of_platform_device_create(struct device_node *np,
+>  extern int of_platform_bus_probe(struct device_node *root,
+>                                  const struct of_device_id *matches,
+>                                  struct device *parent);
+> +#ifdef CONFIG_OF_ADDRESS
+>  extern int of_platform_populate(struct device_node *root,
+>                                 const struct of_device_id *matches,
+>                                 const struct of_dev_auxdata *lookup,
+>                                 struct device *parent);
+> -#endif /* CONFIG_OF_ADDRESS */
+> -
+> -#endif /* CONFIG_OF_DEVICE */
+> -
+> -#if !defined(CONFIG_OF_ADDRESS)
+> -struct of_dev_auxdata;
+> -struct device_node;
+> +#else
+>  static inline int of_platform_populate(struct device_node *root,
+>                                         const struct of_device_id *matches,
+>                                         const struct of_dev_auxdata *lookup,
+> @@ -109,6 +101,6 @@ static inline int of_platform_populate(struct device_node *root,
+>  {
+>         return -ENODEV;
+>  }
+> -#endif /* !CONFIG_OF_ADDRESS */
+> +#endif
+>
+>  #endif /* _LINUX_OF_PLATFORM_H */
+> --
+> 1.8.1.2
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
