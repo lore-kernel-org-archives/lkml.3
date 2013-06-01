@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab3FAJ4S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:56:18 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60668 "EHLO
+	id S1759107Ab3FAJ4j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:56:39 -0400
+Received: from www17.your-server.de ([213.133.104.17]:60706 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756741Ab3FAJ4L (ORCPT
+	with ESMTP id S1759043Ab3FAJ4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:56:11 -0400
-Message-ID: <1370080565.29224.29.camel@localhost.localdomain>
-Subject: [PATCH] virtio-mmio: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 05:56:31 -0400
+Message-ID: <1370080586.29224.30.camel@localhost.localdomain>
+Subject: [PATCH] [media] media: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: rusty@rustcorp.com.au, mst@redhat.com, grant.likely@linaro.org,
-        rob.herring@calxeda.com, virtualization@lists.linux-foundation.org,
+To: g.liakhovetski@gmx.de, mchehab@redhat.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:56:05 +0200
+Date: Sat, 01 Jun 2013 11:56:26 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -27,20 +26,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -567,10 +567,7 @@ static int vm_cmdline_set(const char *de
- 	pdev = platform_device_register_resndata(&vm_cmdline_parent,
- 			"virtio-mmio", vm_cmdline_id++,
- 			resources, ARRAY_SIZE(resources), NULL, 0);
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
+diff -u -p a/drivers/media/platform/sh_veu.c b/drivers/media/platform/sh_veu.c
+--- a/drivers/media/platform/sh_veu.c
++++ b/drivers/media/platform/sh_veu.c
+@@ -359,10 +359,7 @@ static int sh_veu_context_init(struct sh
+ 	veu->m2m_ctx = v4l2_m2m_ctx_init(veu->m2m_dev, veu,
+ 					 sh_veu_queue_init);
+ 
+-	if (IS_ERR(veu->m2m_ctx))
+-		return PTR_ERR(veu->m2m_ctx);
 -
 -	return 0;
-+	return PTR_RET(pdev);
++	return PTR_RET(veu->m2m_ctx);
  }
  
- static int vm_cmdline_get_device(struct device *dev, void *data)
+ static int sh_veu_querycap(struct file *file, void *priv,
 
 
