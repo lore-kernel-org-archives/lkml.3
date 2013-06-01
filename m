@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab3FALCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 07:02:39 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:40878 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3FALC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 07:02:29 -0400
-Date: Sat, 1 Jun 2013 20:01:59 +0900 (PWT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, Russ Anderson <rja@sgi.com>,
-        joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
-        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
- info to runtime code
-In-Reply-To: <20130531143425.GA5850@srcf.ucam.org>
-Message-ID: <alpine.LFD.2.03.1306011956350.9068@pixel.linux-foundation.org>
-References: <alpine.LRH.2.00.1305300018180.1111@twin.jikos.cz> <20130529224645.GA16582@sgi.com> <alpine.LNX.2.00.1305300048520.30576@pobox.suse.cz> <1369880172.17397.11.camel@linux-s257.site> <20130530221737.GA11105@sgi.com> <alpine.LNX.2.00.1305310023020.30576@pobox.suse.cz>
- <20130531101250.GD30394@gmail.com> <alpine.LNX.2.00.1305311259520.30576@pobox.suse.cz> <20130531123015.GC17843@nazgul.tnic> <20130531124356.GA8212@gmail.com> <20130531143425.GA5850@srcf.ucam.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757894Ab3FALEd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 07:04:33 -0400
+Received: from mout.gmx.net ([212.227.15.18]:64066 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756231Ab3FALEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jun 2013 07:04:25 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+HVA49wkuHuArr1F96XNh2EPbuotOyRwCo+p/I2r
+	7/2YUM0imzk3EQ
+Message-ID: <1370084658.7268.19.camel@marge.simpson.net>
+Subject: Re: [PATCH 2/4] ipc/sem: seperate wait-for-zero and alter tasks
+ into seperate queues
+From: Mike Galbraith <efault@gmx.de>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 01 Jun 2013 13:04:18 +0200
+In-Reply-To: <1370080999.7268.5.camel@marge.simpson.net>
+References: <1369559335-13491-1-git-send-email-manfred@colorfullife.com>
+	 <1369559335-13491-3-git-send-email-manfred@colorfullife.com>
+	 <51A39E71.70900@redhat.com> <51A9BCDA.9040006@colorfullife.com>
+	 <1370080999.7268.5.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-06-01 at 12:03 +0200, Mike Galbraith wrote:
+
+> -rtm is with our patches added, -rt is backport without.
+
+Now same tree, turn off PREEMPT_FULL so the kernel is plain old PREEMPT.
+Again, -rt is without your patches, -rtm with, followed by backing out
+all ipc backports to end up at pre scalability series to show what the
+set gains on this box.
+
+vogelweide:/abuild/mike/:[0]# uname -r
+3.8.13-rt9-rt
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 19102372, ops/sec 636745
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 19877668, ops/sec 662588
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 19610632, ops/sec 653687
+vogelweide:/abuild/mike/:[0]# 
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.893317 seconds for 1000192 loops
+per loop execution time: 1.892 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.976055 seconds for 1000192 loops
+per loop execution time: 1.975 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.651162 seconds for 1000192 loops
+per loop execution time: 1.650 usec
 
 
-On Fri, 31 May 2013, Matthew Garrett wrote:
-> 
-> I agree that a revert is probably the right thing to do here, but the 
-> original patch was there to permit a more accurate calculation of the 
-> amount of nvram in use, not to provide additional debug information. 
-> Reverting it is going to differently break a different set of systems
+vogelweide:/abuild/mike/:[0]# uname -r
+3.8.13-rt9-rtm
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 22053968, ops/sec 735132
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 21295310, ops/sec 709843
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 21458002, ops/sec 715266
+vogelweide:/abuild/mike/:[0]# 
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.858765 seconds for 1000192 loops
+per loop execution time: 1.858 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.806943 seconds for 1000192 loops
+per loop execution time: 1.806 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 1.854004 seconds for 1000192 loops
+per loop execution time: 1.853 usec
 
-So "differently break" doesn't matter, if it's old breakage, and people 
-thus don't really expect it to work. We need to fix bugs without *new* 
-breakage, and quite frankly, I have been distressed by hearing the EFI 
-"specifications" mentioned so many times in this thread.
+All ipc patches backed out.
 
-Firmware specs are pure and utter garbage. They are irrelevant. Firmware 
-is buggy, and will always be buggy. The "spec" doesn't matter. We should 
-use firmware for loading the kernel, and as little else as humanly 
-possible.
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 8885026, ops/sec 296167
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 8791676, ops/sec 293055
+vogelweide:/abuild/mike/:[0]# ./semop-multi 256 64
+cpus 64, threads: 256, semaphores: 64, test duration: 30 secs
+total operations: 8301092, ops/sec 276703
+vogelweide:/abuild/mike/:[0]# 
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 10.750488 seconds for 1000192 loops
+per loop execution time: 10.748 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 10.737264 seconds for 1000192 loops
+per loop execution time: 10.735 usec
+vogelweide:/abuild/mike/:[0]# ./osim 64 256 1000000 0 0
+osim <sems> <tasks> <loops> <busy-in> <busy-out>
+osim: using a semaphore array with 64 semaphores.
+osim: using 256 tasks.
+osim: each thread loops 3907 times
+osim: each thread busyloops 0 loops outside and 0 loops inside.
+total execution time: 10.756395 seconds for 1000192 loops
+per loop execution time: 10.754 usec
 
-I'm very disappointed in how the EFI code doesn't seem to understand that. 
-There's tons of these stupid EFI variable crap that simply shouldn't 
-matter. Quite frankly, we'd be better off ignoring as much of it by 
-default as at all possible. Exactly because the more of an EFI interface 
-we have, the more we open us up to th einevitable firmware bugs.
 
-Anyway, I'm traveling with absolutely horrendous internet access, so can 
-somebody please send a description of the revert with the relevant 
-information, because I literally have a hard time extracting it all from 
-this thread because my email access is so slow and flaky... Make it easy 
-for me to do the revert with a good explanation message, please,
 
-               Linus
