@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab3FADKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 23:10:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4912 "EHLO mx1.redhat.com"
+	id S932438Ab3FADKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 23:10:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29046 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757526Ab3FADIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757663Ab3FADIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 May 2013 23:08:13 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
@@ -15,114 +15,129 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v1 09/11] locks: turn the blocked_list into a hashtable
-Date: Fri, 31 May 2013 23:07:32 -0400
-Message-Id: <1370056054-25449-10-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 07/11] locks: only pull entries off of blocked_list when they are really unblocked
+Date: Fri, 31 May 2013 23:07:30 -0400
+Message-Id: <1370056054-25449-8-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
 References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Break up the blocked_list into a hashtable, using the fl_owner as a key.
-This speeds up searching the hash chains, which is especially significant
-for deadlock detection.
+Currently, when there is a lot of lock contention the kernel spends an
+inordinate amount of time taking blocked locks off of the global
+blocked_list and then putting them right back on again. When all of this
+code was protected by a single lock, then it didn't matter much, but now
+it means a lot of file_lock_lock thrashing.
 
-Note that the initial implementation assumes that hashing on fl_owner is
-sufficient. In most cases it should be, with the notable exception being
-server-side lockd, which compares ownership using a tuple of the
-nlm_host and the pid sent in the lock request. So, this may degrade to a
-single hash bucket when you only have a single NFS client. That will be
-addressed in a later patch.
+Optimize this a bit by deferring the removal from the blocked_list until
+we're either applying or cancelling the lock. By doing this, and using a
+lockless list_empty check, we can avoid taking the file_lock_lock in
+many cases.
 
-The careful observer may note that this patch leaves the file_lock_list
-alone. There's much less of a case for turning the file_lock_list into a
-hashtable. The only user of that list is the code that generates
-/proc/locks, and it always walks the entire list.
+Because the fl_link check is lockless, we must ensure that only the task
+that "owns" the request manipulates the fl_link. Also, with this change,
+it's possible that we'll see an entry on the blocked_list that has a
+NULL fl_next pointer. In that event, just ignore it and continue walking
+the list.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/locks.c |   24 ++++++++++++++++++------
- 1 files changed, 18 insertions(+), 6 deletions(-)
+ fs/locks.c |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
 
 diff --git a/fs/locks.c b/fs/locks.c
-index 5ed056b..0d030ce 100644
+index 055c06c..fc35b9e 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -126,6 +126,7 @@
- #include <linux/time.h>
- #include <linux/rcupdate.h>
- #include <linux/pid_namespace.h>
-+#include <linux/hashtable.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -163,10 +164,19 @@ int lease_break_time = 45;
- #define for_each_lock(inode, lockp) \
- 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
- 
-+/*
-+ * By breaking up the blocked locks list into a hashtable, we speed up the
-+ * deadlock detection.
-+ *
-+ * FIXME: make this value scale via some heuristic?
-+ */
-+#define BLOCKED_HASH_BITS	7
-+
-+static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
-+
- static HLIST_HEAD(file_lock_list);
--static HLIST_HEAD(blocked_list);
- 
--/* Protects the two list heads above */
-+/* Protects the file_lock_list and the blocked_hash */
- static DEFINE_SPINLOCK(file_lock_lock);
- 
- static struct kmem_cache *filelock_cache __read_mostly;
-@@ -486,7 +496,8 @@ static inline void
- locks_insert_global_blocked(struct file_lock *waiter)
+@@ -520,7 +520,6 @@ locks_delete_global_locks(struct file_lock *waiter)
+ static void __locks_delete_block(struct file_lock *waiter)
  {
- 	spin_lock(&file_lock_lock);
--	hlist_add_head(&waiter->fl_link, &blocked_list);
-+	hash_add(blocked_hash, &waiter->fl_link,
-+				(unsigned long)waiter->fl_owner);
- 	spin_unlock(&file_lock_lock);
+ 	list_del_init(&waiter->fl_block);
+-	locks_delete_global_blocked(waiter);
+ 	waiter->fl_next = NULL;
  }
  
-@@ -494,7 +505,7 @@ static inline void
- locks_delete_global_blocked(struct file_lock *waiter)
+@@ -704,13 +703,16 @@ EXPORT_SYMBOL(posix_test_lock);
+ /* Find a lock that the owner of the given block_fl is blocking on. */
+ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
  {
- 	spin_lock(&file_lock_lock);
--	hlist_del_init(&waiter->fl_link);
-+	hash_del(&waiter->fl_link);
- 	spin_unlock(&file_lock_lock);
- }
+-	struct file_lock *fl;
++	struct file_lock *fl, *ret = NULL;
  
-@@ -705,7 +716,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
- {
- 	struct file_lock *fl, *ret = NULL;
- 
--	hlist_for_each_entry(fl, &blocked_list, fl_link) {
-+	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
- 		if (posix_same_owner(fl, block_fl)) {
- 			ret = fl->fl_next;
- 			if (likely(ret))
-@@ -2275,13 +2286,14 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- 
- static int locks_show(struct seq_file *f, void *v)
- {
-+	int bkt;
- 	struct file_lock *fl, *bfl;
- 
- 	fl = hlist_entry(v, struct file_lock, fl_link);
- 
- 	lock_get_status(f, fl, *((loff_t *)f->private), "");
- 
--	hlist_for_each_entry(bfl, &blocked_list, fl_link) {
-+	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
- 		if (bfl->fl_next == fl)
- 			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+ 	list_for_each_entry(fl, &blocked_list, fl_link) {
+-		if (posix_same_owner(fl, block_fl))
+-			return fl->fl_next;
++		if (posix_same_owner(fl, block_fl)) {
++			ret = fl->fl_next;
++			if (likely(ret))
++				break;
++		}
  	}
+-	return NULL;
++	return ret;
+ }
+ 
+ static int posix_locks_deadlock(struct file_lock *caller_fl,
+@@ -865,7 +867,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 				goto out;
+ 			error = FILE_LOCK_DEFERRED;
+ 			locks_insert_block(fl, request);
+-			locks_insert_global_blocked(request);
++			if (list_empty(&request->fl_link))
++				locks_insert_global_blocked(request);
+ 			goto out;
+   		}
+   	}
+@@ -876,6 +879,16 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		goto out;
+ 
+ 	/*
++	 * Now that we know the request is no longer blocked, we can take it
++	 * off the global list. Some callers send down partially initialized
++	 * requests, so we only do this if FL_SLEEP is set. Also, avoid taking
++	 * the lock if the list is empty, as that indicates a request that
++	 * never blocked.
++	 */
++	if ((request->fl_flags & FL_SLEEP) && !list_empty(&request->fl_link))
++		locks_delete_global_blocked(request);
++
++	/*
+ 	 * Find the first old lock with the same owner as the new lock.
+ 	 */
+ 	
+@@ -1069,6 +1082,7 @@ int posix_lock_file_wait(struct file *filp, struct file_lock *fl)
+ 			continue;
+ 
+ 		locks_delete_block(fl);
++		locks_delete_global_blocked(fl);
+ 		break;
+ 	}
+ 	return error;
+@@ -1147,6 +1161,7 @@ int locks_mandatory_area(int read_write, struct inode *inode,
+ 		}
+ 
+ 		locks_delete_block(&fl);
++		locks_delete_global_blocked(&fl);
+ 		break;
+ 	}
+ 
+@@ -1859,6 +1874,7 @@ static int do_lock_file_wait(struct file *filp, unsigned int cmd,
+ 			continue;
+ 
+ 		locks_delete_block(fl);
++		locks_delete_global_blocked(fl);
+ 		break;
+ 	}
+ 
+@@ -2160,6 +2176,7 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+ 	else
+ 		status = -ENOENT;
+ 	spin_unlock(&inode->i_lock);
++	locks_delete_global_blocked(waiter);
+ 	return status;
+ }
+ 
 -- 
 1.7.1
 
