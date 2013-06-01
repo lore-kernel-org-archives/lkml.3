@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab3FAJod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 05:44:33 -0400
-Received: from www17.your-server.de ([213.133.104.17]:59248 "EHLO
+	id S1758707Ab3FAJo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 05:44:56 -0400
+Received: from www17.your-server.de ([213.133.104.17]:59303 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758681Ab3FAJoZ (ORCPT
+	with ESMTP id S1754874Ab3FAJov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 05:44:25 -0400
-Message-ID: <1370079861.29224.15.camel@localhost.localdomain>
-Subject: [PATCH] ARM: imx: Cocci spatch "ptr_ret.spatch"
+	Sat, 1 Jun 2013 05:44:51 -0400
+Message-ID: <1370079884.29224.16.camel@localhost.localdomain>
+Subject: [PATCH] ARM: OMAP: Cocci spatch "ptr_ret.spatch"
 From: Thomas Meyer <thomas@m3y3r.de>
-To: kernel@pengutronix.de, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Date: Sat, 01 Jun 2013 11:44:21 +0200
+To: khilman@deeprootsystems.com, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 01 Jun 2013 11:44:44 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -26,65 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/arch/arm/mach-imx/mach-mx31moboard.c b/arch/arm/mach-imx/mach-mx31moboard.c
---- a/arch/arm/mach-imx/mach-mx31moboard.c
-+++ b/arch/arm/mach-imx/mach-mx31moboard.c
-@@ -445,10 +445,7 @@ static int __init moboard_usbh2_init(voi
- 		return -ENODEV;
+diff -u -p a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -66,7 +66,7 @@ static int __init omap3_l3_init(void)
  
- 	pdev = imx31_add_mxc_ehci_hs(2, &usbh2_pdata);
+ 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+ 
+-	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
++	return PTR_RET(pdev);
+ }
+ omap_postcore_initcall(omap3_l3_init);
+ 
+@@ -100,7 +100,7 @@ static int __init omap4_l3_init(void)
+ 
+ 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+ 
+-	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
++	return PTR_RET(pdev);
+ }
+ omap_postcore_initcall(omap4_l3_init);
+ 
+diff -u -p a/arch/arm/mach-omap2/fb.c b/arch/arm/mach-omap2/fb.c
+--- a/arch/arm/mach-omap2/fb.c
++++ b/arch/arm/mach-omap2/fb.c
+@@ -83,10 +83,7 @@ static int __init omap_init_vrfb(void)
+ 	pdev = platform_device_register_resndata(NULL, "omapvrfb", -1,
+ 			res, num_res, NULL, 0);
+ 
 -	if (IS_ERR(pdev))
 -		return PTR_ERR(pdev);
--
--	return 0;
+-	else
+-		return 0;
 +	return PTR_RET(pdev);
  }
  
- static const struct gpio_led mx31moboard_leds[] __initconst = {
-diff -u -p a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
---- a/arch/arm/mach-imx/mx31moboard-devboard.c
-+++ b/arch/arm/mach-imx/mx31moboard-devboard.c
-@@ -213,10 +213,7 @@ static int __init devboard_usbh1_init(vo
- 	usbh1_pdata.otg = phy;
+ omap_arch_initcall(omap_init_vrfb);
+diff -u -p a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1678,7 +1678,7 @@ static int __init omap_gpmc_init(void)
+ 	pdev = omap_device_build(DEVICE_NAME, -1, oh, NULL, 0);
+ 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
  
- 	pdev = imx31_add_mxc_ehci_hs(1, &usbh1_pdata);
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
--
--	return 0;
+-	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
 +	return PTR_RET(pdev);
  }
+ omap_postcore_initcall(omap_gpmc_init);
  
-
-diff -u -p a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
---- a/arch/arm/mach-imx/mx31moboard-marxbot.c
-+++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
-@@ -327,10 +327,7 @@ static int __init marxbot_usbh1_init(voi
- 	usbh1_pdata.otg = phy;
+diff -u -p a/arch/arm/mach-omap2/pmu.c b/arch/arm/mach-omap2/pmu.c
+--- a/arch/arm/mach-omap2/pmu.c
++++ b/arch/arm/mach-omap2/pmu.c
+@@ -54,10 +54,7 @@ static int __init omap2_init_pmu(unsigne
+ 	WARN(IS_ERR(omap_pmu_dev), "Can't build omap_device for %s.\n",
+ 	     dev_name);
  
- 	pdev = imx31_add_mxc_ehci_hs(1, &usbh1_pdata);
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
+-	if (IS_ERR(omap_pmu_dev))
+-		return PTR_ERR(omap_pmu_dev);
 -
 -	return 0;
-+	return PTR_RET(pdev);
++	return PTR_RET(omap_pmu_dev);
  }
  
- static const struct fsl_usb2_platform_data usb_pdata __initconst = {
-diff -u -p a/arch/arm/mach-imx/mx31moboard-smartbot.c b/arch/arm/mach-imx/mx31moboard-smartbot.c
---- a/arch/arm/mach-imx/mx31moboard-smartbot.c
-+++ b/arch/arm/mach-imx/mx31moboard-smartbot.c
-@@ -141,10 +141,7 @@ static int __init smartbot_otg_host_init
- 		return -ENODEV;
- 
- 	pdev = imx31_add_mxc_ehci_otg(&otg_host_pdata);
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
--
--	return 0;
-+	return PTR_RET(pdev);
- }
- #else
- static inline int smartbot_otg_host_init(void) { return 0; }
+ static int __init omap_init_pmu(void)
 
 
