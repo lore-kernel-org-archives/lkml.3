@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3FATSj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 15:18:39 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:42766 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab3FATSR (ORCPT
+	id S1755402Ab3FATSz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 15:18:55 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49339 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab3FATSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 15:18:17 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] usb: musb: use the new %pa format specifier for dma_addr_t
-Date: Sat,  1 Jun 2013 21:18:05 +0200
-Message-Id: <1370114285-14238-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 1 Jun 2013 15:18:44 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
+        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
+        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
+        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
+        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
+        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
+        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stephan.diestelhorst@amd.com>,
+        <riel@redhat.com>, <drjones@redhat.com>,
+        <virtualization@lists.linux-foundation.org>,
+        <srivatsa.vaddagiri@gmail.com>
+Date: Sun, 02 Jun 2013 00:52:43 +0530
+Message-Id: <20130601192243.5966.80786.sendpatchset@codeblue>
+In-Reply-To: <20130601192125.5966.35563.sendpatchset@codeblue>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+Subject: [PATCH RFC V9 4/19]  xen: Defer spinlock setup until boot CPU setup
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060119-9264-0000-0000-000003DB40E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes use of the new format specifier %pa that was introduced
-by the following commit.
+xen: Defer spinlock setup until boot CPU setup
 
-7d7992108d02aa92ad4c77e5d9ce14088c942e75
-("lib/vsprintf.c: add %pa format specifier for phys_addr_t types")
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-The addition of urb->transfer_dma and urb->actual_length is also done a
-few lines below. I have moved this code up and pass the variable buf to
-dev_dbg.
+There's no need to do it at very early init, and doing it there
+makes it impossible to use the jump_label machinery.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
-v2: Remove 0x from string as it will print as 0x0x
-This applies on top of commit 43d5ad743c6f
-("usb: musb: host: fix build warning")
-I also added braces to the else statement for consistency.
-(Didn't want to send a separate patch for that)
+ arch/x86/xen/smp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/usb/musb/musb_host.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index a9695f5..ee7730a 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -1756,12 +1756,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 			dma_addr_t		buf;
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 8ff3799..dcdc91c 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -246,6 +246,7 @@ static void __init xen_smp_prepare_boot_cpu(void)
  
- 			rx_count = musb_readw(epio, MUSB_RXCOUNT);
-+			buf = urb->transfer_dma + urb->actual_length;
+ 	xen_filter_cpu_maps();
+ 	xen_setup_vcpu_info_placement();
++	xen_init_spinlocks();
+ }
  
--			dev_dbg(musb->controller, "RX%d count %d, buffer 0x%llx len %d/%d\n",
-+			dev_dbg(musb->controller, "RX%d count %d, buffer %pa len %d/%d\n",
- 					epnum, rx_count,
--					(unsigned long long) urb->transfer_dma
--					+ urb->actual_length,
--					qh->offset,
-+					&buf, qh->offset,
- 					urb->transfer_buffer_length);
+ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+@@ -647,7 +648,6 @@ void __init xen_smp_init(void)
+ {
+ 	smp_ops = xen_smp_ops;
+ 	xen_fill_possible_map();
+-	xen_init_spinlocks();
+ }
  
- 			c = musb->dma_controller;
-@@ -1785,14 +1784,13 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 					    rx_count, d->length);
- 
- 					length = d->length;
--				} else
-+				} else {
- 					length = rx_count;
-+				}
- 				d->status = d_status;
- 				buf = urb->transfer_dma + d->offset;
- 			} else {
- 				length = rx_count;
--				buf = urb->transfer_dma +
--						urb->actual_length;
- 			}
- 
- 			dma->desired_mode = 0;
--- 
-1.7.10.4
+ static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
 
