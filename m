@@ -1,301 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3FAKou (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jun 2013 06:44:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39527 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab3FAKom (ORCPT
+	id S1756491Ab3FALCY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jun 2013 07:02:24 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:19215 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755442Ab3FALCM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jun 2013 06:44:42 -0400
-From: Jan Luebbe <jlu@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jan Luebbe <jlu@pengutronix.de>
-Subject: [PATCH v2] pps-gpio: add device-tree binding and support
-Date: Sat,  1 Jun 2013 12:44:09 +0200
-Message-Id: <1370083449-11986-1-git-send-email-jlu@pengutronix.de>
-X-Mailer: git-send-email 1.8.2.rc2
-In-Reply-To: <1588516.WvWWFWzAui@wuerfel>
-References: <1588516.WvWWFWzAui@wuerfel>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sat, 1 Jun 2013 07:02:12 -0400
+Date: Sat, 1 Jun 2013 13:01:34 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
+Message-ID: <20130601110133.GA4051@ab42.lan>
+References: <20130530211944.05F4D3E0A90@localhost>
+ <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com>
+ <alpine.LFD.2.02.1305311835040.2905@ionos>
+ <20130531221814.534DF3E08FE@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130531221814.534DF3E08FE@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of allocating a struct pps_gpio_platform_data in the DT case, store
-the necessary information in struct pps_gpio_device_data itself. This avoids
-an additional allocation and the ifdef. It also gets rid of some indirection.
+On Fri, May 31, 2013 at 11:18:14PM +0100, Grant Likely wrote:
+> On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Fri, 31 May 2013, Christian Ruppert wrote:
+> > 
+> > > The SOC interrupt controller driver for the Abilis Systems TB10x series of
+> > > SOCs based on ARC700 CPUs.
+> > > 
+> > > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
+> > > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
+> > 
+> > That branch can be pulled into ARC as well. It only contains the
+> > changes, which are necessary for the irq domain support of the generic
+> > irq chip.
 
-Also use dev_err instead of pr_err in the changed code.
+Vineet, what do you think about this? For the moment I have pulled the
+patch set into our local branch and to me it doesn't matter, we just
+have to make sure to respect this dependency when merging everything
+together.
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+> > > +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
+> > > +{
+> > > +	struct irq_domain *domain = irq_desc_get_handler_data(desc);
+> > > +
+> > > +	generic_handle_irq(irq_find_mapping(domain, irq));
+> > > +}
+> > 
+> > ...
+> > 
+> > > +	for (i = 0; i < nrirqs; i++) {
+> > > +		unsigned int irq = irq_of_parse_and_map(ictl, i);
+> > > +
+> > > +		irq_set_handler_data(irq, domain);
+> > > +		irq_set_chained_handler(irq, tb10x_irq_cascade);
+> > > +	}
+> > 
+> > I might be completely confused, but this does not make any sense at
+> > all.
+> > 
+> > You allocate a linear domain and then map the interrupts in the
+> > domain. The mapping function retrieves the hardware interrupt number
+> > and creates a virtual interrupt number, installs the chip and the
+> > handler for the interrupt and finally returns the virtual interrupt
+> > number.
+> > 
+> > Now you take that virtual interrupt number and install
+> > tb10x_irq_cascade as the handler. irq_set_chained_handler() will
+> > startup (unmask) the interrupt right away.
+> > 
+> > In the cascade handler you take the virtual interrupt number, which
+> > you get as argument, and find the mapping, i.e. the matching VIRTUAL
+> > interrupt number for the VIRTUAL interrupt number and then call the
+> > handler.
+> > 
+> > How is this supposed to work?
+> 
+> I think what is going on here is that the tb10x interrupt controller
+> appears to be more of a front-end to another interrupt controller with
+> each input wired up 1:1 to the interrupt inputs of the other controller.
 
----
-    This patch depends on my two recent pps-gpio patches, which are currently
-    in Andrew Morton's mmotm. So it should probably also go via Andrew if it
-    is acceptable.
-    
-    Changes since v1:
-      - Do not allocate a pdata struct, store info in pps_gpio_device_data.
-        Also fold the two calls from pps_gpio_setup into the probe function.
-        (suggested by Arnd Bergmann)
+Exactly. The TB10x interrupt controller is a front-end for the ARC CPU
+built-in interrupt controller.
 
- Documentation/devicetree/bindings/pps/pps-gpio.txt |   20 +++
- drivers/pps/clients/pps-gpio.c                     |  128 +++++++++++---------
- 2 files changed, 93 insertions(+), 55 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pps/pps-gpio.txt
+> (I don't know why someone would design an interrupt controller that way,
+> but that's another issue).
 
-diff --git a/Documentation/devicetree/bindings/pps/pps-gpio.txt b/Documentation/devicetree/bindings/pps/pps-gpio.txt
-new file mode 100644
-index 0000000..40bf9c3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pps/pps-gpio.txt
-@@ -0,0 +1,20 @@
-+Device-Tree Bindings for a PPS Signal on GPIO
-+
-+These properties describe a PPS (pulse-per-second) signal connected to
-+a GPIO pin.
-+
-+Required properties:
-+- compatible: should be "pps-gpio"
-+- gpios: one PPS GPIO in the format described by ../gpio/gpio.txt
-+
-+Optional properties:
-+- assert-falling-edge: when present, assert is indicated by a falling edge
-+                       (instead of by a rising edge)
-+
-+Example:
-+	pps {
-+		compatible = "pps-gpio";
-+		gpios = <&gpio2 6 0>;
-+
-+		assert-falling-edge;
-+	};
-diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
-index 6768f95..eae0eda 100644
---- a/drivers/pps/clients/pps-gpio.c
-+++ b/drivers/pps/clients/pps-gpio.c
-@@ -33,13 +33,17 @@
- #include <linux/pps-gpio.h>
- #include <linux/gpio.h>
- #include <linux/list.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
- 
- /* Info for each registered platform device */
- struct pps_gpio_device_data {
- 	int irq;			/* IRQ used as PPS source */
- 	struct pps_device *pps;		/* PPS source device */
- 	struct pps_source_info info;	/* PPS source information */
--	const struct pps_gpio_platform_data *pdata;
-+	bool assert_falling_edge;
-+	bool capture_clear;
-+	unsigned int gpio_pin;
- };
- 
- /*
-@@ -57,45 +61,25 @@ static irqreturn_t pps_gpio_irq_handler(int irq, void *data)
- 
- 	info = data;
- 
--	rising_edge = gpio_get_value(info->pdata->gpio_pin);
--	if ((rising_edge && !info->pdata->assert_falling_edge) ||
--			(!rising_edge && info->pdata->assert_falling_edge))
-+	rising_edge = gpio_get_value(info->gpio_pin);
-+	if ((rising_edge && !info->assert_falling_edge) ||
-+			(!rising_edge && info->assert_falling_edge))
- 		pps_event(info->pps, &ts, PPS_CAPTUREASSERT, NULL);
--	else if (info->pdata->capture_clear &&
--			((rising_edge && info->pdata->assert_falling_edge) ||
--			 (!rising_edge && !info->pdata->assert_falling_edge)))
-+	else if (info->capture_clear &&
-+			((rising_edge && info->assert_falling_edge) ||
-+			 (!rising_edge && !info->assert_falling_edge)))
- 		pps_event(info->pps, &ts, PPS_CAPTURECLEAR, NULL);
- 
- 	return IRQ_HANDLED;
- }
- 
--static int pps_gpio_setup(struct platform_device *pdev)
--{
--	int ret;
--	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
--
--	ret = devm_gpio_request(&pdev->dev, pdata->gpio_pin, pdata->gpio_label);
--	if (ret) {
--		pr_warning("failed to request GPIO %u\n", pdata->gpio_pin);
--		return -EINVAL;
--	}
--
--	ret = gpio_direction_input(pdata->gpio_pin);
--	if (ret) {
--		pr_warning("failed to set pin direction\n");
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
- static unsigned long
--get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
-+get_irqf_trigger_flags(const struct pps_gpio_device_data *data)
- {
--	unsigned long flags = pdata->assert_falling_edge ?
-+	unsigned long flags = data->assert_falling_edge ?
- 		IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
- 
--	if (pdata->capture_clear) {
-+	if (data->capture_clear) {
- 		flags |= ((flags & IRQF_TRIGGER_RISING) ?
- 				IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
- 	}
-@@ -106,35 +90,63 @@ get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
- static int pps_gpio_probe(struct platform_device *pdev)
- {
- 	struct pps_gpio_device_data *data;
--	int irq;
-+	const char *gpio_label;
- 	int ret;
- 	int pps_default_params;
- 	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-+	struct device_node *np = pdev->dev.of_node;
- 
-+	/* allocate space for device info */
-+	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
-+			GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	if (pdata) {
-+		data->gpio_pin = pdata->gpio_pin;
-+		gpio_label = pdata->gpio_label;
-+
-+		data->assert_falling_edge = pdata->assert_falling_edge;
-+		data->capture_clear = pdata->capture_clear;
-+	} else {
-+		ret = of_get_gpio(np, 0);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "failed to get GPIO from device tree\n");
-+			return ret;
-+		}
-+		data->gpio_pin = ret;
-+		gpio_label = PPS_GPIO_NAME;
-+
-+		if (of_get_property(np, "assert-falling-edge", NULL))
-+			data->assert_falling_edge = true;
-+	}
- 
- 	/* GPIO setup */
--	ret = pps_gpio_setup(pdev);
--	if (ret)
--		return -EINVAL;
-+	ret = devm_gpio_request(&pdev->dev, data->gpio_pin, gpio_label);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to request GPIO %u\n",
-+			data->gpio_pin);
-+		return ret;
-+	}
- 
--	/* IRQ setup */
--	irq = gpio_to_irq(pdata->gpio_pin);
--	if (irq < 0) {
--		pr_err("failed to map GPIO to IRQ: %d\n", irq);
-+	ret = gpio_direction_input(data->gpio_pin);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to set pin direction\n");
- 		return -EINVAL;
- 	}
- 
--	/* allocate space for device info */
--	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
--			GFP_KERNEL);
--	if (data == NULL) {
--		return -ENOMEM;
-+	/* IRQ setup */
-+	ret = gpio_to_irq(data->gpio_pin);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to map GPIO to IRQ: %d\n", ret);
-+		return -EINVAL;
- 	}
-+	data->irq = ret;
- 
- 	/* initialize PPS specific parts of the bookkeeping data structure. */
- 	data->info.mode = PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
- 		PPS_ECHOASSERT | PPS_CANWAIT | PPS_TSFMT_TSPEC;
--	if (pdata->capture_clear)
-+	if (data->capture_clear)
- 		data->info.mode |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR |
- 			PPS_ECHOCLEAR;
- 	data->info.owner = THIS_MODULE;
-@@ -143,28 +155,27 @@ static int pps_gpio_probe(struct platform_device *pdev)
- 
- 	/* register PPS source */
- 	pps_default_params = PPS_CAPTUREASSERT | PPS_OFFSETASSERT;
--	if (pdata->capture_clear)
-+	if (data->capture_clear)
- 		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
- 	data->pps = pps_register_source(&data->info, pps_default_params);
- 	if (data->pps == NULL) {
--		pr_err("failed to register IRQ %d as PPS source\n", irq);
-+		dev_err(&pdev->dev, "failed to register IRQ %d as PPS source\n",
-+			data->irq);
- 		return -EINVAL;
- 	}
- 
--	data->irq = irq;
--	data->pdata = pdata;
--
- 	/* register IRQ interrupt handler */
--	ret = devm_request_irq(&pdev->dev, irq, pps_gpio_irq_handler,
--			get_irqf_trigger_flags(pdata), data->info.name, data);
-+	ret = devm_request_irq(&pdev->dev, data->irq, pps_gpio_irq_handler,
-+			get_irqf_trigger_flags(data), data->info.name, data);
- 	if (ret) {
- 		pps_unregister_source(data->pps);
--		pr_err("failed to acquire IRQ %d\n", irq);
-+		dev_err(&pdev->dev, "failed to acquire IRQ %d\n", data->irq);
- 		return -EINVAL;
- 	}
- 
- 	platform_set_drvdata(pdev, data);
--	dev_info(data->pps->dev, "Registered IRQ %d as PPS source\n", irq);
-+	dev_info(data->pps->dev, "Registered IRQ %d as PPS source\n",
-+		 data->irq);
- 
- 	return 0;
- }
-@@ -175,16 +186,23 @@ static int pps_gpio_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 	pps_unregister_source(data->pps);
--	pr_info("removed IRQ %d as PPS source\n", data->irq);
-+	dev_info(&pdev->dev, "removed IRQ %d as PPS source\n", data->irq);
- 	return 0;
- }
- 
-+static const struct of_device_id pps_gpio_dt_ids[] = {
-+	{ .compatible = "pps-gpio", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, pps_gpio_dt_ids);
-+
- static struct platform_driver pps_gpio_driver = {
- 	.probe		= pps_gpio_probe,
- 	.remove		= pps_gpio_remove,
- 	.driver		= {
- 		.name	= PPS_GPIO_NAME,
--		.owner	= THIS_MODULE
-+		.owner	= THIS_MODULE,
-+		.of_match_table	= of_match_ptr(pps_gpio_dt_ids),
- 	},
- };
- 
+There are several technical reasons for this front-end. The one that
+concerns us most in the kernel is that the TB10x front-end does the
+translation from all kinds of interrupt trigger modes to the level
+triggered interrupts natively understood by the ARC CPU built-in
+controller.
+
+> The loop above is mapping each of the
+> interrupt inputs on the parent controller so that each child controller
+> can be chained to it as an input. I can't think of how else it could be
+> set up with the current code if the drivers were kept separate.
+
+This is exactly the intention. I haven't found an easier way to do this
+either but I'm open to suggestions. Btw, I have noticed that the parent
+controller interrupts from this loop are not listed in /proc/interrupts.
+I'm not sure if what is done in the loop is sufficient or if I should
+add something else (the naive option of using request_irq doesn't work,
+the kernel saying something in the lines of "irq XX triggered but noone
+cares").
+
+> Christian, what is the parent interrupt controller for this SoC? It
+> really feels like the tb10x-ictl belongs as part of the parent
+> controller. I went and looked at the parent node, and I saw this:
+> 
+> 		intc: interrupt-controller {
+> 				compatible = "snps,arc700-intc";
+> 				interrupt-controller;
+> 				#interrupt-cells = <1>;
+> 		};
+> 
+> I noticed the conspicuous absence of a reg property. Is this something
+> architectural?
+
+The parent controller is part of the CPU itself, see
+arch/arc/kernel/irq.c. This controller is maintained by Vineet and IMHO
+we should keep it separate from the TB10x one since it is implicitly
+used in all ARC-based platforms whereas the TB10x controller is used in
+Abilis chips only.
+
+> If I were working on this system I'd drop the
+> snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
+> encapsulated the properties of both (you would of course want to share
+> handler functions for the 'normal' inputs without the custom features).
+> That would eliminate the goofyness of listing 27 separate interrupts in
+> the abilis,tb10x-ictl interrupts property.
+
+To complicate things even further, some ARC CPU built-in peripherals
+(e.g. timers) generate interrupts directly to the ARC built-in interrupt
+controller (without going through the TB10x front-end), hence the
+"goofy" list of interrupts in the TB10x DT node.
+
+Greetings,
+  Christian
+
 -- 
-1.7.10.4
-
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
