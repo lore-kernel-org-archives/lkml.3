@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab3FAAWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 May 2013 20:22:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39846 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757865Ab3FAAWO (ORCPT
+	id S1758057Ab3FAAXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 May 2013 20:23:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43279 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757851Ab3FAAXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 May 2013 20:22:14 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
-Date: Fri, 31 May 2013 17:22:00 -0700
-Message-Id: <1370046121-7835-3-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1370046121-7835-1-git-send-email-rvaswani@codeaurora.org>
-References: <1370046121-7835-1-git-send-email-rvaswani@codeaurora.org>
+	Fri, 31 May 2013 20:23:37 -0400
+Date: Fri, 31 May 2013 17:23:36 -0700 (PDT)
+Message-Id: <20130531.172336.1848458955586893446.davem@davemloft.net>
+To: maxime.ripard@free-electrons.com
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sr@denx.de, florian@openwrt.org,
+        emilio@elopez.com.ar, kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com
+Subject: Re: [PATCHv4 0/6] ARM: sunxi: Add support for A10 Ethernet
+ controller
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1369921765-3367-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSM_TLMM_BASE is currently not mapped by 8x60. Remove it.
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+Date: Thu, 30 May 2013 15:49:19 +0200
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+> The Allwinner A10 SoC has an ethernet controller that seem to be specific to
+> Allwinner. This IP has no public documentation, so exact
+> details are quite sparse, and this code come from refactored Allwinner
+> code.
+> 
+> The rework to use NAPI is taking more time than expected, I'm still working
+> on it, but it could probably be sent as a follow-up patch.
 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 199372e..cf24b5c 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -41,10 +41,6 @@
- #define MSM8X60_QGIC_CPU_PHYS	0x02081000
- #define MSM8X60_QGIC_CPU_SIZE	SZ_4K
- 
--#define MSM_TLMM_BASE		IOMEM(0xF0004000)
--#define MSM_TLMM_PHYS		0x00800000
--#define MSM_TLMM_SIZE		SZ_16K
--
- #define MSM8X60_TMR_PHYS	0x02000000
- #define MSM8X60_TMR_SIZE	SZ_4K
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Looks good.
 
+All applied to net-next, thanks.
