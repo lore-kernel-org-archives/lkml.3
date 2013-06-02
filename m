@@ -1,153 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3FBGDG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 02:03:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35300 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab3FBGCj (ORCPT
+	id S1751833Ab3FBGjL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 02:39:11 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:43167 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3FBGjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 02:02:39 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH 2/2] mfd: ssbi: Use devm_* to simplify code
-Date: Sat,  1 Jun 2013 23:02:35 -0700
-Message-Id: <1370152955-14841-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
-In-Reply-To: <1370152955-14841-1-git-send-email-sboyd@codeaurora.org>
-References: <1370152955-14841-1-git-send-email-sboyd@codeaurora.org>
+	Sun, 2 Jun 2013 02:39:06 -0400
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Jun 2013 02:39:05 EDT
+From: Oded Gabbay <ogabbay@advaoptical.com>
+To: <gregkh@linuxfoundation.org>, <cjb@laptop.org>,
+        <grant.likely@secretlab.ca>, <rob@landley.net>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <ogabbay@advaoptical.com>
+Subject: [PATCH 3/3] MMC: FSL SDHC: Add support for hard-wired (permanent) card. Kernel version 3.4.47
+Date: Sun, 2 Jun 2013 09:38:48 +0300
+Message-ID: <1370155128-680-1-git-send-email-ogabbay@advaoptical.com>
+X-Mailer: git-send-email 1.7.11.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-02_02:2013-05-31,2013-06-02,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_ioremap_resource and devm_kzalloc to simplify error
-paths and reduce lines of code.
+This patch adds support of recognizing hard-wired (permanent) cards
+to Freescale's SDHC host driver. This is done by adding the option
+"fsl,card-wired" to the SDHC device-tree entry. Detection of this
+option is done in the probe function. Update documentation in file
+fsl-esdhc.txt
 
-Cc: David Brown <davidb@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
 ---
- drivers/mfd/ssbi.c | 69 +++++++++---------------------------------------------
- 1 file changed, 11 insertions(+), 58 deletions(-)
+ Documentation/devicetree/bindings/mmc/fsl-esdhc.txt | 3 +++
+ drivers/mmc/host/sdhci-of-esdhc.c                   | 4 ++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
-index e561d3b..102a2284 100644
---- a/drivers/mfd/ssbi.c
-+++ b/drivers/mfd/ssbi.c
-@@ -268,35 +268,23 @@ static int ssbi_probe(struct platform_device *pdev)
- 	struct device_node *np = pdev->dev.of_node;
- 	struct resource *mem_res;
- 	struct ssbi *ssbi;
--	int ret = 0;
- 	const char *type;
+diff --git a/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt b/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
+index 64bcb8b..6f0eefa 100644
+--- a/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
++++ b/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
+@@ -16,6 +16,9 @@ Required properties:
+     only handle 1-bit data transfers.
+   - sdhci,auto-cmd12: (optional) specifies that a controller can
+     only handle auto CMD12.
++  - fsl,card-wired : (optional) specifies that the card is
++    a permanent card and should not be detected for insertion or
++    removal
  
--	ssbi = kzalloc(sizeof(struct ssbi), GFP_KERNEL);
--	if (!ssbi) {
--		pr_err("can not allocate ssbi_data\n");
-+	ssbi = devm_kzalloc(&pdev->dev, sizeof(*ssbi), GFP_KERNEL);
-+	if (!ssbi)
- 		return -ENOMEM;
--	}
+ Example:
  
- 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem_res) {
--		pr_err("missing mem resource\n");
--		ret = -EINVAL;
--		goto err_get_mem_res;
--	}
-+	ssbi->base = devm_ioremap_resource(&pdev->dev, mem_res);
-+	if (IS_ERR(ssbi->base))
-+		return PTR_ERR(ssbi->base);
- 
--	ssbi->base = ioremap(mem_res->start, resource_size(mem_res));
--	if (!ssbi->base) {
--		pr_err("ioremap of 0x%p failed\n", (void *)mem_res->start);
--		ret = -EINVAL;
--		goto err_ioremap;
--	}
- 	platform_set_drvdata(pdev, ssbi);
- 
- 	type = of_get_property(np, "qcom,controller-type", NULL);
- 	if (type == NULL) {
--		pr_err("Missing qcom,controller-type property\n");
--		ret = -EINVAL;
--		goto err_ssbi_controller;
-+		dev_err(&pdev->dev, "Missing qcom,controller-type property\n");
-+		return -EINVAL;
- 	}
- 	dev_info(&pdev->dev, "SSBI controller type: '%s'\n", type);
- 	if (strcmp(type, "ssbi") == 0)
-@@ -306,9 +294,8 @@ static int ssbi_probe(struct platform_device *pdev)
- 	else if (strcmp(type, "pmic-arbiter") == 0)
- 		ssbi->controller_type = MSM_SBI_CTRL_PMIC_ARBITER;
- 	else {
--		pr_err("Unknown qcom,controller-type\n");
--		ret = -EINVAL;
--		goto err_ssbi_controller;
-+		dev_err(&pdev->dev, "Unknown qcom,controller-type\n");
-+		return -EINVAL;
+diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
+index e70f22f..2f79ec2 100644
+--- a/drivers/mmc/host/sdhci-of-esdhc.c
++++ b/drivers/mmc/host/sdhci-of-esdhc.c
+@@ -222,6 +222,10 @@ static int __devinit sdhci_esdhc_probe(struct platform_device *pdev)
+ 		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HOST_CONTROL;
  	}
  
- 	if (ssbi->controller_type == MSM_SBI_CTRL_PMIC_ARBITER) {
-@@ -321,29 +308,7 @@ static int ssbi_probe(struct platform_device *pdev)
- 
- 	spin_lock_init(&ssbi->lock);
- 
--	ret = of_platform_populate(np, NULL, NULL, &pdev->dev);
--	if (ret)
--		goto err_ssbi_controller;
--
--	return 0;
--
--err_ssbi_controller:
--	platform_set_drvdata(pdev, NULL);
--	iounmap(ssbi->base);
--err_ioremap:
--err_get_mem_res:
--	kfree(ssbi);
--	return ret;
--}
--
--static int ssbi_remove(struct platform_device *pdev)
--{
--	struct ssbi *ssbi = platform_get_drvdata(pdev);
--
--	platform_set_drvdata(pdev, NULL);
--	iounmap(ssbi->base);
--	kfree(ssbi);
--	return 0;
-+	return of_platform_populate(np, NULL, NULL, &pdev->dev);
- }
- 
- static struct of_device_id ssbi_match_table[] = {
-@@ -354,25 +319,13 @@ MODULE_DEVICE_TABLE(of, ssbi_match_table);
- 
- static struct platform_driver ssbi_driver = {
- 	.probe		= ssbi_probe,
--	.remove		= ssbi_remove,
- 	.driver		= {
- 		.name	= "ssbi",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = ssbi_match_table,
- 	},
- };
--
--static int __init ssbi_init(void)
--{
--	return platform_driver_register(&ssbi_driver);
--}
--module_init(ssbi_init);
--
--static void __exit ssbi_exit(void)
--{
--	platform_driver_unregister(&ssbi_driver);
--}
--module_exit(ssbi_exit)
-+module_platform_driver(ssbi_driver);
- 
- MODULE_LICENSE("GPL v2");
- MODULE_VERSION("1.0");
++	/* If card is permanent, add capability of non-removable */
++	if (of_get_property(np, "fsl,card-wired", NULL))
++		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
++
+ 	ret = sdhci_add_host(host);
+ 	if (ret)
+ 		sdhci_pltfm_free(pdev);
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.11.7
 
