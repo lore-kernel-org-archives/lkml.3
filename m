@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3FBXkE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 19:40:04 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40447 "EHLO gloria.sntech.de"
+	id S1756654Ab3FBXkO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 19:40:14 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40451 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756122Ab3FBXjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 19:39:39 -0400
+	id S1756199Ab3FBXjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 19:39:41 -0400
 From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 01/10] clocksource: dw_apb_timer_of: use the clocksource as sched clock if necessary
-Date: Mon, 3 Jun 2013 00:56:02 +0200
+Subject: [PATCH 06/10] mmc: dw_mmc-pltfm: add Rockchip variant
+Date: Mon, 3 Jun 2013 00:59:03 +0200
 User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         John Stultz <john.stultz@linaro.org>,
@@ -30,77 +30,101 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306030056.03522.heiko@sntech.de>
+Message-Id: <201306030059.03783.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the dw_apb_timer always expects a separate special timer to be
-availbable for the sched_clock. Some devices using dw_apb_timers do not
-have the sptimer but can use the clocksource as sched_clock.
-Therefore this patch adds using the clocksource timer as
-a fallback if no usable sched timer is found.
+Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
+controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
+always be set.
+
+There also seem to be no other modifications (additional register etc)
+present, so to keep the footprint low, add this small variant to the
+pltfm driver.
 
 Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
- drivers/clocksource/dw_apb_timer_of.c |   26 +++++++++++++++++---------
- 1 files changed, 17 insertions(+), 9 deletions(-)
+ drivers/mmc/host/dw_mmc-pltfm.c |   48 +++++++++++++++++++++++++++-----------
+ 1 files changed, 34 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-index ab09ed3..d6c0fda 100644
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -57,6 +57,9 @@ static void add_clockevent(struct device_node *event_timer)
- 	dw_apb_clockevent_register(ced);
- }
+diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+index 0048da8..7d041b5 100644
+--- a/drivers/mmc/host/dw_mmc-pltfm.c
++++ b/drivers/mmc/host/dw_mmc-pltfm.c
+@@ -24,6 +24,16 @@
  
-+static void __iomem *sched_io_base;
-+static u32 sched_rate;
+ #include "dw_mmc.h"
+ 
 +
- static void add_clocksource(struct device_node *source_timer)
- {
- 	void __iomem *iobase;
-@@ -71,9 +74,15 @@ static void add_clocksource(struct device_node *source_timer)
- 
- 	dw_apb_clocksource_start(cs);
- 	dw_apb_clocksource_register(cs);
--}
- 
--static void __iomem *sched_io_base;
-+	/*
-+	 * Fallback to use the clocksource as sched_clock if no separate
-+	 * timer is found. sched_io_base then points to the current_value
-+	 * register of the clocksource timer.
-+	 */
-+	sched_io_base = iobase + 0x04;
-+	sched_rate = rate;
++static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
++{
++	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
 +}
- 
- static u32 read_sched_clock(void)
++
++static const struct dw_mci_drv_data rockchip_drv_data = {
++	.prepare_command	= dw_mci_rockchip_prepare_command,
++};
++
+ int dw_mci_pltfm_register(struct platform_device *pdev,
+ 				const struct dw_mci_drv_data *drv_data)
  {
-@@ -89,16 +98,15 @@ static const struct of_device_id sptimer_ids[] __initconst = {
- static void init_sched_clock(void)
- {
- 	struct device_node *sched_timer;
--	u32 rate;
- 
- 	sched_timer = of_find_matching_node(NULL, sptimer_ids);
--	if (!sched_timer)
--		panic("No RTC for sched clock to use");
--
--	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
--	of_node_put(sched_timer);
-+	if (sched_timer) {
-+		timer_get_base_and_rate(sched_timer, &sched_io_base,
-+					&sched_rate);
-+		of_node_put(sched_timer);
-+	}
- 
--	setup_sched_clock(read_sched_clock, 32, rate);
-+	setup_sched_clock(read_sched_clock, 32, sched_rate);
+@@ -63,20 +73,6 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
  }
+ EXPORT_SYMBOL_GPL(dw_mci_pltfm_register);
  
- static const struct of_device_id osctimer_ids[] __initconst = {
+-static int dw_mci_pltfm_probe(struct platform_device *pdev)
+-{
+-	return dw_mci_pltfm_register(pdev, NULL);
+-}
+-
+-int dw_mci_pltfm_remove(struct platform_device *pdev)
+-{
+-	struct dw_mci *host = platform_get_drvdata(pdev);
+-
+-	dw_mci_remove(host);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(dw_mci_pltfm_remove);
+-
+ #ifdef CONFIG_PM_SLEEP
+ /*
+  * TODO: we should probably disable the clock to the card in the suspend path.
+@@ -114,10 +110,34 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+ 
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "snps,dw-mshc", },
++	{ .compatible = "rockchip,cortex-a9-dw-mshc",
++		.data = &rockchip_drv_data },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
+ 
++static int dw_mci_pltfm_probe(struct platform_device *pdev)
++{
++	const struct dw_mci_drv_data *drv_data = NULL;
++	const struct of_device_id *match;
++
++	if (pdev->dev.of_node) {
++		match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
++		drv_data = match->data;
++	}
++
++	return dw_mci_pltfm_register(pdev, drv_data);
++}
++
++int dw_mci_pltfm_remove(struct platform_device *pdev)
++{
++	struct dw_mci *host = platform_get_drvdata(pdev);
++
++	dw_mci_remove(host);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(dw_mci_pltfm_remove);
++
+ static struct platform_driver dw_mci_pltfm_driver = {
+ 	.probe		= dw_mci_pltfm_probe,
+ 	.remove		= dw_mci_pltfm_remove,
 -- 
 1.7.2.3
 
