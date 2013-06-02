@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab3FBTiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 15:38:14 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:57510 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958Ab3FBTiI (ORCPT
+	id S1756077Ab3FBTjp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 15:39:45 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53139 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755965Ab3FBTjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 15:38:08 -0400
+	Sun, 2 Jun 2013 15:39:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130602144725.GC3875@shaftnet.org>
-References: <1370126241-2528420-1-git-send-email-arnd@arndb.de>
-	<20130602122954.GA3875@shaftnet.org>
-	<8513280.folT80711V@wuerfel>
-	<20130602144725.GC3875@shaftnet.org>
-Date: Sun, 2 Jun 2013 21:38:07 +0200
-Message-ID: <CACRpkdYPvGv6FAfm7VhdOkGZ_uXDgZv6v5CLjKjRQdqYOKLnvg@mail.gmail.com>
-Subject: Re: [PATCH] cw1200: fix some obvious mistakes
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        Ajitpal Singh <ajitpal.singh@stericsson.com>,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMuHMdXQZcanJLGG8bs7u1CRb2z00Ho-kv4s5044pDDeUvoKeQ@mail.gmail.com>
+References: <CAMuHMdV8gJew_x1+L3O51sB=JU_EvJ-Y05JxKSsXUi+B43HAJA@mail.gmail.com>
+	<CAMuHMdXQZcanJLGG8bs7u1CRb2z00Ho-kv4s5044pDDeUvoKeQ@mail.gmail.com>
+Date: Sun, 2 Jun 2013 21:39:38 +0200
+X-Google-Sender-Auth: X9dwIpd4_tJb02zY5wwNKd4JeoE
+Message-ID: <CAMuHMdV5t3BGNYNzCyEH-dYikAtEr2A+BckPi9QtgAUEJDMM0w@mail.gmail.com>
+Subject: Re: Exotic architecture fixes
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        linux-c6x-dev@linux-c6x.org, Cris <linux-cris-kernel@axis.com>,
+        linux@openrisc.net,
+        =?UTF-8?Q?H=C3=A5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 2, 2013 at 4:47 PM, Solomon Peachy <pizza@shaftnet.org> wrote:
-
->> In fact my mobile phone has a cw1200 chip that was working until
->> recently. Now it just crashes when I do 'ifconfig wlan0 up'
->> or enable WLAN in the Android settings menu. :(
+On Tue, May 28, 2013 at 11:38 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Thu, May 23, 2013 at 10:09 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> I created a branch where I collected several exotic architecture fixes
+>> (and a few
+>> other trivial fixes):
 >>
->> I'm not blaming you for that ;-)
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git exotic-arch-fixes
+>>
+>> Several of these have been ack'ed (cfr. *-indicators below).
+>> If you reject any of the commits, please scream.
+>> If you want to take any of them yourself, please do so.
+>>
+>> I intend to merge this into my for-next branch after the release of v3.10-rc4,
+>> and ask Linus to pull after the release of v3.10-rc5.
+
+I merged this in the for-next branch of my repo.
+
+>> Geert Uytterhoeven (32):
+>>       cris: Switch cris to drivers/Kconfig
 >
-> What model, out of curiousity?
+> JFYI, this has a trivial conflict with "CRIS: drop unused Kconfig symbols"
+> in -next.
 
-FYI the CW1200 is used in for example:
-http://en.wikipedia.org/wiki/Samsung_Galaxy_S_Advance
-http://en.wikipedia.org/wiki/Samsung_Galaxy_S_III_Mini
-http://en.wikipedia.org/wiki/Sony_Xperia_P
-http://en.wikipedia.org/wiki/Sony_Xperia_U
-http://en.wikipedia.org/wiki/Sony_Xperia_sola
-(plus some others)
+Stephen: cris/for-next and m68k/for-next removed two different hunks from
+arch/cris/arch-v32/drivers/Kconfig. To resolve the conflict, just remove both.
+Thanks!
 
-Yours,
-Linus Walleij
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
