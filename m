@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab3FBWdN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 18:33:13 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40450 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab3FBWdD (ORCPT
+	id S1755657Ab3FBWiX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 18:38:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58771 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab3FBWiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 18:33:03 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 3 Jun 2013 00:32:49 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
+	Sun, 2 Jun 2013 18:38:16 -0400
+Date: Sun, 2 Jun 2013 15:38:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Cc: Takashi Sakamoto <o-takashi@sakamocchi.jp>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] firewire: remove support of fw_driver.driver.probe and
- .remove methods
-Message-ID: <20130603003249.5287b4c4@stein>
-In-Reply-To: <20130603002749.4fdc36a5@stein>
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [PATCH] firewire: introduce fw_driver.probe and .remove methods
+Message-ID: <20130602223843.GA7194@kroah.com>
 References: <51A20AEE.7060201@sakamocchi.jp>
-	<20130526233513.1a95d0d5@stein>
-	<20130526225757.GA32606@kroah.com>
-	<51A742A1.8010108@sakamocchi.jp>
-	<20130603002749.4fdc36a5@stein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20130526233513.1a95d0d5@stein>
+ <20130526225757.GA32606@kroah.com>
+ <51A742A1.8010108@sakamocchi.jp>
+ <20130603002749.4fdc36a5@stein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603002749.4fdc36a5@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After all drivers being converted to bus-specific .probe/.remove methods,
-remove support of the obsolete generic methods.
+On Mon, Jun 03, 2013 at 12:27:49AM +0200, Stefan Richter wrote:
+> FireWire upper layer drivers are converted from generic
+>     struct driver.probe() and .remove()
+> to bus-specific
+>     struct fw_driver.probe() and .remove().
+> 
+> The new .probe() adds a const struct ieee1394_device_id *id argument,
+> indicating the entry in the driver's device identifiers table which
+> matched the fw_unit to be probed.  This new argument is used by the
+> snd-firewire-speakers driver to look up device-specific parameters and
+> methods.  There is at least one other FireWire audio driver currently in
+> development in which this will be useful too.
+> 
+> The new .remove() drops the unused error return code.
+> 
+> Although all in-tree drivers are being converted to the new methods,
+> support for the old methods is left in place for the time being, aiming
+> to avoid conflicts if/when new drivers are being merged into the
+> mainline via other trees.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
-To be merged maybe one release cycle after patch "firewire: introduce
-fw_driver.probe and .remove methods".
+Are there other firewire drivers in other trees in linux-next right now?
+If not, I'd just recommend converting everything over and not using the
+old functions at all.  Especially as there really isn't that many
+firewire drivers, and new ones are pretty rare these days, right?
 
- drivers/firewire/core-device.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+Other than that, your patch looks good.
 
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -197,10 +197,7 @@ static int fw_unit_probe(struct device *
- 	struct fw_driver *driver =
- 			container_of(dev->driver, struct fw_driver, driver);
- 
--	if (driver->probe)
--		return driver->probe(fw_unit(dev), unit_match(dev, dev->driver));
--	else
--		return driver->driver.probe(dev);
-+	return driver->probe(fw_unit(dev), unit_match(dev, dev->driver));
- }
- 
- static int fw_unit_remove(struct device *dev)
-@@ -208,10 +205,9 @@ static int fw_unit_remove(struct device
- 	struct fw_driver *driver =
- 			container_of(dev->driver, struct fw_driver, driver);
- 
--	if (driver->remove)
--		return driver->remove(fw_unit(dev)), 0;
--	else
--		return driver->driver.remove(dev);
-+	driver->remove(fw_unit(dev));
-+
-+	return 0;
- }
- 
- static int get_modalias(struct fw_unit *unit, char *buffer, size_t buffer_size)
+thanks,
 
-
--- 
-Stefan Richter
--=====-===-= -==- ---==
-http://arcgraph.de/sr/
+greg k-h
