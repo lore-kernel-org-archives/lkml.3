@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab3FBM4w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 08:56:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56318 "EHLO mail.skyhub.de"
+	id S1752843Ab3FBM4l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 08:56:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56314 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab3FBMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751289Ab3FBMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jun 2013 08:55:59 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: Linux EFI <linux-efi@vger.kernel.org>
@@ -12,9 +12,9 @@ Cc: Matt Fleming <matt@console-pimps.org>,
         Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
         X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <bp@suse.de>
-Subject: [PATCH 2/4] x86, cpa: Map in an arbitrary pgd
-Date: Sun,  2 Jun 2013 14:56:08 +0200
-Message-Id: <1370177770-26661-3-git-send-email-bp@alien8.de>
+Subject: [PATCH 1/4] efi: Convert runtime services function ptrs
+Date: Sun,  2 Jun 2013 14:56:07 +0200
+Message-Id: <1370177770-26661-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.3.rc1.25.g423ecb0
 In-Reply-To: <1370177770-26661-1-git-send-email-bp@alien8.de>
 References: <1370177770-26661-1-git-send-email-bp@alien8.de>
@@ -24,199 +24,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Add the ability to map pages in an arbitrary pgd.
+... to void * like the boot services and lose all the void * casts. No
+functionality change.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/include/asm/pgtable_types.h |  3 +-
- arch/x86/mm/pageattr.c               | 80 ++++++++++++++++++++++++++++--------
- 2 files changed, 65 insertions(+), 18 deletions(-)
+ arch/x86/boot/compressed/eboot.c |  2 +-
+ arch/x86/include/asm/efi.h       | 28 ++++++++++++++--------------
+ include/linux/efi.h              | 28 ++++++++++++++--------------
+ 3 files changed, 29 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index e6423002c10b..0613e147f083 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -352,7 +352,8 @@ static inline void update_page_count(int level, unsigned long pages) { }
-  */
- extern pte_t *lookup_address(unsigned long address, unsigned int *level);
- extern phys_addr_t slow_virt_to_phys(void *__address);
--
-+extern void kernel_map_pages_in_pgd(pgd_t *pgd, unsigned long address,
-+				    unsigned numpages, unsigned long page_flags);
- #endif	/* !__ASSEMBLY__ */
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 35ee62fccf98..4060c8daf05e 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -266,7 +266,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+ 	while (data && data->next)
+ 		data = (struct setup_data *)(unsigned long)data->next;
  
- #endif /* _ASM_X86_PGTABLE_DEFS_H */
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index bb32480c2d71..3d64e5fc2adc 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -30,6 +30,7 @@
-  */
- struct cpa_data {
- 	unsigned long	*vaddr;
-+	pgd_t		*pgd;
- 	pgprot_t	mask_set;
- 	pgprot_t	mask_clr;
- 	int		numpages;
-@@ -322,17 +323,9 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	return prot;
- }
+-	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
++	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+ 				EFI_VARIABLE_NON_VOLATILE |
+ 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+ 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 2fb5d5884e23..5b33686b6995 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -52,40 +52,40 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
+ 		     u64 arg4, u64 arg5, u64 arg6);
  
--/*
-- * Lookup the page table entry for a virtual address. Return a pointer
-- * to the entry and the level of the mapping.
-- *
-- * Note: We return pud and pmd either when the entry is marked large
-- * or when the present bit is not set. Otherwise we would return a
-- * pointer to a nonexisting mapping.
-- */
--pte_t *lookup_address(unsigned long address, unsigned int *level)
-+static pte_t *
-+__lookup_address_in_pgd(pgd_t *pgd, unsigned long address, unsigned int *level)
- {
--	pgd_t *pgd = pgd_offset_k(address);
- 	pud_t *pud;
- 	pmd_t *pmd;
+ #define efi_call_phys0(f)			\
+-	efi_call0((void *)(f))
++	efi_call0((f))
+ #define efi_call_phys1(f, a1)			\
+-	efi_call1((void *)(f), (u64)(a1))
++	efi_call1((f), (u64)(a1))
+ #define efi_call_phys2(f, a1, a2)			\
+-	efi_call2((void *)(f), (u64)(a1), (u64)(a2))
++	efi_call2((f), (u64)(a1), (u64)(a2))
+ #define efi_call_phys3(f, a1, a2, a3)				\
+-	efi_call3((void *)(f), (u64)(a1), (u64)(a2), (u64)(a3))
++	efi_call3((f), (u64)(a1), (u64)(a2), (u64)(a3))
+ #define efi_call_phys4(f, a1, a2, a3, a4)				\
+-	efi_call4((void *)(f), (u64)(a1), (u64)(a2), (u64)(a3),		\
++	efi_call4((f), (u64)(a1), (u64)(a2), (u64)(a3),		\
+ 		  (u64)(a4))
+ #define efi_call_phys5(f, a1, a2, a3, a4, a5)				\
+-	efi_call5((void *)(f), (u64)(a1), (u64)(a2), (u64)(a3),		\
++	efi_call5((f), (u64)(a1), (u64)(a2), (u64)(a3),		\
+ 		  (u64)(a4), (u64)(a5))
+ #define efi_call_phys6(f, a1, a2, a3, a4, a5, a6)			\
+-	efi_call6((void *)(f), (u64)(a1), (u64)(a2), (u64)(a3),		\
++	efi_call6((f), (u64)(a1), (u64)(a2), (u64)(a3),		\
+ 		  (u64)(a4), (u64)(a5), (u64)(a6))
  
-@@ -361,8 +354,30 @@ pte_t *lookup_address(unsigned long address, unsigned int *level)
+ #define efi_call_virt0(f)				\
+-	efi_call0((void *)(efi.systab->runtime->f))
++	efi_call0((efi.systab->runtime->f))
+ #define efi_call_virt1(f, a1)					\
+-	efi_call1((void *)(efi.systab->runtime->f), (u64)(a1))
++	efi_call1((efi.systab->runtime->f), (u64)(a1))
+ #define efi_call_virt2(f, a1, a2)					\
+-	efi_call2((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2))
++	efi_call2((efi.systab->runtime->f), (u64)(a1), (u64)(a2))
+ #define efi_call_virt3(f, a1, a2, a3)					\
+-	efi_call3((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
++	efi_call3((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3))
+ #define efi_call_virt4(f, a1, a2, a3, a4)				\
+-	efi_call4((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
++	efi_call4((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3), (u64)(a4))
+ #define efi_call_virt5(f, a1, a2, a3, a4, a5)				\
+-	efi_call5((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
++	efi_call5((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3), (u64)(a4), (u64)(a5))
+ #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)			\
+-	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
++	efi_call6((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
  
- 	return pte_offset_kernel(pmd, address);
- }
-+
-+/*
-+ * Lookup the page table entry for a virtual address. Return a pointer
-+ * to the entry and the level of the mapping.
-+ *
-+ * Note: We return pud and pmd either when the entry is marked large
-+ * or when the present bit is not set. Otherwise we would return a
-+ * pointer to a nonexisting mapping.
-+ */
-+pte_t *lookup_address(unsigned long address, unsigned int *level)
-+{
-+	return __lookup_address_in_pgd(pgd_offset_k(address), address, level);
-+}
- EXPORT_SYMBOL_GPL(lookup_address);
+ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 2bc0ad78d058..21ae6b3c0359 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -287,20 +287,20 @@ typedef struct {
  
-+pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
-+			  unsigned int *level)
-+{
-+	if (cpa->pgd)
-+		return __lookup_address_in_pgd(cpa->pgd, address, level);
-+
-+	return lookup_address(address, level);
-+}
-+
- /*
-  * This is necessary because __pa() does not work on some
-  * kinds of memory, like vmalloc() or the alloc_remap()
-@@ -437,7 +452,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * Check for races, another CPU might have split this page
- 	 * up already:
- 	 */
--	tmp = lookup_address(address, &level);
-+	tmp = _lookup_address_cpa(cpa, address, &level);
- 	if (tmp != kpte)
- 		goto out_unlock;
+ typedef struct {
+ 	efi_table_hdr_t hdr;
+-	unsigned long get_time;
+-	unsigned long set_time;
+-	unsigned long get_wakeup_time;
+-	unsigned long set_wakeup_time;
+-	unsigned long set_virtual_address_map;
+-	unsigned long convert_pointer;
+-	unsigned long get_variable;
+-	unsigned long get_next_variable;
+-	unsigned long set_variable;
+-	unsigned long get_next_high_mono_count;
+-	unsigned long reset_system;
+-	unsigned long update_capsule;
+-	unsigned long query_capsule_caps;
+-	unsigned long query_variable_info;
++	void *get_time;
++	void *set_time;
++	void *get_wakeup_time;
++	void *set_wakeup_time;
++	void *set_virtual_address_map;
++	void *convert_pointer;
++	void *get_variable;
++	void *get_next_variable;
++	void *set_variable;
++	void *get_next_high_mono_count;
++	void *reset_system;
++	void *update_capsule;
++	void *query_capsule_caps;
++	void *query_variable_info;
+ } efi_runtime_services_t;
  
-@@ -543,7 +558,8 @@ out_unlock:
- }
- 
- static int
--__split_large_page(pte_t *kpte, unsigned long address, struct page *base)
-+__split_large_page(struct cpa_data *cpa, pte_t *kpte, unsigned long address,
-+		   struct page *base)
- {
- 	pte_t *pbase = (pte_t *)page_address(base);
- 	unsigned long pfn, pfninc = 1;
-@@ -556,7 +572,7 @@ __split_large_page(pte_t *kpte, unsigned long address, struct page *base)
- 	 * Check for races, another CPU might have split this page
- 	 * up for us already:
- 	 */
--	tmp = lookup_address(address, &level);
-+	tmp = _lookup_address_cpa(cpa, address, &level);
- 	if (tmp != kpte) {
- 		spin_unlock(&pgd_lock);
- 		return 1;
-@@ -632,7 +648,8 @@ __split_large_page(pte_t *kpte, unsigned long address, struct page *base)
- 	return 0;
- }
- 
--static int split_large_page(pte_t *kpte, unsigned long address)
-+static int split_large_page(struct cpa_data *cpa, pte_t *kpte,
-+			    unsigned long address)
- {
- 	struct page *base;
- 
-@@ -644,7 +661,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	if (!base)
- 		return -ENOMEM;
- 
--	if (__split_large_page(kpte, address, base))
-+	if (__split_large_page(cpa, kpte, address, base))
- 		__free_page(base);
- 
- 	return 0;
-@@ -697,7 +714,10 @@ static int __change_page_attr(struct cpa_data *cpa, int primary)
- 	else
- 		address = *cpa->vaddr;
- repeat:
--	kpte = lookup_address(address, &level);
-+	if (cpa->pgd)
-+		kpte = __lookup_address_in_pgd(cpa->pgd, address, &level);
-+	else
-+		kpte = _lookup_address_cpa(cpa, address, &level);
- 	if (!kpte)
- 		return __cpa_process_fault(cpa, address, primary);
- 
-@@ -761,7 +781,7 @@ repeat:
- 	/*
- 	 * We have to split the large page:
- 	 */
--	err = split_large_page(kpte, address);
-+	err = split_large_page(cpa, kpte, address);
- 	if (!err) {
- 		/*
- 	 	 * Do a global flush tlb after splitting the large page
-@@ -910,6 +930,8 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 	int ret, cache, checkalias;
- 	unsigned long baddr = 0;
- 
-+	memset(&cpa, 0, sizeof(cpa));
-+
- 	/*
- 	 * Check, if we are requested to change a not supported
- 	 * feature:
-@@ -1434,6 +1456,30 @@ bool kernel_page_present(struct page *page)
- 
- #endif /* CONFIG_DEBUG_PAGEALLOC */
- 
-+void kernel_map_pages_in_pgd(pgd_t *pgd, unsigned long address,
-+			     unsigned numpages, unsigned long page_flags)
-+{
-+	struct cpa_data cpa = {
-+		.vaddr = &address,
-+		.pgd = pgd,
-+		.numpages = numpages,
-+		.mask_set = __pgprot(0),
-+		.mask_clr = __pgprot(0),
-+		.flags = 0
-+	};
-+
-+	if (!(__supported_pte_mask & _PAGE_NX))
-+		return;
-+
-+	if (!(page_flags & _PAGE_NX))
-+		cpa.mask_clr = __pgprot(_PAGE_NX);
-+
-+	cpa.mask_set = __pgprot(_PAGE_PRESENT | page_flags);
-+
-+	__change_page_attr_set_clr(&cpa, 0);
-+	__flush_tlb_all();
-+}
-+
- /*
-  * The testcases use internal knowledge of the implementation that shouldn't
-  * be exposed to the rest of the kernel. Include these directly here.
+ typedef efi_status_t efi_get_time_t (efi_time_t *tm, efi_time_cap_t *tc);
 -- 
 1.8.3.rc1.25.g423ecb0
 
