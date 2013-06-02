@@ -1,181 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab3FBOr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 10:47:58 -0400
-Received: from 162-17-110-37-static.hfc.comcastbusiness.net ([162.17.110.37]:45432
-	"EHLO stuffed.shaftnet.org" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab3FBOrs (ORCPT
+	id S1752485Ab3FBOsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 10:48:53 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33748 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab3FBOsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 10:47:48 -0400
-Date: Sun, 2 Jun 2013 10:47:26 -0400
-From: Solomon Peachy <pizza@shaftnet.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        Ajitpal Singh <ajitpal.singh@stericsson.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] cw1200: fix some obvious mistakes
-Message-ID: <20130602144725.GC3875@shaftnet.org>
-References: <1370126241-2528420-1-git-send-email-arnd@arndb.de>
- <20130602122954.GA3875@shaftnet.org>
- <8513280.folT80711V@wuerfel>
+	Sun, 2 Jun 2013 10:48:46 -0400
+From: =?UTF-8?q?Adis=20Hamzi=C4=87?= <adis@hamzadis.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Adis=20Hamzi=C4=87?= <adis@hamzadis.com>
+Subject: [PATCH 1/1] radeon: Fix system hang issue when using KMS with older cards
+Date: Sun,  2 Jun 2013 16:47:54 +0200
+Message-Id: <1370184474-14392-1-git-send-email-adis@hamzadis.com>
+X-Mailer: git-send-email 1.8.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="32u276st3Jlj2kUU"
-Content-Disposition: inline
-In-Reply-To: <8513280.folT80711V@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current radeon driver initialization routines, when using KMS, are written
+so that the IRQ installation routine is called before initializing the WB buffer
+and the CP rings. With some ASICs, though, the IRQ routine tries to access the
+GFX_INDEX ring causing a call to RREG32 with the value of -1 in
+radeon_fence_read. This, in turn causes the system to completely hang with some
+cards, requiring a hard reset.
 
---32u276st3Jlj2kUU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+A call stack that can cause such a hang looks like this (using rv515 ASIC for the
+example here):
+ * rv515_init (rv515.c)
+ * radeon_irq_kms_init (radeon_irq_kms.c)
+ * drm_irq_install (drm_irq.c)
+ * radeon_driver_irq_preinstall_kms (radeon_irq_kms.c)
+ * rs600_irq_process (rs600.c)
+ * radeon_fence_process - due to SW interrupt (radeon_fence.c)
+ * radeon_fence_read (radeon_fence.c)
+ * hang due to RREG32(-1)
 
-On Sun, Jun 02, 2013 at 03:59:12PM +0200, Arnd Bergmann wrote:
-> The driver doesn't reliably build, and I'm trying to fix it.
-> From my perspective, we can just mark it 'depends on !ARM'
-> to get it off my radar, but other people are doing build
-> testing on x86 and will run into the same issues.
+The patch moves the IRQ installation to the card startup routine, after the ring
+has been initialized, but before the IRQ has been set. This fixes the issue, but
+requires a check to see if the IRQ is already installed, as is the case in the
+system resume codepath.
+I have tested the patch on three machines using the rv515, the rv770 and the
+evergreen ASIC. They worked without issues.
 
-AFAIK the only remaining build problem is when CONFIG_CW1200_SAGRAD is=20
-not defined so there's no "platform" data provided.
+This seems to be a known issue and has been reported on several bug tracking
+sites by various distributions (see links below). Most of reports recommend
+booting the system with KMS disabled and then enabling KMS by reloading the
+radeon module. For some reason, this was indeed a usable workaround, however,
+UMS is now deprecated and disabled by default.
 
-> If the hardware cannot be identified from register access, the
-> information should get passed through firmware. On most architectures
-> that means device tree data, on x86 that would be ACPI tables.
+Bug reports:
+https://bugzilla.redhat.com/show_bug.cgi?id=845745
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/561789
+https://bbs.archlinux.org/viewtopic.php?id=156964
 
-The cw1200 has specific reset sequencing requirements.  Some designs use=20
-a hardware reset circuit (such as the Sagrad EVK/Reference design), but=20
-most others use GPIOs for cost resons.
+Signed-off-by: Adis Hamzić <adis@hamzadis.com>
+---
+ drivers/gpu/drm/radeon/evergreen.c | 10 ++++++----
+ drivers/gpu/drm/radeon/ni.c        | 10 ++++++----
+ drivers/gpu/drm/radeon/r100.c      |  9 ++++++---
+ drivers/gpu/drm/radeon/r300.c      |  9 ++++++---
+ drivers/gpu/drm/radeon/r420.c      | 10 ++++++----
+ drivers/gpu/drm/radeon/r520.c      |  9 ++++++---
+ drivers/gpu/drm/radeon/r600.c      | 10 ++++++----
+ drivers/gpu/drm/radeon/rs400.c     |  9 ++++++---
+ drivers/gpu/drm/radeon/rs600.c     |  9 ++++++---
+ drivers/gpu/drm/radeon/rs690.c     |  9 ++++++---
+ drivers/gpu/drm/radeon/rv515.c     |  9 ++++++---
+ drivers/gpu/drm/radeon/rv770.c     | 10 ++++++----
+ drivers/gpu/drm/radeon/si.c        | 10 ++++++----
+ 13 files changed, 78 insertions(+), 45 deletions(-)
 
-Without that reset sequence, the device will never attach itself to the=20
-SDIO bus so we will never get to the point where we can probe it via=20
-register accesses (and program the DPLL value) to discern enough=20
-information to load the appropriate firmware.
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 8546e3b..0f89ce3 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -4754,6 +4754,12 @@ static int evergreen_startup(struct radeon_device *rdev)
+ 		rdev->ring[R600_RING_TYPE_UVD_INDEX].ring_size = 0;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -4923,10 +4929,6 @@ int evergreen_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index 7969c0c..8458330 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -2025,6 +2025,12 @@ static int cayman_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -2190,10 +2196,6 @@ int cayman_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	ring->ring_obj = NULL;
+ 	r600_ring_init(rdev, ring, 1024 * 1024);
+ 
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 4973bff..d0314ec 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3869,6 +3869,12 @@ static int r100_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -4024,9 +4030,6 @@ int r100_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/r300.c b/drivers/gpu/drm/radeon/r300.c
+index c60350e..b9b776f 100644
+--- a/drivers/gpu/drm/radeon/r300.c
++++ b/drivers/gpu/drm/radeon/r300.c
+@@ -1382,6 +1382,12 @@ static int r300_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -1516,9 +1522,6 @@ int r300_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/r420.c b/drivers/gpu/drm/radeon/r420.c
+index 6fce2eb..4e796ec 100644
+--- a/drivers/gpu/drm/radeon/r420.c
++++ b/drivers/gpu/drm/radeon/r420.c
+@@ -265,6 +265,12 @@ static int r420_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -411,10 +417,6 @@ int r420_init(struct radeon_device *rdev)
+ 	if (r) {
+ 		return r;
+ 	}
+-	r = radeon_irq_kms_init(rdev);
+-	if (r) {
+-		return r;
+-	}
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r) {
+diff --git a/drivers/gpu/drm/radeon/r520.c b/drivers/gpu/drm/radeon/r520.c
+index f795a4e..e1aece7 100644
+--- a/drivers/gpu/drm/radeon/r520.c
++++ b/drivers/gpu/drm/radeon/r520.c
+@@ -194,6 +194,12 @@ static int r520_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -297,9 +303,6 @@ int r520_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index b45e648..0f30d0d 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3202,6 +3202,12 @@ static int r600_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -3356,10 +3362,6 @@ int r600_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+diff --git a/drivers/gpu/drm/radeon/rs400.c b/drivers/gpu/drm/radeon/rs400.c
+index 73051ce..233a9b9 100644
+--- a/drivers/gpu/drm/radeon/rs400.c
++++ b/drivers/gpu/drm/radeon/rs400.c
+@@ -417,6 +417,12 @@ static int rs400_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r100_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -535,9 +541,6 @@ int rs400_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
+index 46fa1b0..670b555 100644
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -923,6 +923,12 @@ static int rs600_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -1047,9 +1053,6 @@ int rs600_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index ab4c86c..55880d5 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -651,6 +651,12 @@ static int rs690_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -776,9 +782,6 @@ int rs690_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index ffcba73..21c7d7b 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -532,6 +532,12 @@ static int rv515_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	rs600_irq_set(rdev);
+ 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
+ 	/* 1M ring buffer */
+@@ -662,9 +668,6 @@ int rv515_init(struct radeon_device *rdev)
+ 	r = radeon_fence_driver_init(rdev);
+ 	if (r)
+ 		return r;
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+ 	/* Memory manager */
+ 	r = radeon_bo_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
+index 08aef24..4a62ad2 100644
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1887,6 +1887,12 @@ static int rv770_startup(struct radeon_device *rdev)
+ 		rdev->ring[R600_RING_TYPE_UVD_INDEX].ring_size = 0;
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = r600_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -2045,10 +2051,6 @@ int rv770_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index d1ba9d8..a1b0da6 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -5350,6 +5350,12 @@ static int si_startup(struct radeon_device *rdev)
+ 	}
+ 
+ 	/* Enable IRQ */
++	if (!rdev->irq.installed) {
++		r = radeon_irq_kms_init(rdev);
++		if (r)
++			return r;
++	}
++
+ 	r = si_irq_init(rdev);
+ 	if (r) {
+ 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+@@ -5533,10 +5539,6 @@ int si_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
+-	r = radeon_irq_kms_init(rdev);
+-	if (r)
+-		return r;
+-
+ 	ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+ 	ring->ring_obj = NULL;
+ 	r600_ring_init(rdev, ring, 1024 * 1024);
+-- 
+1.8.3
 
-(The DPLL value is part of the so-called 'SDD' file, but that file is=20
- also tied to the specific implemntation.  You have to love those=20
- chicken-and-egg problems...)
-
-> The code does not look particularly off-the-shelf though:
-> static struct resource cw1200_href_resources[] =3D {
-
-That code is #ifdef'd out, and was purely left there as a reference. =20
-It's gone now.  :)
-
-> We can use platform_data if there is convincing evidence that people
-> are going to be using that in mainline kernels. However, your SDIO driver
-> doesn't actually do that, it just hardcodes settings in cw1200_sagrad.c
-> and calls a local function to get that data, rather than getting the data
-> from the dev_get_platdata() in it's probe callback at a point where
-> it knows the device is actually there.
-
-As I mentioned earlier, we don't know the device is there until after we=20
-get enough information from the platform_data to power it up and deal=20
-with the finiky reset sequence.
-
-Basically the Sagrad SD-slot-form-factor EVK is a special case only=20
-meant for evaluation purposes.  The "normal" use case for thise driver=20
-is a hard-wired, permanently attached design.
-=20
-> If we only care about two cases a) a default sagrad card that can use
-> hardcoded data and b) a board that uses the same chip and requires
-> custom data, then I would suggest including the sagrad data in the
-> sdio driver as a default (as my patch does) but allow overriding
-> it with platform data.
-
-Yes, those are the only use cases we care about.  And that sounds like a=20
-viable approach, so I'll code that up.
-
-I guess adding a function along the lines of=20
-"cw1200_sdio_set_platform_data()" (to be called by the board/platform=20
-setup code) would be the right way to do this?
-
-As an aside, I wish I'd received this feedback a couple of months ago.
-
-> The problem with this is that it is impossible to build a kernel that
-> supports both, or even two devices of the same type.
-
-Adding proper devicetree support will solve this problem down the line,=20
-but I don't think there's any way to fix this for non-DT systems thanks=20
-to that chicken-and-egg probing situation.
-
-(I wish I had a DT-capable platform handy to develop against..)
-
-> I mean arch/arm/mach-nomadik, which is the platform that originally
-> defined NOMADIK_GPIO_TO_IRQ(). Note that in recent kernels, mach-ux500
-> also uses this macro internally, but it's already gone in nomadik
-> and will stop working in ux500 in the future.
-
-Ah, okay.  FWIW that was a leftover bit from the original driver authors=20
-who'd tied the code rather tightly to the ux500 platform.  That=20
-reference is gone now in any case.
-
-> I don't mind the backports supporting that, but we should probably
-> move on in mainline. The existance of backports is no excuse for
-> keeping around broken code.
-
-I already have one patch queued up for backports to re-enable <2.6.36=20
-support, and I have no problem adding more. =20
-
-That said, until all SDIO/SPI-supporting targets in the mainline are=20
-converted to a devicetree (or equivalent) model, I imagine the=20
-platform_data crap will have to remain.
-
-> just look in include/linux/platform_data/. The most common type for
-> gpio numbers is 'int'.
-
-I've already posted a patch that converts them over.
-
-> Sorry for misinterpreting that, the cw1200_sagrad file really looked
-> like it was written for some out-of-tree board and subsequently
-> all lines that didn't compile got commented out.
-
-No problem.  I just needed to make it clear that this driver did in fact=20
-work -- and it also compiled cleanly on x86_64 as long as the sagrad=20
-symbol was defined.
-
-> In fact my mobile phone has a cw1200 chip that was working until
-> recently. Now it just crashes when I do 'ifconfig wlan0 up'
-> or enable WLAN in the Android settings menu. :(
->=20
-> I'm not blaming you for that ;-)
-
-What model, out of curiousity?
-=20
-> I think the most important part is separating the generic sagrad
-> add-on card code from any platform-specific code and removing the
-> use of cw1200_get_platform_data() function that breaks the build.
-
-I'll convert SDIO driver to using the sagrad data as default and add a=20
-'set_platform_data' sort of function to allow it to be optionally=20
-overridden.  It shouldn't take long, and I'll post the patch as soon as=20
-I'm finished.
-
-(I don't know how long it'll take to get merged though.. none of the=20
- already-posted followup cw1200 patches have been merged into=20
- wireless-next yet)
-
- - Solomon
---=20
-Solomon Peachy        		       pizza at shaftnet dot org	=20
-Delray Beach, FL                          ^^ (email/xmpp) ^^
-Quidquid latine dictum sit, altum viditur.
-
---32u276st3Jlj2kUU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iD8DBQFRq1r9PuLgii2759ARArx2AKCsMiKbe1uyzVd31gUNR8Uupbg2RwCcD0dd
-Zza70FpX3uyP/nQl0c4xpm8=
-=yW0L
------END PGP SIGNATURE-----
-
---32u276st3Jlj2kUU--
