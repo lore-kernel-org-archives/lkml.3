@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab3FBGjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 02:39:11 -0400
-Received: from mail.advaoptical.com ([91.217.199.15]:43167 "EHLO
-	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3FBGjG (ORCPT
+	id S1752093Ab3FBGjz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 02:39:55 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35532 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3FBGjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 02:39:06 -0400
-X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Jun 2013 02:39:05 EDT
-From: Oded Gabbay <ogabbay@advaoptical.com>
-To: <gregkh@linuxfoundation.org>, <cjb@laptop.org>,
-        <grant.likely@secretlab.ca>, <rob@landley.net>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <ogabbay@advaoptical.com>
-Subject: [PATCH 3/3] MMC: FSL SDHC: Add support for hard-wired (permanent) card. Kernel version 3.4.47
-Date: Sun, 2 Jun 2013 09:38:48 +0300
-Message-ID: <1370155128-680-1-git-send-email-ogabbay@advaoptical.com>
-X-Mailer: git-send-email 1.7.11.7
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.179.55]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-06-02_02:2013-05-31,2013-06-02,1970-01-01 signatures=0
+	Sun, 2 Jun 2013 02:39:46 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv2 0/6] Make ARM's sched_clock generic + 64 bit friendly
+Date: Sat,  1 Jun 2013 23:39:37 -0700
+Message-Id: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support of recognizing hard-wired (permanent) cards
-to Freescale's SDHC host driver. This is done by adding the option
-"fsl,card-wired" to the SDHC device-tree entry. Detection of this
-option is done in the probe function. Update documentation in file
-fsl-esdhc.txt
+This is mostly a resend of a patch series I sent a little over a month
+ago. I've reordered the patches so that John can pick up the first three
+and get a generic sched_clock layer without having to take the 64 bit
+patches. The last three patches add 64 bit support and move the architected
+timers on ARM64 and ARM to use it.
 
-Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
----
- Documentation/devicetree/bindings/mmc/fsl-esdhc.txt | 3 +++
- drivers/mmc/host/sdhci-of-esdhc.c                   | 4 ++++
- 2 files changed, 7 insertions(+)
+Stephen Boyd (6):
+  ARM: sched_clock: Remove unused needs_suspend member
+  ARM: sched_clock: Return suspended count earlier
+  sched_clock: Make ARM's sched_clock generic for all architectures
+  sched_clock: Add support for >32 bit sched_clock
+  ARM: arch_timer: Move to setup_sched_clock_64()
+  arm64: Move to generic sched_clock infrastructure
 
-diff --git a/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt b/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
-index 64bcb8b..6f0eefa 100644
---- a/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
-+++ b/Documentation/devicetree/bindings/mmc/fsl-esdhc.txt
-@@ -16,6 +16,9 @@ Required properties:
-     only handle 1-bit data transfers.
-   - sdhci,auto-cmd12: (optional) specifies that a controller can
-     only handle auto CMD12.
-+  - fsl,card-wired : (optional) specifies that the card is
-+    a permanent card and should not be detected for insertion or
-+    removal
- 
- Example:
- 
-diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
-index e70f22f..2f79ec2 100644
---- a/drivers/mmc/host/sdhci-of-esdhc.c
-+++ b/drivers/mmc/host/sdhci-of-esdhc.c
-@@ -222,6 +222,10 @@ static int __devinit sdhci_esdhc_probe(struct platform_device *pdev)
- 		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HOST_CONTROL;
- 	}
- 
-+	/* If card is permanent, add capability of non-removable */
-+	if (of_get_property(np, "fsl,card-wired", NULL))
-+		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
-+
- 	ret = sdhci_add_host(host);
- 	if (ret)
- 		sdhci_pltfm_free(pdev);
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/common/timer-sp.c                         |   2 +-
+ arch/arm/kernel/Makefile                           |   2 +-
+ arch/arm/kernel/arch_timer.c                       |  16 +--
+ arch/arm/kernel/time.c                             |   4 +-
+ arch/arm/mach-davinci/time.c                       |   2 +-
+ arch/arm/mach-imx/time.c                           |   2 +-
+ arch/arm/mach-integrator/integrator_ap.c           |   2 +-
+ arch/arm/mach-ixp4xx/common.c                      |   2 +-
+ arch/arm/mach-mmp/time.c                           |   2 +-
+ arch/arm/mach-msm/timer.c                          |   2 +-
+ arch/arm/mach-omap1/time.c                         |   2 +-
+ arch/arm/mach-omap2/timer.c                        |   2 +-
+ arch/arm/mach-pxa/time.c                           |   2 +-
+ arch/arm/mach-sa1100/time.c                        |   2 +-
+ arch/arm/mach-u300/timer.c                         |   2 +-
+ arch/arm/plat-iop/time.c                           |   2 +-
+ arch/arm/plat-omap/counter_32k.c                   |   2 +-
+ arch/arm/plat-orion/time.c                         |   2 +-
+ arch/arm/plat-samsung/samsung-time.c               |   2 +-
+ arch/arm/plat-versatile/sched-clock.c              |   2 +-
+ arch/arm64/Kconfig                                 |   1 +
+ arch/arm64/kernel/time.c                           |  11 +-
+ drivers/clocksource/bcm2835_timer.c                |   2 +-
+ drivers/clocksource/clksrc-dbx500-prcmu.c          |   3 +-
+ drivers/clocksource/dw_apb_timer_of.c              |   2 +-
+ drivers/clocksource/mxs_timer.c                    |   2 +-
+ drivers/clocksource/nomadik-mtu.c                  |   2 +-
+ drivers/clocksource/samsung_pwm_timer.c            |   2 +-
+ drivers/clocksource/tegra20_timer.c                |   2 +-
+ drivers/clocksource/time-armada-370-xp.c           |   2 +-
+ drivers/clocksource/timer-marco.c                  |   2 +-
+ drivers/clocksource/timer-prima2.c                 |   2 +-
+ .../include/asm => include/linux}/sched_clock.h    |  14 ++-
+ init/Kconfig                                       |   3 +
+ init/main.c                                        |   2 +
+ kernel/time/Makefile                               |   1 +
+ {arch/arm/kernel => kernel/time}/sched_clock.c     | 114 +++++++++++++++------
+ 38 files changed, 132 insertions(+), 92 deletions(-)
+ rename {arch/arm/include/asm => include/linux}/sched_clock.h (62%)
+ rename {arch/arm/kernel => kernel/time}/sched_clock.c (74%)
+
 -- 
-1.7.11.7
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
