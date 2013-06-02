@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3FBL4P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 07:56:15 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:61135 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3FBL4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 07:56:03 -0400
+	id S1751930Ab3FBL4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 07:56:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22185 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753194Ab3FBL4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 07:56:16 -0400
+Date: Sun, 2 Jun 2013 13:56:34 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] irqdomain: Do not reuse existing mappings
+Message-ID: <20130602115634.GA15561@dhcp-26-207.brq.redhat.com>
+References: <20130531125910.GA1454@dhcp-26-207.brq.redhat.com>
+ <20130531223024.AB12F3E08FE@localhost>
 MIME-Version: 1.0
-In-Reply-To: <001501ce5e9a$15731080$40593180$@samsung.com>
-References: <001501ce5e9a$15731080$40593180$@samsung.com>
-Date: Sun, 2 Jun 2013 14:56:02 +0300
-Message-ID: <CAHp75Vce+=1Fdb0Eqg0w+e511cAJeZ8cP6-d+9ng=s-5tJ5C+g@mail.gmail.com>
-Subject: Re: [PATCH] rtc: rtc-pcf2123: replace strict_strtoul() with kstrtoul()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130531223024.AB12F3E08FE@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 1, 2013 at 10:31 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> The usage of strict_strtoul() is not preferred, because
-> strict_strtoul() is obsolete. Thus, kstrtoul() should be
-> used.
+On Fri, May 31, 2013 at 11:30:24PM +0100, Grant Likely wrote:
+> On Fri, 31 May 2013 14:59:11 +0200, Alexander Gordeev <agordeev@redhat.com> wrote:
+> What exactly is the problem that you're trying to solve with this patch?
+> It's not clear from the description.
 
-> --- a/drivers/rtc/rtc-pcf2123.c
-> +++ b/drivers/rtc/rtc-pcf2123.c
-> @@ -94,7 +94,7 @@ static ssize_t pcf2123_show(struct device *dev, struct device_attribute *attr,
->
->         r = container_of(attr, struct pcf2123_sysfs_reg, attr);
->
-> -       if (strict_strtoul(r->name, 16, &reg))
-> +       if (kstrtoul(r->name, 16, &reg))
->                 return -EINVAL;
+Hi Grant,
 
-ret = kstrtoul(...);
-if (ret)
-return ret;
+Thanks for the clarification!
 
-> @@ -117,8 +117,7 @@ static ssize_t pcf2123_store(struct device *dev, struct device_attribute *attr,
->
->         r = container_of(attr, struct pcf2123_sysfs_reg, attr);
->
-> -       if (strict_strtoul(r->name, 16, &reg)
-> -               || strict_strtoul(buffer, 10, &val))
-> +       if (kstrtoul(r->name, 16, &reg) || kstrtoul(buffer, 10, &val))
->                 return -EINVAL;
+No particular problem - I just was confused with this particular behaviour
+and failed to put RFC in subject line. Sorry for that.
 
-I see no harm to allow user to write octal values as well.
-Thus, just
-ret = kstrtoul(r->name, 0, &reg);
-if (ret)
-return ret;
-
-Alessandro, what do you think?
-
---
-With Best Regards,
-Andy Shevchenko
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
