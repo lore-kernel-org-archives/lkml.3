@@ -1,67 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab3FBJCh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 05:02:37 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:63834 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3FBJCd (ORCPT
+	id S1753523Ab3FBKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 06:13:28 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48593 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3FBKNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 05:02:33 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzFuKr9
-X-RZG-CLASS-ID: mo00
-Message-ID: <51AB0A26.6070608@hartkopp.net>
-Date: Sun, 02 Jun 2013 11:02:30 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130519 Icedove/17.0.5
-MIME-Version: 1.0
-To: thomas@m3y3r.de
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netdev: Cocci spatch "ptr_ret.spatch"
-References: <1370080751.29224.37.camel@localhost.localdomain> <20130601.193717.2203825358470502762.davem@davemloft.net>
-In-Reply-To: <20130601.193717.2203825358470502762.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Jun 2013 06:13:20 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: wim@iguana.be, linux@roeck-us.net
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] [RFC]Watchdog:core: constant pinging until userspace timesout when delay very less
+Date: Sun,  2 Jun 2013 15:43:07 +0530
+Message-Id: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+Certain watchdog drivers use a timer to keep kicking the watchdog at
+a rate of 0.5s (HZ/2) untill userspace times out.They do this as
+we can't guarantee that watchdog will be pinged fast enough
+for all system loads, especially if timeout is configured for
+less than or equal to 1 second(basically small values).
 
-additionally to provide a proper log message it is a usual to provide the
-coccinelle expression that found the source to be changed.
+As suggested by Wim Van Sebroeck & Guenter Roeck we should
+add this functionality of individual watchdog drivers in the core
+watchdog core.
 
-http://lwn.net/Articles/315686/
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ drivers/watchdog/watchdog_dev.c |   34 +++++++++++++++++++++++++++++-----
+ include/linux/watchdog.h        |    1 +
+ 2 files changed, 30 insertions(+), 5 deletions(-)
 
-
-E.g. like these
-
-http://marc.info/?l=linux-netdev&m=135081679626023&w=2
-http://marc.info/?l=linux-netdev&m=135194048501621&w=2
-
-http://marc.info/?l=linux-netdev&m=135306967411758&w=2
-http://marc.info/?l=linux-netdev&m=135304902302198&w=2
-
-
-Regards,
-Oliver
-
-On 02.06.2013 04:37, David Miller wrote:
-> From: Thomas Meyer <thomas@m3y3r.de>
-> Date: Sat, 01 Jun 2013 11:59:11 +0200
-> 
->>
->> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> 
-> This obscure reference to the cocci path you used to find/fix
-> this problem is insufficient in detail for a commit log message.
-> 
-> You must explain exactly what the problem is, and how you fixed
-> it, in full sentences.   You must make your commit header lin
-> subject more appropriate as well.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index faf4e18..0305803 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -41,9 +41,14 @@
+ #include <linux/miscdevice.h>	/* For handling misc devices */
+ #include <linux/init.h>		/* For __init/__exit/... */
+ #include <linux/uaccess.h>	/* For copy_to_user/put_user/... */
++#include <linux/timer.h>
++#include <linux/jiffies.h>
+ 
+ #include "watchdog_core.h"
+ 
++/* Timer heartbeat (500ms) */
++#define WDT_TIMEOUT	(HZ/2) /* should this be sysfs? */
++
+ /* the dev_t structure to store the dynamically allocated watchdog devices */
+ static dev_t watchdog_devt;
+ /* the watchdog device behind /dev/watchdog */
+@@ -73,16 +78,33 @@ static int watchdog_ping(struct watchdog_device *wddev)
+ 	if (!watchdog_active(wddev))
+ 		goto out_ping;
+ 
+-	if (wddev->ops->ping)
+-		err = wddev->ops->ping(wddev);  /* ping the watchdog */
+-	else
+-		err = wddev->ops->start(wddev); /* restart watchdog */
++	/* should we check ping interval value i.e. timeout value
++	   if it is less than certain threshold then only we 
++	   should add this logic of periodic pinging? */
++	if (time_before(jiffies, (unsigned long)wddev->timeout)) {
++		if (wddev->ops->ping)
++			err = wddev->ops->ping(wddev);/* ping the watchdog */
++		else
++			err = wddev->ops->start(wddev);/* restart watchdog */
++		mod_timer(&wddev->timer, jiffies + WDT_TIMEOUT);
++	} else {
++		/*
++		 *what we should when we find out that userspace
++		 *has timed out?
++		 **/
++	}
+ 
+ out_ping:
+ 	mutex_unlock(&wddev->lock);
+ 	return err;
+ }
+ 
++static void watchdog_ping_wrapper(unsigned long priv)
++{
++	struct watchdog_device *wdd = (void *)priv;
++	watchdog_ping(wdd);
++}
++
+ /*
+  *	watchdog_start: wrapper to start the watchdog.
+  *	@wddev: the watchdog device to start
+@@ -109,7 +131,8 @@ static int watchdog_start(struct watchdog_device *wddev)
+ 	err = wddev->ops->start(wddev);
+ 	if (err == 0)
+ 		set_bit(WDOG_ACTIVE, &wddev->status);
+-
++	
++	mod_timer(&wddev->timer, jiffies + WDT_TIMEOUT);
+ out_start:
+ 	mutex_unlock(&wddev->lock);
+ 	return err;
+@@ -552,6 +575,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 			old_wdd = NULL;
+ 		}
+ 	}
++	setup_timer(&watchdog->timer, 0, (long)watchdog_ping_wrapper);
+ 	return err;
+ }
+ 
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 2a3038e..e5f18f7 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -84,6 +84,7 @@ struct watchdog_device {
+ 	const struct watchdog_ops *ops;
+ 	unsigned int bootstatus;
+ 	unsigned int timeout;
++	struct timer_list timer;
+ 	unsigned int min_timeout;
+ 	unsigned int max_timeout;
+ 	void *driver_data;
+-- 
+1.7.10.4
 
