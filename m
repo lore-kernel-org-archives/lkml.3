@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3FBQxB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 12:53:01 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60182 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab3FBQwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 12:52:42 -0400
+	id S1755342Ab3FBSM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 14:12:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755230Ab3FBSMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 14:12:55 -0400
+Date: Sun, 2 Jun 2013 21:12:53 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
+Message-ID: <20130602181253.GP24773@redhat.com>
+References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130602115634.GA15561@dhcp-26-207.brq.redhat.com>
-References: <20130531125910.GA1454@dhcp-26-207.brq.redhat.com>
- <20130531223024.AB12F3E08FE@localhost> <20130602115634.GA15561@dhcp-26-207.brq.redhat.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 2 Jun 2013 17:52:21 +0100
-X-Google-Sender-Auth: UXW5u4Omsq-V91Cnk2eRP0EyyfI
-Message-ID: <CACxGe6uWZxb_ZeSoYDOOaA9+DqSCDd+zM8SQfpKkeiCmHoUNkA@mail.gmail.com>
-Subject: Re: [PATCH] irqdomain: Do not reuse existing mappings
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369924555-30216-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 2, 2013 at 12:56 PM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Fri, May 31, 2013 at 11:30:24PM +0100, Grant Likely wrote:
->> On Fri, 31 May 2013 14:59:11 +0200, Alexander Gordeev <agordeev@redhat.com> wrote:
->> What exactly is the problem that you're trying to solve with this patch?
->> It's not clear from the description.
->
-> Hi Grant,
->
-> Thanks for the clarification!
->
-> No particular problem - I just was confused with this particular behaviour
-> and failed to put RFC in subject line. Sorry for that.
+On Thu, May 30, 2013 at 04:35:55PM +0200, Paolo Bonzini wrote:
+> The x86-64 extended low-byte registers were fetched correctly from reg,
+> but not from mod/rm.
+> 
+> This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
+> not enough.
+> 
+Did I missed unit test patch? :)
 
-Hi Alexander,
+> Cc: gnatapov@redhat.com
+> Cc: kvm@vger.kernel.org
+> Cc: <stable@vger.kernel.org> # 3.9
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/emulate.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index aa68106..028b34f 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
+>  	ctxt->modrm_seg = VCPU_SREG_DS;
+>  
+>  	if (ctxt->modrm_mod == 3) {
+> +		int highbyte_regs = ctxt->rex_prefix == 0;
+> +
+>  		op->type = OP_REG;
+>  		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+> -		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
+> +		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
+> +					       highbyte_regs && (ctxt->d & ByteOp));
+>  		if (ctxt->d & Sse) {
+>  			op->type = OP_XMM;
+>  			op->bytes = 16;
+> -- 
+> 1.8.1.4
 
-So there isn't an actual bug or problem that you're trying to solve?
-If you've got a problem on a real system then I'd like to know about
-it.
-
-g.
+--
+			Gleb.
