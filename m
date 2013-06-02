@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab3FBL4Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 07:56:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab3FBL4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 07:56:16 -0400
-Date: Sun, 2 Jun 2013 13:56:34 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] irqdomain: Do not reuse existing mappings
-Message-ID: <20130602115634.GA15561@dhcp-26-207.brq.redhat.com>
-References: <20130531125910.GA1454@dhcp-26-207.brq.redhat.com>
- <20130531223024.AB12F3E08FE@localhost>
+	id S1753454Ab3FBMIM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 08:08:12 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:51395 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3FBMIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 08:08:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130531223024.AB12F3E08FE@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <001701ce5e9a$e05feac0$a11fc040$@samsung.com>
+References: <001701ce5e9a$e05feac0$a11fc040$@samsung.com>
+Date: Sun, 2 Jun 2013 15:08:05 +0300
+Message-ID: <CAHp75VdKBT+yPQ0412wiY7ZCqL27cwJCpKM9_yVw48mtGWWw0w@mail.gmail.com>
+Subject: Re: [PATCH] misc: replace strict_strtoul() with kstrtoul()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Dimitri Sivanich <sivanich@sgi.com>, Robin Holt <holt@sgi.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:30:24PM +0100, Grant Likely wrote:
-> On Fri, 31 May 2013 14:59:11 +0200, Alexander Gordeev <agordeev@redhat.com> wrote:
-> What exactly is the problem that you're trying to solve with this patch?
-> It's not clear from the description.
+On Sat, Jun 1, 2013 at 10:37 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The usage of strict_strtoul() is not preferred, because
+> strict_strtoul() is obsolete. Thus, kstrtoul() should be
+> used.
 
-Hi Grant,
+> --- a/drivers/misc/apds9802als.c
+> +++ b/drivers/misc/apds9802als.c
+> @@ -126,7 +126,7 @@ static ssize_t als_sensing_range_store(struct device *dev,
+>         int ret_val;
+>         unsigned long val;
+>
+> -       if (strict_strtoul(buf, 10, &val))
+> +       if (kstrtoul(buf, 10, &val))
+>                 return -EINVAL;
 
-Thanks for the clarification!
+ret_val = kstrtoul();
+if (ret_val)
+return ret_val;
 
-No particular problem - I just was confused with this particular behaviour
-and failed to put RFC in subject line. Sorry for that.
+> --- a/drivers/misc/apds990x.c
+> +++ b/drivers/misc/apds990x.c
+> @@ -697,7 +697,7 @@ static ssize_t apds990x_lux_calib_store(struct device *dev,
+>         struct apds990x_chip *chip = dev_get_drvdata(dev);
+>         unsigned long value;
+>
+> -       if (strict_strtoul(buf, 0, &value))
+> +       if (kstrtoul(buf, 0, &value))
+>                 return -EINVAL;
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Ditto. Here and across entire patch.
+
+> @@ -895,7 +895,7 @@ static ssize_t apds990x_set_lux_thresh(struct apds990x_chip *chip, u32 *target,
+>         int ret = 0;
+
+Remove this assignment...
+
+>         unsigned long thresh;
+>
+> -       if (strict_strtoul(buf, 0, &thresh))
+> +       if (kstrtoul(buf, 0, &thresh))
+>                 return -EINVAL;
+
+...and use return code from kstrtoul().
+
+> --- a/drivers/misc/carma/carma-fpga.c
+> +++ b/drivers/misc/carma/carma-fpga.c
+> @@ -1002,7 +1002,7 @@ static ssize_t data_en_set(struct device *dev, struct device_attribute *attr,
+>         unsigned long enable;
+>         int ret;
+>
+> -       ret = strict_strtoul(buf, 0, &enable);
+> +       ret = kstrtoul(buf, 0, &enable);
+>         if (ret) {
+>                 dev_err(priv->dev, "unable to parse enable input\n");
+>                 return -EINVAL;
+
+return ret;
+
+--
+With Best Regards,
+Andy Shevchenko
