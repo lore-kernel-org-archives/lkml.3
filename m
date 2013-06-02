@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab3FBS22 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 14:28:28 -0400
-Received: from void.printf.net ([89.145.121.20]:37635 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895Ab3FBS2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 14:28:21 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [GIT PULL] MMC fixes for 3.10-rc5
-Date: Sun, 02 Jun 2013 14:28:14 -0400
-Message-ID: <878v2sbc5d.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1755406Ab3FBSkz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 14:40:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45536 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab3FBSkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 14:40:51 -0400
+Message-ID: <51AB9177.8000508@infradead.org>
+Date: Sun, 02 Jun 2013 11:39:51 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.10-rc4
+References: <alpine.LFD.2.03.1306021745220.6129@pixel.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.03.1306021745220.6129@pixel.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 06/02/13 01:45, Linus Torvalds wrote:
+> 
+> Another week, another -rc. But this time (at least for now) only as a git 
+> tree - for people actually using the tar-balls and patches, I apologize, 
+> but I'm a complete moron, and didn't install kup, its perl dependencies, 
+> and my kup release scripts on the pixel before the trip.
+> 
+> And while I can read and write email, and git is fine with just a few 
+> (flaky) kB/s internet throughput I have access to right now, installing 
+> the perl packages etc seems to be a pipe dream.
+> 
+> I suspect nobody actually uses the tar-balls and patches, since git is so 
+> much more convenient and efficient, so hopefully nobody cares. But I'll 
+> rectify the lack eventually. Hopefully within a day or two, as my "yum 
+> update" actually completes. And if not in a day or two, then when I get 
+> back home a few days later.
 
-Please pull from:
+I still use tarballs and patches, fwiw.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.10-rc5
-
-to receive MMC fixes for 3.10-rc5.  There are no merge conflicts, and
-the patches have been tested in linux-next.  Thanks.
-
-
-The following changes since commit c7788792a5e7b0d5d7f96d0766b4cb6112d47d75:
-
-  Linux 3.10-rc2 (2013-05-20 14:37:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.10-rc5
-
-for you to fetch changes up to 4a29b5591faf25555fdf2b717594d50f70c15066:
-
-  mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case (2013-05-26 14:23:11 -0400)
-
-----------------------------------------------------------------
-MMC fixes for 3.10-rc5:
- - sdhci-acpi: Fix initial runtime PM status, add more ACPI IDs
- - atmel-mci, omap_hsmmc: DT handling fixes
- - esdhc-imx: Fix SDIO IRQs, fix multiblock reads (both h/w errata)
-
-----------------------------------------------------------------
-Adrian Hunter (3):
-      mmc: sdhci-acpi: fix initial runtime pm status
-      mmc: sdhci-acpi: add more device ids
-      mmc: sdhci-pci: add more device ids
-
-Lucas Stach (1):
-      mmc: sdhci-esdhc-imx: fix multiblock reads on i.MX53
-
-Ludovic Desroches (1):
-      mmc: atmel-mci: convert to dma_request_slave_channel_compat()
-
-Martin Fuzzey (1):
-      mmc: sdhci-esdhc-imx: Fix SDIO interrupts
-
-Matt Porter (1):
-      mmc: omap_hsmmc: convert to dma_request_slave_channel_compat
-
-Santosh Shilimkar (1):
-      mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
-
-Tony Lindgren (1):
-      mmc: omap_hsmmc: Fix the DT pbias workaround for MMC controllers 2 to 5
-
- drivers/mmc/host/atmel-mci.c       | 25 +++++++-------
- drivers/mmc/host/omap_hsmmc.c      | 51 +++++++++++++++++-----------
- drivers/mmc/host/sdhci-acpi.c      | 69 +++++++++++++++++++++++++++++++++-----
- drivers/mmc/host/sdhci-esdhc-imx.c | 41 +++++++++++++++++++---
- drivers/mmc/host/sdhci-pci.c       | 54 +++++++++++++++++++++++++++++
- 5 files changed, 195 insertions(+), 45 deletions(-)
+I do expect that some day you will just completely drop doing those
+and I will handle that (with some changes).
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+~Randy
