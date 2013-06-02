@@ -1,62 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3FBKVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 06:21:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60208 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976Ab3FBKVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 06:21:25 -0400
-Date: Sun, 2 Jun 2013 12:21:37 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: herrmann.der.user@googlemail.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, amd64-microcode@amd64.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode, AMD: Cocci spatch "memdup.spatch"
-Message-ID: <20130602102137.GA3441@nazgul.tnic>
-References: <1370079731.29224.12.camel@localhost.localdomain>
+	id S1753644Ab3FBKZG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 06:25:06 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59179 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab3FBKY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 06:24:56 -0400
+Date: Sat, 1 Jun 2013 19:54:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] rcu: Hotplug and PROVE_RCU_DELAY not playing well
+ together
+Message-ID: <20130602025425.GE3957@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1370035669.26799.85.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370079731.29224.12.camel@localhost.localdomain>
+In-Reply-To: <1370035669.26799.85.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060210-7282-0000-0000-000017CE4173
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 01, 2013 at 11:42:11AM +0200, Thomas Meyer wrote:
+On Fri, May 31, 2013 at 05:27:49PM -0400, Steven Rostedt wrote:
+> Paul,
 > 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
+> I've been debugging the last couple of days why my tests have been
+> locking up. One of my tracing tests, runs all available tracers. The
+> lockup always happened with the mmiotrace, which is used to trace
+> interactions between priority drivers and the kernel. But to do this
+> easily, when the tracer gets registered, it disables all but the boot
+> CPUs. The lockup always happened after it got done disabling the CPUs.
 > 
-> diff -u -p a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-> --- a/arch/x86/kernel/microcode_amd.c
-> +++ b/arch/x86/kernel/microcode_amd.c
-> @@ -345,7 +345,7 @@ static int verify_and_add_patch(unsigned
->  		return -EINVAL;
+> Then I decided to try this:
+> 
+> while :; do
+> 	for i in 1 2 3; do
+> 		echo 0 > /sys/devices/system/cpu/cpu$i/online
+> 	done
+> 	for i in 1 2 3; do
+> 		echo 1 > /sys/devices/system/cpu/cpu$i/online
+> 	done
+> done
+> 
+> Well, sure enough, that locked up too, with the same users. Doing a
+> sysrq-w (showing all blocked tasks):
+
+Impressive debugging!!!  And that is what I call one gnarly deadlock!
+
+Your patch looks like it should fix the problem, but my immediate
+reaction was that it would be simpler to have rcu_gp_init()
+do either cpu_maps_update_begin(), get_online_cpus(), or
+cpu_hotplug_begin() if CONFIG_PROVE_RCU_DELAY instead of the
+current mutex_lock(&rsp->onoff_mutex).  (My first choice would be
+get_online_cpus(), but I am not sure that I fully understand the
+deadlock.)
+
+Or am I missing something about the nature of this deadlock?
+
+One concern is that if I made that change, and if any hotplug notifier
+waited for a grace period, there would be another deadlock.  Which
+might well be why this acquires ->onoff_lock.  Hmmm...
+
+OK, another possible simplification would be to use udelay() or something
+similar to do the waiting, and maybe dial down the delay from the current
+two jiffies to (say) 200 microseconds.  I could adjust the "if" condition
+to make the delay more probable to get roughly the same testing intensity
+as the current code has.
+
+Other thoughts?
+
+							Thanx, Paul
+
+> [ 2991.344562]   task                        PC stack   pid father
+> [ 2991.344562] rcu_preempt     D ffff88007986fdf8     0    10      2 0x00000000
+> [ 2991.344562]  ffff88007986fc98 0000000000000002 ffff88007986fc48 0000000000000908
+> [ 2991.344562]  ffff88007986c280 ffff88007986ffd8 ffff88007986ffd8 00000000001d3c80
+> [ 2991.344562]  ffff880079248a40 ffff88007986c280 0000000000000000 00000000fffd4295
+> [ 2991.344562] Call Trace:
+> [ 2991.344562]  [<ffffffff815437ba>] schedule+0x64/0x66
+> [ 2991.344562]  [<ffffffff81541750>] schedule_timeout+0xbc/0xf9
+> [ 2991.344562]  [<ffffffff8154bec0>] ? ftrace_call+0x5/0x2f
+> [ 2991.344562]  [<ffffffff81049513>] ? cascade+0xa8/0xa8
+> [ 2991.344562]  [<ffffffff815417ab>] schedule_timeout_uninterruptible+0x1e/0x20
+> [ 2991.344562]  [<ffffffff810c980c>] rcu_gp_kthread+0x502/0x94b
+> [ 2991.344562]  [<ffffffff81062791>] ? __init_waitqueue_head+0x50/0x50
+> [ 2991.344562]  [<ffffffff810c930a>] ? rcu_gp_fqs+0x64/0x64
+> [ 2991.344562]  [<ffffffff81061cdb>] kthread+0xb1/0xb9
+> [ 2991.344562]  [<ffffffff81091e31>] ? lock_release_holdtime.part.23+0x4e/0x55
+> [ 2991.344562]  [<ffffffff81061c2a>] ? __init_kthread_worker+0x58/0x58
+> [ 2991.344562]  [<ffffffff8154c1dc>] ret_from_fork+0x7c/0xb0
+> [ 2991.344562]  [<ffffffff81061c2a>] ? __init_kthread_worker+0x58/0x58
+> [ 2991.344562] kworker/0:1     D ffffffff81a30680     0    47      2 0x00000000
+> [ 2991.344562] Workqueue: events cpuset_hotplug_workfn
+> [ 2991.344562]  ffff880078dbbb58 0000000000000002 0000000000000006 00000000000000d8
+> [ 2991.344562]  ffff880078db8100 ffff880078dbbfd8 ffff880078dbbfd8 00000000001d3c80
+> [ 2991.344562]  ffff8800779ca5c0 ffff880078db8100 ffffffff81541fcf 0000000000000000
+> [ 2991.344562] Call Trace:
+> [ 2991.344562]  [<ffffffff81541fcf>] ? __mutex_lock_common+0x3d4/0x609
+> [ 2991.344562]  [<ffffffff815437ba>] schedule+0x64/0x66
+> [ 2991.344562]  [<ffffffff81543a39>] schedule_preempt_disabled+0x18/0x24
+> [ 2991.344562]  [<ffffffff81541fcf>] __mutex_lock_common+0x3d4/0x609
+> [ 2991.344562]  [<ffffffff8103d11b>] ? get_online_cpus+0x3c/0x50
+> [ 2991.344562]  [<ffffffff8103d11b>] ? get_online_cpus+0x3c/0x50
+> [ 2991.344562]  [<ffffffff815422ff>] mutex_lock_nested+0x3b/0x40
+> [ 2991.344562]  [<ffffffff8103d11b>] get_online_cpus+0x3c/0x50
+> [ 2991.344562]  [<ffffffff810af7e6>] rebuild_sched_domains_locked+0x6e/0x3a8
+> [ 2991.344562]  [<ffffffff810b0ec6>] rebuild_sched_domains+0x1c/0x2a
+> [ 2991.344562]  [<ffffffff810b109b>] cpuset_hotplug_workfn+0x1c7/0x1d3
+> [ 2991.344562]  [<ffffffff810b0ed9>] ? cpuset_hotplug_workfn+0x5/0x1d3
+> [ 2991.344562]  [<ffffffff81058e07>] process_one_work+0x2d4/0x4d1
+> [ 2991.344562]  [<ffffffff81058d3a>] ? process_one_work+0x207/0x4d1
+> [ 2991.344562]  [<ffffffff8105964c>] worker_thread+0x2e7/0x3b5
+> [ 2991.344562]  [<ffffffff81059365>] ? rescuer_thread+0x332/0x332
+> [ 2991.344562]  [<ffffffff81061cdb>] kthread+0xb1/0xb9
+> [ 2991.344562]  [<ffffffff81061c2a>] ? __init_kthread_worker+0x58/0x58
+> [ 2991.344562]  [<ffffffff8154c1dc>] ret_from_fork+0x7c/0xb0
+> [ 2991.344562]  [<ffffffff81061c2a>] ? __init_kthread_worker+0x58/0x58
+> [ 2991.344562] bash            D ffffffff81a4aa80     0  2618   2612 0x10000000
+> [ 2991.344562]  ffff8800379abb58 0000000000000002 0000000000000006 0000000000000c2c
+> [ 2991.344562]  ffff880077fea140 ffff8800379abfd8 ffff8800379abfd8 00000000001d3c80
+> [ 2991.344562]  ffff8800779ca5c0 ffff880077fea140 ffffffff81541fcf 0000000000000000
+> [ 2991.344562] Call Trace:
+> [ 2991.344562]  [<ffffffff81541fcf>] ? __mutex_lock_common+0x3d4/0x609
+> [ 2991.344562]  [<ffffffff815437ba>] schedule+0x64/0x66
+> [ 2991.344562]  [<ffffffff81543a39>] schedule_preempt_disabled+0x18/0x24
+> [ 2991.344562]  [<ffffffff81541fcf>] __mutex_lock_common+0x3d4/0x609
+> [ 2991.344562]  [<ffffffff81530078>] ? rcu_cpu_notify+0x2f5/0x86e
+> [ 2991.344562]  [<ffffffff81530078>] ? rcu_cpu_notify+0x2f5/0x86e
+> [ 2991.344562]  [<ffffffff815422ff>] mutex_lock_nested+0x3b/0x40
+> [ 2991.344562]  [<ffffffff81530078>] rcu_cpu_notify+0x2f5/0x86e
+> [ 2991.344562]  [<ffffffff81091c99>] ? __lock_is_held+0x32/0x53
+> [ 2991.344562]  [<ffffffff81548912>] notifier_call_chain+0x6b/0x98
+> [ 2991.344562]  [<ffffffff810671fd>] __raw_notifier_call_chain+0xe/0x10
+> [ 2991.344562]  [<ffffffff8103cf64>] __cpu_notify+0x20/0x32
+> [ 2991.344562]  [<ffffffff8103cf8d>] cpu_notify_nofail+0x17/0x36
+> [ 2991.344562]  [<ffffffff815225de>] _cpu_down+0x154/0x259
+> [ 2991.344562]  [<ffffffff81522710>] cpu_down+0x2d/0x3a
+> [ 2991.344562]  [<ffffffff81526351>] store_online+0x4e/0xe7
+> [ 2991.344562]  [<ffffffff8134d764>] dev_attr_store+0x20/0x22
+> [ 2991.344562]  [<ffffffff811b3c5f>] sysfs_write_file+0x108/0x144
+> [ 2991.344562]  [<ffffffff8114c5ef>] vfs_write+0xfd/0x158
+> [ 2991.344562]  [<ffffffff8114c928>] SyS_write+0x5c/0x83
+> [ 2991.344562]  [<ffffffff8154c494>] tracesys+0xdd/0xe2
+> 
+> As well as held locks:
+> 
+> [ 3034.728033] Showing all locks held in the system:
+> [ 3034.728033] 1 lock held by rcu_preempt/10:
+> [ 3034.728033]  #0:  (rcu_preempt_state.onoff_mutex){+.+...}, at: [<ffffffff810c9471>] rcu_gp_kthread+0x167/0x94b
+> [ 3034.728033] 4 locks held by kworker/0:1/47:
+> [ 3034.728033]  #0:  (events){.+.+.+}, at: [<ffffffff81058d3a>] process_one_work+0x207/0x4d1
+> [ 3034.728033]  #1:  (cpuset_hotplug_work){+.+.+.}, at: [<ffffffff81058d3a>] process_one_work+0x207/0x4d1
+> [ 3034.728033]  #2:  (cpuset_mutex){+.+.+.}, at: [<ffffffff810b0ec1>] rebuild_sched_domains+0x17/0x2a
+> [ 3034.728033]  #3:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8103d11b>] get_online_cpus+0x3c/0x50
+> [ 3034.728033] 1 lock held by mingetty/2563:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> [ 3034.728033] 1 lock held by mingetty/2565:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> [ 3034.728033] 1 lock held by mingetty/2569:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> [ 3034.728033] 1 lock held by mingetty/2572:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> [ 3034.728033] 1 lock held by mingetty/2575:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> [ 3034.728033] 7 locks held by bash/2618:
+> [ 3034.728033]  #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff8114bc3f>] file_start_write+0x2a/0x2c
+> [ 3034.728033]  #1:  (&buffer->mutex#2){+.+.+.}, at: [<ffffffff811b3b93>] sysfs_write_file+0x3c/0x144
+> [ 3034.728033]  #2:  (s_active#54){.+.+.+}, at: [<ffffffff811b3c3e>] sysfs_write_file+0xe7/0x144
+> [ 3034.728033]  #3:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff810217c2>] cpu_hotplug_driver_lock+0x17/0x19
+> [ 3034.728033]  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8103d196>] cpu_maps_update_begin+0x17/0x19
+> [ 3034.728033]  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8103cfd8>] cpu_hotplug_begin+0x2c/0x6d
+> [ 3034.728033]  #6:  (rcu_preempt_state.onoff_mutex){+.+...}, at: [<ffffffff81530078>] rcu_cpu_notify+0x2f5/0x86e
+> [ 3034.728033] 1 lock held by bash/2980:
+> [ 3034.728033]  #0:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff8131e28a>] n_tty_read+0x252/0x7e8
+> 
+> Things looked a little weird. Also, this is a deadlock that lockdep did
+> not catch. But what we have here does not look like a circular lock
+> issue:
+> 
+> Bash is blocked in rcu_cpu_notify():
+> 
+> 1961		/* Exclude any attempts to start a new grace period. */
+> 1962		mutex_lock(&rsp->onoff_mutex);
+> 
+> 
+> kworker is blocked in get_online_cpus(), which makes sense as we are
+> currently taking down a CPU.
+> 
+> But rcu_preempt is not blocked on anything. It is simply sleeping in
+> rcu_gp_kthread (really rcu_gp_init) here:
+> 
+> 1453	#ifdef CONFIG_PROVE_RCU_DELAY
+> 1454			if ((prandom_u32() % (rcu_num_nodes * 8)) == 0 &&
+> 1455			    system_state == SYSTEM_RUNNING)
+> 1456				schedule_timeout_uninterruptible(2);
+> 1457	#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+> 
+> And it does this while holding the onoff_mutex that bash is waiting for.
+> 
+> Doing a function trace, it showed me where it happened:
+> 
+> [  125.940066] rcu_pree-10      3.... 28384115273: schedule_timeout_uninterruptible <-rcu_gp_kthread
+> [...]
+> [  125.940066] rcu_pree-10      3d..3 28384202439: sched_switch: prev_comm=rcu_preempt prev_pid=10 prev_prio=120 prev_state=D ==> next_comm=watchdog/3 next_pid=38 next_prio=120
+> 
+> The watchdog ran, and then:
+> 
+> [  125.940066] watchdog-38      3d..3 28384692863: sched_switch: prev_comm=watchdog/3 prev_pid=38 prev_prio=120 prev_state=P ==> next_comm=modprobe next_pid=2848 next_prio=118
+> 
+> Not sure what modprobe was doing, but shortly after that:
+> 
+> [  125.940066] modprobe-2848    3d..3 28385041749: sched_switch: prev_comm=modprobe prev_pid=2848 prev_prio=118 prev_state=R+ ==> next_comm=migration/3 next_pid=40 next_prio=0
+> 
+> Where the migration thread took down the CPU:
+> 
+> [  125.940066] migratio-40      3d..3 28389148276: sched_switch: prev_comm=migration/3 prev_pid=40 prev_prio=0 prev_state=P ==> next_comm=swapper/3 next_pid=0 next_prio=120
+> 
+> which finally did:
+> 
+> [  125.940066]   <idle>-0       3...1 28389282142: arch_cpu_idle_dead <-cpu_startup_entry
+> [  125.940066]   <idle>-0       3...1 28389282548: native_play_dead <-arch_cpu_idle_dead
+> [  125.940066]   <idle>-0       3...1 28389282924: play_dead_common <-native_play_dead
+> [  125.940066]   <idle>-0       3...1 28389283468: idle_task_exit <-play_dead_common
+> [  125.940066]   <idle>-0       3...1 28389284644: amd_e400_remove_cpu <-play_dead_common
+> 
+> 
+> CPU 3 is now offline, the rcu_preempt thread that ran on CPU 3 is still
+> doing a schedule_timeout_uninterruptible() and it registered it's
+> timeout to the timer base for CPU 3. You would think that it would get
+> migrated right? The issue here is that the timer migration happens at
+> the CPU notifier for CPU_DEAD. The problem is that the rcu notifier for
+> CPU_DOWN is blocked waiting for the onoff_mutex to be released, which is
+> held by the thread that just put itself into a uninterruptible sleep,
+> that wont wake up until the CPU_DEAD notifier of the timer
+> infrastructure is called, which wont happen until the rcu notifier
+> finishes. Here's our deadlock!
+> 
+> Not sure how to solve this. I added this hack. Although, even though
+> it's a hack, it's a fix that's for a hack that is used for debugging
+> purposes only.
+> 
+> I added a waitqueue and a flag. The flag gets set when a cpu is going
+> down and cleared after it is down or dead. The rcu_preempt thread will
+> add itself to the waitqueue and then check if any CPU is going down. If
+> one is, it wont do the schedule, if one is not, then it does the
+> schedule. When a cpu goes down, the rcu cpu notifier will wake up the
+> thread before it does more work.
+> 
+> This patch does prevent the issue from occurring.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Index: linux-trace.git/kernel/rcutree.c
+> ===================================================================
+> --- linux-trace.git.orig/kernel/rcutree.c
+> +++ linux-trace.git/kernel/rcutree.c
+> @@ -1396,6 +1396,34 @@ rcu_start_gp_per_cpu(struct rcu_state *r
+>  	__note_new_gpnum(rsp, rnp, rdp);
+>  }
+> 
+> +#ifdef CONFIG_PROVE_RCU_DELAY
+> +/* Need to kick rcu_preempt kthread if cpu is going down */
+> +static DECLARE_WAIT_QUEUE_HEAD(rcu_delay_wait);
+> +static bool rcu_delay_cpu_going_down;
+> +static void rcu_delay_down_done(void)
+> +{
+> +	rcu_delay_cpu_going_down = false;
+> +}
+> +static void rcu_delay_down(void)
+> +{
+> +	rcu_delay_cpu_going_down = true;
+> +	/* Make sure the rcu_preempt thread see this set */
+> +	smp_wmb();
+> +	/*
+> +	 * We may wake up rcu_preempt threads for other CPUs, but
+> +	 * that's OK. It's sleeping for debug purposes only.
+> +	 */
+> +	wake_up_interruptible(&rcu_delay_wait);
+> +}
+> +#else
+> +static inline void rcu_delay_down_done(void)
+> +{
+> +}
+> +static inline void rcu_delay_down(void)
+> +{
+> +}
+> +#endif
+> +
+>  /*
+>   * Initialize a new grace period.
+>   */
+> @@ -1452,8 +1480,26 @@ static int rcu_gp_init(struct rcu_state 
+>  		raw_spin_unlock_irq(&rnp->lock);
+>  #ifdef CONFIG_PROVE_RCU_DELAY
+>  		if ((prandom_u32() % (rcu_num_nodes * 8)) == 0 &&
+> -		    system_state == SYSTEM_RUNNING)
+> -			schedule_timeout_uninterruptible(2);
+> +		    system_state == SYSTEM_RUNNING) {
+> +			DECLARE_WAITQUEUE(wait, current);
+> +			/*
+> +			 * If the current CPU goes offline, the rcu_preempt may
+> +			 * never wake up from the schedule_timeout(). This is
+> +			 * because it holds the onoff_mutex which gets taken
+> +			 * by the RCU CPU down notifier. This will prevent the timer
+> +			 * notifier from migrating the rcu_preempt and letting
+> +			 * it wake up, causing a deadlock.
+> +			 * Thus we have this hacky waitqueue and flag to make sure
+> +			 * that if the CPU goes down, we either skip the
+> +			 * schedule_timeout or we wake up the rcu_preempt thread.
+> +			 */
+> +			set_current_state(TASK_UNINTERRUPTIBLE);
+> +			add_wait_queue(&rcu_delay_wait, &wait);
+> +			if (!rcu_delay_cpu_going_down)
+> +				schedule_timeout(2);
+> +			__set_current_state(TASK_RUNNING);
+> +			remove_wait_queue(&rcu_delay_wait, &wait);
+> +		}
+>  #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+>  		cond_resched();
 >  	}
->  
-> -	patch->data = kzalloc(patch_size, GFP_KERNEL);
-> +	patch->data = kmemdup(fw + SECTION_HDR_SIZE, patch_size, GFP_KERNEL);
->  	if (!patch->data) {
->  		pr_err("Patch data allocation failure.\n");
->  		kfree(patch);
-> @@ -353,7 +353,6 @@ static int verify_and_add_patch(unsigned
->  	}
->  
->  	/* All looks ok, copy patch... */
-> -	memcpy(patch->data, fw + SECTION_HDR_SIZE, patch_size);
->  	INIT_LIST_HEAD(&patch->plist);
->  	patch->patch_id  = mc_hdr->patch_id;
->  	patch->equiv_cpu = proc_id;
+> @@ -3074,8 +3120,10 @@ static int __cpuinit rcu_cpu_notify(stru
+>  	case CPU_ONLINE:
+>  	case CPU_DOWN_FAILED:
+>  		rcu_boost_kthread_setaffinity(rnp, -1);
+> +		rcu_delay_down_done();
+>  		break;
+>  	case CPU_DOWN_PREPARE:
+> +		rcu_delay_down();
+>  		rcu_boost_kthread_setaffinity(rnp, cpu);
+>  		break;
+>  	case CPU_DYING:
+> @@ -3087,6 +3135,7 @@ static int __cpuinit rcu_cpu_notify(stru
+>  	case CPU_DEAD_FROZEN:
+>  	case CPU_UP_CANCELED:
+>  	case CPU_UP_CANCELED_FROZEN:
+> +		rcu_delay_down_done();
+>  		for_each_rcu_flavor(rsp)
+>  			rcu_cleanup_dead_cpu(cpu, rsp);
+>  		break;
+> 
+> 
 
-I can see what happens with a little code browsing of the definition of
-kmemdup but patches without a commit message are most times not a very
-elegant thing.
-
-So please add a nice commit message explaining why you're doing what
-you're doing. If the coccinelle script is not in the kernel tree,
-then referring to it doesn't mean a whole lot so don't do it. Rather,
-explaining why you're doing the change, is a much better thing to do.
-
-Thanks.
