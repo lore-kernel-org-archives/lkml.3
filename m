@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3FCUgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:36:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45487 "EHLO
+	id S1758166Ab3FCUgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:36:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45483 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab3FCUeJ (ORCPT
+	with ESMTP id S1757368Ab3FCUeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 16:34:09 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv7 11/11] ARM: smp: Remove local timer API
-Date: Mon,  3 Jun 2013 13:34:02 -0700
-Message-Id: <1370291642-13259-12-git-send-email-sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCHv7 10/11] clocksource: time-armada-370-xp: Divorce from local timer API
+Date: Mon,  3 Jun 2013 13:34:01 -0700
+Message-Id: <1370291642-13259-11-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
 In-Reply-To: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
 References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
@@ -21,209 +20,206 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no more users of this API, remove it.
+Separate the armada 370xp local timers from the local timer API.
+This will allow us to remove ARM local timer support in the near
+future and makes this driver multi-architecture friendly.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
-Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/Kconfig                  | 10 ------
- arch/arm/include/asm/localtimer.h | 34 -------------------
- arch/arm/kernel/smp.c             | 69 ---------------------------------------
- 3 files changed, 113 deletions(-)
- delete mode 100644 arch/arm/include/asm/localtimer.h
+ drivers/clocksource/time-armada-370-xp.c | 89 +++++++++++++++-----------------
+ 1 file changed, 41 insertions(+), 48 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 177cb39..626a272 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1542,16 +1542,6 @@ config ARM_PSCI
- 	  0022A ("Power State Coordination Interface System Software on
- 	  ARM processors").
+diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+index efe4aef..4a31e86 100644
+--- a/drivers/clocksource/time-armada-370-xp.c
++++ b/drivers/clocksource/time-armada-370-xp.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/kernel.h>
+ #include <linux/clk.h>
++#include <linux/cpu.h>
+ #include <linux/timer.h>
+ #include <linux/clockchips.h>
+ #include <linux/interrupt.h>
+@@ -31,7 +32,6 @@
+ #include <linux/time-armada-370-xp.h>
  
--config LOCAL_TIMERS
--	bool "Use local timer interrupts"
--	depends on SMP
--	default y
--	help
--	  Enable support for local timers on SMP platforms, rather then the
--	  legacy IPI broadcast method.  Local timers allows the system
--	  accounting to be spread across the timer interval, preventing a
--	  "thundering herd" at every timer tick.
--
- # The GPIO number here must be sorted by descending number. In case of
- # a multiplatform kernel, we just want the highest value required by the
- # selected platforms.
-diff --git a/arch/arm/include/asm/localtimer.h b/arch/arm/include/asm/localtimer.h
-deleted file mode 100644
-index f77ffc1..0000000
---- a/arch/arm/include/asm/localtimer.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- *  arch/arm/include/asm/localtimer.h
-- *
-- *  Copyright (C) 2004-2005 ARM Ltd.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_ARM_LOCALTIMER_H
--#define __ASM_ARM_LOCALTIMER_H
--
--#include <linux/errno.h>
--
--struct clock_event_device;
--
--struct local_timer_ops {
--	int  (*setup)(struct clock_event_device *);
--	void (*stop)(struct clock_event_device *);
--};
--
--#ifdef CONFIG_LOCAL_TIMERS
--/*
-- * Register a local timer driver
-- */
--int local_timer_register(struct local_timer_ops *);
--#else
--static inline int local_timer_register(struct local_timer_ops *ops)
--{
--	return -ENXIO;
--}
--#endif
--
--#endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4dc883a..54aa994 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -41,7 +41,6 @@
- #include <asm/sections.h>
- #include <asm/tlbflush.h>
- #include <asm/ptrace.h>
+ #include <asm/sched_clock.h>
 -#include <asm/localtimer.h>
- #include <asm/smp_plat.h>
- #include <asm/virt.h>
- #include <asm/mach/arch.h>
-@@ -133,8 +132,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+ /*
+  * Timer block registers.
+  */
+@@ -70,7 +70,7 @@ static bool timer25Mhz = true;
+  */
+ static u32 ticks_per_jiffy;
+ 
+-static struct clock_event_device __percpu **percpu_armada_370_xp_evt;
++static struct clock_event_device __percpu *armada_370_xp_evt;
+ 
+ static u32 notrace armada_370_xp_read_sched_clock(void)
+ {
+@@ -143,21 +143,14 @@ armada_370_xp_clkevt_mode(enum clock_event_mode mode,
+ 	}
  }
  
- #ifdef CONFIG_HOTPLUG_CPU
--static void percpu_timer_stop(void);
--
- static int platform_cpu_kill(unsigned int cpu)
+-static struct clock_event_device armada_370_xp_clkevt = {
+-	.name		= "armada_370_xp_per_cpu_tick",
+-	.features	= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
+-	.shift		= 32,
+-	.rating		= 300,
+-	.set_next_event	= armada_370_xp_clkevt_next_event,
+-	.set_mode	= armada_370_xp_clkevt_mode,
+-};
++static int armada_370_xp_clkevt_irq;
+ 
+ static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
  {
- 	if (smp_ops.cpu_kill)
-@@ -178,11 +175,6 @@ int __cpuinit __cpu_disable(void)
- 	migrate_irqs();
+ 	/*
+ 	 * ACK timer interrupt and call event handler.
+ 	 */
+-	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++	struct clock_event_device *evt = dev_id;
+ 
+ 	writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
+ 	evt->event_handler(evt);
+@@ -173,42 +166,55 @@ static int __cpuinit armada_370_xp_timer_setup(struct clock_event_device *evt)
+ 	u32 u;
+ 	int cpu = smp_processor_id();
+ 
+-	/* Use existing clock_event for cpu 0 */
+-	if (!smp_processor_id())
+-		return 0;
+-
+ 	u = readl(local_base + TIMER_CTRL_OFF);
+ 	if (timer25Mhz)
+ 		writel(u | TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
+ 	else
+ 		writel(u & ~TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
+ 
+-	evt->name		= armada_370_xp_clkevt.name;
+-	evt->irq		= armada_370_xp_clkevt.irq;
+-	evt->features		= armada_370_xp_clkevt.features;
+-	evt->shift		= armada_370_xp_clkevt.shift;
+-	evt->rating		= armada_370_xp_clkevt.rating,
++	evt->name		= "armada_370_xp_per_cpu_tick",
++	evt->features		= CLOCK_EVT_FEAT_ONESHOT |
++				  CLOCK_EVT_FEAT_PERIODIC;
++	evt->shift		= 32,
++	evt->rating		= 300,
+ 	evt->set_next_event	= armada_370_xp_clkevt_next_event,
+ 	evt->set_mode		= armada_370_xp_clkevt_mode,
++	evt->irq		= armada_370_xp_clkevt_irq;
+ 	evt->cpumask		= cpumask_of(cpu);
+ 
+-	*__this_cpu_ptr(percpu_armada_370_xp_evt) = evt;
+-
+ 	clockevents_config_and_register(evt, timer_clk, 1, 0xfffffffe);
+ 	enable_percpu_irq(evt->irq, 0);
+ 
+ 	return 0;
+ }
+ 
+-static void  armada_370_xp_timer_stop(struct clock_event_device *evt)
++static void __cpuinit armada_370_xp_timer_stop(struct clock_event_device *evt)
+ {
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+ 	disable_percpu_irq(evt->irq);
+ }
+ 
+-static struct local_timer_ops armada_370_xp_local_timer_ops __cpuinitdata = {
+-	.setup	= armada_370_xp_timer_setup,
+-	.stop	=  armada_370_xp_timer_stop,
++static int __cpuinit armada_370_xp_timer_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	/*
++	 * Grab cpu pointer in each case to avoid spurious
++	 * preemptible warnings
++	 */
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
++		break;
++	case CPU_DYING:
++		armada_370_xp_timer_stop(this_cpu_ptr(armada_370_xp_evt));
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block armada_370_xp_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = armada_370_xp_timer_cpu_notify,
+ };
+ 
+ void __init armada_370_xp_timer_init(void)
+@@ -224,9 +230,6 @@ void __init armada_370_xp_timer_init(void)
+ 
+ 	if (of_find_property(np, "marvell,timer-25Mhz", NULL)) {
+ 		/* The fixed 25MHz timer is available so let's use it */
+-		u = readl(local_base + TIMER_CTRL_OFF);
+-		writel(u | TIMER0_25MHZ,
+-		       local_base + TIMER_CTRL_OFF);
+ 		u = readl(timer_base + TIMER_CTRL_OFF);
+ 		writel(u | TIMER0_25MHZ,
+ 		       timer_base + TIMER_CTRL_OFF);
+@@ -236,9 +239,6 @@ void __init armada_370_xp_timer_init(void)
+ 		struct clk *clk = of_clk_get(np, 0);
+ 		WARN_ON(IS_ERR(clk));
+ 		rate =  clk_get_rate(clk);
+-		u = readl(local_base + TIMER_CTRL_OFF);
+-		writel(u & ~(TIMER0_25MHZ),
+-		       local_base + TIMER_CTRL_OFF);
+ 
+ 		u = readl(timer_base + TIMER_CTRL_OFF);
+ 		writel(u & ~(TIMER0_25MHZ),
+@@ -252,7 +252,7 @@ void __init armada_370_xp_timer_init(void)
+ 	 * We use timer 0 as clocksource, and private(local) timer 0
+ 	 * for clockevents
+ 	 */
+-	armada_370_xp_clkevt.irq = irq_of_parse_and_map(np, 4);
++	armada_370_xp_clkevt_irq = irq_of_parse_and_map(np, 4);
+ 
+ 	ticks_per_jiffy = (timer_clk + HZ / 2) / HZ;
+ 
+@@ -277,26 +277,19 @@ void __init armada_370_xp_timer_init(void)
+ 			      "armada_370_xp_clocksource",
+ 			      timer_clk, 300, 32, clocksource_mmio_readl_down);
+ 
+-	/* Register the clockevent on the private timer of CPU 0 */
+-	armada_370_xp_clkevt.cpumask = cpumask_of(0);
+-	clockevents_config_and_register(&armada_370_xp_clkevt,
+-					timer_clk, 1, 0xfffffffe);
++	register_cpu_notifier(&armada_370_xp_timer_cpu_nb);
+ 
+-	percpu_armada_370_xp_evt = alloc_percpu(struct clock_event_device *);
++	armada_370_xp_evt = alloc_percpu(struct clock_event_device);
+ 
  
  	/*
--	 * Stop the local timer for this CPU.
--	 */
--	percpu_timer_stop();
--
--	/*
- 	 * Flush user cache and TLB mappings, and then remove this CPU
- 	 * from the vm mask set of all processes.
- 	 *
-@@ -303,8 +295,6 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
- 	store_cpu_topology(cpuid);
- }
- 
--static void percpu_timer_setup(void);
--
- /*
-  * This is the secondary CPU boot entry.  We're using this CPUs
-  * idle thread stack, but a set of temporary page tables.
-@@ -359,11 +349,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	set_cpu_online(cpu, true);
- 	complete(&cpu_running);
- 
--	/*
--	 * Setup the percpu timer for this CPU.
--	 */
--	percpu_timer_setup();
--
- 	local_irq_enable();
- 	local_fiq_enable();
- 
-@@ -410,12 +395,6 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 		max_cpus = ncores;
- 	if (ncores > 1 && max_cpus) {
- 		/*
--		 * Enable the local timer or broadcast device for the
--		 * boot CPU, but only if we have more than one CPU.
--		 */
--		percpu_timer_setup();
--
--		/*
- 		 * Initialise the present map, which describes the set of CPUs
- 		 * actually populated at the present time. A platform should
- 		 * re-initialize the map in the platforms smp_prepare_cpus()
-@@ -491,11 +470,6 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- 	return sum;
- }
- 
--/*
-- * Timer (local or broadcast) support
-- */
--static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
--
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- void tick_broadcast(const struct cpumask *mask)
- {
-@@ -503,49 +477,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
- 
--static struct local_timer_ops *lt_ops;
--
+ 	 * Setup clockevent timer (interrupt-driven).
+ 	 */
+-	*__this_cpu_ptr(percpu_armada_370_xp_evt) = &armada_370_xp_clkevt;
+-	res = request_percpu_irq(armada_370_xp_clkevt.irq,
++	res = request_percpu_irq(armada_370_xp_clkevt_irq,
+ 				armada_370_xp_timer_interrupt,
+-				armada_370_xp_clkevt.name,
+-				percpu_armada_370_xp_evt);
+-	if (!res) {
+-		enable_percpu_irq(armada_370_xp_clkevt.irq, 0);
 -#ifdef CONFIG_LOCAL_TIMERS
--int local_timer_register(struct local_timer_ops *ops)
--{
--	if (!is_smp() || !setup_max_cpus)
--		return -ENXIO;
--
--	if (lt_ops)
--		return -EBUSY;
--
--	lt_ops = ops;
--	return 0;
--}
+-		local_timer_register(&armada_370_xp_local_timer_ops);
 -#endif
--
--static void __cpuinit percpu_timer_setup(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	evt->cpumask = cpumask_of(cpu);
--
--	if (lt_ops)
--		lt_ops->setup(evt);
--}
--
--#ifdef CONFIG_HOTPLUG_CPU
--/*
-- * The generic clock events code purposely does not stop the local timer
-- * on CPU_DEAD/CPU_DEAD_FROZEN hotplug events, so we have to do it
-- * manually here.
-- */
--static void percpu_timer_stop(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	if (lt_ops)
--		lt_ops->stop(evt);
--}
--#endif
--
- static DEFINE_RAW_SPINLOCK(stop_lock);
- 
- /*
+-	}
++				"armada_370_xp_per_cpu_tick",
++				armada_370_xp_evt);
++	/* Immediately configure the timer on the boot CPU */
++	if (!res)
++		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
+ }
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
