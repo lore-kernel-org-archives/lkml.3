@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab3FCHMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 03:12:47 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:59252 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3FCHMk (ORCPT
+	id S1751349Ab3FCHNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 03:13:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37938 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3FCHNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 03:12:40 -0400
-Date: Mon, 3 Jun 2013 10:12:35 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 3/6] sched_clock: Make ARM's sched_clock generic for
- all architectures
-Message-ID: <20130603071235.GO11798@tarshish>
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
- <1370155183-31421-4-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370155183-31421-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 03:13:02 -0400
+Date: Mon, 03 Jun 2013 00:13:01 -0700 (PDT)
+Message-Id: <20130603.001301.239203578028894121.davem@davemloft.net>
+To: wangyijing@huawei.com
+Cc: nsujir@broadcom.com, mchan@broadcom.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        guohanjun@huawei.com, liuj97@gmail.com
+Subject: Re: [PATCH] tg3: remove redundant pm init code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369818032-36272-1-git-send-email-wangyijing@huawei.com>
+References: <1369818032-36272-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r537DJbk005061
 
-Hi Stephen,
+From: Yijing Wang <wangyijing@huawei.com>
+Date: Wed, 29 May 2013 17:00:32 +0800
 
-On Sat, Jun 01, 2013 at 11:39:40PM -0700, Stephen Boyd wrote:
-> Nothing about the sched_clock implementation in the ARM port is
-> specific to the architecture. Generalize the code so that other
-> architectures can use it by selecting GENERIC_SCHED_CLOCK.
+> Pci_enable_device() will set device pm state to D0, so
+> it's no need to do it again in tg3_init_one().
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/Kconfig                                      | 1 +
->  arch/arm/common/timer-sp.c                            | 2 +-
->  arch/arm/kernel/Makefile                              | 2 +-
->  arch/arm/kernel/arch_timer.c                          | 2 +-
->  arch/arm/kernel/time.c                                | 4 +---
->  arch/arm/mach-davinci/time.c                          | 2 +-
->  arch/arm/mach-imx/time.c                              | 2 +-
->  arch/arm/mach-integrator/integrator_ap.c              | 2 +-
->  arch/arm/mach-ixp4xx/common.c                         | 2 +-
->  arch/arm/mach-mmp/time.c                              | 2 +-
->  arch/arm/mach-msm/timer.c                             | 2 +-
->  arch/arm/mach-omap1/time.c                            | 2 +-
->  arch/arm/mach-omap2/timer.c                           | 2 +-
->  arch/arm/mach-pxa/time.c                              | 2 +-
->  arch/arm/mach-sa1100/time.c                           | 2 +-
->  arch/arm/mach-u300/timer.c                            | 2 +-
->  arch/arm/plat-iop/time.c                              | 2 +-
->  arch/arm/plat-omap/counter_32k.c                      | 2 +-
->  arch/arm/plat-orion/time.c                            | 2 +-
->  arch/arm/plat-samsung/samsung-time.c                  | 2 +-
->  arch/arm/plat-versatile/sched-clock.c                 | 2 +-
->  drivers/clocksource/bcm2835_timer.c                   | 2 +-
->  drivers/clocksource/clksrc-dbx500-prcmu.c             | 3 +--
->  drivers/clocksource/dw_apb_timer_of.c                 | 2 +-
->  drivers/clocksource/mxs_timer.c                       | 2 +-
->  drivers/clocksource/nomadik-mtu.c                     | 2 +-
->  drivers/clocksource/samsung_pwm_timer.c               | 2 +-
->  drivers/clocksource/tegra20_timer.c                   | 2 +-
->  drivers/clocksource/time-armada-370-xp.c              | 2 +-
->  drivers/clocksource/timer-marco.c                     | 2 +-
->  drivers/clocksource/timer-prima2.c                    | 2 +-
->  {arch/arm/include/asm => include/linux}/sched_clock.h | 9 +++++++--
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 
-Shouldn't we just merge this header into the existing linux/sched.h?
+This patch introduces a warning:
 
-baruch
-
->  init/Kconfig                                          | 3 +++
->  init/main.c                                           | 2 ++
->  kernel/time/Makefile                                  | 1 +
->  {arch/arm/kernel => kernel/time}/sched_clock.c        | 3 +--
->  36 files changed, 45 insertions(+), 37 deletions(-)
->  rename {arch/arm/include/asm => include/linux}/sched_clock.h (75%)
->  rename {arch/arm/kernel => kernel/time}/sched_clock.c (99%)
-
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+drivers/net/ethernet/broadcom/tg3.c: In function ¡tg3_init_one¢:
+drivers/net/ethernet/broadcom/tg3.c:17231:13: warning: ¡pm_cap¢ may be used uninitialized in this function [-Wuninitialized]
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
