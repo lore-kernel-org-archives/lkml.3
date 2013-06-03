@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3FCJLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:11:16 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:1162 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3FCJLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:11:13 -0400
-X-Spam-Score: -100.8
-Message-ID: <51AC5D7C.2000905@asianux.com>
-Date: Mon, 03 Jun 2013 17:10:20 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755877Ab3FCJMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:12:35 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:51001 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352Ab3FCJMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 05:12:33 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andreas Schwab <schwab@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: m68k: math-emu: unsigned issue, 'unsigned long'
- will never be less than zero
-References: <51A6F0C6.9050806@asianux.com> <m2a9ndndu5.fsf@linux-m68k.org> <51A70C10.6000408@asianux.com> <CAMuHMdWOxh_YvQyid-PiN7FsM=OC=0YWOzJb86pKaQn3HrjaQw@mail.gmail.com>
-In-Reply-To: <CAMuHMdWOxh_YvQyid-PiN7FsM=OC=0YWOzJb86pKaQn3HrjaQw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <20908.23892.888385.996094@pilspetsen.it.uu.se>
+Date: Mon, 3 Jun 2013 11:09:40 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.10-rc4
+In-Reply-To: <51AB9177.8000508@infradead.org>
+References: <alpine.LFD.2.03.1306021745220.6129@pixel.linux-foundation.org>
+	<51AB9177.8000508@infradead.org>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2013 05:12 PM, Geert Uytterhoeven wrote:
-> On Thu, May 30, 2013 at 10:21 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> 'oldmant.m32[1]' is 'unsigned long' which never '< 0', and the original
->> author wanted to check the highest bit whether set.
->>
->> So need make the bit test explicit (which is better than type cast form
->> 'unsigned long' to 'long').
->>
->> The related warning: (with EXTRA_CFLAGS=-W ARCH=m68k for allmodconfig)
->>   arch/m68k/math-emu/fp_arith.c:522:4: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> Thanks, applied and queued for 3.11!
-> 
+Randy Dunlap writes:
+ > On 06/02/13 01:45, Linus Torvalds wrote:
+ > > 
+ > > Another week, another -rc. But this time (at least for now) only as a git 
+ > > tree - for people actually using the tar-balls and patches, I apologize, 
+ > > but I'm a complete moron, and didn't install kup, its perl dependencies, 
+ > > and my kup release scripts on the pixel before the trip.
+ > > 
+ > > And while I can read and write email, and git is fine with just a few 
+ > > (flaky) kB/s internet throughput I have access to right now, installing 
+ > > the perl packages etc seems to be a pipe dream.
+ > > 
+ > > I suspect nobody actually uses the tar-balls and patches, since git is so 
+ > > much more convenient and efficient, so hopefully nobody cares. But I'll 
+ > > rectify the lack eventually. Hopefully within a day or two, as my "yum 
+ > > update" actually completes. And if not in a day or two, then when I get 
+ > > back home a few days later.
+ > 
+ > I still use tarballs and patches, fwiw.
 
-Thank you too, and pardon: what is '3.11' ?  :-)
+As do I.  For this one time the lack of a patch file is no big deal, but
+please don't discontinue them permanently.
 
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+/Mikael
