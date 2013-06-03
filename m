@@ -1,122 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab3FCJD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:03:26 -0400
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:40436 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab3FCJDZ (ORCPT
+	id S1754363Ab3FCJET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:04:19 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:8715 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479Ab3FCJES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:03:25 -0400
-Date: Mon, 3 Jun 2013 17:43:51 +0900
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: muvarov@gmail.com
-Cc: zhangyanfei@cn.fujitsu.com, d.hatayama@jp.fujitsu.com,
-        akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
-        jingbai.ma@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com, linux-mm@kvack.org,
-        ebiederm@xmission.com, kosaki.motohiro@jp.fujitsu.com,
-        walken@google.com, cpw@sgi.com, vgoyal@redhat.com
-Subject: Re: [PATCH v8 9/9] vmcore: support mmap() on /proc/vmcore
-Message-Id: <20130603174351.d04b2ac71d1bab0df242e0ba@mxc.nes.nec.co.jp>
-In-Reply-To: <CAJGZr0Ld6Q4a4f-VObAbvqCp=+fTFNEc6M-Fdnhh28GTcSm1=w@mail.gmail.com>
-References: <20130523052421.13864.83978.stgit@localhost6.localdomain6>
-	<20130523052547.13864.83306.stgit@localhost6.localdomain6>
-	<20130523152445.17549682ae45b5aab3f3cde0@linux-foundation.org>
-	<CAJGZr0LwivLTH+E7WAR1B9_6B4e=jv04KgCUL_PdVpi9JjDpBw@mail.gmail.com>
-	<51A2BBA7.50607@jp.fujitsu.com>
-	<CAJGZr0LmsFXEgb3UXVb+rqo1aq5KJyNxyNAD+DG+3KnJm_ZncQ@mail.gmail.com>
-	<51A71B49.3070003@cn.fujitsu.com>
-	<CAJGZr0Ld6Q4a4f-VObAbvqCp=+fTFNEc6M-Fdnhh28GTcSm1=w@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 05:04:18 -0400
+X-AuditID: cbfee68e-b7f276d000002279-bc-51ac5c0f3ac9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Srinidhi Kasagar'" <srinidhi.kasagar@stericsson.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
+Subject: [PATCH V2] mfd: replace strict_strtoul() with kstrtoul()
+Date: Mon, 03 Jun 2013 18:04:15 +0900
+Message-id: <000801ce6039$526d9a00$f748ce00$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5gOUvXV7YQ6ccrSoK4xN8jkywViQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zY13+mDWBBnum2li8nHCY0eLywkus
+	Fve/HmW0mPJnOZPF5V1z2CxOd7Na3NrSxObA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx/ela9g9
+	Pm+SC2CL4rJJSc3JLEst0rdL4Mr43zeHveCORMXWy13MDYxnhLsYOTkkBEwkVr45zwxhi0lc
+	uLeerYuRi0NIYBmjxI39W5hgin5svMoKkZjOKDGxewczhPOLUeLb1d/sIFVsAmoSX74cBrNF
+	BLQkuo+dZwOxmQX+Mko8310GYgsLOEpc+n4arIZFQFXi6tGpYDavgKXEgYbNLBC2oMSPyfdY
+	IHq1JNbvPM4EYctLbF7zFupUBYkdZ18zQuzSk9jxaD4jRI2IxL4X7xhBjpMQuMQu0bzsJxPE
+	MgGJb5MPAQ3lAErISmw6ADVHUuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0
+	IiO94sTc4tK8dL3k/NxNjJC47NvBePOA9SHGZKD1E5mlRJPzgXGdVxJvaGxmZGFqYmpsZG5p
+	RpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGnElttgqsompfFk1t931i/8xi
+	2x/PSJGZ2UXbj/t6XKoqY3ryLPHoxjX7Xxr4zf++QfqYLo9qke/6ec7bKzt0v+vrv7zGHJUz
+	v617j6LJky6HoKyyvWff39gv38j5hOfc9uaAVz6m+W3fuVsffKzj/Ki481RZpoNhiq/Ba/Xy
+	b2fu90ecFCpXYinOSDTUYi4qTgQAFg2J1eECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQV3+mDWBBtefmFu8nHCY0eLywkus
+	Fve/HmW0mPJnOZPF5V1z2CxOd7Na3NrSxObA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx/ela9g9
+	Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
+	zAE6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8b9vDnvBHYmKrZe7
+	mBsYzwh3MXJySAiYSPzYeJUVwhaTuHBvPVsXIxeHkMB0RomJ3TuYIZxfjBLfrv5mB6liE1CT
+	+PLlMJgtIqAl0X3sPBuIzSzwl1Hi+e4yEFtYwFHi0vfTYDUsAqoSV49OBbN5BSwlDjRsZoGw
+	BSV+TL7HAtGrJbF+53EmCFteYvOat8wQFylI7Dj7mhFil57EjkfzGSFqRCT2vXjHOIFRYBaS
+	UbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH/TPpHYyrGiwOMQpw
+	MCrx8AZ4rAkUYk0sK67MPcQowcGsJMJ7JRAoxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnA
+	hJRXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYx6Sx3ec/9z
+	SphR7LxlScAlw/6Pbxas3aS3l61qq+zBTQ4JK2KvBzz1NQvazeSz9lLMzlkGxmmMvG68F0pK
+	miJUJijGPog/lu/wcK1T/61znInHVgm2uxxaP0dd+P/dlNtF62+IfZt2KFAodF8Wj9OzyBo/
+	7SIWH8+Kry8PMvmX/D30eF3G8jolluKMREMt5qLiRADwVATfPgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maxim,
+The usage of strict_strtoul() is not preferred, because
+strict_strtoul() is obsolete. Thus, kstrtoul() should be
+used.
 
-On Thu, 30 May 2013 14:30:01 +0400
-Maxim Uvarov <muvarov@gmail.com> wrote:
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+Changes since v1:
+- Used return code from kstrtoul().
+- Changed the type of 'user_reg' from 'unsigned long' to 'u8'.
+- Replaced kstrtoul() with kstrtou8() to handle u8 variable.
 
-> 2013/5/30 Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> 
-> > On 05/30/2013 05:14 PM, Maxim Uvarov wrote:
-> > >
-> > >
-> > >
-> > > 2013/5/27 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com <mailto:
-> > d.hatayama@jp.fujitsu.com>>
-> > >
-> > >     (2013/05/24 18:02), Maxim Uvarov wrote:
-> > >
-> > >
-> > >
-> > >
-> > >         2013/5/24 Andrew Morton <akpm@linux-foundation.org <mailto:
-> > akpm@linux-foundation.org> <mailto:akpm@linux-foundation.__org <mailto:
-> > akpm@linux-foundation.org>>>
-> > >
-> > >
-> > >             On Thu, 23 May 2013 14:25:48 +0900 HATAYAMA Daisuke <
-> > d.hatayama@jp.fujitsu.com <mailto:d.hatayama@jp.fujitsu.com> <mailto:
-> > d.hatayama@jp.fujitsu.__com <mailto:d.hatayama@jp.fujitsu.com>>> wrote:
-> > >
-> > >              > This patch introduces mmap_vmcore().
-> > >              >
-> > >              > Don't permit writable nor executable mapping even with
-> > mprotect()
-> > >              > because this mmap() is aimed at reading crash dump memory.
-> > >              > Non-writable mapping is also requirement of
-> > remap_pfn_range() when
-> > >              > mapping linear pages on non-consecutive physical pages;
-> > see
-> > >              > is_cow_mapping().
-> > >              >
-> > >              > Set VM_MIXEDMAP flag to remap memory by remap_pfn_range
-> > and by
-> > >              > remap_vmalloc_range_pertial at the same time for a single
-> > >              > vma. do_munmap() can correctly clean partially remapped
-> > vma with two
-> > >              > functions in abnormal case. See zap_pte_range(),
-> > vm_normal_page() and
-> > >              > their comments for details.
-> > >              >
-> > >              > On x86-32 PAE kernels, mmap() supports at most 16TB
-> > memory only. This
-> > >              > limitation comes from the fact that the third argument of
-> > >              > remap_pfn_range(), pfn, is of 32-bit length on x86-32:
-> > unsigned long.
-> > >
-> > >             More reviewing and testing, please.
-> > >
-> > >
-> > >         Do you have git pull for both kernel and userland changes? I
-> > would like to do some more testing on my machines.
-> > >
-> > >         Maxim.
-> > >
-> > >
-> > >     Thanks! That's very helpful.
-> > >
-> > >     --
-> > >     Thanks.
-> > >     HATAYAMA, Daisuke
-> > >
-> > > Any update for this? Where can I checkout all sources?
-> >
-> > This series is now in Andrew Morton's -mm tree.
-> >
-> > Ok, and what about makedumpfile changes? Is it possible to fetch them from
-> somewhere?
+ drivers/mfd/aat2870-core.c   |    5 +++--
+ drivers/mfd/ab3100-core.c    |   16 ++++++----------
+ drivers/mfd/ab8500-debugfs.c |    2 +-
+ 3 files changed, 10 insertions(+), 13 deletions(-)
 
-You can fetch them from here, "mmap" branch is the change:
+diff --git a/drivers/mfd/aat2870-core.c b/drivers/mfd/aat2870-core.c
+index dfdb0a2..d4f5945 100644
+--- a/drivers/mfd/aat2870-core.c
++++ b/drivers/mfd/aat2870-core.c
+@@ -312,8 +312,9 @@ static ssize_t aat2870_reg_write_file(struct file *file,
+ 	while (*start == ' ')
+ 		start++;
+ 
+-	if (strict_strtoul(start, 16, &val))
+-		return -EINVAL;
++	ret = kstrtoul(start, 16, &val);
++	if (ret)
++		return ret;
+ 
+ 	ret = aat2870->write(aat2870, (u8)addr, (u8)val);
+ 	if (ret)
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index a9bb140..9cc1bd3 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -491,7 +491,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	char buf[32];
+ 	ssize_t buf_size;
+ 	int regp;
+-	unsigned long user_reg;
++	u8 user_reg;
+ 	int err;
+ 	int i = 0;
+ 
+@@ -514,22 +514,20 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	/*
+ 	 * Advance pointer to end of string then terminate
+ 	 * the register string. This is needed to satisfy
+-	 * the strict_strtoul() function.
++	 * the kstrtou8() function.
+ 	 */
+ 	while ((i < buf_size) && (buf[i] != ' '))
+ 		i++;
+ 	buf[i] = '\0';
+ 
+-	err = strict_strtoul(&buf[regp], 16, &user_reg);
++	err = kstrtou8(&buf[regp], 16, &user_reg);
+ 	if (err)
+ 		return err;
+-	if (user_reg > 0xff)
+-		return -EINVAL;
+ 
+ 	/* Either we read or we write a register here */
+ 	if (!priv->mode) {
+ 		/* Reading */
+-		u8 reg = (u8) user_reg;
++		u8 reg = user_reg;
+ 		u8 regvalue;
+ 
+ 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
+@@ -540,7 +538,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	} else {
+ 		int valp;
+ 		unsigned long user_value;
+-		u8 reg = (u8) user_reg;
++		u8 reg = user_reg;
+ 		u8 value;
+ 		u8 regvalue;
+ 
+@@ -557,11 +555,9 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 			i++;
+ 		buf[i] = '\0';
+ 
+-		err = strict_strtoul(&buf[valp], 16, &user_value);
++		err = kstrtoul(&buf[valp], 16, &user_value);
+ 		if (err)
+ 			return err;
+-		if (user_reg > 0xff)
+-			return -EINVAL;
+ 
+ 		value = (u8) user_value;
+ 		ab3100_set_register_interruptible(ab3100, reg, value);
+diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+index 37b7ce4..11656c2 100644
+--- a/drivers/mfd/ab8500-debugfs.c
++++ b/drivers/mfd/ab8500-debugfs.c
+@@ -2757,7 +2757,7 @@ static ssize_t show_irq(struct device *dev,
+ 	unsigned int irq_index;
+ 	int err;
+ 
+-	err = strict_strtoul(attr->attr.name, 0, &name);
++	err = kstrtoul(attr->attr.name, 0, &name);
+ 	if (err)
+ 		return err;
+ 
+-- 
+1.7.10.4
 
-  git://git.code.sf.net/p/makedumpfile/code
 
-And they will be merged into v1.5.4.
-
-
-Thanks
-Atsushi Kumagai
