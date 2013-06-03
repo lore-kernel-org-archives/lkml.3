@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab3FCWNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:13:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9887 "EHLO
+	id S1759302Ab3FCWNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:13:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30555 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759119Ab3FCWMk (ORCPT
+	with ESMTP id S1759134Ab3FCWMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:40 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=gyErIvFWWBgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KMF8vFrMFUIA:10 a=4K-K1uyHAAAA:8 a=ag1SF4gXAAAA:8 a=VwQbUJbxAAAA:8 a=z11f-joXAAAA:8 a=T2hGJBQr3ZGJPcMLOzoA:9 a=wATGTE7Z8MQA:10 a=1TSTQ8KKaH4A:10 a=CJVq-v20pXUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:44 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9nay_dFR0dgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=oAn56Dz6tywA:10 a=KKAkSRfTAAAA:8 a=6zb38KopAAAA:8 a=vmGD27vEwLNAEJJ72J0A:9 a=WwgC8nHKvroA:10 a=D-PNlr3aaKoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221200.823198580@goodmis.org>
+Message-Id: <20130603221200.311551186@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:11:06 -0400
+Date: Mon, 03 Jun 2013 18:11:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Joern Engel <joern@logfs.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [50/65] target: close target_put_sess_cmd() vs. core_tmr_abort_task() race
+Cc: Inderpal Singh <inderpal.singh@linaro.org>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [47/65] ARM: EXYNOS5: Fix kernel dump in AFTR idle mode
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0050-target-close-target_put_sess_cmd-vs.-core_tmr_abort_.patch
+Content-Disposition: inline; filename=0047-ARM-EXYNOS5-Fix-kernel-dump-in-AFTR-idle-mode.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,118 +31,63 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joern Engel <joern@logfs.org>
+From: Inderpal Singh <inderpal.singh@linaro.org>
 
-[ Upstream commit ccf5ae83a6cf3d9cfe9a7038bfe7cd38ab03d5e1 ]
+[ Upstream commit 088584618836b159947bc4ab5011a5cf1f081a62 ]
 
-It is possible for one thread to to take se_sess->sess_cmd_lock in
-core_tmr_abort_task() before taking a reference count on
-se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
-se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+The kernel crashes while resuming from AFTR idle mode. It happens
+because L2 cache was not going into retention state.
 
-This introduces kref_put_spinlock_irqsave() and uses it in
-target_put_sess_cmd() to close the race window.
+This patch configures the USE_RETENTION bit of ARM_L2_OPTION register
+so that it does not depend on MANUAL_L2RSTDISABLE_CONTROL of
+ARM_COMMON_OPTION register for L2RSTDISABLE signal.
 
-Signed-off-by: Joern Engel <joern@logfs.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+Tested-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/target/target_core_transport.c |   11 +++++------
- include/linux/kref.h                   |   33 ++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 6 deletions(-)
+ arch/arm/mach-exynos/include/mach/regs-pmu.h |    1 +
+ arch/arm/mach-exynos/pmu.c                   |    5 ++---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index c87ef74..140bfb3 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2430,21 +2430,19 @@ static void target_release_cmd_kref(struct kref *kref)
- {
- 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
- 	struct se_session *se_sess = se_cmd->se_sess;
--	unsigned long flags;
+diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+index d4e392b..ad3c020 100644
+--- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
++++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+@@ -342,6 +342,7 @@
+ #define EXYNOS5_FSYS_ARM_OPTION					S5P_PMUREG(0x2208)
+ #define EXYNOS5_ISP_ARM_OPTION					S5P_PMUREG(0x2288)
+ #define EXYNOS5_ARM_COMMON_OPTION				S5P_PMUREG(0x2408)
++#define EXYNOS5_ARM_L2_OPTION					S5P_PMUREG(0x2608)
+ #define EXYNOS5_TOP_PWR_OPTION					S5P_PMUREG(0x2C48)
+ #define EXYNOS5_TOP_PWR_SYSMEM_OPTION				S5P_PMUREG(0x2CC8)
+ #define EXYNOS5_JPEG_MEM_OPTION					S5P_PMUREG(0x2F48)
+diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+index 3a48c85..76691b3 100644
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -227,6 +227,7 @@ static struct exynos_pmu_conf exynos5250_pmu_config[] = {
+ 	{ EXYNOS5_DIS_IRQ_ISP_ARM_CENTRAL_SYS_PWR_REG,	{ 0x0, 0x0, 0x0} },
+ 	{ EXYNOS5_ARM_COMMON_SYS_PWR_REG,		{ 0x0, 0x0, 0x2} },
+ 	{ EXYNOS5_ARM_L2_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
++	{ EXYNOS5_ARM_L2_OPTION,			{ 0x10, 0x10, 0x0 } },
+ 	{ EXYNOS5_CMU_ACLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_SCLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_RESET_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
+@@ -352,11 +353,9 @@ static void exynos5_init_pmu(void)
  
--	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
- 	if (list_empty(&se_cmd->se_cmd_list)) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		se_cmd->se_tfo->release_cmd(se_cmd);
- 		return;
- 	}
- 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		complete(&se_cmd->cmd_wait_comp);
- 		return;
- 	}
- 	list_del(&se_cmd->se_cmd_list);
--	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+	spin_unlock(&se_sess->sess_cmd_lock);
+ 	/*
+ 	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
+-	 * MANUAL_L2RSTDISABLE_CONTROL_BITFIELD Enable
+ 	 */
+ 	tmp = __raw_readl(EXYNOS5_ARM_COMMON_OPTION);
+-	tmp |= (EXYNOS5_MANUAL_L2RSTDISABLE_CONTROL |
+-		EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN);
++	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
+ 	__raw_writel(tmp, EXYNOS5_ARM_COMMON_OPTION);
  
- 	se_cmd->se_tfo->release_cmd(se_cmd);
- }
-@@ -2455,7 +2453,8 @@ static void target_release_cmd_kref(struct kref *kref)
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
--	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
-+	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
-+			&se_sess->sess_cmd_lock);
- }
- EXPORT_SYMBOL(target_put_sess_cmd);
- 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..7419c02 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -19,6 +19,7 @@
- #include <linux/atomic.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
-+#include <linux/spinlock.h>
- 
- struct kref {
- 	atomic_t refcount;
-@@ -95,6 +96,38 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put_spinlock_irqsave - decrement refcount for object.
-+ * @kref: object.
-+ * @release: pointer to the function that will clean up the object when the
-+ *	     last reference to the object is released.
-+ *	     This pointer is required, and it is not acceptable to pass kfree
-+ *	     in as this function.
-+ * @lock: lock to take in release case
-+ *
-+ * Behaves identical to kref_put with one exception.  If the reference count
-+ * drops to zero, the lock will be taken atomically wrt dropping the reference
-+ * count.  The release function has to call spin_unlock() without _irqrestore.
-+ */
-+static inline int kref_put_spinlock_irqsave(struct kref *kref,
-+		void (*release)(struct kref *kref),
-+		spinlock_t *lock)
-+{
-+	unsigned long flags;
-+
-+	WARN_ON(release == NULL);
-+	if (atomic_add_unless(&kref->refcount, -1, 1))
-+		return 0;
-+	spin_lock_irqsave(lock, flags);
-+	if (atomic_dec_and_test(&kref->refcount)) {
-+		release(kref);
-+		local_irq_restore(flags);
-+		return 1;
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+	return 0;
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
+ 	/*
 -- 
 1.7.10.4
 
