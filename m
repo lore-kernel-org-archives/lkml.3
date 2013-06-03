@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab3FCJl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:41:57 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:46695 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab3FCJlz (ORCPT
+	id S1757057Ab3FCJmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:42:33 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:18450 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755538Ab3FCJma convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:41:55 -0400
+	Mon, 3 Jun 2013 05:42:30 -0400
+Date: Mon, 3 Jun 2013 11:42:05 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+Message-ID: <20130603094204.GC31808@ab42.lan>
+References: <CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
+ <20130508164123.GA10248@ab42.lan>
+ <518AAF31.8080502@wwwdotorg.org>
+ <20130510082521.GA2125@ab42.lan>
+ <51942472.9010402@wwwdotorg.org>
+ <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
+ <20130522142824.GC4789@ab42.lan>
+ <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
+ <20130524115053.GB5203@ab42.lan>
+ <CACRpkdbqzSZefYB2jywkkKDE_Qse83+MDJ+D+UNYnQGFUzwQWQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51AC5827.4040801@st.com>
-References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com>
- <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
- <CAGsJ_4xqGZVL7ZsYx1gpeUVoQan4hn=05_v51Kar78Vdkz0hig@mail.gmail.com> <51AC5827.4040801@st.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 3 Jun 2013 17:41:34 +0800
-Message-ID: <CAGsJ_4wEvAeUy3gLkBCoYPAMmbQEsxT0wLDcA4-aELnRx0ivag@mail.gmail.com>
-Subject: Re: [PATCH v1 1/2] ARM:prima2: move sirfsoc_of_rstc_init to .init_early
-To: srinivas.kandagatla@st.com
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry Song <baohua.song@csr.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdbqzSZefYB2jywkkKDE_Qse83+MDJ+D+UNYnQGFUzwQWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Srinivas,
+On Wed, May 29, 2013 at 02:21:05PM +0200, Linus Walleij wrote:
+> On Fri, May 24, 2013 at 1:50 PM, Christian Ruppert
+> <christian.ruppert@abilis.com> wrote:
+> 
+> > I haven't understood how to associate GPIOs to
+> > other functions, however: Our hardware pin controller makes GPIO pins
+> > available depending on the configuration of the non-GPIO interfaces.
+> > This means that in many configurations, GPIO banks are only partially
+> > available because some pins are used for other purposes. We can't expect
+> > our customers to manually change the pin assignments in the device tree
+> > in order to take this into account for every PCB.
+> 
+> But what is it your customers do when customizing a board then?
 
-2013/6/3 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
-> Hi Barry,
-> Thanks for testing,
-> I think this patch introduced a sequencing issue.
->
-> Just re-looking at the code, is there any reason for this to be
-> init_earlycall? And do a ioremap at that early stage?
->
-> Can't we move it to device_init level function "sirfsoc_mach_init()" at
-> which it will be safe to do a ioremap with all mm setup finished?
->
+Ideally, they just select the pin functions they would like to use on
+their PCB using the phandle mechanism outlined in
+Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt.
+We will prepare the nodes to point to in our SOC .dtsi files. Obviously,
+customers will look at these files, in particular the nodes they point
+to. The simpler these nodes are (and the easier to understand) the
+better.
 
-i think it is ok as actually we wanted the reset controller module
-ready before any users need it. the users include gps, graphics, usb
-and some other peripheral drivers.
-now they are actually initialized after init_machine().
+> Part of the promise of the device tree is to make it easy for downstream
+> users to customize the kernel, *especially* for different boards/systems
+> using the same SoC, for example. It is very much intended as a
+> customization tools for embedded developers getting boards from
+> a chipset vendor.
 
->
-> Thanks,
-> srini
->
-> On 03/06/13 03:19, Barry Song wrote:
->> this broke SiRF by:
->> Uncompressing Linux... done, booting the kernel.
->> [    0.000000] Booting Linux on physical CPU 0x0
->> [    0.000000] Linux version 3.10.0-rc2-00723-gd1a0472-dirty
->> (barry@barry-laptop) (gcc version 4.5.4 20110505 (prerelease)
->> (Ubuntu/Linaro 4.5-2011.5-csr-build) ) #35 SMP PREEMPT Mon Jun 3
->> 09:51:59 CST 2013
->> [    0.000000] CPU: ARMv7 Processor [413fc090] revision 0 (ARMv7), cr=10c53c7d
->> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing
->> instruction cache
->> [    0.000000] Machine: Generic ATLAS6 (Flattened Device Tree), model:
->> CSR SiRFatlas6 Evaluation Board
->> [    0.000000] bootconsole [earlycon0] enabled
->> [    0.000000] Memory policy: ECC disabled, Data cache writealloc
->> [    0.000000] Unable to handle kernel NULL pointer dereference at
->> virtual address 00000000
->> [    0.000000] pgd = c0004000
->> [    0.000000] [00000000] *pgd=00000000
->> [    0.000000] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
->> [    0.000000] Modules linked in:
->> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
->> 3.10.0-rc2-00723-gd1a0472-dirty #35
->> [    0.000000] task: c05cfb40 ti: c05c4000 task.ti: c05c4000
->> [    0.000000] PC is at kmem_cache_alloc+0x2c/0x124
->> [    0.000000] LR is at __get_vm_area_node.clone.26+0x7c/0x190
->
+Yes, this is our understanding as well. This is why we would like to
+avoid confusion through the exposure of obscure number spaces, even
+if a customer is not supposed to modify them.
 
--barry
+Ease of use is also the reason why I added the gpio-base property to the
+original driver: Finding out the global GPIO number to use in
+/sys/class/gpio for a given GPIO of a given bank seems to be a recurring
+headache for our customers and the definition of the bank's base number
+in the device tree is an attempt to improve this situation. I am looking
+forward to the patch you said Alexandre is working on which will
+probably be a much better solution.
+
+> Maybe I don't understand what is meant by changing the pin
+> assignments above ...
+
+Every pin can have exactly one function at a time and is thus assigned
+to that function. Ideally, conflicts are cleanly managed in the pinmux
+driver and an error message is generated so customers can understand why
+something doesn't work and how to fix it.
+
+Greetings,
+  Christian
+
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
