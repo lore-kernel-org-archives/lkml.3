@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab3FCXDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:03:08 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:48826 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758861Ab3FCXDF convert rfc822-to-8bit (ORCPT
+	id S1759203Ab3FCXJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:09:26 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:65152 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758645Ab3FCXJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 19:03:05 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Topic: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Index: AQHOYKwt0WWCuQi7zEiY91yfnSwWB5klEP6A
-Date: Mon, 3 Jun 2013 23:03:01 +0000
-Message-ID: <1370300581.2013.14.camel@dabdike.int.hansenpartnership.com>
-References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
-	 <1370301688-27286-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1370301688-27286-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <CCA35D962D415D449099BF7AF5127F5E@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Mon, 3 Jun 2013 19:09:18 -0400
+Date: Mon, 3 Jun 2013 16:09:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu-refcount: Don't use silly cmpxchg()
+Message-ID: <20130603230913.GE29989@mtj.dyndns.org>
+References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
+ <1370300549-2177-1-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370300549-2177-1-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 16:21 -0700, K. Y. Srinivasan wrote:
-> The standard scsi timeout is not appropriate in some of the environments where
-> Hyper-V is deployed. Set this timeout appropriately for all devices managed
-> by this driver. Further make this a module parameter.
+On Mon, Jun 03, 2013 at 04:02:29PM -0700, Kent Overstreet wrote:
+> The cmpxcgh() was just to ensure the debug check didn't race, which was
+> a bit excessive. The caller is supposed to do the appropriate
+> synchronization, which means percpu_ref_kill() can just do a simple
+> store.
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/scsi/storvsc_drv.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> index 16a3a0c..8d29a95 100644
-> --- a/drivers/scsi/storvsc_drv.c
-> +++ b/drivers/scsi/storvsc_drv.c
-> @@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 * PAGE_SIZE);
->  module_param(storvsc_ringbuffer_size, int, S_IRUGO);
->  MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
->  
-> +/*
-> + * Timeout in seconds for all devices managed by this driver.
-> + */
-> +static int storvsc_timeout = 180;
-> +module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
-> +MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
-> +
->  #define STORVSC_MAX_IO_REQUESTS				128
->  
->  /*
-> @@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
->  
->  	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
->  
-> +	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout * HZ));
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Why does this need to be a module parameter?  It's already a sysfs one
-in the scsi_device class?  Three minutes is also a bit large.  The
-default is 30s with huge cache arrays recommending upping this to
-60s ... you're three times this.
+Applied to percpu/for-3.11.
 
-James
+The only concern I have left now is that we now have bitwise-and and
+test instead of just test in the hot path (get/put) to test whether
+the percpu part is alive.  As x86 has single and-and-test instruction
+which doesn't require an output register, this only adds a single
+instruction but this may lead to more overhead on other architectures.
 
+The and-and-test was added because RCU free needs to have access to
+the percpu pointer after the pointer is killed and can be removed by
+adding another field to struct percpu_ref which remembers the pointer
+separately from the original percpu pointer, which I think is a better
+trade-off given that it makes the hot path lighter and adding another
+pointer field to struct percpu_ref isn't really gonna affect anything.
+Plus, it'd also make the code simpler.
+
+Anyways, it's not a big concern at this point and we can address it
+later.
+
+Thanks a lot, everyone!
+
+-- 
+tejun
