@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759554Ab3FCWSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:18:50 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52789 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759227Ab3FCWSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:18:40 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 3/3] clk: dt: binding for basic divider clock
-Date: Tue, 4 Jun 2013 00:18:32 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <1370281990-15090-4-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1370281990-15090-4-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306040018.33236.heiko@sntech.de>
+	id S1759504Ab3FCWTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:19:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23462 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758678Ab3FCWMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 18:12:15 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RBhR3_ey-McA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=54Z1rsfS-xYA:10 a=Op-mwl0xAAAA:8 a=VwQbUJbxAAAA:8 a=M5GUcnROAAAA:8 a=vmLDa1wCAAAA:8 a=KmqCZUEVAza2QQZapJAA:9 a=d4CUUju0HPYA:10 a=9RRF0ttvEvMA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130603221156.305216649@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Jun 2013 18:10:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [24/65] mwifiex: fix setting of multicast filter
+References: <20130603221016.243553628@goodmis.org>
+Content-Disposition: inline; filename=0024-mwifiex-fix-setting-of-multicast-filter.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 3. Juni 2013, 19:53:10 schrieb Mike Turquette:
-> Devicetree binding for the basic clock divider, plus the setup function
-> to register the clock.  Based on the existing fixed-clock binding.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> ---
+3.6.11.5 stable review patch.
+If anyone has any objections, please let me know.
 
-[...]
+------------------
 
-> +/**
-> + * of_div_clk_setup() - Setup function for simple div rate clock
-> + */
-> +void of_divider_clk_setup(struct device_node *node)
-> +{
-> +	struct clk *clk;
-> +	const char *clk_name = node->name;
-> +	void __iomem *reg;
-> +	const char *parent_name;
-> +	u8 clk_divider_flags = 0;
-> +	u8 mask = 0;
-> +	u8 shift = 0;
+From: Daniel Drake <dsd@laptop.org>
 
-in the mux-clock these 3 are unsigned long and u32 types ... what is correct?
+[ Upstream commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 ]
+
+A small bug in this code was causing the ALLMULTI filter to be set
+when in fact we were just wanting to program a selective multicast list
+to the hardware.
+
+Fix that bug and remove a redundant if condition in the code that
+follows.
+
+This fixes wakeup behaviour when multicast WOL is enabled. Previously,
+all multicast packets would wake up the system. Now, only those that the
+host intended to receive trigger wakeups.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Cc: <stable@vger.kernel.org>
+Acked-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
+index fb21360..667598e 100644
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -106,7 +106,7 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
+ 	} else {
+ 		/* Multicast */
+ 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
+-		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
++		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
+ 			dev_dbg(priv->adapter->dev,
+ 				"info: Enabling All Multicast!\n");
+ 			priv->curr_pkt_filter |=
+@@ -118,20 +118,11 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
+ 				dev_dbg(priv->adapter->dev,
+ 					"info: Set multicast list=%d\n",
+ 				       mcast_list->num_multicast_addr);
+-				/* Set multicast addresses to firmware */
+-				if (old_pkt_filter == priv->curr_pkt_filter) {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				} else {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				}
++				/* Send multicast addresses to firmware */
++				ret = mwifiex_send_cmd_async(priv,
++					HostCmd_CMD_MAC_MULTICAST_ADR,
++					HostCmd_ACT_GEN_SET, 0,
++					mcast_list);
+ 			}
+ 		}
+ 	}
+-- 
+1.7.10.4
 
 
-> +	struct clk_div_table *table;
-> +
-> +	of_property_read_string(node, "clock-output-names", &clk_name);
-> +
-> +	parent_name = of_clk_get_parent_name(node, 0);
-> +
-> +	reg = of_iomap(node, 0);
-> +
-> +	if (of_property_read_u8(node, "mask", &mask)) {
-> +		pr_err("%s: missing mask property for %s\n", __func__, node->name);
-> +		return;
-> +	}
-> +
-> +	if (of_property_read_u8(node, "shift", &shift))
-> +		pr_debug("%s: missing shift property defaults to zero for %s\n",
-> +				__func__, node->name);
-
-same here ... mux reads u32
-
-> +	if (of_property_read_bool(node, "index_one"))
-> +		clk_divider_flags |= CLK_DIVIDER_ONE_BASED;
-> +
-> +	if (of_property_read_bool(node, "index_power_of_two"))
-> +		clk_divider_flags |= CLK_DIVIDER_POWER_OF_TWO;
-> +
-> +	if (of_property_read_bool(node, "index_allow_zero"))
-> +		clk_divider_flags |= CLK_DIVIDER_ALLOW_ZERO;
-> +
-> +	table = of_clk_get_div_table(node);
-> +	if (IS_ERR(table))
-> +		return;
-> +
-> +	clk = clk_register_divider_table(NULL, clk_name,
-> +			parent_name, 0,
-> +			reg, shift, mask,
-> +			clk_divider_flags, table,
-> +			NULL);
-
-this causes trouble, as the divider clock code above still requires a width 
-instead of a mask. I remember talk about this going to change separately, but 
-couldn't find anything of the sort in linux-next.
-
-
-
-> +
-> +	if (!IS_ERR(clk))
-> +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-> +}
-> +EXPORT_SYMBOL_GPL(of_divider_clk_setup);
-> +CLK_OF_DECLARE(divider_clk, "divider-clock", of_divider_clk_setup);
-> +#endif
