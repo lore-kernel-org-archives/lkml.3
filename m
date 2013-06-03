@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795Ab3FCN2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:28:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61314 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3FCN2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:28:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Dave Martin <dave.martin@linaro.org>, arm@kernel.org
-Subject: Re: [PATCH] drivers/bus: arm-cci: fix combined ARMv6+v7 build
-Date: Mon, 03 Jun 2013 15:28:07 +0200
-Message-ID: <9496903.tJWqnjnUVv@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.03.1306030922380.1200@syhkavp.arg>
-References: <2485806.Uv8bUctxav@wuerfel> <alpine.LFD.2.03.1306030922380.1200@syhkavp.arg>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ZCjLwxSTeCgc4xKndIbR6561TGl5OyP/LydZ2Yhbpky
- 2K/sJpXUVh6HBqq8l/F9SCGW0eyk0ECKn9yVB2Xc2veLAXseKb
- 81oeT+oEeMfX0hT6dtQMKIXFTknoI2u0sA7E4uxBIifL/qKaEX
- HagO3xGxydIdZIZkTf1C3K8GfGQxZ+quhnAJKIgXeGHfBp9QV9
- gLw99h2Y1326vzMJn6FuXE3STHj7liUANDtOTWj374D5Cl1/pK
- xEtuyPLc8lejlE0h0XfHxGp/9WaGUo0zNcKIWIWdJS1ixSR790
- NnajkQp2AZ1FTqUXloNyfTr/Nl4w1jQsAjUsKX3iEgV/DRHJJ/
- FF0POeWOja3PrjWqu1vo=
+	id S1757805Ab3FCNdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:33:06 -0400
+Received: from jdl.com ([208.123.74.7]:45576 "EHLO jdl.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754755Ab3FCNdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:33:05 -0400
+Message-Id: <E1UjUsY-0008Td-Bj@jdl.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: David Gibson <david@gibson.dropbear.id.au>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, mmarek@suse.cz, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, linux-kbuild@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2] dtc: ensure #line directives don't consume data from the next line
+In-reply-to: <1370025184-23808-1-git-send-email-swarren@wwwdotorg.org>
+References: <1370025184-23808-1-git-send-email-swarren@wwwdotorg.org>
+Comments: In-reply-to Stephen Warren <swarren@wwwdotorg.org>
+   message dated "Fri, 31 May 2013 12:33:04 -0600."
+Date: Mon, 03 Jun 2013 08:32:54 -0500
+From: Jon Loeliger <jdl@jdl.com>
+X-Spam-Score: 0.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 June 2013 09:23:58 Nicolas Pitre wrote:
-> On Mon, 3 Jun 2013, Arnd Bergmann wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> > When we build a kernel with support for both ARMv6 and ARMv7,
-> > gas is trying to be helpful by pointing out that the arm-cci
-> > driver would not work on ARMv6:
-> > 
-> > /tmp/ccu1LDeU.s: Assembler messages:
-> > /tmp/ccu1LDeU.s:450: Error: selected processor does not support ARM mode `wfi '
-> > /tmp/ccu1LDeU.s:451: Error: selected processor does not support ARM mode `wfe '
-> > make[4]: *** [drivers/bus/arm-cci.o] Error 1
-> > 
-> > We know that the driver will only be used on ARMv7, hence we
-> > can annotate the inline assembly listing to allow those instructions.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Nicolas Pitre <nico@linaro.org>
-> > Cc: Dave Martin <dave.martin@linaro.org>
+> Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
+> could match line-break characters. If the #line directive did not contain
+> the optional flags field at the end, this could cause any integer data on
+> the next line to be consumed as part of the #line directive parsing. This
+> could cause syntax errors (i.e. #line parsing consuming the leading 0
+> from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
+> which is a syntax error), or invalid compilation results (i.e. simply
+> consuming literal 1234 as part of the #line processing, thus removing it
+> from the cell data).
 > 
-> Acked-by: Nicolas Pitre <nico@linaro.org>
+> Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+> 
+> Convert all instances of {WS}, even though the other instances should be
+> irrelevant for any well-formed #line directive. This is done for
+> consistency and ultimate safety.
+> 
+> Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v2: Convert all instances of {WS} in the regex.
 
-Thanks
+Applied.
 
-> Since this code is merged into ARM-SOC, I assume you'll take care of 
-> this patch?
+Thanks!
 
-Yes, I applied it on top of the next/soc branch now.
-
-	Arnd
+jdl
