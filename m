@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3FCKss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:48:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57270 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756110Ab3FCKsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:48:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
-Date: Mon, 03 Jun 2013 12:57:47 +0200
-Message-ID: <2413427.Abjbfkms0Z@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com>
-References: <51A7BFA6.3070800@semaphore.gr> <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com> <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com>
+	id S1756792Ab3FCKtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:49:51 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:34524 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755219Ab3FCKtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 06:49:49 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <000901ce6039$7071c670$51555350$@samsung.com>
+References: <000901ce6039$7071c670$51555350$@samsung.com>
+Date: Mon, 3 Jun 2013 13:49:49 +0300
+Message-ID: <CAHp75Vdrhi=sX_MxeT6oqW6s8bbxqWr+rw4PsCYSepw+yffXWg@mail.gmail.com>
+Subject: Re: [PATCH V2] power: replace strict_strtoul() with kstrtoul()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Anton Vorontsov <cbou@mail.ru>, Anton Vorontsov <avorontsov@ru.mvista.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 03, 2013 12:25:02 PM Viresh Kumar wrote:
-> Sent half written mail.. sorry.. will continue from where I left.
-> 
-> On 3 June 2013 12:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> 
-> > So, obviously the calculations aren't the same..
-> 
-> Now, this is how I understood these two different variables:
-> - cpuinfo.max_freq: maximum frequency (in kHz) which is
-> supported by this CPU
-> - policy->max: Maximum frequency forced by user or governor
-> 
-> When somebody sets policy->max, he expects cpufreq core to
-> use the range between min and max as the slope cpufreq core
-> has and adjust its frequencies accordingly..
-> 
-> Don't know if I am right or wrong :(
+On Mon, Jun 3, 2013 at 12:05 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The usage of strict_strtoul() is not preferred, because
+> strict_strtoul() is obsolete. Thus, kstrtoul() should be
+> used.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-The reality is that the set of frequencies to use is constant and changing
-policy->max doesn't change that set.  There are just fewer frequencies the
-governor can choose from if policy->max is below cpuinfo.max_freq.
+Looks better.
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-The question is if we want policy->max to re-scale them effectively (i.e. to
-change weights so that the maximum load maps to the highest frequency available
-at the moment) or if we want policy->max to work as a cap (i.e. to map all
-loads above certain value to the maximum frequency available at the moment, so
-that the criteria for selecting the lower frequencies don't change).  In my
-opinion the second option is better, because it means "OK, we can't use some
-high frequencies, but let's not hurt performance for the loads that wouldn't
-require them anyway".  Otherwise, we'll effectively throttle all loads and
-that not only causes performance to drop, but also causes more energy to be
-used overall.
+> ---
+> Changes since v1:
+> - Used return code from kstrtoul().
+>
+>  drivers/power/ab8500_fg.c        |    6 +++---
+>  drivers/power/pcf50633-charger.c |    8 ++++----
+>  2 files changed, 7 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+> index c5391f5..308e511 100644
+> --- a/drivers/power/ab8500_fg.c
+> +++ b/drivers/power/ab8500_fg.c
+> @@ -2465,9 +2465,9 @@ static ssize_t charge_full_store(struct ab8500_fg *di, const char *buf,
+>                                  size_t count)
+>  {
+>         unsigned long charge_full;
+> -       ssize_t ret = -EINVAL;
+> +       ssize_t ret;
+>
+> -       ret = strict_strtoul(buf, 10, &charge_full);
+> +       ret = kstrtoul(buf, 10, &charge_full);
+>
+>         dev_dbg(di->dev, "Ret %zd charge_full %lu", ret, charge_full);
+>
+> @@ -2489,7 +2489,7 @@ static ssize_t charge_now_store(struct ab8500_fg *di, const char *buf,
+>         unsigned long charge_now;
+>         ssize_t ret;
+>
+> -       ret = strict_strtoul(buf, 10, &charge_now);
+> +       ret = kstrtoul(buf, 10, &charge_now);
+>
+>         dev_dbg(di->dev, "Ret %zd charge_now %lu was %d",
+>                 ret, charge_now, di->bat_cap.prev_mah);
+> diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
+> index 17fd77f..771c4f0 100644
+> --- a/drivers/power/pcf50633-charger.c
+> +++ b/drivers/power/pcf50633-charger.c
+> @@ -191,9 +191,9 @@ static ssize_t set_usblim(struct device *dev,
+>         unsigned long ma;
+>         int ret;
+>
+> -       ret = strict_strtoul(buf, 10, &ma);
+> +       ret = kstrtoul(buf, 10, &ma);
+>         if (ret)
+> -               return -EINVAL;
+> +               return ret;
+>
+>         pcf50633_mbc_usb_curlim_set(mbc->pcf, ma);
+>
+> @@ -228,9 +228,9 @@ static ssize_t set_chglim(struct device *dev,
+>         if (!mbc->pcf->pdata->charger_reference_current_ma)
+>                 return -ENODEV;
+>
+> -       ret = strict_strtoul(buf, 10, &ma);
+> +       ret = kstrtoul(buf, 10, &ma);
+>         if (ret)
+> -               return -EINVAL;
+> +               return ret;
+>
+>         mbcc5 = (ma << 8) / mbc->pcf->pdata->charger_reference_current_ma;
+>         if (mbcc5 > 255)
+> --
+> 1.7.10.4
+>
+>
 
-Thanks,
-Rafael
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--
+With Best Regards,
+Andy Shevchenko
