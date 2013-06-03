@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3FCKAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:00:38 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45505 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab3FCKA0 (ORCPT
+	id S1756750Ab3FCKEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:04:01 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:43501 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab3FCKD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:00:26 -0400
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: tytso@mit.edu, adilger.kernel@dilger.ca
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ext4: add sanity checks in __ext4_check_dir_entry
-Date: Mon,  3 Jun 2013 13:00:16 +0300
-Message-Id: <1370253616-8173-3-git-send-email-ruslan.bilovol@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370253616-8173-1-git-send-email-ruslan.bilovol@ti.com>
-References: <1370253616-8173-1-git-send-email-ruslan.bilovol@ti.com>
+	Mon, 3 Jun 2013 06:03:59 -0400
+Date: Mon, 3 Jun 2013 11:03:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Srinidhi Kasagar'" <srinidhi.kasagar@stericsson.com>,
+        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
+Subject: Re: [PATCH V2] mfd: replace strict_strtoul() with kstrtoul()
+Message-ID: <20130603100354.GE3370@gmail.com>
+References: <000801ce6039$526d9a00$f748ce00$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000801ce6039$526d9a00$f748ce00$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added checks for NULL before dereferencing some pointers
+> The usage of strict_strtoul() is not preferred, because
+> strict_strtoul() is obsolete. Thus, kstrtoul() should be
+> used.
 
-This fixes next issue:
+Andy,
 
-[ 1531.530609] Unable to handle kernel NULL pointer dereference at virtual address 00000004
-[ 1531.543151] pgd = d6068000
-[ 1531.546112] [00000004] *pgd=00000000
-[ 1531.550109] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[ 1531.555816] Modules linked in: rproc_drm(O) tf_driver(O) gps_drv wl18xx(O) wl12xx(O) wlcore(O) mac80211(O) cfg80211(O) pvrsrvkm_sgx540_120(O) compat(O)
-[ 1531.571105] CPU: 0    Tainted: G        W  O  (3.4.34 #1)
-[ 1531.576934] PC is at __ext4_check_dir_entry+0x24/0x1a4
-[ 1531.582550] LR is at ext4_readdir+0x270/0x7fc
-[ 1531.587249] pc : [<c017a788>]    lr : [<c017ab78>]    psr: 80000113
-[ 1531.587249] sp : d6051e50  ip : 00000000  fp : d6051eb4
-[ 1531.599700] r10: d4f0fdb0  r9 : c06a5c54  r8 : 000000d5
-[ 1531.605377] r7 : d4c54540  r6 : d4634948  r5 : 00000000  r4 : 00000000
-[ 1531.612396] r3 : d4634948  r2 : d4f0fdb0  r1 : 000000d5  r0 : c06a5c54
-[ 1531.619476] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[ 1531.627166] Control: 10c5387d  Table: 9606804a  DAC: 00000015
-[...]
-[ 1532.654876] Backtrace:
-[ 1532.657653] [<c017a764>] (__ext4_check_dir_entry+0x0/0x1a4) from [<c017ab78>] (ext4_readdir+0x270/0x7fc)
-[ 1532.667968] [<c017a908>] (ext4_readdir+0x0/0x7fc) from [<c0124860>] (vfs_readdir+0x9c/0xc0)
-[ 1532.677062] [<c01247c4>] (vfs_readdir+0x0/0xc0) from [<c0124a0c>] (sys_getdents64+0x68/0xc0)
-[ 1532.686248] [<c01249a4>] (sys_getdents64+0x0/0xc0) from [<c0013680>] (ret_fast_syscall+0x0/0x30)
-[ 1532.695800]  r7:000000d9 r6:00000000 r5:416d4168 r4:416d4158
-[ 1532.702270] Code: e1a07003 e1a09000 e1a08001 e59b3008 (e1dc40b4)
+Would you mind re-reviewing and providing the appropriate *-by please?
 
-Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
----
- fs/ext4/dir.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+If you're happy I'll take the patch.
 
-diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
-index f8d56e4..cf0875b 100644
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -68,8 +68,12 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
- 			   unsigned int offset)
- {
- 	const char *error_msg = NULL;
--	const int rlen = ext4_rec_len_from_disk(de->rec_len,
--						dir->i_sb->s_blocksize);
-+	int rlen;
-+
-+	if (!de || !bh || !dir)
-+		return 1;
-+
-+	rlen = ext4_rec_len_from_disk(de->rec_len, dir->i_sb->s_blocksize);
- 
- 	if (unlikely(rlen < EXT4_DIR_REC_LEN(1)))
- 		error_msg = "rec_len is smaller than minimal";
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
