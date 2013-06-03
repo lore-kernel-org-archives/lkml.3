@@ -1,193 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3FCUMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:12:55 -0400
-Received: from evergreen.ssec.wisc.edu ([128.104.108.253]:35097 "EHLO
-	evergreen.ssec.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab3FCUMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:12:52 -0400
-X-Greylist: delayed 1367 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jun 2013 16:12:52 EDT
-Date: Mon, 3 Jun 2013 14:50:03 -0500
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] Re: Repeated fork() causes SLAB to grow without bound
-Message-ID: <20130603195003.GA31275@evergreen.ssec.wisc.edu>
-Reply-To: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Mail-Followup-To: Rik van Riel <riel@redhat.com>,
-	Michel Lespinasse <walken@google.com>,
-	Hugh Dickins <hughd@google.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu> <502D42E5.7090403@redhat.com> <20120818000312.GA4262@evergreen.ssec.wisc.edu> <502F100A.1080401@redhat.com> <alpine.LSU.2.00.1208200032450.24855@eggly.anvils> <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com> <20120822032057.GA30871@google.com> <50345232.4090002@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50345232.4090002@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1756780Ab3FCUP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:15:56 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:51644 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753676Ab3FCUPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 16:15:53 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 2/3] clk: dt: binding for basic multiplexor clock
+Date: Mon, 3 Jun 2013 22:15:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Mike Turquette <mturquette@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <201306032133.20039.heiko@sntech.de> <20130603200722.6077.85426@quantum>
+In-Reply-To: <20130603200722.6077.85426@quantum>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306032215.45983.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 11:29:54PM -0400, Rik van Riel wrote:
-> On 08/21/2012 11:20 PM, Michel Lespinasse wrote:
-> >On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
-> >>Instead of adding an atomic count for page references, we could limit
-> >>the anon_vma stacking depth. In fork, we would only clone anon_vmas
-> >>that have a low enough generation count. I think that's not great
-> >>(adds a special case for the deep-fork-without-exec behavior), but
-> >>still better than the atomic page reference counter.
-> >
-> >Here is an attached patch to demonstrate the idea.
-> >
-> >anon_vma_clone() is modified to return the length of the existing same_vma
-> >anon vma chain, and we create a new anon_vma in the child only on the first
-> >fork (this could be tweaked to allow up to a set number of forks, but
-> >I think the first fork would cover all the common forking server cases).
+Am Montag, 3. Juni 2013, 22:07:22 schrieb Mike Turquette:
+> Quoting Heiko Stübner (2013-06-03 12:33:19)
 > 
-> I suspect we need 2 or 3.
+> > Hi Mike,
+> > 
+> > I think it's a multiplexEr clock in the patch title, and see below
 > 
-> Some forking servers first fork off one child, and have
-> the original parent exit, in order to "background the server".
-> That first child then becomes the parent to the real child
-> processes that do the work.
+> Doh, you are right.  But "xor" is so much cooler looking than "xer"...
 > 
-> It is conceivable that we might need an extra level for
-> processes that do something special with privilege dropping,
-> namespace changing, etc...
+> > Am Montag, 3. Juni 2013, 19:53:09 schrieb Mike Turquette:
+> > > Device Tree binding for the basic clock multiplexor, plus the setup
+> > > function to register the clock.  Based on the existing fixed-clock
+> > > binding.
+> > > 
+> > > Also relocate declaration of of_fixed_factor_clk_setup to keep things
+> > > tidy.
+> > > 
+> > > Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> > 
+> > [...]
+> > 
+> > > +
+> > > +     reg = of_iomap(node, 0);
+> > > +     pr_err("%s: reg is 0x%p\n", __func__, reg);
+> > > +
+> > > +     if (of_property_read_u32(node, "mask", &mask)) {
+> > > +             pr_err("%s: missing mask property for %s\n", __func__,
+> > > node->name); +             return;
+> > > +     }
+> > > +
+> > > +     if (of_property_read_u32(node, "shift", &shift))
+> > > +             pr_debug("%s: missing shift property defaults to zero for
+> > > %s\n", +                             __func__, node->name);
+> > > +
+> > > +     if (of_property_read_bool(node, "index_one"))
+> > > +             clk_mux_flags |= CLK_MUX_INDEX_ONE;
+> > > +
+> > > +     clk = clk_register_mux_table(NULL, clk_name, parent_names,
+> > > num_parents, +                     0, reg, 0, mask, clk_mux_flags,
+> > > 
+> >                       ^- should probably be shift
+> > 
+> > Otherwise looks cool and I'm currently trying it with my Rockchip code.
 > 
-> Even setting the threshold to 5 should be totally harmless,
-> since the problem does not kick in until we have really
-> long chains, like in Dan's bug report.
+> Right again.  My test platform seems to not shift the mask at all so
+> this did not cause a visible bug for me.
 
-I have been running with Michel's patch (with the threshold set to 5)
-for quite a few months now and can confirm that it does indeed solve
-my problem.  I am not a kernel developer, so I would appreciate if one
-of you could push this into the kernel tree.
+I'm currently converting my rockchip stuff to it, as it would solve a lot of 
+problems with the numerous clock types I'm defining just to put the shift and 
+mask values somewhere.
 
-NOTE: I have attached Michel's patch with "(length > 1)" modified to
-"(length > 5)" and added a "Tested-by:".
-
----
-
-On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
-> Instead of adding an atomic count for page references, we could limit
-> the anon_vma stacking depth. In fork, we would only clone anon_vmas
-> that have a low enough generation count. I think that's not great
-> (adds a special case for the deep-fork-without-exec behavior), but
-> still better than the atomic page reference counter.
-
-Here is an attached patch to demonstrate the idea.
-
-anon_vma_clone() is modified to return the length of the existing same_vma
-anon vma chain, and we create a new anon_vma in the child only on the first
-fork (this could be tweaked to allow up to a set number of forks, but
-I think the first fork would cover all the common forking server cases).
-
-Signed-off-by: Michel Lespinasse <walken@google.com>
-Tested-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
----
- mm/mmap.c |    6 +++---
- mm/rmap.c |   18 ++++++++++++++----
- 2 files changed, 17 insertions(+), 7 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 3edfcdfa42d9..e14b19a838cb 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -539,7 +539,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
--			if (anon_vma_clone(importer, exporter))
-+			if (anon_vma_clone(importer, exporter) < 0)
- 				return -ENOMEM;
- 			importer->anon_vma = exporter->anon_vma;
- 		}
-@@ -1988,7 +1988,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
- 	}
- 	vma_set_policy(new, pol);
- 
--	if (anon_vma_clone(new, vma))
-+	if (anon_vma_clone(new, vma) < 0)
- 		goto out_free_mpol;
- 
- 	if (new->vm_file) {
-@@ -2409,7 +2409,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 			if (IS_ERR(pol))
- 				goto out_free_vma;
- 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
--			if (anon_vma_clone(new_vma, vma))
-+			if (anon_vma_clone(new_vma, vma) < 0)
- 				goto out_free_mempol;
- 			vma_set_policy(new_vma, pol);
- 			new_vma->vm_start = addr;
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 0f3b7cda2a24..ba8a726aaee6 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -238,12 +238,13 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
- 
- /*
-  * Attach the anon_vmas from src to dst.
-- * Returns 0 on success, -ENOMEM on failure.
-+ * Returns length of the anon_vma chain on success, -ENOMEM on failure.
-  */
- int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- {
- 	struct anon_vma_chain *avc, *pavc;
- 	struct anon_vma *root = NULL;
-+	int length = 0;
- 
- 	list_for_each_entry_reverse(pavc, &src->anon_vma_chain, same_vma) {
- 		struct anon_vma *anon_vma;
-@@ -259,9 +260,10 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- 		anon_vma = pavc->anon_vma;
- 		root = lock_anon_vma_root(root, anon_vma);
- 		anon_vma_chain_link(dst, avc, anon_vma);
-+		length++;
- 	}
- 	unlock_anon_vma_root(root);
--	return 0;
-+	return length;
- 
-  enomem_failure:
- 	unlink_anon_vmas(dst);
-@@ -322,6 +324,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
-+	int length;
- 
- 	/* Don't bother if the parent process has no anon_vma here. */
- 	if (!pvma->anon_vma)
-@@ -331,10 +334,17 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
- 	 */
--	if (anon_vma_clone(vma, pvma))
-+	length = anon_vma_clone(vma, pvma);
-+	if (length < 0)
- 		return -ENOMEM;
-+	else if (length > 5)
-+		return 0;
- 
--	/* Then add our own anon_vma. */
-+	/*
-+	 * Then add our own anon_vma. We do this only on the first fork after
-+	 * the anon_vma is created, as we don't want the same_vma chain to
-+	 * grow arbitrarily large.
-+	 */
- 	anon_vma = anon_vma_alloc();
- 	if (!anon_vma)
- 		goto out_error;
-
--- 
-Daniel K. Forrest		Space Science and
-dan.forrest@ssec.wisc.edu	Engineering Center
-(608) 890 - 0558		University of Wisconsin, Madison
+So lets see if anything more turns up ;-)
