@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759075Ab3FCXNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:13:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41089 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab3FCXNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 19:13:04 -0400
-Date: Mon, 3 Jun 2013 16:13:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: rtc-linux@googlegroups.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: Re: [PATCH] rtc: rtc-twl: ensure IRQ is wakeup enabled
-Message-Id: <20130603161303.55e9da049744656541e9048f@linux-foundation.org>
-In-Reply-To: <1370039827-25033-1-git-send-email-khilman@linaro.org>
-References: <1370039827-25033-1-git-send-email-khilman@linaro.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1759150Ab3FCXSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:18:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758747Ab3FCXSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 19:18:32 -0400
+Message-ID: <1370301501.19018.9.camel@localhost>
+Subject: Re: [RFC PATCH 2/2] SELinux: cache inode checks inside struct inode
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: sds@tycho.nsa.gov, linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
+Date: Mon, 03 Jun 2013 19:18:21 -0400
+In-Reply-To: <alpine.LFD.2.03.1306040628420.25797@pixel.linux-foundation.org>
+References: <1370285941-18367-1-git-send-email-eparis@redhat.com>
+	 <1370285941-18367-2-git-send-email-eparis@redhat.com>
+	 <alpine.LFD.2.03.1306040628420.25797@pixel.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013 15:37:07 -0700 Kevin Hilman <khilman@linaro.org> wrote:
+On Tue, 2013-06-04 at 06:31 +0900, Linus Torvalds wrote:
+> 
+> 
+> On Mon, 3 Jun 2013, Eric Paris wrote:
+> >  
+> >  #ifdef CONFIG_SECURITY
+> > +     seqcount_t              i_security_seqcount;
+> > +     u32                     i_last_task_sid;
+> > +     u32                     i_last_granting;
+> > +     u32                     i_last_perms;
+> > +     u32                     i_audit_allow;
+> >       void                    *i_security;
+> >  #endif
+> 
+> This is much too big. I was really hoping for "another word that the 
+> security layer can use" or similar.
 
-> Currently, the RTC IRQ is never wakeup-enabled so is not capable of
-> bringing the system out of suspend.
-> 
-> On OMAP platforms, we have gotten by without this because the TWL RTC
-> is on an I2C-connected chip which is capable of waking up the OMAP via
-> the IO ring when the OMAP is in low-power states.
-> 
-> However, if the OMAP suspends without hitting the low-power states
-> (and the IO ring is not enabled), RTC wakeups will not work because
-> the IRQ is not wakeup enabled.
-> 
-> To fix, ensure the RTC IRQ is wakeup enabled whenever the RTC alarm is
-> set.
-> 
-> --- a/drivers/rtc/rtc-twl.c
-> +++ b/drivers/rtc/rtc-twl.c
-> @@ -213,12 +213,24 @@ static int mask_rtc_irq_bit(unsigned char bit)
->  
->  static int twl_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
->  {
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	int irq = platform_get_irq(pdev, 0);
-> +	static bool twl_rtc_wake_enabled;
->  	int ret;
->  
-> -	if (enabled)
-> +	if (enabled) {
->  		ret = set_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
-> -	else
-> +		if (device_can_wakeup(dev) && !twl_rtc_wake_enabled) {
-> +			enable_irq_wake(irq);
-> +			twl_rtc_wake_enabled = true;
-> +		}
-> +	} else {
->  		ret = mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
-> +		if (twl_rtc_wake_enabled) {
-> +			disable_irq_wake(irq);
-> +			twl_rtc_wake_enabled = false;
-> +		}
-> +	}
+Not sure how that can work   :-(
 
-Why do we need this (slightly racy) logic with twl_rtc_wake_enabled? 
-Other drivers don't do this.
+> Something this big would be acceptable if it would be a *generic* security 
+> cache, and others could use it too, and would avoid ever actually calling 
+> into any security layer at all (ie we could do the checks entirely at the 
+> VFS layer). Then it would be fine. But for just the fact that SELinux is 
+> too slow? No.
 
-Should we test device_may_wakeup() befre running disable_irq_wake()? 
-Most drivers seem to do this, but it's all a bit foggy.
+There is nothing about it that can't be VFS-erized.  The fields are:
+
+readlockless way to get the data
+which task was allowed
+which perms were allowed
+what generation of security policy allowed it
+what perms should be forced to call security hook anyway
+
+defining "perms" from a VFS PoV is hard.
+
+doing any of this with 'stacking' is hard.  Then again, I'm only so so
+on the value of stacking.  I've waffled a few times...
+
+I can do it entirely inside selinux, but we are still going to have the
+cache hit you were originally seeing as we dereference isec to get the
+info....
+
 
