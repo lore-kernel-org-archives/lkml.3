@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab3FCSSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:18:45 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:34936 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971Ab3FCSSm (ORCPT
+	id S1759610Ab3FCSTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:19:36 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51128 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757057Ab3FCSTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:18:42 -0400
+	Mon, 3 Jun 2013 14:19:34 -0400
+Message-ID: <51ACDE33.6060000@linaro.org>
+Date: Mon, 03 Jun 2013 11:19:31 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130603174847.GA11111@kroah.com>
-References: <1370280225-27479-1-git-send-email-benchan@chromium.org> <20130603174847.GA11111@kroah.com>
-From: Ben Chan <benchan@chromium.org>
-Date: Mon, 3 Jun 2013 11:18:21 -0700
-X-Google-Sender-Auth: i2pbs4yWRYoVPnWE3rz5RIBQPt8
-Message-ID: <CAC5Y2nOcGdF=d6X-9ZimYMkfJD-spw6D81ZdB1o7ra0_05hkMg@mail.gmail.com>
-Subject: Re: [PATCH] staging: gdm72xx: WIMAX_GDM72XX should depend on either
- USB or MMC
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sage Ahn <syahn@gctsemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: srinivas.kandagatla@st.com
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [RFC] clocksource: Add clocksource drivers menu.
+References: <1369994378-28163-1-git-send-email-srinivas.kandagatla@st.com> <51A8EE85.9030405@linaro.org> <51AC446D.5070503@st.com>
+In-Reply-To: <51AC446D.5070503@st.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I meant to send the revised patch but got the wrong file.
-
-I'll add the Reported-by field.
-
-Thanks,
-Ben
-
-On Mon, Jun 3, 2013 at 10:48 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 03, 2013 at 10:23:45AM -0700, Ben Chan wrote:
->> The gdm72xx driver needs to have either the USB or SDIO implementation
->> enabled to provide useful functionalities, so the driver should depend
->> on either USB or MMC.
+On 06/03/2013 12:23 AM, Srinivas KANDAGATLA wrote:
+> On 31/05/13 19:40, John Stultz wrote:
+>> And only just now did I notice that there are user-prompts in the
+>> drivers/clocksource/Kconfig.
 >>
->> Signed-off-by: Ben Chan <benchan@chromium.org>
->> Cc: Sage Ahn <syahn@gctsemi.com>
->> ---
->>  drivers/staging/gdm72xx/Kconfig | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> I suspect the platform support options can safely select the proper
+>> clocksource config options without requiring the user to configure it.
+>> For the most part this is the case, even so folks still introduced some
+>> unnecessary clocksource config options (unnecessary as they don't prompt
+>> the user, default to y and depend on another config).
 >>
->> diff --git a/drivers/staging/gdm72xx/Kconfig b/drivers/staging/gdm72xx/Kconfig
->> index 6905913..8af0dd4 100644
->> --- a/drivers/staging/gdm72xx/Kconfig
->> +++ b/drivers/staging/gdm72xx/Kconfig
->> @@ -4,7 +4,7 @@
+>> It looks like only: CLKSRC_DBX500_PRCMU &
+>> CLKSRC_DBX500_PRCMU_SCHED_CLOCK prompt the user right now.
 >>
->>  menuconfig WIMAX_GDM72XX
->>       tristate "GCT GDM72xx WiMAX support"
->> -     depends on NET
->> +     depends on NET && (USB || MMC)
+>> Can you explain why its necessary the user has to be prompted here?
+> The only reason is to do with "how we present *SCHED_CLOCK options"?
 >
-> Alan Stern already told you how this would not solve the problem, why
-> did you resend it to me again?
->
-> And you forgot the "Reported-by:" line above, giving proper credit to
-> the person who told you about this problem.
->
-> Please fix both of them and resend.
->
-> thanks,
->
-> greg k-h
+> If we make the *SCHED_CLOCK options default without prompts, then we do
+> not need a menu. These options can be selected at platform level
+> Kconfigs. We could possible cleanup the existing prompts.
+
+Right. This is what I'm asking for. Since there are only two options 
+that prompt the user, I'm asking if there is a reason the user needs to 
+be prompted.
+
+I not, we can just remove the prompts and simplify the config.
+
+If there is a valid reason to prompt the user, then we may need to add a 
+menu, but I'd probably prefer we add the option in the platform menu, 
+rather then generate a new driver menu.
+
+thanks
+-john
+
