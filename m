@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759145Ab3FCP7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:59:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50242 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759120Ab3FCP7T (ORCPT
+	id S1759171Ab3FCP7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:59:48 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:45604 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759090Ab3FCP7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:59:19 -0400
-Date: Mon, 3 Jun 2013 16:58:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130603155855.GQ31367@sirena.org.uk>
+	Mon, 3 Jun 2013 11:59:45 -0400
+Message-ID: <51ACBD6A.1030304@candelatech.com>
+Date: Mon, 03 Jun 2013 08:59:38 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kaF1vgn83Aa7CiXN"
-Content-Disposition: inline
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regulator fixes for v3.10
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Joe Lawrence <joe.lawrence@stratus.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: Please add to stable:  module: don't unlink the module until
+ we've removed all exposure.
+References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2013 07:17 AM, Joe Lawrence wrote:
 
---kaF1vgn83Aa7CiXN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>>> Hi Rusty,
+>>>
+>>> I had pointed Ben (offlist) to that bugzilla entry without realizing
+>>> there were other earlier related fixes in this space.  Re-viewing bz-
+>>> 58011, it looks like it was opened against 3.8.12, while Ben and myself
+>>> had encountered module loading problems in versions 3.9 and
+>>> 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
+>>> a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
+>>> kobject_put()".
+>>>
+>>> That said, it doesn't appear that commit 944a1fa "module: don't unlink the
+>>> module until we've removed all exposure" has not made it into any stable
+>>> kernel.  On my system, applying this on top of 3.9 resolved a module
+>>> unload/load race that would occasionally occur on boot (two video adapters
+>>> of the same make, the module unloads for whatever reason and I see "module
+>>> is already loaded" and "sysfs: cannot create duplicate filename
+>>> '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
+>>> were interested in these warnings/crashes.
 
-The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
+It at least works around the problem for me as well.  But, a more rare
+migration/[0-3] (I think) related lockup still exists in 3.9.4 for me,
+so I will also try applying that other kobject patch and continue testing
+today...
 
-  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
+Thanks,
+Ben
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.10-rc4
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
-for you to fetch changes up to dcbd8eec68500beed75cf41630b89da6c85ad1e4:
-
-  Merge remote-tracking branch 'regulator/fix/palmas' into regulator-linus (2013-05-30 11:58:40 +0100)
-
-----------------------------------------------------------------
-
-regulator: Fixes for v3.10
-
-A few small fixes for v3.10, documentation things in the core and a few
-driver bugs.
-
-----------------------------------------------------------------
-Charles Keepax (1):
-      regulator: core: Correct spelling mistake in comment
-
-Kishon Vijay Abraham I (1):
-      regulator: palmas: Fix "enable_reg" to point to the correct reg for SMPS10
-
-Mark Brown (4):
-      Merge remote-tracking branch 'regulator/fix/core' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/dbx500' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/doc' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/palmas' into regulator-linus
-
-Robert P. J. Day (1):
-      regulator: Fix kernel-doc generation warnings.
-
-Sachin Kamat (2):
-      regulator: dbx500: Make local symbol static
-      regulator: palmas: Fix incorrect condition
-
- drivers/regulator/core.c             |    7 +++++--
- drivers/regulator/dbx500-prcmu.c     |   24 ++++++++++++------------
- drivers/regulator/palmas-regulator.c |    4 ++--
- 3 files changed, 19 insertions(+), 16 deletions(-)
-
---kaF1vgn83Aa7CiXN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRrL08AAoJELSic+t+oim9BugP/iQ7dmf5+mpbFF1E/mfrlFYI
-CvIb6FgdZdj+MQQi2vDfLdI773tpR9hWnkQHfRuxXKYoeVCK5ZVclmo9Is1/tTCs
-4On/4aXOYX58gjP2dZndFWpju4k8la3K5H5e5TBvToObBUppgUgDHljm4eXMlvwJ
-8JoYDExr8xZoDEpUrn/pnlNcD4m267eyTzah7J/evukKaetxBQQ3wAS6n3rzv0oM
-jCW13nkIyz1b1SfD1gNWcB5V0ASqzbz4NHYCtFjXybGi37XDjctsV5+wfUd4s/bC
-2VBPZd21DQbX1tB3VGcfoyplvNsvXlLRysLdNtobeJXMxMv93acYnEKhbo784IWf
-1KoMCoCs3E6einNWTHAz/Klxx8gIcxybPvA1mjDLxeK4UbKCsmWStyACO/V0HJa+
-ICroOV0NSAhW7HU2TwpKOnyexT+JQDjTaIHr/lP+Jeg8KM1+xqTTS4vYgyE2XQh2
-NBG5D3u1N9f3u0eXS1tl3TM9K7c68VlaOVyPSBuLVtMuSi3TjG3VvmGbgHIEtP0P
-2H4gB/xlVMx5fNJffxXSLbjuVbLJqPZ2mATUZKM4oD8w5dE8zbKsPnUMTS88Z50R
-MpPuyOMbM1HB9YJxWb+cE26mKq6A9n4c4J3ZaSJhUovq4/iZ0uUkos4Aq1Oyz6ud
-leAljHhPIxSWbwtfnX/b
-=EWDR
------END PGP SIGNATURE-----
-
---kaF1vgn83Aa7CiXN--
