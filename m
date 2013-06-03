@@ -1,205 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab3FCQtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:49:04 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46327 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758785Ab3FCQs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:48:59 -0400
-Date: Mon, 3 Jun 2013 12:48:39 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130603164839.GG15576@cmpxchg.org>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
- <20130531081052.GA32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
- <20130531112116.GC32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
- <20130601061151.GC15576@cmpxchg.org>
- <20130603153432.GC18588@dhcp22.suse.cz>
+	id S1759521Ab3FCQuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:50:05 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:41976
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758786Ab3FCQuC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:50:02 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(z5105hzbb2dI98dI9371Ic89bh1432I4015I1447I853kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh906i192cn1155h)
+Date: Mon, 3 Jun 2013 09:49:53 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>, <paulmck@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <git@xilinx.com>
+Subject: Re: [PATCH] clk: remove the clk_notifier from clk_notifier_list
+ before free it (was: Re: [BUG] zynq | CCF | SRCU)
+References: <42b8bfd5-3012-4c49-b9ef-7a9beb5956f1@VA3EHSMHS041.ehs.local>
+ <51AC5F1B.4020409@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20130603153432.GC18588@dhcp22.suse.cz>
+In-Reply-To: <51AC5F1B.4020409@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <b6422bc1-70b4-4942-a594-3f0e7b0fa04a@CO1EHSMHS001.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 05:34:32PM +0200, Michal Hocko wrote:
-> On Sat 01-06-13 02:11:51, Johannes Weiner wrote:
-> [...]
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > Subject: [PATCH] memcg: more robust oom handling
+Hi Lai,
+
+On Mon, Jun 03, 2013 at 05:17:15PM +0800, Lai Jiangshan wrote:
+> On 06/01/2013 03:12 AM, Sören Brinkmann wrote:
+> > Hi,
 > > 
-> > The memcg OOM handling is incredibly fragile because once a memcg goes
-> > OOM, one task (kernel or userspace) is responsible for resolving the
-> > situation.  Every other task that gets caught trying to charge memory
-> > gets stuck in a waitqueue while potentially holding various filesystem
-> > and mm locks on which the OOM handling task may now deadlock.
+> > we recently encountered some kernel panics when we compiled one of our
+> > drivers as module and tested inserting/removing the module.
+> > Trying to debug this issue, I could reproduce it on the mainline kernel
+> > with a dummy module.
 > > 
-> > Do two things to charge attempts under OOM:
+> > What happens is, that when on driver remove clk_notifier_unregister() is
+> > called and no other notifier for that clock is registered, the kernel
+> > panics.
+> > I'm not sure what is going wrong here. If there is a bug (and if where)
+> > or I'm just using the infrastructure the wrong way,... So, any hint is
+> > appreciated.
 > > 
-> > 1. Do not trap system calls (buffered IO and friends), just return
-> >    -ENOMEM.  Userspace should be able to handle this... right?
+> > I attach the output from the crashing system. The stacktrace indicates a
+> > crash in 'srcu_readers_seq_idx()'.
+> > I also attach the module I used to trigger the issue and a patch on top
+> > of mainline commit a93cb29acaa8f75618c3f202d1cf43c231984644 which has
+> > the DT modifications I need to make the module find its clock and boot
+> > with my initramfs.
 > > 
-> > 2. Do not trap page faults directly in the charging context.  Instead,
-> >    remember the OOMing memcg in the task struct and fully unwind the
-> >    page fault stack first.  Then synchronize the memcg OOM from
-> >    pagefault_out_of_memory()
-> 
-> I think this should work and I really like it! Nice work Johannes, I
-> never dared to go that deep and my opposite approach was also much more
-> fragile.
-> 
-> I am just afraid about all the other archs that do not support (from
-> quick grep it looks like: blackfin, c6x, h8300, metag, mn10300,
-> openrisc, score and tile). What would be an alternative for them?
-> #ifdefs for the old code (something like ARCH_HAS_FAULT_OOM_RETRY)? This
-> would be acceptable for me.
-
-blackfin is NOMMU but I guess the others should be converted to the
-proper OOM protocol anyway and not just kill the faulting task.  I can
-update them in the next version of the patch (series).
-
-> > Not-quite-signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  arch/x86/mm/fault.c        |   2 +
-> >  include/linux/memcontrol.h |   6 +++
-> >  include/linux/sched.h      |   6 +++
-> >  mm/memcontrol.c            | 104 +++++++++++++++++++++++++--------------------
-> >  mm/oom_kill.c              |   7 ++-
-> >  5 files changed, 78 insertions(+), 47 deletions(-)
 > > 
-> [...]
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index e692a02..cf60aef 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1282,6 +1282,8 @@ struct task_struct {
-> >  				 * execve */
-> >  	unsigned in_iowait:1;
-> >  
-> > +	unsigned in_userfault:1;
-> > +
+> > 	Thanks,
+> > 	Sören
+> > 
 > 
-> [This is more a nit pick but before I forget while I am reading through
-> the rest of the patch.]
 > 
-> OK there is a lot of room around those bit fields but as this is only
-> for memcg and you are enlarging the structure by the pointer then you
-> can reuse bottom bit of memcg pointer.
-
-I just didn't want to put anything in the arch code that looks too
-memcgish, even though it's the only user right now.  But granted, it
-will also probably remain the only user for a while.
-
-> > @@ -2085,56 +2087,76 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
-> >  }
-> >  
-> >  /*
-> > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
-> > + * try to call OOM killer
-> >   */
-> > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
-> > -				  int order)
-> > +static void mem_cgroup_oom(struct mem_cgroup *memcg,
-> > +			   gfp_t mask, int order,
-> > +			   bool in_userfault)
-> >  {
-> > -	struct oom_wait_info owait;
-> > -	bool locked, need_to_kill;
-> > -
-> > -	owait.memcg = memcg;
-> > -	owait.wait.flags = 0;
-> > -	owait.wait.func = memcg_oom_wake_function;
-> > -	owait.wait.private = current;
-> > -	INIT_LIST_HEAD(&owait.wait.task_list);
-> > -	need_to_kill = true;
-> > -	mem_cgroup_mark_under_oom(memcg);
-> > +	bool locked, need_to_kill = true;
-> >  
-> >  	/* At first, try to OOM lock hierarchy under memcg.*/
-> >  	spin_lock(&memcg_oom_lock);
-> >  	locked = mem_cgroup_oom_lock(memcg);
-> > -	/*
-> > -	 * Even if signal_pending(), we can't quit charge() loop without
-> > -	 * accounting. So, UNINTERRUPTIBLE is appropriate. But SIGKILL
-> > -	 * under OOM is always welcomed, use TASK_KILLABLE here.
-> > -	 */
-> > -	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
-> > -	if (!locked || memcg->oom_kill_disable)
-> > +	if (!locked || memcg->oom_kill_disable) {
-> >  		need_to_kill = false;
-> > +		if (in_userfault) {
-> > +			/*
-> > +			 * We start sleeping on the OOM waitqueue only
-> > +			 * after unwinding the page fault stack, so
-> > +			 * make sure we detect wakeups that happen
-> > +			 * between now and then.
-> > +			 */
-> > +			mem_cgroup_mark_under_oom(memcg);
-> > +			current->memcg_oom.wakeups =
-> > +				atomic_read(&memcg->oom_wakeups);
-> > +			css_get(&memcg->css);
-> > +			current->memcg_oom.memcg = memcg;
-> > +		}
-> > +	}
-> >  	if (locked)
-> >  		mem_cgroup_oom_notify(memcg);
-> >  	spin_unlock(&memcg_oom_lock);
-> >  
-> >  	if (need_to_kill) {
-> > -		finish_wait(&memcg_oom_waitq, &owait.wait);
-> >  		mem_cgroup_out_of_memory(memcg, mask, order);
-> > -	} else {
-> > -		schedule();
-> > -		finish_wait(&memcg_oom_waitq, &owait.wait);
-> > +		memcg_oom_recover(memcg);
 > 
-> Why do we need to call memcg_oom_recover here? We do not know that any
-> charges have been released. Say mem_cgroup_out_of_memory selected a task
-> which migrated to our group (without its charges) so we would kill the
-> poor guy and free no memory from this group.
-> Now you wake up oom waiters to refault but they will end up in the same
-> situation. I think it should be sufficient to wait for memcg_oom_recover
-> until the memory is uncharged (which we do already).
-
-It's a leftover from how it was before (see the memcg_wakeup_oom
-below), but you are right, we can get rid of it.
-
-> >  	}
-> > -	spin_lock(&memcg_oom_lock);
-> > -	if (locked)
-> > +
-> > +	if (locked) {
-> > +		spin_lock(&memcg_oom_lock);
-> >  		mem_cgroup_oom_unlock(memcg);
-> > -	memcg_wakeup_oom(memcg);
-> > -	spin_unlock(&memcg_oom_lock);
-> > +		spin_unlock(&memcg_oom_lock);
-> > +	}
-> > +}
-> >  
-> > -	mem_cgroup_unmark_under_oom(memcg);
-> [...]
-> > @@ -2647,16 +2665,12 @@ again:
-> >  			css_put(&memcg->css);
-> >  			goto nomem;
-> >  		case CHARGE_NOMEM: /* OOM routine works */
-> > -			if (!oom) {
-> > +			if (!oom || oom_check) {
+> Hi, Sören Brinkmann
 > 
-> OK, this allows us to remove the confusing nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES
-> from the branch where oom_check is set to true
+> I guess:
+> 
+> modprobe clk_notif_dbg
+> modprobe clk_notif_dbg -r  # memory corrupt here
+> modprobe clk_notif_dbg     # access corrupted memroy, but no visiable bug
+> modprobe clk_notif_dbg -r  # access corrupted memroy, BUG
+> 
+> 
+> How the first "modprobe clk_notif_dbg -r" corrupt memroy:
+> 
+> =========
+> 
+> int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
+> {
+> 	struct clk_notifier *cn = NULL;
+> 	int ret = -EINVAL;
+> 
+> 	if (!clk || !nb)
+> 		return -EINVAL;
+> 
+> 	clk_prepare_lock();
+> 
+> 	list_for_each_entry(cn, &clk_notifier_list, node)
+> 		if (cn->clk == clk)
+> 			break;
+> 
+> 	if (cn->clk == clk) {
+> 		ret = srcu_notifier_chain_unregister(&cn->notifier_head, nb);
+> 
+> 		clk->notifier_count--;
+> 
+> 		/* XXX the notifier code should handle this better */
+> 		if (!cn->notifier_head.head) {
+> 			srcu_cleanup_notifier_head(&cn->notifier_head);
+> 
+> ===========> the code forgot to remove @cn from the clk_notifier_list
+> ===========> the second "modprobe clk_notif_dbg" will the same @clk and use the same corrupt @cn
+> 
+> 			kfree(cn);
+> 		}
+> 
+> 	} else {
+> 		ret = -ENOENT;
+> 	}
+> 
+> 	clk_prepare_unlock();
+> 
+> 	return ret;
+> }
+> 
+> ===========
+> 
+> Could you retry with the following patch?
+Thanks for the patch. This fixes it. I can add/remove my module, and it
+didn't crash since.
+I had some trouble applying it though, due to some encoding hiccups. I
+think the 'ö' in my name might be the culprit. I never know where things
+go wrong, whether it's format-patch, or something in the email
+transport, the sender or receiver side... But well, looks like full
+UTF-8 support is missing somewhere.
 
-Oops, will update.
+> 
+> Thanks,
+> Lai
+> 
+> From 5e26b626724139070148df9f6bd0607bc7bc3812 Mon Sep 17 00:00:00 2001
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date: Mon, 3 Jun 2013 16:59:50 +0800
+> Subject: [PATCH] clk: remove the clk_notifier from clk_notifier_list before
+>  free it
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> The @cn is stay in @clk_notifier_list after it is freed, it cause
+> memory corruption.
+> 
+> Example, if @clk is registered(first), unregistered(first),
+> registered(second), unregistered(second).
+> 
+> The freed @cn will be used when @clk is registered(second),
+> and the bug will be happened when @clk is unregistered(second):
+> 
+> [  517.040000] clk_notif_dbg clk_notif_dbg.1: clk_notifier_unregister()
+> [  517.040000] Unable to handle kernel paging request at virtual address 00df3008
+> [  517.050000] pgd = ed858000
+> [  517.050000] [00df3008] *pgd=00000000
+> [  517.060000] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+> [  517.060000] Modules linked in: clk_notif_dbg(O-) [last unloaded: clk_notif_dbg]
+> [  517.060000] CPU: 1 PID: 499 Comm: modprobe Tainted: G           O 3.10.0-rc3-00119-ga93cb29-dirty #85
+> [  517.060000] task: ee1e0180 ti: ee3e6000 task.ti: ee3e6000
+> [  517.060000] PC is at srcu_readers_seq_idx+0x48/0x84
+> [  517.060000] LR is at srcu_readers_seq_idx+0x60/0x84
+> [  517.060000] pc : [<c0052720>]    lr : [<c0052738>]    psr: 80070013
+> [  517.060000] sp : ee3e7d48  ip : 00000000  fp : ee3e7d6c
+> [  517.060000] r10: 00000000  r9 : ee3e6000  r8 : 00000000
+> [  517.060000] r7 : ed84fe4c  r6 : c068ec90  r5 : c068e430  r4 : 00000000
+> [  517.060000] r3 : 00df3000  r2 : 00000000  r1 : 00000002  r0 : 00000000
+> [  517.060000] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [  517.060000] Control: 18c5387d  Table: 2d85804a  DAC: 00000015
+> [  517.060000] Process modprobe (pid: 499, stack limit = 0xee3e6238)
+> [  517.060000] Stack: (0xee3e7d48 to 0xee3e8000)
+> ....
+> [  517.060000] [<c0052720>] (srcu_readers_seq_idx+0x48/0x84) from [<c0052790>] (try_check_zero+0x34/0xfc)
+> [  517.060000] [<c0052790>] (try_check_zero+0x34/0xfc) from [<c00528b0>] (srcu_advance_batches+0x58/0x114)
+> [  517.060000] [<c00528b0>] (srcu_advance_batches+0x58/0x114) from [<c0052c30>] (__synchronize_srcu+0x114/0x1ac)
+> [  517.060000] [<c0052c30>] (__synchronize_srcu+0x114/0x1ac) from [<c0052d14>] (synchronize_srcu+0x2c/0x34)
+> [  517.060000] [<c0052d14>] (synchronize_srcu+0x2c/0x34) from [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74)
+> [  517.060000] [<c0053a08>] (srcu_notifier_chain_unregister+0x68/0x74) from [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0)
+> [  517.060000] [<c0375a78>] (clk_notifier_unregister+0x7c/0xc0) from [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg])
+> [  517.060000] [<bf008034>] (clk_notif_dbg_remove+0x34/0x9c [clk_notif_dbg]) from [<c02bb974>] (platform_drv_remove+0x24/0x28)
+> [  517.060000] [<c02bb974>] (platform_drv_remove+0x24/0x28) from [<c02b9bf8>] (__device_release_driver+0x8c/0xd4)
+> [  517.060000] [<c02b9bf8>] (__device_release_driver+0x8c/0xd4) from [<c02ba680>] (driver_detach+0x9c/0xc4)
+> [  517.060000] [<c02ba680>] (driver_detach+0x9c/0xc4) from [<c02b99c4>] (bus_remove_driver+0xcc/0xfc)
+> [  517.060000] [<c02b99c4>] (bus_remove_driver+0xcc/0xfc) from [<c02bace4>] (driver_unregister+0x54/0x78)
+> [  517.060000] [<c02bace4>] (driver_unregister+0x54/0x78) from [<c02bbb44>] (platform_driver_unregister+0x1c/0x20)
+> [  517.060000] [<c02bbb44>] (platform_driver_unregister+0x1c/0x20) from [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg])
+> [  517.060000] [<bf0081f8>] (clk_notif_dbg_driver_exit+0x14/0x1c [clk_notif_dbg]) from [<c00835e4>] (SyS_delete_module+0x200/0x28c)
+> [  517.060000] [<c00835e4>] (SyS_delete_module+0x200/0x28c) from [<c000edc0>] (ret_fast_syscall+0x0/0x48)
+> [  517.060000] Code: e5973004 e7911102 e0833001 e2881002 (e7933101)
+> 
+> CC: stable@kernel.org
+> Reported-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
 
-Thanks for the review, Michal!
+	Sören
+
+
