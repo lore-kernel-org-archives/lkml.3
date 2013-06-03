@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759329Ab3FCQYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:24:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42510 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758880Ab3FCQYl (ORCPT
+	id S1759110Ab3FCQ01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:26:27 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:43868 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752767Ab3FCQ00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:24:41 -0400
-Date: Mon, 3 Jun 2013 17:24:35 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 0/4] EFI 1:1 mapping
-Message-ID: <20130603162435.GA22563@srcf.ucam.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <20130602225620.GA5496@srcf.ucam.org>
- <20130603081148.GB13607@nazgul.tnic>
- <1370269642.2910.4.camel@dabdike>
- <20130603143010.GA20252@srcf.ucam.org>
- <1370270282.2910.9.camel@dabdike>
- <20130603152122.GA21312@srcf.ucam.org>
- <1370276286.2910.29.camel@dabdike>
+	Mon, 3 Jun 2013 12:26:26 -0400
+Date: Mon, 3 Jun 2013 17:25:18 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 5/5] arm64/xen: introduce CONFIG_XEN and hypercall.S
+ on ARM64
+Message-ID: <20130603162517.GC32295@arm.com>
+References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
+ <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370276286.2910.29.camel@dabdike>
+In-Reply-To: <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 09:18:06AM -0700, James Bottomley wrote:
+On Mon, Jun 03, 2013 at 04:33:44PM +0100, Stefano Stabellini wrote:
+> --- /dev/null
+> +++ b/arch/arm64/xen/hypercall.S
+...
+> +/*
+> + * The Xen hypercall calling convention is very similar to the ARM AEBI
+> + * procedure calling convention: the first paramter is passed in x0, the
+> + * second in x1, the third in x2 and the fourth in x3. Considering that
+> + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
+> + * in rx, differently from the procedure calling convention of using the
+> + * stack for that case.
 
-> I don't entirely buy that.  All EFI programs run with the physical
-> address map, therefore every API an EFI program uses is also tested, at
-> boot time only, obviously.
+You may want to use the AArch64 ABI here where parameters are passed in
+x0-x7, return in x0.
 
-That seems optimistic. Windows never calls QueryVariableInfo() during 
-boot services, so what makes you think doing so has ever been tested?
+BTW, I think it's missing a MAINTAINERS file update.
 
-> However, the ExitBootServices() code seems to be much simpler, so I 
-> don't think it will cause too many bugs.  The UEFI test suites also 
-> seem to try UEFI calls before and after ExitBootServices(), so I think 
-> relying on a 1:1 mapping looks safer to me.
-
-I have no expectation that the majority of system vendors run the test 
-suite, but I have every expectation that every system vendor runs 
-Windows. We should behave as close to the tested mechanism as possible, 
-ie do what Windows does - and that includes calling 
-SetVirtualAddressMap().
+Otherwise, the series looks good. How do you plan to upstream this?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Catalin
