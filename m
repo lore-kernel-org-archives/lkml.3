@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3FCLw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 07:52:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54915 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3FCLw0 convert rfc822-to-8bit (ORCPT
+	id S1756091Ab3FCLzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 07:55:03 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:62128 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3FCLzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 07:52:26 -0400
-Date: Mon, 3 Jun 2013 12:52:19 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Achin Gupta <Achin.Gupta@arm.com>
-Subject: Re: [RFC PATCH 2/3] drivers: mfd: vexpress: add timeout API to
- vexpress config interface
-Message-ID: <20130603115219.GA22821@e102568-lin.cambridge.arm.com>
-References: <1369399986-15649-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1369399986-15649-3-git-send-email-lorenzo.pieralisi@arm.com>
- <1370254532.3407.36.camel@linaro1.home>
+	Mon, 3 Jun 2013 07:55:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370254532.3407.36.camel@linaro1.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 03 Jun 2013 11:52:22.0703 (UTC) FILETIME=[CF02A3F0:01CE6050]
-X-MC-Unique: 113060312522400501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+In-Reply-To: <CACDNBm3WJ_U22uqKuVssV4ntATTHnz_8=pq9_qa33S+eKreKSA@mail.gmail.com>
+References: <1369988485-23176-1-git-send-email-wangxfdu@gmail.com>
+	<CAHp75Veb+FK=5u_HBUp+KNT4__GjbSg1T-kq1tGebDq2pEJOBA@mail.gmail.com>
+	<CACDNBm3WJ_U22uqKuVssV4ntATTHnz_8=pq9_qa33S+eKreKSA@mail.gmail.com>
+Date: Mon, 3 Jun 2013 14:54:59 +0300
+Message-ID: <CAHp75VfeVZRzyW0jKH=oVPPQv3=tmg214D9=tBs0j3_==20UZg@mail.gmail.com>
+Subject: Re: [PATCH] dma: mmp_pdma: support for getting residual bytes
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Xiang Wang <wangxfdu@gmail.com>
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:15:32AM +0100, Jon Medhurst (Tixy) wrote:
-> On Fri, 2013-05-24 at 13:53 +0100, Lorenzo Pieralisi wrote:
-> > In case some transactions to the Serial Power Controller (SPC) are lost owing
-> > to multiple operations handled at once by the M3 controller the OS needs to
-> > rely on a configuration API that can time out so that failures do not result
-> > in an unusable system.
-> > 
-> > This patch adds a timeout API to the vexpress config programming interface,
-> > and refactors the existing read/write functions so that they can be reused
-> > seamlessly on top of the newly defined API.
-> 
-> Isn't one of the main purposes of the config interface to serialise
-> transactions to the config bus, so why would the SPC be handling
-> multiple transactions at once? And if we can in fact loose transactions
-> doesn't this mean we get random failures in the system? E.g. if this
-> happened at boot in vexpress_spc_populate_opps then cpufreq will fail.
+On Mon, Jun 3, 2013 at 6:22 AM, Xiang Wang <wangxfdu@gmail.com> wrote:
+> 2013/5/31 Andy Shevchenko <andy.shevchenko@gmail.com>:
+>> On Fri, May 31, 2013 at 11:21 AM, Xiang Wang <wangxfdu@gmail.com> wrote:
+>>> In some of our drivers (e.g. UART) we may stop a running DMA
+>>> before it finishes. So we need to know how many bytes have
+>>> been transferred.
+>>
+>> Couple of comments below.
+>>
+>>> --- a/drivers/dma/mmp_pdma.c
+>>> +++ b/drivers/dma/mmp_pdma.c
+>>
+>>> @@ -589,7 +638,13 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+>>>                 mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+>>>                 mmp_pdma_free_desc_list(chan, &chan->chain_running);
+>>>                 spin_unlock_irqrestore(&chan->desc_lock, flags);
+>>> -               chan->idle = true;
+>>> +               chan->status = DMA_SUCCESS;
+>>> +               chan->bytes_residue = 0;
+>>> +               break;
+>>> +       case DMA_PAUSE:
+>>> +               disable_chan(chan->phy);
+>>> +               chan->status = DMA_PAUSED;
+>>> +               chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+>>
+>> Does it mean user has to do DMA_PAUSE first to get more or less
+>> accurate residue?
+>> Logically that sound correct, but in general we may allow user to get
+>> approximate residue value of on going transfer.
 
-It has more to do with firmware carrying out background operations like
-powering up a cluster when a DVFS is requested. You are absolutely right
-though:
+> Your comment makes sense. But if the user is allowed to query the
+> residue value in real-time, we cannot just return a saved value to
+> him.
 
-a) the timeout interface is broken, as you mentioned (I noticed after
-   posting it)
-b) we should not add a timeout interface to paper over FW issues
+Right.
 
-I can prepare a v2 with timeout interface dropped and extensively test that
-one, I do not think we should add the required complexity that you describe
-below for something that should never happen.
+> Why I use a saved value (chan->bytes_residue)?
+> In current mmp pdma driver, a phy channel will be freed after the
+> transmission finishes (chan->phy is set to NULL). So we cannot get the
+> physical channel information after we call DMA_TERMINATE_ALL or DMA
+> finishes itself.
 
-> Also, I think the code implementing timeouts is broken, see below.
+I don't see any contradiction to workflow.
+So, If you call device_tx_status() when transfer is completed or
+aborted you will get 0 as a residue, which is correct.
 
-I will have a look asap and repost a v2 accordingly.
+> That is to say, when the use queries the channel information at these
+> points, the chan->phy is usually NULL.
 
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Achin Gupta <achin.gupta@arm.com>
-> > Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-> > Cc: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Cc: Amit Kucheria <amit.kucheria@linaro.org>
-> > Cc: Jon Medhurst <tixy@linaro.org>
-> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> > ---
-> >  drivers/mfd/vexpress-config.c | 26 +++++++---
-> >  include/linux/vexpress.h      | 23 ++++++--
-> >  2 files changed, 37 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-> > index 1af2b0e..6f4aa5a 100644
-> > --- a/drivers/mfd/vexpress-config.c
-> > +++ b/drivers/mfd/vexpress-config.c
-> > @@ -266,8 +266,18 @@ int vexpress_config_wait(struct vexpress_config_trans *trans)
-> >  }
-> >  EXPORT_SYMBOL(vexpress_config_wait);
-> >  
-> > -int vexpress_config_read(struct vexpress_config_func *func, int offset,
-> > -		u32 *data)
-> > +int vexpress_config_wait_timeout(struct vexpress_config_trans *trans,
-> > +			long jiffies)
-> > +{
-> > +	int ret;
-> > +	ret = wait_for_completion_timeout(&trans->completion, jiffies);
-> 
-> If the request times out, don't we need to call vexpress_config_complete
-> to dequeue the timed out request and trigger the next one? Though we
-> will still have a problem where the timeout happens but the request
-> then does in fact complete normally, in that case we would signal
-> completion of the second request before it has in fact completed.
-> 
-> So, if transactions really can get silently dropped by thing on the end
-> of the config bus, then we must have a mechanism for associating a
-> particular transaction with a completion signal, otherwise we won't know
-> what transaction actually got completed OK and which ones were dropped
-> and should receive -ETIMEDOUT.
-> 
-> Finally, I don't think these issues are purely theoretical, I'm pretty
-> certain that the kernel panics and spinlock bad magic errors I see with
-> his patch series are due to requests completing after they have been
-> timed out and then the stack based transaction object is being accessed
-> after it has gone out of scope.
+>>> @@ -637,7 +692,8 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
+>>>         unsigned long flags;
+>>>
+>>>         spin_lock_irqsave(&chan->desc_lock, flags);
+>>> -       ret = dma_cookie_status(dchan, cookie, txstate);
+>>> +       ret = chan->status;
+>>> +       dma_set_residue(txstate, chan->bytes_residue);
+>>>         spin_unlock_irqrestore(&chan->desc_lock, flags);
+>>
+>> Besides my patch which removes this spinlock I think the workflow
+>> should be something like
+>>
+>> status = dma_cookie_status()
+>> if status == DMA_SUCCESS or !txstate:
+>> return status
+>>
+>> dma_set_residue()
+>> return status
+>>
+>> Because there is no reason to return residue of successfully finished
+>> transfer. It should be 0.
 
-You are absolutely right, apologies for wasting your time in testing it.
+> There is one exception from my point of view. When we are receiving
+> data from peripheral devices, we usually start a DMA transaction with
+> a target length of 4K for example. When a timed-out event occurs in
+> peripheral device, it will notify DMA controller and DMA controller
+> will send out a End of Receive interrupt (Marvell specific?).
 
-Thanks a lot for the review,
-Lorenzo
+Might be your hardware specifics, in our case we have got a timeout
+interrupt from uart controller.
 
+> In such situation, DMA status is also DMA_SUCCESS. But the residual
+> bytes is not 0 and the user must query it.
+
+Which sounds wrong approach.
+
+P.S. take a look at  drivers/tty/serial/8250/8250_dma.c
+
+--
+With Best Regards,
+Andy Shevchenko
