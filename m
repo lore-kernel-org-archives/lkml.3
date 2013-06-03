@@ -1,136 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284Ab3FCUrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:47:22 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:52381 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756402Ab3FCUrU (ORCPT
+	id S1758345Ab3FCUtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:49:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59158 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab3FCUtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:47:20 -0400
+	Mon, 3 Jun 2013 16:49:32 -0400
+Date: Mon, 3 Jun 2013 13:49:30 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Joern Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130603204930.GA28299@infradead.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
-References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
- <20130529083652.GA25971@dhcp-26-207.brq.redhat.com> <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 3 Jun 2013 14:46:59 -0600
-Message-ID: <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370280485-10047-1-git-send-email-joern@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 2:58 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [-cc Suresh]
->
-> On Wed, May 29, 2013 at 2:36 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->> On Tue, May 28, 2013 at 03:51:52PM -0600, Bjorn Helgaas wrote:
->>> On Mon, May 13, 2013 at 3:05 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->>>
->>> The subject would make more sense as "Allocate *only* as many MSIs as
->>> requested."
->>
->> 1.
->>
->>> > When multiple MSIs are enabled with pci_enable_msi_block(), the
->>> > requested number of interrupts 'nvec' is rounded up to the nearest
->>> > power-of-two value.
->>>
->>> This rounding is just a consequence of the encodings of the Multiple
->>> Message Enable field in the Message Control register (PCI spec r3.0,
->>> sec 6.8.1.3), isn't it?
->>
->> Yes, it is.
->>
->>> > The result is then used for setting up the
->>> > number of MSI messages in the PCI device and allocation of
->>> > interrupt resources in the operating system (i.e. vector numbers).
->>> > Thus, in cases when a device driver requests some number of MSIs
->>> > and this number is not a power-of-two value, the extra operating
->>> > system resources (allocated as the result of rounding) are wasted.
->>> >
->>> > This fix introduces 'msi_desc::nvec' field to address the above
->>> > issue. When non-zero, it will report the actual number of MSIs the
->>> > device will send, as requested by the device driver. This value
->>> > should be used by architectures to properly set up and tear down
->>> > associated interrupt resources.
->>>
->>> This name needs a little more context, like "nvec_used" or something.
->>
->> I chose "nvec" to indicate it is what was passed to pci_enable_msi_block().
->> I can resend with "nvec_used", along with subject change [1], if you want.
->>
->>> I think the idea is that the Message Control register can only tell
->>> the OS that the device requires 1, 2, 4, 8, 16, or 32 vectors, and
->>> similarly the OS can only tell the device that 1, 2, 4, 8, 16, or 32
->>> vectors are assigned.  If a device can only make use of 18 vectors, it
->>> must advertise the next larger value (32 vectors).  As far as I can
->>> tell, a device *could* advertise 32 vectors in Multiple Message
->>> Capable even if it can only use 1 vector.
->>
->> Yes, that is what we have with i.e. ICH AHCI device - it advertises
->> 16 vectors while makes use of 6 only. I tried to explain this in my
->> changelog's last paragraph (below).
->>
->>> These patches are to avoid allocating resources for the unused
->>> vectors, i.e., the ones between the last one the driver requested and
->>> the last one advertised in Multiple Message Capable.
->>
->> Almost :) Rather ...between the last one the driver requested and
->> the last one *written* in Multiple Message *Enable*, not Capable.
->> IOW, between the last one the driver requested and the closest power
->> of two - which will be written to the device.
->
-> Ah, right.
->
->> As of now, neither pci_enable_msi_block(), nor pci_enable_msi_block_auto()
->> are able to address the case you described, but if we decide to change
->> that then 'msi_desc::nvec' is what would be used. Again, the last paragraph
->> (may be too subtly) implies that.
->>
->>> The driver might
->>> request fewer than the maximum either because it knows the device
->>> isn't capable of using them all, or because the driver author decided
->>> not to use them all.
->>
->> Exactly. (I assume here "or the driver author decided not to use them all"
->> means the author can tell the device how many interrupts to use by means
->> other than Multiple Message Enable - otherwise it would be a bug).
->
-> Yep, makes sense.  Thanks for the clarifications.
->
->>> (Sorry, just thinking out loud above, let me know if I'm not
->>> understanding this correctly.)
->>>
->>> > Note, although the existing 'msi_desc::multiple' field might seem
->>> > redundant, in fact in does not. In general case the number of MSIs a
->>> > PCI device is initialized with is not necessarily the closest power-
->>> > of-two value of the number of MSIs the device will send. Thus, in
->>> > theory it would not be always possible to derive the former from the
->>> > latter and we need to keep them both, to stress this corner case.
->>> > Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
->>> > would not save us any space.
->>
->> --
->> Regards,
->> Alexander Gordeev
->> agordeev@redhat.com
->
-> No need to resend as far as I'm concerned; I can tweak those bits
-> locally.  I can put these in my tree
-> if Joerg or Konrad ack the iommu/irq_remapping.c bit.
+I can't say I like the structure.
 
-I pushed these with updates to
-http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
+A list_pop that removes and entry from the head or returns NULL if the
+list is empty would lead to nice while loops that are obviously
+readable instead.
 
-Anybody want to ack the iommu/irq_remapping.c patch?  If so, I can
-merge that branch into -next for v3.11.
-
-Bjorn
