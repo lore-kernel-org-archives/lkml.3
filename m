@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759382Ab3FCRe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 13:34:57 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33536 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab3FCRez (ORCPT
+	id S1759343Ab3FCRjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 13:39:04 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46390 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755880Ab3FCRjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 13:34:55 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] regmap: assume registers are volatile iff no cache
-Date: Mon,  3 Jun 2013 11:34:48 -0600
-Message-Id: <1370280888-15072-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Mon, 3 Jun 2013 13:39:02 -0400
+Message-ID: <51ACD4B2.7070107@message-id.googlemail.com>
+Date: Mon, 03 Jun 2013 19:38:58 +0200
+From: Stefan Seyfried <stefan.seyfried@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: INTEL_MEI_ME=y breaks suspend on 3.10-rc3
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Or, to be more precise: it breaks resume.
 
-If a regmap has a cache, it's likely that registers are not volatile,
-perhaps with exceptions. Otherwise, the cache would not be useful. Encode
-this assumption into regmap_volatile()'s default return value, for the
-case where a regmap doesn't specify which registers are volatile.
+The machine seems to lock up hard after resume, then after a few seconds
+it panics (caps lock blinking).
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/base/regmap/regmap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Reproduced on ThinkPad X200s
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 1a01553..feb37af 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -123,7 +123,7 @@ bool regmap_volatile(struct regmap *map, unsigned int reg)
- 	if (map->volatile_table)
- 		return regmap_check_range_table(map, reg, map->volatile_table);
- 
--	return true;
-+	return (map->cache_type == REGCACHE_NONE);
- }
- 
- bool regmap_precious(struct regmap *map, unsigned int reg)
+00:03.0 0780: 8086:2a44 (rev 07)
+Intel Corporation Mobile 4 Series Chipset MEI Controller
+
+Debugged with "init=/bin/bash no_console_suspend", I see lots of errors
+from the mei_me driver, then finally the panic (some overflow maybe?).
+
+Unbinding the device before suspend fixes resume.
+This machine has suspended and resumed fine with 3.9.
+
+This machine has no serial port, so it is hard for me to capture output.
+I could try to take a picture of the panic message if that would be helpful.
+
+Best regards,
+
+	Stefan
 -- 
-1.7.10.4
+Stefan Seyfried
+Linux Consultant & Developer -- GPG Key: 0x731B665B
 
+B1 Systems GmbH
+Osterfeldstraße 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
