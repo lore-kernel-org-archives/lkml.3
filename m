@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759925Ab3FCWXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:23:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30555 "EHLO
+	id S1759897Ab3FCWXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:23:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8852 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758742Ab3FCWL5 (ORCPT
+	with ESMTP id S1758713Ab3FCWL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:11:57 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=fnKe4KI2X1kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=hWjMM9_jUWAA:10 a=hGzw-44bAAAA:8 a=voM4FWlXAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=dowx1zmaLagA:10 a=LI9Vle30uBYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:11:56 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LjxYcFONNe0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6lSTn4viUbIA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=aKHjQHsr9158Kq3lC44A:9 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221154.320195525@goodmis.org>
+Message-Id: <20130603221153.315507011@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:29 -0400
+Date: Mon, 03 Jun 2013 18:10:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Anton Blanchard <anton@samba.org>, <stable@kernel.org>,
-        Eric Paris <eparis@redhat.com>
-Subject: [13/65] audit: Syscall rules are not applied to existing processes on
- non-x86
+Cc: Mikulas Patocka <mpatocka@redhat.com>, <stable@kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [07/65] dm bufio: avoid a possible __vmalloc deadlock
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0013-audit-Syscall-rules-are-not-applied-to-existing-proc.patch
+Content-Disposition: inline; filename=0007-dm-bufio-avoid-a-possible-__vmalloc-deadlock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,51 +30,84 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit cdee3904b4ce7c03d1013ed6dd704b43ae7fc2e9 ]
+[ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
 
-Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
-burden on archs) changed audit_syscall_entry to check for a dummy
-context before calling __audit_syscall_entry. Unfortunately the dummy
-context state is maintained in __audit_syscall_entry so once set it
-never gets cleared, even if the audit rules change.
+This patch uses memalloc_noio_save to avoid a possible deadlock in
+dm-bufio.  (it could happen only with large block size, at most
+PAGE_SIZE << MAX_ORDER (typically 8MiB).
 
-As a result, if there are no auditing rules when a process starts
-then it will never be subject to any rules added later. x86 doesn't
-see this because it has an assembly fast path that calls directly into
-__audit_syscall_entry.
+__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+used for allocation of requested pages, structures vmap_area, vmap_block
+and vm_struct and the radix tree nodes.
 
-I noticed this issue when working on audit performance optimisations.
-I wrote a set of simple test cases available at:
+However, the kernel pagetables are allocated always with GFP_KERNEL.
+Thus the allocation of pagetables can recurse back to the I/O layer and
+cause a deadlock.
 
-http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
+This patch uses the function memalloc_noio_save to set per-process
+PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+it. When this flag is set, all allocations in the process are done with
+implied GFP_NOIO flag, thus the deadlock can't happen.
 
-02_new_rule.py fails without the patch and passes with it. The
-test case clears all rules, starts a process, adds a rule then
-verifies the process produces a syscall audit record.
+This should be backported to stable kernels, but they don't have the
+PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+functions. So, PF_MEMALLOC should be set and restored instead.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Cc: <stable@kernel.org> # 3.3+
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ Set and clear PF_MEMALLOC manually - SR ]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/audit.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 36abf2a..a36d567 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -481,7 +481,7 @@ static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
- 				       unsigned long a1, unsigned long a2,
- 				       unsigned long a3)
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index c0fc827..a1f2487 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
+ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 			       enum data_mode *data_mode)
  {
--	if (unlikely(!audit_dummy_context()))
-+	if (unlikely(current->audit_context))
- 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
++	unsigned noio_flag;
++	void *ptr;
++
+ 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+ 		*data_mode = DATA_MODE_SLAB;
+ 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 	}
+ 
+ 	*data_mode = DATA_MODE_VMALLOC;
+-	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	/*
++	 * __vmalloc allocates the data pages and auxiliary structures with
++	 * gfp_flags that were specified, but pagetables are always allocated
++	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
++	 *
++	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
++	 * all allocations done by this process (including pagetables) are done
++	 * as if GFP_NOIO was specified.
++	 */
++
++	if (gfp_mask & __GFP_NORETRY) {
++		noio_flag = current->flags;
++		current->flags |= PF_MEMALLOC;
++	}
++
++	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	if (gfp_mask & __GFP_NORETRY)
++		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
++
++	return ptr;
  }
- static inline void audit_syscall_exit(void *pt_regs)
+ 
+ /*
 -- 
 1.7.10.4
 
