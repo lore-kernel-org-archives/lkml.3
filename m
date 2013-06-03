@@ -1,77 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab3FCMFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:05:03 -0400
-Received: from queue01a.mail.zen.net.uk ([212.23.3.234]:37515 "EHLO
-	queue01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3FCME7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:04:59 -0400
-Message-ID: <1370261030.16073.5.camel@linaro1.home>
-Subject: Re: [RFC PATCH 2/3] drivers: mfd: vexpress: add timeout API to
- vexpress config interface
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	id S1757301Ab3FCMPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:15:47 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:45755 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716Ab3FCMPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:15:43 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC] dw_apb_timer_of: use clocksource_of_init
+Date: Mon, 3 Jun 2013 14:15:28 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Achin Gupta <Achin.Gupta@arm.com>
-Date: Mon, 03 Jun 2013 13:03:50 +0100
-In-Reply-To: <20130603115219.GA22821@e102568-lin.cambridge.arm.com>
-References: <1369399986-15649-1-git-send-email-lorenzo.pieralisi@arm.com>
-	 <1369399986-15649-3-git-send-email-lorenzo.pieralisi@arm.com>
-	 <1370254532.3407.36.camel@linaro1.home>
-	 <20130603115219.GA22821@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
+References: <201306030055.15413.heiko@sntech.de> <201306031146.57611.heiko@sntech.de> <1822564.TIKVDZSzqK@wuerfel>
+In-Reply-To: <1822564.TIKVDZSzqK@wuerfel>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost01-IP: [82.69.122.217]
+Message-Id: <201306031415.29411.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 12:52 +0100, Lorenzo Pieralisi wrote:
-> On Mon, Jun 03, 2013 at 11:15:32AM +0100, Jon Medhurst (Tixy) wrote:
-> > On Fri, 2013-05-24 at 13:53 +0100, Lorenzo Pieralisi wrote:
-> > > In case some transactions to the Serial Power Controller (SPC) are lost owing
-> > > to multiple operations handled at once by the M3 controller the OS needs to
-> > > rely on a configuration API that can time out so that failures do not result
-> > > in an unusable system.
-> > > 
-> > > This patch adds a timeout API to the vexpress config programming interface,
-> > > and refactors the existing read/write functions so that they can be reused
-> > > seamlessly on top of the newly defined API.
-> > 
-> > Isn't one of the main purposes of the config interface to serialise
-> > transactions to the config bus, so why would the SPC be handling
-> > multiple transactions at once? And if we can in fact loose transactions
-> > doesn't this mean we get random failures in the system? E.g. if this
-> > happened at boot in vexpress_spc_populate_opps then cpufreq will fail.
-> 
-> It has more to do with firmware carrying out background operations like
-> powering up a cluster when a DVFS is requested.
+dw_apb_timer_init used to search the devicetree for matching timer
+devices, making calls to it from board files necessary.
 
-Would that make it drop transactions or just take a longer time to get
-around to servicing them?
+Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
+With this change the function gets called once for each timer node
+and tracks these number of calls to attach clockevent and clocksource
+devices to the nodes.
 
+Also convert all previous users of dw_apb_timer_init to use
+clocksource_of_init.
 
-> I can prepare a v2 with timeout interface dropped and extensively test that
-> one, I do not think we should add the required complexity that you describe
-> below for something that should never happen.
-> 
-> > Also, I think the code implementing timeouts is broken, see below.
-> 
-> I will have a look asap and repost a v2 accordingly.
+Tested on the upcoming rk3066 code.
 
-Thanks, I'll hold off any further review the current patches then.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+so something like this?
 
+ arch/arm/mach-picoxcell/Kconfig       |    1 +
+ arch/arm/mach-picoxcell/common.c      |    4 +-
+ arch/arm/mach-socfpga/Kconfig         |    1 +
+ arch/arm/mach-socfpga/socfpga.c       |    4 +-
+ drivers/clocksource/dw_apb_timer_of.c |   41 ++++++++++++++++-----------------
+ include/linux/dw_apb_timer.h          |    1 -
+ 6 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
+index 13bae78..3ef6bbe 100644
+--- a/arch/arm/mach-picoxcell/Kconfig
++++ b/arch/arm/mach-picoxcell/Kconfig
+@@ -6,6 +6,7 @@ config ARCH_PICOXCELL
+ 	select CPU_V6K
+ 	select DW_APB_TIMER
+ 	select DW_APB_TIMER_OF
++	select CLKSRC_OF
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_TCM
+ 	select NO_IOPORT
+diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+index 70b441a..170f085 100644
+--- a/arch/arm/mach-picoxcell/common.c
++++ b/arch/arm/mach-picoxcell/common.c
+@@ -15,7 +15,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+-#include <linux/dw_apb_timer.h>
++#include <linux/clocksource.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -88,7 +88,7 @@ DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
+ 	.map_io		= picoxcell_map_io,
+ 	.nr_irqs	= NR_IRQS_LEGACY,
+ 	.init_irq	= irqchip_init,
+-	.init_time	= dw_apb_timer_init,
++	.init_time	= clocksource_of_init,
+ 	.init_machine	= picoxcell_init_machine,
+ 	.dt_compat	= picoxcell_dt_match,
+ 	.restart	= picoxcell_wdt_restart,
+diff --git a/arch/arm/mach-socfpga/Kconfig b/arch/arm/mach-socfpga/Kconfig
+index 566e804..1c95288 100644
+--- a/arch/arm/mach-socfpga/Kconfig
++++ b/arch/arm/mach-socfpga/Kconfig
+@@ -9,6 +9,7 @@ config ARCH_SOCFPGA
+ 	select CPU_V7
+ 	select DW_APB_TIMER
+ 	select DW_APB_TIMER_OF
++	select CLKSRC_OF
+ 	select GENERIC_CLOCKEVENTS
+ 	select GPIO_PL061 if GPIOLIB
+ 	select HAVE_ARM_SCU
+diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+index 46a0513..921ff67 100644
+--- a/arch/arm/mach-socfpga/socfpga.c
++++ b/arch/arm/mach-socfpga/socfpga.c
+@@ -14,7 +14,7 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
+-#include <linux/dw_apb_timer.h>
++#include <linux/clocksource.h>
+ #include <linux/clk-provider.h>
+ #include <linux/irqchip.h>
+ #include <linux/of_address.h>
+@@ -120,7 +120,7 @@ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+ 	.smp		= smp_ops(socfpga_smp_ops),
+ 	.map_io		= socfpga_map_io,
+ 	.init_irq	= socfpga_init_irq,
+-	.init_time	= dw_apb_timer_init,
++	.init_time	= clocksource_of_init,
+ 	.init_machine	= socfpga_cyclone5_init,
+ 	.restart	= socfpga_cyclone5_restart,
+ 	.dt_compat	= altera_dt_match,
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index 1964f87..cef5544 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -133,27 +133,26 @@ static void init_sched_clock(void)
+ 	setup_sched_clock(read_sched_clock, 32, sched_rate);
+ }
+ 
+-static const struct of_device_id osctimer_ids[] __initconst = {
+-	{ .compatible = "picochip,pc3x2-timer" },
+-	{ .compatible = "snps,dw-apb-timer-osc" },
+-	{},
+-};
+-
+-void __init dw_apb_timer_init(void)
++static int num_called;
++static void __init dw_apb_timer_init(struct device_node *timer)
+ {
+-	struct device_node *event_timer, *source_timer;
+-
+-	event_timer = of_find_matching_node(NULL, osctimer_ids);
+-	if (!event_timer)
+-		panic("No timer for clockevent");
+-	add_clockevent(event_timer);
+-
+-	source_timer = of_find_matching_node(event_timer, osctimer_ids);
+-	if (!source_timer)
+-		panic("No timer for clocksource");
+-	add_clocksource(source_timer);
+-
+-	of_node_put(source_timer);
++	switch (num_called) {
++	case 0:
++		pr_debug("%s: found clockevent timer\n", __func__);
++		add_clockevent(timer);
++		of_node_put(timer);
++		break;
++	case 1:
++		pr_debug("%s: found clocksource timer\n", __func__);
++		add_clocksource(timer);
++		of_node_put(timer);
++		init_sched_clock();
++		break;
++	default:
++		break;
++	}
+ 
+-	init_sched_clock();
++	num_called++;
+ }
++CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
+diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
+index dd755ce..07261d5 100644
+--- a/include/linux/dw_apb_timer.h
++++ b/include/linux/dw_apb_timer.h
+@@ -53,5 +53,4 @@ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs);
+ cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs);
+ void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs);
+ 
+-extern void dw_apb_timer_init(void);
+ #endif /* __DW_APB_TIMER_H__ */
 -- 
-Tixy
+1.7.2.3
 
