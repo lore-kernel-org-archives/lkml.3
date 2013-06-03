@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3FCJrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:47:15 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44238 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab3FCJrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:47:10 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 10/10] arm: add basic support for Rockchip RK3066a boards
-Date: Mon, 3 Jun 2013 11:46:57 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <201306031023.49364.heiko@sntech.de> <9452845.qTGjLPCfXq@wuerfel>
-In-Reply-To: <9452845.qTGjLPCfXq@wuerfel>
+	id S1757257Ab3FCJsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:48:16 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.114]:35015 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751423Ab3FCJsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 05:48:14 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-14.tower-194.messagelabs.com!1370252890!8331583!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 03 Jun 2013 11:48:10 +0200
+Date: Mon, 3 Jun 2013 11:50:26 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: <wim@iguana.be>, <guenter@roeck-us.net>, <linux-watchdog@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <johannes.thumshirn@men.de>
+Subject: Re: [PATCH v6] watchdog: New watchdog driver for MEN A21 watchdogs
+Message-ID: <20130603095026.GA21720@jtlinux>
+References: <20130531103654.GB5619@roeck-us.net>
+ <20130531110846.GA15707@jtlinux>
+ <20130531114037.GA13533@roeck-us.net>
+ <20130531125519.GB8983@jtlinux>
+ <20130601041523.GB4081@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306031146.57611.heiko@sntech.de>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130601041523.GB4081@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 03 Jun 2013 09:48:10.0233 (UTC) FILETIME=[74FDF690:01CE603F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 3. Juni 2013, 11:22:35 schrieb Arnd Bergmann:
-> On Monday 03 June 2013 10:23:49 Heiko Stübner wrote:
-> > Am Montag, 3. Juni 2013, 04:15:46 schrieb Arnd Bergmann:
-> > > Can't you use
-> > > 
-> > > 	of_clk_init(NULL);
-> > > 	clocksource_of_init();
-> > > 
-> > > here and change the two drivers to provide the respective macros?
-> > 
-> > hmm, while this would make a lot of things easier I don't see right now
-> > how this would work.
-> > 
-> > The dw_apb_timer clocksource does not have its own device node, but
-> > instead uses two timer devices as clocksource and clockevent.
-> > 
-> > Hmm ... one idea would be to wrap them in the dt, like
-> > 
-> > 	clocksource {
-> > 	
-> > 		compatible = "snps,dw-apb-clocksource"
-> > 		
-> > 		timer@2003a000 {
-> > 		
-> > 			compatible = "snps,dw-apb-timer-osc";
-> > 			reg = <0x2003a000 0x100>;
-> > 			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
-> > 			clocks = <&clk_gates1 1>, <&clk_gates7 8>;
-> > 			clock-names = "timer", "pclk";
-> > 		
-> > 		};
-> > 		
-> > 		timer@2000e000 {
-> > 		
-> > 			compatible = "snps,dw-apb-timer-osc";
-> > 			reg = <0x2000e000 0x100>;
-> > 			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
-> > 			clocks = <&clk_gates1 2>, <&clk_gates7 9>;
-> > 			clock-names = "timer", "pclk";
-> > 		
-> > 		};
-> > 	
-> > 	};
-> 
-> Can't you just have multiple CLOCKSOURCE_OF_DECLARE() lines, one
-> for each of the nodes?
+On Fri, May 31, 2013 at 09:15:23PM -0700, Guenter Roeck wrote:
+> On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
+> > Hi Guenther,
+> > On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
+> > > > +#define GPIO_WD_ENAB	169
+> > > > +#define GPIO_WD_FAST	170
+> > > > +#define GPIO_WD_TRIG	171
+> > > > +
+> > > > +#define GPIO_RST_CAUSE_BASE 166
+> > > > +
+> > >
+> > > I think I asked that before ... as you are supporting devicetree, gpio pins
+> > > should really be provided through devicetree properties and not be hardcoded.
+> > >
+> > Yes you did and I didn't come up with a solution to this problem yet. I understand
+> > and agree to your concerns but I'm lacking example code/documentation for it, maybe
+> > you can point me to an example on that and then I'll update my code accordingly.
+> >
+>
+> Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
+> drivers/hwmon/gpio-fan.c.
 
-The timers are of the same type and the clocksource driver just grabs the 
-first of them as clockevent and the second as clocksource, so I think two 
-CLOCKSOURCE_OF_DECLARE lines won't do.
+Thanks a lot, this really helped me out. Updated patch is comming today
+including the bindings document Arnd Bergmann requested. I only need to rebase
+the sysfs patch on top of that changes.
 
-But I just looked at clocksource_of_init a bit more closely, which does a 
-for_each_matching_node_and_match over the nodes. So the init_func could grab 
-the device for the clockevent on the first call and the clocksource when it 
-gets called for the second matching node.
-
-
-> > > > +DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
-> > > > +       .map_io         = debug_ll_io_init,
-> > > > +       .init_machine   = rockchip_dt_init,
-> > > > +       .init_time      = rockchip_timer_init,
-> > > > +       .dt_compat      = rockchip_board_dt_compat,
-> > > > +MACHINE_END
-> > > 
-> > > The map_io line can already get removed.
-> > 
-> > Yesterday I did grep thru the linux-next I was using as base looking for
-> > the debug_ll_io_init default I read about but was not able to find it
-> > ... most likely my linux-next is a tad to old.
-> 
-> Yes, it only showed up in today's linux-next. I thought it was older.
+Regards,
+Johannes
