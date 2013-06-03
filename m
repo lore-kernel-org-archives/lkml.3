@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab3FCGbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:31:52 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47899 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3FCGbs (ORCPT
+	id S1751100Ab3FCGcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:32:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51588 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3FCGcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:31:48 -0400
-Message-ID: <51AC384B.8040500@linux.vnet.ibm.com>
-Date: Mon, 03 Jun 2013 14:31:39 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51ABFF6A.60206@linux.vnet.ibm.com> <1370228941.5988.66.camel@marge.simpson.net> <51AC0CD4.9070302@linux.vnet.ibm.com> <1370231597.5988.79.camel@marge.simpson.net> <51AC2121.1060903@linux.vnet.ibm.com> <1370236944.5988.108.camel@marge.simpson.net> <51AC2EA2.7030106@linux.vnet.ibm.com> <1370239514.5988.117.camel@marge.simpson.net>
-In-Reply-To: <1370239514.5988.117.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060306-4790-0000-0000-000008983EE0
+	Mon, 3 Jun 2013 02:32:00 -0400
+Date: Mon, 3 Jun 2013 16:31:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, chanho.min@lge.com,
+        Kamil Debski <k.debski@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Arun Kumar K <arun.kk@samsung.com>
+Subject: Re: Regression introduced by commit
+ "lib/bitmap.c: speed up bitmap_find_free_region"
+Message-Id: <20130603163145.f51c89410bd223d74e9b4fb9@canb.auug.org.au>
+In-Reply-To: <20130531120542.87e2056dc7c129e72b83f2af@linux-foundation.org>
+References: <CAK9yfHyZH3DSg2ZLbPN2bjQppWZSMR+2hQE+OU76eqSJoWAWGA@mail.gmail.com>
+	<20130531120542.87e2056dc7c129e72b83f2af@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Jun_2013_16_31_45_+1000_rf_yh9vmq2Crl9wc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 02:05 PM, Mike Galbraith wrote:
-> On Mon, 2013-06-03 at 13:50 +0800, Michael Wang wrote: 
->> On 06/03/2013 01:22 PM, Mike Galbraith wrote:
->> [snip]
->>>>
->>>> I agree that this idea, in other work, 'stop wake-affine when current is
->>>> busy with wakeup' may miss the chance to bring benefit, although I could
->>>> not find such workload, but I can't do promise...
->>>
->>> Someday we'll find the perfect balance... likely the day before the sun
->>> turns into a red giant and melts the earth.
->>
->> Won't take so long ;-)
->>
->> I would like to stop the regression on pgbench firstly, as PeterZ
->> mentioned, if someone reported other regressions, we will know what is
->> missing, if fix is possible, we fix it, if cost is too high, then I say
->> we ignore the illegal income, after all, we could not benefit one in the
->> cost of sacrifice others...
->>
->> I'd like to fix the problem ASAP, it's really a big, urgent problem on
->> my point of view, but doesn't win enough attentions as I thought it will...
-> 
-> I fully agree that it's a problem, but not that it's a regression.  
+--Signature=_Mon__3_Jun_2013_16_31_45_+1000_rf_yh9vmq2Crl9wc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I won't disagree, it's just the view point, I used to compare the whole
-thing with/without wake-affine stuff, and I found it damage pgbench to
-benefit hackbench, furthermore, that was in mainline by default...
+Hi Andrew,
 
-The
-> "we became too buddy-centric" problem has existed for a long time, it's
-> just that pgbench in 1:N mode shows us how much that pull pull pull can
-> cost us in scalability.
+On Fri, 31 May 2013 12:05:42 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Fri, 31 May 2013 12:15:10 +0530 Sachin Kamat <sachin.kamat@linaro.org>=
+ wrote:
+>=20
+> > While testing MFC decoder on Exynos machines, I encountered some
+> > memory allocation errors due to failure of dma_alloc_coherent().
+> > File: drivers/media/platform/s5p-mfc/s5p_mfc_ctrl.c Line: 38.
+> >=20
+> > Git bisect pointed me to the following commit as the first bad commit
+> > (linux-next tree of 20130531):
+> >=20
+> > commit 3d5272d9b289cd0930b2ea9984406d757a72f4dd
+> > Author: Chanho Min <chanho.min@lge.com>
+> > Date:   Thu May 23 10:37:28 2013 +1000
+> >     lib/bitmap.c: speed up bitmap_find_free_region
+> >=20
+> > Reverting this (and the commit 197e1cf7
+> > ("ib-bitmapc-speed-up-bitmap_find_free_region-fix") ) fixes this
+> > issue.
+> >=20
+> > Looks like some regression has been introduced by the above patch?
+>=20
+> Thanks.  I dropped the patches for now, to minimise linux-next
+> breakage.  Hopefully we'll be able to identify and fix this at a later
+> time.
 
-Agree, that was something we missed when we are so happily figure out
-the good-side of pull...
+I removed those 2 patches from the akpm tree in linux-next today as well.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> A much more interesting pgbench test (imho) would be with one server per
-> socket. 
+--Signature=_Mon__3_Jun_2013_16_31_45_+1000_rf_yh9vmq2Crl9wc
+Content-Type: application/pgp-signature
 
-May be configure the database could achieve that, sounds like a better
-deployment to me ;-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-1 server (mother of all work) driving a multi-socket sized load
-> is just silly, can't possibly scale, so it's important that improving
-> 1:N pgbench (we can, and need to) doesn't harm sane loads.
+iQIcBAEBCAAGBQJRrDhVAAoJEECxmPOUX5FEVG4P/2mw6aSlwqcCKmwyS1bpIuz2
+tQhNO2Q9gUFHKuXxSRvZkdLIKgiV0MTy7EJquJGopVuROM8JR4L1kOdm8FWEtsWD
+UzTTlnLq5qwmwlaJuYWmQHt6FIbJLndBV71XWM5KlXWQDLqqL7kiaPEDVaZ2I11/
+l5G30l7+KraBXt5olkSk4cb3KVHvhNeNSKQHRAzzbPdqgEO6AtQ14oHli+Sf+KLu
+K5crQkWhBc21ocxvzjEA22Fh0bYjoaZ/MKwCJwB0JZA/lG66sNM55Gn6GRG8ABjU
+9DbTdzGL7cp6xTryc8XAztO8BKYkX+QiBU+4cvaFbECVq6bNpENKO9llhG3wTm3f
+/iXa/JUySMx2K8zJyF8mby6uYYjJksMXgKscRMx7cFkI0Dxr3AKOCMMRB90EKFWf
+I8A5c5AaIyQQfXRaBLIWX3AOAt1ayFEKFKey19fuS7EhQrV54P+47OGQ03xb7cAN
+C4PjoyRNXS3EHi3GpmgytshYsEBk4iltAPN21OQfSvXGOxru5egwelD6YWzJI+3I
+AcAut0O+PUmpVya0ntJYW2WWi6GYLMa5mxRkiV1WL5ZIzQLP3d3mqsdfEQKyQaCe
+AL5QSuPgroiFBMffEdwqSK3BWUsSmv7TVLiUobM3bwK4i6KCvt4ltr/z7DmZUQSU
+ppLB2vgKnXHNJ4F98glB
+=AXf1
+-----END PGP SIGNATURE-----
 
-I guess the pgbench behaviour is badly depends on the database
-configuration on box, I think there are still many interesting points we
-could dig :)
-
-Anyway, I still prefer to do it step by step, if we do not fix the issue
-we already found, then the deeper research will based on an forked
-unreal world...
-
-Regards,
-Michael Wang
-
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+--Signature=_Mon__3_Jun_2013_16_31_45_+1000_rf_yh9vmq2Crl9wc--
