@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3FCAqF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 20:46:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48602 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab3FCAp5 (ORCPT
+	id S1755833Ab3FCA7D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 20:59:03 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44924 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3FCA6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 20:45:57 -0400
-Date: Mon, 3 Jun 2013 10:45:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Matthijs Kooijman <matthijs@stdin.nl>, Michal Marek <mmarek@suse.cz>
-Subject: linux-next: manual merge of the devicetree-current tree with the
- kbuild-current tree
-Message-Id: <20130603104541.ba697d4df0ac27a363bb05b7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	Sun, 2 Jun 2013 20:58:55 -0400
+Date: Mon, 3 Jun 2013 08:58:49 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: "Catalin Marinas" <catalin.marinas@arm.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: [PATCH 2/3] mm/kmemleak.c: Use list_for_each_entry_safe to reconstruct function scan_gray_list
+References: <519224D8.5090704@gmail.com>, 
+	<20130530144028.GF23631@arm.com>
+X-Priority: 3
+X-GUID: FAB18D1D-89D4-4516-AC3C-7990CBC53379
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__3_Jun_2013_10_45_41_+1000_QT1TtcMG2SMGqRCC"
+Message-ID: <201306030858459339090@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r530xQUq003295
 
---Signature=_Mon__3_Jun_2013_10_45_41_+1000_QT1TtcMG2SMGqRCC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Grant,
-
-Today's linux-next merge of the devicetree-current tree got a conflict in s=
-cripts/Makefile.lib between commit ad06156876c0 ("kbuild: Don't assume dts =
-files live in arch/*/boot/dts") from the  tree and commit 2c302eb0a6a5 ("kb=
-uild: make sure we clean up DTB temporary files") from the devicetree-curre=
-nt tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc scripts/Makefile.lib
-index 8337663,d7ec7cf..0000000
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@@ -264,9 -264,9 +264,9 @@@ $(obj)/%.dtb.S: $(obj)/%.dt
-  quiet_cmd_dtc =3D DTC     $@
-  cmd_dtc =3D $(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $=
-< ; \
-  	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 \
- -		-i $(srctree)/arch/$(SRCARCH)/boot/dts $(DTC_FLAGS) \
- +		-i $(dir $<) $(DTC_FLAGS) \
-- 		-d $(depfile).dtc $(dtc-tmp) ; \
-- 	cat $(depfile).pre $(depfile).dtc > $(depfile)
-+ 		-d $(depfile).dtc.tmp $(dtc-tmp) ; \
-+ 	cat $(depfile).pre.tmp $(depfile).dtc.tmp > $(depfile)
- =20
-  $(obj)/%.dtb: $(src)/%.dts FORCE
-  	$(call if_changed_dep,dtc)
-
---Signature=_Mon__3_Jun_2013_10_45_41_+1000_QT1TtcMG2SMGqRCC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRq+c6AAoJEECxmPOUX5FERjEP+wb+AzA7TW2fn6O0CfmaRZN+
-uY8lDdPR1T5oqRziEI9wZ4vweVUFbJNiS4G7UR4oM+dm5Mf77ZJWpT2vdI/bbjsb
-CRpS9cBLx4kkxmRoi4HbnDCvP5t9P8WRbcEbpMZn0t6b3c8UPlG61lQdxrCC1tpf
-j7Df6WWGAjPu+UcWr1k/zoym8OB6ILCGQWkzGGnr2zOlqV9d+V+6/xYyJOQDhAQP
-jnrZFkStzuatQZtGUKhhKXg5iIv2yJEYnruRTyB2lF35NFrDxp7+0xmCkg0QRgR1
-tDCSVNRm6wPW/OLLZDVe/60RzJCwNi6Y/GCrPj4qBXTKRBQSDaB8mGEdc3CdHyYG
-sOiyn2ACwsxReK3ORH51Ewf1IDoKcdMrR2VtsjakSYTEF1gr4BHQ2ZOqy36gUMhV
-HDwdRRoWuvdPLk8+30s+Gbjc47e33Eik0VJBMpzJa6TqVyFpx9hjdBrUmFQL9eZR
-o1b20DrOOG5gwwiHTmlJ3nKZDH3ZYYCSVO6z0ejnK8fJGovzvedYrt3036ZxmAhK
-M24qChWEuUZTF9DInai1cbyw/gMnxiCASLx68fqTKBFESryuFaSzKlub1VIWufM6
-+uY7yNtHPYfy/bGQcbOXrgdxmkkTsg8dqatB0GldKWjAEaEcNCzgn3XNPrbUMn+z
-yxc3X5VPmpwDPNnMr8Df
-=Zt0c
------END PGP SIGNATURE-----
-
---Signature=_Mon__3_Jun_2013_10_45_41_+1000_QT1TtcMG2SMGqRCC--
+>On Tue, May 14, 2013 at 12:49:44PM +0100, majianpeng wrote:
+>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>> ---
+>>  mm/kmemleak.c | 8 +-------
+>>  1 file changed, 1 insertion(+), 7 deletions(-)
+>> 
+>> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+>> index b1525db..f0ece93 100644
+>> --- a/mm/kmemleak.c
+>> +++ b/mm/kmemleak.c
+>> @@ -1225,22 +1225,16 @@ static void scan_gray_list(void)
+>>  	 * from inside the loop. The kmemleak objects cannot be freed from
+>>  	 * outside the loop because their use_count was incremented.
+>>  	 */
+>> -	object = list_entry(gray_list.next, typeof(*object), gray_list);
+>> -	while (&object->gray_list != &gray_list) {
+>> +	list_for_each_entry_safe(object, tmp, &gray_list, gray_list) {
+>>  		cond_resched();
+>>  
+>>  		/* may add new objects to the list */
+>>  		if (!scan_should_stop())
+>>  			scan_object(object);
+>>  
+>> -		tmp = list_entry(object->gray_list.next, typeof(*object),
+>> -				 gray_list);
+>> -
+>>  		/* remove the object from the list and release it */
+>>  		list_del(&object->gray_list);
+>>  		put_object(object);
+>> -
+>> -		object = tmp;
+>>  	}
+>>  	WARN_ON(!list_empty(&gray_list));
+>
+>I tried this patch for a few days and I hit the WARN_ON after the loop.
+>During scanning, new entries may be added at the end of the loop but we
+>need to loop until all the entries have been removed. I probably had a
+>reason why I had the 'while' loop.
+>
+>The key difference is that list_for_each_entry_safe() gets the next
+>entry (n or tmp above) before scan_object() and it may hit the end of
+>the list. However, scan_object() may do a list_add_tail(&gray_list)
+>hence we need to get the next entry after this function.
+>
+>Basically list_for_each_entry_safe() is not safe with tail additions.
+>I'll revert this patch (hasn't reached mainline anyway).
+>
+Ok, i see. 
+Thanks!
+>Thanks.
+>
+>-- 
+>Catalinÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
