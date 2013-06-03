@@ -1,368 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FCFVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 01:21:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29797 "EHLO mx1.redhat.com"
+	id S1751774Ab3FCFWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 01:22:41 -0400
+Received: from mout.gmx.net ([212.227.15.19]:55028 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab3FCFV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 01:21:26 -0400
-Message-ID: <51AC27BA.8050808@redhat.com>
-Date: Mon, 03 Jun 2013 13:20:58 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next rfc V2 7/8] macvtap: add TUNSETQUEUE ioctl
-References: <1369994005-5943-1-git-send-email-jasowang@redhat.com> <1369994005-5943-8-git-send-email-jasowang@redhat.com> <20130602112228.GA10190@redhat.com>
-In-Reply-To: <20130602112228.GA10190@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751069Ab3FCFWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 01:22:33 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19okuA0ImRo5jxgrNkBFxjylRgks7KT9g18pIsXbI
+	ONg7mQ56kYi5Jz
+Message-ID: <1370236944.5988.108.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] sched: smart wake-affine
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Mon, 03 Jun 2013 07:22:24 +0200
+In-Reply-To: <51AC2121.1060903@linux.vnet.ibm.com>
+References: <51A43B16.9080801@linux.vnet.ibm.com>
+	 <51ABFF6A.60206@linux.vnet.ibm.com>
+	 <1370228941.5988.66.camel@marge.simpson.net>
+	 <51AC0CD4.9070302@linux.vnet.ibm.com>
+	 <1370231597.5988.79.camel@marge.simpson.net>
+	 <51AC2121.1060903@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2013 07:22 PM, Michael S. Tsirkin wrote:
-> On Fri, May 31, 2013 at 05:53:24PM +0800, Jason Wang wrote:
->> This patch adds TUNSETQUEUE ioctl to let userspace can temporarily disable or
->> enable a queue of macvtap. This is used to be compatible at API layer of tuntap
->> to simplify the userspace to manage the queues.
->>
->> This is done by split the taps array into three different areas:
->>
->> - [0, numvtaps) : enabled taps
->> - [numvtaps, numvtaps + numdisabled) : disabled taps
->> - [numvtaps + numdisabled, MAX_MAXVTAP_QUEUES) : unused slots
->>
->> When a tap were enabled and disabled, it was moved to another area.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->
-> This seems a bit tricky. Can we just move the tap out of the
-> array? 
+On Mon, 2013-06-03 at 12:52 +0800, Michael Wang wrote: 
+> On 06/03/2013 11:53 AM, Mike Galbraith wrote:
+> > On Mon, 2013-06-03 at 11:26 +0800, Michael Wang wrote: 
+> >> On 06/03/2013 11:09 AM, Mike Galbraith wrote:
+> >>> On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
+> >>>> On 05/28/2013 01:05 PM, Michael Wang wrote:
+> >>>>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+> >>>>> this will bring benefit if waker's cpu cached hot data for wakee, or the
+> >>>>> extreme ping-pong case.
+> >>>>>
+> >>>>> And testing show it could benefit hackbench 15% at most.
+> >>>>>
+> >>>>> However, the whole stuff is somewhat blindly and time-consuming, some
+> >>>>> workload therefore suffer.
+> >>>>>
+> >>>>> And testing show it could damage pgbench 50% at most.
+> >>>>>
+> >>>>> Thus, wake-affine stuff should be smarter, and realise when to stop
+> >>>>> it's thankless effort.
+> >>>>
+> >>>> Is there any comments?
+> >>>
+> >>> (I haven't had time to test-drive yet, -rt munches time like popcorn)
+> >>
+> >> I see ;-)
+> >>
+> >> During my testing, this one works well on the box, solved the issues of
+> >> pgbench and won't harm hackbench any, I think we have caught some good
+> >> point here :)
+> > 
+> > Some wider spectrum testing needs doing though.
+> 
+> That's right, the benchmark I currently have is hackbench, pgbench,
+> ebizzy, aim7, tbench, dbench, kbench, is there any other good candidate
+> we should add to the test?
 
-Certainly yes.
-> the only reason we have the array is for fast
-> lookup on xmit.
-> What's the reason to keep disabled queues there?
+pgsql/mysql+oltp are useful.  I used to track mysql especially all the
+time, until I lost my fast mysql database, and couldn't re-create
+anything that wasn't a complete slug.
 
-It saves us some space and make code simpler.
-> To be able to track all queues for cleanups, all we need is
-> a linked list of all queues (enabled and disabled).
+> Hackbench is a good
+> > sign, but localhost and db type stuff that really suffer from misses
+> > would be good to test.  Java crud tends to be sensitive too.  I used to
+> > watch vmark (crap) as an indicator,
+> 
+> I can't get it from google...do you mean vmmark?
 
-Yes, but you need iterate both arrays and linked list which won't be
-simpler than keeping them in place.
->> ---
->>  drivers/net/macvtap.c      |  167 ++++++++++++++++++++++++++++++++++++++++----
->>  include/linux/if_macvlan.h |    7 ++
->>  2 files changed, 159 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index eac49cb..03b781c 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -85,32 +85,126 @@ static const struct proto_ops macvtap_socket_ops;
->>   */
->>  static DEFINE_SPINLOCK(macvtap_lock);
->>  
->> -static int macvtap_set_queue(struct net_device *dev, struct file *file,
->> +static void macvtap_swap_slot(struct macvlan_dev *vlan, int a, int b)
->> +{
->> +	struct macvtap_queue *q1, *q2;
->> +
->> +	if (a == b)
->> +		return;
->> +
->> +	q1 = rcu_dereference_protected(vlan->taps[a],
->> +				       lockdep_is_held(&macvtap_lock));
->> +	q2 = rcu_dereference_protected(vlan->taps[b],
->> +				       lockdep_is_held(&macvtap_lock));
->> +
->> +	BUG_ON(q1 == NULL || q2 == NULL);
->> +
->> +	rcu_assign_pointer(vlan->taps[a], q2);
->> +	rcu_assign_pointer(vlan->taps[b], q1);
->> +
->> +	q1->queue_index = b;
->> +	q2->queue_index = a;
->> +}
->> +
->> +static int macvtap_enable_queue(struct net_device *dev, struct file *file,
->>  				struct macvtap_queue *q)
->>  {
->>  	struct macvlan_dev *vlan = netdev_priv(dev);
->> +	int err = -EINVAL;
->> +	int total;
->> +
->> +	spin_lock(&macvtap_lock);
->> +	total = vlan->numvtaps + vlan->numdisabled;
->> +
->> +	if (q->queue_index < vlan->numvtaps)
->> +		goto out;
->> +
->> +	err = 0;
->> +
->> +	BUG_ON(q->queue_index >= total);
->> +	macvtap_swap_slot(vlan, q->queue_index, vlan->numvtaps);
->> +
->> +	/* Make sure the pointers were seen before indices. */
->> +	wmb();
-> Which indices?  We only care about numvtaps right?
-> So let's just say so.
+No, crusty old, and widely disparaged as being a useless POS benchmark,
+volanomark.  The big boys do SPECjbb, maybe that's better quality java
+crud, dunno, never had it to play with.
 
-ok
->
-> Why is this wmb and not smp_wmb()?
+> if you see unhappiness there, you'll
+> > very likely see it in other loads as well, it is very fond of cache
+> > affine wakeups, but loathes preemption (super heavy loads usually do).
+> 
+> I agree that this idea, in other work, 'stop wake-affine when current is
+> busy with wakeup' may miss the chance to bring benefit, although I could
+> not find such workload, but I can't do promise...
 
-will correct it.
->
->> +
->> +	vlan->numdisabled--;
->> +	vlan->numvtaps++;
->> +out:
->> +	spin_unlock(&macvtap_lock);
->> +	return err;
->> +}
->> +
->> +static int macvtap_set_queue(struct net_device *dev, struct file *file,
->> +			     struct macvtap_queue *q)
->> +{
->> +	struct macvlan_dev *vlan = netdev_priv(dev);
->>  	int err = -EBUSY;
->> +	int total;
->>  
->>  	spin_lock(&macvtap_lock);
->> -	if (vlan->numvtaps == MAX_MACVTAP_QUEUES)
->> +
->> +	total = vlan->numvtaps + vlan->numdisabled;
->> +	if (total == MAX_MACVTAP_QUEUES)
->>  		goto out;
->>  
->>  	err = 0;
->> +
->>  	rcu_assign_pointer(q->vlan, vlan);
->> -	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
->> +	rcu_assign_pointer(vlan->taps[total], q);
->>  	sock_hold(&q->sk);
->>  
->>  	q->file = file;
->> -	q->queue_index = vlan->numvtaps;
->> +	q->queue_index = total;
->>  	file->private_data = q;
->> +	if (vlan->numdisabled)
->> +		macvtap_swap_slot(vlan, vlan->numvtaps, total);
->>  
->> -	vlan->numvtaps++;
->> +	/* Make sure the pointers were seen before indices. */
->> +	wmb();
->>  
->> +	vlan->numvtaps++;
->>  out:
->>  	spin_unlock(&macvtap_lock);
->>  	return err;
->>  }
->>  
->> +static int macvtap_disable_queue(struct macvtap_queue *q)
->> +{
->> +	struct macvlan_dev *vlan;
->> +	int err = -EINVAL;
->> +
->> +	spin_lock(&macvtap_lock);
->> +	vlan = rcu_dereference_protected(q->vlan,
->> +					 lockdep_is_held(&macvtap_lock));
->> +
->> +	if (vlan) {
->> +		int total = vlan->numvtaps + vlan->numdisabled;
->> +		int index = q->queue_index;
->> +
->> +		BUG_ON(q->queue_index >= total);
->> +		if (q->queue_index >= vlan->numvtaps)
->> +			goto out;
->> +
->> +		err = 0;
->> +		macvtap_swap_slot(vlan, index, total - 1);
->> +		if (vlan->numdisabled)
->> +			/* If there's disabled taps, the above swap will cause
->> +			 * a disabled tap to be moved to enabled area. So
->> +			 * another swap is needed to keep the right order.
->> +			 */
->> +			macvtap_swap_slot(vlan, index, vlan->numvtaps - 1);
->> +
->> +		/* make sure the pointers were seen before indices */
->> +		wmb();
-> Hmm this looks questionable. The code near rmb first
-> checks numvtaps then dereferences the queue.
-> So it might see a new queue but old value of numvtaps.
+Someday we'll find the perfect balance... likely the day before the sun
+turns into a red giant and melts the earth.
 
-Right, barriers here were just best effort to reduce the possibility of
-wrong queue selection when changing the number of queues.
->
->> +
->> +		vlan->numvtaps--;
->> +		vlan->numdisabled++;
->> +	}
->> +
->> +out:
->> +	spin_unlock(&macvtap_lock);
->> +	return err;
->> +}
->>  /*
->>   * The file owning the queue got closed, give up both
->>   * the reference that the files holds as well as the
->> @@ -121,25 +215,38 @@ out:
->>   */
->>  static void macvtap_put_queue(struct macvtap_queue *q)
->>  {
->> -	struct macvtap_queue *nq;
->>  	struct macvlan_dev *vlan;
->>  
->>  	spin_lock(&macvtap_lock);
->>  	vlan = rcu_dereference_protected(q->vlan,
->>  					 lockdep_is_held(&macvtap_lock));
->> +
->>  	if (vlan) {
->> +		int total = vlan->numvtaps + vlan->numdisabled;
->>  		int index = q->queue_index;
->> -		BUG_ON(index >= vlan->numvtaps);
->> +		bool disabled = q->queue_index >= vlan->numvtaps;
->> +
->> +		BUG_ON(q->queue_index >= total);
->> +		macvtap_swap_slot(vlan, index, total - 1);
->> +		if (!disabled && vlan->numdisabled)
->> +			/* If there's disabled taps, the above swap will cause
->> +			 * a disabled tap to be moved to enabled area. So
->> +			 * another swap is needed to keep the right order.
->> +			 */
->> +			macvtap_swap_slot(vlan, index, vlan->numvtaps - 1);
->> +
->> +		RCU_INIT_POINTER(vlan->taps[total - 1], NULL);
->> +		RCU_INIT_POINTER(q->vlan, NULL);
->> +		sock_put(&q->sk);
->>  
->> -		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
->> -					       lockdep_is_held(&macvtap_lock));
->> -		rcu_assign_pointer(vlan->taps[index], nq);
->> -		nq->queue_index = index;
->> +		/* Make sure the pointers were seen before indices */
-> Here it's one pointer, right?
-
-Right.
->
->> +		wmb();
-> Same issue as above, looks even more worrying
-> as queue is freed here.
-
-The read side were protected by rcu_read_lock(), so no worries here.
->
->>  
->> -		RCU_INIT_POINTER(q->vlan, NULL);
->> +		if (disabled)
->> +			vlan->numdisabled--;
->> +		else
->> +			vlan->numvtaps--;
->>  
->> -		sock_put(&q->sk);
->> -		--vlan->numvtaps;
->>  	}
->>  
->>  	spin_unlock(&macvtap_lock);
->> @@ -166,6 +273,9 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
->>  	if (!numvtaps)
->>  		goto out;
->>  
->> +	/* Check taps after numvtaps were exposed. */
->> +	rmb();
->> +
-> Except this doesn't seem to handle case where taps are going away ...
-
-We're protected by rcu read lock here so even though it choose the queue
-which is going to be destroyed temporarily, the socket won't be freed
-before the packets were queued in the socket.
->>  	/* Check if we can use flow to select a queue */
->>  	rxq = skb_get_rxhash(skb);
->>  	if (rxq) {
->> @@ -201,7 +311,7 @@ static void macvtap_del_queues(struct net_device *dev)
->>  
->>  	/* macvtap_put_queue can free some slots, so go through all slots */
->>  	spin_lock(&macvtap_lock);
->> -	for (i = 0; i < vlan->numvtaps; i++) {
->> +	for (i = 0; i < vlan->numvtaps + vlan->numdisabled; i++) {
->>  		q = rcu_dereference_protected(vlan->taps[i],
->>  					      lockdep_is_held(&macvtap_lock));
->>  		BUG_ON(q == NULL);
->> @@ -211,6 +321,7 @@ static void macvtap_del_queues(struct net_device *dev)
->>  	}
->>  	/* guarantee that any future macvtap_set_queue will fail */
->>  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
->> +	vlan->numdisabled = 0;
->>  	spin_unlock(&macvtap_lock);
->>  
->>  	synchronize_rcu();
->> @@ -927,6 +1038,27 @@ static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
->>  	return 0;
->>  }
->>  
->> +static int macvtap_ioctl_set_queue(struct file *file, unsigned int flags)
->> +{
->> +	struct macvtap_queue *q = file->private_data;
->> +	struct macvlan_dev *vlan;
->> +	int ret = -EINVAL;
->> +
->> +	vlan = macvtap_get_vlan(q);
->> +	if (!vlan)
->> +		goto done;
->> +
->> +	if (flags & IFF_ATTACH_QUEUE)
->> +		ret = macvtap_enable_queue(vlan->dev, file, q);
->> +	else if (flags & IFF_DETACH_QUEUE)
->> +		ret = macvtap_disable_queue(q);
->> +
->> +	macvtap_put_vlan(vlan);
->> +
->> +done:
->> +	return ret;
->> +}
->> +
->>  /*
->>   * provide compatibility with generic tun/tap interface
->>   */
->> @@ -959,6 +1091,11 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->>  		macvtap_put_vlan(vlan);
->>  		return ret;
->>  
->> +	case TUNSETQUEUE:
->> +		if (get_user(u, &ifr->ifr_flags))
->> +			return -EFAULT;
->> +		return macvtap_ioctl_set_queue(file, u);
->> +
->>  	case TUNGETFEATURES:
->>  		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR, up))
->>  			return -EFAULT;
->> diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
->> index 62d8bda..d528f38 100644
->> --- a/include/linux/if_macvlan.h
->> +++ b/include/linux/if_macvlan.h
->> @@ -69,8 +69,15 @@ struct macvlan_dev {
->>  	u16			flags;
->>  	int (*receive)(struct sk_buff *skb);
->>  	int (*forward)(struct net_device *dev, struct sk_buff *skb);
->> +	/* This array tracks all taps (include disabled ones) and will be
->> +	 * reshuffled to keep the following order:
->> +	 * [0, numvtaps) : enabled taps,
->> +	 * [numvtaps, numvtaps + numdisabled) : disabled taps,
->> +	 * [numvtaps + numdisabled, MAX_MACVTAP_QUEUES) : unused slots
->> +	 */
->>  	struct macvtap_queue	*taps[MAX_MACVTAP_QUEUES];
->>  	int			numvtaps;
->> +	int			numdisabled;
->>  	int			minor;
->>  };
->>  
->> -- 
->> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Mike
 
