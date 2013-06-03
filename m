@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759401Ab3FCRvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 13:51:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38439 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab3FCRvJ (ORCPT
+	id S1758870Ab3FCRxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 13:53:44 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:44328 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3FCRxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 13:51:09 -0400
-Date: Mon, 3 Jun 2013 10:51:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, balbi@ti.com,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
-Message-ID: <20130603175108.GA11188@kroah.com>
-References: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org>
- <519E2BD4.9020906@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519E2BD4.9020906@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 13:53:42 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH RFC 0/3] clk: dt: bindings for mux & divider clocks
+Date: Mon,  3 Jun 2013 10:53:07 -0700
+Message-Id: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 05:46:44PM +0300, Roger Quadros wrote:
-> On 05/23/2013 05:11 PM, Alan Stern wrote:
-> > On Thu, 23 May 2013, Roger Quadros wrote:
-> > 
-> >> Device tree probed devices don't get dma_mask set. Previously
-> >> we were setting the dma_mask pointer only if it was NULL.
-> >> However, the address of 'omap_ehci_dma_mask' would change
-> >> each time the module is unloaded and loaded back thus causing
-> >> the devices dma_mask pointer to be invalid on the next load.
-> >>
-> >> This will cause page faults if any driver tries to access the
-> >> old dma_mask pointer.
-> >>
-> >> Unconditionally re-setting the dma_mask pointer fixes this problem.
-> > 
-> >> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> >> index 3d1491b..b33e306 100644
-> >> --- a/drivers/usb/host/ehci-omap.c
-> >> +++ b/drivers/usb/host/ehci-omap.c
-> >> @@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
-> >>  	 * Since shared usb code relies on it, set it here for now.
-> >>  	 * Once we have dma capability bindings this can go away.
-> >>  	 */
-> >> -	if (!pdev->dev.dma_mask)
-> >> -		pdev->dev.dma_mask = &omap_ehci_dma_mask;
-> >> +	pdev->dev.dma_mask = &omap_ehci_dma_mask;
-> > 
-> > Is this the solution that people have agreed on?  There has been a lot 
-> > of discussion on this topic.  In particular, there has been talk about 
-> > fixing it in the DT core.
-> 
-> Fixing it in DT core would be best.
+This series introduces binding definitions for common register-mapped
+clock multiplexor and divider IP blocks, and the corresponding setup
+functions once they are matched.  The bindings are close the struct
+definitions but please don't hold that against the binding: the struct
+definitions closely model the hardware.
 
-Then please do that.
+The only missing basic clock type is the gate clock.  A binding for that
+was posted some time back and is similar in spirit to these[1].  I guess
+we'll need to decide whether register-level programming details belong
+in DT.  I believe they do since those details describe the hardware.
 
-thanks,
+Note that there is still no generic clock driver that matches these
+basic types, but it would be trivial to write one.  Thoughts on that?
+Is it better for each of the basic clock types to be a driver that
+matches, or should there be one drivers/clk/clk-basic.c which matches
+all of the basic clock building blocks?  I like the latter for aesthetic
+purposes.
 
-greg k-h
+I am using this code while converting the OMAP4 clock data over to DT
+and some common boilerplate code can be factored out of several clock
+drivers if this is merged.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137878.html
+
+Mike Turquette (3):
+  clk: of: helper for determining number of parent clocks
+  clk: dt: binding for basic multiplexor clock
+  clk: dt: binding for basic divider clock
+
+ .../devicetree/bindings/clock/divider-clock.txt    | 80 ++++++++++++++++++++
+ .../devicetree/bindings/clock/mux-clock.txt        | 75 ++++++++++++++++++
+ drivers/clk/clk-divider.c                          | 88 +++++++++++++++++++++-
+ drivers/clk/clk-mux.c                              | 65 +++++++++++++++-
+ drivers/clk/clk.c                                  |  6 ++
+ include/linux/clk-provider.h                       |  8 +-
+ 6 files changed, 319 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/divider-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
+
+-- 
+1.8.1.2
+
