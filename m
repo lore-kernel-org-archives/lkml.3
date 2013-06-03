@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab3FCPk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:40:56 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54438 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab3FCPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:40:53 -0400
-Date: Mon, 3 Jun 2013 11:40:48 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-Cc: adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ext4: add sanity checks in __ext4_check_dir_entry
-Message-ID: <20130603154048.GC20009@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ruslan Bilovol <ruslan.bilovol@ti.com>, adilger.kernel@dilger.ca,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1370253616-8173-1-git-send-email-ruslan.bilovol@ti.com>
- <1370253616-8173-3-git-send-email-ruslan.bilovol@ti.com>
+	id S1758697Ab3FCPmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:42:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39777 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756694Ab3FCPmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:42:04 -0400
+Date: Mon, 3 Jun 2013 17:42:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] hugetlbfs: support split page table lock
+Message-ID: <20130603154200.GD18588@dhcp22.suse.cz>
+References: <1369770771-8447-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1369770771-8447-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130603131932.GA18588@dhcp22.suse.cz>
+ <1370270075-wtjoksqp-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370253616-8173-3-git-send-email-ruslan.bilovol@ti.com>
+In-Reply-To: <1370270075-wtjoksqp-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 01:00:16PM +0300, Ruslan Bilovol wrote:
-> Added checks for NULL before dereferencing some pointers
+On Mon 03-06-13 10:34:35, Naoya Horiguchi wrote:
+> On Mon, Jun 03, 2013 at 03:19:32PM +0200, Michal Hocko wrote:
+> > On Tue 28-05-13 15:52:50, Naoya Horiguchi wrote:
+> > > Currently all of page table handling by hugetlbfs code are done under
+> > > mm->page_table_lock. This is not optimal because there can be lock
+> > > contentions between unrelated components using this lock.
+> > 
+> > While I agree with such a change in general I am a bit afraid of all
+> > subtle tweaks in the mm code that make hugetlb special. Maybe there are
+> > none for page_table_lock but I am not 100% sure. So this might be
+> > really tricky and it is not necessary for your further patches, is it?
 > 
-> +	if (!de || !bh || !dir)
-> +		return 1;
+> No, this page_table_lock patch is separable from migration stuff.
+> As you said in another email, changes going to stable should be minimal,
+> so it's better to make 2/2 patch not depend on this patch.
 
-Do you know which one of these pointers was NULL?
+OK, so I do we go around this. Both patches are in the mm tree now.
+Should Andrew just drop the current version and you repost a new
+version? Sorry I didn't jump in sooner but I was quite busy last week.
 
-I want't make sure we're fixing the root issue as opposed to papering
-over it.  I'm not seeing how any of these pointers could have been
-NULL (at least in my upstream kernel), and while I believe that this
-helped for your kernel, I want to make sure we understand exactly what
-was going on.
+> > How have you tested this?
+> 
+> Other than libhugetlbfs test (that contains many workloads, but I'm
+> not sure it can detect the possible regression of this patch,)
+> I did simple testing where:
+>  - create a file on hugetlbfs,
+>  - create 10 processes and make each of them iterate the following:
+>    * mmap() the hugetlbfs file,
+>    * memset() the mapped range (to cause hugetlb_fault), and
+>    * munmap() the mapped range.
+> I think that this can make racy situation which should be prevented
+> by page table locks.
 
-Thanks,
+OK, but this still requires a deep inspection of all the subtle
+dependencies on page_table_lock from the core mm. I might be wrong here
+and should be more specific about the issues I have only suspicion for
+but as this is "just" an scalability improvement (is this actually
+measurable?) I would suggest to put it at the end of your hugetlbfs
+enahcements for the migration. Just from the reviewability point of
+view.
 
-					- Ted
+> > > This patch makes hugepage support split page table lock so that
+> > > we use page->ptl of the leaf node of page table tree which is pte for
+> > > normal pages but can be pmd and/or pud for hugepages of some architectures.
+> > > 
+> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > ---
+> > >  arch/x86/mm/hugetlbpage.c |  6 ++--
+> > >  include/linux/hugetlb.h   | 18 ++++++++++
+> > >  mm/hugetlb.c              | 84 ++++++++++++++++++++++++++++-------------------
+> > 
+> > This doesn't seem to be the complete story. At least not from the
+> > trivial:
+> > $ find arch/ -name "*hugetlb*" | xargs git grep "page_table_lock" -- 
+> > arch/powerpc/mm/hugetlbpage.c:  spin_lock(&mm->page_table_lock);
+> > arch/powerpc/mm/hugetlbpage.c:  spin_unlock(&mm->page_table_lock);
+> > arch/tile/mm/hugetlbpage.c:             spin_lock(&mm->page_table_lock);
+> > arch/tile/mm/hugetlbpage.c:
+> > spin_unlock(&mm->page_table_lock);
+> > arch/x86/mm/hugetlbpage.c: * called with vma->vm_mm->page_table_lock held.
+> 
+> This trivials should be fixed. Sorry.
+
+Other archs are often forgotten and cscope doesn't help exactly ;)
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
