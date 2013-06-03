@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab3FCCXx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 22:23:53 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:46516 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893Ab3FCCXs (ORCPT
+	id S1756912Ab3FCC2x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 22:28:53 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:56566
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755945Ab3FCC2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 22:23:48 -0400
-Message-ID: <51ABF410.4090109@linux.vnet.ibm.com>
-Date: Mon, 03 Jun 2013 07:10:32 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Sun, 2 Jun 2013 22:28:44 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -16
+X-BigFish: VS-16(zzbb2dI98dI9371I936eI1432I4015Ia65Rzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Message-ID: <51ABFF5F.4020409@freescale.com>
+Date: Mon, 3 Jun 2013 10:28:47 +0800
+From: Chen Yuanquan-B41889 <B41889@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Jiannan Ouyang <ouyang@cs.pitt.edu>, Gleb Natapov <gleb@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        x86@kernel.org, konrad.wilk@oracle.com,
-        "H. Peter Anvin" <hpa@zytor.com>, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        xen-devel@lists.xensource.com, Peter Zijlstra <peterz@infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
-        chegu vinod <chegu_vinod@hp.com>, torvalds@linux-foundation.org,
-        Avi Kivity <avi.kivity@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stephan.diestelhorst@amd.com,
-        Rik van Riel <riel@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-References: <20130601192125.5966.35563.sendpatchset@codeblue> <20130602080739.GA24773@redhat.com> <CAJocwcf0oykyLv4B22pBf1A3H7+Cs6qu0vmTWp46Z=KwrTkXyQ@mail.gmail.com>
-In-Reply-To: <CAJocwcf0oykyLv4B22pBf1A3H7+Cs6qu0vmTWp46Z=KwrTkXyQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
+        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
+Subject: Re: [PATCH] powerpc/pci: Improve device hotplug initialization
+References: <1369762514-27352-1-git-send-email-linux@roeck-us.net> <51A5CAC1.6030800@freescale.com> <20130531051423.GA15505@roeck-us.net> <1369979047.3928.112.camel@pasglop> <20130601135809.GA6395@roeck-us.net>
+In-Reply-To: <20130601135809.GA6395@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060302-5816-0000-0000-0000083D6658
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2013 09:50 PM, Jiannan Ouyang wrote:
-> On Sun, Jun 2, 2013 at 1:07 AM, Gleb Natapov <gleb@redhat.com> wrote:
->
->> High level question here. We have a big hope for "Preemptable Ticket
->> Spinlock" patch series by Jiannan Ouyang to solve most, if not all,
->> ticketing spinlocks in overcommit scenarios problem without need for PV.
->> So how this patch series compares with his patches on PLE enabled processors?
+On 06/01/2013 09:58 PM, Guenter Roeck wrote:
+> On Fri, May 31, 2013 at 03:44:07PM +1000, Benjamin Herrenschmidt wrote:
+>> On Thu, 2013-05-30 at 22:14 -0700, Guenter Roeck wrote:
+>>> On Wed, May 29, 2013 at 05:30:41PM +0800, Chen Yuanquan-B41889 wrote:
+>>>> On 05/29/2013 01:35 AM, Guenter Roeck wrote:
+>>>>> bios_add_device(). Drop explicit calls to pcibios_setup_device();
+>>>>> this makes pcibios_setup_bus_devices() a noop function which could
+>>>>> eve
+>>>> Yeah, it's more reasonable to do the irq and DMA related initialization
+>>>> in one code path for all devices.
+>>>>
+>>> Any comments / feedback on the code itself ?
+>> Sorry, I haven't had a chance to review it yet, I'm fairly bogged down
+>> at the moment. I want to tread carefully because the previous iteration
+>> of changing that stuff did break a few platforms in the end.
 >>
+> Hi Ben,
 >
-> No experiment results yet.
+> the comment was actuially directed towards Yuanquan.
 >
-> An error is reported on a 20 core VM. I'm during an internship
-> relocation, and will start work on it next week.
+> No problem, take your time. I did my best to test it, but I agree that this is a
+> critical area of the code, and it would be desirable to get additional scrutiny
+> and test feedback.
+>
+> The code has been running in our system (P2020 and P5040) for several months.
+> I was preparing a patch for upstream submission when I noticed commit 37f02195b.
+> After testing ithis commit, I noticed the problems with it and wrote this patch,
+> which aligns the code with our initial patch. I tested it as good as I could on
+> our systems as well as with a P5040 evaluation board and an Intel GE PCIe
+> card.
+>
+> Thanks,
+> Guenter
+>
 
-Preemptable spinlocks' testing update:
-I hit the same softlockup problem while testing on 32 core machine with
-32 guest vcpus that Andrew had reported.
+Hi Guenter,
 
-After that i started tuning TIMEOUT_UNIT, and when I went till (1<<8),
-things seemed to be manageable for undercommit cases.
-But I still see degradation for undercommit w.r.t baseline itself on 32
-core machine (after tuning).
+Your patch makes sure the initialization of DMA and irq in one code path 
+and also
+avoids the initialization called two times(in pci bus scanning and 
+pci_enable_device()
+in device driver) for no-hot-plugged pci device. It's much more reasonable!
 
-(37.5% degradation w.r.t base line).
-I can give the full report after the all tests complete.
+I don't know why you also remove the function "set_dev_node()" ? As I 
+know, the
+function just be called here. I think it should remain in your new function
+pcibios_add_device().
 
-For over-commit cases, I again started hitting softlockups (and
-degradation is worse). But as I said in the preemptable thread, the
-concept of preemptable locks looks promising (though I am still not a
-fan of  embedded TIMEOUT mechanism)
+Regards,
+Yuanquan
 
-Here is my opinion of TODOs for preemptable locks to make it better ( I
-think I need to paste in the preemptable thread also)
+>
 
-1. Current TIMEOUT UNIT seem to be on higher side and also it does not
-scale well with large guests and also overcommit. we need to have a
-sort of adaptive mechanism and better is sort of different TIMEOUT_UNITS
-for different types of lock too. The hashing mechanism that was used in
-Rik's spinlock backoff series fits better probably.
-
-2. I do not think TIMEOUT_UNIT itself would work great when we have a
-big queue (for large guests / overcommits) for lock.
-one way is to add a PV hook that does yield hypercall immediately for
-the waiters above some THRESHOLD so that they don't burn the CPU.
-( I can do POC to check if  that idea works in improving situation
-at some later point of time)
 
