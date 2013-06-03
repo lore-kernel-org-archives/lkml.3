@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab3FCNWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:22:53 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:38467 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757501Ab3FCNWu (ORCPT
+	id S1757820Ab3FCNXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:23:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56051 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757501Ab3FCNXR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:22:50 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: tj@kernel.org, timur@tabi.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, clemens@ladisch.de,
-        sergei.shtylyov@cogentembedded.com
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH v4] ata: increase retry count but shorten duration for Calxeda controller
-Date: Mon,  3 Jun 2013 08:22:54 -0500
-Message-Id: <1370265774-13939-1-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
+	Mon, 3 Jun 2013 09:23:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,792,1363158000"; 
+   d="scan'208";a="250000563"
+Message-ID: <1370265792.29283.260.camel@smile>
+Subject: Re: [RFC PATCH v0 0/2] dw_dmac: move to own folder and split
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Date: Mon, 03 Jun 2013 16:23:12 +0300
+In-Reply-To: <CAKohpokWj4fNxc3AQPvKoogJRjGaMkeU6r7OvPCkE2Rrj+OcGw@mail.gmail.com>
+References: <1370015432-17259-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAKohpo=5+6X79tJaHd0BvKzECNqpiUcp9eybSSMDcJCkF8HVng@mail.gmail.com>
+	 <1370262344.29283.255.camel@smile>
+	 <CAKohpokWj4fNxc3AQPvKoogJRjGaMkeU6r7OvPCkE2Rrj+OcGw@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the retry count for the hard reset function to 100 but
-shorten the time out period to 500 ms. See the comment for
-ahci_highbank_hardreset for the reasons why those vaulues were
-chosen.
+On Mon, 2013-06-03 at 18:42 +0530, Viresh Kumar wrote: 
+> On 3 June 2013 17:55, Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
----
-Changes from v3
-	Move the detail to a comment on the ahci_highbank_hardreset function
-Changes from v2
-        Add static to the timing variable definition
-Changes from v1
-        Add const to the timing variable definition
-        Added more detail in why the various numbers were chosen
 
- drivers/ata/sata_highbank.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+> > In patch 2/2 I collect platform related code. I see a lot of #ifdefs
+> > related to OF and ACPI. I would like to split it further and create
+> > files like of.c and acpi.c. What do you think?
+> 
+> Naahh.. OF by itself doesn't mean anything here on this driver. It
+> belongs to all the users that are using DT to enumerate it (Mostly
+> ARM). And they are going to use platform_driver interface. So,
+> code is well located currently too..
 
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index b20aa96..c846fd3 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -196,10 +196,26 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
- 	return 0;
- }
- 
-+/*
-+ * The Calxeda SATA phy intermittently fails to bring up a link with Gen3
-+ * Retrying the phy hard reset can work around the issue, but the drive
-+ * may fail again. In less than 150 out of 15000 test runs, it took more
-+ * than 10 tries for the link to be established (but never more than 35).
-+ * Triple the maximum observed retry count to provide plenty of margin for
-+ * rare events and to guarantee that the link is established.
-+ *
-+ * Also, the default 2 second time-out on a failed drive is too long in
-+ * this situation. The uboot implementation of the same driver function
-+ * uses a much shorter time-out period and never experiences a time out
-+ * issue. Reducing the time-out to 500ms improves the responsiveness.
-+ * The other timing constants were kept the same as the stock AHCI driver.
-+ * This change was also tested 15000 times on 24 drives and none of them
-+ * experienced a time out.
-+ */
- static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 				unsigned long deadline)
- {
--	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-+	static const unsigned long timing[] = { 5, 100, 500};
- 	struct ata_port *ap = link->ap;
- 	struct ahci_port_priv *pp = ap->private_data;
- 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
-@@ -207,7 +223,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 	bool online;
- 	u32 sstatus;
- 	int rc;
--	int retry = 10;
-+	int retry = 100;
- 
- 	ahci_stop_engine(ap);
- 
+I got it.
+
+> ACPI, I am not sure.. you need these routines in your pci stuff too?
+
+No, ACPI is alike OF, it relies on platform driver.
+
+> Keep it this way:
+> - Keep all the common stuff across pci and platform in core.c
+> - everything else in pci and platform files.
+
+It seems it's kept in that way already.
+
+Thanks for your comments!
+
+I will resend patch series v1 w/o RFC and with PCI driver later (when it
+will be ready). I will attach the missed patch to the series in case
+Vinod doesn't apply it in time.
+
+
 -- 
-1.8.1.2
-
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
