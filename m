@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab3FCUgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:36:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45483 "EHLO
+	id S1757746Ab3FCUgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:36:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45480 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757368Ab3FCUeJ (ORCPT
+	with ESMTP id S1757301Ab3FCUeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 16:34:09 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCHv7 10/11] clocksource: time-armada-370-xp: Divorce from local timer API
-Date: Mon,  3 Jun 2013 13:34:01 -0700
-Message-Id: <1370291642-13259-11-git-send-email-sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCHv7 04/11] ARM: smp_twd: Divorce smp_twd from local timer API
+Date: Mon,  3 Jun 2013 13:33:55 -0700
+Message-Id: <1370291642-13259-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
 In-Reply-To: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
 References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
@@ -20,206 +22,366 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the armada 370xp local timers from the local timer API.
-This will allow us to remove ARM local timer support in the near
-future and makes this driver multi-architecture friendly.
+Separate the smp_twd timers from the local timer API. This will
+allow us to remove ARM local timer support in the near future and
+gets us closer to moving this driver to drivers/clocksource.
 
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Mark Rutland <mark.rutland@arm.com>
 Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clocksource/time-armada-370-xp.c | 89 +++++++++++++++-----------------
- 1 file changed, 41 insertions(+), 48 deletions(-)
+ arch/arm/Kconfig               |  2 +-
+ arch/arm/kernel/smp_twd.c      | 64 ++++++++++++++++++++++++++++--------------
+ arch/arm/mach-highbank/Kconfig |  2 +-
+ arch/arm/mach-imx/Kconfig      |  2 +-
+ arch/arm/mach-omap2/Kconfig    |  2 +-
+ arch/arm/mach-realview/Kconfig |  8 +++---
+ arch/arm/mach-spear/Kconfig    |  2 +-
+ arch/arm/mach-tegra/Kconfig    |  2 +-
+ arch/arm/mach-ux500/Kconfig    |  2 +-
+ arch/arm/mach-vexpress/Kconfig |  2 +-
+ arch/arm/mach-zynq/Kconfig     |  2 +-
+ 11 files changed, 56 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index efe4aef..4a31e86 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d423d58..177cb39 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -636,7 +636,7 @@ config ARCH_SHMOBILE
+ 	select CLKDEV_LOOKUP
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_CLK
+ 	select HAVE_MACH_CLKDEV
+ 	select HAVE_SMP
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 90525d9..aac1495 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -11,6 +11,7 @@
+ #include <linux/init.h>
  #include <linux/kernel.h>
  #include <linux/clk.h>
 +#include <linux/cpu.h>
- #include <linux/timer.h>
- #include <linux/clockchips.h>
- #include <linux/interrupt.h>
-@@ -31,7 +32,6 @@
- #include <linux/time-armada-370-xp.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+@@ -24,7 +25,6 @@
  
- #include <asm/sched_clock.h>
+ #include <asm/smp_plat.h>
+ #include <asm/smp_twd.h>
 -#include <asm/localtimer.h>
- /*
-  * Timer block registers.
-  */
-@@ -70,7 +70,7 @@ static bool timer25Mhz = true;
-  */
- static u32 ticks_per_jiffy;
  
--static struct clock_event_device __percpu **percpu_armada_370_xp_evt;
-+static struct clock_event_device __percpu *armada_370_xp_evt;
+ /* set up by the platform code */
+ static void __iomem *twd_base;
+@@ -33,7 +33,7 @@ static struct clk *twd_clk;
+ static unsigned long twd_timer_rate;
+ static DEFINE_PER_CPU(bool, percpu_setup_called);
  
- static u32 notrace armada_370_xp_read_sched_clock(void)
- {
-@@ -143,21 +143,14 @@ armada_370_xp_clkevt_mode(enum clock_event_mode mode,
- 	}
- }
+-static struct clock_event_device __percpu **twd_evt;
++static struct clock_event_device __percpu *twd_evt;
+ static int twd_ppi;
  
--static struct clock_event_device armada_370_xp_clkevt = {
--	.name		= "armada_370_xp_per_cpu_tick",
--	.features	= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
--	.shift		= 32,
--	.rating		= 300,
--	.set_next_event	= armada_370_xp_clkevt_next_event,
--	.set_mode	= armada_370_xp_clkevt_mode,
--};
-+static int armada_370_xp_clkevt_irq;
- 
- static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
- {
- 	/*
- 	 * ACK timer interrupt and call event handler.
- 	 */
--	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+	struct clock_event_device *evt = dev_id;
- 
- 	writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
- 	evt->event_handler(evt);
-@@ -173,42 +166,55 @@ static int __cpuinit armada_370_xp_timer_setup(struct clock_event_device *evt)
- 	u32 u;
- 	int cpu = smp_processor_id();
- 
--	/* Use existing clock_event for cpu 0 */
--	if (!smp_processor_id())
--		return 0;
--
- 	u = readl(local_base + TIMER_CTRL_OFF);
- 	if (timer25Mhz)
- 		writel(u | TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
- 	else
- 		writel(u & ~TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
- 
--	evt->name		= armada_370_xp_clkevt.name;
--	evt->irq		= armada_370_xp_clkevt.irq;
--	evt->features		= armada_370_xp_clkevt.features;
--	evt->shift		= armada_370_xp_clkevt.shift;
--	evt->rating		= armada_370_xp_clkevt.rating,
-+	evt->name		= "armada_370_xp_per_cpu_tick",
-+	evt->features		= CLOCK_EVT_FEAT_ONESHOT |
-+				  CLOCK_EVT_FEAT_PERIODIC;
-+	evt->shift		= 32,
-+	evt->rating		= 300,
- 	evt->set_next_event	= armada_370_xp_clkevt_next_event,
- 	evt->set_mode		= armada_370_xp_clkevt_mode,
-+	evt->irq		= armada_370_xp_clkevt_irq;
- 	evt->cpumask		= cpumask_of(cpu);
- 
--	*__this_cpu_ptr(percpu_armada_370_xp_evt) = evt;
--
- 	clockevents_config_and_register(evt, timer_clk, 1, 0xfffffffe);
- 	enable_percpu_irq(evt->irq, 0);
- 
+ static void twd_set_mode(enum clock_event_mode mode,
+@@ -90,8 +90,10 @@ static int twd_timer_ack(void)
  	return 0;
  }
  
--static void  armada_370_xp_timer_stop(struct clock_event_device *evt)
-+static void __cpuinit armada_370_xp_timer_stop(struct clock_event_device *evt)
+-static void twd_timer_stop(struct clock_event_device *clk)
++static void twd_timer_stop(void)
  {
- 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
- 	disable_percpu_irq(evt->irq);
++	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++
+ 	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
+ 	disable_percpu_irq(clk->irq);
+ }
+@@ -106,7 +108,7 @@ static void twd_update_frequency(void *new_rate)
+ {
+ 	twd_timer_rate = *((unsigned long *) new_rate);
+ 
+-	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
++	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
  }
  
--static struct local_timer_ops armada_370_xp_local_timer_ops __cpuinitdata = {
--	.setup	= armada_370_xp_timer_setup,
--	.stop	=  armada_370_xp_timer_stop,
-+static int __cpuinit armada_370_xp_timer_cpu_notify(struct notifier_block *self,
+ static int twd_rate_change(struct notifier_block *nb,
+@@ -132,7 +134,7 @@ static struct notifier_block twd_clk_nb = {
+ 
+ static int twd_clk_init(void)
+ {
+-	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
++	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
+ 		return clk_notifier_register(twd_clk, &twd_clk_nb);
+ 
+ 	return 0;
+@@ -151,7 +153,7 @@ static void twd_update_frequency(void *data)
+ {
+ 	twd_timer_rate = clk_get_rate(twd_clk);
+ 
+-	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
++	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
+ }
+ 
+ static int twd_cpufreq_transition(struct notifier_block *nb,
+@@ -177,7 +179,7 @@ static struct notifier_block twd_cpufreq_nb = {
+ 
+ static int twd_cpufreq_init(void)
+ {
+-	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
++	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
+ 		return cpufreq_register_notifier(&twd_cpufreq_nb,
+ 			CPUFREQ_TRANSITION_NOTIFIER);
+ 
+@@ -228,7 +230,7 @@ static void __cpuinit twd_calibrate_rate(void)
+ 
+ static irqreturn_t twd_handler(int irq, void *dev_id)
+ {
+-	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++	struct clock_event_device *evt = dev_id;
+ 
+ 	if (twd_timer_ack()) {
+ 		evt->event_handler(evt);
+@@ -265,9 +267,9 @@ static void twd_get_clock(struct device_node *np)
+ /*
+  * Setup the local clock events for a CPU.
+  */
+-static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
++static void __cpuinit twd_timer_setup(void)
+ {
+-	struct clock_event_device **this_cpu_clk;
++	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
+ 	int cpu = smp_processor_id();
+ 
+ 	/*
+@@ -276,9 +278,9 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
+ 	 */
+ 	if (per_cpu(percpu_setup_called, cpu)) {
+ 		__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
+-		clockevents_register_device(*__this_cpu_ptr(twd_evt));
++		clockevents_register_device(clk);
+ 		enable_percpu_irq(clk->irq, 0);
+-		return 0;
++		return;
+ 	}
+ 	per_cpu(percpu_setup_called, cpu) = true;
+ 
+@@ -297,27 +299,37 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
+ 	clk->set_mode = twd_set_mode;
+ 	clk->set_next_event = twd_set_next_event;
+ 	clk->irq = twd_ppi;
+-
+-	this_cpu_clk = __this_cpu_ptr(twd_evt);
+-	*this_cpu_clk = clk;
++	clk->cpumask = cpumask_of(cpu);
+ 
+ 	clockevents_config_and_register(clk, twd_timer_rate,
+ 					0xf, 0xffffffff);
+ 	enable_percpu_irq(clk->irq, 0);
++}
+ 
+-	return 0;
++static int __cpuinit twd_timer_cpu_notify(struct notifier_block *self,
 +					   unsigned long action, void *hcpu)
 +{
-+	/*
-+	 * Grab cpu pointer in each case to avoid spurious
-+	 * preemptible warnings
-+	 */
 +	switch (action & ~CPU_TASKS_FROZEN) {
 +	case CPU_STARTING:
-+		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
++		twd_timer_setup();
 +		break;
 +	case CPU_DYING:
-+		armada_370_xp_timer_stop(this_cpu_ptr(armada_370_xp_evt));
++		twd_timer_stop();
 +		break;
 +	}
 +
 +	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block armada_370_xp_timer_cpu_nb __cpuinitdata = {
-+	.notifier_call = armada_370_xp_timer_cpu_notify,
+ }
+ 
+-static struct local_timer_ops twd_lt_ops __cpuinitdata = {
+-	.setup	= twd_timer_setup,
+-	.stop	= twd_timer_stop,
++static struct notifier_block twd_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = twd_timer_cpu_notify,
  };
  
- void __init armada_370_xp_timer_init(void)
-@@ -224,9 +230,6 @@ void __init armada_370_xp_timer_init(void)
+ static int __init twd_local_timer_common_register(struct device_node *np)
+ {
+ 	int err;
  
- 	if (of_find_property(np, "marvell,timer-25Mhz", NULL)) {
- 		/* The fixed 25MHz timer is available so let's use it */
--		u = readl(local_base + TIMER_CTRL_OFF);
--		writel(u | TIMER0_25MHZ,
--		       local_base + TIMER_CTRL_OFF);
- 		u = readl(timer_base + TIMER_CTRL_OFF);
- 		writel(u | TIMER0_25MHZ,
- 		       timer_base + TIMER_CTRL_OFF);
-@@ -236,9 +239,6 @@ void __init armada_370_xp_timer_init(void)
- 		struct clk *clk = of_clk_get(np, 0);
- 		WARN_ON(IS_ERR(clk));
- 		rate =  clk_get_rate(clk);
--		u = readl(local_base + TIMER_CTRL_OFF);
--		writel(u & ~(TIMER0_25MHZ),
--		       local_base + TIMER_CTRL_OFF);
+-	twd_evt = alloc_percpu(struct clock_event_device *);
++	twd_evt = alloc_percpu(struct clock_event_device);
+ 	if (!twd_evt) {
+ 		err = -ENOMEM;
+ 		goto out_free;
+@@ -329,12 +341,22 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+ 		goto out_free;
+ 	}
  
- 		u = readl(timer_base + TIMER_CTRL_OFF);
- 		writel(u & ~(TIMER0_25MHZ),
-@@ -252,7 +252,7 @@ void __init armada_370_xp_timer_init(void)
- 	 * We use timer 0 as clocksource, and private(local) timer 0
- 	 * for clockevents
- 	 */
--	armada_370_xp_clkevt.irq = irq_of_parse_and_map(np, 4);
-+	armada_370_xp_clkevt_irq = irq_of_parse_and_map(np, 4);
+-	err = local_timer_register(&twd_lt_ops);
++	err = register_cpu_notifier(&twd_timer_cpu_nb);
+ 	if (err)
+ 		goto out_irq;
  
- 	ticks_per_jiffy = (timer_clk + HZ / 2) / HZ;
+ 	twd_get_clock(np);
  
-@@ -277,26 +277,19 @@ void __init armada_370_xp_timer_init(void)
- 			      "armada_370_xp_clocksource",
- 			      timer_clk, 300, 32, clocksource_mmio_readl_down);
++	/*
++	 * Immediately configure the timer on the boot CPU, unless we need
++	 * jiffies to be incrementing to calibrate the rate in which case
++	 * setup the timer in late_time_init.
++	 */
++	if (twd_timer_rate)
++		twd_timer_setup();
++	else
++		late_time_init = twd_timer_setup;
++
+ 	return 0;
  
--	/* Register the clockevent on the private timer of CPU 0 */
--	armada_370_xp_clkevt.cpumask = cpumask_of(0);
--	clockevents_config_and_register(&armada_370_xp_clkevt,
--					timer_clk, 1, 0xfffffffe);
-+	register_cpu_notifier(&armada_370_xp_timer_cpu_nb);
- 
--	percpu_armada_370_xp_evt = alloc_percpu(struct clock_event_device *);
-+	armada_370_xp_evt = alloc_percpu(struct clock_event_device);
- 
- 
- 	/*
- 	 * Setup clockevent timer (interrupt-driven).
- 	 */
--	*__this_cpu_ptr(percpu_armada_370_xp_evt) = &armada_370_xp_clkevt;
--	res = request_percpu_irq(armada_370_xp_clkevt.irq,
-+	res = request_percpu_irq(armada_370_xp_clkevt_irq,
- 				armada_370_xp_timer_interrupt,
--				armada_370_xp_clkevt.name,
--				percpu_armada_370_xp_evt);
--	if (!res) {
--		enable_percpu_irq(armada_370_xp_clkevt.irq, 0);
--#ifdef CONFIG_LOCAL_TIMERS
--		local_timer_register(&armada_370_xp_local_timer_ops);
--#endif
--	}
-+				"armada_370_xp_per_cpu_tick",
-+				armada_370_xp_evt);
-+	/* Immediately configure the timer on the boot CPU */
-+	if (!res)
-+		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
- }
+ out_irq:
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index cd9fcb1..6acbdab 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -12,7 +12,7 @@ config ARCH_HIGHBANK
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select MAILBOX
+ 	select PL320_MBOX
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index ba44328..c8adc79 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -798,7 +798,7 @@ config SOC_IMX6Q
+ 	select COMMON_CLK
+ 	select CPU_V7
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_CAN_FLEXCAN if CAN
+ 	select HAVE_IMX_ANATOP
+ 	select HAVE_IMX_GPC
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index f49cd51..edb950a 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -90,7 +90,7 @@ config ARCH_OMAP4
+ 	select CACHE_L2X0
+ 	select CPU_V7
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select LOCAL_TIMERS if SMP
+ 	select OMAP_INTERCONNECT
+diff --git a/arch/arm/mach-realview/Kconfig b/arch/arm/mach-realview/Kconfig
+index d210c0f9..9db2029 100644
+--- a/arch/arm/mach-realview/Kconfig
++++ b/arch/arm/mach-realview/Kconfig
+@@ -13,7 +13,7 @@ config REALVIEW_EB_A9MP
+ 	depends on MACH_REALVIEW_EB
+ 	select CPU_V7
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+@@ -26,7 +26,7 @@ config REALVIEW_EB_ARM11MP
+ 	select ARCH_HAS_BARRIERS if SMP
+ 	select CPU_V6K
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+@@ -48,7 +48,7 @@ config MACH_REALVIEW_PB11MP
+ 	select ARM_GIC
+ 	select CPU_V6K
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+@@ -92,7 +92,7 @@ config MACH_REALVIEW_PBX
+ 	select ARCH_SPARSEMEM_ENABLE if CPU_V7 && !REALVIEW_HIGH_PHYS_OFFSET
+ 	select ARM_GIC
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
+index 442917e..df0d59a 100644
+--- a/arch/arm/mach-spear/Kconfig
++++ b/arch/arm/mach-spear/Kconfig
+@@ -23,7 +23,7 @@ config ARCH_SPEAR13XX
+ 	select CPU_V7
+ 	select GPIO_SPEAR_SPICS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	select PINCTRL
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 84d72fc..1f3ea1f 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -8,7 +8,7 @@ config ARCH_TEGRA
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_CLK
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index 6a4387e..0614ee2 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -8,7 +8,7 @@ config ARCH_U8500
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
+index 5907e10..5bfdd73 100644
+--- a/arch/arm/mach-vexpress/Kconfig
++++ b/arch/arm/mach-vexpress/Kconfig
+@@ -10,7 +10,7 @@ config ARCH_VEXPRESS
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select HAVE_CLK
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
+index c1d61f2..04f8a4a 100644
+--- a/arch/arm/mach-zynq/Kconfig
++++ b/arch/arm/mach-zynq/Kconfig
+@@ -6,7 +6,7 @@ config ARCH_ZYNQ
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU if SMP
+-	select HAVE_ARM_TWD if LOCAL_TIMERS
++	select HAVE_ARM_TWD if SMP
+ 	select ICST
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	select USE_OF
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
