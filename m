@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab3FCSuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:50:09 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42452 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab3FCSuG (ORCPT
+	id S1759662Ab3FCSuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:50:19 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61603 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab3FCSuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:50:06 -0400
+	Mon, 3 Jun 2013 14:50:13 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] serial: omap: repair building without PM_SLEEP
+References: <1844339.mxci2DdvBF@wuerfel> <20130603170730.GA30767@kroah.com>
+Date: Mon, 03 Jun 2013 11:50:09 -0700
+In-Reply-To: <20130603170730.GA30767@kroah.com> (Greg Kroah-Hartman's message
+	of "Mon, 3 Jun 2013 10:07:30 -0700")
+Message-ID: <871u8jm3ku.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <s5h8v2rzezr.wl%tiwai@suse.de>
-References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
- <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
- <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
- <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
- <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
- <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
- <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
- <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
- <s5h1u8wtsk9.wl%tiwai@suse.de> <CALxABCZdm=qd1E63NeabcqmD0csnL1FcuUBCFTwa1yDOVRVXyg@mail.gmail.com>
- <s5h1u8w8f82.wl%tiwai@suse.de> <CALxABCbJ-4_UPNX5qNAOy-PdQ+tp+vVBDE535nLyfjgzDjjebQ@mail.gmail.com>
- <s5h1u8p7pxi.wl%tiwai@suse.de> <CALxABCbBYRJDsXMw0Y0BLs+RuXNMa_RMOAF5i4rmWDaYPa2H0Q@mail.gmail.com>
- <s5hehcn2tc3.wl%tiwai@suse.de> <CALxABCaQ_drc+jKP4wZ5S_5wZVcE7rVXW_LZdVJ8tqZUai-=UQ@mail.gmail.com>
- <s5hbo7rowq5.wl%tiwai@suse.de> <CALxABCZVDrLMH+Y=b6CP8rehM5q7vikjoGNgi=S5jHKZuSSGsw@mail.gmail.com>
- <s5h8v2rzezr.wl%tiwai@suse.de>
-From: Alex Riesen <raa.lkml@gmail.com>
-Date: Mon, 3 Jun 2013 20:49:45 +0200
-Message-ID: <CALxABCbJz_8ENe+qQgb8m9yoU_75yKh5CAaikT3zX92X18As1w@mail.gmail.com>
-Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
- HDA, codec VIA VT1802
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 12:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> Thanks.  I think I found the culprit of the problem with the pin ctl
-> value now.  This happens only when the power save is used or
-> suspended, and it happens only on VT1802.  That's why I couldn't
-> reproduce the issue with the emulator, and it wasn't reported from
-> users of other VIA codecs.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+
+> On Sat, Jun 01, 2013 at 11:18:13AM +0200, Arnd Bergmann wrote:
+>> A recent bug fix in 3.10, ddd85e225c "serial: omap: prevent runtime PM for
+>> "no_console_suspend"", introduced a regression from an obvious typo:
 >
-> In anyway, the patch series below are the fixes.  Scratch the whole
-> previous patches and apply them on clean 3.9 (or 3.10-rc) tree.
-> Hopefully we sorted out all issues now.
+> I don't see that commit id, or commit, in Linus's tree at all.  Where do
+> you see it?
 
-Bingo, it works! In case you want to review the test, logs:
+It's in linux-next (from your tty-next branch.)
 
-  http://familie-riesen.de/~raa/public/test/via-fix-cleared-pins.tar.bz2
+>> drivers/tty/serial/omap-serial.c:1677:14: error: 'serial_omap_complete' 
+>> 	undeclared here (not in a function)
+>> 
+>> This changes the incorrectly added macro to the one that we need instead.
+>> 
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-I'm going to run this kernel from now on. I shall report if I see
-something else.
+Acked-by: Kevin Hilman <khilman@linaro.org>
 
-Thanks!
-Alex
+>> ---
+>> Please apply for 3.10-rc
+>
+> Really?  It doesn't apply to 3.10-rc3 or -rc4 from what I can tell.
+
+Right, this is -next material, not v3.10.
+
+Kevin
