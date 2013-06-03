@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3FCG2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:28:13 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:48579 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3FCG2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:28:10 -0400
-Message-ID: <51AC376D.9030001@redhat.com>
-Date: Mon, 03 Jun 2013 08:27:57 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
-References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com> <20130602181253.GP24773@redhat.com>
-In-Reply-To: <20130602181253.GP24773@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751286Ab3FCGa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:30:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62144 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783Ab3FCGau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 02:30:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,791,1363158000"; 
+   d="scan'208";a="343887378"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [char-misc 3.10] mei: nfc: fix nfc device freeing
+Date: Mon,  3 Jun 2013 09:28:30 +0300
+Message-Id: <1370240910-16411-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/06/2013 20:12, Gleb Natapov ha scritto:
-> On Thu, May 30, 2013 at 04:35:55PM +0200, Paolo Bonzini wrote:
->> The x86-64 extended low-byte registers were fetched correctly from reg,
->> but not from mod/rm.
->>
->> This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
->> not enough.
->>
-> Did I missed unit test patch? :)
+The nfc_dev is a static variable and is not cleaned properly upon reset
+mainly ndev->cl and ndev->cl_info are not set to NULL after freeing which
 
-I wanted to ask the GSoC student to do it.  If it doesn't come in a
-couple of weeks, I'll send it.
+mei_stop:198: mei_me 0000:00:16.0: stopping the device.
+[  404.253427] general protection fault: 0000 [#2] SMP
+[  404.253437] Modules linked in: mei_me(-) binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd af_packet cpufreq_conservative cpufreq_userspace cpufreq_powersave fuse loop dm_mod hid_generic usbhid hid coretemp acpi_cpufreq mperf kvm_intel kvm crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul snd_hda_codec_hdmi glue_helper aes_x86_64 e1000e snd_hda_intel snd_hda_codec ehci_pci iTCO_wdt iTCO_vendor_support ehci_hcd snd_hwdep xhci_hcd snd_pcm usbcore ptp mei sg microcode snd_timer pps_core i2c_i801 snd pcspkr battery rtc_cmos lpc_ich mfd_core soundcore usb_common snd_page_alloc ac ext3 jbd mbcache drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt i2c_core sd_mod crc_t10dif thermal fan video button processor thermal_sys hwmon ahci libahci libata scsi_mod [last unloaded: mei_me]
+[  404.253591] CPU: 0 PID: 5551 Comm: modprobe Tainted: G      D W    3.10.0-rc3 #1
+[  404.253611] task: ffff880143cd8300 ti: ffff880144a2a000 task.ti: ffff880144a2a000
+[  404.253619] RIP: 0010:[<ffffffff81334e5d>]  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
+[  404.253638] RSP: 0018:ffff880144a2bcf8  EFLAGS: 00010206
+[  404.253645] RAX: 2020302e30202030 RBX: ffff880144fdb000 RCX: 0000000000000086
+[  404.253652] RDX: 0000000000000001 RSI: 0000000000000086 RDI: ffff880144fdb000
+[  404.253659] RBP: ffff880144a2bd18 R08: 0000000000000651 R09: 0000000000000006
+[  404.253666] R10: 0000000000000651 R11: 0000000000000006 R12: ffff880144fdb000
+[  404.253673] R13: ffff880149371098 R14: ffff880144482c00 R15: ffffffffa04710e0
+[  404.253681] FS:  00007f251c59a700(0000) GS:ffff88014e200000(0000) knlGS:0000000000000000
+[  404.253689] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  404.253696] CR2: ffffffffff600400 CR3: 0000000145319000 CR4: 00000000001407f0
+[  404.253703] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  404.253710] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[  404.253716] Stack:
+[  404.253720]  ffff880144fdb000 ffff880143ffe000 ffff880149371098 ffffffffa0471000
+[  404.253732]  ffff880144a2bd38 ffffffff8133502d ffff88014e20cf48 ffff880143ffe1d8
+[  404.253744]  ffff880144a2bd48 ffffffffa02a4749 ffff880144a2bd58 ffffffffa02a4ba1
+[  404.253755] Call Trace:
+[  404.253766]  [<ffffffff8133502d>] device_unregister+0x1d/0x60
+[  404.253787]  [<ffffffffa02a4749>] mei_cl_remove_device+0x9/0x10 [mei]
+[  404.253804]  [<ffffffffa02a4ba1>] mei_nfc_host_exit+0x21/0x30 [mei]
+[  404.253819]  [<ffffffffa029c2dd>] mei_stop+0x3d/0x90 [mei]
+[  404.253830]  [<ffffffffa046e220>] mei_me_remove+0x60/0xe0 [mei_me]
+[  404.253843]  [<ffffffff81278f37>] pci_device_remove+0x37/0xb0
+[  404.253855]  [<ffffffff81337c68>] __device_release_driver+0x98/0x100
+[  404.253865]  [<ffffffff81337d80>] driver_detach+0xb0/0xc0
+[  404.253876]  [<ffffffff81336b4f>] bus_remove_driver+0x8f/0x120
+[  404.253891]  [<ffffffff81075990>] ? try_to_wake_up+0x2b0/0x2b0
+[  404.253903]  [<ffffffff81338a48>] driver_unregister+0x58/0x90
+[  404.253913]  [<ffffffff8127906b>] pci_unregister_driver+0x2b/0xb0
+[  404.253924]  [<ffffffffa046f244>] mei_me_driver_exit+0x10/0xdcc [mei_me]
+[  404.253936]  [<ffffffff810a50d8>] SyS_delete_module+0x198/0x2b0
+[  404.253949]  [<ffffffff814850d9>] ? do_page_fault+0x9/0x10
+[  404.253961]  [<ffffffff81489692>] system_call_fastpath+0x16/0x1b
+[  404.253967] Code: 41 5c 41 5d 41 5e 41 5f c9 c3 0f 1f 40 00 55 48 89 e5 41 56 41 55 41 54 49 89 fc 53 48 8b 87 88 00 00 00 4c 8b 37 48 85 c0 74 18 <48> 8b 78 78 4c 89 e2 be 02 00 00 00 48 81 c7 f8 00 00 00 e8 3b
+[  404.254048] RIP  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
 
-Paolo
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/nfc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
->> Cc: gnatapov@redhat.com
->> Cc: kvm@vger.kernel.org
->> Cc: <stable@vger.kernel.org> # 3.9
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> ---
->>  arch/x86/kvm/emulate.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
->> index aa68106..028b34f 100644
->> --- a/arch/x86/kvm/emulate.c
->> +++ b/arch/x86/kvm/emulate.c
->> @@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
->>  	ctxt->modrm_seg = VCPU_SREG_DS;
->>  
->>  	if (ctxt->modrm_mod == 3) {
->> +		int highbyte_regs = ctxt->rex_prefix == 0;
->> +
->>  		op->type = OP_REG;
->>  		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
->> -		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
->> +		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
->> +					       highbyte_regs && (ctxt->d & ByteOp));
->>  		if (ctxt->d & Sse) {
->>  			op->type = OP_XMM;
->>  			op->bytes = 16;
->> -- 
->> 1.8.1.4
-> 
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+index 3adf8a7..d0c6907 100644
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -142,6 +142,8 @@ static void mei_nfc_free(struct mei_nfc_dev *ndev)
+ 		mei_cl_unlink(ndev->cl_info);
+ 		kfree(ndev->cl_info);
+ 	}
++
++	memset(ndev, 0, sizeof(struct mei_nfc_dev));
+ }
+ 
+ static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
+-- 
+1.8.1.2
 
