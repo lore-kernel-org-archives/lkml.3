@@ -1,37 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3FCIja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:39:30 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:58274 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab3FCIj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:39:28 -0400
+	id S1754929Ab3FCIjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:39:42 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:43651 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754096Ab3FCIjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 04:39:32 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Baruch Siach <baruch@tkos.co.il>
+Subject: Re: [PATCH 02/10] clocksource: dw_apb_timer_of: add clock-handling
+Date: Mon, 3 Jun 2013 09:51:08 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Olof Johansson <olof@lixom.net>, John Stultz <john.stultz@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        devicetree-discuss@lists.ozlabs.org
+References: <201306030055.15413.heiko@sntech.de> <201306030056.37724.heiko@sntech.de> <20130603032219.GM11798@tarshish>
+In-Reply-To: <20130603032219.GM11798@tarshish>
 MIME-Version: 1.0
-In-Reply-To: <1370247842.29283.243.camel@smile>
-References: <1370015432-17259-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1370015432-17259-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAKohpomwHMP=0hxkv4rLRWty28h6F408wmPq6FU_vixL1X-krA@mail.gmail.com>
-	<1370247842.29283.243.camel@smile>
-Date: Mon, 3 Jun 2013 14:09:27 +0530
-Message-ID: <CAKohpo=Crkk3e9xJ_AGa04N5ce4dD7DJ+2Ge6Oi_w=_UWKdGYQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v0 1/2] dma: move dw_dmac driver to an own directory
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306030951.09468.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 June 2013 13:54, Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
-> Imagine the case when we choose platform driver to be compiled as a
-> module. It means both variables set to m.
->
-> During compilation we will have core part compiled-in, and platform part
-> as a module.
->
-> I don't think this is what we want.
+Am Montag, 3. Juni 2013, 05:22:19 schrieb Baruch Siach:
+> Hi Heiko,
+> 
+> On Mon, Jun 03, 2013 at 12:56:37AM +0200, Heiko Stübner wrote:
+> > Add the possibility to get the clock-frequency from a timer clock instead
+> > of specifying it as dt property. Additionally also add the possibility
+> > to also define a controlling periphal clock for the timer block.
+> > 
+> > The clock-frequency property is kept to act as fallback if no clocks
+> > are specified.
+> > 
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > ---
+> > 
+> >  Documentation/devicetree/bindings/rtc/dw-apb.txt |   19 ++++++++++++++++
+> >  drivers/clocksource/dw_apb_timer_of.c            |   26
+> >  +++++++++++++++++++++- 2 files changed, 44 insertions(+), 1
+> >  deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/rtc/dw-apb.txt
+> > b/Documentation/devicetree/bindings/rtc/dw-apb.txt index
+> > 93e2b0f..80ab1c1 100644
+> > --- a/Documentation/devicetree/bindings/rtc/dw-apb.txt
+> > +++ b/Documentation/devicetree/bindings/rtc/dw-apb.txt
+> > 
+> > @@ -5,9 +5,20 @@ Required properties:
+> >  - reg: physical base address of the controller and length of memory
+> >  mapped
+> >  
+> >    region.
+> >  
+> >  - interrupts: IRQ line for the timer.
+> > 
+> > +- either clocks+clock-names or clock-frequency properties
+> > +
+> > +Optional properties:
+> > +- clocks	: list of clock specifiers, corresponding to entries in
+> > +		  the clock-names property;
+> > +- clock-names	: should contain "timer and "pclk" entries, matching
+> > entries
+> 
+> Missing closing quotes around "timer".
 
-Correct. So, both are acked without any more comments :)
+thanks for finding ... will fix in the next run
