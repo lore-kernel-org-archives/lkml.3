@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759061Ab3FCWjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:39:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758824Ab3FCWjE (ORCPT
+	id S1759365Ab3FCWjp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:39:45 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:48198 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758711Ab3FCWji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:39:04 -0400
-Date: Mon, 3 Jun 2013 15:39:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v4 3/6] staging: android: binder: fix
- BINDER_SET_MAX_THREADS declaration
-Message-ID: <20130603223903.GA16711@kroah.com>
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
- <1369217581-16285-4-git-send-email-serban.constantinescu@arm.com>
- <CAMP5XgeBsr63tcHxoMb2D5dJPuetyLnxNVi8_2V0FM69+AwFbQ@mail.gmail.com>
- <20130603150252.GA2334@kroah.com>
- <CAMP5XgdHDv_Lr=CXrD51XTrxq1t=16-OK-Q0Ww79wdgm2QXGtA@mail.gmail.com>
+	Mon, 3 Jun 2013 18:39:38 -0400
+Date: Mon, 3 Jun 2013 15:39:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Generic percpu refcounting
+Message-ID: <20130603223931.GD29989@mtj.dyndns.org>
+References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgdHDv_Lr=CXrD51XTrxq1t=16-OK-Q0Ww79wdgm2QXGtA@mail.gmail.com>
+In-Reply-To: <1370039205-14071-1-git-send-email-koverstreet@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 02:44:25PM -0700, Arve Hjønnevåg wrote:
-> On Mon, Jun 3, 2013 at 8:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, May 31, 2013 at 04:17:34PM -0700, Arve Hjønnevåg wrote:
-> >> On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
-> >> <serban.constantinescu@arm.com> wrote:
-> >> > This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
-> >> > instead of size_t for setting the max threads. Thus using the same
-> >> > handler for 32 and 64bit kernels.
-> >> >
-> >> > This value is stored internally in struct binder_proc and set to 15
-> >> > on open_binder() in the libbinder API(thus no need for a 64bit size_t
-> >> > on 64bit platforms).
-> >> >
-> >> > The change does not affect existing 32bit ABI.
-> >> >
-> >> > Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-> >> > ---
-> >> >  drivers/staging/android/binder.h |    2 +-
-> >> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >> >
-> >> > diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-> >> > index 2f94d16..1761541 100644
-> >> > --- a/drivers/staging/android/binder.h
-> >> > +++ b/drivers/staging/android/binder.h
-> >> > @@ -86,7 +86,7 @@ struct binder_version {
-> >> >
-> >> >  #define BINDER_WRITE_READ              _IOWR('b', 1, struct binder_write_read)
-> >> >  #define        BINDER_SET_IDLE_TIMEOUT         _IOW('b', 3, __s64)
-> >> > -#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, size_t)
-> >> > +#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, __u32)
-> >> >  #define        BINDER_SET_IDLE_PRIORITY        _IOW('b', 6, __s32)
-> >> >  #define        BINDER_SET_CONTEXT_MGR          _IOW('b', 7, __s32)
-> >> >  #define        BINDER_THREAD_EXIT              _IOW('b', 8, __s32)
-> >> > --
-> >> > 1.7.9.5
-> >> >
-> >>
-> >> Acked-by: Arve Hjønnevåg <arve@android.com>
-> >
-> > What about patches 1 and 2 in this series?
-> >
+On Fri, May 31, 2013 at 03:26:45PM -0700, Kent Overstreet wrote:
+> This implements a refcount with similar semantics to
+> atomic_get()/atomic_dec_and_test() - but percpu.
 > 
-> I apparently only responded privately to those. I just resent them.
+> It also implements two stage shutdown, as we need it to tear down the
+> percpu counts.  Before dropping the initial refcount, you must call
+> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> switches back to a single atomic refcount with the appropriate barriers
+> (synchronize_rcu()).
+> 
+> It's also legal to call percpu_ref_kill() multiple times - it only returns
+> true once, so callers don't have to reimplement shutdown synchronization.
+> 
+> [akpm@linux-foundation.org: fix build]
+> [akpm@linux-foundation.org: coding-style tweak]
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Cc: Zach Brown <zab@redhat.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Asai Thambi S P <asamymuthupa@micron.com>
+> Cc: Selvan Mani <smani@micron.com>
+> Cc: Sam Bradshaw <sbradshaw@micron.com>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Benjamin LaHaise <bcrl@kvack.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Thanks for that.  I'll wait for the series to be fixed up and resent
-before doing anything with them.
+Applied to percpu/for-3.11.  Andrew, I removed your SOB as the patch
+is routed outside -mm.  Please let me know if you want
+reviewed/ackd-by added.
 
-greg k-h
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.11
+
+Thanks a lot!
+
+-- 
+tejun
