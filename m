@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab3FCGFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:05:31 -0400
-Received: from mout.gmx.net ([212.227.15.15]:57483 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab3FCGFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:05:23 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+wGNJBNNWw1O3O2izXjRBRKJdmksdOM2uGMA11A+
-	d/iiYvo/JamXd1
-Message-ID: <1370239514.5988.117.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Mon, 03 Jun 2013 08:05:14 +0200
-In-Reply-To: <51AC2EA2.7030106@linux.vnet.ibm.com>
-References: <51A43B16.9080801@linux.vnet.ibm.com>
-	 <51ABFF6A.60206@linux.vnet.ibm.com>
-	 <1370228941.5988.66.camel@marge.simpson.net>
-	 <51AC0CD4.9070302@linux.vnet.ibm.com>
-	 <1370231597.5988.79.camel@marge.simpson.net>
-	 <51AC2121.1060903@linux.vnet.ibm.com>
-	 <1370236944.5988.108.camel@marge.simpson.net>
-	 <51AC2EA2.7030106@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752233Ab3FCGGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:06:10 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48893 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3FCGGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 02:06:03 -0400
+Date: Sun, 2 Jun 2013 23:05:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, klamm@yandex-team.ru, brouer@redhat.com,
+        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, David.Laight@ACULAB.COM
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130603060557.GD29614@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1370229169.24311.119.camel@edumazet-glaptop>
+ <20130602.202703.1059637861388689182.davem@davemloft.net>
+ <20130603034254.GC29614@linux.vnet.ibm.com>
+ <20130602.204915.334823676645400072.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130602.204915.334823676645400072.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060306-5406-0000-0000-00000924265B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 13:50 +0800, Michael Wang wrote: 
-> On 06/03/2013 01:22 PM, Mike Galbraith wrote:
-> [snip]
-> >>
-> >> I agree that this idea, in other work, 'stop wake-affine when current is
-> >> busy with wakeup' may miss the chance to bring benefit, although I could
-> >> not find such workload, but I can't do promise...
+On Sun, Jun 02, 2013 at 08:49:15PM -0700, David Miller wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Date: Sun, 2 Jun 2013 20:42:54 -0700
+> 
+> > On Sun, Jun 02, 2013 at 08:27:03PM -0700, David Miller wrote:
+> >> From: Eric Dumazet <eric.dumazet@gmail.com>
+> >> Date: Sun, 02 Jun 2013 20:12:49 -0700
+> >> 
+> >> > On Sun, 2013-06-02 at 19:58 -0700, David Miller wrote:
+> >> >> From: Eric Dumazet <eric.dumazet@gmail.com>
+> >> >> Date: Sun, 02 Jun 2013 16:31:35 -0700
+> >> >> 
+> >> >> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
+> >> >> >> On 29.05.2013 23:06, Eric Dumazet wrote:
+> >> >> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
+> >> >> >> >
+> >> >> >> > True, these lookup functions are usually structured the same around the
+> >> >> >> > hlist_nulls_for_each_entry_rcu() loop.
+> >> >> >> >
+> >> >> >> > A barrier() right before the loop seems to be a benefit, the size of
+> >> >> >> > assembly code is reduced by 48 bytes.
+> >> >> >> >
+> >> >> >> > And its one of the documented way to handle this kind of problems
+> >> >> >> > (Documentation/atomic_ops.txt line 114)
+> >> >> >> >
+> >> >> >> > I guess we should amend this documentation, eventually.
+> >> >> >> >
+> >> >> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
+> >> >> >> >
+> >> >> >> 
+> >> >> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> >> >> >> 
+> >> >> >> Many thanks to you, Paul E. McKenney and David Laight for your
+> >> >> >> patches, help and participation in this discussion.
+> >> >> > 
+> >> >> > Thanks to you !
+> >> >> > 
+> >> >> > David, is there any problem with the patch ?
+> >> >> > 
+> >> >> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
+> >> >> > tell me what is needed to get it merged.
+> >> >> 
+> >> >> It's not a networking patch, it's a patch for generic RCU upstream.
+> >> >> So it either goes through Paul McKenney, or directly via Linus on
+> >> >> linux-kernel.
+> >> > 
+> >> > Well, whole discussion went on linux kernel, and you were the original
+> >> > committer of this patch five years ago.
+> >> > 
+> >> > http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
+> >> > 
+> >> > So please Paul or David make sure the patch goes in.
+> >> > 
+> >> > My only concern is that Paul seems quite busy these days.
+> >> 
+> >> Ok I can take it then, no problem.
 > > 
-> > Someday we'll find the perfect balance... likely the day before the sun
-> > turns into a red giant and melts the earth.
+> > Or if you would like to take it:
+> > 
+> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> Won't take so long ;-)
-> 
-> I would like to stop the regression on pgbench firstly, as PeterZ
-> mentioned, if someone reported other regressions, we will know what is
-> missing, if fix is possible, we fix it, if cost is too high, then I say
-> we ignore the illegal income, after all, we could not benefit one in the
-> cost of sacrifice others...
-> 
-> I'd like to fix the problem ASAP, it's really a big, urgent problem on
-> my point of view, but doesn't win enough attentions as I thought it will...
+> Let's end this deadlock by me taking it :-)
 
-I fully agree that it's a problem, but not that it's a regression.  The
-"we became too buddy-centric" problem has existed for a long time, it's
-just that pgbench in 1:N mode shows us how much that pull pull pull can
-cost us in scalability.
+You got it!  ;-)
 
-A much more interesting pgbench test (imho) would be with one server per
-socket.  1 server (mother of all work) driving a multi-socket sized load
-is just silly, can't possibly scale, so it's important that improving
-1:N pgbench (we can, and need to) doesn't harm sane loads.
-
--Mike
+							Thanx, Paul
 
