@@ -1,373 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab3FCQC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:02:59 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:5890 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758938Ab3FCQC4 (ORCPT
+	id S1759227Ab3FCQFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:05:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44105 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758517Ab3FCQFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:02:56 -0400
-X-IronPort-AV: E=Sophos;i="4.87,794,1363132800"; 
-   d="scan'208";a="5267897"
-Message-ID: <1370275373.24512.37.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] dtc: ensure #line directives don't consume data from
- the next line
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>, <jdl@jdl.com>,
-        Stephen Warren <swarren@nvidia.com>
-Date: Mon, 3 Jun 2013 17:02:53 +0100
-In-Reply-To: <1370273816-19411-1-git-send-email-swarren@wwwdotorg.org>
-References: <1370273816-19411-1-git-send-email-swarren@wwwdotorg.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 3 Jun 2013 12:05:34 -0400
+Date: Mon, 3 Jun 2013 12:03:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        stefan.bader@canonical.com
+Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 5/19]  xen/pvticketlock: Xen implementation for PV
+ ticket locks
+Message-ID: <20130603160316.GG4224@phenom.dumpdata.com>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+ <20130601192314.5966.71330.sendpatchset@codeblue>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130601192314.5966.71330.sendpatchset@codeblue>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 09:36 -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+On Sat, Jun 01, 2013 at 12:23:14PM -0700, Raghavendra K T wrote:
+> xen/pvticketlock: Xen implementation for PV ticket locks
 > 
-> Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
-> could match line-break characters. If the #line directive did not contain
-> the optional flags field at the end, this could cause any integer data on
-> the next line to be consumed as part of the #line directive parsing. This
-> could cause syntax errors (i.e. #line parsing consuming the leading 0
-> from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
-> which is a syntax error), or invalid compilation results (i.e. simply
-> consuming literal 1234 as part of the #line processing, thus removing it
-> from the cell data).
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+> Replace the old Xen implementation of PV spinlocks with and implementation
+> of xen_lock_spinning and xen_unlock_kick.
 > 
-> Convert all instances of {WS}, even though the other instances should be
-> irrelevant for any well-formed #line directive. This is done for
-> consistency and ultimate safety.
+> xen_lock_spinning simply registers the cpu in its entry in lock_waiting,
+> adds itself to the waiting_cpus set, and blocks on an event channel
+> until the channel becomes pending.
 > 
-> This is a port of upstream dtc commit a1ee6f0 (with same subject) to the
-> kernel's copy of dtc.
-
-FWIW I have tested the upstream commit via my device-tree.git. If that
-is considered sufficient then it is OK by me to apply
-   Tested-by: Ian Campbell <ian.campbell@citrix.com>
-to this change too.
-
+> xen_unlock_kick searches the cpus in waiting_cpus looking for the one
+> which next wants this lock with the next ticket, if any.  If found,
+> it kicks it by making its event channel pending, which wakes it up.
 > 
-> Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> We need to make sure interrupts are disabled while we're relying on the
+> contents of the per-cpu lock_waiting values, otherwise an interrupt
+> handler could come in, try to take some other lock, block, and overwrite
+> our values.
+> 
+> Raghu: use function + enum instead of macro, cmpxchg for zero status reset
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 > ---
-> This is a fix for 3.10.
+>  arch/x86/xen/spinlock.c |  347 +++++++++++------------------------------------
+>  1 file changed, 78 insertions(+), 269 deletions(-)
 > 
->  scripts/dtc/dtc-lexer.l             |    2 +-
->  scripts/dtc/dtc-lexer.lex.c_shipped |  232 +++++++++++++++++------------------
->  2 files changed, 117 insertions(+), 117 deletions(-)
-> 
-> diff --git a/scripts/dtc/dtc-lexer.l b/scripts/dtc/dtc-lexer.l
-> index 254d5af..3b41bfc 100644
-> --- a/scripts/dtc/dtc-lexer.l
-> +++ b/scripts/dtc/dtc-lexer.l
-> @@ -71,7 +71,7 @@ static int pop_input_file(void);
->  			push_input_file(name);
+> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+> index d6481a9..860e190 100644
+> --- a/arch/x86/xen/spinlock.c
+> +++ b/arch/x86/xen/spinlock.c
+> @@ -16,45 +16,44 @@
+>  #include "xen-ops.h"
+>  #include "debugfs.h"
+>  
+> -#ifdef CONFIG_XEN_DEBUG_FS
+> -static struct xen_spinlock_stats
+> -{
+> -	u64 taken;
+> -	u32 taken_slow;
+> -	u32 taken_slow_nested;
+> -	u32 taken_slow_pickup;
+> -	u32 taken_slow_spurious;
+> -	u32 taken_slow_irqenable;
+> +enum xen_contention_stat {
+> +	TAKEN_SLOW,
+> +	TAKEN_SLOW_PICKUP,
+> +	TAKEN_SLOW_SPURIOUS,
+> +	RELEASED_SLOW,
+> +	RELEASED_SLOW_KICKED,
+> +	NR_CONTENTION_STATS
+> +};
+>  
+> -	u64 released;
+> -	u32 released_slow;
+> -	u32 released_slow_kicked;
+>  
+> +#ifdef CONFIG_XEN_DEBUG_FS
+>  #define HISTO_BUCKETS	30
+> -	u32 histo_spin_total[HISTO_BUCKETS+1];
+> -	u32 histo_spin_spinning[HISTO_BUCKETS+1];
+> +static struct xen_spinlock_stats
+> +{
+> +	u32 contention_stats[NR_CONTENTION_STATS];
+>  	u32 histo_spin_blocked[HISTO_BUCKETS+1];
+> -
+> -	u64 time_total;
+> -	u64 time_spinning;
+>  	u64 time_blocked;
+>  } spinlock_stats;
+>  
+>  static u8 zero_stats;
+>  
+> -static unsigned lock_timeout = 1 << 10;
+> -#define TIMEOUT lock_timeout
+> -
+>  static inline void check_zero(void)
+>  {
+> -	if (unlikely(zero_stats)) {
+> -		memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+> -		zero_stats = 0;
+> +	u8 ret;
+> +	u8 old = ACCESS_ONCE(zero_stats);
+> +	if (unlikely(old)) {
+> +		ret = cmpxchg(&zero_stats, old, 0);
+> +		/* This ensures only one fellow resets the stat */
+> +		if (ret == old)
+> +			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+>  	}
+>  }
+>  
+> -#define ADD_STATS(elem, val)			\
+> -	do { check_zero(); spinlock_stats.elem += (val); } while(0)
+> +static inline void add_stats(enum xen_contention_stat var, u32 val)
+> +{
+> +	check_zero();
+> +	spinlock_stats.contention_stats[var] += val;
+> +}
+>  
+>  static inline u64 spin_time_start(void)
+>  {
+> @@ -73,22 +72,6 @@ static void __spin_time_accum(u64 delta, u32 *array)
+>  		array[HISTO_BUCKETS]++;
+>  }
+>  
+> -static inline void spin_time_accum_spinning(u64 start)
+> -{
+> -	u32 delta = xen_clocksource_read() - start;
+> -
+> -	__spin_time_accum(delta, spinlock_stats.histo_spin_spinning);
+> -	spinlock_stats.time_spinning += delta;
+> -}
+> -
+> -static inline void spin_time_accum_total(u64 start)
+> -{
+> -	u32 delta = xen_clocksource_read() - start;
+> -
+> -	__spin_time_accum(delta, spinlock_stats.histo_spin_total);
+> -	spinlock_stats.time_total += delta;
+> -}
+> -
+>  static inline void spin_time_accum_blocked(u64 start)
+>  {
+>  	u32 delta = xen_clocksource_read() - start;
+> @@ -98,19 +81,15 @@ static inline void spin_time_accum_blocked(u64 start)
+>  }
+>  #else  /* !CONFIG_XEN_DEBUG_FS */
+>  #define TIMEOUT			(1 << 10)
+> -#define ADD_STATS(elem, val)	do { (void)(val); } while(0)
+> +static inline void add_stats(enum xen_contention_stat var, u32 val)
+> +{
+> +}
+>  
+>  static inline u64 spin_time_start(void)
+>  {
+>  	return 0;
+>  }
+>  
+> -static inline void spin_time_accum_total(u64 start)
+> -{
+> -}
+> -static inline void spin_time_accum_spinning(u64 start)
+> -{
+> -}
+>  static inline void spin_time_accum_blocked(u64 start)
+>  {
+>  }
+> @@ -133,229 +112,82 @@ typedef u16 xen_spinners_t;
+>  	asm(LOCK_PREFIX " decw %0" : "+m" ((xl)->spinners) : : "memory");
+>  #endif
+>  
+> -struct xen_spinlock {
+> -	unsigned char lock;		/* 0 -> free; 1 -> locked */
+> -	xen_spinners_t spinners;	/* count of waiting cpus */
+> +struct xen_lock_waiting {
+> +	struct arch_spinlock *lock;
+> +	__ticket_t want;
+>  };
+>  
+>  static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
+> +static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
+> +static cpumask_t waiting_cpus;
+>  
+> -#if 0
+> -static int xen_spin_is_locked(struct arch_spinlock *lock)
+> -{
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+> -
+> -	return xl->lock != 0;
+> -}
+> -
+> -static int xen_spin_is_contended(struct arch_spinlock *lock)
+> +static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>  {
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+> -
+> -	/* Not strictly true; this is only the count of contended
+> -	   lock-takers entering the slow path. */
+> -	return xl->spinners != 0;
+> -}
+> -
+> -static int xen_spin_trylock(struct arch_spinlock *lock)
+> -{
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+> -	u8 old = 1;
+> -
+> -	asm("xchgb %b0,%1"
+> -	    : "+q" (old), "+m" (xl->lock) : : "memory");
+> -
+> -	return old == 0;
+> -}
+> -
+> -static DEFINE_PER_CPU(struct xen_spinlock *, lock_spinners);
+> -
+> -/*
+> - * Mark a cpu as interested in a lock.  Returns the CPU's previous
+> - * lock of interest, in case we got preempted by an interrupt.
+> - */
+> -static inline struct xen_spinlock *spinning_lock(struct xen_spinlock *xl)
+> -{
+> -	struct xen_spinlock *prev;
+> -
+> -	prev = __this_cpu_read(lock_spinners);
+> -	__this_cpu_write(lock_spinners, xl);
+> -
+> -	wmb();			/* set lock of interest before count */
+> -
+> -	inc_spinners(xl);
+> -
+> -	return prev;
+> -}
+> -
+> -/*
+> - * Mark a cpu as no longer interested in a lock.  Restores previous
+> - * lock of interest (NULL for none).
+> - */
+> -static inline void unspinning_lock(struct xen_spinlock *xl, struct xen_spinlock *prev)
+> -{
+> -	dec_spinners(xl);
+> -	wmb();			/* decrement count before restoring lock */
+> -	__this_cpu_write(lock_spinners, prev);
+> -}
+> -
+> -static noinline int xen_spin_lock_slow(struct arch_spinlock *lock, bool irq_enable)
+> -{
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+> -	struct xen_spinlock *prev;
+>  	int irq = __this_cpu_read(lock_kicker_irq);
+> -	int ret;
+> +	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
+> +	int cpu = smp_processor_id();
+>  	u64 start;
+> +	unsigned long flags;
+>  
+>  	/* If kicker interrupts not initialized yet, just spin */
+>  	if (irq == -1)
+> -		return 0;
+> +		return;
+>  
+>  	start = spin_time_start();
+>  
+> -	/* announce we're spinning */
+> -	prev = spinning_lock(xl);
+> -
+> -	ADD_STATS(taken_slow, 1);
+> -	ADD_STATS(taken_slow_nested, prev != NULL);
+> -
+> -	do {
+> -		unsigned long flags;
+> -
+> -		/* clear pending */
+> -		xen_clear_irq_pending(irq);
+> -
+> -		/* check again make sure it didn't become free while
+> -		   we weren't looking  */
+> -		ret = xen_spin_trylock(lock);
+> -		if (ret) {
+> -			ADD_STATS(taken_slow_pickup, 1);
+> -
+> -			/*
+> -			 * If we interrupted another spinlock while it
+> -			 * was blocking, make sure it doesn't block
+> -			 * without rechecking the lock.
+> -			 */
+> -			if (prev != NULL)
+> -				xen_set_irq_pending(irq);
+> -			goto out;
+> -		}
+> +	/*
+> +	 * Make sure an interrupt handler can't upset things in a
+> +	 * partially setup state.
+> +	 */
+> +	local_irq_save(flags);
+>  
+> -		flags = arch_local_save_flags();
+> -		if (irq_enable) {
+> -			ADD_STATS(taken_slow_irqenable, 1);
+> -			raw_local_irq_enable();
+> -		}
+> +	w->want = want;
+> +	smp_wmb();
+> +	w->lock = lock;
+>  
+> -		/*
+> -		 * Block until irq becomes pending.  If we're
+> -		 * interrupted at this point (after the trylock but
+> -		 * before entering the block), then the nested lock
+> -		 * handler guarantees that the irq will be left
+> -		 * pending if there's any chance the lock became free;
+> -		 * xen_poll_irq() returns immediately if the irq is
+> -		 * pending.
+> -		 */
+> -		xen_poll_irq(irq);
+> +	/* This uses set_bit, which atomic and therefore a barrier */
+> +	cpumask_set_cpu(cpu, &waiting_cpus);
+> +	add_stats(TAKEN_SLOW, 1);
+>  
+> -		raw_local_irq_restore(flags);
+> +	/* clear pending */
+> +	xen_clear_irq_pending(irq);
+>  
+> -		ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
+> -	} while (!xen_test_irq_pending(irq)); /* check for spurious wakeups */
+> +	/* Only check lock once pending cleared */
+> +	barrier();
+>  
+> +	/* check again make sure it didn't become free while
+> +	   we weren't looking  */
+> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
+> +		add_stats(TAKEN_SLOW_PICKUP, 1);
+> +		goto out;
+> +	}
+> +	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
+> +	xen_poll_irq(irq);
+> +	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
+>  	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
+> -
+>  out:
+> -	unspinning_lock(xl, prev);
+> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+> +	w->lock = NULL;
+> +	local_irq_restore(flags);
+>  	spin_time_accum_blocked(start);
+> -
+> -	return ret;
+>  }
+>  
+> -static inline void __xen_spin_lock(struct arch_spinlock *lock, bool irq_enable)
+> -{
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
+> -	unsigned timeout;
+> -	u8 oldval;
+> -	u64 start_spin;
+> -
+> -	ADD_STATS(taken, 1);
+> -
+> -	start_spin = spin_time_start();
+> -
+> -	do {
+> -		u64 start_spin_fast = spin_time_start();
+> -
+> -		timeout = TIMEOUT;
+> -
+> -		asm("1: xchgb %1,%0\n"
+> -		    "   testb %1,%1\n"
+> -		    "   jz 3f\n"
+> -		    "2: rep;nop\n"
+> -		    "   cmpb $0,%0\n"
+> -		    "   je 1b\n"
+> -		    "   dec %2\n"
+> -		    "   jnz 2b\n"
+> -		    "3:\n"
+> -		    : "+m" (xl->lock), "=q" (oldval), "+r" (timeout)
+> -		    : "1" (1)
+> -		    : "memory");
+> -
+> -		spin_time_accum_spinning(start_spin_fast);
+> -
+> -	} while (unlikely(oldval != 0 &&
+> -			  (TIMEOUT == ~0 || !xen_spin_lock_slow(lock, irq_enable))));
+> -
+> -	spin_time_accum_total(start_spin);
+> -}
+> -
+> -static void xen_spin_lock(struct arch_spinlock *lock)
+> -{
+> -	__xen_spin_lock(lock, false);
+> -}
+> -
+> -static void xen_spin_lock_flags(struct arch_spinlock *lock, unsigned long flags)
+> -{
+> -	__xen_spin_lock(lock, !raw_irqs_disabled_flags(flags));
+> -}
+> -
+> -static noinline void xen_spin_unlock_slow(struct xen_spinlock *xl)
+> +static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+>  {
+>  	int cpu;
+>  
+> -	ADD_STATS(released_slow, 1);
+> +	add_stats(RELEASED_SLOW, 1);
+> +
+> +	for_each_cpu(cpu, &waiting_cpus) {
+> +		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+>  
+> -	for_each_online_cpu(cpu) {
+> -		/* XXX should mix up next cpu selection */
+> -		if (per_cpu(lock_spinners, cpu) == xl) {
+> -			ADD_STATS(released_slow_kicked, 1);
+> +		if (w->lock == lock && w->want == next) {
+> +			add_stats(RELEASED_SLOW_KICKED, 1);
+>  			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
+
+When this was initially implemented there was a "break" here. But
+76eaca031f0af2bb303e405986f637811956a422 (xen: Send spinlock IPI to all waiters)
+fixed an issue and changed this to send an IPI to all of the CPUs. That
+means the 'break' was removed..
+
+With this implementation of spinlock, you know exactly which vCPU is holding it,
+so this code should introduce the 'break' back.
+
+
 >  		}
+>  	}
+>  }
 >  
-> -<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
-> +<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)? {
->  			char *line, *tmp, *fn;
->  			/* skip text before line # */
->  			line = yytext;
-> diff --git a/scripts/dtc/dtc-lexer.lex.c_shipped b/scripts/dtc/dtc-lexer.lex.c_shipped
-> index a6c5fcd..2d30f41 100644
-> --- a/scripts/dtc/dtc-lexer.lex.c_shipped
-> +++ b/scripts/dtc/dtc-lexer.lex.c_shipped
-> @@ -405,19 +405,19 @@ static yyconst flex_int16_t yy_accept[161] =
->  static yyconst flex_int32_t yy_ec[256] =
->      {   0,
->          1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
-> -        2,    2,    2,    1,    1,    1,    1,    1,    1,    1,
-> +        4,    4,    4,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-> -        1,    2,    4,    5,    6,    1,    1,    7,    8,    1,
-> -        1,    9,   10,   10,   11,   10,   12,   13,   14,   15,
-> -       15,   15,   15,   15,   15,   15,   15,   16,    1,   17,
-> -       18,   19,   10,   10,   20,   20,   20,   20,   20,   20,
-> -       21,   21,   21,   21,   21,   22,   21,   21,   21,   21,
-> -       21,   21,   21,   21,   23,   21,   21,   24,   21,   21,
-> -        1,   25,   26,    1,   21,    1,   20,   27,   28,   29,
+> -static void xen_spin_unlock(struct arch_spinlock *lock)
+> -{
+> -	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
 > -
-> -       30,   20,   21,   21,   31,   21,   21,   32,   33,   34,
-> -       35,   36,   21,   37,   38,   39,   40,   41,   21,   24,
-> -       42,   21,   43,   44,   45,    1,    1,    1,    1,    1,
-> +        1,    2,    5,    6,    7,    1,    1,    8,    9,    1,
-> +        1,   10,   11,   11,   12,   11,   13,   14,   15,   16,
-> +       16,   16,   16,   16,   16,   16,   16,   17,    1,   18,
-> +       19,   20,   11,   11,   21,   21,   21,   21,   21,   21,
-> +       22,   22,   22,   22,   22,   23,   22,   22,   22,   22,
-> +       22,   22,   22,   22,   24,   22,   22,   25,   22,   22,
-> +        1,   26,   27,    1,   22,    1,   21,   28,   29,   30,
-> +
-> +       31,   21,   22,   22,   32,   22,   22,   33,   34,   35,
-> +       36,   37,   22,   38,   39,   40,   41,   42,   22,   25,
-> +       43,   22,   44,   45,   46,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-> @@ -434,36 +434,36 @@ static yyconst flex_int32_t yy_ec[256] =
->          1,    1,    1,    1,    1
->      } ;
->  
-> -static yyconst flex_int32_t yy_meta[46] =
-> +static yyconst flex_int32_t yy_meta[47] =
->      {   0,
-> -        1,    1,    1,    1,    1,    2,    3,    1,    2,    2,
-> -        2,    4,    5,    5,    5,    6,    1,    1,    1,    7,
-> -        8,    8,    8,    8,    1,    1,    7,    7,    7,    7,
-> -        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-> -        8,    8,    3,    1,    1
-> +        1,    1,    1,    1,    1,    1,    2,    3,    1,    2,
-> +        2,    2,    4,    5,    5,    5,    6,    1,    1,    1,
-> +        7,    8,    8,    8,    8,    1,    1,    7,    7,    7,
-> +        7,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-> +        8,    8,    8,    3,    1,    1
->      } ;
->  
->  static yyconst flex_int16_t yy_base[175] =
->      {   0,
-> -        0,  388,  381,   40,   41,  386,   71,  385,   34,   44,
-> -      390,  395,   60,   62,  371,  112,  111,  111,  111,  104,
-> -      370,  106,  371,  342,  124,  119,    0,  144,  395,    0,
-> -      123,    0,  159,  153,  165,  167,  395,  130,  395,  382,
-> -      395,    0,  372,  122,  395,  157,  374,  379,  350,   21,
-> -      346,  349,  395,  395,  395,  395,  395,  362,  395,  395,
-> -      181,  346,  342,  395,  359,    0,  191,  343,  190,  351,
-> -      350,    0,    0,    0,  173,  362,  177,  367,  357,  329,
-> -      335,  328,  337,  331,  206,  329,  334,  327,  395,  338,
-> -      170,  314,  346,  345,  318,  325,  343,  158,  316,  212,
+> -	ADD_STATS(released, 1);
 > -
-> -      322,  319,  320,  395,  340,  336,  308,  305,  314,  304,
-> -      295,  138,  208,  220,  395,  292,  305,  265,  264,  254,
-> -      201,  222,  285,  275,  273,  270,  236,  235,  225,  115,
-> -      395,  395,  252,  216,  216,  217,  214,  230,  209,  220,
-> -      213,  239,  211,  217,  216,  209,  229,  395,  240,  225,
-> -      206,  169,  395,  395,  116,  106,   99,   54,  395,  395,
-> -      254,  260,  268,  272,  276,  282,  289,  293,  301,  309,
-> -      313,  319,  327,  335
-> +        0,  385,  378,   40,   41,  383,   72,  382,   34,   44,
-> +      388,  393,   61,  117,  368,  116,  115,  115,  115,   48,
-> +      367,  107,  368,  339,  127,  120,    0,  147,  393,    0,
-> +      127,    0,  133,  156,  168,  153,  393,  125,  393,  380,
-> +      393,    0,  369,  127,  393,  160,  371,  377,  347,   21,
-> +      343,  346,  393,  393,  393,  393,  393,  359,  393,  393,
-> +      183,  343,  339,  393,  356,    0,  183,  340,  187,  348,
-> +      347,    0,    0,    0,  178,  359,  195,  365,  354,  326,
-> +      332,  325,  334,  328,  204,  326,  331,  324,  393,  335,
-> +      150,  311,  343,  342,  315,  322,  340,  179,  313,  207,
-> +
-> +      319,  316,  317,  393,  337,  333,  305,  302,  311,  301,
-> +      310,  190,  338,  337,  393,  307,  322,  301,  305,  277,
-> +      208,  311,  307,  278,  271,  270,  248,  246,  213,  130,
-> +      393,  393,  263,  235,  207,  221,  218,  229,  213,  213,
-> +      206,  234,  218,  210,  208,  193,  219,  393,  223,  204,
-> +      176,  157,  393,  393,  120,  106,   97,  119,  393,  393,
-> +      245,  251,  259,  263,  267,  273,  280,  284,  292,  300,
-> +      304,  310,  318,  326
->      } ;
->  
->  static yyconst flex_int16_t yy_def[175] =
-> @@ -489,108 +489,108 @@ static yyconst flex_int16_t yy_def[175] =
->        160,  160,  160,  160
->      } ;
->  
-> -static yyconst flex_int16_t yy_nxt[441] =
-> +static yyconst flex_int16_t yy_nxt[440] =
->      {   0,
-> -       12,   13,   14,   15,   16,   12,   17,   18,   12,   12,
-> -       12,   19,   12,   12,   12,   12,   20,   21,   22,   23,
-> -       23,   23,   23,   23,   12,   12,   23,   23,   23,   23,
-> +       12,   13,   14,   13,   15,   16,   12,   17,   18,   12,
-> +       12,   12,   19,   12,   12,   12,   12,   20,   21,   22,
-> +       23,   23,   23,   23,   23,   12,   12,   23,   23,   23,
->         23,   23,   23,   23,   23,   23,   23,   23,   23,   23,
-> -       23,   23,   12,   24,   12,   25,   34,   35,   35,   25,
-> -       81,   26,   26,   27,   27,   27,   34,   35,   35,   82,
-> -       28,   36,   36,   36,   36,  159,   29,   28,   28,   28,
-> -       28,   12,   13,   14,   15,   16,   30,   17,   18,   30,
-> -       30,   30,   26,   30,   30,   30,   12,   20,   21,   22,
-> -       31,   31,   31,   31,   31,   32,   12,   31,   31,   31,
-> +       23,   23,   23,   12,   24,   12,   25,   34,   35,   35,
-> +       25,   81,   26,   26,   27,   27,   27,   34,   35,   35,
-> +       82,   28,   36,   36,   36,   53,   54,   29,   28,   28,
-> +       28,   28,   12,   13,   14,   13,   15,   16,   30,   17,
-> +       18,   30,   30,   30,   26,   30,   30,   30,   12,   20,
-> +       21,   22,   31,   31,   31,   31,   31,   32,   12,   31,
->  
->         31,   31,   31,   31,   31,   31,   31,   31,   31,   31,
-> -       31,   31,   31,   12,   24,   12,   39,   41,   45,   47,
-> -       53,   54,   48,   56,   57,   61,   61,   47,   66,   45,
-> -       48,   66,   66,   66,   39,   46,   40,   49,   59,   50,
-> -      158,   51,  122,   52,  157,   49,   46,   50,  136,   63,
-> -      137,   52,  156,   43,   40,   62,   65,   65,   65,   59,
-> -       61,   61,  123,   65,   75,   69,   69,   69,   36,   36,
-> -       65,   65,   65,   65,   70,   71,   72,   69,   69,   69,
-> -       45,   46,   61,   61,  109,   77,   70,   71,   93,  110,
-> -       68,   70,   71,   85,   85,   85,   66,   46,  155,   66,
+> -	smp_wmb();		/* make sure no writes get moved after unlock */
+> -	xl->lock = 0;		/* release lock */
 > -
-> -       66,   66,   69,   69,   69,  122,   59,  100,  100,   61,
-> -       61,   70,   71,  100,  100,  148,  112,  154,   85,   85,
-> -       85,   61,   61,  129,  129,  123,  129,  129,  135,  135,
-> -      135,  142,  142,  148,  143,  149,  153,  135,  135,  135,
-> -      142,  142,  160,  143,  152,  151,  150,  146,  145,  144,
-> -      141,  140,  139,  149,   38,   38,   38,   38,   38,   38,
-> -       38,   38,   42,  138,  134,  133,   42,   42,   44,   44,
-> -       44,   44,   44,   44,   44,   44,   58,   58,   58,   58,
-> -       64,  132,   64,   66,  131,  130,   66,  160,   66,   66,
-> -       67,  128,  127,   67,   67,   67,   67,   73,  126,   73,
+> -	/*
+> -	 * Make sure unlock happens before checking for waiting
+> -	 * spinners.  We need a strong barrier to enforce the
+> -	 * write-read ordering to different memory locations, as the
+> -	 * CPU makes no implied guarantees about their ordering.
+> -	 */
+> -	mb();
 > -
-> -       73,   76,   76,   76,   76,   76,   76,   76,   76,   78,
-> -       78,   78,   78,   78,   78,   78,   78,   91,  125,   91,
-> -       92,  124,   92,   92,  120,   92,   92,  121,  121,  121,
-> -      121,  121,  121,  121,  121,  147,  147,  147,  147,  147,
-> -      147,  147,  147,  119,  118,  117,  116,  115,   47,  114,
-> -      110,  113,  111,  108,  107,  106,   48,  105,  104,   89,
-> -      103,  102,  101,   99,   98,   97,   96,   95,   94,   79,
-> -       77,   90,   89,   88,   59,   87,   86,   59,   84,   83,
-> -       80,   79,   77,   74,  160,   60,   59,   55,   37,  160,
-> -       33,   25,   26,   25,   11,  160,  160,  160,  160,  160,
-> +       31,   31,   31,   31,   31,   12,   24,   12,   36,   36,
-> +       36,   39,   41,   45,   47,   56,   57,   48,   61,   47,
-> +       39,  159,   48,   66,   61,   45,   66,   66,   66,  158,
-> +       46,   40,   49,   59,   50,  157,   51,   49,   52,   50,
-> +       40,   63,   46,   52,   36,   36,   36,  156,   43,   62,
-> +       65,   65,   65,   59,  136,   68,  137,   65,   75,   69,
-> +       69,   69,   70,   71,   65,   65,   65,   65,   70,   71,
-> +       72,   69,   69,   69,   61,   46,   45,  155,  154,   66,
-> +       70,   71,   66,   66,   66,  122,   85,   85,   85,   59,
-> +
-> +       69,   69,   69,   46,   77,  100,  109,   93,  100,   70,
-> +       71,  110,  112,  122,  129,  123,  153,   85,   85,   85,
-> +      135,  135,  135,  148,  148,  160,  135,  135,  135,  152,
-> +      142,  142,  142,  123,  143,  142,  142,  142,  151,  143,
-> +      150,  146,  145,  149,  149,   38,   38,   38,   38,   38,
-> +       38,   38,   38,   42,  144,  141,  140,   42,   42,   44,
-> +       44,   44,   44,   44,   44,   44,   44,   58,   58,   58,
-> +       58,   64,  139,   64,   66,  138,  134,   66,  133,   66,
-> +       66,   67,  132,  131,   67,   67,   67,   67,   73,  130,
-> +       73,   73,   76,   76,   76,   76,   76,   76,   76,   76,
-> +
-> +       78,   78,   78,   78,   78,   78,   78,   78,   91,  160,
-> +       91,   92,  129,   92,   92,  128,   92,   92,  121,  121,
-> +      121,  121,  121,  121,  121,  121,  147,  147,  147,  147,
-> +      147,  147,  147,  147,  127,  126,  125,  124,   61,   61,
-> +      120,  119,  118,  117,  116,  115,   47,  114,  110,  113,
-> +      111,  108,  107,  106,   48,  105,  104,   89,  103,  102,
-> +      101,   99,   98,   97,   96,   95,   94,   79,   77,   90,
-> +       89,   88,   59,   87,   86,   59,   84,   83,   80,   79,
-> +       77,   74,  160,   60,   59,   55,   37,  160,   33,   25,
-> +       26,   25,   11,  160,  160,  160,  160,  160,  160,  160,
->  
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-> -      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
-> +      160,  160,  160,  160,  160,  160,  160,  160,  160
->      } ;
->  
-> -static yyconst flex_int16_t yy_chk[441] =
-> +static yyconst flex_int16_t yy_chk[440] =
->      {   0,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
->          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-> -        1,    1,    1,    1,    1,    4,    9,    9,    9,   10,
-> -       50,    4,    5,    5,    5,    5,   10,   10,   10,   50,
-> -        5,   13,   13,   14,   14,  158,    5,    5,    5,    5,
-> -        5,    7,    7,    7,    7,    7,    7,    7,    7,    7,
-> +        1,    1,    1,    1,    1,    1,    4,    9,    9,    9,
-> +       10,   50,    4,    5,    5,    5,    5,   10,   10,   10,
-> +       50,    5,   13,   13,   13,   20,   20,    5,    5,    5,
-> +        5,    5,    7,    7,    7,    7,    7,    7,    7,    7,
->          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
->          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
->  
->          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
-> -        7,    7,    7,    7,    7,    7,   16,   17,   18,   19,
-> -       20,   20,   19,   22,   22,   25,   25,   26,   31,   44,
-> -       26,   31,   31,   31,   38,   18,   16,   19,   31,   19,
-> -      157,   19,  112,   19,  156,   26,   44,   26,  130,   26,
-> -      130,   26,  155,   17,   38,   25,   28,   28,   28,   28,
-> -       33,   33,  112,   28,   46,   34,   34,   34,   36,   36,
-> -       28,   28,   28,   28,   34,   34,   34,   35,   35,   35,
-> -       75,   46,   61,   61,   98,   77,   35,   35,   77,   98,
-> -       33,   91,   91,   61,   61,   61,   67,   75,  152,   67,
+> -	if (unlikely(xl->spinners))
+> -		xen_spin_unlock_slow(xl);
+> -}
+> -#endif
 > -
-> -       67,   67,   69,   69,   69,  121,   67,   85,   85,  113,
-> -      113,   69,   69,  100,  100,  143,  100,  151,   85,   85,
-> -       85,  114,  114,  122,  122,  121,  129,  129,  135,  135,
-> -      135,  138,  138,  147,  138,  143,  150,  129,  129,  129,
-> -      142,  142,  149,  142,  146,  145,  144,  141,  140,  139,
-> -      137,  136,  134,  147,  161,  161,  161,  161,  161,  161,
-> -      161,  161,  162,  133,  128,  127,  162,  162,  163,  163,
-> -      163,  163,  163,  163,  163,  163,  164,  164,  164,  164,
-> -      165,  126,  165,  166,  125,  124,  166,  123,  166,  166,
-> -      167,  120,  119,  167,  167,  167,  167,  168,  118,  168,
+>  static irqreturn_t dummy_handler(int irq, void *dev_id)
+>  {
+>  	BUG();
+> @@ -415,15 +247,8 @@ void __init xen_init_spinlocks(void)
+>  	if (xen_hvm_domain())
+>  		return;
+>  
+> -	BUILD_BUG_ON(sizeof(struct xen_spinlock) > sizeof(arch_spinlock_t));
+> -#if 0
+> -	pv_lock_ops.spin_is_locked = xen_spin_is_locked;
+> -	pv_lock_ops.spin_is_contended = xen_spin_is_contended;
+> -	pv_lock_ops.spin_lock = xen_spin_lock;
+> -	pv_lock_ops.spin_lock_flags = xen_spin_lock_flags;
+> -	pv_lock_ops.spin_trylock = xen_spin_trylock;
+> -	pv_lock_ops.spin_unlock = xen_spin_unlock;
+> -#endif
+> +	pv_lock_ops.lock_spinning = xen_lock_spinning;
+> +	pv_lock_ops.unlock_kick = xen_unlock_kick;
+>  }
+>  
+>  #ifdef CONFIG_XEN_DEBUG_FS
+> @@ -441,37 +266,21 @@ static int __init xen_spinlock_debugfs(void)
+>  
+>  	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+>  
+> -	debugfs_create_u32("timeout", 0644, d_spin_debug, &lock_timeout);
 > -
-> -      168,  169,  169,  169,  169,  169,  169,  169,  169,  170,
-> -      170,  170,  170,  170,  170,  170,  170,  171,  117,  171,
-> -      172,  116,  172,  172,  111,  172,  172,  173,  173,  173,
-> -      173,  173,  173,  173,  173,  174,  174,  174,  174,  174,
-> -      174,  174,  174,  110,  109,  108,  107,  106,  105,  103,
-> -      102,  101,   99,   97,   96,   95,   94,   93,   92,   90,
-> -       88,   87,   86,   84,   83,   82,   81,   80,   79,   78,
-> -       76,   71,   70,   68,   65,   63,   62,   58,   52,   51,
-> -       49,   48,   47,   43,   40,   24,   23,   21,   15,   11,
-> -        8,    6,    3,    2,  160,  160,  160,  160,  160,  160,
-> +        7,    7,    7,    7,    7,    7,    7,    7,   14,   14,
-> +       14,   16,   17,   18,   19,   22,   22,   19,   25,   26,
-> +       38,  158,   26,   31,   33,   44,   31,   31,   31,  157,
-> +       18,   16,   19,   31,   19,  156,   19,   26,   19,   26,
-> +       38,   26,   44,   26,   36,   36,   36,  155,   17,   25,
-> +       28,   28,   28,   28,  130,   33,  130,   28,   46,   34,
-> +       34,   34,   91,   91,   28,   28,   28,   28,   34,   34,
-> +       34,   35,   35,   35,   61,   46,   75,  152,  151,   67,
-> +       35,   35,   67,   67,   67,  112,   61,   61,   61,   67,
-> +
-> +       69,   69,   69,   75,   77,   85,   98,   77,  100,   69,
-> +       69,   98,  100,  121,  129,  112,  150,   85,   85,   85,
-> +      135,  135,  135,  143,  147,  149,  129,  129,  129,  146,
-> +      138,  138,  138,  121,  138,  142,  142,  142,  145,  142,
-> +      144,  141,  140,  143,  147,  161,  161,  161,  161,  161,
-> +      161,  161,  161,  162,  139,  137,  136,  162,  162,  163,
-> +      163,  163,  163,  163,  163,  163,  163,  164,  164,  164,
-> +      164,  165,  134,  165,  166,  133,  128,  166,  127,  166,
-> +      166,  167,  126,  125,  167,  167,  167,  167,  168,  124,
-> +      168,  168,  169,  169,  169,  169,  169,  169,  169,  169,
-> +
-> +      170,  170,  170,  170,  170,  170,  170,  170,  171,  123,
-> +      171,  172,  122,  172,  172,  120,  172,  172,  173,  173,
-> +      173,  173,  173,  173,  173,  173,  174,  174,  174,  174,
-> +      174,  174,  174,  174,  119,  118,  117,  116,  114,  113,
-> +      111,  110,  109,  108,  107,  106,  105,  103,  102,  101,
-> +       99,   97,   96,   95,   94,   93,   92,   90,   88,   87,
-> +       86,   84,   83,   82,   81,   80,   79,   78,   76,   71,
-> +       70,   68,   65,   63,   62,   58,   52,   51,   49,   48,
-> +       47,   43,   40,   24,   23,   21,   15,   11,    8,    6,
-> +        3,    2,  160,  160,  160,  160,  160,  160,  160,  160,
+> -	debugfs_create_u64("taken", 0444, d_spin_debug, &spinlock_stats.taken);
+>  	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
+> -			   &spinlock_stats.taken_slow);
+> -	debugfs_create_u32("taken_slow_nested", 0444, d_spin_debug,
+> -			   &spinlock_stats.taken_slow_nested);
+> +			   &spinlock_stats.contention_stats[TAKEN_SLOW]);
+>  	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
+> -			   &spinlock_stats.taken_slow_pickup);
+> +			   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
+>  	debugfs_create_u32("taken_slow_spurious", 0444, d_spin_debug,
+> -			   &spinlock_stats.taken_slow_spurious);
+> -	debugfs_create_u32("taken_slow_irqenable", 0444, d_spin_debug,
+> -			   &spinlock_stats.taken_slow_irqenable);
+> +			   &spinlock_stats.contention_stats[TAKEN_SLOW_SPURIOUS]);
 >  
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
->        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
-> -      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
-> +      160,  160,  160,  160,  160,  160,  160,  160,  160
->      } ;
+> -	debugfs_create_u64("released", 0444, d_spin_debug, &spinlock_stats.released);
+>  	debugfs_create_u32("released_slow", 0444, d_spin_debug,
+> -			   &spinlock_stats.released_slow);
+> +			   &spinlock_stats.contention_stats[RELEASED_SLOW]);
+>  	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
+> -			   &spinlock_stats.released_slow_kicked);
+> +			   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
 >  
->  static yy_state_type yy_last_accepting_state;
-
-
+> -	debugfs_create_u64("time_spinning", 0444, d_spin_debug,
+> -			   &spinlock_stats.time_spinning);
+>  	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
+>  			   &spinlock_stats.time_blocked);
+> -	debugfs_create_u64("time_total", 0444, d_spin_debug,
+> -			   &spinlock_stats.time_total);
+>  
+> -	debugfs_create_u32_array("histo_total", 0444, d_spin_debug,
+> -				spinlock_stats.histo_spin_total, HISTO_BUCKETS + 1);
+> -	debugfs_create_u32_array("histo_spinning", 0444, d_spin_debug,
+> -				spinlock_stats.histo_spin_spinning, HISTO_BUCKETS + 1);
+>  	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+>  				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
+>  
+> 
