@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab3FCJXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:23:49 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:40733 "EHLO
+	id S1756299Ab3FCJYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:24:45 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:40741 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3FCJXp (ORCPT
+	with ESMTP id S1755312Ab3FCJYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:23:45 -0400
+	Mon, 3 Jun 2013 05:24:43 -0400
 X-Spam-Score: -100.8
-Message-ID: <51AC606C.7060401@asianux.com>
-Date: Mon, 03 Jun 2013 17:22:52 +0800
+Message-ID: <51AC60AA.8010107@asianux.com>
+Date: Mon, 03 Jun 2013 17:23:54 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andreas Schwab <schwab@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: edumazet@google.com, Pravin Shelar <pshelar@nicira.com>, mgorman@suse.de,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: m68k: math-emu: unsigned issue, 'unsigned long'
- will never be less than zero
-References: <51A6F0C6.9050806@asianux.com> <m2a9ndndu5.fsf@linux-m68k.org> <51A70C10.6000408@asianux.com> <CAMuHMdWOxh_YvQyid-PiN7FsM=OC=0YWOzJb86pKaQn3HrjaQw@mail.gmail.com> <51AC5D7C.2000905@asianux.com> <CAMuHMdXrxAajOqfZd4iQRC2pKHE8KAZOVsZRfeyMWLHRt0NVUg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXrxAajOqfZd4iQRC2pKHE8KAZOVsZRfeyMWLHRt0NVUg@mail.gmail.com>
+        netdev <netdev@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] include/linux/skbuff.h: using '0xffff' instead of '~0U'
+References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com>
+In-Reply-To: <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 05:13 PM, Geert Uytterhoeven wrote:
-> On Mon, Jun 3, 2013 at 11:10 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>> >> Thanks, applied and queued for 3.11!
->>> >>
+On 06/01/2013 05:05 AM, Andy Shevchenko wrote:
+> On Thu, May 30, 2013 at 9:03 AM, Chen Gang <gang.chen@asianux.com> wrote:
 >> >
->> > Thank you too, and pardon: what is '3.11' ?  :-)
-> Linux v3.11.
+>> > Both 'transport_header' and 'mac_header' are u16, which are never equal
+>> > to '~0U'.
+>> >
+>> > So need use '0xffff' instead of '~0U'.
+> Why not "(u16)~0" ?
+> Or even better "!= USHORT_MAX"?
+> 
+> Or mac_header + 1 == 0, though it less clear.
 
-OK, thanks.
+It seems they are just the same as '0xffff' (are all 'magic' number).
 
+We'd better to give a meaningful name to it just like Ben said.
+
+
+Thanks.
 -- 
 Chen Gang
 
