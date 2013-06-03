@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab3FCPxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:53:32 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:65081 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759032Ab3FCPxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:53:25 -0400
+	id S1759040Ab3FCPzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:55:12 -0400
+Received: from www.sr71.net ([198.145.64.142]:58313 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758553Ab3FCPzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:55:10 -0400
+Message-ID: <51ACBC5C.9020701@sr71.net>
+Date: Mon, 03 Jun 2013 08:55:08 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
-References: <CAAWiN8oSfH9fZVvnMtfehaY+D-9qhtqu4fwedVOv5Q-uB0WNYw@mail.gmail.com>
-	<CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
-Date: Mon, 3 Jun 2013 17:53:24 +0200
-Message-ID: <CAFLxGvwxPnzTQ+SCjQeHgTBOKmfyahy-oXz66xCXB2EW3J2AXw@mail.gmail.com>
-Subject: Re: Why Linux OS Desktop is not popular?
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Mats Liljegren <liljegren.mats2@gmail.com>
-Cc: Amit C <amit.linux.os.desktop@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v4][PATCH 2/6] mm: swap: make 'struct page' and swp_entry_t
+ variants of swapcache_free().
+References: <20130531183855.44DDF928@viggo.jf.intel.com> <20130531183858.3C8C10C7@viggo.jf.intel.com> <20130603061320.GA2795@blaptop>
+In-Reply-To: <20130603061320.GA2795@blaptop>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't feed the trolls.
+On 06/02/2013 11:13 PM, Minchan Kim wrote:
+> I lost from this description.
+> 
+> Old behavior
+> 
+> delete_from_swap_cache
+>         swap_address_space
+>         __delete_from_swap_cache
+>                 swap_address_space
+> 
+> 
+> New behavior
+> 
+> delete_from_swap_cache
+>         __delete_from_swap_cache
+>                 swap_address_space
+>                 
+> So you removes a swap_address_space, not adding a extra call.
+> Am I missing something?
 
-On Mon, Jun 3, 2013 at 5:43 PM, Mats Liljegren
-<liljegren.mats2@gmail.com> wrote:
-> On Tue, May 28, 2013 at 11:42 AM, Amit C
-> <amit.linux.os.desktop@gmail.com> wrote:
->> Hi All,
->>
->> Linux OS Desktop has not become very popular because of the following reasons:
->>
->> 1. It is not because its GUI is not good.
->> 2. It is because if I buy a new gadget/device/hardware, I am not sure
->> whether it will work with Linux Desktop.
->> 3. The reason for number 2 is that the vendor introducing
->> gadget/device/hardware does not write a device driver for Linux.
->> 4. The reason for number 3 is that developing new device driver on
->> linux is hard.
->> 5. The way to solve number 4 is to move to data oriented device driver
->> development where the framework for driver is already available for
->> all kinds of devices (PCI, USB, Firewire, etc.) and the only thing a
->> device driver developer has to do is to collect io/virtual addresses
->> from the vendor/manual and feed into a table (structure of structures,
->> etc.) and the framework will pick up this data and configure the new
->> gadget/device/hardware instantly.
->>
->> I do not want to pay for Microsoft OS but can Linux community give me
->> a usable Linux Desktop. I have both Windows and Linux on my laptop and
->> I use Microsoft just to connect to Internet because the USB dongle
->> that I use for connecting to Internet does not work on Linux. I am in
->> India and here USB dongles connecting to Internet are very popular
->> because you can use them anywhere.
->
-> The big difference between Windows and Linux is that Windows is
-> developed by a single company, while Linux is developed by a community
-> including several companies as well as hobbyists. You can become part
-> of this community by participating in the development. It is not as
-> easy to become part of developing Windows.
->
-> The way Linux progress is by people realizing they have a pain they
-> want to fix. The fix is done with one or several patches. If the
-> maintainers like the patches, they become part of Linux. This is how
-> these pains are fixed.
->
-> You start this by experimenting for yourself until you've found a
-> solution you like. Then you send out patch(es) labeled "RFC" (Request
-> For Comments) to LKML to see if people think your idea will work.
-> There is a long way to go then until it actually ends up in the kernel
-> since there is a lot of quality assurance needed to be done, but
-> eventually the pain gets solved.
->
-> It is very hard to discuss any solutions without those RFC patches,
-> since no one knows whether the idea will work or exactly what the idea
-> consists of. So it's unlikely you'll get much constructive response
-> until you've tested the solution yourself and sent out patches for
-> comments so others might test it. Just keep it as small as possible
-> while still proving the idea.
->
-> I look forward to your patches, so I can better understand what you
-> want to accomplish.
->
-> Regards
-> Mats Liljegren
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I think I got the page->swp_entry_t lookup confused with the
+page->swap_address_space lookup when I was writing the description.  The
+bit that you missed is that I _added_ a page_mapping() call, which calls
+swap_address_space() internally:
 
+Old behavior:
 
+delete_from_swap_cache
+        swap_address_space
+        __delete_from_swap_cache
+                swap_address_space
 
--- 
-Thanks,
-//richard
+New behavior:
+
+delete_from_swap_cache
+	page_mapping
+		swap_address_space
+        __delete_from_swap_cache
+                swap_address_space
+
+--
+
+New description (last paragraph changed).  Andrew, I'll resend the
+series since there are a few of these cleanups.
+
+From: Dave Hansen <dave.hansen@linux.intel.com>
+
+swapcache_free() takes two arguments:
+
+	void swapcache_free(swp_entry_t entry, struct page *page)
+
+Most of its callers (5/7) are from error handling paths haven't even
+instantiated a page, so they pass page=NULL.  Both of the callers
+that call in with a 'struct page' create and pass in a temporary
+swp_entry_t.
+
+Now that we are deferring clearing page_private() until after
+swapcache_free() has been called, we can just create a variant
+that takes a 'struct page' and does the temporary variable in
+the helper.
+
+That leaves all the other callers doing
+
+	swapcache_free(entry, NULL)
+
+so create another helper for them that makes it clear that they
+need only pass in a swp_entry_t.
+
+One downside here is that delete_from_swap_cache() now calls
+swap_address_space() via page_mapping() instead of calling
+swap_address_space() directly.  In doing so, it removes one more
+case of the swap cache code being special-cased, which is a good
+thing in my book.
+
