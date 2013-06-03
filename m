@@ -1,53 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3FCL7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 07:59:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34040 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754150Ab3FCL7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 07:59:32 -0400
-Message-ID: <1370260771.2025.15.camel@joe-AO722>
-Subject: Re: [PATCH V2 2/8] pktcdvd: Convert printk to pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 03 Jun 2013 04:59:31 -0700
-In-Reply-To: <20130603095714.GA23987@mwanda>
-References: <1369978679.10556.36.camel@joe-AO722>
-	 <cover.1370048648.git.joe@perches.com>
-	 <92da9370f91c4435cd62b71998f6d66db8680596.1370048648.git.joe@perches.com>
-	 <20130603095714.GA23987@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756138Ab3FCMCn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:02:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40072 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3FCMCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:02:41 -0400
+Date: Mon, 3 Jun 2013 08:02:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stable@vger.kernel.org, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Please backport bee980d9e9642e96351fa3ca9077b853ecf62f57
+ (xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.) to
+ earlier kernels v3.8...and so on
+Message-ID: <20130603120232.GA6893@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="Qxx1br4bt0+wmkIi"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 12:57 +0300, Dan Carpenter wrote:
-> On Fri, May 31, 2013 at 09:11:23PM -0700, Joe Perches wrote:
-> > +static const char *sense_key_string(__u8 index)
-> > +{
-> > +	static const char *info[9] = {
-> > +		"No sense", "Recovered error", "Not ready",
-> > +		"Medium error", "Hardware error", "Illegal request",
-> > +		"Unit attention", "Data protect", "Blank check"
-> > +	};
-> > +	if (index < 8)
-> 
-> Off by one:
-> 
-> 	if (index < 9)
 
-Kinda, but that's the original code.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It should be ARRAY_SIZE and I think it should be
-done in a separate patch.
+Hey Greg,
 
-Someone should say if "Blank check" is really one
-of the sense key values possible or if it should
-just be deleted.
+I hadn't (by mistake) put the CC: stable@vger.kernel.org on said patch
+(Which is in the Linux kernel).
+
+If possible please back-port said patch to the existing stable trees.
+Attached is a version that applies to some of the earlier trees easily.
 
 
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-xen-events-Handle-VIRQ_TIMER-before-any-other-hardir.patch"
+
+>From e525951e780c533209b0102ad91de6acc46db6b2 Mon Sep 17 00:00:00 2001
+From: Keir Fraser <keir.fraser@citrix.com>
+Date: Thu, 28 Mar 2013 10:03:36 -0400
+Subject: [PATCH] xen/events: Handle VIRQ_TIMER before any other hardirq in
+ event loop.
+
+This avoids any other hardirq handler seeing a very stale jiffies
+value immediately after wakeup from a long idle period. The one
+observable symptom of this was a USB keyboard, with software keyboard
+repeat, which would always repeat a key immediately that it was
+pressed. This is due to the key press waking the guest, the key
+handler immediately runs, sees an old jiffies value, and then that
+jiffies value significantly updated, before the key is unpressed.
+
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Keir Fraser <keir.fraser@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+(cherry picked from commit bee980d9e9642e96351fa3ca9077b853ecf62f57)
+---
+ drivers/xen/events.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 74d77df..0f1d1ba 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1288,7 +1288,7 @@ static void __xen_evtchn_do_upcall(void)
+ {
+ 	int start_word_idx, start_bit_idx;
+ 	int word_idx, bit_idx;
+-	int i;
++	int i, irq;
+ 	int cpu = get_cpu();
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
+@@ -1296,6 +1296,8 @@ static void __xen_evtchn_do_upcall(void)
+ 
+ 	do {
+ 		unsigned long pending_words;
++		unsigned long pending_bits;
++		struct irq_desc *desc;
+ 
+ 		vcpu_info->evtchn_upcall_pending = 0;
+ 
+@@ -1306,6 +1308,17 @@ static void __xen_evtchn_do_upcall(void)
+ 		/* Clear master flag /before/ clearing selector flag. */
+ 		wmb();
+ #endif
++		if ((irq = per_cpu(virq_to_irq, cpu)[VIRQ_TIMER]) != -1) {
++			int evtchn = evtchn_from_irq(irq);
++			word_idx = evtchn / BITS_PER_LONG;
++			pending_bits = evtchn % BITS_PER_LONG;
++			if (active_evtchns(cpu, s, word_idx) & (1ULL << pending_bits)) {
++				desc = irq_to_desc(irq);
++				if (desc)
++					generic_handle_irq_desc(irq, desc);
++			}
++		}
++
+ 		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
+ 
+ 		start_word_idx = __this_cpu_read(current_word_idx);
+@@ -1314,7 +1327,6 @@ static void __xen_evtchn_do_upcall(void)
+ 		word_idx = start_word_idx;
+ 
+ 		for (i = 0; pending_words != 0; i++) {
+-			unsigned long pending_bits;
+ 			unsigned long words;
+ 
+ 			words = MASK_LSBS(pending_words, word_idx);
+@@ -1343,8 +1355,7 @@ static void __xen_evtchn_do_upcall(void)
+ 
+ 			do {
+ 				unsigned long bits;
+-				int port, irq;
+-				struct irq_desc *desc;
++				int port;
+ 
+ 				bits = MASK_LSBS(pending_bits, bit_idx);
+ 
+-- 
+1.8.1.4
+
+
+--Qxx1br4bt0+wmkIi--
