@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab3FCIAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:00:52 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:26983 "EHLO mail.abilis.ch"
+	id S1753248Ab3FCIBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:01:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10009 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab3FCIAn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:00:43 -0400
-Date: Mon, 3 Jun 2013 10:00:04 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver (2)
-Message-ID: <20130603080001.GA31808@ab42.lan>
-References: <20130530211944.05F4D3E0A90@localhost>
- <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com>
- <alpine.LFD.2.02.1305311835040.2905@ionos>
- <20130531221814.534DF3E08FE@localhost>
- <20130601110133.GA4051@ab42.lan>
- <51AC2A99.30709@synopsys.com>
+	id S1751167Ab3FCIBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 04:01:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,791,1363158000"; 
+   d="scan'208";a="343917489"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v8 net-next 0/7] net: low latency Ethernet device polling
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 03 Jun 2013 11:01:07 +0300
+Message-ID: <20130603080107.18273.34279.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <51AC2A99.30709@synopsys.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:03:13AM +0530, Vineet Gupta wrote:
-> On 06/01/2013 04:31 PM, Christian Ruppert wrote:
-> > On Fri, May 31, 2013 at 11:18:14PM +0100, Grant Likely wrote:
-> >> On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>> On Fri, 31 May 2013, Christian Ruppert wrote:
-> [...]
-> >> The loop above is mapping each of the
-> >> interrupt inputs on the parent controller so that each child controller
-> >> can be chained to it as an input. I can't think of how else it could be
-> >> set up with the current code if the drivers were kept separate.
-> > This is exactly the intention. I haven't found an easier way to do this
-> > either but I'm open to suggestions.
-> 
-> But the child intc must only uplink to one parent intc IRQ line. In that
-> case why do we need to enumerate the rest of them in code. Is that a
-> limitation of framework or the parent intc (with it's legacy domain
-> instantiation) is not doing something correct.
+David,
 
-You are right, it would have been possible to "merge" several interrupt
-sources onto the same ARC input. This is done (where required) further
-down the interrupt controller hierarchy, however, and the way our
-hardware is designed is that every input line of the tb10x-ictl controls
-a separate output line. Every one of these output lines is connected to
-a different ARC interrupt input. tb10x-ictl does not "merge" several
-interrupts:
+Here is v8 with yet more fixes.
 
-                      ...
-                   |
-               3 --+ 3
-                   |
-               4 --+ 4
-       +-----+     |
-   5 --+.....+-----+ 5
-       |tb10x|     |     ARC770
-   6 --+.....+-----+ 6
-       |-ictl|     |
-   7 --+.....+-----+ 7
-       |     |     |
-   8 --+.....+-----+ 8
-       |     |     |
-         ...          ...
+Please consider applying.
 
-> [...]
-> >> If I were working on this system I'd drop the
-> >> snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
-> >> encapsulated the properties of both (you would of course want to share
-> >> handler functions for the 'normal' inputs without the custom features).
-> >> That would eliminate the goofyness of listing 27 separate interrupts in
-> >> the abilis,tb10x-ictl interrupts property.
-> > To complicate things even further, some ARC CPU built-in peripherals
-> > (e.g. timers) generate interrupts directly to the ARC built-in interrupt
-> > controller (without going through the TB10x front-end), hence the
-> > "goofy" list of interrupts in the TB10x DT node.
-> 
-> But I presume that this is common-place for cascaded intc setups - some
-> peripherals hooking up directly to topmost intc would be normal. But it
-> seems I'm not as educated in area as I really should be.
+Thanks to everyone for their input.
 
-Yep, that's completely normal. But it forces us to tell the driver which
-ones of the interrupts it must manage and which ones it should ignore.
+-Eliezer
 
-Greetings,
-  Christian
+change log:
+v8
+- split out udp and select/poll into seperate patches.
+  what used to be patch 2/5 is now three patches.
+- type corrections from Amir Vadai and Cong Wang:
+  one unsigned long that was left when chenging to cycles_t
+  int -> bool 
+- more detailed patch descriptions.
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+v7
+- suggested by Ben Hutchings and Eric Dumazet:
+  type fixes, static for globals in net/core.c,
+  avoid napi_id collisions in napi_hash_add()
+
+v6
+- many small fixes suggested by Eric Dumazet:
+  data locality, typos, documentation
+  protect napi_hash insert/delete with a spinlock (napi_gen_id is no
+  longer atomic_t since it's only accessed with the spinlock held.)
+- added IPv6 TCP and UDP support (only minimally tested)
+
+v5
+- corrections suggested by Ben Hutchings:
+  fixed typos, moved the config option and sysctl value from IPv4 to net
+- moved sk_mark_ll() to the protocol handlers
+- removed global id mechanism, replaced with a hashed napi_id.
+  based on code sample from Eric Dumazet
+  Note that ixgbe_free_q_vector() already waits an rcu grace period
+  before freeing the q_vector, so nothing additional needs to be done
+  when adding a call to napi_hash_del().
+- simple poll/select support
+
+v4
+- removed separate config option for TCP as suggested Eric Dumazet.
+- added linux mib counter for packets received through the low latency path,
+  as suggested by Andi Kleen.
+- re-allow module unloading, remove module param, use a global generation id
+  instead to prevent the use of a stale napi pointer, as suggested
+  by Eric Dumazet
+- updated Documentation/networking/ip-sysctl.txt text
+
+v3
+- coding style changes suggested by Dave Miller
+
+v2
+- the sysctl knob is now in microseconds. The default value is now 0 (off).
+- for now the code depends at configure time on CONFIG_I86_TSC 
+- the napi reference in struct skb is now a union with the dma cookie
+  since the former is only used on RX and the latter on TX,
+  as suggested by Eric Dumazet.
+- we do a better job at honoring non-blocking operations.
+- removed busy-polling support for tcp_read_sock()
+- remove dynamic disabling of GRO
+- coding style fixes
+- disallow unloading the device module after the feature has been used
+
+Credit:
+Jesse Brandeburg, Arun Chekhov Ilango, Julie Cummings,
+Alexander Duyck, Eric Geisler, Jason Neighbors, Yadong Li,
+Mike Polehn, Anil Vasudevan, Don Wood
+Special thanks for finding bugs in earlier versions:
+Willem de Bruijn and Andi Kleen
