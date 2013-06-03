@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759411Ab3FCQPQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:15:16 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:52250 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759038Ab3FCQO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:14:27 -0400
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: rja@sgi.com, mingo@kernel.org, torvalds@linux-foundation.org, bp@alien8.de,
-        jkosina@suse.cz, matt.fleming@intel.com, linux-efi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, akpm@linux-foundation.org, oneukum@suse.de
-In-Reply-To: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
-References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Jun 2013 00:13:40 +0800
-Message-ID: <1370276021.30695.4.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1759078Ab3FCQOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:14:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36451 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759038Ab3FCQOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:14:20 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <kishon@ti.com>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <gregkh@linuxfoundation.org>,
+        <benoit.cousson@linaro.org>, <anish198519851985@gmail.com>,
+        <pmeerw@pmeerw.net>, Lokesh Vutla <lokeshvutla@ti.com>
+Subject: [PATCH 3/5] extcon: add EXPORT_SYMBOL_GPL for exported functions
+Date: Mon, 3 Jun 2013 21:43:38 +0530
+Message-ID: <1370276020-17446-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370276020-17446-1-git-send-email-kishon@ti.com>
+References: <1370276020-17446-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 六，2013-06-01 於 16:06 -0400，Matthew Garrett 提到：
-> +               unsigned long dummy_size = remaining_size + 1024;
-> +               void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
-> +               efi_char16_t efi_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
-> +               efi_guid_t guid = EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e,
-> +                                          0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92,
-> +                                          0xa9);
-> +
-> +               status = efi.set_variable(efi_name, &guid, attributes,
-> +                                         dummy_size, dummy);
-> +
-> +               if (status == EFI_SUCCESS) {
-> +                       /*
-> +                        * This should have failed, so if it didn't make sure
-> +                        * that we delete it...
-> +                        */
-> +                       efi.set_variable(efi_name, &guid, attributes, 0,
-> +                                        dummy);
-> +               } 
+Added EXPORT_SYMBOL_GPL() for extcon_register_interest and
+extcon_register_notifier in order to avoid undefined reference
+error when building the consumer modules of extcon as _modules_.
 
-Oliver raised a question for if power fails between that succesful
-attempt and the deletion?
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+---
+ drivers/extcon/extcon-class.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Due to the create/delete operating are not atomic, I think that will be
-better we try to delete DUMMY object in efi_enter_virtual_mode() or when
-efivars initial.
-
-The following diff tested on OVMF for delete DUMMY object when system
-boot, for reference.
-
-
-Thanks a lot!
-Joey Lee
-
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 63e167a..72770b0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -861,6 +861,10 @@ void __init efi_enter_virtual_mode(void)
- 	u64 end, systab, start_pfn, end_pfn;
- 	void *p, *va, *new_memmap = NULL;
- 	int count = 0;
-+	efi_char16_t efi_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
-+	efi_guid_t guid = EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e,
-+				   0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92,
-+				   0xa9);
- 
- 	efi.systab = NULL;
- 
-@@ -981,6 +985,9 @@ void __init efi_enter_virtual_mode(void)
- 		runtime_code_page_mkexec();
- 
- 	kfree(new_memmap);
-+
-+	/* clean DUMMY object */
-+	efi.set_variable(efi_name, &guid, 0, 0, NULL);
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 265d549..51a5f5f 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -541,6 +541,7 @@ int extcon_register_interest(struct extcon_specific_cable_nb *obj,
+ 		return -ENODEV;
+ 	}
  }
++EXPORT_SYMBOL_GPL(extcon_register_interest);
  
- /*
-
+ /**
+  * extcon_unregister_interest() - Unregister the notifier registered by
+@@ -555,6 +556,7 @@ int extcon_unregister_interest(struct extcon_specific_cable_nb *obj)
+ 
+ 	return raw_notifier_chain_unregister(&obj->edev->nh, &obj->internal_nb);
+ }
++EXPORT_SYMBOL_GPL(extcon_unregister_interest);
+ 
+ /**
+  * extcon_register_notifier() - Register a notifiee to get notified by
+-- 
+1.7.10.4
 
