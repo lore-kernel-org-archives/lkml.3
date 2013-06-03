@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3FCM6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:58:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33576 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756049Ab3FCM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:58:14 -0400
-Message-ID: <1370264293.2025.31.camel@joe-AO722>
-Subject: Re: [PATCH V2 2/8] pktcdvd: Convert printk to pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 03 Jun 2013 05:58:13 -0700
-In-Reply-To: <20130603125057.GB23987@mwanda>
-References: <1369978679.10556.36.camel@joe-AO722>
-	 <cover.1370048648.git.joe@perches.com>
-	 <92da9370f91c4435cd62b71998f6d66db8680596.1370048648.git.joe@perches.com>
-	 <20130603095714.GA23987@mwanda> <1370260771.2025.15.camel@joe-AO722>
-	 <20130603125057.GB23987@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757672Ab3FCM6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:58:20 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:60471 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab3FCM6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:58:17 -0400
+Message-ID: <1370264294.24311.125.camel@edumazet-glaptop>
+Subject: Re: [PATCH v8 net-next 1/7] net: add napi_id and hash
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 03 Jun 2013 05:58:14 -0700
+In-Reply-To: <20130603080117.18273.68908.stgit@ladj378.jer.intel.com>
+References: <20130603080107.18273.34279.stgit@ladj378.jer.intel.com>
+	 <20130603080117.18273.68908.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 15:50 +0300, Dan Carpenter wrote:
-> Read it again.  ;)  In the original code, 8 was valid.
+On Mon, 2013-06-03 at 11:01 +0300, Eliezer Tamir wrote:
+> Adds a napi_id and a hashing mechanism to lookup a napi by id.
+> This will be used by subsequent patches to implement low latency
+> Ethernet device polling.
+> Based on a code sample by Eric Dumazet.
+> 
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
+> 
+>  include/linux/netdevice.h |   29 ++++++++++++++++++++++
+>  net/core/dev.c            |   59 +++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 88 insertions(+), 0 deletions(-)
 
-Right, I stuffed it up.  Thanks, I'll resubmit later.
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 
 
