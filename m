@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3FCVFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:05:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756402Ab3FCVFO (ORCPT
+	id S1758003Ab3FCVFx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:05:53 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59367 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab3FCVFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:05:14 -0400
-Date: Mon, 3 Jun 2013 14:05:13 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] uio: Add two platform uio drivers to one
-Message-ID: <20130603210513.GA22606@kroah.com>
-References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
- <71c482e15ee32fa304db73b984f6d5a63441cd92.1369317710.git.michal.simek@xilinx.com>
- <51A5E644.1040901@monstr.eu>
- <51AC8D43.100@monstr.eu>
+	Mon, 3 Jun 2013 17:05:50 -0400
+Date: Mon, 3 Jun 2013 15:36:47 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130603193647.GB10200@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130603204930.GA28299@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51AC8D43.100@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130603204930.GA28299@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 02:34:11PM +0200, Michal Simek wrote:
-> Hi Hans and Greg,
+On Mon, 3 June 2013 13:49:30 -0700, Christoph Hellwig wrote:
 > 
-> can you please comment this?
+> I can't say I like the structure.
+> 
+> A list_pop that removes and entry from the head or returns NULL if the
+> list is empty would lead to nice while loops that are obviously
+> readable instead.
 
-I'll let Hans handle this, as he's the UIO maintainer now.
+Something like this?
 
-thanks,
+#define list_pop(head) \
+        ({ struct list_head *____pos; \
+           list_empty(head) ? NULL : (____pos = (head)->next, \
+                   list_del(____pos), ____pos) \
+        })
 
-greg -h
+#define list_pop_entry(head, type, member) \
+        ({ struct list_head *____pos; \
+           list_empty(head) ? NULL : (____pos = (head)->next, \
+                   list_del(____pos), list_entry(____pos, type, member) \
+        })
+
+Would be fine with me as well.
+
+Jörn
+
+--
+Beware of bugs in the above code; I have only proved it correct, but
+not tried it.
+-- Donald Knuth
