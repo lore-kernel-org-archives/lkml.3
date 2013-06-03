@@ -1,149 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab3FCSDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:03:25 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:43156 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3FCSDV (ORCPT
+	id S1759167Ab3FCSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:05:09 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43595 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757202Ab3FCSFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:03:21 -0400
-Date: Mon, 3 Jun 2013 20:03:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130603180316.GA23659@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
- <20130531081052.GA32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
- <20130531112116.GC32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
- <20130601061151.GC15576@cmpxchg.org>
- <20130603153432.GC18588@dhcp22.suse.cz>
- <20130603164839.GG15576@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130603164839.GG15576@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 14:05:06 -0400
+Message-ID: <1370282703.9888.5.camel@dabdike>
+Subject: Re: [PATCH 0/4] EFI 1:1 mapping
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Date: Mon, 03 Jun 2013 11:05:03 -0700
+In-Reply-To: <20130603164237.GA23146@srcf.ucam.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+	 <20130602225620.GA5496@srcf.ucam.org> <20130603081148.GB13607@nazgul.tnic>
+	 <1370269642.2910.4.camel@dabdike> <20130603143010.GA20252@srcf.ucam.org>
+	 <1370270282.2910.9.camel@dabdike> <20130603152122.GA21312@srcf.ucam.org>
+	 <1370276286.2910.29.camel@dabdike> <20130603162435.GA22563@srcf.ucam.org>
+	 <1370277307.2910.39.camel@dabdike> <20130603164237.GA23146@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-06-13 12:48:39, Johannes Weiner wrote:
-> On Mon, Jun 03, 2013 at 05:34:32PM +0200, Michal Hocko wrote:
-> > On Sat 01-06-13 02:11:51, Johannes Weiner wrote:
-> > [...]
-> > > From: Johannes Weiner <hannes@cmpxchg.org>
-> > > Subject: [PATCH] memcg: more robust oom handling
-> > > 
-> > > The memcg OOM handling is incredibly fragile because once a memcg goes
-> > > OOM, one task (kernel or userspace) is responsible for resolving the
-> > > situation.  Every other task that gets caught trying to charge memory
-> > > gets stuck in a waitqueue while potentially holding various filesystem
-> > > and mm locks on which the OOM handling task may now deadlock.
-> > > 
-> > > Do two things to charge attempts under OOM:
-> > > 
-> > > 1. Do not trap system calls (buffered IO and friends), just return
-> > >    -ENOMEM.  Userspace should be able to handle this... right?
-> > > 
-> > > 2. Do not trap page faults directly in the charging context.  Instead,
-> > >    remember the OOMing memcg in the task struct and fully unwind the
-> > >    page fault stack first.  Then synchronize the memcg OOM from
-> > >    pagefault_out_of_memory()
+On Mon, 2013-06-03 at 17:42 +0100, Matthew Garrett wrote:
+> On Mon, Jun 03, 2013 at 09:35:07AM -0700, James Bottomley wrote:
+> > On Mon, 2013-06-03 at 17:24 +0100, Matthew Garrett wrote:
+> > > That seems optimistic. Windows never calls QueryVariableInfo() during 
+> > > boot services, so what makes you think doing so has ever been tested?
 > > 
-> > I think this should work and I really like it! Nice work Johannes, I
-> > never dared to go that deep and my opposite approach was also much more
-> > fragile.
-> > 
-> > I am just afraid about all the other archs that do not support (from
-> > quick grep it looks like: blackfin, c6x, h8300, metag, mn10300,
-> > openrisc, score and tile). What would be an alternative for them?
-> > #ifdefs for the old code (something like ARCH_HAS_FAULT_OOM_RETRY)? This
-> > would be acceptable for me.
+> > It's used by the UEFI shell package ... every system which boots to the
+> > shell automatically tests this.  I know no locked down UEFI system ships
+> > with a shell but almost every system in test has a Shell in some form,
+> > so I think its fairly safe to call it from boot services.
 > 
-> blackfin is NOMMU but I guess the others should be converted to the
-> proper OOM protocol anyway and not just kill the faulting task.  I can
-> update them in the next version of the patch (series).
+> Why do you persist in this belief that all system vendors are going to 
+> have run a shell, let alone any kind of test suite? That runs counter to 
+> everything we've learned about x86 firmware. People verify that it runs 
+> Windows and then ship it.
 
-OK, if you are willing to convert them all then even better.
+I don't, but I find it hard to believe no vendor ever runs an EFI shell
+on their systems.  The feedback I got from a couple of OEMs is that they
+use the shell mostly for internal testing.
 
-> > > Not-quite-signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > ---
-> > >  arch/x86/mm/fault.c        |   2 +
-> > >  include/linux/memcontrol.h |   6 +++
-> > >  include/linux/sched.h      |   6 +++
-> > >  mm/memcontrol.c            | 104 +++++++++++++++++++++++++--------------------
-> > >  mm/oom_kill.c              |   7 ++-
-> > >  5 files changed, 78 insertions(+), 47 deletions(-)
-> > > 
-> > [...]
-> > > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > > index e692a02..cf60aef 100644
-> > > --- a/include/linux/sched.h
-> > > +++ b/include/linux/sched.h
-> > > @@ -1282,6 +1282,8 @@ struct task_struct {
-> > >  				 * execve */
-> > >  	unsigned in_iowait:1;
-> > >  
-> > > +	unsigned in_userfault:1;
-> > > +
-> > 
-> > [This is more a nit pick but before I forget while I am reading through
-> > the rest of the patch.]
-> > 
-> > OK there is a lot of room around those bit fields but as this is only
-> > for memcg and you are enlarging the structure by the pointer then you
-> > can reuse bottom bit of memcg pointer.
+> > However, what about a compromise: why don't we implement 1:1 mapping and
+> > then call SetVirtualAddressMap with the 1:1 map ... in theory the
+> > pointer chases should then be nops (it will be replacing the physical
+> > address with the same virtual address), so everything should just work
+> > and anything the UEFI vendor missed will still work because the physical
+> > address will work also in this scenario.
 > 
-> I just didn't want to put anything in the arch code that looks too
-> memcgish, even though it's the only user right now.  But granted, it
-> will also probably remain the only user for a while.
+> The problem there is that you're saying "In theory". We know that 
+> Windows doesn't behave this way, so we have no legitimate expectation 
+> that it'll work. We know that it doesn't on some Apple hardware.
 
-OK, no objection. I would just use a more generic name. Something like
-memcg_oom_can_block.
+Fine, you say we need to call SetVirtualAddressMap because windows does,
+I agree, I'm just saying we get additional safety from calling it with
+the 1:1 map ... I don't see what the problem is.
 
-[...`]
-> > >  	if (locked)
-> > >  		mem_cgroup_oom_notify(memcg);
-> > >  	spin_unlock(&memcg_oom_lock);
-> > >  
-> > >  	if (need_to_kill) {
-> > > -		finish_wait(&memcg_oom_waitq, &owait.wait);
-> > >  		mem_cgroup_out_of_memory(memcg, mask, order);
-> > > -	} else {
-> > > -		schedule();
-> > > -		finish_wait(&memcg_oom_waitq, &owait.wait);
-> > > +		memcg_oom_recover(memcg);
-> > 
-> > Why do we need to call memcg_oom_recover here? We do not know that any
-> > charges have been released. Say mem_cgroup_out_of_memory selected a task
-> > which migrated to our group (without its charges) so we would kill the
-> > poor guy and free no memory from this group.
-> > Now you wake up oom waiters to refault but they will end up in the same
-> > situation. I think it should be sufficient to wait for memcg_oom_recover
-> > until the memory is uncharged (which we do already).
-> 
-> It's a leftover from how it was before (see the memcg_wakeup_oom
-> below), but you are right, we can get rid of it.
+James
 
-right, I have missed that. Then it would deserve a note in the
-changelog. Something like
-"
-memcg_wakeup_oom should be removed because there is no guarantee that
-mem_cgroup_out_of_memory was able to free any memory. It could have
-killed a task which doesn't have any charges from the group. Waiters
-should be woken up by memcg_oom_recover during uncharge or a limit
-change.
-"
-[...]
--- 
-Michal Hocko
-SUSE Labs
+
+
