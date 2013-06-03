@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab3FCPeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:34:08 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40255 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab3FCPeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:34:03 -0400
-Message-ID: <51ACB764.2000808@gmail.com>
-Date: Mon, 03 Jun 2013 23:33:56 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	id S1758824Ab3FCPeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:34:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:14421 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756526Ab3FCPeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:34:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,793,1363132800"; 
+   d="scan'208";a="28900838"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, <Ian.Campbell@citrix.com>,
+        <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 4/5] arm64/xen: use XEN_IO_PROTO_ABI_ARM on ARM64
+Date: Mon, 3 Jun 2013 16:33:43 +0100
+Message-ID: <1370273624-26976-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Joonsoo Kim <js1304@gmail.com>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] mm, vmalloc: Call setup_vmalloc_vm instead of insert_vmalloc_vm
-References: <51ACB6DB.6040809@gmail.com>
-In-Reply-To: <51ACB6DB.6040809@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-
-Here we pass flags with only VM_ALLOC bit set, it is unnecessary
-to call clear_vm_unlist to clear VM_UNLIST bit. So use setup_vmalloc_vm
-instead of insert_vmalloc_vm.
-
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- mm/vmalloc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/xen/interface/io/protocols.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 6580c76..edbfad0 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2503,8 +2503,8 @@ found:
- 
- 	/* insert all vm's */
- 	for (area = 0; area < nr_vms; area++)
--		insert_vmalloc_vm(vms[area], vas[area], VM_ALLOC,
--				  pcpu_get_vm_areas);
-+		setup_vmalloc_vm(vms[area], vas[area], VM_ALLOC,
-+				 pcpu_get_vm_areas);
- 
- 	kfree(vas);
- 	return vms;
+diff --git a/include/xen/interface/io/protocols.h b/include/xen/interface/io/protocols.h
+index 0eafaf2..056744b 100644
+--- a/include/xen/interface/io/protocols.h
++++ b/include/xen/interface/io/protocols.h
+@@ -15,7 +15,7 @@
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_IA64
+ #elif defined(__powerpc64__)
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_POWERPC64
+-#elif defined(__arm__)
++#elif defined(__arm__) || defined(__aarch64__)
+ # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_ARM
+ #else
+ # error arch fixup needed here
 -- 
-1.7.1
+1.7.2.5
 
