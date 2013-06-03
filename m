@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449Ab3FCRFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 13:05:44 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:43636 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab3FCRFl (ORCPT
+	id S1759527Ab3FCRG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 13:06:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45862 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759268Ab3FCRGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 13:05:41 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL v2] at91: USBA DT support / drivers update for 3.11 #1
-Date: Mon, 3 Jun 2013 19:05:39 +0200
-Message-ID: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <20130526083430.GP24476@game.jcrosoft.org>
-References: <20130526083430.GP24476@game.jcrosoft.org>
-Organization: atmel
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 3 Jun 2013 13:06:55 -0400
+From: Mark Brown <broonie@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@linaro.org>
+Date: Mon,  3 Jun 2013 18:06:31 +0100
+Message-Id: <1370279191-15721-1-git-send-email-broonie@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regmap: core: Cache all registers by default when cache is enabled
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Currently all register maps with a cache need to provide a volatile
+callback since the default is to assume all registers are volatile.
+This is not sensible if we have a cache so change the default to be
+fully cached if a cache is provided.
 
-This is a rework of the previous pull-request done by Jean-Christophe
-PLAGNIOL-VILLARD last week ([GIT PULL] at91: USBA DT support for 3.11).
-You should see that this material is based on the cleanup branch that you
-already have in arm-soc/at91/cleanup.
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/base/regmap/regmap.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-This adds the DT support for USBA gadget driver present in the most recent
-AT91 SoCs.
-As agreed with Arnd and Felipe we send these drivers updates via arm-soc.
-
-Thanks, best regards,
-
-The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
-
-  ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-drivers
-
-for you to fetch changes up to a375f12dde25a7e89acd75d066d0225657d7dfc2:
-
-  ARM: at91: sam9m10g45ek add udc DT support (2013-05-24 07:15:20 +0800)
-
-----------------------------------------------------------------
-Adding the DT support to UBB gadget High-Speed aka usba.
-It updates the driver and all device tree files
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (7):
-      USB: gadget: atmel_usba: move global struct usba_ep usba_ep to struct usba_udc
-      USB: gadget: atmel_usba: allow multi instance
-      USB: gadget: atmel_usba: add DT support
-      ARM: at91: sam9x5 add udc DT support
-      ARM: at91: sam9x5ek add udc DT support
-      ARM: at91: sam9g45 add udc DT support
-      ARM: at91: sam9m10g45ek add udc DT support
-
- .../devicetree/bindings/usb/atmel-usb.txt          |  82 +++++++
- arch/arm/boot/dts/at91sam9g45.dtsi                 |  62 +++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   5 +
- arch/arm/boot/dts/at91sam9x5.dtsi                  |  62 +++++
- arch/arm/boot/dts/at91sam9x5ek.dtsi                |   5 +
- arch/arm/mach-at91/at91sam9g45.c                   |   2 +
- arch/arm/mach-at91/at91sam9x5.c                    |   2 +
- drivers/usb/gadget/Kconfig                         |   2 +-
- drivers/usb/gadget/atmel_usba_udc.c                | 264 ++++++++++++++-------
- drivers/usb/gadget/atmel_usba_udc.h                |   2 +
- 10 files changed, 407 insertions(+), 81 deletions(-)
-
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 1a01553..ed152e3 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -123,7 +123,10 @@ bool regmap_volatile(struct regmap *map, unsigned int reg)
+ 	if (map->volatile_table)
+ 		return regmap_check_range_table(map, reg, map->volatile_table);
+ 
+-	return true;
++	if (map->cache_ops)
++		return false;
++	else
++		return true;
+ }
+ 
+ bool regmap_precious(struct regmap *map, unsigned int reg)
 -- 
-Nicolas Ferre
+1.7.10.4
+
