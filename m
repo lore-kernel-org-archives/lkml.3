@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab3FCQM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:12:27 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:52929 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756694Ab3FCQMZ (ORCPT
+	id S1759302Ab3FCQNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:13:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46531 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab3FCQNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:12:25 -0400
-Message-ID: <51ACC066.1010902@semaphore.gr>
-Date: Mon, 03 Jun 2013 19:12:22 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Mon, 3 Jun 2013 12:13:36 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
-References: <51A7BFA6.3070800@semaphore.gr> <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com> <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com> <2413427.Abjbfkms0Z@vostro.rjw.lan> <CAKohpomLkogSHD+5Wobb34qHPnb7_vWE1Xz4K5MD=Q50kOpfuA@mail.gmail.com>
-In-Reply-To: <CAKohpomLkogSHD+5Wobb34qHPnb7_vWE1Xz4K5MD=Q50kOpfuA@mail.gmail.com>
+In-Reply-To: <51ACB6DB.6040809@gmail.com>
+References: <51ACB6DB.6040809@gmail.com>
+Date: Tue, 4 Jun 2013 01:13:34 +0900
+Message-ID: <CAAmzW4MiDzUv4v=ZtGcvOW0e-i9Po0EBJDoLSVeXg9oYXpzDnw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm, vmalloc: Only call setup_vmalloc_vm only in __get_vm_area_node
+From: JoonSoo Kim <js1304@gmail.com>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 02:24 PM, Viresh Kumar wrote:
-> On 3 June 2013 16:27, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> The question is if we want policy->max to re-scale them effectively (i.e. to
->> change weights so that the maximum load maps to the highest frequency available
->> at the moment) or if we want policy->max to work as a cap (i.e. to map all
->> loads above certain value to the maximum frequency available at the moment, so
->> that the criteria for selecting the lower frequencies don't change).  In my
->> opinion the second option is better, because it means "OK, we can't use some
->> high frequencies, but let's not hurt performance for the loads that wouldn't
->> require them anyway".  Otherwise, we'll effectively throttle all loads and
->> that not only causes performance to drop, but also causes more energy to be
->> used overall.
-> 
-> I wouldn't say that I don't agree with you as I do to some extent.
-> 
-> But the question that comes to my mind now is: Why is policy->max reduced
-> in the first place? User doesn't have control over which freqs to expose, so
-> available_frequencies will stay the same. The only thing he is capable
-> of doing is: reduce policy->max.. Which in a way means that.. "I don't want to
-> use higher frequencies (power, thermal reasons) and I know performance will
-> go down with it and I don't care for it now."
-> 
-> And this way I feel policy->max isn't a bad choice either.
-> 
-> BUT as you said: policy->max isn't there to say don't be so aggressive now in
-> increasing frequencies but just only to say, don't go over this frequency..
-> 
-> So, probably we can use cpuinfo.max_freq :)
-> 
+Hello, Zhang.
 
-Both of you know better than me, but I also believe that cpuinfo.max is more
-appropriate. Although, the decision was taken, let me share a spreadsheet to show
-the 2 cases.
-https://docs.google.com/spreadsheet/ccc?key=0AnMfNYUV1k0ddHh1OUFXa0kxcGZJaXd4am1sdmVWT0E&usp=sharing
+2013/6/4 Zhang Yanfei <zhangyanfei.yes@gmail.com>:
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>
+> Now for insert_vmalloc_vm, it only calls the two functions:
+> - setup_vmalloc_vm: fill vm_struct and vmap_area instances
+> - clear_vm_unlist: clear VM_UNLIST bit in vm_struct->flags
+>
+> So in function __get_vm_area_node, if VM_UNLIST bit unset
+> in flags, that is the else branch here, we don't need to
+> clear VM_UNLIST bit for vm->flags since this bit is obviously
+> not set. That is to say, we could only call setup_vmalloc_vm
+> instead of insert_vmalloc_vm here. And then we could even
+> remove the if test here.
+>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-I will prepare the v2 of this patch that uses cpuinfo.max_freq instead of policy-max.
-Also, I will split the patch into 3 parts as suggested.
+For all three patches,
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-
-Thank you for your comments and suggestions!
-Stratos
+> ---
+>  mm/vmalloc.c |   11 +----------
+>  1 files changed, 1 insertions(+), 10 deletions(-)
+>
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index d365724..6580c76 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1367,16 +1367,7 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
+>                 return NULL;
+>         }
+>
+> -       /*
+> -        * When this function is called from __vmalloc_node_range,
+> -        * we add VM_UNLIST flag to avoid accessing uninitialized
+> -        * members of vm_struct such as pages and nr_pages fields.
+> -        * They will be set later.
+> -        */
+> -       if (flags & VM_UNLIST)
+> -               setup_vmalloc_vm(area, va, flags, caller);
+> -       else
+> -               insert_vmalloc_vm(area, va, flags, caller);
+> +       setup_vmalloc_vm(area, va, flags, caller);
+>
+>         return area;
+>  }
+> --
+> 1.7.1
