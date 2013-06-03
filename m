@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3FCTFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:05:00 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:38057 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3FCTE6 (ORCPT
+	id S1757966Ab3FCTHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:07:39 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:41211 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab3FCTHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:04:58 -0400
-Message-ID: <1370286292.15671.4.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v1 00/11] locks: scalability improvements for file
- locking
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Date: Mon, 03 Jun 2013 12:04:52 -0700
-In-Reply-To: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 15:07:36 -0400
+Date: Mon, 3 Jun 2013 21:07:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 2/8] posix-cpu-timers: fix acounting delta_exec twice
+Message-ID: <20130603190730.GA31107@somewhere>
+References: <1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1369604149-13016-4-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369604149-13016-4-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-31 at 23:07 -0400, Jeff Layton wrote:
-> This is not the first attempt at doing this. The conversion to the
-> i_lock was originally attempted by Bruce Fields a few years ago. His
-> approach was NAK'ed since it involved ripping out the deadlock
-> detection. People also really seem to like /proc/locks for debugging, so
-> keeping that in is probably worthwhile.
+On Sun, May 26, 2013 at 05:35:42PM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> Currently glibc rt/tst-cpuclock2 test(*) sporadically fails because
+> scheduler delta can be accounted twice from thread_group_cputimer()
+> and account_group_exec_runtime().
+> 
+> Finally, clock_nanosleep() wakes up earlier than an argument. This is posix
+> violation. This issue was introduced by commit d670ec1317 (posix-cpu-timers:
+> Cure SMP wobbles).
+> 
+> (*) http://sourceware.org/git/?p=glibc.git;a=blob;f=rt/tst-cpuclock2.c;h=6752721717f959e89c0d692b3f1ee082d507eec2;hb=HEAD
+> 
+> Cc: Olivier Langlois <olivier@trillion01.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 
-Yep, we need to keep this. FWIW, lslocks(8) relies on /proc/locks.
+So with this patch the timer sample can be (nr_threads * TICK_NSEC) nsecs behind the
+clock in the worst case.
 
-Thanks,
-Davidlohr
+This is still better than possibly (nr_threads * TICK_NSEC) nsecs ahead of the clock in
+the worst case like we have before the patch :)
 
+But the worst case can be unbounded with full dynticks tasks. May be the ideal thing
+would be to perform an update_curr() on the threads before we read their sum_exec_runtime,
+This way we make sure we are never far away behind.
+
+This needs to be done on top of your change anyway because we still want to avoid
+the double count, so: Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+Thanks.
