@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab3FCQky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:40:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36495 "EHLO mx1.redhat.com"
+	id S1759310Ab3FCQlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:41:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758652Ab3FCQkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:40:51 -0400
-Date: Mon, 3 Jun 2013 11:59:40 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130603155940.GA6714@redhat.com>
-References: <51A006CF.90105@gmail.com>
- <87k3mnahkf.fsf@xmission.com>
- <51A076FE.3060604@gmail.com>
- <20130525145217.0549138a@holzheu>
- <20130528135500.GC7088@redhat.com>
- <20130529135144.7f95c4c0@holzheu>
- <20130530203847.GB5968@redhat.com>
- <20130531162127.6d512233@holzheu>
- <20130531160158.GC13057@redhat.com>
- <20130603152718.5ba4d05f@holzheu>
+	id S1758763Ab3FCQlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:41:01 -0400
+Date: Mon, 3 Jun 2013 19:40:57 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi.kivity@gmail.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm <kvm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
+Message-ID: <20130603164057.GQ24773@redhat.com>
+References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com>
+ <51A7717D.6030203@redhat.com>
+ <51A77FA8.6010007@redhat.com>
+ <CAEbWaiqg765n5jSz7+8_O-44j5NoTMhKVnN-ev7daSHBoR6Tiw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130603152718.5ba4d05f@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAEbWaiqg765n5jSz7+8_O-44j5NoTMhKVnN-ev7daSHBoR6Tiw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 03:27:18PM +0200, Michael Holzheu wrote:
-
-[..]
-> > If not, how would remap_pfn_range() work with HSA region when
-> > /proc/vmcore is mmaped()?
+On Mon, Jun 03, 2013 at 06:42:11PM +0300, Avi Kivity wrote:
+> On Thu, May 30, 2013 at 7:34 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> > Il 30/05/2013 17:34, Paolo Bonzini ha scritto:
+> >> Il 30/05/2013 16:35, Paolo Bonzini ha scritto:
+> >>> The x86-64 extended low-byte registers were fetched correctly from reg,
+> >>> but not from mod/rm.
+> >>>
+> >>> This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
+> >>> not enough.
+> >>
+> >> Well, it is enough but it takes 2 minutes to reach the point where
+> >> hardware virtualization is used.  It is doing a lot of stuff in
+> >> emulation mode because FS and GS have leftovers from the A20 test:
+> >>
+> >> FS =0000 0000000000000000 0000ffff 00009300 DPL=0 DS16 [-WA]
+> >> GS =ffff 00000000000ffff0 0000ffff 00009300 DPL=0 DS16 [-WA]
+> >>
+> >> 0x00000000000113be:  in     $0x92,%al
+> >> 0x00000000000113c0:  or     $0x2,%al
+> >> 0x00000000000113c2:  out    %al,$0x92
+> >> 0x00000000000113c4:  xor    %ax,%ax
+> >> 0x00000000000113c6:  mov    %ax,%fs
+> >> 0x00000000000113c8:  dec    %ax
+> >> 0x00000000000113c9:  mov    %ax,%gs
+> >> 0x00000000000113cb:  inc    %ax
+> >> 0x00000000000113cc:  mov    %ax,%fs:0x200
+> >> 0x00000000000113d0:  cmp    %gs:0x210,%ax
+> >> 0x00000000000113d5:  je     0x113cb
+> >>
+> >> The DPL < RPL test fails.  Any ideas?  Should we introduce a new
+> >> intermediate value for emulate_invalid_guest_state (0=none, 1=some, 2=full)?
+> >
+> > One idea could be to replace invalid descriptors with NULL ones.  Then
+> > you can intercept this in the #GP handler and trigger emulation for that
+> > instruction only.
 > 
-> I am no memory management expert, so I discussed that with Martin
-> Schwidefsky (s390 architecture maintainer). Perhaps something like
-> the following could work:
+> Won't work, vmx won't let you enter in such a configuration.
 > 
-> After vmcore_mmap() is called the HSA pages are not initially mapped in
-> the page tables. So when user space accesses those parts
-> of /proc/vmcore, a fault will be generated. We implement a mechanism
-> that in this case the HSA is copied to a new page in the page cache and
-> a mapping is created for it. Since the page is allocated in the page
-> cache, it can be released afterwards by the kernel when we get memory
-> pressure.
-> 
-> Our current idea for such an implementation:
-> 
-> * Create new address space (struct address_space) for /proc/vmcore.
-> * Implement new vm_operations_struct "vmcore_mmap_ops" with
->   new vmcore_fault() ".fault" callback for /proc/vmcore.
-> * Set vma->vm_ops to vmcore_mmap_ops in mmap_vmcore().
-> * The vmcore_fault() function will get a new page cache page,
->   copy HSA page to page cache page add it to vmcore address space.
->   To see how this could work, we looked into the functions
->   filemap_fault() in "mm/filemap.c" and relay_buf_fault() in
->   "kernel/relay.c".
-> 
-> What do you think?
+Why? It is possible to have NULL descriptor in 32bit mode with vmx. But
+we do not usually intercept #GP while executing 32bit mode, so we will
+have to track if there is artificial NULL selector and enables #GP
+interception and then emulate on every #GP.
 
-I am not mm expert either but above proposal sounds reasonable to me.
+> Maybe you can detect the exact code sequence (%eip, some instructions,
+> register state) and clear %fs and %gs.
+My be we can set dpl to rpl unconditionally on a switch from 16 to 32
+bit. The only problem I can see with it is that if a guest enters user
+mode without explicitly reload the segment it will be accessible by a
+user mode code, but I am not sure it is well defined what dpl of a 16
+bit segment is after transition to 32 bit mode anyway, so it would be
+crazy to do so.
 
-So remap_pfn_range() call will go in arch dependent code so that arch
-can decide which range can be mapped right away and which ranges will
-be filed in when fault happens? I am assuming that s390 will map
-everything except for pfn between 0 and HSA_SIZE.
-
-And regular s390 kdump will map everyting right away and will not
-have to rely on fault mechanism?
-
-Thanks
-Vivek
+--
+			Gleb.
