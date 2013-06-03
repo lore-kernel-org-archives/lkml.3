@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab3FCXCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:02:45 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:44373 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758645Ab3FCXCj (ORCPT
+	id S1759577Ab3FCXDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:03:08 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:48826 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758861Ab3FCXDF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 19:02:39 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH] percpu-refcount: Don't use silly cmpxchg()
-Date: Mon,  3 Jun 2013 16:02:29 -0700
-Message-Id: <1370300549-2177-1-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1370039205-14071-1-git-send-email-koverstreet@google.com>
-References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
+	Mon, 3 Jun 2013 19:03:05 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
+ module parameter
+Thread-Topic: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
+ module parameter
+Thread-Index: AQHOYKwt0WWCuQi7zEiY91yfnSwWB5klEP6A
+Date: Mon, 3 Jun 2013 23:03:01 +0000
+Message-ID: <1370300581.2013.14.camel@dabdike.int.hansenpartnership.com>
+References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
+	 <1370301688-27286-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1370301688-27286-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.18.112.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <CCA35D962D415D449099BF7AF5127F5E@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cmpxcgh() was just to ensure the debug check didn't race, which was
-a bit excessive. The caller is supposed to do the appropriate
-synchronization, which means percpu_ref_kill() can just do a simple
-store.
+On Mon, 2013-06-03 at 16:21 -0700, K. Y. Srinivasan wrote:
+> The standard scsi timeout is not appropriate in some of the environments where
+> Hyper-V is deployed. Set this timeout appropriately for all devices managed
+> by this driver. Further make this a module parameter.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/scsi/storvsc_drv.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 16a3a0c..8d29a95 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 * PAGE_SIZE);
+>  module_param(storvsc_ringbuffer_size, int, S_IRUGO);
+>  MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+>  
+> +/*
+> + * Timeout in seconds for all devices managed by this driver.
+> + */
+> +static int storvsc_timeout = 180;
+> +module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
+> +MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
+> +
+>  #define STORVSC_MAX_IO_REQUESTS				128
+>  
+>  /*
+> @@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+>  
+>  	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
+>  
+> +	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout * HZ));
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- lib/percpu-refcount.c | 19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+Why does this need to be a module parameter?  It's already a sysfs one
+in the scsi_device class?  Three minutes is also a bit large.  The
+default is 30s with huge cache arrays recommending upping this to
+60s ... you're three times this.
 
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-index e65820a..04be7ea 100644
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -107,22 +107,11 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
-  */
- void percpu_ref_kill(struct percpu_ref *ref)
- {
--	unsigned __percpu *pcpu_count, *old, *new;
-+	WARN_ONCE(REF_STATUS(ref->pcpu_count) == PCPU_REF_DEAD,
-+		  "percpu_ref_kill() called more than once!\n");
- 
--	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
--
--	do {
--		if (REF_STATUS(pcpu_count) == PCPU_REF_DEAD) {
--			WARN(1, "percpu_ref_kill() called more than once!\n");
--			return;
--		}
--
--		old = pcpu_count;
--		new = (unsigned __percpu *)
--			(((unsigned long) pcpu_count)|PCPU_REF_DEAD);
--
--		pcpu_count = cmpxchg(&ref->pcpu_count, old, new);
--	} while (pcpu_count != old);
-+	ref->pcpu_count = (unsigned __percpu *)
-+		(((unsigned long) ref->pcpu_count)|PCPU_REF_DEAD);
- 
- 	call_rcu(&ref->rcu, percpu_ref_kill_rcu);
- }
--- 
-1.8.2.1
+James
 
