@@ -1,373 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759140Ab3FCQBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:01:30 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41537 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab3FCQB2 (ORCPT
+	id S1759209Ab3FCQCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:02:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33540 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758938Ab3FCQCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:01:28 -0400
-Date: Mon, 3 Jun 2013 12:00:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 16/19] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130603160010.GF4224@phenom.dumpdata.com>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
- <20130601192557.5966.12696.sendpatchset@codeblue>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601192557.5966.12696.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 3 Jun 2013 12:02:18 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=w5NR5vgd4yIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=0jC6bcFkUTUA:10 a=VwQbUJbxAAAA:8 a=1f2KdLKwJRynbfznIPcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370275337.26799.94.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/2] [GIT PULL] rcu/ftrace: Fix livelock from overhead
+ of RCU debugging
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 03 Jun 2013 12:02:17 -0400
+In-Reply-To: <20130529185300.403107512@goodmis.org>
+References: <20130529185300.403107512@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 12:55:57AM +0530, Raghavendra K T wrote:
-> kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
+On Wed, 2013-05-29 at 14:53 -0400, Steven Rostedt wrote:
+> Linus,
 > 
-> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> 
-> During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
-> required feature (KVM_FEATURE_PV_UNHALT) to support pv-ticketlocks. If so,
->  support for pv-ticketlocks is registered via pv_lock_ops.
-> 
-> Use KVM_HC_KICK_CPU hypercall to wakeup waiting/halted vcpu.
-> 
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-> [Raghu: check_zero race fix, enum for kvm_contention_stat
-> jumplabel related changes ]
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/kvm_para.h |   14 ++
->  arch/x86/kernel/kvm.c           |  256 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 268 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 695399f..427afcb 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -118,10 +118,20 @@ void kvm_async_pf_task_wait(u32 token);
->  void kvm_async_pf_task_wake(u32 token);
->  u32 kvm_read_and_reset_pf_reason(void);
->  extern void kvm_disable_steal_time(void);
-> -#else
-> -#define kvm_guest_init() do { } while (0)
-> +
-> +#ifdef CONFIG_PARAVIRT_SPINLOCKS
-> +void __init kvm_spinlock_init(void);
-> +#else /* !CONFIG_PARAVIRT_SPINLOCKS */
-> +static inline void kvm_spinlock_init(void)
-> +{
-> +}
-> +#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-> +
-> +#else /* CONFIG_KVM_GUEST */
-> +#define kvm_guest_init() do {} while (0)
->  #define kvm_async_pf_task_wait(T) do {} while(0)
->  #define kvm_async_pf_task_wake(T) do {} while(0)
-> +
->  static inline u32 kvm_read_and_reset_pf_reason(void)
->  {
->  	return 0;
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index cd6d9a5..2715b92 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -34,6 +34,7 @@
->  #include <linux/sched.h>
->  #include <linux/slab.h>
->  #include <linux/kprobes.h>
-> +#include <linux/debugfs.h>
->  #include <asm/timer.h>
->  #include <asm/cpu.h>
->  #include <asm/traps.h>
-> @@ -419,6 +420,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
->  	WARN_ON(kvm_register_clock("primary cpu clock"));
->  	kvm_guest_cpu_init();
->  	native_smp_prepare_boot_cpu();
-> +	kvm_spinlock_init();
->  }
->  
->  static void __cpuinit kvm_guest_cpu_online(void *dummy)
-> @@ -523,3 +525,257 @@ static __init int activate_jump_labels(void)
->  	return 0;
->  }
->  arch_initcall(activate_jump_labels);
-> +
-> +/* Kick a cpu by its apicid. Used to wake up a halted vcpu */
-> +void kvm_kick_cpu(int cpu)
-> +{
-> +	int apicid;
-> +
-> +	apicid = per_cpu(x86_cpu_to_apicid, cpu);
-> +	kvm_hypercall1(KVM_HC_KICK_CPU, apicid);
-> +}
-> +
-> +#ifdef CONFIG_PARAVIRT_SPINLOCKS
-> +
-> +enum kvm_contention_stat {
-> +	TAKEN_SLOW,
-> +	TAKEN_SLOW_PICKUP,
-> +	RELEASED_SLOW,
-> +	RELEASED_SLOW_KICKED,
-> +	NR_CONTENTION_STATS
-> +};
-> +
-> +#ifdef CONFIG_KVM_DEBUG_FS
-> +#define HISTO_BUCKETS	30
-> +
-> +static struct kvm_spinlock_stats
-> +{
-> +	u32 contention_stats[NR_CONTENTION_STATS];
-> +	u32 histo_spin_blocked[HISTO_BUCKETS+1];
-> +	u64 time_blocked;
-> +} spinlock_stats;
-> +
-> +static u8 zero_stats;
-> +
-> +static inline void check_zero(void)
-> +{
-> +	u8 ret;
-> +	u8 old;
-> +
-> +	old = ACCESS_ONCE(zero_stats);
-> +	if (unlikely(old)) {
-> +		ret = cmpxchg(&zero_stats, old, 0);
-> +		/* This ensures only one fellow resets the stat */
-> +		if (ret == old)
-> +			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
-> +	}
-> +}
-> +
-> +static inline void add_stats(enum kvm_contention_stat var, u32 val)
-> +{
-> +	check_zero();
-> +	spinlock_stats.contention_stats[var] += val;
-> +}
-> +
-> +
-> +static inline u64 spin_time_start(void)
-> +{
-> +	return sched_clock();
-> +}
-> +
-> +static void __spin_time_accum(u64 delta, u32 *array)
-> +{
-> +	unsigned index;
-> +
-> +	index = ilog2(delta);
-> +	check_zero();
-> +
-> +	if (index < HISTO_BUCKETS)
-> +		array[index]++;
-> +	else
-> +		array[HISTO_BUCKETS]++;
-> +}
-> +
-> +static inline void spin_time_accum_blocked(u64 start)
-> +{
-> +	u32 delta;
-> +
-> +	delta = sched_clock() - start;
-> +	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
-> +	spinlock_stats.time_blocked += delta;
-> +}
-> +
-> +static struct dentry *d_spin_debug;
-> +static struct dentry *d_kvm_debug;
-> +
-> +struct dentry *kvm_init_debugfs(void)
-> +{
-> +	d_kvm_debug = debugfs_create_dir("kvm", NULL);
-> +	if (!d_kvm_debug)
-> +		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
-> +
-> +	return d_kvm_debug;
-> +}
-> +
-> +static int __init kvm_spinlock_debugfs(void)
-> +{
-> +	struct dentry *d_kvm;
-> +
-> +	d_kvm = kvm_init_debugfs();
-> +	if (d_kvm == NULL)
-> +		return -ENOMEM;
-> +
-> +	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
-> +
-> +	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
-> +
-> +	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-> +		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
-> +	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
-> +		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
-> +
-> +	debugfs_create_u32("released_slow", 0444, d_spin_debug,
-> +		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
-> +	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
-> +		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
-> +
-> +	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
-> +			   &spinlock_stats.time_blocked);
-> +
-> +	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
-> +		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
-> +
-> +	return 0;
-> +}
-> +fs_initcall(kvm_spinlock_debugfs);
-> +#else  /* !CONFIG_KVM_DEBUG_FS */
-> +#define TIMEOUT			(1 << 10)
+> [ If you don't care to read the background of these patches,
+>   just jump down to the "Please pull" line. I included this
+>   description in the tag as well. ]
 
-What do you use that for?
+Hi Linus,
+
+I noticed that this hasn't been pulled yet. Is there any issue with it,
+or has it just been missed due to your travels?  I have a few more
+patches I'm currently testing that I built on top of these commits. I'll
+have another pull request today or tomorrow.
+
+These changes touched RCU but has been acked by Paul.
+
+Thanks,
+
+-- Steve
+
+> 
+> I was testing a config for one bug and triggered a livelock lockup. A
+> NMI watchdog dump showed what was happening:
+> 
+> [   65.972000] NMI backtrace for cpu 2
+> [   65.972000] CPU: 2 PID: 48 Comm: kworker/2:1 Not tainted 3.10.0-rc2-test+ #151
+> [   65.972000] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+> [   65.972000] task: ffff880078dc2140 ti: ffff880078dc4000 task.ti: ffff880078dc4000
+> [   65.972000] RIP: 0010:[<ffffffff810c2259>]  [<ffffffff810c2259>] ftrace_ops_list_func+0x144/0x151
+> [   65.972000] RSP: 0000:ffff880078dc5ac8  EFLAGS: 00000006
+> [   65.972000] RAX: 0000000000008000 RBX: 0000000000000001 RCX: 000000000000000f
+> [   65.972000] RDX: 0000000000000002 RSI: ffffffff810c0e9f RDI: ffffffff810b73f7
+> [   65.972000] RBP: ffff880078dc5af8 R08: ffff880078dc5be0 R09: ffff880078dc5bb0
+> [   65.972000] R10: ffffffff81a3c730 R11: 0000000000000001 R12: 0000000000008000
+> [   65.972000] R13: ffffffff810b73f7 R14: 0000000000000000 R15: ffffffff810c0e9f
+> [   65.972000] FS:  0000000000000000(0000) GS:ffff88007aa00000(0000) knlGS:0000000000000000
+> [   65.972000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   65.972000] CR2: 0000000000000168 CR3: 0000000001a0b000 CR4: 00000000000007e0
+> [   65.972000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   65.972000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   65.972000] Stack:
+> [   65.972000]  ffff880078d97480 0000000000000001 ffffffff810b9148 ffff880078d97480
+> [   65.972000]  0000000000000000 ffffffff810bb6ba ffff880078dc5bd0 ffffffff814fa7c0
+> [   65.972000]  0000000000000000 ffffffff810bb6ba ffff880078dc5c00 ffffffff814fa7c0
+> [   65.972000] Call Trace:
+> [   65.972000]  [<ffffffff810b9148>] ? check_for_new_grace_period+0x115/0x115
+> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
+> [   65.972000]  [<ffffffff814fa7c0>] ftrace_call+0x5/0x2f
+> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
+> [   65.972000]  [<ffffffff814fa7c0>] ? ftrace_call+0x5/0x2f
+> [   65.972000]  [<ffffffff810b73fc>] ? rcu_is_cpu_idle+0x5/0x69
+> [   65.972000]  [<ffffffff810558d3>] ? debug_lockdep_rcu_enabled+0x5/0x35
+> [   65.972000]  [<ffffffff810b73fc>] ? rcu_is_cpu_idle+0x5/0x69
+> [   65.972000]  [<ffffffff810c0e9f>] ? rcu_read_lock_held+0x19/0x3c
+> [   65.972000]  [<ffffffff810c0f90>] ftrace_ops_test+0x47/0x93
+> [   65.972000]  [<ffffffff810b9148>] ? check_for_new_grace_period+0x115/0x115
+> [   65.972000]  [<ffffffff810c21e1>] ftrace_ops_list_func+0xcc/0x151
+> [   65.972000]  [<ffffffff814fa7c0>] ftrace_call+0x5/0x2f
+> [   65.972000]  [<ffffffff810c2234>] ? ftrace_ops_list_func+0x11f/0x151
+> [   65.972000]  [<ffffffff810bb6b2>] ? rcu_note_context_switch+0x206/0x260
+> [   67.972000]  [<ffffffff810b914d>] ? rcu_preempt_qs+0x5/0x53
+> [   65.972000]  [<ffffffff81086f41>] ? trace_hardirqs_off+0xd/0xf
+> [   65.972000]  [<ffffffff810b914d>] ? rcu_preempt_qs+0x5/0x53
+> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
+> [   65.972000]  [<ffffffff814f2bca>] ? schedule+0x64/0x66
+> [   65.972000]  [<ffffffff814f246e>] __schedule+0x67/0x710
+> [   65.972000]  [<ffffffff81052e5e>] ? worker_thread+0x1e9/0x1f3
+> [   65.972000]  [<ffffffff81052e5e>] ? worker_thread+0x1e9/0x1f3
+> [   65.972000]  [<ffffffff814f2bca>] schedule+0x64/0x66
+> [   65.972000]  [<ffffffff81052e63>] worker_thread+0x1ee/0x1f3
+> [   65.972000]  [<ffffffff81052c75>] ? rescuer_thread+0x26c/0x26c
+> [   65.972000]  [<ffffffff8105a8bf>] kthread+0xb1/0xb9
+> [   65.972000]  [<ffffffff81064b3c>] ? finish_task_switch+0x7c/0xf8
+> [   65.972000]  [<ffffffff8105a80e>] ? __init_kthread_worker+0x59/0x59
+> [   65.972000]  [<ffffffff814faadc>] ret_from_fork+0x7c/0xb0
+> [   65.972000]  [<ffffffff8105a80e>] ? __init_kthread_worker+0x59/0x59
+> 
+> What happened was that ftrace's function tracer uses
+> hlist_for_each_entry_rcu() which uses rcu_dereference_raw(), and also
+> calls rcu_dereference_raw() directly. As this macro is defined as
+> rcu_dereference_check() and will call rcu_read_lock_sched_held() which
+> does various rcu checks as well as lockdep and such, when it happens for
+> *every* function call in the kernel it slows the system down where it
+> can live lock (interrupts taking too long to finish, before another
+> interrupt is triggered).
+> 
+> To give an idea of the abuse that function tracing is taking, every
+> function that is traced can do the following:
+> 
+> in __ftrace_ops_list_func() we have:
+> 
+>         do_for_each_ftrace_op(op, ftrace_ops_list) {
+>                 if (ftrace_ops_test(op, ip))
+>                         op->func(ip, parent_ip, op, regs);
+>         } while_for_each_ftrace_op(op);
+> 
+> Where:
+> 
+> #define do_for_each_ftrace_op(op, list)                 \
+>         op = rcu_dereference_raw(list);                 \
+>         do
+> 
+> and
+> 
+> #define while_for_each_ftrace_op(op)                            \
+>         while (likely(op = rcu_dereference_raw((op)->next)) &&  \
+>                unlikely((op) != &ftrace_list_end))
+> 
+> And ftrace_ops_test() has:
+> 
+>         filter_hash = rcu_dereference_raw(ops->filter_hash);
+>         notrace_hash = rcu_dereference_raw(ops->notrace_hash);
+> 
+>         if ((ftrace_hash_empty(filter_hash) ||
+>              ftrace_lookup_ip(filter_hash, ip)) &&
+>             (ftrace_hash_empty(notrace_hash) ||
+>              !ftrace_lookup_ip(notrace_hash, ip)))
+>                 ret = 1;
+> 
+> Where ftrace_lookup_ip() has:
+> 
+>         hlist_for_each_entry_rcu(entry, hhd, hlist) {
+> 
+> Now that is 6 calls to rcu_dereference_raw() that happens for every
+> single function that is traced! And this doesn't count possibly more by
+> the callbacks that were registered by the function tracer, or multiple
+> loops by while_for_each_ftrace_op(). When rcu debugging is on, that's 6
+> calls to rcu_read_lock_sched_held() which not only does several calls
+> that is traced by the function tracer (luckily the recursion protection
+> catches those), but those calls also call preempt_disable/enable (that
+> gets traced by the function tracer). Worse yet, lock_is_held() is called
+> that disables and then re-enables interrupts, and does a search for
+> locks held.
+> 
+> All this overhead that is done for every function call that is traced
+> (which could be most of the functions in the kernel) and does it at
+> least 6 times. This can drastically slow things down so much that we get
+> a live lock in the system.
+> 
+> Now, we could put a bunch of notrace in the RCU code, but as RCU is a
+> more critical subsystem than tracing, and used more often, I find that
+> it is advantageous to be able to trace RCU. RCU is also a more complex
+> subsystem than tracing, and having that ability to trace RCU is an asset
+> to help debug it and give us better confidence that it works. Thus, I
+> believe it is better to remove some of the debugability from the tracing
+> infrastructure than to remove it from RCU. Not to mention, even
+> eliminating the recursive calls by the RCU being traced, it doesn't
+> remove the RCU functions being called or the lockdep function being
+> called 6 times for every function traced.
+> 
+> After discussing this with Paul McKenney, I added two new RCU interfaces:
+> 
+>  rcu_dereference_raw_notrace()
+>  hlist_for_each_entry_raw_notrace()
+> 
+> The function tracer now uses these and this prevents the live lock.
+> 
+> 
+> Please pull the latest trace-fixes-v3.10-rc3-v2 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> trace-fixes-v3.10-rc3-v2
+> 
+> Tag SHA1: 066277682313adbca025f177cff8a211f2b4f46d
+> Head SHA1: 1bb539ca36e21c2f4fce0865e11df384bc7b7656
+> 
+> 
+> Steven Rostedt (2):
+>       rcu: Add _notrace variation of rcu_dereference_raw() and hlist_for_each_entry_rcu()
+>       ftrace: Use the rcu _notrace variants for rcu_dereference_raw() and friends
+> 
+> ----
+>  include/linux/rculist.h  |   20 ++++++++++++++++++++
+>  include/linux/rcupdate.h |    9 +++++++++
+>  kernel/trace/ftrace.c    |   18 +++++++++---------
+>  3 files changed, 38 insertions(+), 9 deletions(-)
 
 
-> +static inline void add_stats(enum kvm_contention_stat var, u32 val)
-> +{
-> +}
-> +
-> +static inline u64 spin_time_start(void)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void spin_time_accum_blocked(u64 start)
-> +{
-> +}
-> +#endif  /* CONFIG_KVM_DEBUG_FS */
-> +
-> +struct kvm_lock_waiting {
-> +	struct arch_spinlock *lock;
-> +	__ticket_t want;
-> +};
-> +
-> +/* cpus 'waiting' on a spinlock to become available */
-> +static cpumask_t waiting_cpus;
-> +
-> +/* Track spinlock on which a cpu is waiting */
-> +static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
-> +
-> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-> +{
-> +	struct kvm_lock_waiting *w;
-> +	int cpu;
-> +	u64 start;
-> +	unsigned long flags;
-> +
-> +	w = &__get_cpu_var(lock_waiting);
-> +	cpu = smp_processor_id();
-> +	start = spin_time_start();
-> +
-> +	/*
-> +	 * Make sure an interrupt handler can't upset things in a
-> +	 * partially setup state.
-> +	 */
-> +	local_irq_save(flags);
-> +
-> +	/*
-> +	 * The ordering protocol on this is that the "lock" pointer
-> +	 * may only be set non-NULL if the "want" ticket is correct.
-> +	 * If we're updating "want", we must first clear "lock".
-> +	 */
-> +	w->lock = NULL;
-> +	smp_wmb();
-> +	w->want = want;
-> +	smp_wmb();
-> +	w->lock = lock;
-> +
-> +	add_stats(TAKEN_SLOW, 1);
-> +
-> +	/*
-> +	 * This uses set_bit, which is atomic but we should not rely on its
-> +	 * reordering gurantees. So barrier is needed after this call.
-> +	 */
-> +	cpumask_set_cpu(cpu, &waiting_cpus);
-> +
-> +	barrier();
-> +
-> +	/*
-> +	 * Mark entry to slowpath before doing the pickup test to make
-> +	 * sure we don't deadlock with an unlocker.
-> +	 */
-> +	__ticket_enter_slowpath(lock);
-> +
-> +	/*
-> +	 * check again make sure it didn't become free while
-> +	 * we weren't looking.
-> +	 */
-> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
-> +		add_stats(TAKEN_SLOW_PICKUP, 1);
-> +		goto out;
-> +	}
-> +
-> +	/* Allow interrupts while blocked */
-> +	local_irq_restore(flags);
-> +
-> +	/* halt until it's our turn and kicked. */
-> +	halt();
-> +
-> +	local_irq_save(flags);
-> +out:
-> +	cpumask_clear_cpu(cpu, &waiting_cpus);
-> +	w->lock = NULL;
-> +	local_irq_restore(flags);
-> +	spin_time_accum_blocked(start);
-> +}
-> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-> +
-> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
-> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-> +{
-> +	int cpu;
-> +
-> +	add_stats(RELEASED_SLOW, 1);
-> +	for_each_cpu(cpu, &waiting_cpus) {
-> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
-> +		if (ACCESS_ONCE(w->lock) == lock &&
-> +		    ACCESS_ONCE(w->want) == ticket) {
-> +			add_stats(RELEASED_SLOW_KICKED, 1);
-> +			kvm_kick_cpu(cpu);
-> +			break;
-> +		}
-> +	}
-> +}
-> +
-> +/*
-> + * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
-> + */
-> +void __init kvm_spinlock_init(void)
-> +{
-> +	if (!kvm_para_available())
-> +		return;
-> +	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
-> +	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
-> +		return;
-> +
-> +	printk(KERN_INFO"KVM setup paravirtual spinlock\n");
-
-That spacing is odd.
-
-> +
-> +	static_key_slow_inc(&paravirt_ticketlocks_enabled);
-> +
-> +	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-> +	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-> +}
-> +#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-> 
