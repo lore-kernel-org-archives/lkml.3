@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3FCDtX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:49:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36773 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab3FCDtQ (ORCPT
+	id S1751366Ab3FCDvK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 23:51:10 -0400
+Received: from mailhub4.stratus.com ([134.111.1.17]:57243 "EHLO
+	mailhub4.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3FCDu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:49:16 -0400
-Date: Sun, 02 Jun 2013 20:49:15 -0700 (PDT)
-Message-Id: <20130602.204915.334823676645400072.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: eric.dumazet@gmail.com, klamm@yandex-team.ru, brouer@redhat.com,
-        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, David.Laight@ACULAB.COM
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130603034254.GC29614@linux.vnet.ibm.com>
-References: <1370229169.24311.119.camel@edumazet-glaptop>
-	<20130602.202703.1059637861388689182.davem@davemloft.net>
-	<20130603034254.GC29614@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Jun 2013 23:50:59 -0400
+Date: Sun, 2 Jun 2013 23:46:33 -0400 (EDT)
+From: Joe Lawrence <joe.lawrence@stratus.com>
+X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@kenel.org, Joe Lawrence <joe.lawrence@stratus.com>
+Subject: Re: Please add to stable:  module: don't unlink the module until
+ we've removed all exposure.
+In-Reply-To: <87ehclumhr.fsf@rustcorp.com.au>
+Message-ID: <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com>
+References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 03 Jun 2013 03:50:12.0834 (UTC) FILETIME=[7376F420:01CE600D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Sun, 2 Jun 2013 20:42:54 -0700
+On Sun, 2 Jun 2013, Rusty Russell wrote:
 
-> On Sun, Jun 02, 2013 at 08:27:03PM -0700, David Miller wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Sun, 02 Jun 2013 20:12:49 -0700
->> 
->> > On Sun, 2013-06-02 at 19:58 -0700, David Miller wrote:
->> >> From: Eric Dumazet <eric.dumazet@gmail.com>
->> >> Date: Sun, 02 Jun 2013 16:31:35 -0700
->> >> 
->> >> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
->> >> >> On 29.05.2013 23:06, Eric Dumazet wrote:
->> >> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
->> >> >> >
->> >> >> > True, these lookup functions are usually structured the same around the
->> >> >> > hlist_nulls_for_each_entry_rcu() loop.
->> >> >> >
->> >> >> > A barrier() right before the loop seems to be a benefit, the size of
->> >> >> > assembly code is reduced by 48 bytes.
->> >> >> >
->> >> >> > And its one of the documented way to handle this kind of problems
->> >> >> > (Documentation/atomic_ops.txt line 114)
->> >> >> >
->> >> >> > I guess we should amend this documentation, eventually.
->> >> >> >
->> >> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
->> >> >> >
->> >> >> 
->> >> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
->> >> >> 
->> >> >> Many thanks to you, Paul E. McKenney and David Laight for your
->> >> >> patches, help and participation in this discussion.
->> >> > 
->> >> > Thanks to you !
->> >> > 
->> >> > David, is there any problem with the patch ?
->> >> > 
->> >> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
->> >> > tell me what is needed to get it merged.
->> >> 
->> >> It's not a networking patch, it's a patch for generic RCU upstream.
->> >> So it either goes through Paul McKenney, or directly via Linus on
->> >> linux-kernel.
->> > 
->> > Well, whole discussion went on linux kernel, and you were the original
->> > committer of this patch five years ago.
->> > 
->> > http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
->> > 
->> > So please Paul or David make sure the patch goes in.
->> > 
->> > My only concern is that Paul seems quite busy these days.
->> 
->> Ok I can take it then, no problem.
+> Ben Greear <greearb@candelatech.com> writes:
 > 
-> Or if you would like to take it:
+> > It turns out, the bug I spent yesterday chasing in various 3.9 kernels is apparently
+> > fixed by the commit in the title (c9c390bb5535380d40614571894ef0c00bc026ff).
 > 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Apparently being the operative word.
+> 
+> This commit avoids the entire "module insert failed due to sysfs race"
+> path in the common case, it doesn't fix any actual problem.
+> 
+> I think the real commit you want is Linus' kobject fix
+> a49b7e82cab0f9b41f483359be83f44fbb6b4979 "kobject: fix kset_find_obj()
+> race with concurrent last kobject_put()".
+> 
+> Or is that already in stable?
 
-Let's end this deadlock by me taking it :-)
+Hi Rusty,
+ 
+I had pointed Ben (offlist) to that bugzilla entry without realizing
+there were other earlier related fixes in this space.  Re-viewing bz-
+58011, it looks like it was opened against 3.8.12, while Ben and myself
+had encountered module loading problems in versions 3.9 and
+3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
+a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
+kobject_put()".
+
+That said, it doesn't appear that commit 944a1fa "module: don't unlink the
+module until we've removed all exposure" has not made it into any stable  
+kernel.  On my system, applying this on top of 3.9 resolved a module
+unload/load race that would occasionally occur on boot (two video adapters
+of the same make, the module unloads for whatever reason and I see "module
+is already loaded" and "sysfs: cannot create duplicate filename
+'/module/mgag200'" messages every 5-10% instances.)  I have logs if you
+were interested in these warnings/crashes.
+
+Hope this clarifies things.
+
+Regards,
+
+-- Joe
