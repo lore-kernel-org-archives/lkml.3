@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab3FCFWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 01:22:41 -0400
-Received: from mout.gmx.net ([212.227.15.19]:55028 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab3FCFWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 01:22:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19okuA0ImRo5jxgrNkBFxjylRgks7KT9g18pIsXbI
-	ONg7mQ56kYi5Jz
-Message-ID: <1370236944.5988.108.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Mon, 03 Jun 2013 07:22:24 +0200
-In-Reply-To: <51AC2121.1060903@linux.vnet.ibm.com>
-References: <51A43B16.9080801@linux.vnet.ibm.com>
-	 <51ABFF6A.60206@linux.vnet.ibm.com>
-	 <1370228941.5988.66.camel@marge.simpson.net>
-	 <51AC0CD4.9070302@linux.vnet.ibm.com>
-	 <1370231597.5988.79.camel@marge.simpson.net>
-	 <51AC2121.1060903@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1751862Ab3FCFZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 01:25:36 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:2388 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750896Ab3FCFZa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 01:25:30 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'Will Deacon'" <will.deacon@arm.com>
+CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 3 Jun 2013 13:25:26 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5d7+dtduvJQq2bSgyQsgXTePIUogAAk0LgAIoPJqA=
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+ <20130531111305.GI4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 12:52 +0800, Michael Wang wrote: 
-> On 06/03/2013 11:53 AM, Mike Galbraith wrote:
-> > On Mon, 2013-06-03 at 11:26 +0800, Michael Wang wrote: 
-> >> On 06/03/2013 11:09 AM, Mike Galbraith wrote:
-> >>> On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
-> >>>> On 05/28/2013 01:05 PM, Michael Wang wrote:
-> >>>>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
-> >>>>> this will bring benefit if waker's cpu cached hot data for wakee, or the
-> >>>>> extreme ping-pong case.
-> >>>>>
-> >>>>> And testing show it could benefit hackbench 15% at most.
-> >>>>>
-> >>>>> However, the whole stuff is somewhat blindly and time-consuming, some
-> >>>>> workload therefore suffer.
-> >>>>>
-> >>>>> And testing show it could damage pgbench 50% at most.
-> >>>>>
-> >>>>> Thus, wake-affine stuff should be smarter, and realise when to stop
-> >>>>> it's thankless effort.
-> >>>>
-> >>>> Is there any comments?
-> >>>
-> >>> (I haven't had time to test-drive yet, -rt munches time like popcorn)
-> >>
-> >> I see ;-)
-> >>
-> >> During my testing, this one works well on the box, solved the issues of
-> >> pgbench and won't harm hackbench any, I think we have caught some good
-> >> point here :)
-> > 
-> > Some wider spectrum testing needs doing though.
+Hi  Will,
+
+I have a question about this patch .
+
+If the user space is thumb mode,
+The PC should be rewind by 2 bytes,
+So the fix_up code should be 
+
+Sub lr, lr, #2 .
+
+
+Am I right ?
+
+
+Thanks for your help .
+
+-----Original Message-----
+From: Wang, Yalin 
+Sent: Friday, May 31, 2013 7:31 PM
+To: 'Will Deacon'
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: RE: A bug about system call on ARM
+
+Hi Will,
+
+I see,
+I will make one more test .
+
+Thanks for your clarification .
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Friday, May 31, 2013 7:13 PM
+To: Wang, Yalin
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: A bug about system call on ARM
+
+On Fri, May 31, 2013 at 12:02:49PM +0100, Wang, Yalin wrote:
+> Hi  Will,
 > 
-> That's right, the benchmark I currently have is hackbench, pgbench,
-> ebizzy, aim7, tbench, dbench, kbench, is there any other good candidate
-> we should add to the test?
-
-pgsql/mysql+oltp are useful.  I used to track mysql especially all the
-time, until I lost my fast mysql database, and couldn't re-create
-anything that wasn't a complete slug.
-
-> Hackbench is a good
-> > sign, but localhost and db type stuff that really suffer from misses
-> > would be good to test.  Java crud tends to be sensitive too.  I used to
-> > watch vmark (crap) as an indicator,
+> I have merge your code ,
+> But there is a different ,
 > 
-> I can't get it from google...do you mean vmmark?
+> +	
+> +	ct_user_exit
 
-No, crusty old, and widely disparaged as being a useless POS benchmark,
-volanomark.  The big boys do SPECjbb, maybe that's better quality java
-crud, dunno, never had it to play with.
+I thought you didn't have ct_user_exit? In which case, just delete this line.
 
-> if you see unhappiness there, you'll
-> > very likely see it in other loads as well, it is very fond of cache
-> > affine wakeups, but loathes preemption (super heavy loads usually do).
+> +#ifdef CONFIG_ALIGNMENT_TRAP
+> +	ldr	ip, __cr_alignment
+> +	ldr	ip, [ip]
+> +	mcr	p15, 0, ip, c1, c0		@ update control register
+> +#endif
 > 
-> I agree that this idea, in other work, 'stop wake-affine when current is
-> busy with wakeup' may miss the chance to bring benefit, although I could
-> not find such workload, but I can't do promise...
+> +	enable_irq
+> +	get_thread_info tsk
 
-Someday we'll find the perfect balance... likely the day before the sun
-turns into a red giant and melts the earth.
+Hard to tell without context. You can take a look at my git tree if you like (I fixed it up based on Nico's comment):
 
--Mike
+  https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=misc-patches
 
+Will
