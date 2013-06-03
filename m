@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab3FCGGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:06:10 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:48893 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3FCGGD (ORCPT
+	id S1752274Ab3FCGLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:11:32 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:61909 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3FCGL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:06:03 -0400
-Date: Sun, 2 Jun 2013 23:05:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, klamm@yandex-team.ru, brouer@redhat.com,
-        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, David.Laight@ACULAB.COM
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130603060557.GD29614@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1370229169.24311.119.camel@edumazet-glaptop>
- <20130602.202703.1059637861388689182.davem@davemloft.net>
- <20130603034254.GC29614@linux.vnet.ibm.com>
- <20130602.204915.334823676645400072.davem@davemloft.net>
+	Mon, 3 Jun 2013 02:11:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130602.204915.334823676645400072.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060306-5406-0000-0000-00000924265B
+In-Reply-To: <51AA1BFF.20803@semaphore.gr>
+References: <51A7BFA6.3070800@semaphore.gr>
+	<CAKohpo=oD9Wgr0Y9zA3aVCdMq5MUC5GESWyL45h=izRyp9-CLA@mail.gmail.com>
+	<51A8D0C2.1080801@semaphore.gr>
+	<CAKohpokmn-Rf-1w2aQHMMMkMbJqxokWXm5ye3DNuc-yzzk=7pQ@mail.gmail.com>
+	<51AA1BFF.20803@semaphore.gr>
+Date: Mon, 3 Jun 2013 11:41:25 +0530
+Message-ID: <CAKohpom3AA3xCHqZ-TeWgOgwM-=CQxd0XSAmKp85mR-p6txmcg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 08:49:15PM -0700, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Sun, 2 Jun 2013 20:42:54 -0700
-> 
-> > On Sun, Jun 02, 2013 at 08:27:03PM -0700, David Miller wrote:
-> >> From: Eric Dumazet <eric.dumazet@gmail.com>
-> >> Date: Sun, 02 Jun 2013 20:12:49 -0700
-> >> 
-> >> > On Sun, 2013-06-02 at 19:58 -0700, David Miller wrote:
-> >> >> From: Eric Dumazet <eric.dumazet@gmail.com>
-> >> >> Date: Sun, 02 Jun 2013 16:31:35 -0700
-> >> >> 
-> >> >> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
-> >> >> >> On 29.05.2013 23:06, Eric Dumazet wrote:
-> >> >> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
-> >> >> >> >
-> >> >> >> > True, these lookup functions are usually structured the same around the
-> >> >> >> > hlist_nulls_for_each_entry_rcu() loop.
-> >> >> >> >
-> >> >> >> > A barrier() right before the loop seems to be a benefit, the size of
-> >> >> >> > assembly code is reduced by 48 bytes.
-> >> >> >> >
-> >> >> >> > And its one of the documented way to handle this kind of problems
-> >> >> >> > (Documentation/atomic_ops.txt line 114)
-> >> >> >> >
-> >> >> >> > I guess we should amend this documentation, eventually.
-> >> >> >> >
-> >> >> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
-> >> >> >> >
-> >> >> >> 
-> >> >> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> >> >> >> 
-> >> >> >> Many thanks to you, Paul E. McKenney and David Laight for your
-> >> >> >> patches, help and participation in this discussion.
-> >> >> > 
-> >> >> > Thanks to you !
-> >> >> > 
-> >> >> > David, is there any problem with the patch ?
-> >> >> > 
-> >> >> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
-> >> >> > tell me what is needed to get it merged.
-> >> >> 
-> >> >> It's not a networking patch, it's a patch for generic RCU upstream.
-> >> >> So it either goes through Paul McKenney, or directly via Linus on
-> >> >> linux-kernel.
-> >> > 
-> >> > Well, whole discussion went on linux kernel, and you were the original
-> >> > committer of this patch five years ago.
-> >> > 
-> >> > http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
-> >> > 
-> >> > So please Paul or David make sure the patch goes in.
-> >> > 
-> >> > My only concern is that Paul seems quite busy these days.
-> >> 
-> >> Ok I can take it then, no problem.
-> > 
-> > Or if you would like to take it:
-> > 
-> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Let's end this deadlock by me taking it :-)
+On 1 June 2013 21:36, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> On 06/01/2013 05:56 PM, Viresh Kumar wrote:
 
-You got it!  ;-)
+>> Even removal of __cpufreq_driver_getavg() should be done in a separate
+>> patch, so that it can be reverted easily if required later.
+>
+> Thanks, Viresh. I will do the removal of that function in a seperate patch.
+> Should I use a third patch for it? Or should I include it in the patch which
+> will remove APERF/MPERF support?
 
-							Thanx, Paul
+Maybe a third patch would be more cleaner.
 
+>> Why are you changing it to cpuinfo.max_freq?? This is fixed once a driver is
+>> initialized.. but user may request a lower max freq for a governor or policy.
+>> Which is actually reflected in policy->max I believe.
+>
+> My initial thought is to have a linear function to calculate the target freq
+> proportional to load: (I will use 'C' as the function's slope as Rafael used it)
+>
+> freq_target = C * load
+>
+> For simplicity, let's assume that load is between 0 and 1 as initially is calculated
+> in governor.
+> Ideally,  for a load = 0, we should have freq_target = 0 and for load = 1,
+> freq_target = cpuinfo.max
+>
+> So, the slope C = cpuinfo.max
+>
+> I think, it's matter of definition about what policy->min and policy->max can do.
+> Should they change the slope C? Or only limit freq_target?
+> I don't think that the policy->max (or min) should affect HOW (slope C) governor
+> calculates freq_target but only limit the calculated result.
+>
+> Maybe, we could have separate tunables to a affect the slope C.
+>
+> If I'm wrong about the definition of policy->min, policy->max, I would change
+> the code accordingly.
+
+Lets discuss that in reply to Rafael's mail.
+
+>> As, if load is over 95, then even policy->max * 95 / 100 will even give almost
+>> the same freq.
+>>
+>
+> I thought that too. But maybe user selects a lower value for up_threshold.
+> (For example, up_threshold = 60). In my opinion, we have to keep up_theshold,
+> to give the possibility to user to have max freq with small loads.
+
+Yes... good point.
