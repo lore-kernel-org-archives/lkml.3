@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab3FCUxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:53:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46974 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab3FCUxq (ORCPT
+	id S1758284Ab3FCUyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:54:23 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:41201 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756753Ab3FCUyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:53:46 -0400
-Message-ID: <51AD0259.4010708@codeaurora.org>
-Date: Mon, 03 Jun 2013 13:53:45 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 3 Jun 2013 16:54:20 -0400
 MIME-Version: 1.0
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] msm: Remove unused file core.h
-References: <1369863449-25059-1-git-send-email-rvaswani@codeaurora.org>
-In-Reply-To: <1369863449-25059-1-git-send-email-rvaswani@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51ACFDF2.4040600@infradead.org>
+References: <20130603163717.a6f78476e57d92fadd6f6a23@canb.auug.org.au>
+	<51ACFDF2.4040600@infradead.org>
+Date: Mon, 3 Jun 2013 22:54:19 +0200
+X-Google-Sender-Auth: axMXci_Syh_fmhrpaYEgjXweVvE
+Message-ID: <CAMuHMdUALrScFE895xRiBvgUpVa9Tvic5M7YxefrEgyeMaSjhw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 3 (fonts.c & vivi)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping ?
-
-On 5/29/2013 2:37 PM, Rohit Vaswani wrote:
-> Commit be2109e13fc6f017040c57615acfe1065723687b removed the usage
-> of core.h. Remove the file as well.
+On Mon, Jun 3, 2013 at 10:34 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 06/02/13 23:37, Stephen Rothwell wrote:
+>> Changes since 20130531:
+> on x86_64:
 >
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
->   arch/arm/mach-msm/core.h |    2 --
->   1 files changed, 0 insertions(+), 2 deletions(-)
->   delete mode 100644 arch/arm/mach-msm/core.h
+> warning: (VIDEO_VIVI && USB_SISUSBVGA && SOLO6X10) selects FONT_SUPPORT which has unmet direct dependencies (HAS_IOMEM && VT)
+> warning: (VIDEO_VIVI && FB_VGA16 && FB_S3 && FB_VT8623 && FB_ARK && USB_SISUSBVGA_CON && SOLO6X10) selects FONT_8x16 which has unmet direct dependencies (HAS_IOMEM && VT && FONT_SUPPORT)
+
+I knew about thet warning. But I thought it was harmless, as none of the font
+code really depends on console support...
+
+> drivers/built-in.o: In function `vivi_init':
+> vivi.c:(.init.text+0x1a3da): undefined reference to `find_font'
 >
-> diff --git a/arch/arm/mach-msm/core.h b/arch/arm/mach-msm/core.h
-> deleted file mode 100644
-> index a9bab53..0000000
-> --- a/arch/arm/mach-msm/core.h
-> +++ /dev/null
-> @@ -1,2 +0,0 @@
-> -extern struct smp_operations msm_smp_ops;
-> -extern void msm_cpu_die(unsigned int cpu);
+> when CONFIG_VT is not enabled.
 
+... but I missed that drivers/video/console is not used if CONFIG_VT=y.
+Sorry for that.
 
-Thanks,
-Rohit Vaswani
+> Just make CONFIG_VIDEO_VIVI depend on VT ?
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+Does this (whitespace-damaged copy-and-paste) help?
 
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -12,7 +12,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o
+                                      modedb.o fbcvt.o
+ fb-objs                           := $(fb-y)
+
+-obj-$(CONFIG_VT)                 += console/
++obj-y                            += console/
+ obj-$(CONFIG_LOGO)               += logo/
+ obj-y                            += backlight/
+
+It shouldn't make a difference if nothing inside drivers/video/console
+is enabled,
+as all objects in drivers/video/console/Makefile are conditional.
+
+BTW, my plan was to move the font code to lib/font, but I haven't done that yet.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
