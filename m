@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3FCKTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:19:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51795 "EHLO mx2.suse.de"
+	id S1757391Ab3FCKUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:20:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab3FCKTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:19:08 -0400
+	id S1753061Ab3FCKTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 06:19:14 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
@@ -16,188 +16,326 @@ Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michel Lespinasse <walken@google.com>,
         Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
         Balbir Singh <bsingharora@gmail.com>
-Subject: [patch v4] Soft limit rework
-Date: Mon,  3 Jun 2013 12:18:47 +0200
-Message-Id: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+Subject: [patch -v4 5/8] memcg: track children in soft limit excess to improve soft limit
+Date: Mon,  3 Jun 2013 12:18:52 +0200
+Message-Id: <1370254735-13012-6-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Soft limit reclaim has to check the whole reclaim hierarchy while doing
+the first pass of the reclaim. This leads to a higher system time which
+can be visible especially when there are many groups in the hierarchy.
 
-This is the fourth version of the patchset.
+This patch adds a per-memcg counter of children in excess. It also
+restores MEM_CGROUP_TARGET_SOFTLIMIT into mem_cgroup_event_ratelimit for
+a proper batching.
+If a group crosses soft limit for the first time it increases parent's
+children_in_excess up the hierarchy. The similarly if a group gets below
+the limit it will decrease the counter. The transition phase is recorded
+in soft_contributed flag.
 
-Summary of versions:
-The first version has been posted here: http://permalink.gmane.org/gmane.linux.kernel.mm/97973
-(lkml wasn't CCed at the time so I cannot find it in lwn.net
-archives). There were no major objections. The second version
-has been posted here http://lwn.net/Articles/548191/ as a part
-of a longer and spicier thread which started after LSF here:
-https://lwn.net/Articles/548192/
-Version number 3 has been posted here http://lwn.net/Articles/550409/
-Johannes was worried about setups with thousands of memcgs and the
-tree walk overhead for the soft reclaim pass without anybody in excess.
+mem_cgroup_soft_reclaim_eligible then uses this information to better
+decide whether to skip the node or the whole subtree. The rule is
+simple. Skip the node with a children in excess or skip the whole subtree
+otherwise.
 
-Changes between RFC (aka V1) -> V2
-As there were no major objections there were only some minor cleanups
-since the last version and I have moved "memcg: Ignore soft limit until
-it is explicitly specified" to the end of the series.
+This has been tested by a stream IO (dd if=/dev/zero of=file with
+4*MemTotal size) which is quite sensitive to overhead during reclaim.
+The load is running in a group with soft limit set to 0 and without any
+limit. Apart from that there was a hierarchy with ~500, 2k and 8k groups
+(two groups on each level) without any pages in them. base denotes to
+the kernel on which the whole series is based on, rework is the kernel
+before this patch and reworkoptim is with this patch applied:
 
-Changes between V2 -> V3
-No changes in the code since the last version. I have just rebased the
-series on top of the current mmotm tree. The most controversial part
-has been dropped (the last patch "memcg: Ignore soft limit until it is
-explicitly specified") so there are no semantical changes to the soft
-limit behavior. This makes this work mostly a code clean up and code
-reorganization. Nevertheless, this is enough to make the soft limit work
-more efficiently according to my testing and groups above the soft limit
-are reclaimed much less as a result.
-
-Changes between V3->V4
-Added some Reviewed-bys but the biggest change comes from Johannes
-concern about the tree traversal overhead with a huge number of memcgs
-(http://thread.gmane.org/gmane.linux.kernel.cgroups/7307/focus=100326)
-and this version addresses this problem by augmenting the memcg tree
-with the number of over soft limit children at each level of the
-hierarchy. See more bellow.
-
-The basic idea is quite simple. Pull soft reclaim into shrink_zone in
-the first step and get rid of the previous soft reclaim infrastructure.
-shrink_zone is done in two passes now. First it tries to do the soft
-limit reclaim and it falls back to reclaim-all mode if no group is over
-the limit or no pages have been scanned. The second pass happens at the
-same priority so the only time we waste is the memcg tree walk which
-has been updated in the third step to have only negligible overhead.
-
-As a bonus we will get rid of a _lot_ of code by this and soft reclaim
-will not stand out like before when it wasn't integrated into the zone
-shrinking code and it reclaimed at priority 0 (the testing results show
-that some workloads suffers from such an aggressive reclaim). The clean
-up is in a separate patch because I felt it would be easier to review
-that way.
-
-The second step is soft limit reclaim integration into targeted
-reclaim. It should be rather straight forward. Soft limit has been used
-only for the global reclaim so far but it makes sense for any kind of
-pressure coming from up-the-hierarchy, including targeted reclaim.
-
-The third step (patches 4-8) addresses the tree walk overhead by
-enhancing memcg iterators to enable skipping whole subtrees and tracking
-number of over soft limit children at each level of the hierarchy. This
-information is updated same way the old soft limit tree was updated
-(from memcg_check_events) so we shouldn't see an additional overhead. In
-fact mem_cgroup_update_soft_limit is much simpler than tree manipulation
-done previously.
-__shrink_zone uses mem_cgroup_soft_reclaim_eligible as a predicate for
-mem_cgroup_iter so the decision whether a particular group should be
-visited is done at the iterator level which allows us to decide to skip
-the whole subtree as well (if there is no child in excess). This reduces
-the tree walk overhead considerably.
-
-My primary test case was a parallel kernel build with 2 groups (make
-is running with -j4 with a distribution .config in a separate cgroup
-without any hard limit) on a 8 CPU machine booted with 1GB memory.  I
-was mostly interested in 2 setups. Default - no soft limit set and - and
-0 soft limit set to both groups.
-The first one should tell us whether the rework regresses the default
-behavior while the second one should show us improvements in an extreme
-case where both workloads are always over the soft limit.
-
-/usr/bin/time -v has been used to collect the statistics and each
-configuration had 3 runs after fresh boot without any other load on the
-system.
-
-base is mmotm-2013-05-09-15-57
-rework means patches 1-3
-reworkoptim means patches 4-8
-
-* No-limit
-System
-base: min: 242.55 max: 245.36 avg: 243.92 std: 1.17 runs: 6
-rework: min: 240.74 [99.3%] max: 244.90 [99.8%] avg: 242.82 [99.5%] std: 1.45 runs: 6
-reworkoptim: min: 242.07 [99.8%] max: 244.73 [99.7%] avg: 243.78 [99.9%] std: 0.91 runs: 6
+* Run with soft limit set to 0
 Elapsed
-base: min: 596.81 max: 620.04 avg: 605.52 std: 7.56 runs: 6
-rework: min: 590.06 [98.9%] max: 602.11 [97.1%] avg: 596.09 [98.4%] std: 4.39 runs: 6
-reworkoptim: min: 591.54 [99.1%] max: 613.47 [98.9%] avg: 599.60 [99.0%] std: 7.20 runs: 6
-
-The numbers are within stdev so it doesn't look like an regression
-
-* 0-limit
+0-0-limit/base: min: 88.21 max: 94.61 avg: 91.73 std: 2.65 runs: 3
+0-0-limit/rework: min: 76.05 [86.2%] max: 79.08 [83.6%] avg: 77.84 [84.9%] std: 1.30 runs: 3
+0-0-limit/reworkoptim: min: 77.98 [88.4%] max: 80.36 [84.9%] avg: 78.92 [86.0%] std: 1.03 runs: 3
 System
-base: min: 248.40 max: 252.00 avg: 250.19 std: 1.38 runs: 6
-rework: min: 240.31 [96.7%] max: 243.61 [96.7%] avg: 242.01 [96.7%] std: 1.18 runs: 6
-reworkoptim: min: 242.67 [97.7%] max: 245.73 [97.5%] avg: 244.52 [97.7%] std: 1.00 runs: 6
+0.5k-0-limit/base: min: 34.86 max: 36.42 avg: 35.89 std: 0.73 runs: 3
+0.5k-0-limit/rework: min: 43.26 [124.1%] max: 48.95 [134.4%] avg: 46.09 [128.4%] std: 2.32 runs: 3
+0.5k-0-limit/reworkoptim: min: 46.98 [134.8%] max: 50.98 [140.0%] avg: 48.49 [135.1%] std: 1.77 runs: 3
 Elapsed
-base: min: 759.28 max: 805.30 avg: 784.87 std: 15.45 runs: 6
-rework: min: 588.75 [77.5%] max: 606.30 [75.3%] avg: 597.07 [76.1%] std: 5.12 runs: 6
-reworkoptim: min: 591.31 [77.9%] max: 612.52 [76.1%] avg: 601.08 [76.6%] std: 6.93 runs: 6
-
-We can see 2-3% time decrease for System time which is not rocket high
-but sounds like a good outcome from a cleanup (rework) and the tracking
-overhead is barely visible (within the noise).
-
-It is even more interesting to check the Elapsed time numbers which show
-that the parallel load is much more effective. I haven't looked into
-the specific reasons for this boost up deeply but I would guess that
-priority-0 reclaim done in the original implementation should be a big
-contributor.
-
-Page fault statistics tell us at least part of the story:
-Minor
-base: min: 35941845.00 max: 36029788.00 avg: 35986860.17 std: 28288.66 runs: 6
-rework: min: 35595937.00 [99.0%] max: 35690024.00 [99.1%] avg: 35654958.17 [99.1%] std: 31270.07 runs: 6
-reworkoptim: min: 35596909.00 [99.0%] max: 35684640.00 [99.0%] avg: 35660804.67 [99.1%] std: 29918.93 runs: 6
-Major
-base: min: 25390.00 max: 33132.00 avg: 29961.83 std: 2476.58 runs: 6
-rework: min: 451.00 [1.8%] max: 1600.00 [4.8%] avg: 814.17 [2.7%] std: 380.01 runs: 6
-reworkoptim: min: 318.00 [1.3%] max: 2023.00 [6.1%] avg: 911.50 [3.0%] std: 632.83 runs: 6
-
-While the minor faults are within the noise the major faults are reduced
-considerably. This looks like an aggressive pageout during the reclaim
-and that pageout affects the working set presumably.
-
- While this looks as a huge win it is fair to say that there are some
-workloads that actually benefit from reclaim at 0 priority (from
-background reclaim). E.g. an aggressive streaming IO would like to get
-rid of as many pages as possible and do not block on the pages under
-writeback. This can lead to a higher System time but I generally got
-Elapsed which was comparable.
-
-The following results are from 2 groups configuration on a 8GB machine
-(A running stream IO with 4*TotalMem with 0 soft limit, B runnning a
-mem_eater which consumes TotalMem-1G without any limit).
+0.5k-0-limit/base: min: 88.50 max: 97.52 avg: 93.92 std: 3.90 runs: 3
+0.5k-0-limit/rework: min: 75.92 [85.8%] max: 78.45 [80.4%] avg: 77.34 [82.3%] std: 1.06 runs: 3
+0.5k-0-limit/reworkoptim: min: 75.79 [85.6%] max: 79.37 [81.4%] avg: 77.55 [82.6%] std: 1.46 runs: 3
 System
-base: min: 124.88 max: 136.97 avg: 130.77 std: 4.94 runs: 3
-rework: min: 161.67 [129.5%] max: 196.80 [143.7%] avg: 174.18 [133.2%] std: 16.02 runs: 3
-reworkoptim: min: 267.48 [214.2%] max: 319.64 [233.4%] avg: 300.43 [229.7%] std: 23.40 runs: 3
+2k-0-limit/base: min: 34.57 max: 37.65 avg: 36.34 std: 1.30 runs: 3
+2k-0-limit/rework: min: 64.17 [185.6%] max: 68.20 [181.1%] avg: 66.21 [182.2%] std: 1.65 runs: 3
+2k-0-limit/reworkoptim: min: 49.78 [144.0%] max: 52.99 [140.7%] avg: 51.00 [140.3%] std: 1.42 runs: 3
 Elapsed
-base: min: 398.86 max: 412.81 avg: 407.62 std: 6.23 runs: 3
-rework: min: 423.41 [106.2%] max: 450.30 [109.1%] avg: 440.92 [108.2%] std: 12.39 runs: 3
-reworkoptim: min: 379.91 [95.2%] max: 416.46 [100.9%] avg: 399.26 [97.9%] std: 15.00 runs: 3
+2k-0-limit/base: min: 92.61 max: 97.83 avg: 95.03 std: 2.15 runs: 3
+2k-0-limit/rework: min: 78.33 [84.6%] max: 84.08 [85.9%] avg: 81.09 [85.3%] std: 2.35 runs: 3
+2k-0-limit/reworkoptim: min: 75.72 [81.8%] max: 78.57 [80.3%] avg: 76.73 [80.7%] std: 1.30 runs: 3
+System
+8k-0-limit/base: min: 39.78 max: 42.09 avg: 41.09 std: 0.97 runs: 3
+8k-0-limit/rework: min: 200.86 [504.9%] max: 265.42 [630.6%] avg: 241.80 [588.5%] std: 29.06 runs: 3
+8k-0-limit/reworkoptim: min: 53.70 [135.0%] max: 54.89 [130.4%] avg: 54.43 [132.5%] std: 0.52 runs: 3
+Elapsed
+8k-0-limit/base: min: 95.11 max: 98.61 avg: 96.81 std: 1.43 runs: 3
+8k-0-limit/rework: min: 246.96 [259.7%] max: 331.47 [336.1%] avg: 301.32 [311.2%] std: 38.52 runs: 3
+8k-0-limit/reworkoptim: min: 76.79 [80.7%] max: 81.71 [82.9%] avg: 78.97 [81.6%] std: 2.05 runs: 3
 
-The testing results for bunch of cgroups with both stream IO and kbuild
-loads can be found in "memcg: track children in soft limit excess to
-improve soft limit".
+System time is increased by 30-40% but it is reduced a lot comparing
+to kernel without this patch. The higher time can be explained by the
+fact that the original soft reclaim scanned at priority 0 so it was much
+more effective for this workload (which is basically touch once and
+writeback). The Elapsed time looks better though (~20%).
 
-The series has seen quite some testing and I guess it is in the state to
-be merged into mmotm and hopefully get into 3.11. I would like to hear
-back from Johannes and Kamezawa about this timing though.
+* Run with no soft limit set
+System
+0-no-limit/base: min: 42.18 max: 50.38 avg: 46.44 std: 3.36 runs: 3
+0-no-limit/rework: min: 40.57 [96.2%] max: 47.04 [93.4%] avg: 43.82 [94.4%] std: 2.64 runs: 3
+0-no-limit/reworkoptim: min: 40.45 [95.9%] max: 45.28 [89.9%] avg: 42.10 [90.7%] std: 2.25 runs: 3
+Elapsed
+0-no-limit/base: min: 75.97 max: 78.21 avg: 76.87 std: 0.96 runs: 3
+0-no-limit/rework: min: 75.59 [99.5%] max: 80.73 [103.2%] avg: 77.64 [101.0%] std: 2.23 runs: 3
+0-no-limit/reworkoptim: min: 77.85 [102.5%] max: 82.42 [105.4%] avg: 79.64 [103.6%] std: 1.99 runs: 3
+System
+0.5k-no-limit/base: min: 44.54 max: 46.93 avg: 46.12 std: 1.12 runs: 3
+0.5k-no-limit/rework: min: 42.09 [94.5%] max: 46.16 [98.4%] avg: 43.92 [95.2%] std: 1.69 runs: 3
+0.5k-no-limit/reworkoptim: min: 42.47 [95.4%] max: 45.67 [97.3%] avg: 44.06 [95.5%] std: 1.31 runs: 3
+Elapsed
+0.5k-no-limit/base: min: 78.26 max: 81.49 avg: 79.65 std: 1.36 runs: 3
+0.5k-no-limit/rework: min: 77.01 [98.4%] max: 80.43 [98.7%] avg: 78.30 [98.3%] std: 1.52 runs: 3
+0.5k-no-limit/reworkoptim: min: 76.13 [97.3%] max: 77.87 [95.6%] avg: 77.18 [96.9%] std: 0.75 runs: 3
+System
+2k-no-limit/base: min: 62.96 max: 69.14 avg: 66.14 std: 2.53 runs: 3
+2k-no-limit/rework: min: 76.01 [120.7%] max: 81.06 [117.2%] avg: 78.17 [118.2%] std: 2.12 runs: 3
+2k-no-limit/reworkoptim: min: 62.57 [99.4%] max: 66.10 [95.6%] avg: 64.53 [97.6%] std: 1.47 runs: 3
+Elapsed
+2k-no-limit/base: min: 76.47 max: 84.22 avg: 79.12 std: 3.60 runs: 3
+2k-no-limit/rework: min: 89.67 [117.3%] max: 93.26 [110.7%] avg: 91.10 [115.1%] std: 1.55 runs: 3
+2k-no-limit/reworkoptim: min: 76.94 [100.6%] max: 79.21 [94.1%] avg: 78.45 [99.2%] std: 1.07 runs: 3
+System
+8k-no-limit/base: min: 104.74 max: 151.34 avg: 129.21 std: 19.10 runs: 3
+8k-no-limit/rework: min: 205.23 [195.9%] max: 285.94 [188.9%] avg: 258.98 [200.4%] std: 38.01 runs: 3
+8k-no-limit/reworkoptim: min: 161.16 [153.9%] max: 184.54 [121.9%] avg: 174.52 [135.1%] std: 9.83 runs: 3
+Elapsed
+8k-no-limit/base: min: 125.43 max: 181.00 avg: 154.81 std: 22.80 runs: 3
+8k-no-limit/rework: min: 254.05 [202.5%] max: 355.67 [196.5%] avg: 321.46 [207.6%] std: 47.67 runs: 3
+8k-no-limit/reworkoptim: min: 193.77 [154.5%] max: 222.72 [123.0%] avg: 210.18 [135.8%] std: 12.13 runs: 3
 
-Shortlog says:
-Michal Hocko (8):
-      memcg: integrate soft reclaim tighter with zone shrinking code
-      memcg: Get rid of soft-limit tree infrastructure
-      vmscan, memcg: Do softlimit reclaim also for targeted reclaim
-      memcg: enhance memcg iterator to support predicates
-      memcg: track children in soft limit excess to improve soft limit
-      memcg, vmscan: Do not attempt soft limit reclaim if it would not scan anything
-      memcg: Track all children over limit in the root
-      memcg, vmscan: do not fall into reclaim-all pass too quickly
+Both System and Elapsed are in stdev with the base kernel for all
+configurations except for 8k where both System and Elapsed are up by
+35%. I do not have a good explanation for this because there is no soft
+reclaim pass going on as no group is above the limit which is checked in
+mem_cgroup_should_soft_reclaim.
 
-And the diffstat is still promissing I would say:
- include/linux/memcontrol.h |   46 +++-
- mm/memcontrol.c            |  537 +++++++++++---------------------------------
- mm/vmscan.c                |   83 ++++---
- 3 files changed, 218 insertions(+), 448 deletions(-)
+Then I have tested kernel build with the same configuration to see the
+behavior with a more general behavior.
+
+* Soft limit set to 0 for the build
+System
+0-0-limit/base: min: 242.70 max: 245.17 avg: 243.85 std: 1.02 runs: 3
+0-0-limit/rework min: 237.86 [98.0%] max: 240.22 [98.0%] avg: 239.00 [98.0%] std: 0.97 runs: 3
+0-0-limit/reworkoptim: min: 241.11 [99.3%] max: 243.53 [99.3%] avg: 242.01 [99.2%] std: 1.08 runs: 3
+Elapsed
+0-0-limit/base: min: 348.48 max: 360.86 avg: 356.04 std: 5.41 runs: 3
+0-0-limit/rework min: 286.95 [82.3%] max: 290.26 [80.4%] avg: 288.27 [81.0%] std: 1.43 runs: 3
+0-0-limit/reworkoptim: min: 286.55 [82.2%] max: 289.00 [80.1%] avg: 287.69 [80.8%] std: 1.01 runs: 3
+System
+0.5k-0-limit/base: min: 251.77 max: 254.41 avg: 252.70 std: 1.21 runs: 3
+0.5k-0-limit/rework min: 286.44 [113.8%] max: 289.30 [113.7%] avg: 287.60 [113.8%] std: 1.23 runs: 3
+0.5k-0-limit/reworkoptim: min: 252.18 [100.2%] max: 253.16 [99.5%] avg: 252.62 [100.0%] std: 0.41 runs: 3
+Elapsed
+0.5k-0-limit/base: min: 347.83 max: 353.06 avg: 350.04 std: 2.21 runs: 3
+0.5k-0-limit/rework min: 290.19 [83.4%] max: 295.62 [83.7%] avg: 293.12 [83.7%] std: 2.24 runs: 3
+0.5k-0-limit/reworkoptim: min: 293.91 [84.5%] max: 294.87 [83.5%] avg: 294.29 [84.1%] std: 0.42 runs: 3
+System
+2k-0-limit/base: min: 263.05 max: 271.52 avg: 267.94 std: 3.58 runs: 3
+2k-0-limit/rework min: 458.99 [174.5%] max: 468.31 [172.5%] avg: 464.45 [173.3%] std: 3.97 runs: 3
+2k-0-limit/reworkoptim: min: 267.10 [101.5%] max: 279.38 [102.9%] avg: 272.78 [101.8%] std: 5.05 runs: 3
+Elapsed
+2k-0-limit/base: min: 372.33 max: 379.32 avg: 375.47 std: 2.90 runs: 3
+2k-0-limit/rework min: 334.40 [89.8%] max: 339.52 [89.5%] avg: 337.44 [89.9%] std: 2.20 runs: 3
+2k-0-limit/reworkoptim: min: 301.47 [81.0%] max: 319.19 [84.1%] avg: 307.90 [82.0%] std: 8.01 runs: 3
+System
+8k-0-limit/base: min: 320.50 max: 332.10 avg: 325.46 std: 4.88 runs: 3
+8k-0-limit/rework min: 1115.76 [348.1%] max: 1165.66 [351.0%] avg: 1132.65 [348.0%] std: 23.34 runs: 3
+8k-0-limit/reworkoptim: min: 403.75 [126.0%] max: 409.22 [123.2%] avg: 406.16 [124.8%] std: 2.28 runs: 3
+Elapsed
+8k-0-limit/base: min: 475.48 max: 585.19 avg: 525.54 std: 45.30 runs: 3
+8k-0-limit/rework min: 616.25 [129.6%] max: 625.90 [107.0%] avg: 620.68 [118.1%] std: 3.98 runs: 3
+8k-0-limit/reworkoptim: min: 420.18 [88.4%] max: 428.28 [73.2%] avg: 423.05 [80.5%] std: 3.71 runs: 3
+
+Apart from 8k the system time is comparable with the base kernel while
+Elapsed is up to 20% better with all configurations.
+
+* No soft limit set
+System
+0-no-limit/base: min: 234.76 max: 237.42 avg: 236.25 std: 1.11 runs: 3
+0-no-limit/rework min: 233.09 [99.3%] max: 238.65 [100.5%] avg: 236.09 [99.9%] std: 2.29 runs: 3
+0-no-limit/reworkoptim: min: 236.12 [100.6%] max: 240.53 [101.3%] avg: 237.94 [100.7%] std: 1.88 runs: 3
+Elapsed
+0-no-limit/base: min: 288.52 max: 295.42 avg: 291.29 std: 2.98 runs: 3
+0-no-limit/rework min: 283.17 [98.1%] max: 284.33 [96.2%] avg: 283.78 [97.4%] std: 0.48 runs: 3
+0-no-limit/reworkoptim: min: 288.50 [100.0%] max: 290.79 [98.4%] avg: 289.78 [99.5%] std: 0.95 runs: 3
+System
+0.5k-no-limit/base: min: 286.51 max: 293.23 avg: 290.21 std: 2.78 runs: 3
+0.5k-no-limit/rework min: 291.69 [101.8%] max: 294.38 [100.4%] avg: 292.97 [101.0%] std: 1.10 runs: 3
+0.5k-no-limit/reworkoptim: min: 277.05 [96.7%] max: 288.76 [98.5%] avg: 284.17 [97.9%] std: 5.11 runs: 3
+Elapsed
+0.5k-no-limit/base: min: 294.94 max: 298.92 avg: 296.47 std: 1.75 runs: 3
+0.5k-no-limit/rework min: 292.55 [99.2%] max: 294.21 [98.4%] avg: 293.55 [99.0%] std: 0.72 runs: 3
+0.5k-no-limit/reworkoptim: min: 294.41 [99.8%] max: 301.67 [100.9%] avg: 297.78 [100.4%] std: 2.99 runs: 3
+System
+2k-no-limit/base: min: 443.41 max: 466.66 avg: 457.66 std: 10.19 runs: 3
+2k-no-limit/rework min: 490.11 [110.5%] max: 516.02 [110.6%] avg: 501.42 [109.6%] std: 10.83 runs: 3
+2k-no-limit/reworkoptim: min: 435.25 [98.2%] max: 458.11 [98.2%] avg: 446.73 [97.6%] std: 9.33 runs: 3
+Elapsed
+2k-no-limit/base: min: 330.85 max: 333.75 avg: 332.52 std: 1.23 runs: 3
+2k-no-limit/rework min: 343.06 [103.7%] max: 349.59 [104.7%] avg: 345.95 [104.0%] std: 2.72 runs: 3
+2k-no-limit/reworkoptim: min: 330.01 [99.7%] max: 333.92 [100.1%] avg: 332.22 [99.9%] std: 1.64 runs: 3
+System
+8k-no-limit/base: min: 1175.64 max: 1259.38 avg: 1222.39 std: 34.88 runs: 3
+8k-no-limit/rework min: 1226.31 [104.3%] max: 1241.60 [98.6%] avg: 1233.74 [100.9%] std: 6.25 runs: 3
+8k-no-limit/reworkoptim: min: 1023.45 [87.1%] max: 1056.74 [83.9%] avg: 1038.92 [85.0%] std: 13.69 runs: 3
+Elapsed
+8k-no-limit/base: min: 613.36 max: 619.60 avg: 616.47 std: 2.55 runs: 3
+8k-no-limit/rework min: 627.56 [102.3%] max: 642.33 [103.7%] avg: 633.44 [102.8%] std: 6.39 runs: 3
+8k-no-limit/reworkoptim: min: 545.89 [89.0%] max: 555.36 [89.6%] avg: 552.06 [89.6%] std: 4.37 runs: 3
+
+and these numbers look good as well. System time is around 100%
+(suprisingly better for the 8k case) and Elapsed is copies that trend.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index da7ea80..90495d5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -136,6 +136,7 @@ static const char * const mem_cgroup_lru_names[] = {
+  */
+ enum mem_cgroup_events_target {
+ 	MEM_CGROUP_TARGET_THRESH,
++	MEM_CGROUP_TARGET_SOFTLIMIT,
+ 	MEM_CGROUP_TARGET_NUMAINFO,
+ 	MEM_CGROUP_NTARGETS,
+ };
+@@ -355,6 +356,10 @@ struct mem_cgroup {
+ 	atomic_t	numainfo_updating;
+ #endif
+ 
++	spinlock_t soft_lock;
++	bool soft_contributed;
++	atomic_t children_in_excess;
++
+ 	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+@@ -890,6 +895,9 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+ 		case MEM_CGROUP_TARGET_THRESH:
+ 			next = val + THRESHOLDS_EVENTS_TARGET;
+ 			break;
++		case MEM_CGROUP_TARGET_SOFTLIMIT:
++			next = val + SOFTLIMIT_EVENTS_TARGET;
++			break;
+ 		case MEM_CGROUP_TARGET_NUMAINFO:
+ 			next = val + NUMAINFO_EVENTS_TARGET;
+ 			break;
+@@ -902,6 +910,34 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+ 	return false;
+ }
+ 
++static void mem_cgroup_update_soft_limit(struct mem_cgroup *memcg)
++{
++	unsigned long long excess = res_counter_soft_limit_excess(&memcg->res);
++	struct mem_cgroup *parent = memcg;
++	int delta = 0;
++
++	spin_lock(&memcg->soft_lock);
++	if (excess) {
++		if (!memcg->soft_contributed) {
++			delta = 1;
++			memcg->soft_contributed = true;
++		}
++	} else {
++		if (memcg->soft_contributed) {
++			delta = -1;
++			memcg->soft_contributed = false;
++		}
++	}
++
++	/*
++	 * Necessary to update all ancestors when hierarchy is used
++	 * because their event counter is not touched.
++	 */
++	while (delta && (parent = parent_mem_cgroup(parent)))
++		atomic_add(delta, &parent->children_in_excess);
++	spin_unlock(&memcg->soft_lock);
++}
++
+ /*
+  * Check events in order.
+  *
+@@ -912,8 +948,11 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 	/* threshold event is triggered in finer grain than soft limit */
+ 	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+ 						MEM_CGROUP_TARGET_THRESH))) {
++		bool do_softlimit;
+ 		bool do_numainfo __maybe_unused;
+ 
++		do_softlimit = mem_cgroup_event_ratelimit(memcg,
++						MEM_CGROUP_TARGET_SOFTLIMIT);
+ #if MAX_NUMNODES > 1
+ 		do_numainfo = mem_cgroup_event_ratelimit(memcg,
+ 						MEM_CGROUP_TARGET_NUMAINFO);
+@@ -921,6 +960,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 		preempt_enable();
+ 
+ 		mem_cgroup_threshold(memcg);
++		if (unlikely(do_softlimit))
++			mem_cgroup_update_soft_limit(memcg);
+ #if MAX_NUMNODES > 1
+ 		if (unlikely(do_numainfo))
+ 			atomic_inc(&memcg->numainfo_events);
+@@ -1892,6 +1933,9 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+  * hierarchy if
+  * 	a) it is over its soft limit
+  * 	b) any parent up the hierarchy is over its soft limit
++ *
++ * If the given group doesn't have any children over the limit then it
++ * doesn't make any sense to iterate its subtree.
+  */
+ enum mem_cgroup_filter_t
+ mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+@@ -1913,6 +1957,8 @@ mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 			break;
+ 	}
+ 
++	if (!atomic_read(&memcg->children_in_excess))
++		return SKIP_TREE;
+ 	return SKIP;
+ }
+ 
+@@ -6059,6 +6105,7 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+ 	mutex_init(&memcg->thresholds_lock);
+ 	spin_lock_init(&memcg->move_lock);
+ 	vmpressure_init(&memcg->vmpressure);
++	spin_lock_init(&memcg->soft_lock);
+ 
+ 	return &memcg->css;
+ 
+@@ -6148,6 +6195,10 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+ 
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
++	if (memcg->soft_contributed) {
++		while ((memcg = parent_mem_cgroup(memcg)))
++			atomic_dec(&memcg->children_in_excess);
++	}
+ 	mem_cgroup_destroy_all_caches(memcg);
+ }
+ 
+-- 
+1.7.10.4
+
