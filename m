@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab3FCJzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:55:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56745 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755981Ab3FCJzj (ORCPT
+	id S1755219Ab3FCJ5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:57:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37714 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3FCJ5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:55:39 -0400
-Date: Mon, 3 Jun 2013 10:54:25 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-Message-ID: <20130603095425.GA32242@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
- <20130531084638.GB4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
- <20130531111305.GI4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
+	Mon, 3 Jun 2013 05:57:21 -0400
+Date: Mon, 3 Jun 2013 12:57:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andy Shevchenko <andy.shevchenko@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/8] pktcdvd: Convert printk to pr_<level>
+Message-ID: <20130603095714.GA23987@mwanda>
+References: <1369978679.10556.36.camel@joe-AO722>
+ <cover.1370048648.git.joe@perches.com>
+ <92da9370f91c4435cd62b71998f6d66db8680596.1370048648.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
-Thread-Topic: A bug about system call on ARM
-Accept-Language: en-GB, en-US
-Content-Language: en-US
+In-Reply-To: <92da9370f91c4435cd62b71998f6d66db8680596.1370048648.git.joe@perches.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 06:25:26AM +0100, Wang, Yalin wrote:
-> Hi  Will,
-> 
-> I have a question about this patch .
-> 
-> If the user space is thumb mode,
-> The PC should be rewind by 2 bytes,
-> So the fix_up code should be 
-> 
-> Sub lr, lr, #2 .
-> 
-> 
-> Am I right ?
+On Fri, May 31, 2013 at 09:11:23PM -0700, Joe Perches wrote:
+> +static const char *sense_key_string(__u8 index)
+> +{
+> +	static const char *info[9] = {
+> +		"No sense", "Recovered error", "Not ready",
+> +		"Medium error", "Hardware error", "Illegal request",
+> +		"Unit attention", "Data protect", "Blank check"
+> +	};
+> +	if (index < 8)
 
-No, because we don't have OABI-compat support for Thumb applications and
-force everything down the EABI path instead.
+Off by one:
 
-Did you manage to test the patch?
+	if (index < 9)
 
-Will
+
+> +		return info[index];
+> +	return "INVALID";
+
+regards,
+dan carpenter
+
