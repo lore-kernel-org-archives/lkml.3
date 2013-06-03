@@ -1,170 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3FCIkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:40:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64901 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab3FCIka (ORCPT
+	id S1752448Ab3FCIol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:44:41 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:34752 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3FCIoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:40:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        Ajitpal Singh <ajitpal.singh@stericsson.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] cw1200: fix some obvious mistakes
-Date: Mon, 03 Jun 2013 10:40:42 +0200
-Message-ID: <2014948.bdhzSga56L@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <20130602144725.GC3875@shaftnet.org>
-References: <1370126241-2528420-1-git-send-email-arnd@arndb.de> <8513280.folT80711V@wuerfel> <20130602144725.GC3875@shaftnet.org>
+	Mon, 3 Jun 2013 04:44:37 -0400
+Message-ID: <51AC5772.5090604@linaro.org>
+Date: Mon, 03 Jun 2013 10:44:34 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:l9AT+tM+SeNVluzf3YKSKGmNRBsDyFxgGPJh071fnz8
- 2eE8EIWP+HGYph6iqXs0NyK7FacpUtpKq4fwW9nlbUCOdua/iY
- H6bqbHkfF/ME0iwSGlZfKQr0uxlRSDEJWVbuPDHEixRXPR9Pke
- ZdFaKToP0wgChiA6HteudBODeqYJUzTUEzLnBftAFuDVUGzKgW
- Ftf2uifbdBdGL4LFe08B1vr6ReCIXUVxCa15viEnj2joJVnmw+
- G1XMFI4XC4bO27cIvCryrpUssVSCz/EpkINVBXKkhHCUBYRg2Z
- uJIwbbprE9NYpF3A44LMIASyIujVJtnMD3JfN1D233fCH0kz5f
- kiWxoW6VHH9wmwkTMapE=
+To: Daniel Tang <dt.tangr@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] Add TI-Nspire timer support
+References: <AE2AF524-C495-4D6B-B622-816B3254D384@gmail.com>
+In-Reply-To: <AE2AF524-C495-4D6B-B622-816B3254D384@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 June 2013 10:47:26 Solomon Peachy wrote:
-> On Sun, Jun 02, 2013 at 03:59:12PM +0200, Arnd Bergmann wrote:
-> > The driver doesn't reliably build, and I'm trying to fix it.
-> > From my perspective, we can just mark it 'depends on !ARM'
-> > to get it off my radar, but other people are doing build
-> > testing on x86 and will run into the same issues.
+On 06/01/2013 08:02 AM, Daniel Tang wrote:
+> This patch adds a clocksource/clockevent driver for the timer found on some models in the TI-Nspire calculator series.
 > 
-> AFAIK the only remaining build problem is when CONFIG_CW1200_SAGRAD is 
-> not defined so there's no "platform" data provided.
-
-Yes, that is correct. My first approach was to always 'select CW1200_SAGRAD'
-from the CW1200_SDIO driver, but then it becomes impossible to have
-a different definition of the data in platform code. Even without doing
-it you also have a build error if you try to add a platform_data definition
-to more than one board file in the kernel or enable the sagrad driver
-at the same time as a platform.
-
-> > If we only care about two cases a) a default sagrad card that can use
-> > hardcoded data and b) a board that uses the same chip and requires
-> > custom data, then I would suggest including the sagrad data in the
-> > sdio driver as a default (as my patch does) but allow overriding
-> > it with platform data.
+> The timer has two 16bit subtimers within its memory mapped I/O interface but only the first can generate interrupts. 
 > 
-> Yes, those are the only use cases we care about.  And that sounds like a 
-> viable approach, so I'll code that up.
+> The first subtimer is used to generate clockevents but only if an interrupt number and register is given.
 > 
-> I guess adding a function along the lines of 
-> "cw1200_sdio_set_platform_data()" (to be called by the board/platform 
-> setup code) would be the right way to do this?
-
-It's much better than what you have today, but not ideal because it
-means the driver cannot be a loadable module any more.
-
-> As an aside, I wish I'd received this feedback a couple of months ago.
-
-Yes, I agree it's unfortunate timing. Our review process is certainly
-not perfect when you have to wait for stuff to break in linux-next
-before you get people to notice the problems.
-
-At least it's not in a released kernel yet.
-
-> > The problem with this is that it is impossible to build a kernel that
-> > supports both, or even two devices of the same type.
+> The interrupt acknowledgement mechanism is a little strange because the interrupt mask and acknowledge registers are located in another memory mapped I/O peripheral. The address of this register is passed to the driver through device tree bindings.
 > 
-> Adding proper devicetree support will solve this problem down the line, 
-> but I don't think there's any way to fix this for non-DT systems thanks 
-> to that chicken-and-egg probing situation.
+> The second subtimer is used as a clocksource because it isn't capable of generating an interrupt. This subtimer is always added.
 > 
-> (I wish I had a DT-capable platform handy to develop against..)
-
-All ST-Ericsson DB8500 (ux500) systems should now work with DT, and will
-be DT-only in one of the next few kernel releases.
-
-> > I don't mind the backports supporting that, but we should probably
-> > move on in mainline. The existance of backports is no excuse for
-> > keeping around broken code.
+> Changes between v2 and v1:
+> * Added a changelog
+> * Moved `int irqnr` out of struct zevio_timer and into the init function
+> * Set timer->clkevt.irq to the IRQ number in init function
+> * Added spaces in the shift macros (i.e. (1<<2) => (1 << 2))
+> * Realigned function declarations, container_of and at timer->clkevt.
+> * Remove unnecessary calls to local_irq_save and local_irq_restore
+> * Remove redundant setting of dev->mode
+> * Change kzalloc call to use GFP_KERNEL
+> * Remove redundant line break
+> * Remove IRQF_DISABLED flag
 > 
-> I already have one patch queued up for backports to re-enable <2.6.36 
-> support, and I have no problem adding more.  
+> Cheers,
+> Daniel Tang
 > 
-> That said, until all SDIO/SPI-supporting targets in the mainline are 
-> converted to a devicetree (or equivalent) model, I imagine the 
-> platform_data crap will have to remain.
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+> ---
 
-I'm not sure about this: I would argue that only the boards that
-are part of mainline and have a cw1200 wired up are what matters here.
+The patch sounds good for me. If nobody complains, I will queue it for 3.11.
 
-Having an SoC platform with SDIO support and the potential to add
-a board file including cw1200 is not relevant as long as that board
-file does not actually get added. If someone can patch the kernel
-to add a board file, they can also patch the driver in any way
-necessary.
+Please in the future, add the subsystem name in the subject line as:
 
-In contrast, with devicetree we normally anticipate that people can
-have their external dts files which reference DT-enabled drivers
-even if the dts file is not itself part of the kernel.
+clocksource: Add TI-Nspire timer ...
 
-> > just look in include/linux/platform_data/. The most common type for
-> > gpio numbers is 'int'.
+Thanks
+  -- Daniel
+
+>  .../devicetree/bindings/timer/lsi,zevio-timer.txt  |  33 ++++
+>  drivers/clocksource/Makefile                       |   1 +
+>  drivers/clocksource/zevio-timer.c                  | 215 +++++++++++++++++++++
+>  3 files changed, 249 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+>  create mode 100644 drivers/clocksource/zevio-timer.c
 > 
-> I've already posted a patch that converts them over.
-
-ok.
-
-> > In fact my mobile phone has a cw1200 chip that was working until
-> > recently. Now it just crashes when I do 'ifconfig wlan0 up'
-> > or enable WLAN in the Android settings menu. :(
-> > 
-> > I'm not blaming you for that ;-)
+> diff --git a/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+> new file mode 100644
+> index 0000000..b2d07ad
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
+> @@ -0,0 +1,33 @@
+> +TI-NSPIRE timer
+> +
+> +Required properties:
+> +
+> +- compatible : should be "lsi,zevio-timer".
+> +- reg : The physical base address and size of the timer (always first).
+> +- clocks: phandle to the source clock.
+> +
+> +Optional properties:
+> +
+> +- interrupts : The interrupt number of the first timer.
+> +- reg : The interrupt acknowledgement registers
+> +	(always after timer base address)
+> +
+> +If any of the optional properties are not given, the timer is added as a
+> +clock-source only.
+> +
+> +Example:
+> +
+> +timer {
+> +	compatible = "lsi,zevio-timer";
+> +	reg = <0x900D0000 0x1000>, <0x900A0020 0x8>;
+> +	interrupts = <19>;
+> +	clocks = <&timer_clk>;
+> +};
+> +
+> +Example (no clock-events):
+> +
+> +timer {
+> +	compatible = "lsi,zevio-timer";
+> +	reg = <0x900D0000 0x1000>;
+> +	clocks = <&timer_clk>;
+> +};
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 8d979c7..293f86e 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -22,6 +22,7 @@ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+>  obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+>  obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+>  obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+> +obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
+>  obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+>  obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
+>  obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+> diff --git a/drivers/clocksource/zevio-timer.c b/drivers/clocksource/zevio-timer.c
+> new file mode 100644
+> index 0000000..ca81809
+> --- /dev/null
+> +++ b/drivers/clocksource/zevio-timer.c
+> @@ -0,0 +1,215 @@
+> +/*
+> + *  linux/drivers/clocksource/zevio-timer.c
+> + *
+> + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/clk.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/cpumask.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/slab.h>
+> +
+> +#define IO_CURRENT_VAL	0x00
+> +#define IO_DIVIDER	0x04
+> +#define IO_CONTROL	0x08
+> +
+> +#define IO_TIMER1	0x00
+> +#define IO_TIMER2	0x0C
+> +
+> +#define IO_MATCH_BEGIN	0x18
+> +#define IO_MATCH(x)	(IO_MATCH_BEGIN + ((x) << 2))
+> +
+> +#define IO_INTR_STS	0x00
+> +#define IO_INTR_ACK	0x00
+> +#define IO_INTR_MSK	0x04
+> +
+> +#define CNTL_STOP_TIMER	(1 << 4)
+> +#define CNTL_RUN_TIMER	(0 << 4)
+> +
+> +#define CNTL_INC	(1 << 3)
+> +#define CNTL_DEC	(0 << 3)
+> +
+> +#define CNTL_TOZERO	0
+> +#define CNTL_MATCH(x)	((x) + 1)
+> +#define CNTL_FOREVER	7
+> +
+> +/* There are 6 match registers but we only use one. */
+> +#define TIMER_MATCH	0
+> +
+> +#define TIMER_INTR_MSK	(1 << (TIMER_MATCH))
+> +#define TIMER_INTR_ALL	0x3F
+> +
+> +struct zevio_timer {
+> +	void __iomem *base;
+> +	void __iomem *timer1, *timer2;
+> +	void __iomem *interrupt_regs;
+> +
+> +	struct clk *clk;
+> +	struct clock_event_device clkevt;
+> +	struct irqaction clkevt_irq;
+> +
+> +	char clocksource_name[64];
+> +	char clockevent_name[64];
+> +};
+> +
+> +static int zevio_timer_set_event(unsigned long delta,
+> +				 struct clock_event_device *dev)
+> +{
+> +	struct zevio_timer *timer = container_of(dev, struct zevio_timer,
+> +						 clkevt);
+> +
+> +	writel(delta, timer->timer1 + IO_CURRENT_VAL);
+> +	writel(CNTL_RUN_TIMER | CNTL_DEC | CNTL_MATCH(TIMER_MATCH),
+> +			timer->timer1 + IO_CONTROL);
+> +
+> +	return 0;
+> +}
+> +
+> +static void zevio_timer_set_mode(enum clock_event_mode mode,
+> +				 struct clock_event_device *dev)
+> +{
+> +	struct zevio_timer *timer = container_of(dev, struct zevio_timer,
+> +						 clkevt);
+> +
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_RESUME:
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +		/* Enable timer interrupts */
+> +		writel(TIMER_INTR_MSK, timer->interrupt_regs + IO_INTR_MSK);
+> +		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
+> +		break;
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +		/* Disable timer interrupts */
+> +		writel(0, timer->interrupt_regs + IO_INTR_MSK);
+> +		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
+> +		/* Stop timer */
+> +		writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
+> +		break;
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +	default:
+> +		/* Unsupported */
+> +		break;
+> +	}
+> +}
+> +
+> +static irqreturn_t zevio_timer_interrupt(int irq, void *dev_id)
+> +{
+> +	struct zevio_timer *timer = dev_id;
+> +	u32 intr;
+> +
+> +	intr = readl(timer->interrupt_regs + IO_INTR_ACK);
+> +	if (!(intr & TIMER_INTR_MSK))
+> +		return IRQ_NONE;
+> +
+> +	writel(TIMER_INTR_MSK, timer->interrupt_regs + IO_INTR_ACK);
+> +	writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
+> +
+> +	if (timer->clkevt.event_handler)
+> +		timer->clkevt.event_handler(&timer->clkevt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __init zevio_timer_add(struct device_node *node)
+> +{
+> +	struct zevio_timer *timer;
+> +	struct resource res;
+> +	int irqnr, ret;
+> +
+> +	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
+> +	if (!timer)
+> +		return -ENOMEM;
+> +
+> +	timer->base = of_iomap(node, 0);
+> +	if (!timer->base) {
+> +		ret = -EINVAL;
+> +		goto error_free;
+> +	}
+> +	timer->timer1 = timer->base + IO_TIMER1;
+> +	timer->timer2 = timer->base + IO_TIMER2;
+> +
+> +	timer->clk = of_clk_get(node, 0);
+> +	if (IS_ERR(timer->clk)) {
+> +		ret = PTR_ERR(timer->clk);
+> +		pr_err("Timer clock not found! (error %d)\n", ret);
+> +		goto error_unmap;
+> +	}
+> +
+> +	timer->interrupt_regs = of_iomap(node, 1);
+> +	irqnr = irq_of_parse_and_map(node, 0);
+> +
+> +	of_address_to_resource(node, 0, &res);
+> +	scnprintf(timer->clocksource_name, sizeof(timer->clocksource_name),
+> +			"%llx.%s_clocksource",
+> +			(unsigned long long)res.start, node->name);
+> +
+> +	scnprintf(timer->clockevent_name, sizeof(timer->clockevent_name),
+> +			"%llx.%s_clockevent",
+> +			(unsigned long long)res.start, node->name);
+> +
+> +	if (timer->interrupt_regs && irqnr) {
+> +		timer->clkevt.name		= timer->clockevent_name;
+> +		timer->clkevt.set_next_event	= zevio_timer_set_event;
+> +		timer->clkevt.set_mode		= zevio_timer_set_mode;
+> +		timer->clkevt.rating		= 200;
+> +		timer->clkevt.cpumask		= cpu_all_mask;
+> +		timer->clkevt.features		= CLOCK_EVT_FEAT_ONESHOT;
+> +		timer->clkevt.irq		= irqnr;
+> +
+> +		writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
+> +		writel(0, timer->timer1 + IO_DIVIDER);
+> +
+> +		/* Start with timer interrupts disabled */
+> +		writel(0, timer->interrupt_regs + IO_INTR_MSK);
+> +		writel(TIMER_INTR_ALL, timer->interrupt_regs + IO_INTR_ACK);
+> +
+> +		/* Interrupt to occur when timer value matches 0 */
+> +		writel(0, timer->base + IO_MATCH(TIMER_MATCH));
+> +
+> +		timer->clkevt_irq.name		= timer->clockevent_name;
+> +		timer->clkevt_irq.handler	= zevio_timer_interrupt;
+> +		timer->clkevt_irq.dev_id	= timer;
+> +		timer->clkevt_irq.flags		= IRQF_TIMER | IRQF_IRQPOLL;
+> +
+> +		setup_irq(irqnr, &timer->clkevt_irq);
+> +
+> +		clockevents_config_and_register(&timer->clkevt,
+> +				clk_get_rate(timer->clk), 0x0001, 0xffff);
+> +		pr_info("Added %s as clockevent\n", timer->clockevent_name);
+> +	}
+> +
+> +	writel(CNTL_STOP_TIMER, timer->timer2 + IO_CONTROL);
+> +	writel(0, timer->timer2 + IO_CURRENT_VAL);
+> +	writel(0, timer->timer2 + IO_DIVIDER);
+> +	writel(CNTL_RUN_TIMER | CNTL_FOREVER | CNTL_INC,
+> +			timer->timer2 + IO_CONTROL);
+> +
+> +	clocksource_mmio_init(timer->timer2 + IO_CURRENT_VAL,
+> +			timer->clocksource_name,
+> +			clk_get_rate(timer->clk),
+> +			200, 16,
+> +			clocksource_mmio_readw_up);
+> +
+> +	pr_info("Added %s as clocksource\n", timer->clocksource_name);
+> +
+> +	return 0;
+> +error_unmap:
+> +	iounmap(timer->base);
+> +error_free:
+> +	kfree(timer);
+> +	return ret;
+> +}
+> +
+> +CLOCKSOURCE_OF_DECLARE(zevio_timer, "lsi,zevio-timer", zevio_timer_add);
 > 
-> What model, out of curiousity?
 
-This is a Sony xperia Sola. Wireless was working for about a year
-with the original Android 2.3 image, but it broke a week after
-I installed CyanogenMod 9.1.
 
-> > I think the most important part is separating the generic sagrad
-> > add-on card code from any platform-specific code and removing the
-> > use of cw1200_get_platform_data() function that breaks the build.
-> 
-> I'll convert SDIO driver to using the sagrad data as default and add a 
-> 'set_platform_data' sort of function to allow it to be optionally 
-> overridden.  It shouldn't take long, and I'll post the patch as soon as 
-> I'm finished.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Ok, sounds like a good next step.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Regarding a long-term solution, I think what we should do here is to
-move the reset logic into the SDIO framework itself: We have similar
-requirements even for eMMC and SD cards, where you need to provide
-the correct voltage to a device on the MMC port in order for it to
-work. Today this is supported to a varying degree on the MMC controller
-level, where we hook into various frameworks (clk, reset-controller,
-regulator, gpio, pinctrl, power domain) based on platformm data or
-device tree information on the controller node.
-
-I think you can do this today with cw1200 as long as you know which
-MMC controller you have, which may also solve your problem, but it
-would be nice if that could be made more generic for SDIO, since
-the problem is neither controller-specific nor device-specific
-but can happen on any SDIO device.
-
-Looking at the source code for my phone, there is one clock that
-needs to be enabled for the cw1200 through pdata->clk_ctrl. This
-should probably just be a turned into an anonymous clock so the
-cw1200 driver itself does "clk = clk_get(dev, NULL); clk_enable(clk);"
-and the callback can be removed.
-There is also IRQ and reset logic in this board-mop500-wlan.c file.
-The IRQ logic seems fine, and for the reset, I would suggest using
-the gpio-reset driver that is getting proposed for merging in 3.11,
-and to add a call to device_reset() into the sdio layer.
-
-	Arnd
