@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3FCVS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:18:26 -0400
-Received: from exprod6og118.obsmtp.com ([64.18.1.233]:39881 "EHLO
-	exprod6og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758353Ab3FCVSW (ORCPT
+	id S1758534Ab3FCVSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:18:38 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:48552 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757773Ab3FCVSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:18:22 -0400
-X-Greylist: delayed 2397 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jun 2013 17:18:22 EDT
-Message-ID: <51ACFEBE.1050801@verisign.com>
-Date: Mon, 03 Jun 2013 16:38:22 -0400
-From: David C Niemi <dniemi@verisign.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stratos Karafotis <stratosk@semaphore.gr>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] cpufreq: ondemand: Change the calculation of target
- frequency
-References: <51ACF2EA.70001@semaphore.gr>
-In-Reply-To: <51ACF2EA.70001@semaphore.gr>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Jun 2013 17:18:33 -0400
+Message-ID: <1370294292.20051.41.camel@ejdallLaptop>
+Subject: Re: [PATCH v2 1/3] PCI/AER: Fix incorrect return from
+ aer_hest_parse()
+From: Betty Dall <betty.dall@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Date: Mon, 03 Jun 2013 15:18:12 -0600
+In-Reply-To: <CAErSpo6KV28p3QRoz-Xx=xMjsFaY7sCho8HN2W_M-DntrNk+Ag@mail.gmail.com>
+References: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
+	 <1369924769-17183-2-git-send-email-betty.dall@hp.com>
+	 <CAErSpo6KV28p3QRoz-Xx=xMjsFaY7sCho8HN2W_M-DntrNk+Ag@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jun 2013 20:38:23.0006 (UTC) FILETIME=[4A6AB3E0:01CE609A]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-06-01 at 18:38 -0600, Bjorn Helgaas wrote:
+> [+cc Bob for ACPI HEST spec questions]
+> 
+> On Thu, May 30, 2013 at 8:39 AM, Betty Dall <betty.dall@hp.com> wrote:
+> > The function aer_hest_parse() is called to determine if the given
+> > PCI device is firmware first or not. The code loops through each
+> > section of the HEST table to look for a match. The bug is that
+> > the function always returns whether the last HEST section is firmware
+> > first. The fix stops the iteration once the info.firmware_first
+> > variable is set.  This is similar to how the function aer_hest_parse_aff()
+> > stops the iteration.
+> >
+> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+> > ---
+> >
+> >  drivers/pci/pcie/aer/aerdrv_acpi.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> >
+> >
+> > diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > index 5194a7d..39b8671 100644
+> > --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > @@ -42,6 +42,9 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+> >         u8 bridge = 0;
+> >         int ff = 0;
+> >
+> > +       if (info->firmware_first)
+> > +               return 0;
+> > +
+> >         switch (hest_hdr->type) {
+> >         case ACPI_HEST_TYPE_AER_ROOT_PORT:
+> >                 pcie_type = PCI_EXP_TYPE_ROOT_PORT;
+> 
+> Not related directly to your patch, Betty, but I can't figure out why
+> the ACPI spec defines the HEST structures for PCIe as it does.  I'm
+> looking at ACPI 5.0, sec 18.3.2.3 - 18.3.2.5. 
 
-Interesting analysis; I just got back from vacation and have not had a chance to comment until now.
+> 1) The PCIe Root Port, PCIe Device, and PCIe/PCI-X Bridge structures
+> all include Bus, Device, and Function fields.  But there's no Segment.
+>  The current Linux code (hest_match_pci()) assumes HEST records can
+> only apply to PCI domain 0.  Is Linux missing something, or is the
+> HEST really this limited?
+You are right that the HEST table does not have the Segment for the PCIe
+sources. The Linux code uses the Generic Source type that points to a
+UEFI CPER record. Those do have the Segment. The code in
+acpi/apei/ghes.c that parses the HEST and invokes the
+aer_recover_queue() is using the segment from the CPER record. 
 
-I like Stratos' general idea of making the decision to upshift or downshift independent of current frequency, as it makes thinks simpler and potentially more stable.  But I believe it will be important to measure performance and power consumption in a wider range of use cases to know whether it is an overall win (or whether it can at least be tuned to match the status quo for various use cases).
+The hest_match_pci() code is only looking at the PCIe error source types
+because that is where the flags field is defined to indicate "firmware
+first". Flags is not defined in the Generic error source.  Firmware
+first platforms today must be using GLOBAL error sources because the
+code is written in such a way that any specific PCIe match will cause
+the entire platform to be firmware first. Linux only supports either AER
+or firmware first right now, and it would be an enhancement to do both. 
 
-In my main use case (network servers), I don't think using more middle frequencies is a good thing at all; as soon as a load gets heavy even briefly I want the CPU doing all it can until the load has clearly abated.  The main competition in this use case is between using ondemand (tuned for performance at the cost of some extra power consumption) or the "performance" governor (which cannot be tuned at all, and where C-states are the only hope for moderating power consumption).
+> 2) Doesn't the fact that the HEST structures include a bus number mean
+> that the OS cannot reassign bus numbers?  I guess maybe we could still
+> reassign them if we kept track of the mapping back to the original
+> values.
+Yes, I think there needs to be a mapping between the HEST/CPER bus
+number and the OS assigned bus numbers, if the OS is reassigning bus
+numbers.  
 
-A couple of additional points -- it is possible to get excellent overall performance and avoid oscillation using ondemand right now by using a low up_threshold and a sampling_down_factor of around 100; in this case you spend most of your time at either the lowest or highest possible frequency and you spend very little time thinking about slowing down.  The main downside of this is an increase in power consumption, so it is not a battery-friendly approach, but someone will need to also measure power consumption if we want to justify a change from the status quo on that basis.  There are dozens of ways to save power at the expense of performance or vice versa, so any major change like this needs to be analyzed for both, in case your patch just results in running at higher average frequencies and gets its performance boost from that.
+> 3) It's interesting that the only choices seem to be "global" or "list
+> every device."  There's no "apply to this device and the subtree under
+> it," so I guess if you want HEST to apply to hot-added devices,
+> "global" is the only thing that makes sense?
+"Global" is the one one that makes sense to me too. The size of the HEST
+table is fixed at boot and firmware strives to keep it as small as
+possible because firmware memory is a scarce resource. 
 
-David C Niemi
+Betty
 
-On 06/03/13 15:47, Stratos Karafotis wrote:
-> Ondemand calculates load in terms of frequency and increases it only
-> if the load_freq is greater than up_threshold multiplied by current
-> or average frequency. This seems to produce oscillations of frequency
-> between min and max because, for example, a relatively small load can
-> easily saturate minimum frequency and lead the CPU to max. Then, the
-> CPU will decrease back to min due to a small load_freq.
->
-> This patch changes the calculation method of load and target frequency
-> considering 2 points:
-> - Load computation should be independent from current or average
-> measured frequency. For example an absolute load 80% at 100MHz is not
-> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
-> - Target frequency should be increased to any value of frequency table
-> proportional to absolute load, instead to only the max. Thus:
->
-> Target frequency = C * load
->
-> where C = policy->cpuinfo.max_freq / 100
->
-> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
-> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
-> that middle frequencies are used more, with this patch. Highest
-> and lowest frequencies were used less by ~9%
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_governor.c | 10 +---------
->  drivers/cpufreq/cpufreq_governor.h |  1 -
->  drivers/cpufreq/cpufreq_ondemand.c | 39 +++++++-------------------------------
->  3 files changed, 8 insertions(+), 42 deletions(-)
->
-...
+> Bjorn
+
+
