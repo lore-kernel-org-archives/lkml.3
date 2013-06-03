@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab3FCNuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:50:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61614 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab3FCNuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:50:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        ulf.hansson@linaro.org
-Subject: Re: [PATCH 09/21] ARM: ux500: Supply the UART clocks lookup to the DBX500 DT
-Date: Mon, 03 Jun 2013 15:50:20 +0200
-Message-ID: <196465635.q8uKhQ7JEM@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1370266965-7901-10-git-send-email-lee.jones@linaro.org>
-References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-10-git-send-email-lee.jones@linaro.org>
+	id S1758048Ab3FCNuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:50:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757773Ab3FCNuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:50:14 -0400
+Date: Mon, 3 Jun 2013 15:49:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@calxeda.com>
+Subject: Re: [PATCH 16/16] perf, persistent: Allow multiple users for an event
+Message-ID: <20130603134925.GA13548@krava.brq.redhat.com>
+References: <1369990056-10310-1-git-send-email-rric@kernel.org>
+ <1369990056-10310-17-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:pqzLyXpLrdn+Img7HKt5WEGIQunoSLGSG4h9+7tVlE+
- EzVAqZsv8yy1GXcrJ93LcV0PZfwU7Hyh7RVMRlgG74h++N6I0q
- BCwOMt0yIsL/0FG3N2Zyxf1AsQyBvmf7e/YYLZv9qXf1ym03wV
- 3Bi1UVOGd+BykoPKeV+iix4scWsudpLy13+FgxzvTGd0P+2exd
- pIzRUlhyB4K5lq/w1Rf2294WzT7K2nkCewzMb3EbaAhzlfbo8i
- 2Pb5b+ADMmfyNVFPIwTLjmumZXD7TLTvSjBTJUQxBTx2yCYGDr
- 9U33RC/f1k9H4vPfH86VfZt0Kwr/rg5trgIlC3Gww1o/fhEO+Z
- YQi9mJdJNF/QYPtrVJdY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369990056-10310-17-git-send-email-rric@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 June 2013 14:42:33 Lee Jones wrote:
-> @@ -650,6 +650,9 @@
->                                <&dma 13 0 0x0>; /* Logical - MemToDev */
->                         dma-names = "rx", "tx";
->  
-> +                       clocks = <&clk 83>, <&clk 40>;
-> +                       clock-names = "uart0", "apb_pclk";
-> +
->                         status = "disabled";
->                 };
->  
-> @@ -662,6 +665,9 @@
->                                <&dma 12 0 0x0>; /* Logical - MemToDev */
->                         dma-names = "rx", "tx";
->  
-> +                       clocks = <&clk 84>, <&clk 41>;
-> +                       clock-names = "uart1", "apb_pclk";
-> +
->                         status = "disabled";
->                 };
->  
+On Fri, May 31, 2013 at 10:47:36AM +0200, Robert Richter wrote:
+> From: Robert Richter <robert.richter@calxeda.com>
 
-This seems wrong: why would one of them have a clock named "uart0"
-and the other one call it "uart1"? The clock name should be defined
-in the binding and specific to the driver using it, not a string that
-indicates where it is connected to.
+SNIP
 
-	Arnd
+>  out:
+>  	mutex_unlock(&per_cpu(pers_events_lock, cpu));
+>  }
+> @@ -182,18 +195,31 @@ fail:
+>  int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
+>  {
+>  	struct pers_event_desc *desc;
+> +	struct perf_event *event;
+>  	int event_fd = -ENODEV;
+>  
+>  	mutex_lock(&per_cpu(pers_events_lock, cpu));
+
+maybe check for valid cpu, since perf_get_persistent_event_fd is
+called directly from syscall allowing anything in cpu
+
+(unrelated to this patch, but I couldn't find the original
+patch that adds perf_get_persistent_event_fd)
+
+jirka
