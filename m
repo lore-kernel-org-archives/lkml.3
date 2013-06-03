@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3FCGN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:13:29 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54842 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3FCGNW (ORCPT
+	id S1752412Ab3FCGRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:17:30 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:38296 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3FCGRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:13:22 -0400
-X-AuditID: 9c93017e-b7c0cae0000006f6-7b-51ac34007ba6
-Date: Mon, 3 Jun 2013 15:13:20 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v4][PATCH 2/6] mm: swap: make 'struct page' and swp_entry_t
- variants of swapcache_free().
-Message-ID: <20130603061320.GA2795@blaptop>
-References: <20130531183855.44DDF928@viggo.jf.intel.com>
- <20130531183858.3C8C10C7@viggo.jf.intel.com>
+	Mon, 3 Jun 2013 02:17:23 -0400
+Message-ID: <51AC35F0.4010400@linux.vnet.ibm.com>
+Date: Mon, 03 Jun 2013 11:51:36 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130531183858.3C8C10C7@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Jiannan Ouyang <ouyang@cs.pitt.edu>, Gleb Natapov <gleb@redhat.com>
+CC: Ingo Molnar <mingo@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        x86@kernel.org, konrad.wilk@oracle.com,
+        "H. Peter Anvin" <hpa@zytor.com>, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        xen-devel@lists.xensource.com, Peter Zijlstra <peterz@infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu vinod <chegu_vinod@hp.com>, torvalds@linux-foundation.org,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, stephan.diestelhorst@amd.com,
+        Rik van Riel <riel@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+References: <20130601192125.5966.35563.sendpatchset@codeblue> <20130602080739.GA24773@redhat.com> <CAJocwcf0oykyLv4B22pBf1A3H7+Cs6qu0vmTWp46Z=KwrTkXyQ@mail.gmail.com> <51ABF410.4090109@linux.vnet.ibm.com>
+In-Reply-To: <51ABF410.4090109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060306-4790-0000-0000-0000089832A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave,
+On 06/03/2013 07:10 AM, Raghavendra K T wrote:
+> On 06/02/2013 09:50 PM, Jiannan Ouyang wrote:
+>> On Sun, Jun 2, 2013 at 1:07 AM, Gleb Natapov <gleb@redhat.com> wrote:
+>>
+>>> High level question here. We have a big hope for "Preemptable Ticket
+>>> Spinlock" patch series by Jiannan Ouyang to solve most, if not all,
+>>> ticketing spinlocks in overcommit scenarios problem without need for PV.
+>>> So how this patch series compares with his patches on PLE enabled
+>>> processors?
+>>>
+>>
+>> No experiment results yet.
+>>
+>> An error is reported on a 20 core VM. I'm during an internship
+>> relocation, and will start work on it next week.
+>
+> Preemptable spinlocks' testing update:
+> I hit the same softlockup problem while testing on 32 core machine with
+> 32 guest vcpus that Andrew had reported.
+>
+> After that i started tuning TIMEOUT_UNIT, and when I went till (1<<8),
+> things seemed to be manageable for undercommit cases.
+> But I still see degradation for undercommit w.r.t baseline itself on 32
+> core machine (after tuning).
+>
+> (37.5% degradation w.r.t base line).
+> I can give the full report after the all tests complete.
+>
+> For over-commit cases, I again started hitting softlockups (and
+> degradation is worse). But as I said in the preemptable thread, the
+> concept of preemptable locks looks promising (though I am still not a
+> fan of  embedded TIMEOUT mechanism)
+>
+> Here is my opinion of TODOs for preemptable locks to make it better ( I
+> think I need to paste in the preemptable thread also)
+>
+> 1. Current TIMEOUT UNIT seem to be on higher side and also it does not
+> scale well with large guests and also overcommit. we need to have a
+> sort of adaptive mechanism and better is sort of different TIMEOUT_UNITS
+> for different types of lock too. The hashing mechanism that was used in
+> Rik's spinlock backoff series fits better probably.
+>
+> 2. I do not think TIMEOUT_UNIT itself would work great when we have a
+> big queue (for large guests / overcommits) for lock.
+> one way is to add a PV hook that does yield hypercall immediately for
+> the waiters above some THRESHOLD so that they don't burn the CPU.
+> ( I can do POC to check if  that idea works in improving situation
+> at some later point of time)
+>
 
-On Fri, May 31, 2013 at 11:38:58AM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> swapcache_free() takes two arguments:
-> 
-> 	void swapcache_free(swp_entry_t entry, struct page *page)
-> 
-> Most of its callers (5/7) are from error handling paths haven't even
-> instantiated a page, so they pass page=NULL.  Both of the callers
-> that call in with a 'struct page' create and pass in a temporary
-> swp_entry_t.
-> 
-> Now that we are deferring clearing page_private() until after
-> swapcache_free() has been called, we can just create a variant
-> that takes a 'struct page' and does the temporary variable in
-> the helper.
-> 
-> That leaves all the other callers doing
-> 
-> 	swapcache_free(entry, NULL)
-> 
-> so create another helper for them that makes it clear that they
-> need only pass in a swp_entry_t.
-> 
-> One downside here is that delete_from_swap_cache() now does
-> an extra swap_address_space() call.  But, those are pretty
-> cheap (just some array index arithmetic).
+Preemptable-lock results from my run with 2^8 TIMEOUT:
 
-I lost from this description.
++-----------+-----------+-----------+------------+-----------+
+                  ebizzy (records/sec) higher is better
++-----------+-----------+-----------+------------+-----------+
+     base        stdev        patched    stdev        %improvement
++-----------+-----------+-----------+------------+-----------+
+1x  5574.9000   237.4997    3484.2000   113.4449   -37.50202
+2x  2741.5000   561.3090     351.5000   140.5420   -87.17855
+3x  2146.2500   216.7718     194.8333    85.0303   -90.92215
+4x  1663.0000   141.9235     101.0000    57.7853   -93.92664
++-----------+-----------+-----------+------------+-----------+
++-----------+-----------+-----------+------------+-----------+
+                dbench  (Throughput) higher is better
++-----------+-----------+-----------+------------+-----------+
+      base        stdev        patched    stdev        %improvement
++-----------+-----------+-----------+------------+-----------+
+1x  14111.5600   754.4525   3930.1602   2547.2369    -72.14936
+2x  2481.6270    71.2665      181.1816    89.5368    -92.69908
+3x  1510.2483    31.8634      104.7243    53.2470    -93.06576
+4x  1029.4875    16.9166       72.3738    38.2432    -92.96992
++-----------+-----------+-----------+------------+-----------+
 
-Old behavior
+Note we can not trust on overcommit results because of softlock-ups
 
-delete_from_swap_cache
-        swap_address_space
-        __delete_from_swap_cache
-                swap_address_space
-
-
-New behavior
-
-delete_from_swap_cache
-        __delete_from_swap_cache
-                swap_address_space
-                
-So you removes a swap_address_space, not adding a extra call.
-Am I missing something?
-
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-
-Otherwise, looks good to me
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-
--- 
-Kind regards,
-Minchan Kim
