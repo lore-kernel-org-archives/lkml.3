@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758974Ab3FCPwU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:52:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17721 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab3FCPwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:52:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, konrad@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
-Subject: [PATCH] xen/smp: Fixup NOHZ per cpu data when onlining an offline CPU.
-Date: Mon,  3 Jun 2013 11:51:52 -0400
-Message-Id: <1370274712-3415-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1759022Ab3FCPxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:53:20 -0400
+Received: from www.sr71.net ([198.145.64.142]:58268 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758624Ab3FCPxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:53:17 -0400
+Message-ID: <51ACBBEA.2040804@sr71.net>
+Date: Mon, 03 Jun 2013 08:53:14 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 23/39] thp: wait_split_huge_page(): serialize over i_mmap_mutex
+ too
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-24-git-send-email-kirill.shutemov@linux.intel.com> <519BEFAE.1080800@sr71.net> <20130603150214.54C34E0090@blue.fi.intel.com>
+In-Reply-To: <20130603150214.54C34E0090@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xen_play_dead is an undead function. When the vCPU is told to
-offline it ends up calling xen_play_dead wherin it calls the
-VCPUOP_down hypercall which offlines the vCPU. However, when the
-vCPU is onlined back, it resumes execution right after
-VCPUOP_down hypercall.
 
-That was OK (albeit the API for play_dead assumes that the CPU
-stays dead and never returns) but with commit 4b0c0f294
-(tick: Cleanup NOHZ per cpu data on cpu down) that is no longer safe
-as said commit resets the ts->inidle which at the start of the
-cpu_idle loop was set.
+On 06/03/2013 08:02 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com
+>>> -#define wait_split_huge_page(__anon_vma, __pmd)				\
+>>> +#define wait_split_huge_page(__vma, __pmd)				\
+>>>  	do {								\
+>>>  		pmd_t *____pmd = (__pmd);				\
+>>> -		anon_vma_lock_write(__anon_vma);			\
+>>> -		anon_vma_unlock_write(__anon_vma);			\
+>>> +		struct address_space *__mapping =			\
+>>> +					vma->vm_file->f_mapping;	\
+>>> +		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
+>>> +		if (__mapping)						\
+>>> +			mutex_lock(&__mapping->i_mmap_mutex);		\
+>>> +		if (__anon_vma) {					\
+>>> +			anon_vma_lock_write(__anon_vma);		\
+>>> +			anon_vma_unlock_write(__anon_vma);		\
+>>> +		}							\
+>>> +		if (__mapping)						\
+>>> +			mutex_unlock(&__mapping->i_mmap_mutex);		\
+>>>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+>>>  		       pmd_trans_huge(*____pmd));			\
+>>>  	} while (0)
+...
+>> Could you also describe the lengths to which you've gone to try and keep
+>> this macro from growing in to any larger of an abomination.  Is it truly
+>> _impossible_ to turn this in to a normal function?  Or will it simply be
+>> a larger amount of work that you can do right now?  What would it take?
+> 
+> Okay, I've tried once again. The patch is below. It looks too invasive for
+> me. What do you think?
 
-The net effect is that we get this warn:
+That patch looks great to me, actually.  It really looks to just be
+superficially moving code around.  The diffstat is even too:
 
-Broke affinity for irq 16
-installing Xen timer for CPU 1
-cpu 1 spinlock event irq 48
-------------[ cut here ]------------
-WARNING: at /home/konrad/linux-linus/kernel/time/tick-sched.c:935 tick_nohz_idle_exit+0x195/0x1b0()
-Modules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc3upstream-00068-gdcdbe33 #1
-Hardware name: BIOSTAR Group N61PB-M2S/N61PB-M2S, BIOS 6.00 PG 09/03/2009
- ffffffff8193b448 ffff880039da5e60 ffffffff816707c8 ffff880039da5ea0
- ffffffff8108ce8b ffff880039da4010 ffff88003fa8e500 ffff880039da4010
- 0000000000000001 ffff880039da4000 ffff880039da4010 ffff880039da5eb0
-Call Trace:
- [<ffffffff816707c8>] dump_stack+0x19/0x1b
- [<ffffffff8108ce8b>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff8108ced5>] warn_slowpath_null+0x15/0x20
- [<ffffffff810e4745>] tick_nohz_idle_exit+0x195/0x1b0
- [<ffffffff810da755>] cpu_startup_entry+0x205/0x250
- [<ffffffff81661070>] cpu_bringup_and_idle+0x13/0x15
----[ end trace 915c8c486004dda1 ]---
-
-b/c ts_inidle is set to zero. Thomas suggested that we just add a workaround
-to call tick_nohz_idle_enter before returning from xen_play_dead() - and
-that is what this patch does and fixes the issue.
-
-We also add the stable part b/c git commit 4b0c0f294 is on the stable
-tree.
-
-CC: stable@vger.kernel.org
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/smp.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index fb44426..d99cae8 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -17,6 +17,7 @@
- #include <linux/slab.h>
- #include <linux/smp.h>
- #include <linux/irq_work.h>
-+#include <linux/tick.h>
- 
- #include <asm/paravirt.h>
- #include <asm/desc.h>
-@@ -447,6 +448,13 @@ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
- 	play_dead_common();
- 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
- 	cpu_bringup();
-+	/*
-+	 * commit 4b0c0f294 (tick: Cleanup NOHZ per cpu data on cpu down)
-+	 * clears certain data that the cpu_idle loop (which called us
-+	 * and that we return from) expects. The only way to get that
-+	 * data back is to call:
-+	 */
-+	tick_nohz_idle_enter();
- }
- 
- #else /* !CONFIG_HOTPLUG_CPU */
--- 
-1.8.1.4
+>  include/linux/huge_mm.h  |   35 ++++++++++++++--------------
+>  include/linux/mm.h       |   24 +++++++++++++++++--
+>  include/linux/mm_types.h |   37 +++++++++++++++++++++++++++++
+>  include/linux/rmap.h     |   58 -----------------------------------------------
+>  mm/memory.c              |    8 +++---
+>  5 files changed, 81 insertions(+), 81 deletions(-)
 
