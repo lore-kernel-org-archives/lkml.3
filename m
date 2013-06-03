@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab3FCOqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:46:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49059 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab3FCOp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:45:58 -0400
-Date: Mon, 3 Jun 2013 16:45:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ivo Sieben <meltedpianoman@gmail.com>
-cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH-v2] Set irq thread to RT priority on creation
-In-Reply-To: <1370254322-17240-1-git-send-email-meltedpianoman@gmail.com>
-Message-ID: <alpine.LFD.2.02.1306031637420.2905@ionos>
-References: <alpine.LFD.2.02.1305302147290.2905@ionos> <1370254322-17240-1-git-send-email-meltedpianoman@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1758274Ab3FCOxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:53:05 -0400
+Received: from www.sr71.net ([198.145.64.142]:57588 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753768Ab3FCOxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 10:53:04 -0400
+Message-ID: <51ACADCD.70904@sr71.net>
+Date: Mon, 03 Jun 2013 07:53:01 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v4][PATCH 1/6] mm: swap: defer clearing of page_private() for
+ swap cache pages
+References: <20130531183855.44DDF928@viggo.jf.intel.com> <20130531183856.1D7D75AD@viggo.jf.intel.com> <20130603054048.GA27858@blaptop>
+In-Reply-To: <20130603054048.GA27858@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jun 2013, Ivo Sieben wrote:
+On 06/02/2013 10:40 PM, Minchan Kim wrote:
+>> > diff -puN mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private mm/vmscan.c
+>> > --- linux.git/mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-30 16:07:50.632079492 -0700
+>> > +++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:50.637079712 -0700
+>> > @@ -494,6 +494,8 @@ static int __remove_mapping(struct addre
+>> >  		__delete_from_swap_cache(page);
+>> >  		spin_unlock_irq(&mapping->tree_lock);
+>> >  		swapcache_free(swap, page);
+>> > +		set_page_private(page, 0);
+>> > +		ClearPageSwapCache(page);
+> It it worth to support non-atomic version of ClearPageSwapCache?
 
-> When a threaded irq handler is installed the irq thread is initially created
-> on normal scheduling priority. Only after the the irq thread is woken up it
-> immediately sets its priority to RT_FIFO MAX_USER_RT_PRIO/2.
-> 
-> This means that interrupts that occur directly after the irq handler is
-> installed will be handled on a normal scheduling priority instead of the
-> realtime priority that you would expect. Fixed this by setting the RT
-> priority on creation of the irq_thread.
-> 
-> This solves the following issue with a UART device driver:
-> On start of the application there is already data present in the uart RX
-> fifo buffer. On opening the uart device the hard & threaded interrupt
-> handlers are installed and the interrupts are enabled. Immediately a hard
-> irq occurs because there is still data in the RX fifo. Because the threaded
-> irq handler is still on normal scheduling, my application is not immediatly
-> interrupted by the threaded handler and continues to run: it tries to flush
-> the uart input buffer and writes data to the uart device. After this the
-> threaded handler finally gets scheduled in and fills the buffer with the
-> "old" received data. When my application reads data from the uart port it
-> receives the "old" data and gives an error.
+Just for this, probably not.
 
-While I in principle agree with the patch, the issue you are
-describing is just solved accidentaly.
+It does look like a site where it would be theoretically safe to use
+non-atomic flag operations since the page is on a one-way trip to the
+allocator at this point and the __clear_page_locked() now happens _just_
+after this code.
 
-The question is why there is data present in the UART when the UART
-driver has not initialized the UART. Up to the point where the UART is
-opened and the interrupt handler is installed the receiver should be
-disabled. Also there is the question why a flush does not kill
-everything including the pending data in the UART itself.
-
-And I don't think, that your issue is solved completely. Assume the
-following:
-
-Open UART
-Flush Buffers (including UART fifo)
-
----> UART receives data
----> Interrupt
-	Data is available in tty buffer
-
-Write data to UART
-
-Receive data from UART
-
-You still get data which got into the buffer before you sent stuff
-out. So your application should not be surpriced at all by random data
-on the receive line when it starts up.
-
-Thanks,
-
-	tglx
+But, personally, I'm happy to leave it as-is.  The atomic vs. non-atomic
+flags look to me like a micro-optimization that we should use when we
+_know_ there will be some tangible benefit.  Otherwise, they're just
+something extra for developers to trip over and cause very subtle bugs.
