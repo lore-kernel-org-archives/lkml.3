@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab3FCNzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:55:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22315 "EHLO mx1.redhat.com"
+	id S1757654Ab3FCOAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:00:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31234 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab3FCNzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:55:02 -0400
-Date: Mon, 3 Jun 2013 15:54:22 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@calxeda.com>
-Subject: Re: [PATCH 3/4] perf tools: Add attr<num> syntax to event parser
-Message-ID: <20130603135421.GB8758@krava.brq.redhat.com>
-References: <1369991785-10499-1-git-send-email-rric@kernel.org>
- <1369991785-10499-4-git-send-email-rric@kernel.org>
+	id S1754306Ab3FCOAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 10:00:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,793,1363158000"; 
+   d="scan'208";a="311567485"
+Message-ID: <51ACA15C.4060101@linux.intel.com>
+Date: Mon, 03 Jun 2013 16:59:56 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369991785-10499-4-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v8 net-next 5/7] net: simple poll/select low latency socket
+ poll
+References: <20130603080107.18273.34279.stgit@ladj378.jer.intel.com>  <20130603080200.18273.52073.stgit@ladj378.jer.intel.com> <1370265324.24311.136.camel@edumazet-glaptop>
+In-Reply-To: <1370265324.24311.136.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:16:24AM +0200, Robert Richter wrote:
-> From: Robert Richter <robert.richter@calxeda.com>
-> 
-> The event parser is limited to update only a subset of all fields in
-> struct perf_event_attr (config*, period, branch_type). We are not able
-> to set other attr fields, esp. flags.
-> 
-> Introducing a new syntax to set any field of the event attribute by
-> using an index to the u64 value to be used within struct
-> perf_event_attr. The new syntax attr<num> is similar to config<num>,
-> but <num> specifies the index to be used. E.g. attr5:23 sets bit 23 of
-> the flag field of attr.
-> 
-> The persistent event implementation is a use case of the above. In
-> this case sysfs provides:
-> 
->  /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
->  /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
+On 03/06/2013 16:15, Eric Dumazet wrote:
+> On Mon, 2013-06-03 at 11:02 +0300, Eliezer Tamir wrote:
+>>   	sock = file->private_data;
+>> -	return sock->ops->poll(file, sock, wait);
+>> +
+>> +	poll_result = sock->ops->poll(file, sock, wait);
+>> +
+>> +	if (!(poll_result & (POLLRDNORM | POLLERR | POLLRDHUP | POLLHUP)) &&
+>> +		sk_valid_ll(sock->sk) && sk_poll_ll(sock->sk, 1))
+>> +			poll_result = sock->ops->poll(file, sock, NULL);
+>> +
+>> +	return poll_result;
+>>   }
+>>
+>>   static int sock_mmap(struct file *file, struct vm_area_struct *vma)
+>>
+>
+>
+> In fact, for TCP, POLLOUT event being ready can also be triggered by
+> incoming messages, as the ACK might allow the user application to push
+> more data in the write queue.
+>
+> And you might check wait->_key to avoid testing flags that user is not
+> interested into.
 
-good idea, you probably need to update:
-Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+yes, comparing to _key is more correct.
+In any case this needs to be completely rewritten for support for
+working well with a large number of sockets.
 
-also.. there's so far only mce_record event AFAICS, and this seems
-to be initialized at the time when sysfs's not ready so I dont get
-the sysfs entries for it.. and since there's no other event yet,
-the sysfs is not updated/populated later.. I think ;)
-
-I'll probably tweak it somehow later, but if there was anything
-simple I could do or I missed something please let me know, that
-would speed up my testing
-
-thanks,
-jirka
+-Eliezer
