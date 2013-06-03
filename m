@@ -1,108 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab3FCExN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 00:53:13 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52664 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3FCExD (ORCPT
+	id S1751349Ab3FCEz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 00:55:57 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:65062 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3FCEzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 00:53:03 -0400
-Message-ID: <51AC2121.1060903@linux.vnet.ibm.com>
-Date: Mon, 03 Jun 2013 12:52:49 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 3 Jun 2013 00:55:51 -0400
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51ABFF6A.60206@linux.vnet.ibm.com> <1370228941.5988.66.camel@marge.simpson.net> <51AC0CD4.9070302@linux.vnet.ibm.com> <1370231597.5988.79.camel@marge.simpson.net>
-In-Reply-To: <1370231597.5988.79.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060304-4790-0000-0000-00000897E623
+In-Reply-To: <1370015432-17259-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1370015432-17259-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1370015432-17259-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Mon, 3 Jun 2013 10:25:50 +0530
+Message-ID: <CAKohpomwHMP=0hxkv4rLRWty28h6F408wmPq6FU_vixL1X-krA@mail.gmail.com>
+Subject: Re: [RFC PATCH v0 1/2] dma: move dw_dmac driver to an own directory
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 11:53 AM, Mike Galbraith wrote:
-> On Mon, 2013-06-03 at 11:26 +0800, Michael Wang wrote: 
->> On 06/03/2013 11:09 AM, Mike Galbraith wrote:
->>> On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
->>>> On 05/28/2013 01:05 PM, Michael Wang wrote:
->>>>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
->>>>> this will bring benefit if waker's cpu cached hot data for wakee, or the
->>>>> extreme ping-pong case.
->>>>>
->>>>> And testing show it could benefit hackbench 15% at most.
->>>>>
->>>>> However, the whole stuff is somewhat blindly and time-consuming, some
->>>>> workload therefore suffer.
->>>>>
->>>>> And testing show it could damage pgbench 50% at most.
->>>>>
->>>>> Thus, wake-affine stuff should be smarter, and realise when to stop
->>>>> it's thankless effort.
->>>>
->>>> Is there any comments?
->>>
->>> (I haven't had time to test-drive yet, -rt munches time like popcorn)
->>
->> I see ;-)
->>
->> During my testing, this one works well on the box, solved the issues of
->> pgbench and won't harm hackbench any, I think we have caught some good
->> point here :)
-> 
-> Some wider spectrum testing needs doing though.
+On 31 May 2013 21:20, Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
+> diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+> +obj-$(CONFIG_DW_DMAC) += dw/
 
-That's right, the benchmark I currently have is hackbench, pgbench,
-ebizzy, aim7, tbench, dbench, kbench, is there any other good candidate
-we should add to the test?
+> +++ b/drivers/dma/dw/Makefile
+> +obj-$(CONFIG_DW_DMAC) += dw_dmac.o
 
-Hackbench is a good
-> sign, but localhost and db type stuff that really suffer from misses
-> would be good to test.  Java crud tends to be sensitive too.  I used to
-> watch vmark (crap) as an indicator,
-
-I can't get it from google...do you mean vmmark?
-
-if you see unhappiness there, you'll
-> very likely see it in other loads as well, it is very fond of cache
-> affine wakeups, but loathes preemption (super heavy loads usually do).
-
-I agree that this idea, in other work, 'stop wake-affine when current is
-busy with wakeup' may miss the chance to bring benefit, although I could
-not find such workload, but I can't do promise...
-
-However, IMHO, wake-affine is actually an additional accelerator, if we
-want to adopt it without any knob, what we have to make sure is, it
-won't damage any workload, rather than it catch all the chances to bring
-benefit.
-
-Here my point is, we stop the additional accelerator if it seems to
-bring damage, and we currently found one such case ;-)
-
-So the worst result of this idea is missing the timing to accelerate,
-however, since such acceleration will sacrifice others and we don't want
-knob, just filter it out.
-
-Regards,
-Michael Wang
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+The lower one should be obj-y += dw_dmac.o as this will always
+be true.
