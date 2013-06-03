@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab3FCOfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:35:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758299Ab3FCOfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:35:07 -0400
-Date: Mon, 03 Jun 2013 10:34:41 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <1370270081-pv4wkd99-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130603132641.GB18588@dhcp22.suse.cz>
-References: <1369770771-8447-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1369770771-8447-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130603132641.GB18588@dhcp22.suse.cz>
-Subject: Re: [PATCH v3 2/2] migrate: add migrate_entry_wait_huge()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1758206Ab3FCOg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:36:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36370 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757274Ab3FCOgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 10:36:54 -0400
+Date: Mon, 3 Jun 2013 07:37:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Michal Simek <monstr@monstr.eu>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org,
+        Graeme Smecher <gsmecher@threespeedlogic.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 1/2] xilinx systemace: Fix device name assignment for
+ SystemACE (from "xs`" to "xsa").
+Message-ID: <20130603143722.GA7651@kroah.com>
+References: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+ <51AC9068.7050203@monstr.eu>
+ <20130603142242.GB7024@kroah.com>
+ <51ACA928.4090601@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <20130603132641.GB18588@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <51ACA928.4090601@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 03:26:41PM +0200, Michal Hocko wrote:
-> On Tue 28-05-13 15:52:51, Naoya Horiguchi wrote:
-> > When we have a page fault for the address which is backed by a hugepage
-> > under migration, the kernel can't wait correctly and do busy looping on
-> > hugepage fault until the migration finishes.
-> > This is because pte_offset_map_lock() can't get a correct migration entry
-> > or a correct page table lock for hugepage.
-> > This patch introduces migration_entry_wait_huge() to solve this.
+On Mon, Jun 03, 2013 at 04:33:12PM +0200, Michal Simek wrote:
+> On 06/03/2013 04:22 PM, Greg Kroah-Hartman wrote:
+> > On Mon, Jun 03, 2013 at 02:47:36PM +0200, Michal Simek wrote:
+> >> Hi Greg,
+> >>
+> >> do you want to take these two patches through your tree?
 > > 
-> > Note that the caller, hugetlb_fault(), gets the pointer to the "leaf"
-> > entry with huge_pte_offset() inside which all the arch-dependency of
-> > the page table structure are. So migration_entry_wait_huge() and
-> > __migration_entry_wait() are free from arch-dependency.
-> > 
-> > ChangeLog v3:
-> >  - use huge_pte_lockptr
-> > 
-> > ChangeLog v2:
-> >  - remove dup in migrate_entry_wait_huge()
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Reviewed-by: Rik van Riel <riel@redhat.com>
-> > Cc: stable@vger.kernel.org # 2.6.35
+> > Why would I be sending in drivers/block/* patches?  I don't have a tree
+> > for that, do I?
 > 
-> OK, this looks good to me and I guess you can safely replace
-> huge_pte_lockptr by &(mm)->page_table_lock so you can implement this
-> even without risky 1/2 of this series. The patch should be as simple as
-> possible especially when it goes to the stable.
+> Ah ok. I took you because you are 3rd based on get_maintainer patch (50% commit signer)
+> 
+> 
+> >> Or should I take them through my microblaze tree?
+> > 
+> > Please do, or send them to the block maintainer.
+> 
+> Who is drivers/block maintainer? I can't see anyone in MAINTAINERS file.
 
-Yes, I agree.
+Jens is the block/ maintainer, so I imagine he's also the drivers/block/
+maintainer as well.  If not, he would know who.
 
-> > Without 1/2 dependency
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+thanks,
 
-Thanks,
-Naoya
+greg k-h
