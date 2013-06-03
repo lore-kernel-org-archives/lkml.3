@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab3FCVmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:42:33 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33559 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab3FCVm1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:42:27 -0400
+	id S1758678Ab3FCVnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:43:25 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46375 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757307Ab3FCVnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 17:43:16 -0400
+Date: Mon, 3 Jun 2013 17:43:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130603214304.GL15576@cmpxchg.org>
+References: <20130530150539.GA18155@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601102058.GA19474@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306031102480.7956@chino.kir.corp.google.com>
+ <20130603185433.GK15576@cmpxchg.org>
+ <alpine.DEB.2.02.1306031159060.7956@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1369217581-16285-2-git-send-email-serban.constantinescu@arm.com>
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
-	<1369217581-16285-2-git-send-email-serban.constantinescu@arm.com>
-Date: Mon, 3 Jun 2013 14:42:26 -0700
-Message-ID: <CAMP5Xge1QM-z0Y=cKAKwN8ubj+iZVtOWvNHdQb02MHMjEHTvYg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/6] staging: android: binder: modify struct
- binder_write_read to use size_t
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306031159060.7956@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
-<serban.constantinescu@arm.com> wrote:
-> This change mirrors the userspace operation where struct binder_write_read
-> members that specify the buffer size and consumed size are size_t elements.
->
-> The patch also fixes the binder_thread_write() and binder_thread_read()
-> functions prototypes to conform with the definition of binder_write_read.
->
-> The changes do not affect existing 32bit ABI.
->
-> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-> ---
->  drivers/staging/android/binder.c |   10 +++++-----
->  drivers/staging/android/binder.h |    8 ++++----
->  2 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index 1567ac2..ce70909 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
->  }
->
->  int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
-> -                       void __user *buffer, int size, signed long *consumed)
-> +                       void __user *buffer, size_t size, size_t *consumed)
->  {
->         uint32_t cmd;
->         void __user *ptr = buffer + *consumed;
-> @@ -2080,8 +2080,8 @@ static int binder_has_thread_work(struct binder_thread *thread)
->
->  static int binder_thread_read(struct binder_proc *proc,
->                               struct binder_thread *thread,
-> -                             void  __user *buffer, int size,
-> -                             signed long *consumed, int non_block)
-> +                             void  __user *buffer, size_t size,
-> +                             size_t *consumed, int non_block)
->  {
->         void __user *ptr = buffer + *consumed;
->         void __user *end = buffer + size;
-> @@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->                         goto err;
->                 }
->                 binder_debug(BINDER_DEBUG_READ_WRITE,
-> -                            "%d:%d write %ld at %08lx, read %ld at %08lx\n",
-> +                            "%d:%d write %zd at %08lx, read %zd at %08lx\n",
->                              proc->pid, thread->pid, bwr.write_size,
->                              bwr.write_buffer, bwr.read_size, bwr.read_buffer);
->
-> @@ -2604,7 +2604,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->                         }
->                 }
->                 binder_debug(BINDER_DEBUG_READ_WRITE,
-> -                            "%d:%d wrote %ld of %ld, read return %ld of %ld\n",
-> +                            "%d:%d wrote %zd of %zd, read return %zd of %zd\n",
->                              proc->pid, thread->pid, bwr.write_consumed, bwr.write_size,
->                              bwr.read_consumed, bwr.read_size);
->                 if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
-> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-> index dbe81ce..edab249 100644
-> --- a/drivers/staging/android/binder.h
-> +++ b/drivers/staging/android/binder.h
-> @@ -67,11 +67,11 @@ struct flat_binder_object {
->   */
->
->  struct binder_write_read {
-> -       signed long     write_size;     /* bytes to write */
-> -       signed long     write_consumed; /* bytes consumed by driver */
-> +       size_t write_size;      /* bytes to write */
-> +       size_t write_consumed;  /* bytes consumed by driver */
->         unsigned long   write_buffer;
-> -       signed long     read_size;      /* bytes to read */
-> -       signed long     read_consumed;  /* bytes consumed by driver */
-> +       size_t read_size;       /* bytes to read */
-> +       size_t read_consumed;   /* bytes consumed by driver */
->         unsigned long   read_buffer;
->  };
->
-> --
-> 1.7.9.5
->
+On Mon, Jun 03, 2013 at 12:09:22PM -0700, David Rientjes wrote:
+> On Mon, 3 Jun 2013, Johannes Weiner wrote:
+> 
+> > > It's not necessarily harder if you assign the userspace oom handlers to 
+> > > the root of your subtree with access to more memory than the children.  
+> > > There is no "inability" to write a proper handler, but when you have 
+> > > dozens of individual users implementing their own userspace handlers with 
+> > > changing memcg limits over time, then you might find it hard to have 
+> > > perfection every time.  If we had perfection, we wouldn't have to worry 
+> > > about oom in the first place.  We can't just let these gazillion memcgs 
+> > > sit spinning forever because they get stuck, either.  That's why we've 
+> > > used this solution for years as a failsafe.  Disabling the oom killer 
+> > > entirely, even for a memcg, is ridiculous, and if you don't have a grace 
+> > > period then oom handlers themselves just don't work.
+> > 
+> > It's only ridiculous if your OOM handler is subject to the OOM
+> > situation it's trying to handle.
+> > 
+> 
+> You're suggesting the oom handler can't be subject to its own memcg 
+> limits, independent of the memcg it is handling?  If we demand that such a 
+> handler be attached to the root memcg, that breaks the memory isolation 
+> that memcg provides.  We constrain processes to a memcg for the purposes 
+> of that isolation, so it cannot use more resources than allotted.
 
-Acked-by: Arve Hjønnevåg <arve@android.com>
+I guess the traditional use case is that you have a job manager that
+you trust, that sets up the groups, configures their limits etc. and
+would also know more about the jobs than the kernel to act as the OOM
+killer as well.  Since it's trusted and not expected to consume any
+significant amounts of memory by itself, the memcg code assumes that
+it does not run in a cgroup itself, it's just not thought of as being
+part of the application class.
 
---
-Arve Hjønnevåg
+I'm not saying it should necessarily stay that way, but it's also not
+a completely ridiculous model.
+
+> > What we could do is allow one task in the group to be the dedicated
+> > OOM handler.  If we catch this task in the charge path during an OOM
+> > situation, we fall back to the kernel OOM handler.
+> > 
+> 
+> I'm not sure it even makes sense to have more than one oom handler per 
+> memcg and the synchronization that requires in userspace to get the right 
+> result, so I didn't consider dedicating a single oom handler.  That would 
+> be an entirely new interface, though, since we may have multiple processes 
+> waiting on memory.oom_control that aren't necessarily handlers; they grab 
+> a snapshot of memory, do logging, etc.
+
+It will probably be hard to extend the existing oom_control interface.
+
+But we could add a separate one where you put in a pid or 0 (kernel)
+instead of a boolean value, which then enables or disables the
+userspace OOM handling task for the whole subtree.  If that task
+enters the OOM path, the kernel handler is invoked.  If the task dies,
+the kernel handler is permanently re-enabled.  Everybody is free to
+poll that interface for OOM notifications, not only that one task.
+
+Combined with the "enter waitqueue after unwinding page fault stack"
+patch, would this fully cover your usecase?
