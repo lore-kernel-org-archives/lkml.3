@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3FCD0d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:26:33 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33222 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3FCD00 (ORCPT
+	id S1751954Ab3FCD1U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 23:27:20 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63854 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab3FCD1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:26:26 -0400
-Message-ID: <51AC0CD4.9070302@linux.vnet.ibm.com>
-Date: Mon, 03 Jun 2013 11:26:12 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sun, 2 Jun 2013 23:27:12 -0400
+Date: Sun, 2 Jun 2013 20:27:11 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 08/10] clk: add basic Rockchip rk3066a clock support
+Message-ID: <20130603032711.GA3379@quad.lixom.net>
+References: <201306030055.15413.heiko@sntech.de>
+ <201306030100.31647.heiko@sntech.de>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51ABFF6A.60206@linux.vnet.ibm.com> <1370228941.5988.66.camel@marge.simpson.net>
-In-Reply-To: <1370228941.5988.66.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060303-7014-0000-0000-0000031B89A7
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306030100.31647.heiko@sntech.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 11:09 AM, Mike Galbraith wrote:
-> On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
->> On 05/28/2013 01:05 PM, Michael Wang wrote:
->>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
->>> this will bring benefit if waker's cpu cached hot data for wakee, or the
->>> extreme ping-pong case.
->>>
->>> And testing show it could benefit hackbench 15% at most.
->>>
->>> However, the whole stuff is somewhat blindly and time-consuming, some
->>> workload therefore suffer.
->>>
->>> And testing show it could damage pgbench 50% at most.
->>>
->>> Thus, wake-affine stuff should be smarter, and realise when to stop
->>> it's thankless effort.
->>
->> Is there any comments?
+On Mon, Jun 03, 2013 at 01:00:31AM +0200, Heiko Stübner wrote:
+> This adds basic support for clocks on Rockchip rk3066 SoCs.
+> The clock handling thru small dt nodes is heavily inspired by the
+> sunxi clk code.
 > 
-> (I haven't had time to test-drive yet, -rt munches time like popcorn)
+> The clock specifiers are named as "x-cortex-a9-x", because the clock
+> semantics are the same thru the whole cortex-a9 series (rk30xx,
+> rk3188, rk2928; but not the other rk29 SoCs, which are Cortex-A8 based).
 
-I see ;-)
+Hi,
 
-During my testing, this one works well on the box, solved the issues of
-pgbench and won't harm hackbench any, I think we have caught some good
-point here :)
+I think you're better off naming them after the first SoC of that series.
+Otherwise, if there's an A9-based platform in the future that is not
+compatible, things will get complicated.
 
-Regards,
-Michael Wang
+It's pretty common that we do this for other kinds of devices, so it seems
+appropriate for clock drivers too.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
+-Olof
 
