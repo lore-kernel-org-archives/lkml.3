@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab3FCQgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:36:43 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:44405 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3FCQgl (ORCPT
+	id S1759239Ab3FCQhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:37:39 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:64578 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758076Ab3FCQhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:36:41 -0400
-Message-ID: <51ACC60B.8090504@candelatech.com>
-Date: Mon, 03 Jun 2013 09:36:27 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Mon, 3 Jun 2013 12:37:37 -0400
+X-IronPort-AV: E=Sophos;i="4.87,794,1363132800"; 
+   d="scan'208";a="5269240"
+Message-ID: <1370277455.24512.46.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 5/5] arm64/xen: introduce CONFIG_XEN and
+ hypercall.S on ARM64
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 3 Jun 2013 17:37:35 +0100
+In-Reply-To: <20130603162517.GC32295@arm.com>
+References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
+	 <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20130603162517.GC32295@arm.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-To: Joe Lawrence <joe.lawrence@stratus.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: Please add to stable:  module: don't unlink the module until
- we've removed all exposure.
-References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com> <51ACBD6A.1030304@candelatech.com>
-In-Reply-To: <51ACBD6A.1030304@candelatech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 08:59 AM, Ben Greear wrote:
-> On 06/03/2013 07:17 AM, Joe Lawrence wrote:
->
->>>> Hi Rusty,
->>>>
->>>> I had pointed Ben (offlist) to that bugzilla entry without realizing
->>>> there were other earlier related fixes in this space.  Re-viewing bz-
->>>> 58011, it looks like it was opened against 3.8.12, while Ben and myself
->>>> had encountered module loading problems in versions 3.9 and
->>>> 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
->>>> a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
->>>> kobject_put()".
->>>>
->>>> That said, it doesn't appear that commit 944a1fa "module: don't unlink the
->>>> module until we've removed all exposure" has not made it into any stable
->>>> kernel.  On my system, applying this on top of 3.9 resolved a module
->>>> unload/load race that would occasionally occur on boot (two video adapters
->>>> of the same make, the module unloads for whatever reason and I see "module
->>>> is already loaded" and "sysfs: cannot create duplicate filename
->>>> '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
->>>> were interested in these warnings/crashes.
->
-> It at least works around the problem for me as well.  But, a more rare
-> migration/[0-3] (I think) related lockup still exists in 3.9.4 for me,
-> so I will also try applying that other kobject patch and continue testing
-> today...
+On Mon, 2013-06-03 at 17:25 +0100, Catalin Marinas wrote:
+> On Mon, Jun 03, 2013 at 04:33:44PM +0100, Stefano Stabellini wrote:
+> > --- /dev/null
+> > +++ b/arch/arm64/xen/hypercall.S
+> ...
+> > +/*
+> > + * The Xen hypercall calling convention is very similar to the ARM AEBI
+> > + * procedure calling convention: the first paramter is passed in x0, the
+> > + * second in x1, the third in x2 and the fourth in x3. Considering that
+> > + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
 
-Well, that other kobject patch is already in 3.9.4, so I think it's still
-a good idea to include the
-"module: don't unlink the module until we've removed all exposure."
-patch in stable.  I have a decent test case to reproduce the crash, so if someone
-wants me to test other patches instead, then I will do so.
+                                                          parameter
 
-Thanks,
-Ben
+> > + * in rx, differently from the procedure calling convention of using the
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+          ^x4 not rx
+
+> > + * stack for that case.
+> 
+> You may want to use the AArch64 ABI here where parameters are passed in
+> x0-x7, return in x0.
+
+I think that is actually what we are doing (up to 5 arguments), the
+"Considering that ..." bit at the end is a left over of the 32 bit
+version I think.
+
+> 
+> BTW, I think it's missing a MAINTAINERS file update.
+> 
+> Otherwise, the series looks good. How do you plan to upstream this?
+> 
+
 
