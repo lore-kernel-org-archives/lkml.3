@@ -1,228 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3FCPGR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:06:17 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:42433 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758602Ab3FCPEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:04:20 -0400
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Hannes Reinecke <hare@suse.de>, Stefan Weinhuber <wein@de.ibm.com>
-Subject: [PATCH 2/9] dasd: make number of retries configurable
-Date: Mon,  3 Jun 2013 17:03:15 +0200
-Message-Id: <1370271802-30019-3-git-send-email-schwidefsky@de.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
-References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060314-5024-0000-0000-000006396332
+	id S1758566Ab3FCPKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:10:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752723Ab3FCPKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:10:51 -0400
+Message-ID: <1370272217.30975.283.camel@ul30vt.home>
+Subject: Re: [PATCH] iommu: amd/intel: Remove multifunction assumption
+ around	grouping
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 03 Jun 2013 09:10:17 -0600
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D56A9F4@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <20130530183855.14612.15585.stgit@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D56A9F4@039-SN2MPN1-013.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Reinecke <hare@suse.de>
+On Mon, 2013-06-03 at 07:28 +0000, Sethi Varun-B16395 wrote:
+> > -----Original Message-----
+> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> > bounces@lists.linux-foundation.org] On Behalf Of Alex Williamson
+> > Sent: Friday, May 31, 2013 12:09 AM
+> > To: iommu@lists.linux-foundation.org; dwmw2@infradead.org;
+> > joro@8bytes.org
+> > Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: [PATCH] iommu: amd/intel: Remove multifunction assumption around
+> > grouping
+> > 
+> > If a device is multifunction and does not have ACS enabled then we assume
+> > that the entire package lacks ACS and use function 0 as the base of the
+> > group.  The PCIe spec however states that components are permitted to
+> > implement ACS on some, none, or all of their applicable functions.  It's
+> > therefore conceivable that function 0 may be fully independent and
+> > support ACS while other functions do not.  Instead use the lowest
+> > function of the slot that does not have ACS enabled as the base of the
+> > group.  This may be the current device, which is intentional.  So long as
+> > we use a consistent algorithm, all the non-ACS functions will be grouped
+> > together and ACS functions will get separate groups.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  drivers/iommu/amd_iommu.c   |   25 +++++++++++++++++++------
+> >  drivers/iommu/intel-iommu.c |   25 +++++++++++++++++++------
+> >  2 files changed, 38 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c index
+> > 1d84be1..565c745 100644
+> > --- a/drivers/iommu/amd_iommu.c
+> > +++ b/drivers/iommu/amd_iommu.c
+> > @@ -287,14 +287,27 @@ static struct pci_dev *get_isolation_root(struct
+> > pci_dev *pdev)
+> > 
+> >  	/*
+> >  	 * If it's a multifunction device that does not support our
+> > -	 * required ACS flags, add to the same group as function 0.
+> > +	 * required ACS flags, add to the same group as lowest numbered
+> > +	 * function that also does not suport the required ACS flags.
+> >  	 */
+> >  	if (dma_pdev->multifunction &&
+> > -	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+> > -		swap_pci_ref(&dma_pdev,
+> > -			     pci_get_slot(dma_pdev->bus,
+> > -					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+> > -					  0)));
+> > +	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+> > +		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+> > +
+> > +		for (i = 0; i < 8; i++) {
+> > +			struct pci_dev *tmp;
+> > +
+> > +			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+> > +			if (!tmp)
+> > +				continue;
+> > +
+> > +			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+> > +				swap_pci_ref(&dma_pdev, tmp);
+> > +				break;
+> > +			}
+> > +			pci_dev_put(tmp);
+> > +		}
+> > +	}
+> > 
+> >  	/*
+> >  	 * Devices on the root bus go through the iommu.  If that's not us,
+> > diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> > index b4f0e28..eec0d3e 100644
+> > --- a/drivers/iommu/intel-iommu.c
+> > +++ b/drivers/iommu/intel-iommu.c
+> > @@ -4182,14 +4182,27 @@ static int intel_iommu_add_device(struct device
+> > *dev)
+> > 
+> >  	/*
+> >  	 * If it's a multifunction device that does not support our
+> > -	 * required ACS flags, add to the same group as function 0.
+> > +	 * required ACS flags, add to the same group as lowest numbered
+> > +	 * function that also does not suport the required ACS flags.
+> >  	 */
+> >  	if (dma_pdev->multifunction &&
+> > -	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+> > -		swap_pci_ref(&dma_pdev,
+> > -			     pci_get_slot(dma_pdev->bus,
+> > -					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+> > -					  0)));
+> > +	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+> > +		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+> > +
+> > +		for (i = 0; i < 8; i++) {
+> [Sethi Varun-B16395] A macro like PCI_MAX_FUNCTIONS would improve code readability.
 
-Instead of having the number of retries hard-coded in the various
-functions we should be using a default retry value, which can
-be modified via sysfs.
+Ok, I see a couple defines of PCI_MAX_FUNCTION, I guess we could add one
+to iommu/pci.h too.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Stefan Weinhuber <wein@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
----
- drivers/s390/block/dasd_devmap.c |   41 ++++++++++++++++++++++++++++++++++++++
- drivers/s390/block/dasd_diag.c   |    3 ++-
- drivers/s390/block/dasd_eckd.c   |   11 ++++++----
- drivers/s390/block/dasd_fba.c    |    5 ++++-
- drivers/s390/block/dasd_int.h    |    3 +++
- 5 files changed, 57 insertions(+), 6 deletions(-)
+> > +			struct pci_dev *tmp;
+> > +
+> > +			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+> > +			if (!tmp)
+> > +				continue;
+> > +
+> > +			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+> > +				swap_pci_ref(&dma_pdev, tmp);
+> > +				break;
+> > +			}
+> > +			pci_dev_put(tmp);
+> > +		}
+> > +	}
+> 
+> It would be nice if this code could be represented as a function in a common file like iommu/pci.c.
 
-diff --git a/drivers/s390/block/dasd_devmap.c b/drivers/s390/block/dasd_devmap.c
-index a71bb8a..bc3e7af 100644
---- a/drivers/s390/block/dasd_devmap.c
-+++ b/drivers/s390/block/dasd_devmap.c
-@@ -1240,6 +1240,46 @@ dasd_expires_store(struct device *dev, struct device_attribute *attr,
- 
- static DEVICE_ATTR(expires, 0644, dasd_expires_show, dasd_expires_store);
- 
-+static ssize_t
-+dasd_retries_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct dasd_device *device;
-+	int len;
-+
-+	device = dasd_device_from_cdev(to_ccwdev(dev));
-+	if (IS_ERR(device))
-+		return -ENODEV;
-+	len = snprintf(buf, PAGE_SIZE, "%lu\n", device->default_retries);
-+	dasd_put_device(device);
-+	return len;
-+}
-+
-+static ssize_t
-+dasd_retries_store(struct device *dev, struct device_attribute *attr,
-+		   const char *buf, size_t count)
-+{
-+	struct dasd_device *device;
-+	unsigned long val;
-+
-+	device = dasd_device_from_cdev(to_ccwdev(dev));
-+	if (IS_ERR(device))
-+		return -ENODEV;
-+
-+	if ((strict_strtoul(buf, 10, &val) != 0) ||
-+	    (val > DASD_RETRIES_MAX)) {
-+		dasd_put_device(device);
-+		return -EINVAL;
-+	}
-+
-+	if (val)
-+		device->default_retries = val;
-+
-+	dasd_put_device(device);
-+	return count;
-+}
-+
-+static DEVICE_ATTR(retries, 0644, dasd_retries_show, dasd_retries_store);
-+
- static ssize_t dasd_reservation_policy_show(struct device *dev,
- 					    struct device_attribute *attr,
- 					    char *buf)
-@@ -1350,6 +1390,7 @@ static struct attribute * dasd_attrs[] = {
- 	&dev_attr_erplog.attr,
- 	&dev_attr_failfast.attr,
- 	&dev_attr_expires.attr,
-+	&dev_attr_retries.attr,
- 	&dev_attr_reservation_policy.attr,
- 	&dev_attr_last_known_reservation_state.attr,
- 	&dev_attr_safe_offline.attr,
-diff --git a/drivers/s390/block/dasd_diag.c b/drivers/s390/block/dasd_diag.c
-index cc06033..1548422 100644
---- a/drivers/s390/block/dasd_diag.c
-+++ b/drivers/s390/block/dasd_diag.c
-@@ -359,6 +359,7 @@ dasd_diag_check_device(struct dasd_device *device)
- 	}
- 
- 	device->default_expires = DIAG_TIMEOUT;
-+	device->default_retries = DIAG_MAX_RETRIES;
- 
- 	/* Figure out position of label block */
- 	switch (private->rdc_data.vdev_class) {
-@@ -555,7 +556,7 @@ static struct dasd_ccw_req *dasd_diag_build_cp(struct dasd_device *memdev,
- 			recid++;
- 		}
- 	}
--	cqr->retries = DIAG_MAX_RETRIES;
-+	cqr->retries = memdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	if (blk_noretry_request(req) ||
- 	    block->base->features & DASD_FEATURE_FAILFAST)
-diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
-index 6a44b27..f4315dc 100644
---- a/drivers/s390/block/dasd_eckd.c
-+++ b/drivers/s390/block/dasd_eckd.c
-@@ -1682,6 +1682,9 @@ dasd_eckd_check_characteristics(struct dasd_device *device)
- 
- 	/* set default timeout */
- 	device->default_expires = DASD_EXPIRES;
-+	/* set default retry count */
-+	device->default_retries = DASD_RETRIES;
-+
- 	if (private->gneq) {
- 		value = 1;
- 		for (i = 0; i < private->gneq->timeout.value; i++)
-@@ -2659,7 +2662,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_single(
- 	cqr->block = block;
- 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
- 	cqr->lpm = startdev->path_data.ppm;
--	cqr->retries = 256;
-+	cqr->retries = startdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	cqr->status = DASD_CQR_FILLED;
- 	return cqr;
-@@ -2834,7 +2837,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_track(
- 	cqr->block = block;
- 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
- 	cqr->lpm = startdev->path_data.ppm;
--	cqr->retries = 256;
-+	cqr->retries = startdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	cqr->status = DASD_CQR_FILLED;
- 	return cqr;
-@@ -3127,7 +3130,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_tpm_track(
- 	cqr->block = block;
- 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
- 	cqr->lpm = startdev->path_data.ppm;
--	cqr->retries = 256;
-+	cqr->retries = startdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	cqr->status = DASD_CQR_FILLED;
- 	return cqr;
-@@ -3330,7 +3333,7 @@ static struct dasd_ccw_req *dasd_raw_build_cp(struct dasd_device *startdev,
- 	cqr->block = block;
- 	cqr->expires = startdev->default_expires * HZ;
- 	cqr->lpm = startdev->path_data.ppm;
--	cqr->retries = 256;
-+	cqr->retries = startdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	cqr->status = DASD_CQR_FILLED;
- 
-diff --git a/drivers/s390/block/dasd_fba.c b/drivers/s390/block/dasd_fba.c
-index 4dd0e2f..d232c83 100644
---- a/drivers/s390/block/dasd_fba.c
-+++ b/drivers/s390/block/dasd_fba.c
-@@ -29,6 +29,8 @@
- #endif				/* PRINTK_HEADER */
- #define PRINTK_HEADER "dasd(fba):"
- 
-+#define FBA_DEFAULT_RETRIES 32
-+
- #define DASD_FBA_CCW_WRITE 0x41
- #define DASD_FBA_CCW_READ 0x42
- #define DASD_FBA_CCW_LOCATE 0x43
-@@ -167,6 +169,7 @@ dasd_fba_check_characteristics(struct dasd_device *device)
- 	}
- 
- 	device->default_expires = DASD_EXPIRES;
-+	device->default_retries = FBA_DEFAULT_RETRIES;
- 	device->path_data.opm = LPM_ANYPATH;
- 
- 	readonly = dasd_device_is_ro(device);
-@@ -369,7 +372,7 @@ static struct dasd_ccw_req *dasd_fba_build_cp(struct dasd_device * memdev,
- 	cqr->memdev = memdev;
- 	cqr->block = block;
- 	cqr->expires = memdev->default_expires * HZ;	/* default 5 minutes */
--	cqr->retries = 32;
-+	cqr->retries = memdev->default_retries;
- 	cqr->buildclk = get_tod_clock();
- 	cqr->status = DASD_CQR_FILLED;
- 	return cqr;
-diff --git a/drivers/s390/block/dasd_int.h b/drivers/s390/block/dasd_int.h
-index 0785bd9..ad42075 100644
---- a/drivers/s390/block/dasd_int.h
-+++ b/drivers/s390/block/dasd_int.h
-@@ -224,6 +224,8 @@ struct dasd_ccw_req {
- /* default expiration time*/
- #define DASD_EXPIRES	  300
- #define DASD_EXPIRES_MAX  40000000
-+#define DASD_RETRIES	  256
-+#define DASD_RETRIES_MAX  32768
- 
- /* per dasd_ccw_req flags */
- #define DASD_CQR_FLAGS_USE_ERP   0	/* use ERP for this request */
-@@ -466,6 +468,7 @@ struct dasd_device {
- 
- 	/* default expiration time in s */
- 	unsigned long default_expires;
-+	unsigned long default_retries;
- 
- 	struct dentry *debugfs_dentry;
- 	struct dasd_profile profile;
--- 
-1.7.9.5
+I agree, but I haven't gotten any feedback on iommu/pci.c yet and didn't
+want this patch to depend on that series.  There are probably more
+opportunities to consolidate there.  Thanks,
+
+Alex
+
 
