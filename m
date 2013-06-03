@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390Ab3FCO10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:27:26 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42896 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758040Ab3FCO1Z (ORCPT
+	id S1758470Ab3FCO1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:27:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36275 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab3FCO1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:27:25 -0400
-Message-ID: <1370269642.2910.4.camel@dabdike>
-Subject: Re: [PATCH 0/4] EFI 1:1 mapping
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Date: Mon, 03 Jun 2013 07:27:22 -0700
-In-Reply-To: <20130603081148.GB13607@nazgul.tnic>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
-	 <20130602225620.GA5496@srcf.ucam.org> <20130603081148.GB13607@nazgul.tnic>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 10:27:43 -0400
+Date: Mon, 3 Jun 2013 07:28:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        nhorman@tuxdriver.com, vyasevich@gmail.com, davem@davemloft.net
+Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
+ handler
+Message-ID: <20130603142811.GE7024@kroah.com>
+References: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 10:11 +0200, Borislav Petkov wrote:
-> On Sun, Jun 02, 2013 at 11:56:20PM +0100, Matthew Garrett wrote:
-> > I've just run Windows 8 under a hacked up copy of OVMF that dumps
-> > the data passed to SetVirtualAddressMap. It seems that Windows *is*
-> > mapping the runtime services to higher addresses - so presumably the
-> > 1:1 mapping is in addition to the virtual mapping.
-> 
-> But but, once we call SetVirtualAddressMap with the set of addresses of
-> the runtime services, only those can be used after, right? If so, we
-> can't have both (this is at least my understanding)...
+On Mon, Jun 03, 2013 at 03:52:58PM +0800, Xufeng Zhang wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
 
-That's correct.  I think not calling SetVirtualAddressMap() and just
-using a 1:1 mapping is far safer (having looked at what tianocore does
-for SetVirtualAddressMap()).  The chances are that all the UEFI bioses
-are only tested with windows, so the pointer chases it has to do to
-switch address maps only work with the operations windows does.
+Really?  What are you going to do with it if no one objects?
 
-James
+I know I'm sure not going to do anything with it...
 
+(hint, this isn't how you ask for networking stable patches to be
+applied.)
 
+greg k-h
