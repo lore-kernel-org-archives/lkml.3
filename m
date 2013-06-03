@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3FCWsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:48:47 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:56006 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab3FCWsl (ORCPT
+	id S1759365Ab3FCW4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:56:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40970 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758131Ab3FCW4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:48:41 -0400
-Date: Tue, 4 Jun 2013 00:48:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-Message-ID: <20130603224836.GA9388@somewhere>
-References: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 18:56:30 -0400
+Date: Mon, 3 Jun 2013 15:56:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Luebbe <jlu@pengutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] pps-gpio: add device-tree binding and support
+Message-Id: <20130603155627.3f63cfd0ae1cec3c0e0a1444@linux-foundation.org>
+In-Reply-To: <1370083449-11986-1-git-send-email-jlu@pengutronix.de>
+References: <1588516.WvWWFWzAui@wuerfel>
+	<1370083449-11986-1-git-send-email-jlu@pengutronix.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 05:23:05PM +0200, Vincent Guittot wrote:
-> I have faced a sequence where the Idle Load Balance was sometime not
->  triggered for a while on my platform.
-> 
-> CPU 0 and CPU 1 are running tasks and CPU 2 is idle
-> 
-> CPU 1 kicks the Idle Load Balance
-> CPU 1 selects CPU 2 as the new Idle Load Balancer
-> CPU 1 sets NOHZ_BALANCE_KICK for CPU 2
-> CPU 1 sends a reschedule IPI to CPU 2
-> While CPU 2 wakes up, CPU 0 or CPU 1 migrates a waking task A on CPU 2
-> CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
-> Task A quickly goes back to sleep (before a tick occurs on CPU 2)
-> CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
-> 
-> Whenever CPU 2 will be selected for the ILB, reschedule IPI will be not
-> sent to CPU2, which is idle, because NOHZ_BALANCE_KICK is already set
-> and no Idle Load Balance will be performed.
-> 
-> We must wait for the sched softirq to be raised on CPU 2 thanks to
-> another part of the kernel to clear NOHZ_BALANCE_KICKand come back to
-> a normal situation.
-> 
-> The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
-> we can't raise the sched_softirq for the Idle Load Balance.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/core.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 58453b8..51fc715 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1420,7 +1420,8 @@ void scheduler_ipi(void)
->  	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
->  		this_rq()->idle_balance = 1;
->  		raise_softirq_irqoff(SCHED_SOFTIRQ);
-> -	}
-> +	} else
-> +		clear_bit(NOHZ_BALANCE_KICK, nohz_flags(smp_processor_id()));
+On Sat,  1 Jun 2013 12:44:09 +0200 Jan Luebbe <jlu@pengutronix.de> wrote:
 
-But then do we reach this if the IPI happens while running the non-idle task in
-CPU 2? The first got_nohz_idle_kick() test would drop us out early from scheduler_ipi()
-due to the idle_cpu() test. So the flag doesn't get cleared in this case.
+> Instead of allocating a struct pps_gpio_platform_data in the DT case, store
+> the necessary information in struct pps_gpio_device_data itself. This avoids
+> an additional allocation and the ifdef. It also gets rid of some indirection.
+> 
+> Also use dev_err instead of pr_err in the changed code.
+> 
+> ...
+>
+>  static int pps_gpio_probe(struct platform_device *pdev)
+>  {
+>  	struct pps_gpio_device_data *data;
+> -	int irq;
+> +	const char *gpio_label;
+>  	int ret;
+>  	int pps_default_params;
+>  	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
+> +	struct device_node *np = pdev->dev.of_node;
+>  
+> +	/* allocate space for device info */
+> +	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
+> +			GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	if (pdata) {
+> +		data->gpio_pin = pdata->gpio_pin;
+> +		gpio_label = pdata->gpio_label;
+> +
+> +		data->assert_falling_edge = pdata->assert_falling_edge;
+> +		data->capture_clear = pdata->capture_clear;
+> +	} else {
+> +		ret = of_get_gpio(np, 0);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev, "failed to get GPIO from device tree\n");
+> +			return ret;
+> +		}
+> +		data->gpio_pin = ret;
+> +		gpio_label = PPS_GPIO_NAME;
+> +
+> +		if (of_get_property(np, "assert-falling-edge", NULL))
+> +			data->assert_falling_edge = true;
+> +	}
+>  
+>  	/* GPIO setup */
+> -	ret = pps_gpio_setup(pdev);
+> -	if (ret)
+> -		return -EINVAL;
+> +	ret = devm_gpio_request(&pdev->dev, data->gpio_pin, gpio_label);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to request GPIO %u\n",
+> +			data->gpio_pin);
+> +		return ret;
+> +	}
+>  
+> -	/* IRQ setup */
+> -	irq = gpio_to_irq(pdata->gpio_pin);
+> -	if (irq < 0) {
+> -		pr_err("failed to map GPIO to IRQ: %d\n", irq);
+> +	ret = gpio_direction_input(data->gpio_pin);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to set pin direction\n");
+>  		return -EINVAL;
+
+Should we propagate the gpio_direction_input() return value?
+
+>  	}
+>  
+
