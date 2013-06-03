@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab3FCVSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:18:38 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:48552 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773Ab3FCVSd (ORCPT
+	id S1758504Ab3FCVTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:19:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45018 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756973Ab3FCVTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:18:33 -0400
-Message-ID: <1370294292.20051.41.camel@ejdallLaptop>
-Subject: Re: [PATCH v2 1/3] PCI/AER: Fix incorrect return from
- aer_hest_parse()
-From: Betty Dall <betty.dall@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Date: Mon, 03 Jun 2013 15:18:12 -0600
-In-Reply-To: <CAErSpo6KV28p3QRoz-Xx=xMjsFaY7sCho8HN2W_M-DntrNk+Ag@mail.gmail.com>
-References: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
-	 <1369924769-17183-2-git-send-email-betty.dall@hp.com>
-	 <CAErSpo6KV28p3QRoz-Xx=xMjsFaY7sCho8HN2W_M-DntrNk+Ag@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 17:19:09 -0400
+Message-ID: <1370294345.9888.12.camel@dabdike>
+Subject: Re: [PATCH 0/4] EFI 1:1 mapping
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Date: Mon, 03 Jun 2013 14:19:05 -0700
+In-Reply-To: <20130603181110.GA25060@srcf.ucam.org>
+References: <20130603081148.GB13607@nazgul.tnic>
+	 <1370269642.2910.4.camel@dabdike> <20130603143010.GA20252@srcf.ucam.org>
+	 <1370270282.2910.9.camel@dabdike> <20130603152122.GA21312@srcf.ucam.org>
+	 <1370276286.2910.29.camel@dabdike> <20130603162435.GA22563@srcf.ucam.org>
+	 <1370277307.2910.39.camel@dabdike> <20130603164237.GA23146@srcf.ucam.org>
+	 <1370282703.9888.5.camel@dabdike> <20130603181110.GA25060@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-01 at 18:38 -0600, Bjorn Helgaas wrote:
-> [+cc Bob for ACPI HEST spec questions]
+On Mon, 2013-06-03 at 19:11 +0100, Matthew Garrett wrote:
+> > > The problem there is that you're saying "In theory". We know that 
+> > > Windows doesn't behave this way, so we have no legitimate expectation 
+> > > that it'll work. We know that it doesn't on some Apple hardware.
+> > 
+> > Fine, you say we need to call SetVirtualAddressMap because windows does,
+> > I agree, I'm just saying we get additional safety from calling it with
+> > the 1:1 map ... I don't see what the problem is.
 > 
-> On Thu, May 30, 2013 at 8:39 AM, Betty Dall <betty.dall@hp.com> wrote:
-> > The function aer_hest_parse() is called to determine if the given
-> > PCI device is firmware first or not. The code loops through each
-> > section of the HEST table to look for a match. The bug is that
-> > the function always returns whether the last HEST section is firmware
-> > first. The fix stops the iteration once the info.firmware_first
-> > variable is set.  This is similar to how the function aer_hest_parse_aff()
-> > stops the iteration.
-> >
-> > Signed-off-by: Betty Dall <betty.dall@hp.com>
-> > ---
-> >
-> >  drivers/pci/pcie/aer/aerdrv_acpi.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> >
-> >
-> > diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > index 5194a7d..39b8671 100644
-> > --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > @@ -42,6 +42,9 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
-> >         u8 bridge = 0;
-> >         int ff = 0;
-> >
-> > +       if (info->firmware_first)
-> > +               return 0;
-> > +
-> >         switch (hest_hdr->type) {
-> >         case ACPI_HEST_TYPE_AER_ROOT_PORT:
-> >                 pcie_type = PCI_EXP_TYPE_ROOT_PORT;
-> 
-> Not related directly to your patch, Betty, but I can't figure out why
-> the ACPI spec defines the HEST structures for PCIe as it does.  I'm
-> looking at ACPI 5.0, sec 18.3.2.3 - 18.3.2.5. 
+> No. I'm saying that calling it with the 1:1 map is something very 
+> different to the behaviour of Windows, and I'm saying that doing so is 
+> known to cause variable writes on some Apple hardware to stop working. 
+> If we're aiming for maximum compatibility, we need to call 
+> SetVirtualAddressMap() with addresses above the canonicalisation hole.
 
-> 1) The PCIe Root Port, PCIe Device, and PCIe/PCI-X Bridge structures
-> all include Bus, Device, and Function fields.  But there's no Segment.
->  The current Linux code (hest_match_pci()) assumes HEST records can
-> only apply to PCI domain 0.  Is Linux missing something, or is the
-> HEST really this limited?
-You are right that the HEST table does not have the Segment for the PCIe
-sources. The Linux code uses the Generic Source type that points to a
-UEFI CPER record. Those do have the Segment. The code in
-acpi/apei/ghes.c that parses the HEST and invokes the
-aer_recover_queue() is using the segment from the CPER record. 
+OK, so tell me this problem: it's a new one one me.  I think you're
+saying if we don't call SetVirtualAddressMap with a mapping above a
+certain value, some Apple system breaks somehow? (how?).
 
-The hest_match_pci() code is only looking at the PCIe error source types
-because that is where the flags field is defined to indicate "firmware
-first". Flags is not defined in the Generic error source.  Firmware
-first platforms today must be using GLOBAL error sources because the
-code is written in such a way that any specific PCIe match will cause
-the entire platform to be firmware first. Linux only supports either AER
-or firmware first right now, and it would be an enhancement to do both. 
+James
 
-> 2) Doesn't the fact that the HEST structures include a bus number mean
-> that the OS cannot reassign bus numbers?  I guess maybe we could still
-> reassign them if we kept track of the mapping back to the original
-> values.
-Yes, I think there needs to be a mapping between the HEST/CPER bus
-number and the OS assigned bus numbers, if the OS is reassigning bus
-numbers.  
-
-> 3) It's interesting that the only choices seem to be "global" or "list
-> every device."  There's no "apply to this device and the subtree under
-> it," so I guess if you want HEST to apply to hot-added devices,
-> "global" is the only thing that makes sense?
-"Global" is the one one that makes sense to me too. The size of the HEST
-table is fixed at boot and firmware strives to keep it as small as
-possible because firmware memory is a scarce resource. 
-
-Betty
-
-> Bjorn
 
 
