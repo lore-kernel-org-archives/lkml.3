@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab3FCM0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:26:33 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53243 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752841Ab3FCM0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:26:30 -0400
-Message-ID: <1370262387.2025.25.camel@joe-AO722>
-Subject: Re: [PATCH v1.1] gpiolib: append SFI helpers for GPIO API
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Ryan Mallon <rmallon@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@intel.com>,
-        Grant Likely <grant.likely@linaro.org>
-Date: Mon, 03 Jun 2013 05:26:27 -0700
-In-Reply-To: <1370247379.29283.240.camel@smile>
-References: <CACRpkdZbCytqaWTK7HvfU2aMpPQVZWX2uf-NXL-rUPGJ6DQ-mQ@mail.gmail.com>
-	 <1369992439-5421-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <51ABF879.1090509@gmail.com> <1370225170.2096.12.camel@joe-AO722>
-	 <1370247379.29283.240.camel@smile>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757527Ab3FCM0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:26:43 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:60437 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757359Ab3FCM0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:26:39 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: [PATCH v2] include/linux/skbuff.h: using '(u16) ~0U' instead of '~0U'
+Date: Mon, 3 Jun 2013 13:26:29 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7262@saturn3.aculab.com>
+In-Reply-To: <51AC7CD4.2060801@asianux.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] include/linux/skbuff.h: using '(u16) ~0U' instead of '~0U'
+Thread-Index: Ac5gTP47znuaL0AITMyRQ3C0h7fPxgACE3hg
+References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com> <51AC60AA.8010107@asianux.com> <CAHp75Vc19Kii7_TF+9aF4ZeKAa4_92DCVL+u1duZDTu38o2qsw@mail.gmail.com> <51AC7546.4010002@asianux.com> <51AC7CD4.2060801@asianux.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Chen Gang" <gang.chen@asianux.com>,
+        "Andy Shevchenko" <andy.shevchenko@gmail.com>, <edumazet@google.com>
+Cc: "Pravin Shelar" <pshelar@nicira.com>, <mgorman@suse.de>,
+        "David Miller" <davem@davemloft.net>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, "netdev" <netdev@vger.kernel.org>,
+        "Ben Hutchings" <bhutchings@solarflare.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r53CQnK0007121
 
-On Mon, 2013-06-03 at 11:16 +0300, Andy Shevchenko wrote:
-> On Sun, 2013-06-02 at 19:06 -0700, Joe Perches wrote: 
-> > On Mon, 2013-06-03 at 11:59 +1000, Ryan Mallon wrote:
-> > > On 31/05/13 19:27, Andy Shevchenko wrote:
-> > > > +	sfi_gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
-> > > Use kcalloc when you have a size and a count.
-> > kmalloc_array unless you want zero'ed memory
-> One proposed to use kmemdup to clean up a bit. What do you think?
+> +#define SKB_HEADER_UNSET_16	((unsigned short) ~0U)
+> +
 
-Seems correct to use kmemdup but what validates num?
+The _16 part isn't really correct, the type could be changed
+and then it would be wrong.
 
-It seems like a possible error path exists there regardless
-of whether kmemdup is used or not.
+I think I might have used SKB_HEADER_OFFSET.
 
+	David
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
