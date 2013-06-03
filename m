@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3FCVeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:34:15 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:55177 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833Ab3FCVeC (ORCPT
+	id S1758576Ab3FCVgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:36:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57699 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3FCVgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:34:02 -0400
+	Mon, 3 Jun 2013 17:36:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Stefan Roese <sr@denx.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] net: sun4i-emac: remove erroneous assignment
+Date: Mon, 03 Jun 2013 23:36:50 +0200
+Message-ID: <3298610.K0DeJZEM4E@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20130603183018.GJ15576@cmpxchg.org>
-References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
- <20130530150539.GA18155@dhcp22.suse.cz> <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
- <20130531081052.GA32491@dhcp22.suse.cz> <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
- <20130531112116.GC32491@dhcp22.suse.cz> <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
- <20130601061151.GC15576@cmpxchg.org> <20130603153432.GC18588@dhcp22.suse.cz>
- <20130603164839.GG15576@cmpxchg.org> <20130603183018.GJ15576@cmpxchg.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Mon, 3 Jun 2013 17:33:40 -0400
-Message-ID: <CAHGf_=rFhhRM3CqmSJEFrYMFafUzOU7WHvwQrguXOFwbKbbDLQ@mail.gmail.com>
-Subject: Re: [patch] mm, memcg: add oom killer delay
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:FWGGSnceXZgdYpH1en7MQM1kUgQtA+IkxpAUvW3Slo9
+ P5MBPKBpqAmJDKv93D7YvziFZ+TIP2CpvYbJ2JlZy3Tuo6ewo1
+ SOVCD5CIxT8pC4avFJFgKU8yuVLfUEtx8IrPOvAmc/xN0zRL2y
+ QfcxEHkqWpygQtDwHRxgvtVv+CU30/dSpLXSrj1KkyCHU7TgfO
+ 1f6qp6ZB/pG2vTj4o1iHEpE2kANAu9FTm1uZNzgxfTGI6NO8Lw
+ EG8AF4wcafnZM3dtCefca4ZX8ZO3MgkIXDaoGZ4kP5r4SRwGwO
+ V9PybrFXeyKQfcyRZL6FGNImR0hEp9f9cyQxpQn3xn6Ho2v9pt
+ 0T8G1pThPZcd8qjj/4cQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [PATCH] memcg: do not sleep on OOM waitqueue with full charge context
->
-> The memcg OOM handling is incredibly fragile because once a memcg goes
-> OOM, one task (kernel or userspace) is responsible for resolving the
-> situation.  Every other task that gets caught trying to charge memory
-> gets stuck in a waitqueue while potentially holding various filesystem
-> and mm locks on which the OOM handling task may now deadlock.
->
-> Do two things:
->
-> 1. When OOMing in a system call (buffered IO and friends), invoke the
->    OOM killer but do not trap other tasks and just return -ENOMEM for
->    everyone.  Userspace should be able to handle this... right?
->
-> 2. When OOMing in a page fault, invoke the OOM killer but do not trap
->    other chargers directly in the charging code.  Instead, remember
->    the OOMing memcg in the task struct and then fully unwind the page
->    fault stack first.  Then synchronize the memcg OOM from
->    pagefault_out_of_memory().
->
-> While reworking the OOM routine, also remove a needless OOM waitqueue
-> wakeup when invoking the killer.  Only uncharges and limit increases,
-> things that actually change the memory situation, should do wakeups.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+The newly added sun4i-emac driver causes a build error when
+CONFIG_NET_POLL_CONTROLLER is set, because it attempts to
+assign a pointer to netdev->poll_controller, which has
+been replaced with ops->ndo_poll_controller in 2.6.31!
 
->From point of the memcg oom notification view, it is NOT supported on the case
-that an oom handler process is subjected its own memcg limit. All
-memcg developers
-clearly agreed it since it began. Even though, anyway, people have a
-right to shoot their own foot. :)
-However, this patch fixes more than that. OK, I prefer it. Good fix!
+The correct assignment is present as well, so we just need
+to remove the wrong one.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Stefan Roese <sr@denx.de>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>
+---
+diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
+index b411344..3e7b220 100644
+--- a/drivers/net/ethernet/allwinner/sun4i-emac.c
++++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
+@@ -869,10 +869,6 @@ static int emac_probe(struct platform_device *pdev)
+ 	ndev->watchdog_timeo = msecs_to_jiffies(watchdog);
+ 	ndev->ethtool_ops = &emac_ethtool_ops;
+ 
+-#ifdef CONFIG_NET_POLL_CONTROLLER
+-	ndev->poll_controller = &emac_poll_controller;
+-#endif
+-
+ 	platform_set_drvdata(pdev, ndev);
+ 
+ 	/* Carrier starts down, phylib will bring it up */
+
