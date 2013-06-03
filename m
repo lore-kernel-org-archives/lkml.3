@@ -1,77 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab3FCTZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:25:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37441 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab3FCTZU (ORCPT
+	id S1757645Ab3FCT1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:27:05 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:34350 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755626Ab3FCT1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:25:20 -0400
-Date: Mon, 3 Jun 2013 21:25:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130603192505.GH8923@twins.programming.kicks-ass.net>
-References: <20130523152611.GE23650@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
- <20130528085548.GA12193@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu>
- <20130529074433.GB12193@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu>
- <20130530072532.GF4341@laptop>
- <alpine.DEB.2.10.1305300842040.11264@vincent-weaver-1.um.maine.edu>
- <20130603132645.GC8923@twins.programming.kicks-ass.net>
+	Mon, 3 Jun 2013 15:27:02 -0400
+Message-ID: <51ACEDBB.6040706@hds.com>
+Date: Mon, 03 Jun 2013 15:25:47 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130603132645.GC8923@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: linux-kernel@vger.kernel.org, x86@kernel.org, rostedt@goodmis.org,
+        hpa@zytor.com
+CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
+        linux-edac@vger.kernel.org, tony.luck@intel.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Subject: [PATCH v13 0/3]trace,x86: irq vector tracepoint support
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-03_05:2013-06-03,2013-06-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
+ suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1306030165
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 03:26:45PM +0200, Peter Zijlstra wrote:
-> On Thu, May 30, 2013 at 08:51:00AM -0400, Vince Weaver wrote:
-> > > I'll go prod, thanks again!
-> 
-> 
-> OK the below builds and seems to survive both test cases and about 10 minutes
-> of fuzzing -- fingers crossed.
-> 
-> ---
-> @@ -3779,12 +3834,21 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
->  		return -EINVAL;
->  
->  	WARN_ON_ONCE(event->ctx->parent_ctx);
-> +again:
->  	mutex_lock(&event->mmap_mutex);
->  	if (event->rb) {
-> -		if (event->rb->nr_pages == nr_pages)
-> -			atomic_inc(&event->rb->refcount);
-> -		else
-> +		if (event->rb->nr_pages != nr_pages)
-		{
->  			ret = -EINVAL;
-			goto unlock;
-		}
+Change log
+ v12 -> v13
+ - Rebase to 3.10-rc3
+ - Patch 2/3
+   - Separate a patch introducing entering/exiting_irq() from patch-v12 3/3.
+ - Patch 3/3
+   - Introduce write_trace_idt_entry() to remove "ifdef CONFIG_TRACING"
+     from _set_gate().
+   - Change DEFINE_IRQ_VECTOR_EVENT to save on repeat code.
+   - Add a path of irq_vector.h to Makefile.
+   - Introduce current_idt_descr_ptr and load_current_idt() to switch
+     IDT in a generic way with handling Debug traps/NMI and cpu hotplug.
 
-Seems to cure it... I'm going to let it run over night.
+ v11 -> v12
+ - Rebase to 3.9-rc5
 
-> +
-> +		if (!atomic_inc_not_zero(&event->rb->mmap_count)) {
-> +			/*
-> +			 * Raced against perf_mmap_close() through
-> +			 * perf_event_set_output(). Try again, hope for better
-> +			 * luck.
-> +			 */
-> +			mutex_unlock(&event->mmap_mutex);
-> +			goto again;
-> +		}
->  		goto unlock;
->  	}
->  
+ v10 -> v11
+ - Rebase to 3.9-rc2
+ - Add a modification for hyperv_callback vector. (patch 2/3)
+ - Change a way to switch idt to check the table in use instead of saving/restoring it,
+   because saving/restoring functions will break if we have to add another one. (patch 2/3)
+
+ v9 -> v10
+ - Add an explanation the reason why tracepoints has to place inside irq enter/exit handling. (patch 3/3)
+
+ v8 -> v9
+ - Rebase to 3.8-rc6
+ - Add Steven's email address at the top of the message and 
+   move my signed-off-by below Steven's one because it is
+   originally created by Steven. (patch 1/3)
+ - Introduce a irq_vector_mutex to avoid a race at registering/unregistering
+   time. (patch 2/3)
+ - Use a per_cpu data to orig_idt_descr because IDT descritor is needed to each cpu
+   and the appropriate data type is per_cpu data. It is suggested by Steven.
+   (patch 2/3)
+
+ v7 -> v8
+ - Rebase to 3.8-rc4
+ - Add a patch 1 introducing DEFINE_EVENT_FN() macro.
+ - Rename original patches 1 and 2 to 2 and 3.
+ - Change a definition of tracepoint to use DEFINE_EVENT_FN(). (patch 2)
+ - Change alloc_intr_gate() to use do{}while(0) to avoid a warning 
+   of checkpatch.pl. (patch 2)
+ - Move entering_irq()/exiting_irq() to arch/x86/include/asm/apic.h (patch 3)
+
+ v6 -> v7
+ - Divide into two patches to make a code review easier.
+   Summery of each patch is as follows.
+    - Patch 1/2
+      - Add an irq_vector tracing infrastructure.
+      - Create idt_table for tracing. It is refactored to avoid duplicating
+        existing logic.
+      - Duplicate new irq handlers inserted tracepoints.
+
+    - Patch 2/2
+      - Share a common logic among irq handlers to make them
+        manageable and readable.
+
+ v5 -> v6
+ - Rebased to 3.7
+
+ v4 -> v5
+ - Rebased to 3.6.0
+
+ - Introduce a logic switching IDT at enabling/disabling TP time 
+   so that a time penalty makes a zero when tracepoints are disabled.
+   This IDT is created only when CONFIG_TRACEPOINTS is enabled.
+
+ - Remove arch_irq_vector_entry/exit and add followings again
+   so that we can add each tracepoint in a generic way.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+ - Drop nmi tracepoints to begin with apic interrupts and discuss a logic switching
+   IDT first.
+
+ - Move irq_vectors.h in the directory of arch/x86/include/asm/trace because
+   I'm not sure if a logic switching IDT is sharable with other architectures.
+
+ v3 -> v4
+ - Add a latency measurement of each tracepoint
+ - Rebased to 3.6-rc6
+
+ v2 -> v3
+ - Remove an invalidate_tlb_vector event because it was replaced by a call function vector
+   in a following commit.
+   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=52aec3308db85f4e9f5c8b9f5dc4fbd0138c6fa4
+
+ v1 -> v2
+ - Modify variable name from irq to vector.
+ - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+[Purpose of this patch]
+
+As Vaibhav explained in the thread below, tracepoints for irq vectors are useful.
+
+http://www.spinics.net/lists/mm-commits/msg85707.html
+
+<snip>
+The current interrupt traces from irq_handler_entry and irq_handler_exit provide
+when an interrupt is handled.  
+They provide good data about when the system has switched to kernel space and 
+how it affects the currently running processes.
+
+There are some IRQ vectors which trigger the system into kernel space, which are 
+not handled in generic IRQ handlers.  
+Tracing such events gives us the information about IRQ interaction with other 
+system events.
+
+The trace also tells where the system is spending its time.  We want to know which
+cores are handling interrupts and 
+how they are affecting other processes in the system.  Also, the trace provides
+information about when the cores are 
+idle and which interrupts are changing that state.
+<snip>
+
+On the other hand, my usecase is tracing just local timer event and getting
+ a value of instruction pointer.
+
+I suggested to add an argument local timer event to get instruction pointer before.
+But there is another way to get it with external module like systemtap.
+So, I don't need to add any argument to irq vector tracepoints now.
+
+[Patch Description]
+
+Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
+But there is an above use case to trace specific irq_vector rather than tracing all events.
+In this case, we are concerned about overhead due to unwanted events.
+
+This patch adds following tracepoints instead of introducing irq_vector_entry/exit.
+so that we can enable them independently.
+   - local_timer_vector
+   - reschedule_vector
+   - call_function_vector
+   - call_function_single_vector 
+   - irq_work_entry_vector
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+Please see descriptions in each patch.
+
+Seiji Aguchi (2):
+  trace,x86: Introduce entering/exiting_irq()
+  trace,x86: Add irq vector tracepoints
+
+Steven Rostedt (1):
+  tracing: Add DEFINE_EVENT_FN() macro
+
+ arch/x86/include/asm/apic.h              |   27 ++++++++
+ arch/x86/include/asm/desc.h              |   55 +++++++++++++++-
+ arch/x86/include/asm/entry_arch.h        |    8 ++-
+ arch/x86/include/asm/hw_irq.h            |   17 +++++
+ arch/x86/include/asm/mshyperv.h          |    1 +
+ arch/x86/include/asm/trace/irq_vectors.h |  104 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/Makefile                 |    1 +
+ arch/x86/kernel/apic/Makefile            |    1 +
+ arch/x86/kernel/apic/apic.c              |   71 +++++++++++++++++----
+ arch/x86/kernel/cpu/common.c             |    5 +-
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   24 +++++--
+ arch/x86/kernel/cpu/mcheck/threshold.c   |   24 +++++--
+ arch/x86/kernel/entry_32.S               |   12 +++-
+ arch/x86/kernel/entry_64.S               |   31 +++++++--
+ arch/x86/kernel/head_64.S                |    6 ++
+ arch/x86/kernel/irq.c                    |   31 ++++++---
+ arch/x86/kernel/irq_work.c               |   24 ++++++-
+ arch/x86/kernel/smp.c                    |   65 ++++++++++++++++--
+ arch/x86/kernel/tracepoint.c             |   58 +++++++++++++++++
+ include/linux/tracepoint.h               |    2 +
+ include/trace/define_trace.h             |    5 ++
+ include/trace/ftrace.h                   |    4 +
+ include/xen/events.h                     |    3 +
+ 23 files changed, 520 insertions(+), 59 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace/irq_vectors.h
+ create mode 100644 arch/x86/kernel/tracepoint.c
+
