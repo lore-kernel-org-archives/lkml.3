@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab3FCPa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:30:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22173 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139Ab3FCPaY (ORCPT
+	id S1758664Ab3FCPbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:31:50 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35735 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139Ab3FCPbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:30:24 -0400
-Date: Mon, 3 Jun 2013 11:28:00 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 2/19]  x86/ticketlock: Don't inline _spin_unlock
- when using paravirt spinlocks
-Message-ID: <20130603152800.GA4224@phenom.dumpdata.com>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
- <20130601192209.5966.46834.sendpatchset@codeblue>
+	Mon, 3 Jun 2013 11:31:48 -0400
+Message-ID: <51ACB6DB.6040809@gmail.com>
+Date: Mon, 03 Jun 2013 23:31:39 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601192209.5966.46834.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Joonsoo Kim <js1304@gmail.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] mm, vmalloc: Only call setup_vmalloc_vm only in __get_vm_area_node
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 12:52:09AM +0530, Raghavendra K T wrote:
-> x86/ticketlock: Don't inline _spin_unlock when using paravirt spinlocks
-> 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> The code size expands somewhat, and its better to just call
-> a function rather than inline it.
-> 
-> Thanks Jeremy for original version of ARCH_NOINLINE_SPIN_UNLOCK config patch,
-> which is simplified.
-> 
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 685692c..80fcc4b 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -621,6 +621,7 @@ config PARAVIRT_DEBUG
->  config PARAVIRT_SPINLOCKS
->  	bool "Paravirtualization layer for spinlocks"
->  	depends on PARAVIRT && SMP
-> +	select UNINLINE_SPIN_UNLOCK
->  	---help---
->  	  Paravirtualized spinlocks allow a pvops backend to replace the
->  	  spinlock implementation with something virtualization-friendly
-> 
+Now for insert_vmalloc_vm, it only calls the two functions:
+- setup_vmalloc_vm: fill vm_struct and vmap_area instances
+- clear_vm_unlist: clear VM_UNLIST bit in vm_struct->flags
+
+So in function __get_vm_area_node, if VM_UNLIST bit unset
+in flags, that is the else branch here, we don't need to
+clear VM_UNLIST bit for vm->flags since this bit is obviously
+not set. That is to say, we could only call setup_vmalloc_vm
+instead of insert_vmalloc_vm here. And then we could even
+remove the if test here.
+
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ mm/vmalloc.c |   11 +----------
+ 1 files changed, 1 insertions(+), 10 deletions(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index d365724..6580c76 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1367,16 +1367,7 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
+ 		return NULL;
+ 	}
+ 
+-	/*
+-	 * When this function is called from __vmalloc_node_range,
+-	 * we add VM_UNLIST flag to avoid accessing uninitialized
+-	 * members of vm_struct such as pages and nr_pages fields.
+-	 * They will be set later.
+-	 */
+-	if (flags & VM_UNLIST)
+-		setup_vmalloc_vm(area, va, flags, caller);
+-	else
+-		insert_vmalloc_vm(area, va, flags, caller);
++	setup_vmalloc_vm(area, va, flags, caller);
+ 
+ 	return area;
+ }
+-- 
+1.7.1
