@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504Ab3FCVTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:19:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45018 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756973Ab3FCVTJ (ORCPT
+	id S1758247Ab3FCVZA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:25:00 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59370 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab3FCVY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:19:09 -0400
-Message-ID: <1370294345.9888.12.camel@dabdike>
-Subject: Re: [PATCH 0/4] EFI 1:1 mapping
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Date: Mon, 03 Jun 2013 14:19:05 -0700
-In-Reply-To: <20130603181110.GA25060@srcf.ucam.org>
-References: <20130603081148.GB13607@nazgul.tnic>
-	 <1370269642.2910.4.camel@dabdike> <20130603143010.GA20252@srcf.ucam.org>
-	 <1370270282.2910.9.camel@dabdike> <20130603152122.GA21312@srcf.ucam.org>
-	 <1370276286.2910.29.camel@dabdike> <20130603162435.GA22563@srcf.ucam.org>
-	 <1370277307.2910.39.camel@dabdike> <20130603164237.GA23146@srcf.ucam.org>
-	 <1370282703.9888.5.camel@dabdike> <20130603181110.GA25060@srcf.ucam.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 17:24:57 -0400
+Date: Mon, 3 Jun 2013 15:55:55 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130603195555.GC10200@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130603204930.GA28299@infradead.org>
+ <20130603193647.GB10200@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130603193647.GB10200@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 19:11 +0100, Matthew Garrett wrote:
-> > > The problem there is that you're saying "In theory". We know that 
-> > > Windows doesn't behave this way, so we have no legitimate expectation 
-> > > that it'll work. We know that it doesn't on some Apple hardware.
+On Mon, 3 June 2013 15:36:47 -0400, Jörn Engel wrote:
+> On Mon, 3 June 2013 13:49:30 -0700, Christoph Hellwig wrote:
 > > 
-> > Fine, you say we need to call SetVirtualAddressMap because windows does,
-> > I agree, I'm just saying we get additional safety from calling it with
-> > the 1:1 map ... I don't see what the problem is.
+> > I can't say I like the structure.
+> > 
+> > A list_pop that removes and entry from the head or returns NULL if the
+> > list is empty would lead to nice while loops that are obviously
+> > readable instead.
 > 
-> No. I'm saying that calling it with the 1:1 map is something very 
-> different to the behaviour of Windows, and I'm saying that doing so is 
-> known to cause variable writes on some Apple hardware to stop working. 
-> If we're aiming for maximum compatibility, we need to call 
-> SetVirtualAddressMap() with addresses above the canonicalisation hole.
+> Something like this?
+> 
+> #define list_pop(head) \
+>         ({ struct list_head *____pos; \
+>            list_empty(head) ? NULL : (____pos = (head)->next, \
+>                    list_del(____pos), ____pos) \
+>         })
+> 
+> #define list_pop_entry(head, type, member) \
+>         ({ struct list_head *____pos; \
+>            list_empty(head) ? NULL : (____pos = (head)->next, \
+>                    list_del(____pos), list_entry(____pos, type, member) \
+>         })
+> 
+> Would be fine with me as well.
 
-OK, so tell me this problem: it's a new one one me.  I think you're
-saying if we don't call SetVirtualAddressMap with a mapping above a
-certain value, some Apple system breaks somehow? (how?).
+Actually, when I compare the two invocations, I prefer the
+list_for_each_entry_del() variant over list_pop_entry().
 
-James
+        while ((ref = list_pop_entry(&prefs, struct __prelim_ref, list))) {
+        list_for_each_entry_del(ref, &prefs, list) {
 
+Christoph?
 
+Jörn
 
+--
+"Translations are and will always be problematic. They inflict violence
+upon two languages." (translation from German)
