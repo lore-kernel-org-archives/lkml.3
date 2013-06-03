@@ -1,84 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab3FCH0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 03:26:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42480 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab3FCHZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 03:25:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,791,1363158000"; 
-   d="scan'208";a="343906833"
-Date: Mon, 3 Jun 2013 09:25:56 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: gregkh@linuxfoundation.org, arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc 3.10] mei: nfc: fix nfc device freeing
-Message-ID: <20130603072556.GF15843@zurbaran>
-References: <1370240910-16411-1-git-send-email-tomas.winkler@intel.com>
+	id S1751144Ab3FCH3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 03:29:03 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:8523
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861Ab3FCH2x convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 03:28:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffhbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] iommu: amd/intel: Remove multifunction assumption
+ around	grouping
+Thread-Topic: [PATCH] iommu: amd/intel: Remove multifunction assumption
+ around	grouping
+Thread-Index: AQHOXWU4++EkbVSpikCIcMFQxCTuuZkjjKjQ
+Date: Mon, 3 Jun 2013 07:28:26 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D56A9F4@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <20130530183855.14612.15585.stgit@bling.home>
+In-Reply-To: <20130530183855.14612.15585.stgit@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.132.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370240910-16411-1-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomas,
 
-On Mon, Jun 03, 2013 at 09:28:30AM +0300, Tomas Winkler wrote:
-> The nfc_dev is a static variable and is not cleaned properly upon reset
-> mainly ndev->cl and ndev->cl_info are not set to NULL after freeing which
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of Alex Williamson
+> Sent: Friday, May 31, 2013 12:09 AM
+> To: iommu@lists.linux-foundation.org; dwmw2@infradead.org;
+> joro@8bytes.org
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] iommu: amd/intel: Remove multifunction assumption around
+> grouping
 > 
-> mei_stop:198: mei_me 0000:00:16.0: stopping the device.
-> [  404.253427] general protection fault: 0000 [#2] SMP
-> [  404.253437] Modules linked in: mei_me(-) binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd af_packet cpufreq_conservative cpufreq_userspace cpufreq_powersave fuse loop dm_mod hid_generic usbhid hid coretemp acpi_cpufreq mperf kvm_intel kvm crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul snd_hda_codec_hdmi glue_helper aes_x86_64 e1000e snd_hda_intel snd_hda_codec ehci_pci iTCO_wdt iTCO_vendor_support ehci_hcd snd_hwdep xhci_hcd snd_pcm usbcore ptp mei sg microcode snd_timer pps_core i2c_i801 snd pcspkr battery rtc_cmos lpc_ich mfd_core soundcore usb_common snd_page_alloc ac ext3 jbd mbcache drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt i2c_core sd_mod crc_t10dif thermal fan video button processor thermal_sys hwmon ahci libahci libata scsi_mod [last unloaded: mei_me]
-> [  404.253591] CPU: 0 PID: 5551 Comm: modprobe Tainted: G      D W    3.10.0-rc3 #1
-> [  404.253611] task: ffff880143cd8300 ti: ffff880144a2a000 task.ti: ffff880144a2a000
-> [  404.253619] RIP: 0010:[<ffffffff81334e5d>]  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
-> [  404.253638] RSP: 0018:ffff880144a2bcf8  EFLAGS: 00010206
-> [  404.253645] RAX: 2020302e30202030 RBX: ffff880144fdb000 RCX: 0000000000000086
-> [  404.253652] RDX: 0000000000000001 RSI: 0000000000000086 RDI: ffff880144fdb000
-> [  404.253659] RBP: ffff880144a2bd18 R08: 0000000000000651 R09: 0000000000000006
-> [  404.253666] R10: 0000000000000651 R11: 0000000000000006 R12: ffff880144fdb000
-> [  404.253673] R13: ffff880149371098 R14: ffff880144482c00 R15: ffffffffa04710e0
-> [  404.253681] FS:  00007f251c59a700(0000) GS:ffff88014e200000(0000) knlGS:0000000000000000
-> [  404.253689] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  404.253696] CR2: ffffffffff600400 CR3: 0000000145319000 CR4: 00000000001407f0
-> [  404.253703] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  404.253710] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-> [  404.253716] Stack:
-> [  404.253720]  ffff880144fdb000 ffff880143ffe000 ffff880149371098 ffffffffa0471000
-> [  404.253732]  ffff880144a2bd38 ffffffff8133502d ffff88014e20cf48 ffff880143ffe1d8
-> [  404.253744]  ffff880144a2bd48 ffffffffa02a4749 ffff880144a2bd58 ffffffffa02a4ba1
-> [  404.253755] Call Trace:
-> [  404.253766]  [<ffffffff8133502d>] device_unregister+0x1d/0x60
-> [  404.253787]  [<ffffffffa02a4749>] mei_cl_remove_device+0x9/0x10 [mei]
-> [  404.253804]  [<ffffffffa02a4ba1>] mei_nfc_host_exit+0x21/0x30 [mei]
-> [  404.253819]  [<ffffffffa029c2dd>] mei_stop+0x3d/0x90 [mei]
-> [  404.253830]  [<ffffffffa046e220>] mei_me_remove+0x60/0xe0 [mei_me]
-> [  404.253843]  [<ffffffff81278f37>] pci_device_remove+0x37/0xb0
-> [  404.253855]  [<ffffffff81337c68>] __device_release_driver+0x98/0x100
-> [  404.253865]  [<ffffffff81337d80>] driver_detach+0xb0/0xc0
-> [  404.253876]  [<ffffffff81336b4f>] bus_remove_driver+0x8f/0x120
-> [  404.253891]  [<ffffffff81075990>] ? try_to_wake_up+0x2b0/0x2b0
-> [  404.253903]  [<ffffffff81338a48>] driver_unregister+0x58/0x90
-> [  404.253913]  [<ffffffff8127906b>] pci_unregister_driver+0x2b/0xb0
-> [  404.253924]  [<ffffffffa046f244>] mei_me_driver_exit+0x10/0xdcc [mei_me]
-> [  404.253936]  [<ffffffff810a50d8>] SyS_delete_module+0x198/0x2b0
-> [  404.253949]  [<ffffffff814850d9>] ? do_page_fault+0x9/0x10
-> [  404.253961]  [<ffffffff81489692>] system_call_fastpath+0x16/0x1b
-> [  404.253967] Code: 41 5c 41 5d 41 5e 41 5f c9 c3 0f 1f 40 00 55 48 89 e5 41 56 41 55 41 54 49 89 fc 53 48 8b 87 88 00 00 00 4c 8b 37 48 85 c0 74 18 <48> 8b 78 78 4c 89 e2 be 02 00 00 00 48 81 c7 f8 00 00 00 e8 3b
-> [  404.254048] RIP  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
+> If a device is multifunction and does not have ACS enabled then we assume
+> that the entire package lacks ACS and use function 0 as the base of the
+> group.  The PCIe spec however states that components are permitted to
+> implement ACS on some, none, or all of their applicable functions.  It's
+> therefore conceivable that function 0 may be fully independent and
+> support ACS while other functions do not.  Instead use the lowest
+> function of the slot that does not have ACS enabled as the base of the
+> group.  This may be the current device, which is intentional.  So long as
+> we use a consistent algorithm, all the non-ACS functions will be grouped
+> together and ACS functions will get separate groups.
 > 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/iommu/amd_iommu.c   |   25 +++++++++++++++++++------
+>  drivers/iommu/intel-iommu.c |   25 +++++++++++++++++++------
+>  2 files changed, 38 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c index
+> 1d84be1..565c745 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -287,14 +287,27 @@ static struct pci_dev *get_isolation_root(struct
+> pci_dev *pdev)
+> 
+>  	/*
+>  	 * If it's a multifunction device that does not support our
+> -	 * required ACS flags, add to the same group as function 0.
+> +	 * required ACS flags, add to the same group as lowest numbered
+> +	 * function that also does not suport the required ACS flags.
+>  	 */
+>  	if (dma_pdev->multifunction &&
+> -	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+> -		swap_pci_ref(&dma_pdev,
+> -			     pci_get_slot(dma_pdev->bus,
+> -					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+> -					  0)));
+> +	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+> +		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+> +
+> +		for (i = 0; i < 8; i++) {
+> +			struct pci_dev *tmp;
+> +
+> +			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+> +			if (!tmp)
+> +				continue;
+> +
+> +			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+> +				swap_pci_ref(&dma_pdev, tmp);
+> +				break;
+> +			}
+> +			pci_dev_put(tmp);
+> +		}
+> +	}
+> 
+>  	/*
+>  	 * Devices on the root bus go through the iommu.  If that's not us,
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index b4f0e28..eec0d3e 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -4182,14 +4182,27 @@ static int intel_iommu_add_device(struct device
+> *dev)
+> 
+>  	/*
+>  	 * If it's a multifunction device that does not support our
+> -	 * required ACS flags, add to the same group as function 0.
+> +	 * required ACS flags, add to the same group as lowest numbered
+> +	 * function that also does not suport the required ACS flags.
+>  	 */
+>  	if (dma_pdev->multifunction &&
+> -	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
+> -		swap_pci_ref(&dma_pdev,
+> -			     pci_get_slot(dma_pdev->bus,
+> -					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
+> -					  0)));
+> +	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+> +		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+> +
+> +		for (i = 0; i < 8; i++) {
+[Sethi Varun-B16395] A macro like PCI_MAX_FUNCTIONS would improve code readability.
 
-Cheers,
-Samuel.
+> +			struct pci_dev *tmp;
+> +
+> +			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+> +			if (!tmp)
+> +				continue;
+> +
+> +			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+> +				swap_pci_ref(&dma_pdev, tmp);
+> +				break;
+> +			}
+> +			pci_dev_put(tmp);
+> +		}
+> +	}
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+It would be nice if this code could be represented as a function in a common file like iommu/pci.c.
+
+-Varun
+
