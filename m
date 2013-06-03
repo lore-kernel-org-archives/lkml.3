@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3FCI4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:56:33 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:64518 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3FCI4b (ORCPT
+	id S1753574Ab3FCI6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:58:10 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:59935 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752009Ab3FCI6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:56:31 -0400
-X-Spam-Score: -100.8
-Message-ID: <51AC5A0E.4080408@asianux.com>
-Date: Mon, 03 Jun 2013 16:55:42 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 3 Jun 2013 04:58:08 -0400
+Message-ID: <51AC5A53.1090700@st.com>
+Date: Mon, 03 Jun 2013 09:56:51 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Kyle McMartin <kmcmarti@redhat.com>
-CC: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, udknight@gmail.com,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: parisc: kernel: using strlcpy() instead of strcpy()
-References: <51A6A8F3.2030200@asianux.com> <20130530153551.GN19205@redacted.bos.redhat.com>
-In-Reply-To: <20130530153551.GN19205@redacted.bos.redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Barry Song <21cnbao@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Barry Song <baohua.song@csr.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1 2/2] ARM:prima2:move postcore_initcalls to init_machine.
+References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com> <1369993517-24735-1-git-send-email-srinivas.kandagatla@st.com> <CAGsJ_4yu2MT5o7hbX67KPhrejS9D1BbPcship4zxtXs3G9tE-Q@mail.gmail.com>
+In-Reply-To: <CAGsJ_4yu2MT5o7hbX67KPhrejS9D1BbPcship4zxtXs3G9tE-Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2013 11:35 PM, Kyle McMartin wrote:
-> On Thu, May 30, 2013 at 09:18:43AM +0800, Chen Gang wrote:
->> > 
->> > 'boot_args' is an input args, and 'boot_command_line' has a fix length.
->> > 
->> > So need use strlcpy() instead of strcpy() to avoid memory overflow.
->> > 
-> This is basically impossible, since boot_args is fixed in size by palo,
-> initialized to zero, and length checked in the bootloader. It's also
-> only 256+4 bytes compared to the 1024 bytes set aside for
-> boot_command_line.
+On 03/06/13 04:51, Barry Song wrote:
+> did you see this one?
 > 
-> That said, it's harmless to use strlcpy here, and obviously (more)
-> correct. Thanks!
-> 
+> [PATCH v2] arm: prima2: use of_platform_populate instead of
+> of_platform_bus_probe
+> http://www.spinics.net/lists/arm-kernel/msg243710.html
 
-OK, thanks.
+Yes, I think this is a nice cleanup for simplest case. But Prima
+platforms do much more checking at the same init level. An attempt to
+get rid of postcore and early init calls might introduce this back.
 
-> Acked-by: Kyle McMartin <kyle@mcmartin.ca>
-> 
-> 
+You could solve both the early and postcore initcall issues by returning
+instead of panic, and let every NON Prima platforms call this function.
+Or
+Do it the right way and clean it up.
 
-Thank you. :-)
+I will leave it up to you to decide on how you want to fix the multi_v7
+kernel issue.
 
-
--- 
-Chen Gang
-
-Asianux Corporation
+Thanks,
+srini
