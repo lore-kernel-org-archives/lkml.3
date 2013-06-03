@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab3FCQhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:37:39 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:64578 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758076Ab3FCQhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:37:37 -0400
-X-IronPort-AV: E=Sophos;i="4.87,794,1363132800"; 
-   d="scan'208";a="5269240"
-Message-ID: <1370277455.24512.46.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2 5/5] arm64/xen: introduce CONFIG_XEN and
- hypercall.S on ARM64
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 3 Jun 2013 17:37:35 +0100
-In-Reply-To: <20130603162517.GC32295@arm.com>
-References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
-	 <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <20130603162517.GC32295@arm.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1759203Ab3FCQky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:40:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36495 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758652Ab3FCQkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:40:51 -0400
+Date: Mon, 3 Jun 2013 11:59:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
+Message-ID: <20130603155940.GA6714@redhat.com>
+References: <51A006CF.90105@gmail.com>
+ <87k3mnahkf.fsf@xmission.com>
+ <51A076FE.3060604@gmail.com>
+ <20130525145217.0549138a@holzheu>
+ <20130528135500.GC7088@redhat.com>
+ <20130529135144.7f95c4c0@holzheu>
+ <20130530203847.GB5968@redhat.com>
+ <20130531162127.6d512233@holzheu>
+ <20130531160158.GC13057@redhat.com>
+ <20130603152718.5ba4d05f@holzheu>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603152718.5ba4d05f@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 17:25 +0100, Catalin Marinas wrote:
-> On Mon, Jun 03, 2013 at 04:33:44PM +0100, Stefano Stabellini wrote:
-> > --- /dev/null
-> > +++ b/arch/arm64/xen/hypercall.S
-> ...
-> > +/*
-> > + * The Xen hypercall calling convention is very similar to the ARM AEBI
-> > + * procedure calling convention: the first paramter is passed in x0, the
-> > + * second in x1, the third in x2 and the fourth in x3. Considering that
-> > + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
+On Mon, Jun 03, 2013 at 03:27:18PM +0200, Michael Holzheu wrote:
 
-                                                          parameter
-
-> > + * in rx, differently from the procedure calling convention of using the
-
-          ^x4 not rx
-
-> > + * stack for that case.
+[..]
+> > If not, how would remap_pfn_range() work with HSA region when
+> > /proc/vmcore is mmaped()?
 > 
-> You may want to use the AArch64 ABI here where parameters are passed in
-> x0-x7, return in x0.
-
-I think that is actually what we are doing (up to 5 arguments), the
-"Considering that ..." bit at the end is a left over of the 32 bit
-version I think.
-
+> I am no memory management expert, so I discussed that with Martin
+> Schwidefsky (s390 architecture maintainer). Perhaps something like
+> the following could work:
 > 
-> BTW, I think it's missing a MAINTAINERS file update.
+> After vmcore_mmap() is called the HSA pages are not initially mapped in
+> the page tables. So when user space accesses those parts
+> of /proc/vmcore, a fault will be generated. We implement a mechanism
+> that in this case the HSA is copied to a new page in the page cache and
+> a mapping is created for it. Since the page is allocated in the page
+> cache, it can be released afterwards by the kernel when we get memory
+> pressure.
 > 
-> Otherwise, the series looks good. How do you plan to upstream this?
+> Our current idea for such an implementation:
 > 
+> * Create new address space (struct address_space) for /proc/vmcore.
+> * Implement new vm_operations_struct "vmcore_mmap_ops" with
+>   new vmcore_fault() ".fault" callback for /proc/vmcore.
+> * Set vma->vm_ops to vmcore_mmap_ops in mmap_vmcore().
+> * The vmcore_fault() function will get a new page cache page,
+>   copy HSA page to page cache page add it to vmcore address space.
+>   To see how this could work, we looked into the functions
+>   filemap_fault() in "mm/filemap.c" and relay_buf_fault() in
+>   "kernel/relay.c".
+> 
+> What do you think?
 
+I am not mm expert either but above proposal sounds reasonable to me.
 
+So remap_pfn_range() call will go in arch dependent code so that arch
+can decide which range can be mapped right away and which ranges will
+be filed in when fault happens? I am assuming that s390 will map
+everything except for pfn between 0 and HSA_SIZE.
+
+And regular s390 kdump will map everyting right away and will not
+have to rely on fault mechanism?
+
+Thanks
+Vivek
