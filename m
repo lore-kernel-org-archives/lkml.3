@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab3FCGLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 02:11:32 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:61909 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab3FCGL0 (ORCPT
+	id S1752219Ab3FCGN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 02:13:29 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54842 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3FCGNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 02:11:26 -0400
+	Mon, 3 Jun 2013 02:13:22 -0400
+X-AuditID: 9c93017e-b7c0cae0000006f6-7b-51ac34007ba6
+Date: Mon, 3 Jun 2013 15:13:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v4][PATCH 2/6] mm: swap: make 'struct page' and swp_entry_t
+ variants of swapcache_free().
+Message-ID: <20130603061320.GA2795@blaptop>
+References: <20130531183855.44DDF928@viggo.jf.intel.com>
+ <20130531183858.3C8C10C7@viggo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <51AA1BFF.20803@semaphore.gr>
-References: <51A7BFA6.3070800@semaphore.gr>
-	<CAKohpo=oD9Wgr0Y9zA3aVCdMq5MUC5GESWyL45h=izRyp9-CLA@mail.gmail.com>
-	<51A8D0C2.1080801@semaphore.gr>
-	<CAKohpokmn-Rf-1w2aQHMMMkMbJqxokWXm5ye3DNuc-yzzk=7pQ@mail.gmail.com>
-	<51AA1BFF.20803@semaphore.gr>
-Date: Mon, 3 Jun 2013 11:41:25 +0530
-Message-ID: <CAKohpom3AA3xCHqZ-TeWgOgwM-=CQxd0XSAmKp85mR-p6txmcg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130531183858.3C8C10C7@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 June 2013 21:36, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> On 06/01/2013 05:56 PM, Viresh Kumar wrote:
+Hello Dave,
 
->> Even removal of __cpufreq_driver_getavg() should be done in a separate
->> patch, so that it can be reverted easily if required later.
->
-> Thanks, Viresh. I will do the removal of that function in a seperate patch.
-> Should I use a third patch for it? Or should I include it in the patch which
-> will remove APERF/MPERF support?
+On Fri, May 31, 2013 at 11:38:58AM -0700, Dave Hansen wrote:
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> swapcache_free() takes two arguments:
+> 
+> 	void swapcache_free(swp_entry_t entry, struct page *page)
+> 
+> Most of its callers (5/7) are from error handling paths haven't even
+> instantiated a page, so they pass page=NULL.  Both of the callers
+> that call in with a 'struct page' create and pass in a temporary
+> swp_entry_t.
+> 
+> Now that we are deferring clearing page_private() until after
+> swapcache_free() has been called, we can just create a variant
+> that takes a 'struct page' and does the temporary variable in
+> the helper.
+> 
+> That leaves all the other callers doing
+> 
+> 	swapcache_free(entry, NULL)
+> 
+> so create another helper for them that makes it clear that they
+> need only pass in a swp_entry_t.
+> 
+> One downside here is that delete_from_swap_cache() now does
+> an extra swap_address_space() call.  But, those are pretty
+> cheap (just some array index arithmetic).
 
-Maybe a third patch would be more cleaner.
+I lost from this description.
 
->> Why are you changing it to cpuinfo.max_freq?? This is fixed once a driver is
->> initialized.. but user may request a lower max freq for a governor or policy.
->> Which is actually reflected in policy->max I believe.
->
-> My initial thought is to have a linear function to calculate the target freq
-> proportional to load: (I will use 'C' as the function's slope as Rafael used it)
->
-> freq_target = C * load
->
-> For simplicity, let's assume that load is between 0 and 1 as initially is calculated
-> in governor.
-> Ideally,  for a load = 0, we should have freq_target = 0 and for load = 1,
-> freq_target = cpuinfo.max
->
-> So, the slope C = cpuinfo.max
->
-> I think, it's matter of definition about what policy->min and policy->max can do.
-> Should they change the slope C? Or only limit freq_target?
-> I don't think that the policy->max (or min) should affect HOW (slope C) governor
-> calculates freq_target but only limit the calculated result.
->
-> Maybe, we could have separate tunables to a affect the slope C.
->
-> If I'm wrong about the definition of policy->min, policy->max, I would change
-> the code accordingly.
+Old behavior
 
-Lets discuss that in reply to Rafael's mail.
+delete_from_swap_cache
+        swap_address_space
+        __delete_from_swap_cache
+                swap_address_space
 
->> As, if load is over 95, then even policy->max * 95 / 100 will even give almost
->> the same freq.
->>
->
-> I thought that too. But maybe user selects a lower value for up_threshold.
-> (For example, up_threshold = 60). In my opinion, we have to keep up_theshold,
-> to give the possibility to user to have max freq with small loads.
 
-Yes... good point.
+New behavior
+
+delete_from_swap_cache
+        __delete_from_swap_cache
+                swap_address_space
+                
+So you removes a swap_address_space, not adding a extra call.
+Am I missing something?
+
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+
+Otherwise, looks good to me
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+
+-- 
+Kind regards,
+Minchan Kim
