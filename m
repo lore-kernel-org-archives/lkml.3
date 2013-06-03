@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312Ab3FCDJV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:09:21 -0400
-Received: from mout.gmx.net ([212.227.17.22]:58885 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab3FCDJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:09:14 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+dtRUAlwidDayouz/Q1cfbXgnCMRwKWWC6ot3Gzn
-	hWs/ax5cFWInIW
-Message-ID: <1370228941.5988.66.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: smart wake-affine
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Mon, 03 Jun 2013 05:09:01 +0200
-In-Reply-To: <51ABFF6A.60206@linux.vnet.ibm.com>
-References: <51A43B16.9080801@linux.vnet.ibm.com>
-	 <51ABFF6A.60206@linux.vnet.ibm.com>
+	id S1751500Ab3FCDNC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 23:13:02 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56171 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3FCDMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 23:12:52 -0400
+Message-ID: <1370229169.24311.119.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: klamm@yandex-team.ru, paulmck@linux.vnet.ibm.com, brouer@redhat.com,
+        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, David.Laight@ACULAB.COM
+Date: Sun, 02 Jun 2013 20:12:49 -0700
+In-Reply-To: <20130602.195826.721294433730539253.davem@davemloft.net>
+References: <1369854387.5109.77.camel@edumazet-glaptop>
+	 <51A70CF4.1020807@yandex-team.ru>
+	 <1370215895.24311.93.camel@edumazet-glaptop>
+	 <20130602.195826.721294433730539253.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
-> On 05/28/2013 01:05 PM, Michael Wang wrote:
-> > wake-affine stuff is always trying to pull wakee close to waker, by theory,
-> > this will bring benefit if waker's cpu cached hot data for wakee, or the
-> > extreme ping-pong case.
-> > 
-> > And testing show it could benefit hackbench 15% at most.
-> > 
-> > However, the whole stuff is somewhat blindly and time-consuming, some
-> > workload therefore suffer.
-> > 
-> > And testing show it could damage pgbench 50% at most.
-> > 
-> > Thus, wake-affine stuff should be smarter, and realise when to stop
-> > it's thankless effort.
+On Sun, 2013-06-02 at 19:58 -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Sun, 02 Jun 2013 16:31:35 -0700
 > 
-> Is there any comments?
+> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
+> >> On 29.05.2013 23:06, Eric Dumazet wrote:
+> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
+> >> >
+> >> > True, these lookup functions are usually structured the same around the
+> >> > hlist_nulls_for_each_entry_rcu() loop.
+> >> >
+> >> > A barrier() right before the loop seems to be a benefit, the size of
+> >> > assembly code is reduced by 48 bytes.
+> >> >
+> >> > And its one of the documented way to handle this kind of problems
+> >> > (Documentation/atomic_ops.txt line 114)
+> >> >
+> >> > I guess we should amend this documentation, eventually.
+> >> >
+> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
+> >> >
+> >> 
+> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> >> 
+> >> Many thanks to you, Paul E. McKenney and David Laight for your
+> >> patches, help and participation in this discussion.
+> > 
+> > Thanks to you !
+> > 
+> > David, is there any problem with the patch ?
+> > 
+> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
+> > tell me what is needed to get it merged.
+> 
+> It's not a networking patch, it's a patch for generic RCU upstream.
+> So it either goes through Paul McKenney, or directly via Linus on
+> linux-kernel.
 
-(I haven't had time to test-drive yet, -rt munches time like popcorn)
+Well, whole discussion went on linux kernel, and you were the original
+committer of this patch five years ago.
+
+http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
+
+So please Paul or David make sure the patch goes in.
+
+My only concern is that Paul seems quite busy these days.
+
+Thanks
+
 
