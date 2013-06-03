@@ -1,115 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab3FCJlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:41:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15943 "EHLO mx1.redhat.com"
+	id S1756621Ab3FCJlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:41:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab3FCJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:40:54 -0400
-Date: Mon, 3 Jun 2013 11:41:33 +0200
+	id S1754150Ab3FCJlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 05:41:08 -0400
+Date: Mon, 3 Jun 2013 11:42:01 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH RFC -tip 0/6] perf: IRQ-bound performance events
-Message-ID: <20130603094132.GB30878@dhcp-26-207.brq.redhat.com>
+Subject: [PATCH RFC -tip 2/6] perf/x86: IRQ-bound performance events
+Message-ID: <20130603094200.GD30878@dhcp-26-207.brq.redhat.com>
+References: <cover.1370251263.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1370251263.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is against perf/core branch.
+Generic changes to x86 performance framework to further enable
+implementations of IRQ-bound performance events.
 
-As Linux is able to measure task-bound and CPU-bound performance
-events there are no convenient means to monitor performance of
-an execution context which requires control and tuning probably
-most - interrupt service routines.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       |   33 +++++++++++++++++++++++++++++--
+ arch/x86/kernel/cpu/perf_event.h       |    5 ++++
+ arch/x86/kernel/cpu/perf_event_amd.c   |    2 +
+ arch/x86/kernel/cpu/perf_event_intel.c |    4 +++
+ arch/x86/kernel/cpu/perf_event_knc.c   |    2 +
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +
+ arch/x86/kernel/cpu/perf_event_p6.c    |    2 +
+ 7 files changed, 47 insertions(+), 3 deletions(-)
 
-This series is an attempt to introduce IRQ-bound performance
-events - ones that only count in a context of a hardware interrupt
-handler.
-
-The implementation is pretty straightforward: an IRQ-bound event
-is registered with the IRQ descriptor and gets enabled/disabled
-using new PMU callbacks: pmu_enable_irq() and pmu_disable_irq().
-
-The series has not been tested thoroughly and is a concept proof
-rather than a decent implementation: no group events could be be
-loaded, inappropriate (i.e. software) events are not rejected,
-only Intel and AMD PMUs were tried for 'perf stat', only Intel
-PMU works with precise events. Perf tool changes are just a hack.
-
-Yet, I would like first to ensure if the approach taken is not
-screwed and I did not miss anything vital. Not to mention if the
-change is wanted at all.
-
-Below is a sample session on a machine with x2apic in cluster mode.
-IRQ number is passed using new argument -I <irq> (please nevermind
-'...process id '8'...' in the output for now):
-
-# cat /proc/interrupts | grep ' 8:'
-   8:         23          0          0          0         21          0          0          0         23          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0         27          0          0          0         23          0          0          0         17          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0  IR-IO-APIC-edge      rtc0
-# ./tools/perf/perf stat -a -e L1-dcache-load-misses:k sleep 1
- Performance counter stats for 'sleep 1':
-
-           124,849 L1-dcache-load-misses                                       
-
-       1.001359403 seconds time elapsed
-
-# ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k sleep 1
-
- Performance counter stats for process id '8':
-
-                 0 L1-dcache-load-misses                                       
-
-       1.001235781 seconds time elapsed
-
-# ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
-Mon 03 Jun 2013 04:42:59 AM EDT  -0.891274 seconds
-
- Performance counter stats for process id '8':
-
-
-Alexander Gordeev (6):
-  perf/core: IRQ-bound performance events
-  perf/x86: IRQ-bound performance events
-  perf/x86/AMD PMU: IRQ-bound performance events
-  perf/x86/Core PMU: IRQ-bound performance events
-  perf/x86/Intel PMU: IRQ-bound performance events
-  perf/tool: Hack 'pid' as 'irq' for sys_perf_event_open()
-
- arch/x86/kernel/cpu/perf_event.c          |   71 ++++++++++++++++++---
- arch/x86/kernel/cpu/perf_event.h          |   19 ++++++
- arch/x86/kernel/cpu/perf_event_amd.c      |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c    |   93 +++++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    5 +-
- arch/x86/kernel/cpu/perf_event_knc.c      |    2 +
- arch/x86/kernel/cpu/perf_event_p4.c       |    2 +
- arch/x86/kernel/cpu/perf_event_p6.c       |    2 +
- include/linux/irq.h                       |    8 ++
- include/linux/irqdesc.h                   |    3 +
- include/linux/perf_event.h                |   16 +++++
- include/uapi/linux/perf_event.h           |    1 +
- kernel/events/core.c                      |   69 +++++++++++++++----
- kernel/irq/Makefile                       |    1 +
- kernel/irq/handle.c                       |    4 +
- kernel/irq/irqdesc.c                      |   14 ++++
- kernel/irq/perf_event.c                   |  100 +++++++++++++++++++++++++++++
- tools/perf/builtin-record.c               |    8 ++
- tools/perf/builtin-stat.c                 |    8 ++
- tools/perf/util/evlist.c                  |    4 +-
- tools/perf/util/evsel.c                   |    3 +
- tools/perf/util/evsel.h                   |    1 +
- tools/perf/util/target.c                  |    4 +
- tools/perf/util/thread_map.c              |   16 +++++
- 24 files changed, 422 insertions(+), 34 deletions(-)
- create mode 100644 kernel/irq/perf_event.c
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 1025f3c..d02842d 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -525,6 +525,11 @@ static void x86_pmu_disable(struct pmu *pmu)
+ 	x86_pmu.disable_all();
+ }
+ 
++static void x86_pmu__disable_irq(struct pmu *pmu, int irq)
++{
++	x86_pmu.disable_irq(irq);
++}
++
+ void x86_pmu_enable_all(int added)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -540,6 +545,10 @@ void x86_pmu_enable_all(int added)
+ 	}
+ }
+ 
++void x86_pmu_enable_irq_nop_int(int irq)
++{
++}
++
+ static struct pmu pmu;
+ 
+ static inline int is_x86_event(struct perf_event *event)
+@@ -920,6 +929,11 @@ static void x86_pmu_enable(struct pmu *pmu)
+ 	x86_pmu.enable_all(added);
+ }
+ 
++static void x86_pmu__enable_irq(struct pmu *pmu, int irq)
++{
++	x86_pmu.enable_irq(irq);
++}
++
+ static DEFINE_PER_CPU(u64 [X86_PMC_IDX_MAX], pmc_prev_left);
+ 
+ /*
+@@ -1065,7 +1079,12 @@ static void x86_pmu_start(struct perf_event *event, int flags)
+ 	event->hw.state = 0;
+ 
+ 	cpuc->events[idx] = event;
+-	__set_bit(idx, cpuc->active_mask);
++	if (is_interrupt_event(event)) {
++		__set_bit(idx, cpuc->actirq_mask);
++		perf_event_irq_add(event);
++	} else {
++		__set_bit(idx, cpuc->active_mask);
++	}
+ 	__set_bit(idx, cpuc->running);
+ 	x86_pmu.enable(event);
+ 	perf_event_update_userpage(event);
+@@ -1102,6 +1121,7 @@ void perf_event_print_debug(void)
+ 		pr_info("CPU#%d: pebs:       %016llx\n", cpu, pebs);
+ 	}
+ 	pr_info("CPU#%d: active:     %016llx\n", cpu, *(u64 *)cpuc->active_mask);
++	pr_info("CPU#%d: actirq:     %016llx\n", cpu, *(u64 *)cpuc->actirq_mask);
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		rdmsrl(x86_pmu_config_addr(idx), pmc_ctrl);
+@@ -1130,8 +1150,11 @@ void x86_pmu_stop(struct perf_event *event, int flags)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
++	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask) ||
++	    __test_and_clear_bit(hwc->idx, cpuc->actirq_mask)) {
+ 		x86_pmu.disable(event);
++		if (unlikely(is_interrupt_event(event)))
++			perf_event_irq_del(event);
+ 		cpuc->events[hwc->idx] = NULL;
+ 		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
+ 		hwc->state |= PERF_HES_STOPPED;
+@@ -1199,7 +1222,8 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+-		if (!test_bit(idx, cpuc->active_mask)) {
++		if (!test_bit(idx, cpuc->active_mask) &&
++		    !test_bit(idx, cpuc->actirq_mask)) {
+ 			/*
+ 			 * Though we deactivated the counter some cpus
+ 			 * might still deliver spurious interrupts still
+@@ -1826,6 +1850,9 @@ static struct pmu pmu = {
+ 	.pmu_enable		= x86_pmu_enable,
+ 	.pmu_disable		= x86_pmu_disable,
+ 
++	.pmu_enable_irq		= x86_pmu__enable_irq,
++	.pmu_disable_irq	= x86_pmu__disable_irq,
++
+ 	.attr_groups		= x86_pmu_attr_groups,
+ 
+ 	.event_init		= x86_pmu_event_init,
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index ba9aadf..9dd59a9 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -125,6 +125,7 @@ struct cpu_hw_events {
+ 	 */
+ 	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
+ 	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++	unsigned long		actirq_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	int			enabled;
+ 
+@@ -345,6 +346,8 @@ struct x86_pmu {
+ 	int		(*handle_irq)(struct pt_regs *);
+ 	void		(*disable_all)(void);
+ 	void		(*enable_all)(int added);
++	void		(*disable_irq)(int irq);
++	void		(*enable_irq)(int irq);
+ 	void		(*enable)(struct perf_event *);
+ 	void		(*disable)(struct perf_event *);
+ 	int		(*hw_config)(struct perf_event *event);
+@@ -528,6 +531,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+ 
+ void x86_pmu_enable_all(int added);
+ 
++void x86_pmu_enable_irq_nop_int(int irq);
++
+ int perf_assign_events(struct event_constraint **constraints, int n,
+ 			int wmin, int wmax, int *assign);
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 4cbe032..74f123a 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -622,6 +622,8 @@ static __initconst const struct x86_pmu amd_pmu = {
+ 	.handle_irq		= x86_pmu_handle_irq,
+ 	.disable_all		= x86_pmu_disable_all,
+ 	.enable_all		= x86_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= x86_pmu_enable_event,
+ 	.disable		= x86_pmu_disable_event,
+ 	.hw_config		= amd_pmu_hw_config,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f60d41f..74f8652 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1676,6 +1676,8 @@ static __initconst const struct x86_pmu core_pmu = {
+ 	.handle_irq		= x86_pmu_handle_irq,
+ 	.disable_all		= x86_pmu_disable_all,
+ 	.enable_all		= core_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= core_pmu_enable_event,
+ 	.disable		= x86_pmu_disable_event,
+ 	.hw_config		= x86_pmu_hw_config,
+@@ -1818,6 +1820,8 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.handle_irq		= intel_pmu_handle_irq,
+ 	.disable_all		= intel_pmu_disable_all,
+ 	.enable_all		= intel_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= intel_pmu_enable_event,
+ 	.disable		= intel_pmu_disable_event,
+ 	.hw_config		= intel_pmu_hw_config,
+diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
+index 838fa87..a2bfc16 100644
+--- a/arch/x86/kernel/cpu/perf_event_knc.c
++++ b/arch/x86/kernel/cpu/perf_event_knc.c
+@@ -289,6 +289,8 @@ static const struct x86_pmu knc_pmu __initconst = {
+ 	.handle_irq		= knc_pmu_handle_irq,
+ 	.disable_all		= knc_pmu_disable_all,
+ 	.enable_all		= knc_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= knc_pmu_enable_event,
+ 	.disable		= knc_pmu_disable_event,
+ 	.hw_config		= x86_pmu_hw_config,
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 3486e66..3665e48 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1286,6 +1286,8 @@ static __initconst const struct x86_pmu p4_pmu = {
+ 	.handle_irq		= p4_pmu_handle_irq,
+ 	.disable_all		= p4_pmu_disable_all,
+ 	.enable_all		= p4_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= p4_pmu_enable_event,
+ 	.disable		= p4_pmu_disable_event,
+ 	.eventsel		= MSR_P4_BPU_CCCR0,
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index b1e2fe1..7328dae 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -202,6 +202,8 @@ static __initconst const struct x86_pmu p6_pmu = {
+ 	.handle_irq		= x86_pmu_handle_irq,
+ 	.disable_all		= p6_pmu_disable_all,
+ 	.enable_all		= p6_pmu_enable_all,
++	.disable_irq		= x86_pmu_enable_irq_nop_int,
++	.enable_irq		= x86_pmu_enable_irq_nop_int,
+ 	.enable			= p6_pmu_enable_event,
+ 	.disable		= p6_pmu_disable_event,
+ 	.hw_config		= x86_pmu_hw_config,
 -- 
 1.7.7.6
 
