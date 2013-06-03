@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504Ab3FCWTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:19:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23462 "EHLO
+	id S1759577Ab3FCWTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:19:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30555 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758678Ab3FCWMP (ORCPT
+	with ESMTP id S1758901Ab3FCWMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:15 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RBhR3_ey-McA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=54Z1rsfS-xYA:10 a=Op-mwl0xAAAA:8 a=VwQbUJbxAAAA:8 a=M5GUcnROAAAA:8 a=vmLDa1wCAAAA:8 a=KmqCZUEVAza2QQZapJAA:9 a=d4CUUju0HPYA:10 a=9RRF0ttvEvMA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:14 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=nWQPX4Jv034A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=n2WasoeWmK4A:10 a=6zZ5Uxn1AAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=-zc3DgLdyqHp_tMFs3cA:9 a=QwnTS9JGZEsA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221156.305216649@goodmis.org>
+Message-Id: <20130603221157.039073571@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:40 -0400
+Date: Mon, 03 Jun 2013 18:10:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [24/65] mwifiex: fix setting of multicast filter
+Cc: Christopher Harvey <charvey@matrox.com>, Julia Lemire <jlemire@matrox.com>,
+        Mathieu Larouche <mathieu.larouche@matrox.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [27/65] drm/mgag200: Fix writes into MGA1064_PIX_CLK_CTL register
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0024-mwifiex-fix-setting-of-multicast-filter.patch
+Content-Disposition: inline; filename=0027-drm-mgag200-Fix-writes-into-MGA1064_PIX_CLK_CTL-regi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,69 +31,209 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Christopher Harvey <charvey@matrox.com>
 
-[ Upstream commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 ]
+[ Upstream commit fb70a6690875315a3a1454e52fa339441ee7612b ]
 
-A small bug in this code was causing the ALLMULTI filter to be set
-when in fact we were just wanting to program a selective multicast list
-to the hardware.
+The original line,
+  WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
+wrote tmp into MGA1064_PIX_CLK_CTL_CLK_DIS, where
+MGA1064_PIX_CLK_CTL_CLK_DIS is an offset into
+MGA1064_PIX_CLK_CTL. Change the line to write properly into
+MGA1064_PIX_CLK_CTL. There were other chunks of code nearby that use
+the same pattern (but work correctly), so this patch updates them all
+to use this new (slightly more efficient) write pattern. The WREG_DAC
+macro was causing the DAC_INDEX register to be set to the same value
+twice. WREG8(DAC_DATA, foo) takes advantage of the fact that DAC_INDEX
+is already at the value we want.
 
-Fix that bug and remove a redundant if condition in the code that
-follows.
-
-This fixes wakeup behaviour when multicast WOL is enabled. Previously,
-all multicast packets would wake up the system. Now, only those that the
-host intended to receive trigger wakeups.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: <stable@vger.kernel.org>
-Acked-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Christopher Harvey <charvey@matrox.com>
+Acked-by: Julia Lemire <jlemire@matrox.com>
+Tested-by: Julia Lemire <jlemire@matrox.com>
+Acked-by: Mathieu Larouche <mathieu.larouche@matrox.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |   42 ++++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
-index fb21360..667598e 100644
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -106,7 +106,7 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 	} else {
- 		/* Multicast */
- 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
--		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
-+		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
- 			dev_dbg(priv->adapter->dev,
- 				"info: Enabling All Multicast!\n");
- 			priv->curr_pkt_filter |=
-@@ -118,20 +118,11 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 				dev_dbg(priv->adapter->dev,
- 					"info: Set multicast list=%d\n",
- 				       mcast_list->num_multicast_addr);
--				/* Set multicast addresses to firmware */
--				if (old_pkt_filter == priv->curr_pkt_filter) {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				} else {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				}
-+				/* Send multicast addresses to firmware */
-+				ret = mwifiex_send_cmd_async(priv,
-+					HostCmd_CMD_MAC_MULTICAST_ADR,
-+					HostCmd_ACT_GEN_SET, 0,
-+					mcast_list);
- 			}
- 		}
- 	}
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index fa82ead..26518cc 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -190,12 +190,12 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_REMHEADCTL_CLKDIS;
+-		WREG_DAC(MGA1064_REMHEADCTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		/* select PLL Set C */
+ 		tmp = RREG8(MGAREG_MEM_MISC_READ);
+@@ -205,7 +205,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN | 0x80;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		udelay(500);
+ 
+@@ -213,7 +213,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_VREF_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~0x04;
+-		WREG_DAC(MGA1064_VREF_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		udelay(50);
+ 
+@@ -237,13 +237,13 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_REMHEADCTL_CLKSL_MSK;
+ 		tmp |= MGA1064_REMHEADCTL_CLKSL_PLL;
+-		WREG_DAC(MGA1064_REMHEADCTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		/* reset dotclock rate bit */
+ 		WREG8(MGAREG_SEQ_INDEX, 1);
+@@ -254,7 +254,7 @@ static int mga_g200wb_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		vcount = RREG8(MGAREG_VCOUNT);
+ 
+@@ -319,7 +319,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= 0x3 << 2;
+@@ -327,12 +327,12 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
+ 	tmp = RREG8(DAC_DATA);
+-	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp & ~0x40);
++	WREG8(DAC_DATA, tmp & ~0x40);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG_DAC(MGA1064_EV_PIX_PLLC_M, m);
+ 	WREG_DAC(MGA1064_EV_PIX_PLLC_N, n);
+@@ -343,7 +343,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	udelay(500);
+ 
+@@ -351,11 +351,11 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 	tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
+ 	tmp = RREG8(DAC_DATA);
+-	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp | 0x40);
++	WREG8(DAC_DATA, tmp | 0x40);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= (0x3 << 2);
+@@ -364,7 +364,7 @@ static int mga_g200ev_set_plls(struct mga_device *mdev, long clock)
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	return 0;
+ }
+@@ -417,7 +417,7 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 		tmp |= 0x3 << 2;
+@@ -426,7 +426,7 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		udelay(500);
+ 
+@@ -440,13 +440,13 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		vcount = RREG8(MGAREG_VCOUNT);
+ 
+@@ -516,12 +516,12 @@ static int mga_g200er_set_plls(struct mga_device *mdev, long clock)
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_REMHEADCTL_CLKDIS;
+-	WREG_DAC(MGA1064_REMHEADCTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= (0x3<<2) | 0xc0;
+@@ -531,7 +531,7 @@ static int mga_g200er_set_plls(struct mga_device *mdev, long clock)
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	udelay(500);
+ 
 -- 
 1.7.10.4
 
