@@ -1,209 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab3FCCTl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 22:19:41 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:40897 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab3FCCTe (ORCPT
+	id S1756910Ab3FCCWH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 22:22:07 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:48638 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab3FCCV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 22:19:34 -0400
+	Sun, 2 Jun 2013 22:21:56 -0400
+Message-ID: <51ABFDB2.4050505@windriver.com>
+Date: Mon, 3 Jun 2013 10:21:38 +0800
+From: Ying Xue <ying.xue@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com> <1369993501-24309-1-git-send-email-srinivas.kandagatla@st.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 3 Jun 2013 10:19:13 +0800
-Message-ID: <CAGsJ_4xqGZVL7ZsYx1gpeUVoQan4hn=05_v51Kar78Vdkz0hig@mail.gmail.com>
-Subject: Re: [PATCH v1 1/2] ARM:prima2: move sirfsoc_of_rstc_init to .init_early
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Barry Song <baohua.song@csr.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: <linux-kernel@vger.kernel.org>
+CC: Ying Xue <ying.xue@windriver.com>, <tglx@linutronix.de>,
+        <richardcochran@gmail.com>, <prarit@redhat.com>
+Subject: Re: [PATCH] ntp: Move do_adjtimex() and hardpps() functions to timekeeping.c
+References: <1370225928-17792-1-git-send-email-ying.xue@windriver.com>
+In-Reply-To: <1370225928-17792-1-git-send-email-ying.xue@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.175]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Srinivas,
+Sorry, please ignore the patch as I send out wrong patch.
 
-2013/5/31 Srinivas KANDAGATLA <srinivas.kandagatla@st.com>:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> This patch moves sirfsoc_of_rstc_init from early_initcall to .init_early
-> in machine descriptor, doing this way a multi_v7 kernel will not crash
-> on non-prima2 SOCs.
->
-> Without this patch the multi_v7 kernel panics if we boot it on any non
-> prima2 parts with below log:
->
-> Kernel panic - not syncing: unable to find compatible rstc node in dtb
->
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc3-00535-gc3cc4ac #62
-> [<c001387c>] (unwind_backtrace+0x0/0xf8) from [<c00111cc>]
-> (show_stack+0x10/0x14)
-> [<c00111cc>] (show_stack+0x10/0x14) from [<c03417f4>] (panic+0x90/0x1e4)
-> [<c03417f4>] (panic+0x90/0x1e4) from [<c04256d0>]
-> (sirfsoc_of_rstc_init+0x24/0x5c)
-> [<c04256d0>] (sirfsoc_of_rstc_init+0x24/0x5c) from [<c041f854>]
-> (do_one_initcall+0x90/0x150)
-> [<c041f854>] (do_one_initcall+0x90/0x150) from [<c041f978>]
-> (kernel_init_freeable+0x64/0x1c4)
-> [<c041f978>] (kernel_init_freeable+0x64/0x1c4) from [<c033d344>]
-> (kernel_init+0x8/0xe4)
-> [<c033d344>] (kernel_init+0x8/0xe4) from [<c000ded8>]
-> (ret_from_fork+0x14/0x3c)
->
-> Initially detected when booting Stih415 SOC with multi_v7_defconfig.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Regards,
+Ying
+
+
+On 06/03/2013 10:18 AM, Ying Xue wrote:
+> From: John Stultz <john.stultz@linaro.org>
+> 
+> In preparation for changing the ntp locking rules, move
+> do_adjtimex and hardpps accessor functions to timekeeping.c,
+> but keep the code logic in ntp.c.
+> 
+> This patch also introduces a ntp_internal.h file so timekeeping
+> specific interfaces of ntp.c can be more limitedly shared with
+> timekeeping.c.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Richard Cochran <richardcochran@gmail.com>
+> Cc: Prarit Bhargava <prarit@redhat.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 > ---
-
-this broke SiRF by:
-Uncompressing Linux... done, booting the kernel.
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Linux version 3.10.0-rc2-00723-gd1a0472-dirty
-(barry@barry-laptop) (gcc version 4.5.4 20110505 (prerelease)
-(Ubuntu/Linaro 4.5-2011.5-csr-build) ) #35 SMP PREEMPT Mon Jun 3
-09:51:59 CST 2013
-[    0.000000] CPU: ARMv7 Processor [413fc090] revision 0 (ARMv7), cr=10c53c7d
-[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing
-instruction cache
-[    0.000000] Machine: Generic ATLAS6 (Flattened Device Tree), model:
-CSR SiRFatlas6 Evaluation Board
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] Memory policy: ECC disabled, Data cache writealloc
-[    0.000000] Unable to handle kernel NULL pointer dereference at
-virtual address 00000000
-[    0.000000] pgd = c0004000
-[    0.000000] [00000000] *pgd=00000000
-[    0.000000] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
-3.10.0-rc2-00723-gd1a0472-dirty #35
-[    0.000000] task: c05cfb40 ti: c05c4000 task.ti: c05c4000
-[    0.000000] PC is at kmem_cache_alloc+0x2c/0x124
-[    0.000000] LR is at __get_vm_area_node.clone.26+0x7c/0x190
-[    0.000000] pc : [<c00bf338>]    lr : [<c00b2b88>]    psr: 200001d3
-[    0.000000] sp : c05c5ec8  ip : c05c4000  fp : 00000000
-[    0.000000] r10: 00000000  r9 : 00001000  r8 : c00b2b88
-[    0.000000] r7 : 00002000  r6 : c05c4000  r5 : 000080d0  r4 : 00000000
-[    0.000000] r3 : 40000002  r2 : 00000001  r1 : 000080d0  r0 : 00000000
-[    0.000000] Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM
-Segment kernel
-[    0.000000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
-[    0.000000] Process swapper (pid: 0, stack limit = 0xc05c4238)
-[    0.000000] Stack: (0xc05c5ec8 to 0xc05c6000)
-[    0.000000] 5ec0:                   c0613948 c05c5ef0 00000001
-000000d0 00002000 c027255c
-[    0.000000] 5ee0: 00001000 d0800000 00000000 c00b2b88 00000001
-c040d90c 00088010 00000000
-[    0.000000] 5f00: 88010000 00001000 c05d1924 88010fff 00000000
-c00b32ec ff000000 000000d0
-[    0.000000] 5f20: c027255c 00000000 c05d18fc c001a3f4 c027255c
-00000000 c04788e0 c045b7a0
-[    0.000000] 5f40: c0008000 413fc090 c05c5fe4 c001a4dc c027255c
-c082b0ac c04788e0 c05d1a68
-[    0.000000] 5f60: c082b0ac c001a1c4 00000000 c027255c c05d1a90
-88010000 88010fff c082b0e8
-[    0.000000] 5f80: 00000200 00000000 00000000 00000000 c045b7a0
-c0462d9c c0477620 c05cf880
-[    0.000000] 5fa0: c04788e0 c045f2f4 00000000 c05c5fc4 00000000
-c05c4000 00000001 00000000
-[    0.000000] 5fc0: c05d0984 0000406a 00000000 c045c628 00000000
-00000000 00000000 00000000
-[    0.000000] 5fe0: 00000000 c04788e0 10c53c7d c05cd3b4 c04788dc
-00008074 00000000 00000000
-[    0.000000] [<c00bf338>] (kmem_cache_alloc+0x2c/0x124) from
-[<c00b2b88>] (__get_vm_area_node.clone.26+0x7c/0x190)
-[    0.000000] [<c00b2b88>] (__get_vm_area_node.clone.26+0x7c/0x190)
-from [<c00b32ec>] (get_vm_area_caller+0x44/0x4c)
-[    0.000000] [<c00b32ec>] (get_vm_area_caller+0x44/0x4c) from
-[<c001a3f4>] (__arm_ioremap_pfn_caller+0x124/0x1a0)
-[    0.000000] [<c001a3f4>] (__arm_ioremap_pfn_caller+0x124/0x1a0)
-from [<c001a4dc>] (__arm_ioremap_caller+0x54/0x5c)
-[    0.000000] [<c001a4dc>] (__arm_ioremap_caller+0x54/0x5c) from
-[<c001a1c4>] (__arm_ioremap+0x18/0x1c)
-[    0.000000] [<c001a1c4>] (__arm_ioremap+0x18/0x1c) from
-[<c027255c>] (of_iomap+0x2c/0x34)
-[    0.000000] [<c027255c>] (of_iomap+0x2c/0x34) from [<c0462d9c>]
-(sirfsoc_of_rstc_init+0x38/0x68)
-[    0.000000] [<c0462d9c>] (sirfsoc_of_rstc_init+0x38/0x68) from
-[<c045f2f4>] (setup_arch+0x19c/0x1a8)
-[    0.000000] [<c045f2f4>] (setup_arch+0x19c/0x1a8) from [<c045c628>]
-(start_kernel+0x7c/0x2b4)
-[    0.000000] [<c045c628>] (start_kernel+0x7c/0x2b4) from [<00008074>] (0x8074)
-[    0.000000] Code: ee1daf90 e5963004 e2833001 e5863004 (e5947000)
-[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
-[    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!
-
->  arch/arm/mach-prima2/common.c |    3 +++
->  arch/arm/mach-prima2/common.h |    1 +
->  arch/arm/mach-prima2/rstc.c   |    5 +----
->  3 files changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
-> index 4f94cd8..9aefcd6 100644
-> --- a/arch/arm/mach-prima2/common.c
-> +++ b/arch/arm/mach-prima2/common.c
-> @@ -61,6 +61,7 @@ DT_MACHINE_START(ATLAS6_DT, "Generic ATLAS6 (Flattened Device Tree)")
->         .init_late      = sirfsoc_init_late,
->         .dt_compat      = atlas6_dt_match,
->         .restart        = sirfsoc_restart,
-> +       .init_early     = sirfsoc_of_rstc_init,
->  MACHINE_END
->  #endif
->
-> @@ -81,6 +82,7 @@ DT_MACHINE_START(PRIMA2_DT, "Generic PRIMA2 (Flattened Device Tree)")
->         .init_late      = sirfsoc_init_late,
->         .dt_compat      = prima2_dt_match,
->         .restart        = sirfsoc_restart,
-> +       .init_early     = sirfsoc_of_rstc_init,
->  MACHINE_END
->  #endif
->
-> @@ -100,5 +102,6 @@ DT_MACHINE_START(MARCO_DT, "Generic MARCO (Flattened Device Tree)")
->         .init_late      = sirfsoc_init_late,
->         .dt_compat      = marco_dt_match,
->         .restart        = sirfsoc_restart,
-> +       .init_early     = sirfsoc_of_rstc_init,
->  MACHINE_END
->  #endif
-> diff --git a/arch/arm/mach-prima2/common.h b/arch/arm/mach-prima2/common.h
-> index 81135cd..65703a4 100644
-> --- a/arch/arm/mach-prima2/common.h
-> +++ b/arch/arm/mach-prima2/common.h
-> @@ -20,6 +20,7 @@ extern struct smp_operations   sirfsoc_smp_ops;
->  extern void sirfsoc_secondary_startup(void);
->  extern void sirfsoc_cpu_die(unsigned int cpu);
->
-> +extern void sirfsoc_of_rstc_init(void);
->  extern void __init sirfsoc_of_irq_init(void);
->  extern void __init sirfsoc_of_clk_init(void);
->  extern void sirfsoc_restart(char, const char *);
-> diff --git a/arch/arm/mach-prima2/rstc.c b/arch/arm/mach-prima2/rstc.c
-> index 435019c..5506425 100644
-> --- a/arch/arm/mach-prima2/rstc.c
-> +++ b/arch/arm/mach-prima2/rstc.c
-> @@ -23,7 +23,7 @@ static struct of_device_id rstc_ids[]  = {
->         {},
->  };
->
-> -static int __init sirfsoc_of_rstc_init(void)
-> +void sirfsoc_of_rstc_init(void)
->  {
->         struct device_node *np;
->
-> @@ -36,10 +36,7 @@ static int __init sirfsoc_of_rstc_init(void)
->                 panic("unable to map rstc cpu registers\n");
->
->         of_node_put(np);
+>  include/linux/timex.h      |    7 -------
+>  kernel/time/ntp.c          |    9 ++++-----
+>  kernel/time/ntp_internal.h |   11 +++++++++++
+>  kernel/time/timekeeping.c  |   21 +++++++++++++++++++++
+>  4 files changed, 36 insertions(+), 12 deletions(-)
+>  create mode 100644 kernel/time/ntp_internal.h
+> 
+> diff --git a/include/linux/timex.h b/include/linux/timex.h
+> index 5ec87c6..b3726e6 100644
+> --- a/include/linux/timex.h
+> +++ b/include/linux/timex.h
+> @@ -125,9 +125,6 @@
+>  extern unsigned long tick_usec;		/* USER_HZ period (usec) */
+>  extern unsigned long tick_nsec;		/* SHIFTED_HZ period (nsec) */
+>  
+> -extern void ntp_init(void);
+> -extern void ntp_clear(void);
 > -
-> -       return 0;
->  }
-> -early_initcall(sirfsoc_of_rstc_init);
->
->  int sirfsoc_reset_device(struct device *dev)
+>  /* Required to safely shift negative values */
+>  #define shift_right(x, s) ({	\
+>  	__typeof__(x) __x = (x);	\
+> @@ -140,10 +137,6 @@ extern void ntp_clear(void);
+>  #define NTP_INTERVAL_FREQ  (HZ)
+>  #define NTP_INTERVAL_LENGTH (NSEC_PER_SEC/NTP_INTERVAL_FREQ)
+>  
+> -/* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
+> -extern u64 ntp_tick_length(void);
+> -
+> -extern int second_overflow(unsigned long secs);
+>  extern int do_adjtimex(struct timex *);
+>  extern void hardpps(const struct timespec *, const struct timespec *);
+>  
+> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+> index 457d2ba..8b10706 100644
+> --- a/kernel/time/ntp.c
+> +++ b/kernel/time/ntp.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/rtc.h>
+>  
+>  #include "tick-internal.h"
+> +#include "ntp_internal.h"
+>  
+>  /*
+>   * NTP timekeeping variables:
+> @@ -661,7 +662,7 @@ int ntp_validate_timex(struct timex *txc)
+>   * adjtimex mainly allows reading (and writing, if superuser) of
+>   * kernel time-keeping variables. used by xntpd.
+>   */
+> -int do_adjtimex(struct timex *txc)
+> +int __do_adjtimex(struct timex *txc)
 >  {
-> --
-> 1.7.6.5
->
+>  	struct timespec ts;
+>  	u32 time_tai, orig_tai;
+> @@ -911,7 +912,7 @@ static void hardpps_update_phase(long error)
+>  }
+>  
+>  /*
+> - * hardpps() - discipline CPU clock oscillator to external PPS signal
+> + * __hardpps() - discipline CPU clock oscillator to external PPS signal
+>   *
+>   * This routine is called at each PPS signal arrival in order to
+>   * discipline the CPU clock oscillator to the PPS signal. It takes two
+> @@ -922,7 +923,7 @@ static void hardpps_update_phase(long error)
+>   * This code is based on David Mills's reference nanokernel
+>   * implementation. It was mostly rewritten but keeps the same idea.
+>   */
+> -void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+> +void __hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+>  {
+>  	struct pps_normtime pts_norm, freq_norm;
+>  	unsigned long flags;
+> @@ -976,8 +977,6 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+>  
+>  	raw_spin_unlock_irqrestore(&ntp_lock, flags);
+>  }
+> -EXPORT_SYMBOL(hardpps);
+> -
+>  #endif	/* CONFIG_NTP_PPS */
+>  
+>  static int __init ntp_tick_adj_setup(char *str)
+> diff --git a/kernel/time/ntp_internal.h b/kernel/time/ntp_internal.h
+> new file mode 100644
+> index 0000000..fdee80c
+> --- /dev/null
+> +++ b/kernel/time/ntp_internal.h
+> @@ -0,0 +1,11 @@
+> +#ifndef _LINUX_NTP_INTERNAL_H
+> +#define _LINUX_NTP_INTERNAL_H
+> +
+> +extern void ntp_init(void);
+> +extern void ntp_clear(void);
+> +/* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
+> +extern u64 ntp_tick_length(void);
+> +extern int second_overflow(unsigned long secs);
+> +extern int __do_adjtimex(struct timex *);
+> +extern void __hardpps(const struct timespec *, const struct timespec *);
+> +#endif /* _LINUX_NTP_INTERNAL_H */
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index c5feb7a..a138ec2 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/pvclock_gtod.h>
+>  
+>  #include "tick-internal.h"
+> +#include "ntp_internal.h"
+>  
+>  static struct timekeeper timekeeper;
+>  static DEFINE_RAW_SPINLOCK(timekeeper_lock);
+> @@ -1613,6 +1614,26 @@ ktime_t ktime_get_monotonic_offset(void)
+>  EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
+>  
+>  /**
+> + * do_adjtimex() - Accessor function to NTP __do_adjtimex function
+> + */
+> +int do_adjtimex(struct timex *txc)
+> +{
+> +	return __do_adjtimex(txc);
+> +}
+> +
+> +
+> +#ifdef CONFIG_NTP_PPS
+> +/**
+> + * hardpps() - Accessor function to NTP __hardpps function
+> + */
+> +void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+> +{
+> +	__hardpps(phase_ts, raw_ts);
+> +}
+> +EXPORT_SYMBOL(hardpps);
+> +#endif
+> +
+> +/**
+>   * xtime_update() - advances the timekeeping infrastructure
+>   * @ticks:	number of ticks, that have elapsed since the last call.
+>   *
+> 
 
--barry
