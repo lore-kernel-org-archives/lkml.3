@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3FCIPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:15:13 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49631 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3FCIPK (ORCPT
+	id S1753349Ab3FCIP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:15:57 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49953 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab3FCIPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:15:10 -0400
-Date: Mon, 3 Jun 2013 09:15:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Philippe Begnic <philippe.begnic.st@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        linux-kernel@vger.kernel.org, olivier.clergeaud@st.com,
-        Philippe Begnic <philippe.begnic@st.com>, sameo@linux.intel.com
-Subject: Re: [PATCH 0/4] clk, mfd: u8540 clock tree definition
-Message-ID: <20130603081504.GB3370@gmail.com>
-References: <1369658492-31358-1-git-send-email-philippe.begnic.st@gmail.com>
- <20130531012509.21525.90187@quantum>
- <20130531065532.GA10355@gmail.com>
- <20130531191437.21525.40759@quantum>
+	Mon, 3 Jun 2013 04:15:55 -0400
+Message-ID: <51AC50AE.50503@redhat.com>
+Date: Mon, 03 Jun 2013 10:15:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130531191437.21525.40759@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
+References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com> <20130602181253.GP24773@redhat.com> <51AC376D.9030001@redhat.com> <20130603080416.GA4725@redhat.com>
+In-Reply-To: <20130603080416.GA4725@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Mike Turquette wrote:
+Il 03/06/2013 10:04, Gleb Natapov ha scritto:
+> On Mon, Jun 03, 2013 at 08:27:57AM +0200, Paolo Bonzini wrote:
+>> Il 02/06/2013 20:12, Gleb Natapov ha scritto:
+>>> On Thu, May 30, 2013 at 04:35:55PM +0200, Paolo Bonzini wrote:
+>>>> The x86-64 extended low-byte registers were fetched correctly from reg,
+>>>> but not from mod/rm.
+>>>>
+>>>> This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
+>>>> not enough.
+>>>>
+>>> Did I missed unit test patch? :)
+>>
+>> I wanted to ask the GSoC student to do it.  If it doesn't come in a
+>> couple of weeks, I'll send it.
+>>
+> Which instruction you saw the bug happening with? It this 3.10 regression?
 
-> Quoting Lee Jones (2013-05-30 23:55:32)
-> > On Thu, 30 May 2013, Mike Turquette wrote:
-> > 
-> > > Quoting Philippe Begnic (2013-05-27 05:41:28)
-> > > > From: Philippe Begnic <philippe.begnic@st.com>
-> > > > 
-> > > > Create U8540 clock tree definitions for common clock framework
-> > > > 
-> > > 
-> > > The clock changes look good to me.  How did you want to merge the
-> > > patches?
-> > 
-> > You may as well take them through your tree Mike.
-> > 
+cmp $0x1f, %bpl
+
+Like the NOP, it is a regression introduced in the switch of
+emulate_invalid_guest_state from 0 to 1.
+
+Paolo
+
 > 
-> Sure I can take them but it would be best to wait for an Ack from Samuel
-> for the MFD parts, if only so that we are coordinated.
+>> Paolo
+>>
+>>>> Cc: gnatapov@redhat.com
+> Please use my other email :)
+> 
+>>>> Cc: kvm@vger.kernel.org
+>>>> Cc: <stable@vger.kernel.org> # 3.9
+>>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>>>> ---
+>>>>  arch/x86/kvm/emulate.c | 5 ++++-
+>>>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>>>> index aa68106..028b34f 100644
+>>>> --- a/arch/x86/kvm/emulate.c
+>>>> +++ b/arch/x86/kvm/emulate.c
+>>>> @@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
+>>>>  	ctxt->modrm_seg = VCPU_SREG_DS;
+>>>>  
+>>>>  	if (ctxt->modrm_mod == 3) {
+>>>> +		int highbyte_regs = ctxt->rex_prefix == 0;
+>>>> +
+>>>>  		op->type = OP_REG;
+>>>>  		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+>>>> -		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
+>>>> +		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
+>>>> +					       highbyte_regs && (ctxt->d & ByteOp));
+>>>>  		if (ctxt->d & Sse) {
+>>>>  			op->type = OP_XMM;
+>>>>  			op->bytes = 16;
+>>>> -- 
+>>>> 1.8.1.4
+>>>
+>>> --
+>>> 			Gleb.
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+> 
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-You don't need it. Apply with mine instead:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> > > > Philippe Begnic (4):
-> > > >   clk: ux500: Pass clock base adresses in initcall for u8540 and u9540
-> > > >   mfd: db8500: Update register definition for u8540 clock
-> > > >   mfd: db8500: Update BML clock register for db8580
-> > > >   clk: ux500: Clocks definition for u8540
-> > > > 
-> > > >  arch/arm/mach-ux500/cpu.c                 |    6 +-
-> > > >  drivers/clk/ux500/u8540_clk.c             |  564 ++++++++++++++++++++++++++++-
-> > > >  drivers/clk/ux500/u9540_clk.c             |    4 +-
-> > > >  drivers/mfd/db8500-prcmu.c                |    1 +
-> > > >  drivers/mfd/dbx500-prcmu-regs.h           |    1 +
-> > > >  include/linux/mfd/abx500/ab8500-sysctrl.h |    4 +-
-> > > >  include/linux/mfd/dbx500-prcmu.h          |   12 +
-> > > >  include/linux/platform_data/clk-ux500.h   |    6 +-
-> > > >  8 files changed, 587 insertions(+), 11 deletions(-)
-> > > > 
-> > 
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
