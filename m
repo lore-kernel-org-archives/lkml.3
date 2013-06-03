@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3FCHhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 03:37:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57036 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab3FCHhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 03:37:25 -0400
-From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5] i2c: omap: correct usage of the interrupt enable register
-Date: Mon, 3 Jun 2013 10:37:20 +0300
-Message-ID: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
-X-Mailer: git-send-email 1.8.2.rc2
+	id S1752175Ab3FCHkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 03:40:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62609 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3FCHki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 03:40:38 -0400
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <stable@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <nhorman@tuxdriver.com>, <xufeng.zhang@windriver.com>,
+        <vyasevich@gmail.com>, <davem@davemloft.net>
+Subject: [PATCH] sctp: set association state to established in dupcook_a handler
+Date: Mon, 3 Jun 2013 15:52:58 +0800
+Message-ID: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+X-Mailer: git-send-email 1.7.0.2
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've been lucky not to have any interrupts fire during the suspend
-path, otherwise we would have unpredictable behaviour in the kernel.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Based on the logic of the kernel code interrupts from i2c should be
-prohibited during suspend. Kernel writes 0 to the I2C_IE register in
-the omap_i2c_runtime_suspend() function. In the other side kernel
-writes saved interrupt flags to the I2C_IE register in
-omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
-during suspend.
+------------------
 
-This works for chips with version1 registers scheme. Interrupts are
-disabled during suspend. For chips with version2 scheme registers
-writting 0 to the I2C_IE register does nothing (because now the
-I2C_IRQENABLE_SET register is located at this address). This register
-is used to enable interrupts. For disabling interrupts
-I2C_IRQENABLE_CLR register should be used.
 
-Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
-addresses, the interrupt enabling procedure is unchanged.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-I've checked that interrupts in the i2c controller are still enabled
-after writting 0 to the I2C_IRQENABLE_SET register. With this patch
-interrupts are disabled in the omap_i2c_runtime_suspend() function.
+[ Upstream commit 9839ff0dead906e85e4d17490aeff87a5859a157 ]
 
-Patch is based on:
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-tag: v3.10-rc2
+While sctp handling a duplicate COOKIE-ECHO and the action is
+'Association restart', sctp_sf_do_dupcook_a() will processing
+the unexpected COOKIE-ECHO for peer restart, but it does not set
+the association state to SCTP_STATE_ESTABLISHED, so the association
+could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+This violates the sctp specification:
+  RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+  Action
+  A) In this case, the peer may have restarted. .....
+     After this, the endpoint shall enter the ESTABLISHED state.
 
-Verified on OMAP4430.
+To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
+command list before SCTP_CMD_REPLY cmd, this will set the restart
+association to SCTP_STATE_ESTABLISHED state properly and also avoid
+I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
+with DATA chunks.
 
-Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/i2c/busses/i2c-omap.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/sctp/sm_statefuns.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index e02f9e3..64c26f9 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -180,6 +180,8 @@ enum {
- #define I2C_OMAP_ERRATA_I207		(1 << 0)
- #define I2C_OMAP_ERRATA_I462		(1 << 1)
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index cb1c430..ab08f65 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1747,8 +1747,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(const struct sctp_endpoint *ep,
  
-+#define OMAP_I2C_IP_V2_INTERRUPTS_MASK	0x6FFF
-+
- struct omap_i2c_dev {
- 	spinlock_t		lock;		/* IRQ synchronization */
- 	struct device		*dev;
-@@ -193,6 +195,7 @@ struct omap_i2c_dev {
- 						    long latency);
- 	u32			speed;		/* Speed of bus in kHz */
- 	u32			flags;
-+	u16			scheme;
- 	u16			cmd_err;
- 	u8			*buf;
- 	u8			*regs;
-@@ -1082,7 +1085,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	int irq;
- 	int r;
- 	u32 rev;
--	u16 minor, major, scheme;
-+	u16 minor, major;
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
++	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++			SCTP_STATE(SCTP_STATE_ESTABLISHED));
++	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+ 	return SCTP_DISPOSITION_CONSUME;
  
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -1159,8 +1162,8 @@ omap_i2c_probe(struct platform_device *pdev)
- 	 */
- 	rev = __raw_readw(dev->base + 0x04);
- 
--	scheme = OMAP_I2C_SCHEME(rev);
--	switch (scheme) {
-+	dev->scheme = OMAP_I2C_SCHEME(rev);
-+	switch (dev->scheme) {
- 	case OMAP_I2C_SCHEME_0:
- 		dev->regs = (u8 *)reg_map_ip_v1;
- 		dev->rev = omap_i2c_read_reg(dev, OMAP_I2C_REV_REG);
-@@ -1289,7 +1292,11 @@ static int omap_i2c_runtime_suspend(struct device *dev)
- 
- 	_dev->iestate = omap_i2c_read_reg(_dev, OMAP_I2C_IE_REG);
- 
--	omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
-+	if (_dev->scheme == OMAP_I2C_SCHEME_0)
-+		omap_i2c_write_reg(_dev, OMAP_I2C_IE_REG, 0);
-+	else
-+		omap_i2c_write_reg(_dev, OMAP_I2C_IP_V2_IRQENABLE_CLR,
-+				   OMAP_I2C_IP_V2_INTERRUPTS_MASK);
- 
- 	if (_dev->rev < OMAP_I2C_OMAP1_REV_2) {
- 		omap_i2c_read_reg(_dev, OMAP_I2C_IV_REG); /* Read clears */
+ nomem_ev:
 -- 
-1.8.2.rc2
+1.7.0.2
 
