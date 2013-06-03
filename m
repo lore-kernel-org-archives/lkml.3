@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab3FCSsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:48:35 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60450 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab3FCSsb (ORCPT
+	id S1759311Ab3FCSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:50:09 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42452 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754989Ab3FCSuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:48:31 -0400
-Date: Mon, 3 Jun 2013 19:48:07 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Message-ID: <20130603184807.GR31367@sirena.org.uk>
-References: <1370280888-15072-1-git-send-email-swarren@wwwdotorg.org>
+	Mon, 3 Jun 2013 14:50:06 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zHDeOHGDnzKksZSU"
-Content-Disposition: inline
-In-Reply-To: <1370280888-15072-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: assume registers are volatile iff no cache
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <s5h8v2rzezr.wl%tiwai@suse.de>
+References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
+ <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
+ <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
+ <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
+ <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
+ <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
+ <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
+ <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
+ <s5h1u8wtsk9.wl%tiwai@suse.de> <CALxABCZdm=qd1E63NeabcqmD0csnL1FcuUBCFTwa1yDOVRVXyg@mail.gmail.com>
+ <s5h1u8w8f82.wl%tiwai@suse.de> <CALxABCbJ-4_UPNX5qNAOy-PdQ+tp+vVBDE535nLyfjgzDjjebQ@mail.gmail.com>
+ <s5h1u8p7pxi.wl%tiwai@suse.de> <CALxABCbBYRJDsXMw0Y0BLs+RuXNMa_RMOAF5i4rmWDaYPa2H0Q@mail.gmail.com>
+ <s5hehcn2tc3.wl%tiwai@suse.de> <CALxABCaQ_drc+jKP4wZ5S_5wZVcE7rVXW_LZdVJ8tqZUai-=UQ@mail.gmail.com>
+ <s5hbo7rowq5.wl%tiwai@suse.de> <CALxABCZVDrLMH+Y=b6CP8rehM5q7vikjoGNgi=S5jHKZuSSGsw@mail.gmail.com>
+ <s5h8v2rzezr.wl%tiwai@suse.de>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Mon, 3 Jun 2013 20:49:45 +0200
+Message-ID: <CALxABCbJz_8ENe+qQgb8m9yoU_75yKh5CAaikT3zX92X18As1w@mail.gmail.com>
+Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
+ HDA, codec VIA VT1802
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 3, 2013 at 12:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> Thanks.  I think I found the culprit of the problem with the pin ctl
+> value now.  This happens only when the power save is used or
+> suspended, and it happens only on VT1802.  That's why I couldn't
+> reproduce the issue with the emulator, and it wasn't reported from
+> users of other VIA codecs.
+>
+> In anyway, the patch series below are the fixes.  Scratch the whole
+> previous patches and apply them on clean 3.9 (or 3.10-rc) tree.
+> Hopefully we sorted out all issues now.
 
---zHDeOHGDnzKksZSU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Bingo, it works! In case you want to review the test, logs:
 
-On Mon, Jun 03, 2013 at 11:34:48AM -0600, Stephen Warren wrote:
+  http://familie-riesen.de/~raa/public/test/via-fix-cleared-pins.tar.bz2
 
-> If a regmap has a cache, it's likely that registers are not volatile,
-> perhaps with exceptions. Otherwise, the cache would not be useful. Encode
-> this assumption into regmap_volatile()'s default return value, for the
-> case where a regmap doesn't specify which registers are volatile.
+I'm going to run this kernel from now on. I shall report if I see
+something else.
 
-I already sent out a patch of my own for this.
-
---zHDeOHGDnzKksZSU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRrOTfAAoJELSic+t+oim9ZCwP/R97vZ424INjyjZwpQuY/7UA
-2cOkPHx4oua5c042Cvf+LuqhRTss8djm9182L+eofMQz8B1mFRycTOKYkqlbjOvC
-CMICK6+j6vh0Yu49qGV0MLqveNror2zyseoPBQQIVSGLIZwARnr97JRDuSPNlfsi
-s+HotGak6SyaYxEl2/6rU35udrcoXQRjesYcEYOsGr1lroJH5RbzwMdrG97k+GLA
-5lbvW8ADkIApMKp8mdBE5X/jqtL3TtEy7+gsqFhaQu864/3W1WCd+DZLrrGgKAbG
-V/MBVHIVEIH3T/oTH1xmzzi2t/sYzzdFqGmwcIRpp0MpuesLMcn1WXmEkPIRxGa6
-YtQZSl11VSM7qnAbEWNkE0Zm2BgtHdq1msmWhKNGhY7mCsJ8iXroOKiikDV9zZz9
-MzL89a+KoR59Dl7kAG997hcpfDFSqdKQX+SSfI7uYQKx9KZaWHUgEj7dr8nmlQyg
-BcVNKwhuSpVWlLiaCqMa40yAXNadf3G/r/DMc9l0GoMGrWOEqerV8RYu2OhlnPaI
-Z6tI8tAInGWs0C0IStkG6B9YwT5ZJ8PsxbuYGTVdMJVFSENFGNDLWX5kEEBnfhHu
-9CSmGVPfvc6x6JzP0R53GDImbhRnF7cxQRekJ++tF7uIQRUXLid0p3Pa7PK9W9Kf
-gZpocOVgtUVcYDy8Qetj
-=17vk
------END PGP SIGNATURE-----
-
---zHDeOHGDnzKksZSU--
+Thanks!
+Alex
