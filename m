@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab3FCWWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:22:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18316 "EHLO
+	id S1759083Ab3FCWWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:22:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27975 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758804Ab3FCWMA (ORCPT
+	with ESMTP id S1758801Ab3FCWMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 18:12:00 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=CIibLl7Jrs4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=eaz7EpK6WUsA:10 a=YhdJeHolAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=cIlJEn9swfgASWA2gWUA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=sFaEtk7krlQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=U8dQHKfu5ZEA:10 a=yPCof4ZbAAAA:8 a=tHz9FfFoAAAA:8 a=VwQbUJbxAAAA:8 a=RUSTWMQ1nkjDhUZoypYA:9 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=9EuFBfuGW6owQClQ:21 a=bddKreHdEC-6ch5t:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221153.475194479@goodmis.org>
+Message-Id: <20130603221154.001317406@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:24 -0400
+Date: Mon, 03 Jun 2013 18:10:27 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [08/65] dm snapshot: fix error return code in snapshot_ctr
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [11/65] xen/vcpu/pvhvm: Fix vcpu hotplugging hanging.
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0008-dm-snapshot-fix-error-return-code-in-snapshot_ctr.patch
+Content-Disposition: inline; filename=0011-xen-vcpu-pvhvm-Fix-vcpu-hotplugging-hanging.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +30,110 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-[ Upstream commit 09e8b813897a0f85bb401435d009228644c81214 ]
+[ Upstream commit 7f1fc268c47491fd5e63548f6415fc8604e13003 ]
 
-Return -ENOMEM instead of success if unable to allocate pending
-exception mempool in snapshot_ctr.
+If a user did:
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: stable@vger.kernel.org
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+	echo 0 > /sys/devices/system/cpu/cpu1/online
+	echo 1 > /sys/devices/system/cpu/cpu1/online
+
+we would (this a build with DEBUG enabled) get to:
+smpboot: ++++++++++++++++++++=_---CPU UP  1
+.. snip..
+smpboot: Stack at about ffff880074c0ff44
+smpboot: CPU1: has booted.
+
+and hang. The RCU mechanism would kick in an try to IPI the CPU1
+but the IPIs (and all other interrupts) would never arrive at the
+CPU1. At first glance at least. A bit digging in the hypervisor
+trace shows that (using xenanalyze):
+
+[vla] d4v1 vec 243 injecting
+   0.043163027 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
+]  0.043163639 --|x d4v1 vmentry cycles 1468
+]  0.043164913 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
+   0.043164913 --|x d4v1 inj_virq vec 243  real
+  [vla] d4v1 vec 243 injecting
+   0.043164913 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
+]  0.043165526 --|x d4v1 vmentry cycles 1472
+]  0.043166800 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
+   0.043166800 --|x d4v1 inj_virq vec 243  real
+  [vla] d4v1 vec 243 injecting
+
+there is a pending event (subsequent debugging shows it is the IPI
+from the VCPU0 when smpboot.c on VCPU1 has done
+"set_cpu_online(smp_processor_id(), true)") and the guest VCPU1 is
+interrupted with the callback IPI (0xf3 aka 243) which ends up calling
+__xen_evtchn_do_upcall.
+
+The __xen_evtchn_do_upcall seems to do *something* but not acknowledge
+the pending events. And the moment the guest does a 'cli' (that is the
+ffffffff81673254 in the log above) the hypervisor is invoked again to
+inject the IPI (0xf3) to tell the guest it has pending interrupts.
+This repeats itself forever.
+
+The culprit was the per_cpu(xen_vcpu, cpu) pointer. At the bootup
+we set each per_cpu(xen_vcpu, cpu) to point to the
+shared_info->vcpu_info[vcpu] but later on use the VCPUOP_register_vcpu_info
+to register per-CPU  structures (xen_vcpu_setup).
+This is used to allow events for more than 32 VCPUs and for performance
+optimizations reasons.
+
+When the user performs the VCPU hotplug we end up calling the
+the xen_vcpu_setup once more. We make the hypercall which returns
+-EINVAL as it does not allow multiple registration calls (and
+already has re-assigned where the events are being set). We pick
+the fallback case and set per_cpu(xen_vcpu, cpu) to point to the
+shared_info->vcpu_info[vcpu] (which is a good fallback during bootup).
+However the hypervisor is still setting events in the register
+per-cpu structure (per_cpu(xen_vcpu_info, cpu)).
+
+As such when the events are set by the hypervisor (such as timer one),
+and when we iterate in __xen_evtchn_do_upcall we end up reading stale
+events from the shared_info->vcpu_info[vcpu] instead of the
+per_cpu(xen_vcpu_info, cpu) structures. Hence we never acknowledge the
+events that the hypervisor has set and the hypervisor keeps on reminding
+us to ack the events which we never do.
+
+The fix is simple. Don't on the second time when xen_vcpu_setup is
+called over-write the per_cpu(xen_vcpu, cpu) if it points to
+per_cpu(xen_vcpu_info).
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/md/dm-snap.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/enlighten.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index a143921..456ef7a 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -1117,6 +1117,7 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	s->pending_pool = mempool_create_slab_pool(MIN_IOS, pending_cache);
- 	if (!s->pending_pool) {
- 		ti->error = "Could not allocate mempool for pending exceptions";
-+		r = -ENOMEM;
- 		goto bad_pending_pool;
- 	}
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 0dc16d6..d11cf12 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -154,6 +154,21 @@ static void xen_vcpu_setup(int cpu)
+ 
+ 	BUG_ON(HYPERVISOR_shared_info == &xen_dummy_shared_info);
+ 
++	/*
++	 * This path is called twice on PVHVM - first during bootup via
++	 * smp_init -> xen_hvm_cpu_notify, and then if the VCPU is being
++	 * hotplugged: cpu_up -> xen_hvm_cpu_notify.
++	 * As we can only do the VCPUOP_register_vcpu_info once lets
++	 * not over-write its result.
++	 *
++	 * For PV it is called during restore (xen_vcpu_restore) and bootup
++	 * (xen_setup_vcpu_info_placement). The hotplug mechanism does not
++	 * use this function.
++	 */
++	if (xen_hvm_domain()) {
++		if (per_cpu(xen_vcpu, cpu) == &per_cpu(xen_vcpu_info, cpu))
++			return;
++	}
+ 	if (cpu < MAX_VIRT_CPUS)
+ 		per_cpu(xen_vcpu,cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
  
 -- 
 1.7.10.4
