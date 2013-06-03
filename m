@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab3FCTRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:17:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40840 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab3FCTRF (ORCPT
+	id S1757267Ab3FCTVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:21:22 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:57404 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756091Ab3FCTVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:17:05 -0400
-Message-ID: <51ACEBAF.6010707@codeaurora.org>
-Date: Mon, 03 Jun 2013 12:17:03 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH 2/2] mfd: ssbi: Use devm_* to simplify code
-References: <1370152955-14841-1-git-send-email-sboyd@codeaurora.org> <1370152955-14841-2-git-send-email-sboyd@codeaurora.org> <20130603081021.GA3370@gmail.com>
-In-Reply-To: <20130603081021.GA3370@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 15:21:19 -0400
+From: Nikolay Balandin <n.a.balandin@gmail.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, Rob Landley <rob@landley.net>,
+        rtc-linux@googlegroups.com, linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Krivoschekov <dkrivoschokov@dev.rtsoft.ru>,
+        Alexander Stauffenberg <Alexander.Stauffenberg@kontron.com>,
+        Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+Subject: [PATCH v1 1/1] Documentation/rtc: update ioctl return values checkings in example code
+Date: Mon,  3 Jun 2013 23:20:22 +0400
+Message-Id: <1370287222-24417-1-git-send-email-n.a.balandin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/13 01:10, Lee Jones wrote:
->> Use devm_ioremap_resource and devm_kzalloc to simplify error
->> paths and reduce lines of code.
-> The code looks fine, but you're actually doing a great deal more than
-> you describe in the commit message. Would you mind expanding?
->
-> I.e:
->
->> +		dev_err(&pdev->dev, "Unknown qcom,controller-type\n");
-> Switching to these 'cos they're more informative.
->
->> -	platform_set_drvdata(pdev, NULL);
-> Removing these because they're obsolete.
->
->> -	.remove		= ssbi_remove,
-> Removing this 'cos it no longer does anything useful.
->
->> +module_platform_driver(ssbi_driver);
-> Moving these because it's more succinct when init() and exit()
-> routines are baron.
->
-> None of the above have anything to do with devm_* managed resources.
->
+From: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
 
-Ok I'll update the commit text and resend. Thanks for the review.
+Update ioctl return values for rtc example code to correctly determine
+does the rtc driver support corresponding IRQ type or not.
 
+According to the rtc subsystem interface return values:
+ For the update and alarm interrupts rtc subsystem interface will
+return -EINVAL error code if a device driver does not implement
+corresponding handler (RTC_UIE_ON or RTC_ALM_SET).
+ For the periodic IRQs (RTC_IRQP_READ) rtc-dev will return 0 as a period
+if rtc->irq_freq property is not initialized.
+
+Signed-off-by: Nikolay Balandin <nbalandin@dev.rtsoft.ru>
+---
+ Documentation/rtc.txt |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/rtc.txt b/Documentation/rtc.txt
+index 32aa400..f911e4a 100644
+--- a/Documentation/rtc.txt
++++ b/Documentation/rtc.txt
+@@ -270,7 +270,7 @@ int main(int argc, char **argv)
+ 	/* Turn on update interrupts (one per second) */
+ 	retval = ioctl(fd, RTC_UIE_ON, 0);
+ 	if (retval == -1) {
+-		if (errno == ENOTTY) {
++		if (errno == EINVAL) {
+ 			fprintf(stderr,
+ 				"\n...Update IRQs not supported.\n");
+ 			goto test_READ;
+@@ -353,7 +353,7 @@ test_READ:
+ 
+ 	retval = ioctl(fd, RTC_ALM_SET, &rtc_tm);
+ 	if (retval == -1) {
+-		if (errno == ENOTTY) {
++		if (errno == EINVAL) {
+ 			fprintf(stderr,
+ 				"\n...Alarm IRQs not supported.\n");
+ 			goto test_PIE;
+@@ -401,13 +401,12 @@ test_PIE:
+ 	/* Read periodic IRQ rate */
+ 	retval = ioctl(fd, RTC_IRQP_READ, &tmp);
+ 	if (retval == -1) {
+-		/* not all RTCs support periodic IRQs */
+-		if (errno == ENOTTY) {
+-			fprintf(stderr, "\nNo periodic IRQ support\n");
+-			goto done;
+-		}
+ 		perror("RTC_IRQP_READ ioctl");
+ 		exit(errno);
++	} else if (tmp == 0) {
++		/* not all RTCs support periodic IRQs */
++		fprintf(stderr, "\nNo periodic IRQ support\n");
++		goto done;
+ 	}
+ 	fprintf(stderr, "\nPeriodic IRQ rate is %ldHz.\n", tmp);
+ 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
