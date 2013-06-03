@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488Ab3FCWQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:16:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32917 "EHLO
+	id S1759292Ab3FCWQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:16:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18316 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758984Ab3FCWMX (ORCPT
+	with ESMTP id S1758968Ab3FCWMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 18:12:23 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9Xj-3rIJt8AA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=JNVLLR7WruIA:10 a=40MIqcmNAAAA:8 a=J1Y8HTJGAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=-tENaG0q7zQA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ofuUIV-DBO0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=kgqIQ5U_yXUA:10 a=fk1lIlRQAAAA:8 a=J1Y8HTJGAAAA:8 a=O92jFK8mYZ1BVrX7gfAA:9 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=ZbahZk9npJwsnaCJ:21 a=Sj-E8SW9EOdyFVMJ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221157.720285357@goodmis.org>
+Message-Id: <20130603221159.008098286@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:47 -0400
+Date: Mon, 03 Jun 2013 18:10:55 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chen Gang <gang.chen@asianux.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [31/65] net: mac802154: comparision issue of type cast, finding by
- EXTRA_CFLAGS=-W
+Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [39/65] 3c59x: fix PCI resource management
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0031-net-mac802154-comparision-issue-of-type-cast-finding.patch
+Content-Disposition: inline; filename=0039-3c59x-fix-PCI-resource-management.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,38 +30,107 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-[ Upstream commit 2c1bbbffa0b644fab4f91878cde0c2e8f52e2dcc ]
+[ Upstream commit 4b264a1676e70dc656ba53a8cac690f2d4b65f4e ]
 
-Change MAC802154_CHAN_NONE from ~(u8)0 to 0xff, or the comparison in
-mac802154_wpan_xmit() for ``chan == MAC802154_CHAN_NONE'' will not
-succeed.
+The driver wrongly claimed I/O ports at an address returned by pci_iomap() --
+even if it was passed an MMIO address.  Fix this by claiming/releasing all PCI
+resources in the PCI driver's probe()/remove() methods instead and get rid of
+'must_free_region' flag weirdness (why would Cardbus claim anything for us?).
 
-This bug can be boiled down to ``u8 foo = 0xff; if (foo == ~(u8)0)
-[...] else [...]'' where the condition will always take the else
-branch.
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/mac802154/mac802154.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/3com/3c59x.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/net/mac802154/mac802154.h b/net/mac802154/mac802154.h
-index a4dcaf1..703c121 100644
---- a/net/mac802154/mac802154.h
-+++ b/net/mac802154/mac802154.h
-@@ -90,7 +90,7 @@ struct mac802154_sub_if_data {
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index ccfc86f..5673d6e 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -632,7 +632,6 @@ struct vortex_private {
+ 		pm_state_valid:1,				/* pci_dev->saved_config_space has sane contents */
+ 		open:1,
+ 		medialock:1,
+-		must_free_region:1,				/* Flag: if zero, Cardbus owns the I/O region */
+ 		large_frames:1,			/* accept large frames */
+ 		handling_irq:1;			/* private in_irq indicator */
+ 	/* {get|set}_wol operations are already serialized by rtnl.
+@@ -1012,6 +1011,12 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 	if (rc < 0)
+ 		goto out;
  
- #define MAC802154_MAX_XMIT_ATTEMPTS	3
++	rc = pci_request_regions(pdev, DRV_NAME);
++	if (rc < 0) {
++		pci_disable_device(pdev);
++		goto out;
++	}
++
+ 	unit = vortex_cards_found;
  
--#define MAC802154_CHAN_NONE		(~(u8)0) /* No channel is assigned */
-+#define MAC802154_CHAN_NONE		0xff /* No channel is assigned */
+ 	if (global_use_mmio < 0 && (unit >= MAX_UNITS || use_mmio[unit] < 0)) {
+@@ -1027,6 +1032,7 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 	if (!ioaddr) /* If mapping fails, fall-back to BAR 0... */
+ 		ioaddr = pci_iomap(pdev, 0, 0);
+ 	if (!ioaddr) {
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		rc = -ENOMEM;
+ 		goto out;
+@@ -1036,6 +1042,7 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 			   ent->driver_data, unit);
+ 	if (rc < 0) {
+ 		pci_iounmap(pdev, ioaddr);
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		goto out;
+ 	}
+@@ -1179,11 +1186,6 @@ static int __devinit vortex_probe1(struct device *gendev,
  
- extern struct ieee802154_reduced_mlme_ops mac802154_mlme_reduced;
- extern struct ieee802154_mlme_ops mac802154_mlme_wpan;
+ 	/* PCI-only startup logic */
+ 	if (pdev) {
+-		/* EISA resources already marked, so only PCI needs to do this here */
+-		/* Ignore return value, because Cardbus drivers already allocate for us */
+-		if (request_region(dev->base_addr, vci->io_size, print_name) != NULL)
+-			vp->must_free_region = 1;
+-
+ 		/* enable bus-mastering if necessary */
+ 		if (vci->flags & PCI_USES_MASTER)
+ 			pci_set_master(pdev);
+@@ -1221,7 +1223,7 @@ static int __devinit vortex_probe1(struct device *gendev,
+ 					   &vp->rx_ring_dma);
+ 	retval = -ENOMEM;
+ 	if (!vp->rx_ring)
+-		goto free_region;
++		goto free_device;
+ 
+ 	vp->tx_ring = (struct boom_tx_desc *)(vp->rx_ring + RX_RING_SIZE);
+ 	vp->tx_ring_dma = vp->rx_ring_dma + sizeof(struct boom_rx_desc) * RX_RING_SIZE;
+@@ -1486,9 +1488,7 @@ free_ring:
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-free_region:
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vci->io_size);
++free_device:
+ 	free_netdev(dev);
+ 	pr_err(PFX "vortex_probe1 fails.  Returns %d\n", retval);
+ out:
+@@ -3256,8 +3256,9 @@ static void __devexit vortex_remove_one(struct pci_dev *pdev)
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vp->io_size);
++
++	pci_release_regions(pdev);
++
+ 	free_netdev(dev);
+ }
+ 
 -- 
 1.7.10.4
 
