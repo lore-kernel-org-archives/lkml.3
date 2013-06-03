@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab3FCWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:20:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13491 "EHLO
+	id S1759435Ab3FCWVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:21:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12159 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758847Ab3FCWMI (ORCPT
+	with ESMTP id S1758444Ab3FCWMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:08 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ez8N2QTBFYUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=CktM0wh3hBkA:10 a=LpQP-O61AAAA:8 a=VwQbUJbxAAAA:8 a=f3sFeNDE-ck_AaCaTmYA:9 a=YDjxKKMXsvQA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:06 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=TSiiwlhmU30A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=tqnHMRikr-UA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=oU6oq8r_vRGwvP3CHtYA:9 a=MSl-tDqOz04A:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221154.480685059@goodmis.org>
+Message-Id: <20130603221156.678843913@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:30 -0400
+Date: Mon, 03 Jun 2013 18:10:42 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tirupathi Reddy <tirupath@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [14/65] timer: Dont reinitialize the cpu base lock during CPU_UP_PREPARE
+Cc: Michael Buesch <m@bues.ch>, Thommy Jakobsson <thommyj@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [26/65] B43: Handle DMA RX descriptor underrun
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0014-timer-Don-t-reinitialize-the-cpu-base-lock-during-CP.patch
+Content-Disposition: inline; filename=0026-B43-Handle-DMA-RX-descriptor-underrun.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,88 +30,156 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tirupathi Reddy <tirupath@codeaurora.org>
+From: Thommy Jakobsson <thommyj@gmail.com>
 
-[ Upstream commit 42a5cf46cd56f46267d2a9fcf2655f4078cd3042 ]
+[ Upstream commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 ]
 
-An inactive timer's base can refer to a offline cpu's base.
+Add handling of rx descriptor underflow. This fixes a fault that could
+happen on slow machines, where data is received faster than the CPU can
+handle. In such a case the device will use up all rx descriptors and
+refuse to send any more data before confirming that it is ok. This
+patch enables necessary interrupt to discover such a situation and will
+handle them by dropping everything in the ring buffer.
 
-In the current code, cpu_base's lock is blindly reinitialized each
-time a CPU is brought up. If a CPU is brought online during the period
-that another thread is trying to modify an inactive timer on that CPU
-with holding its timer base lock, then the lock will be reinitialized
-under its feet. This leads to following SPIN_BUG().
-
-<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
-<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
-<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
-<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
-<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
-<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
-<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
-<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
-<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
-<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
-<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
-<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
-<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
-<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
-<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
-
-As an example, this particular crash occurred when CPU #3 is executing
-mod_timer() on an inactive timer whose base is refered to offlined CPU
-#2.  The code locked the timer_base corresponding to CPU #2. Before it
-could proceed, CPU #2 came online and reinitialized the spinlock
-corresponding to its base. Thus now CPU #3 held a lock which was
-reinitialized. When CPU #3 finally ended up unlocking the old cpu_base
-corresponding to CPU #2, we hit the above SPIN_BUG().
-
-CPU #0		CPU #3				       CPU #2
-------		-------				       -------
-.....		 ......				      <Offline>
-		mod_timer()
-		 lock_timer_base
-		   spin_lock_irqsave(&base->lock)
-
-cpu_up(2)	 .....				        ......
-							init_timers_cpu()
-....		 .....				    	spin_lock_init(&base->lock)
-.....		   spin_unlock_irqrestore(&base->lock)  ......
-		   <spin_bug>
-
-Allocation of per_cpu timer vector bases is done only once under
-"tvec_base_done[]" check. In the current code, spinlock_initialization
-of base->lock isn't under this check. When a CPU is up each time the
-base lock is reinitialized. Move base spinlock initialization under
-the check.
-
-Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1368520142-4136-1-git-send-email-tirupath@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Michael Buesch <m@bues.ch>
+Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/timer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/b43/dma.c  |   19 +++++++++++++++++
+ drivers/net/wireless/b43/dma.h  |    4 +++-
+ drivers/net/wireless/b43/main.c |   43 ++++++++++++++++-----------------------
+ 3 files changed, 40 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 46ef2b1..4cefc08 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1692,12 +1692,12 @@ static int __cpuinit init_timers_cpu(int cpu)
- 			boot_done = 1;
- 			base = &boot_tvec_bases;
+diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
+index 92768d304..ba0738a 100644
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1730,6 +1730,25 @@ drop_recycle_buffer:
+ 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
+ }
+ 
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
++{
++	int current_slot, previous_slot;
++
++	B43_WARN_ON(ring->tx);
++
++	/* Device has filled all buffers, drop all packets and let TCP
++	 * decrease speed.
++	 * Decrement RX index by one will let the device to see all slots
++	 * as free again
++	 */
++	/*
++	*TODO: How to increase rx_drop in mac80211?
++	*/
++	current_slot = ring->ops->get_current_rxslot(ring);
++	previous_slot = prev_slot(ring, current_slot);
++	ring->ops->set_current_rxslot(ring, previous_slot);
++}
++
+ void b43_dma_rx(struct b43_dmaring *ring)
+ {
+ 	const struct b43_dma_ops *ops = ring->ops;
+diff --git a/drivers/net/wireless/b43/dma.h b/drivers/net/wireless/b43/dma.h
+index 315b96e..68d5e0c 100644
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -9,7 +9,7 @@
+ /* DMA-Interrupt reasons. */
+ #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
+ 					 | (1 << 14) | (1 << 15))
+-#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
++#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
+ #define B43_DMAIRQ_RX_DONE		(1 << 16)
+ 
+ /*** 32-bit DMA Engine. ***/
+@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
+ void b43_dma_handle_txstatus(struct b43_wldev *dev,
+ 			     const struct b43_txstatus *status);
+ 
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
++
+ void b43_dma_rx(struct b43_dmaring *ring);
+ 
+ void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 46d9d4e..54ecf96 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -1895,30 +1895,18 @@ static void b43_do_interrupt_thread(struct b43_wldev *dev)
  		}
-+		spin_lock_init(&base->lock);
- 		tvec_base_done[cpu] = 1;
- 	} else {
- 		base = per_cpu(tvec_bases, cpu);
  	}
  
--	spin_lock_init(&base->lock);
+-	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
+-					  B43_DMAIRQ_NONFATALMASK))) {
+-		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
+-			b43err(dev->wl, "Fatal DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-			b43err(dev->wl, "This device does not support DMA "
++	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
++		b43err(dev->wl,
++			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
++			dma_reason[0], dma_reason[1],
++			dma_reason[2], dma_reason[3],
++			dma_reason[4], dma_reason[5]);
++		b43err(dev->wl, "This device does not support DMA "
+ 			       "on your system. It will now be switched to PIO.\n");
+-			/* Fall back to PIO transfers if we get fatal DMA errors! */
+-			dev->use_pio = true;
+-			b43_controller_restart(dev, "DMA error");
+-			return;
+-		}
+-		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
+-			b43err(dev->wl, "DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-		}
++		/* Fall back to PIO transfers if we get fatal DMA errors! */
++		dev->use_pio = true;
++		b43_controller_restart(dev, "DMA error");
++		return;
+ 	}
  
- 	for (j = 0; j < TVN_SIZE; j++) {
- 		INIT_LIST_HEAD(base->tv5.vec + j);
+ 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
+@@ -1937,6 +1925,11 @@ static void b43_do_interrupt_thread(struct b43_wldev *dev)
+ 		handle_irq_noise(dev);
+ 
+ 	/* Check the DMA reason registers for received data. */
++	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
++		if (B43_DEBUG)
++			b43warn(dev->wl, "RX descriptor underrun\n");
++		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
++	}
+ 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
+ 		if (b43_using_pio_transfers(dev))
+ 			b43_pio_rx(dev->pio.rx_queue);
+@@ -1994,7 +1987,7 @@ static irqreturn_t b43_do_interrupt(struct b43_wldev *dev)
+ 		return IRQ_NONE;
+ 
+ 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
+-	    & 0x0001DC00;
++	    & 0x0001FC00;
+ 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
+ 	    & 0x0000DC00;
+ 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
+@@ -3098,7 +3091,7 @@ static int b43_chip_init(struct b43_wldev *dev)
+ 		b43_write32(dev, 0x018C, 0x02000000);
+ 	}
+ 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
+-	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
++	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
+ 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
 -- 
 1.7.10.4
 
