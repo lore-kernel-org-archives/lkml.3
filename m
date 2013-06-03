@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759148Ab3FCWPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:15:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34304 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758848Ab3FCWMw (ORCPT
+	id S1759408Ab3FCWP3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:15:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18316 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759177Ab3FCWMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:52 -0400
-Date: Mon, 3 Jun 2013 23:12:11 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, arm@kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 4/6] sched_clock: Add support for >32 bit sched_clock
-Message-ID: <20130603221210.GO18614@n2100.arm.linux.org.uk>
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <1370155183-31421-5-git-send-email-sboyd@codeaurora.org> <20130603093938.GG18614@n2100.arm.linux.org.uk> <51AD069F.1060308@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AD069F.1060308@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 3 Jun 2013 18:12:47 -0400
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=grsCHd6i15wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Lhp0uK9d-S4A:10 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130603221201.663195948@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Jun 2013 18:11:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@intel.com>
+Subject: [55/65] usermodehelper: check subprocess_info->path != NULL
+References: <20130603221016.243553628@goodmis.org>
+Content-Disposition: inline; filename=0055-usermodehelper-check-subprocess_info-path-NULL.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 02:11:59PM -0700, Stephen Boyd wrote:
-> On 06/03/13 02:39, Russell King - ARM Linux wrote:
-> > On Sat, Jun 01, 2013 at 11:39:41PM -0700, Stephen Boyd wrote:
-> >> +}
-> >> +
-> >> +void __init
-> >> +setup_sched_clock_64(u64 (*read)(void), int bits, unsigned long rate)
-> >> +{
-> >> +	if (cd.rate > rate)
-> >> +		return;
-> >> +
-> >> +	BUG_ON(bits <= 32);
-> >> +	WARN_ON(!irqs_disabled());
-> >> +	read_sched_clock_64 = read;
-> >> +	sched_clock_func = sched_clock_64;
-> >> +	cd.rate = rate;
-> >> +	cd.mult = NSEC_PER_SEC / rate;
-> > Here, you don't check that the (2^bits) * mult results in a wrap of the
-> > resulting 64-bit number, which is a _basic_ requirement for sched_clock
-> > (hence all the code for <=32bit clocks, otherwise we wouldn't need this
-> > complexity in the first place.)
-> 
-> Ok I will use clocks_calc_mult_shift() here.
+3.6.11.5 stable review patch.
+If anyone has any objections, please let me know.
 
-No, that's not the problem.
+------------------
 
-If you have a 56-bit clock which ticks at a period of 1ns, then
-cd.rate = 1, and your sched_clock() values will be truncated to 56-bits.
-The scheduler always _requires_ 64-bits from sched_clock.  That's why we
-have the complicated code to extend the 32-bits-or-less to a _full_
-64-bit value.
+From: Oleg Nesterov <oleg@redhat.com>
 
-Let me make this clearer: sched_clock() return values _must_ without
-exception monotonically increment from zero to 2^64-1 and then wrap
-back to zero.  No other behaviour is acceptable for sched_clock().
+[ Upstream commit 264b83c07a84223f0efd0d1db9ccc66d6f88288f ]
+
+argv_split(empty_or_all_spaces) happily succeeds, it simply returns
+argc == 0 and argv[0] == NULL. Change call_usermodehelper_exec() to
+check sub_info->path != NULL to avoid the crash.
+
+This is the minimal fix, todo:
+
+ - perhaps we should change argv_split() to return NULL or change the
+   callers.
+
+ - kill or justify ->path[0] check
+
+ - narrow the scope of helper_lock()
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/kmod.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 6f99aea..122a299 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -558,6 +558,11 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	int retval = 0;
+ 
+ 	helper_lock();
++	if (!sub_info->path) {
++		retval = -EINVAL;
++		goto out;
++	}
++
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
+ 
+-- 
+1.7.10.4
+
+
