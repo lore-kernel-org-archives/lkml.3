@@ -1,145 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759534Ab3FCWSk (ORCPT <rfc822;w@1wt.eu>);
+	id S1759554Ab3FCWSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:18:50 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:52789 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759227Ab3FCWSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 18:18:40 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:57882 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759054Ab3FCWS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:18:29 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-References: <20130603190705.GA11517@redhat.com>
-Date: Mon, 03 Jun 2013 15:18:06 -0700
-In-Reply-To: <20130603190705.GA11517@redhat.com> (Oleg Nesterov's message of
-	"Mon, 3 Jun 2013 21:07:05 +0200")
-Message-ID: <877giarg81.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 3/3] clk: dt: binding for basic divider clock
+Date: Tue, 4 Jun 2013 00:18:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <1370281990-15090-4-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1370281990-15090-4-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19cLlUECtaMVM8W6GiiAEFM+1ZHBPMuabw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0176]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_05 8+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in proc_task_readdir() paths
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306040018.33236.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
-
-> 1. proc_task_readdir() truncates f_pos to long, this can lead
->    to wrong result on 32bit.
->
-> 2. first_tid() truncates f_pos to int, this is wrong even on
->    64bit.
->
->    We could check that f_pos < PID_MAX or even INT_MAX in
->    proc_task_readdir(), but this patch simply checks the
->    potential overflow in first_tid(), this check is nop on
->    64bit. We do not care if it was negative and the new
->    unsigned value is huge, all we need to ensure is that we
->    never wrongly return !NULL.
->
-> 3. Remove the 2nd "nr != 0" check before get_nr_threads(),
->    nr_threads == 0 is not distinguishable from !pid_task()
->    above.
-
-This won't compile on some 32bit architectures like x86-32.
-
-switch(unsigned long long) requires helpers that the kernel does not
-included.  Or at least the kernel has not included because such code
-is a problem.  In fact that is the reason Linus put the case to
-unsigned long in there.
-
-There is another bug in here as well that we may return really crazy
-things in the case of seek simultaneous with readdir.
-
-I do like your overflow check, but unfortunately I think it is
-susceptible to races with lseek.
-
-Simply to avoid lseek non-sense I think we really need to put f_pos
-in a local variable.  If the code continues to evolve our heads
-will like to explode trying to think about what happens when someone
-modifies f_pos while we are reading it/modifying it.
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Am Montag, 3. Juni 2013, 19:53:10 schrieb Mike Turquette:
+> Devicetree binding for the basic clock divider, plus the setup function
+> to register the clock.  Based on the existing fixed-clock binding.
+> 
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
 > ---
->  fs/proc/base.c |   16 ++++++++++------
->  1 files changed, 10 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 5e0e02f..5598cfa 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -3178,10 +3178,14 @@ out_no_task:
->   * In the case of a seek we start with the leader and walk nr
->   * threads past it.
->   */
-> -static struct task_struct *first_tid(struct pid *pid, int tid,
-> -					int nr, struct pid_namespace *ns)
-> +static struct task_struct *first_tid(struct pid *pid, int tid, loff_t f_pos,
-> +					struct pid_namespace *ns)
->  {
->  	struct task_struct *pos, *task;
-> +	unsigned long nr = f_pos;
+
+[...]
+
+> +/**
+> + * of_div_clk_setup() - Setup function for simple div rate clock
+> + */
+> +void of_divider_clk_setup(struct device_node *node)
+> +{
+> +	struct clk *clk;
+> +	const char *clk_name = node->name;
+> +	void __iomem *reg;
+> +	const char *parent_name;
+> +	u8 clk_divider_flags = 0;
+> +	u8 mask = 0;
+> +	u8 shift = 0;
+
+in the mux-clock these 3 are unsigned long and u32 types ... what is correct?
+
+
+> +	struct clk_div_table *table;
 > +
-> +	if (nr != f_pos)	/* 32bit overflow? */
-> +		return NULL;
->  
->  	rcu_read_lock();
->  	task = pid_task(pid, PIDTYPE_PID);
-> @@ -3189,14 +3193,14 @@ static struct task_struct *first_tid(struct pid *pid, int tid,
->  		goto fail;
->  
->  	/* Attempt to start with the tid of a thread */
-> -	if (tid && (nr > 0)) {
-> +	if (tid && nr) {
->  		pos = find_task_by_pid_ns(tid, ns);
->  		if (pos && same_thread_group(pos, task))
->  			goto found;
->  	}
->  
->  	/* If nr exceeds the number of threads there is nothing todo */
-> -	if (nr && nr >= get_nr_threads(task))
-> +	if (nr >= get_nr_threads(task))
->  		goto fail;
->  
->  	/* If we haven't found our starting place yet start
-> @@ -3204,7 +3208,7 @@ static struct task_struct *first_tid(struct pid *pid, int tid,
->  	 */
->  	pos = task = task->group_leader;
->  	do {
-> -		if (nr-- <= 0)
-> +		if (!nr--)
->  			goto found;
->  	} while_each_thread(task, pos);
->  fail:
-> @@ -3261,7 +3265,7 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
->  	if (proc_inode_is_dead(inode))
->  		return -ENOENT;
->  
-> -	switch ((unsigned long)filp->f_pos) {
-> +	switch (filp->f_pos) {
->  	case 0:
->  		ino = inode->i_ino;
->  		if (filldir(dirent, ".", 1, filp->f_pos, ino, DT_DIR) < 0)
+> +	of_property_read_string(node, "clock-output-names", &clk_name);
+> +
+> +	parent_name = of_clk_get_parent_name(node, 0);
+> +
+> +	reg = of_iomap(node, 0);
+> +
+> +	if (of_property_read_u8(node, "mask", &mask)) {
+> +		pr_err("%s: missing mask property for %s\n", __func__, node->name);
+> +		return;
+> +	}
+> +
+> +	if (of_property_read_u8(node, "shift", &shift))
+> +		pr_debug("%s: missing shift property defaults to zero for %s\n",
+> +				__func__, node->name);
+
+same here ... mux reads u32
+
+> +	if (of_property_read_bool(node, "index_one"))
+> +		clk_divider_flags |= CLK_DIVIDER_ONE_BASED;
+> +
+> +	if (of_property_read_bool(node, "index_power_of_two"))
+> +		clk_divider_flags |= CLK_DIVIDER_POWER_OF_TWO;
+> +
+> +	if (of_property_read_bool(node, "index_allow_zero"))
+> +		clk_divider_flags |= CLK_DIVIDER_ALLOW_ZERO;
+> +
+> +	table = of_clk_get_div_table(node);
+> +	if (IS_ERR(table))
+> +		return;
+> +
+> +	clk = clk_register_divider_table(NULL, clk_name,
+> +			parent_name, 0,
+> +			reg, shift, mask,
+> +			clk_divider_flags, table,
+> +			NULL);
+
+this causes trouble, as the divider clock code above still requires a width 
+instead of a mask. I remember talk about this going to change separately, but 
+couldn't find anything of the sort in linux-next.
+
+
+
+> +
+> +	if (!IS_ERR(clk))
+> +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +}
+> +EXPORT_SYMBOL_GPL(of_divider_clk_setup);
+> +CLK_OF_DECLARE(divider_clk, "divider-clock", of_divider_clk_setup);
+> +#endif
