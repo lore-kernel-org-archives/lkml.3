@@ -1,199 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759886Ab3FCWWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:22:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14070 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758798Ab3FCWMA (ORCPT
+	id S1759908Ab3FCWXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:23:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34344 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758856Ab3FCWXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:00 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9EJDhe1-xzEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MIETxrNxWykA:10 a=9AzMRrQhAAAA:8 a=VkbnAb4FAAAA:8 a=2IzVV_4oBMwMYoTLWpEA:9 a=SxxB86fLhQ4A:10 a=jeBq3FmKZ4MA:10 a=ku8ijnxeQ8pGZUrg:21 a=IuVnpM8ufwAspDgI:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221156.491465850@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>, <stable@vger.linux.org>
-Subject: [25/65] tile: support new Tilera hypervisor
-References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0025-tile-support-new-Tilera-hypervisor.patch
+	Mon, 3 Jun 2013 18:23:34 -0400
+Date: Mon, 3 Jun 2013 23:23:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
+	decompressor
+Message-ID: <20130603222321.GP18614@n2100.arm.linux.org.uk>
+References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AD0703.6050408@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.5 stable review patch.
-If anyone has any objections, please let me know.
+On Mon, Jun 03, 2013 at 02:13:39PM -0700, Stephen Boyd wrote:
+> Resending due to rmk's vacation.
+> 
+> On 05/24/13 15:05, Stephen Boyd wrote:
+> > I've noticed another problem now that our caches are used. On MSM
+> > we have TEXT_OFFSET set to at least 0x208000 if we've built-in
+> > support for MSM8x60/8960. If I boot a kernel with the MSM code
+> > built-in that requires the higher text offset, but I load my
+> > compressed kernel below that address (such as 0x0) the
+> > decompression fails.
+> >
+> > This happens because the page tables are written into the
+> > compressed data region before we relocate ourself to a higher
+> > location.
 
-------------------
+We've always required kernel images to be loaded above RAM+32K for
+exactly this issue.
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+> > This is bad because we just wrote our page tables into the
+> > compressed data. Nobody notices though and we finish relocating
+> > ourselves and then we call decompress_kernel() which fails
+> > randomly. (BTW, why does error() sit in a while loop forever?
 
-[ Upstream commit c539914dcd9a68c63305e055b14115a6a19578a8 ]
+It loops forever because there is _nothing_ else to be done.  It's
+already printed a message explaining why stuff has failed:
 
-The Tilera hypervisor shipped in releases up through MDE 4.1 launches
-the client operating system (i.e. Linux) at privilege level 1 (PL1).
-Starting with MDE 4.2, as part of the work to enable KVM, the
-Tilera hypervisor launches Linux at PL2 instead.
+void error(char *x)
+{
+        arch_error(x);
 
-This commit makes the KERNEL_PL option default to 2 for tilegx, while
-still saying at 1 for tilepro, which doesn't have an updated hypervisor.
-It also explains how and when you might want to choose another value.
-In addition, we change a small buglet in the on-chip Ethernet driver,
-where we were failing to use the KERNEL_PL constant in an API call.
+        putstr("\n\n");
+        putstr(x);
+        putstr("\n\n -- System halted");
 
-To make the transition cleaner, this change also provides the updated
-hv_init() API for the new hypervisor that supports announcing Linux's
-compiled-in PL, so the hypervisor can generate a suitable error in the
-case of a mismatched hypervisor and Linux binary.
+        while(1);       /* Halt */
+}
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: stable@vger.linux.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/tile/Kconfig                  |   14 ++++++++++----
- arch/tile/include/hv/hypervisor.h  |   27 ++++++++++++++++++++++++---
- arch/tile/kernel/head_32.S         |    2 +-
- arch/tile/kernel/head_64.S         |   12 +++++++++---
- drivers/net/ethernet/tile/tilegx.c |    2 +-
- 5 files changed, 45 insertions(+), 12 deletions(-)
+and the while loop is to prevent us trying to do something stupid
+after failure.  Basically, error() never returns.
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 932e443..569f719 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -360,11 +360,17 @@ config HARDWALL
- config KERNEL_PL
- 	int "Processor protection level for kernel"
- 	range 1 2
--	default "1"
-+	default 2 if TILEGX
-+	default 1 if !TILEGX
- 	---help---
--	  This setting determines the processor protection level the
--	  kernel will be built to run at.  Generally you should use
--	  the default value here.
-+	  Since MDE 4.2, the Tilera hypervisor runs the kernel
-+	  at PL2 by default.  If running under an older hypervisor,
-+	  or as a KVM guest, you must run at PL1.  (The current
-+	  hypervisor may also be recompiled with "make HV_PL=2" to
-+	  allow it to run a kernel at PL1, but clients running at PL1
-+	  are not expected to be supported indefinitely.)
-+
-+	  If you're not sure, don't change the default.
- 
- source "arch/tile/gxio/Kconfig"
- 
-diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
-index ccd847e..837dca5 100644
---- a/arch/tile/include/hv/hypervisor.h
-+++ b/arch/tile/include/hv/hypervisor.h
-@@ -107,7 +107,22 @@
- #define HV_DISPATCH_ENTRY_SIZE 32
- 
- /** Version of the hypervisor interface defined by this file */
--#define _HV_VERSION 11
-+#define _HV_VERSION 13
-+
-+/** Last version of the hypervisor interface with old hv_init() ABI.
-+ *
-+ * The change from version 12 to version 13 corresponds to launching
-+ * the client by default at PL2 instead of PL1 (corresponding to the
-+ * hv itself running at PL3 instead of PL2).  To make this explicit,
-+ * the hv_init() API was also extended so the client can report its
-+ * desired PL, resulting in a more helpful failure diagnostic.  If you
-+ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
-+ * argument, the hypervisor will assume client_pl = 1.
-+ *
-+ * Note that this is a deprecated solution and we do not expect to
-+ * support clients of the Tilera hypervisor running at PL1 indefinitely.
-+ */
-+#define _HV_VERSION_OLD_HV_INIT 12
- 
- /* Index into hypervisor interface dispatch code blocks.
-  *
-@@ -377,7 +392,11 @@ typedef int HV_Errno;
- #ifndef __ASSEMBLER__
- 
- /** Pass HV_VERSION to hv_init to request this version of the interface. */
--typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-+typedef enum {
-+  HV_VERSION = _HV_VERSION,
-+  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
-+
-+} HV_VersionNumber;
- 
- /** Initializes the hypervisor.
-  *
-@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-  * that this program expects, typically HV_VERSION.
-  * @param chip_num Architecture number of the chip the client was built for.
-  * @param chip_rev_num Revision number of the chip the client was built for.
-+ * @param client_pl Privilege level the client is built for
-+ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
-  */
- void hv_init(HV_VersionNumber interface_version_number,
--             int chip_num, int chip_rev_num);
-+             int chip_num, int chip_rev_num, int client_pl);
- 
- 
- /** Queries we can make for hv_sysconf().
-diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
-index f71bfee..ac11530 100644
---- a/arch/tile/kernel/head_32.S
-+++ b/arch/tile/kernel/head_32.S
-@@ -38,7 +38,7 @@ ENTRY(_start)
- 	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
-+	  moveli r0, _HV_VERSION_OLD_HV_INIT
- 	  jal hv_init
- 	}
- 	/* Get a reasonable default ASID in r0 */
-diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
-index f9a2734..6093964 100644
---- a/arch/tile/kernel/head_64.S
-+++ b/arch/tile/kernel/head_64.S
-@@ -34,13 +34,19 @@
- ENTRY(_start)
- 	/* Notify the hypervisor of what version of the API we want */
- 	{
-+#if KERNEL_PL == 1 && _HV_VERSION == 13
-+	  /* Support older hypervisors by asking for API version 12. */
-+	  movei r0, _HV_VERSION_OLD_HV_INIT
-+#else
-+	  movei r0, _HV_VERSION
-+#endif
- 	  movei r1, TILE_CHIP
--	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
--	  jal hv_init
-+	  movei r2, TILE_CHIP_REV
-+	  movei r3, KERNEL_PL
- 	}
-+	jal hv_init
- 	/* Get a reasonable default ASID in r0 */
- 	{
- 	  move r0, zero
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 4e98100..04a321a 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
- 		if (info->has_iqueue) {
- 			gxio_mpipe_request_notif_ring_interrupt(
- 				&context, cpu_x(cpu), cpu_y(cpu),
--				1, ingress_irq, info->iqueue.ring);
-+				KERNEL_PL, ingress_irq, info->iqueue.ring);
- 		}
- 	}
- 
--- 
-1.7.10.4
+I've no idea why you say the following:
 
+> > We
+> > can't get any information about why the decompression failed if
+> > we have debug_ll enabled. I had to patch the error() routine to
+> > not while loop forever to get that print after do_decompress to
+> > be useful.)
 
+Maybe your implementation of puts() for the decompressor is faulty then?
+Because it works for me - when something goes wrong with the decompression,
+I get a message such as:
+
+Decompressing kernel...
+
+CRC error
+
+ -- System halted
+
+> > I see a few solutions.
+> >
+> >  1) Relocate with caches off and then turn on caches after we're
+> >     running in a location where we won't overwrite ourselves.
+> >
+> >  2) Have temporary page tables for the relocation phase that live
+> >     just below the location we're going to relocate to.
+> >
+> >  3) Force bootloaders loading these types of images to load the
+> >     zImage at least as high as the TEXT_OFFSET is compiled to.
+> >
+> > I don't think we can convince everyone that #3 is ok to do. I'm
+> > leaning towards #2 since we get all the benefits of the cache
+> > during the relocation phase but #1 is the obviously simple fix.
+
+(3) is what we've always required in the past.  We already have code
+to relocate the compressed image, so we _might_ be able to do (1).
+
+The easy solution is to continue saying "minimum of RAM start + 32K"
+as we've always had in the past though.
