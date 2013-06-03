@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3FCIP5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:15:57 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:49953 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3FCIPz (ORCPT
+	id S1753326Ab3FCIQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:16:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19078 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818Ab3FCIQ1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:15:55 -0400
-Message-ID: <51AC50AE.50503@redhat.com>
-Date: Mon, 03 Jun 2013 10:15:42 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
-References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com> <20130602181253.GP24773@redhat.com> <51AC376D.9030001@redhat.com> <20130603080416.GA4725@redhat.com>
-In-Reply-To: <20130603080416.GA4725@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 04:16:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,791,1363158000"; 
+   d="scan'208";a="249913679"
+Message-ID: <1370247379.29283.240.camel@smile>
+Subject: Re: [PATCH v1.1] gpiolib: append SFI helpers for GPIO API
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Ryan Mallon <rmallon@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@intel.com>,
+        Grant Likely <grant.likely@linaro.org>
+Date: Mon, 03 Jun 2013 11:16:19 +0300
+In-Reply-To: <1370225170.2096.12.camel@joe-AO722>
+References: <CACRpkdZbCytqaWTK7HvfU2aMpPQVZWX2uf-NXL-rUPGJ6DQ-mQ@mail.gmail.com>
+	 <1369992439-5421-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <51ABF879.1090509@gmail.com> <1370225170.2096.12.camel@joe-AO722>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 03/06/2013 10:04, Gleb Natapov ha scritto:
-> On Mon, Jun 03, 2013 at 08:27:57AM +0200, Paolo Bonzini wrote:
->> Il 02/06/2013 20:12, Gleb Natapov ha scritto:
->>> On Thu, May 30, 2013 at 04:35:55PM +0200, Paolo Bonzini wrote:
->>>> The x86-64 extended low-byte registers were fetched correctly from reg,
->>>> but not from mod/rm.
->>>>
->>>> This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
->>>> not enough.
->>>>
->>> Did I missed unit test patch? :)
->>
->> I wanted to ask the GSoC student to do it.  If it doesn't come in a
->> couple of weeks, I'll send it.
->>
-> Which instruction you saw the bug happening with? It this 3.10 regression?
+On Sun, 2013-06-02 at 19:06 -0700, Joe Perches wrote: 
+> On Mon, 2013-06-03 at 11:59 +1000, Ryan Mallon wrote:
+> > On 31/05/13 19:27, Andy Shevchenko wrote:
+> > Some trivial coding style comment below.
 
-cmp $0x1f, %bpl
+Thank you, Joe, for commenting this.
 
-Like the NOP, it is a regression introduced in the switch of
-emulate_invalid_guest_state from 0 to 1.
-
-Paolo
-
+> > > +	for (i = 0; i < sfi_gpio_num_entry; i++, pentry++) {
+> > > +		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+> > > +			return pentry->pin_no;
+> > > +	}
+> > 
+> > Nitpick - Don't need the braces on the for loop.
 > 
->> Paolo
->>
->>>> Cc: gnatapov@redhat.com
-> Please use my other email :)
-> 
->>>> Cc: kvm@vger.kernel.org
->>>> Cc: <stable@vger.kernel.org> # 3.9
->>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->>>> ---
->>>>  arch/x86/kvm/emulate.c | 5 ++++-
->>>>  1 file changed, 4 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
->>>> index aa68106..028b34f 100644
->>>> --- a/arch/x86/kvm/emulate.c
->>>> +++ b/arch/x86/kvm/emulate.c
->>>> @@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
->>>>  	ctxt->modrm_seg = VCPU_SREG_DS;
->>>>  
->>>>  	if (ctxt->modrm_mod == 3) {
->>>> +		int highbyte_regs = ctxt->rex_prefix == 0;
->>>> +
->>>>  		op->type = OP_REG;
->>>>  		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
->>>> -		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
->>>> +		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
->>>> +					       highbyte_regs && (ctxt->d & ByteOp));
->>>>  		if (ctxt->d & Sse) {
->>>>  			op->type = OP_XMM;
->>>>  			op->bytes = 16;
->>>> -- 
->>>> 1.8.1.4
->>>
->>> --
->>> 			Gleb.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
-> 
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> I'm not Andy but I think it's preferable to keep the braces
+> when there's an if in the for loop.
 
+This is my point too.
+
+> > > +	sfi_gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
+> > 
+> > Use kcalloc when you have a size and a count.
+> 
+> kmalloc_array unless you want zero'ed memory
+
+One proposed to use kmemdup to clean up a bit. What do you think?
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
