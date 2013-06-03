@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3FCKTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:19:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51862 "EHLO mx2.suse.de"
+	id S1757292Ab3FCKUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:20:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51853 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756929Ab3FCKTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:19:16 -0400
+	id S1756838Ab3FCKTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 06:19:15 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
@@ -16,9 +16,9 @@ Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michel Lespinasse <walken@google.com>,
         Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
         Balbir Singh <bsingharora@gmail.com>
-Subject: [patch -v4 8/8] memcg, vmscan: do not fall into reclaim-all pass too quickly
-Date: Mon,  3 Jun 2013 12:18:55 +0200
-Message-Id: <1370254735-13012-9-git-send-email-mhocko@suse.cz>
+Subject: [patch -v4 7/8] memcg: Track all children over limit in the root
+Date: Mon,  3 Jun 2013 12:18:54 +0200
+Message-Id: <1370254735-13012-8-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
 References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
@@ -26,87 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_zone starts with soft reclaim pass first and then falls back to
-regular reclaim if nothing has been scanned. This behavior is natural
-but there is a catch. Memcg iterators, when used with the reclaim
-cookie, are designed to help to prevent from over reclaim by
-interleaving reclaimers (per node-zone-priority) so the tree walk might
-miss many (even all) nodes in the hierarchy e.g. when there are direct
-reclaimers racing with each other or with kswapd in the global case or
-multiple allocators reaching the limit for the target reclaim case.
-To make it even more complicated, targeted reclaim doesn't do the whole
-tree walk because it stops reclaiming once it reclaims sufficient pages.
-As a result groups over the limit might be missed, thus nothing is
-scanned, and reclaim would fall back to the reclaim all mode.
+Children in soft limit excess are currently tracked up the hierarchy
+in memcg->children_in_excess. Nevertheless there still might exist
+tons of groups that are not in hierarchy relation to the root cgroup
+(e.g. all first level groups if root_mem_cgroup->use_hierarchy ==
+false).
 
-This patch checks for the incomplete tree walk in shrink_zone. If no
-group has been visited and the hierarchy is soft reclaimable then we
-must have missed some groups, in which case the __shrink_zone is called
-again. This doesn't guarantee there will be some progress of course
-because the current reclaimer might be still racing with others but it
-would at least give a chance to start the walk without a big risk of
-reclaim latencies.
+As the whole tree walk has to be done when the iteration starts at
+root_mem_cgroup the iterator should be able to skip the walk if there
+is no child above the limit without iterating them. This can be done
+easily if the root tracks all children rather than only hierarchical
+children. This is done by this patch which updates root_mem_cgroup
+children_in_excess if root_mem_cgroup->use_hierarchy == false so the
+root knows about all children in excess.
+
+Please note that this is not an issue for inner memcgs which have
+use_hierarchy == false because then only the single group is visited so
+no special optimization is necessary.
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/vmscan.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index dc78f07..72b428d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1955,10 +1955,11 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	}
- }
- 
--static void
-+static int
- __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- {
- 	unsigned long nr_reclaimed, nr_scanned;
-+	int groups_scanned = 0;
- 
- 	do {
- 		struct mem_cgroup *root = sc->target_mem_cgroup;
-@@ -1976,6 +1977,7 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- 		while ((memcg = mem_cgroup_iter_cond(root, memcg, &reclaim, filter))) {
- 			struct lruvec *lruvec;
- 
-+			groups_scanned++;
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
- 
- 			shrink_lruvec(lruvec, sc);
-@@ -2003,6 +2005,8 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- 
- 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
- 					 sc->nr_scanned - nr_scanned, sc));
-+
-+	return groups_scanned;
- }
- 
- 
-@@ -2010,8 +2014,19 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
- 	bool do_soft_reclaim = mem_cgroup_should_soft_reclaim(sc);
- 	unsigned long nr_scanned = sc->nr_scanned;
-+	int scanned_groups;
- 
--	__shrink_zone(zone, sc, do_soft_reclaim);
-+	scanned_groups = __shrink_zone(zone, sc, do_soft_reclaim);
-+	/*
-+         * memcg iterator might race with other reclaimer or start from
-+         * a incomplete tree walk so the tree walk in __shrink_zone
-+         * might have missed groups that are above the soft limit. Try
-+         * another loop to catch up with others. Do it just once to
-+         * prevent from reclaim latencies when other reclaimers always
-+         * preempt this one.
-+	 */
-+	if (do_soft_reclaim && !scanned_groups)
-+		__shrink_zone(zone, sc, do_soft_reclaim);
- 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8ff9366..91740f7 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -932,9 +932,15 @@ static void mem_cgroup_update_soft_limit(struct mem_cgroup *memcg)
  	/*
- 	 * No group is over the soft limit or those that are do not have
+ 	 * Necessary to update all ancestors when hierarchy is used
+ 	 * because their event counter is not touched.
++	 * We track children even outside the hierarchy for the root
++	 * cgroup because tree walk starting at root should visit
++	 * all cgroups and we want to prevent from pointless tree
++	 * walk if no children is below the limit.
+ 	 */
+ 	while (delta && (parent = parent_mem_cgroup(parent)))
+ 		atomic_add(delta, &parent->children_in_excess);
++	if (memcg != root_mem_cgroup && !root_mem_cgroup->use_hierarchy)
++		atomic_add(delta, &root_mem_cgroup->children_in_excess);
+ 	spin_unlock(&memcg->soft_lock);
+ }
+ 
+@@ -6202,6 +6208,9 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+ 	if (memcg->soft_contributed) {
+ 		while ((memcg = parent_mem_cgroup(memcg)))
+ 			atomic_dec(&memcg->children_in_excess);
++
++		if (memcg != root_mem_cgroup && !root_mem_cgroup->use_hierarchy)
++			atomic_dec(&root_mem_cgroup->children_in_excess);
+ 	}
+ 	mem_cgroup_destroy_all_caches(memcg);
+ }
 -- 
 1.7.10.4
 
