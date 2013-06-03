@@ -1,28 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab3FCHc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 03:32:59 -0400
-Received: from msgw.vicepresidencia.gob.ec ([190.152.249.126]:56992 "EHLO
-	msgw.vicepresidencia.gob.ec" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861Ab3FCHcx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 03:32:53 -0400
-X-Greylist: delayed 29883 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jun 2013 03:32:53 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1752013Ab3FCHdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 03:33:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39167 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818Ab3FCHdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 03:33:15 -0400
+X-IronPort-AV: E=Sophos;i="4.87,791,1363104000"; 
+   d="scan'208";a="7444143"
+Message-ID: <51AC4759.6090101@cn.fujitsu.com>
+Date: Mon, 03 Jun 2013 15:35:53 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Project For You 
-To: Recipients <info@live.com>
-From: "Mr. William Billington" <info@live.com>
-Date: Mon, 03 Jun 2013 01:13:04 +0200
-Reply-To: williambillington@wildblue.net
-Message-Id: <20130602230535.0F2FD2A08036@mail.vicepresidencia.gob.ec>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, lwoodman@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 07/13] x86, numa, mem-hotplug: Mark nodes which the
+ kernel resides in.
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com> <1369387762-17865-8-git-send-email-tangchen@cn.fujitsu.com> <20130531162401.GA31139@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20130531162401.GA31139@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/03 15:31:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/03 15:31:31,
+	Serialize complete at 2013/06/03 15:31:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is based on blind trust, hoping that you will expand my wishes as desired. I have US$200 Million for charity projects. You will be getting 20% of total funds as your commission if interested.
+Hi Vasilis,
 
-Regards,
-Mr. William Billington
+On 06/01/2013 12:24 AM, Vasilis Liaskovitis wrote:
+......
+>> +void __init_memblock memblock_mark_kernel_nodes()
+>> +{
+>> +	int i, nid;
+>> +	struct memblock_type *reserved =&memblock.reserved;
+>> +
+>> +	for (i = 0; i<  reserved->cnt; i++)
+>> +		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+>> +			nid = memblock_get_region_node(&reserved->regions[i]);
+>> +			node_set(nid, memblock_kernel_nodemask);
+>> +		}
+>> +}
+>
+> I think there is a problem here because memblock_set_region_node is sometimes
+> called with nid == MAX_NUMNODES. This means the correct node is not properly
+> masked in the memblock_kernel_nodemask bitmap.
+> E.g. in a VM test, memblock_mark_kernel_nodes with extra pr_warn calls iterates
+> over the following memblocks (ranges below are memblks base-(base+size)):
+>
+> [    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000000000-0x00000000010000
+> [    0.000000] memblock_mark_kernel_nodes nid=64 0x00000000098000-0x00000000100000
+> [    0.000000] memblock_mark_kernel_nodes nid=64 0x00000001000000-0x00000001a5a000
+> [    0.000000] memblock_mark_kernel_nodes nid=64 0x00000037000000-0x000000377f8000
+>
+> where MAX_NUMNODES is 64 because CONFIG_NODES_SHIFT=6.
+> The ranges above belong to node 0, but the node's bit is never marked.
+>
+> With a buggy bios that marks all memory as hotpluggable, this results in a
+> panic, because both checks against hotpluggable bit and memblock_kernel_bitmask
+> (in early_mem_hotplug_init) fail, the numa regions have all been merged together
+> and memblock_reserve_hotpluggable is called for all memory.
+>
+> With a correct bios (some part of initial memory is not hotplug-able) the kernel
+> can boot since the hotpluggable bit check works ok, but extra dimms on node 0
+> will still be allowed to be in MOVABLE_ZONE.
+>
+
+OK, I see the problem. But would you please give me a call trace that 
+can show
+how this could happen. I think the memory block info should be the same as
+numa_meminfo. Can we fix the caller to make it set nid correctly ?
+
+> Actually this behaviour (being able to have MOVABLE memory on nodes with kernel
+> reserved memblocks) sort of matches the policy I requested in v2 :). But i
+> suspect that is not your intent i.e. you want memblock_kernel_nodemask_bitmap to
+> prevent movable reservations for the whole node where kernel has reserved
+> memblocks.
+
+I intended to set the whole node which the kernel resides in as 
+un-hotpluggable.
+
+>
+> Is there a way to get accurate nid information for memblocks at early boot? I
+> suspect pfn_to_nid doesn't work yet at this stage (i got a panic when I
+> attempted iirc)
+
+In such an early time, I think we can only get nid from numa_meminfo. So 
+as I
+said above, I'd like to fix this problem by making memblock has correct nid.
+
+And I read the patch below. I think if we get nid from numa_meminfo, 
+than we
+don't need to call memblock_get_region_node().
+
+Thanks. :)
+
+>
+> I used the hack below but it depends on CONFIG_NUMA, hopefully there is a
+> cleaner general way:
+>
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index cfd8c2f..af8ad2a 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -133,6 +133,19 @@ void __init setup_node_to_cpumask_map(void)
+>   	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
+>   }
+>
+> +int __init numa_find_range_nid(u64 start, u64 size)
+> +{
+> +	unsigned int i;
+> +	struct numa_meminfo *mi =&numa_meminfo;
+> +
+> +	for (i = 0; i<  mi->nr_blks; i++) {
+> +		if (start>= mi->blk[i].start&&  start + size -1<= mi->blk[i].end)
+> +		 return mi->blk[i].nid;
+> +	}
+> +	return -1;
+> +}
+> +EXPORT_SYMBOL(numa_find_range_nid);
+> +
+>   static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+>   				     bool hotpluggable,
+>   				     struct numa_meminfo *mi)
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 77a71fb..194b7c7 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1600,6 +1600,9 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+>   			unsigned long start, unsigned long end);
+>   #endif
+>
+> +#ifdef CONFIG_NUMA
+> +int __init numa_find_range_nid(u64 start, u64 size);
+> +#endif
+>   struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+>   int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+>   			unsigned long pfn, unsigned long size, pgprot_t);
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index a6b7845..284aced 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -834,15 +834,26 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+>
+>   void __init_memblock memblock_mark_kernel_nodes()
+>   {
+> -	int i, nid;
+> +	int i, nid, tmpnid;
+>   	struct memblock_type *reserved =&memblock.reserved;
+>
+>   	for (i = 0; i<  reserved->cnt; i++)
+>   		if (reserved->regions[i].flags == MEMBLK_FLAGS_DEFAULT) {
+>   			nid = memblock_get_region_node(&reserved->regions[i]);
+> +		if (nid == MAX_NUMNODES) {
+> +			tmpnid = numa_find_range_nid(reserved->regions[i].base,
+> +				reserved->regions[i].size);
+> +			if (tmpnid>= 0)
+> +				nid = tmpnid;
+> +		}
+>
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index e862311..84d6e64 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -667,11 +667,7 @@ static bool srat_used __initdata;
+>    */
+>   static void __init early_x86_numa_init(void)
+>   {
+> -	/*
+> -	 * Need to find out which nodes the kernel resides in, and arrange
+> -	 * them as un-hotpluggable when parsing SRAT.
+> -	 */
+> -	memblock_mark_kernel_nodes();
+>
+>   	if (!numa_off) {
+>   #ifdef CONFIG_X86_NUMAQ
+> @@ -779,6 +775,12 @@ void __init early_initmem_init(void)
+>   	load_cr3(swapper_pg_dir);
+>   	__flush_tlb_all();
+>
+> +	/*
+> +	 * Need to find out which nodes the kernel resides in, and arrange
+> +	 * them as un-hotpluggable when parsing SRAT.
+> +	 */
+> +
+> +	memblock_mark_kernel_nodes();
+>   	early_mem_hotplug_init();
+>
+>   	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
