@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759365Ab3FCW4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:56:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40970 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758131Ab3FCW4a (ORCPT
+	id S1759148Ab3FCW7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:59:42 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38389 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757635Ab3FCW7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:56:30 -0400
-Date: Mon, 3 Jun 2013 15:56:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Luebbe <jlu@pengutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pps-gpio: add device-tree binding and support
-Message-Id: <20130603155627.3f63cfd0ae1cec3c0e0a1444@linux-foundation.org>
-In-Reply-To: <1370083449-11986-1-git-send-email-jlu@pengutronix.de>
-References: <1588516.WvWWFWzAui@wuerfel>
-	<1370083449-11986-1-git-send-email-jlu@pengutronix.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 3 Jun 2013 18:59:34 -0400
+Message-ID: <51AD1FD3.4040907@linaro.org>
+Date: Mon, 03 Jun 2013 15:59:31 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Baruch Siach <baruch@tkos.co.il>, Colin Cross <ccross@android.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Liu Ying <Ying.Liu@freescale.com>, Pavel Machek <pavel@ucw.cz>,
+        Todd Poynor <toddpoynor@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [GIT PULL] Time changes for 3.11 (first chunk)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  1 Jun 2013 12:44:09 +0200 Jan Luebbe <jlu@pengutronix.de> wrote:
+Hey Thomas (sorry for the dup, forgot to cc everyone before originally 
+sending),
+     Just wanted to send along my current queue for 3.11 for 
+tip/timers/core. I've still got a few more items to queue in my inbox, 
+but wanted to get these out there in the meantime for testing in -next.
 
-> Instead of allocating a struct pps_gpio_platform_data in the DT case, store
-> the necessary information in struct pps_gpio_device_data itself. This avoids
-> an additional allocation and the ifdef. It also gets rid of some indirection.
-> 
-> Also use dev_err instead of pr_err in the changed code.
-> 
-> ...
->
->  static int pps_gpio_probe(struct platform_device *pdev)
->  {
->  	struct pps_gpio_device_data *data;
-> -	int irq;
-> +	const char *gpio_label;
->  	int ret;
->  	int pps_default_params;
->  	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-> +	struct device_node *np = pdev->dev.of_node;
->  
-> +	/* allocate space for device info */
-> +	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
-> +			GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	if (pdata) {
-> +		data->gpio_pin = pdata->gpio_pin;
-> +		gpio_label = pdata->gpio_label;
-> +
-> +		data->assert_falling_edge = pdata->assert_falling_edge;
-> +		data->capture_clear = pdata->capture_clear;
-> +	} else {
-> +		ret = of_get_gpio(np, 0);
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev, "failed to get GPIO from device tree\n");
-> +			return ret;
-> +		}
-> +		data->gpio_pin = ret;
-> +		gpio_label = PPS_GPIO_NAME;
-> +
-> +		if (of_get_property(np, "assert-falling-edge", NULL))
-> +			data->assert_falling_edge = true;
-> +	}
->  
->  	/* GPIO setup */
-> -	ret = pps_gpio_setup(pdev);
-> -	if (ret)
-> -		return -EINVAL;
-> +	ret = devm_gpio_request(&pdev->dev, data->gpio_pin, gpio_label);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to request GPIO %u\n",
-> +			data->gpio_pin);
-> +		return ret;
-> +	}
->  
-> -	/* IRQ setup */
-> -	irq = gpio_to_irq(pdata->gpio_pin);
-> -	if (irq < 0) {
-> -		pr_err("failed to map GPIO to IRQ: %d\n", irq);
-> +	ret = gpio_direction_input(data->gpio_pin);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to set pin direction\n");
->  		return -EINVAL;
+Let me know if you have any objections.
 
-Should we propagate the gpio_direction_input() return value?
+thanks
+-john
 
->  	}
->  
+The following changes since commit 1eaff67266b6b6c97bbd33cf2c20577822836413:
 
+   clocksource: Implement clocksource_select_fallback() for 
+CONFIG_ARCH_USES_GETTIMEOFFSET=y (2013-05-28 09:48:46 +0200)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/jstultz/linux.git fortglx/3.11/time
+
+for you to fetch changes up to ce0b098981544d9f4e910ea48f3af3e726ca6d6b:
+
+   x86: Fix vrtc_get_time/set_mmss to use new timespec interface 
+(2013-05-29 12:57:35 -0700)
+
+----------------------------------------------------------------
+Baruch Siach (1):
+       clocksource: dw_apb: Remove unused header
+
+Colin Cross (1):
+       power: Add option to log time spent in suspend
+
+Daniel Borkmann (1):
+       ktime: Add __must_check prefix to ktime_to_timespec_cond
+
+David Vrabel (1):
+       x86: Increase precision of x86_platform.get/set_wallclock()
+
+John Stultz (1):
+       x86: Fix vrtc_get_time/set_mmss to use new timespec interface
+
+Liu Ying (1):
+       ktime: Use macro NSEC_PER_USEC where appropriate
+
+Pavel Machek (1):
+       dw_apb_timer_of.c: Remove parts that were picoxcell-specific
+
+Todd Poynor (2):
+       alarmtimer: Add functions for timerfd support
+       timerfd: Add alarm timers
+
+  arch/arm/mach-picoxcell/common.h      |   2 -
+  arch/x86/include/asm/mc146818rtc.h    |   4 +-
+  arch/x86/include/asm/mrst-vrtc.h      |   4 +-
+  arch/x86/include/asm/x86_init.h       |   6 +-
+  arch/x86/kernel/kvmclock.c            |   9 +--
+  arch/x86/kernel/rtc.c                 |  17 ++---
+  arch/x86/lguest/boot.c                |   4 +-
+  arch/x86/platform/efi/efi.c           |  10 +--
+  arch/x86/platform/mrst/vrtc.c         |  11 +--
+  arch/x86/xen/time.c                   |  19 ++---
+  drivers/clocksource/dw_apb_timer.c    |   6 --
+  drivers/clocksource/dw_apb_timer_of.c |  53 ++++++--------
+  fs/timerfd.c                          | 131 
+++++++++++++++++++++++++++++------
+  include/linux/alarmtimer.h            |   4 ++
+  include/linux/dw_apb_timer.h          |   6 ++
+  include/linux/efi.h                   |   4 +-
+  include/linux/ktime.h                 |  10 +--
+  kernel/time/Makefile                  |   1 +
+  kernel/time/alarmtimer.c              |  39 +++++++++-
+  kernel/time/timekeeping.c             |   2 +
+  kernel/time/timekeeping_debug.c       |  72 +++++++++++++++++++
+  kernel/time/timekeeping_internal.h    |  14 ++++
+  22 files changed, 314 insertions(+), 114 deletions(-)
+  create mode 100644 kernel/time/timekeeping_debug.c
+  create mode 100644 kernel/time/timekeeping_internal.h
