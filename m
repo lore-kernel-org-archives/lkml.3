@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab3FCTd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:33:28 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:51168 "EHLO gloria.sntech.de"
+	id S1758669Ab3FCTeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:34:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50226 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758545Ab3FCTd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:33:26 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 2/3] clk: dt: binding for basic multiplexor clock
-Date: Mon, 3 Jun 2013 21:33:19 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <1370281990-15090-3-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1370281990-15090-3-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1756229Ab3FCTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 15:34:05 -0400
+Message-ID: <1370288034.19018.1.camel@localhost>
+Subject: Re: [RFC PATCH 1/2] selinux: merge selinux_inode_permission and
+ inode_has_perm
+From: Eric Paris <eparis@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: sds@tycho.nsa.gov, linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
+Date: Mon, 03 Jun 2013 15:33:54 -0400
+In-Reply-To: <1370285941-18367-1-git-send-email-eparis@redhat.com>
+References: <1370285941-18367-1-git-send-email-eparis@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306032133.20039.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-I think it's a multiplexEr clock in the patch title, and see below
-
-
-Am Montag, 3. Juni 2013, 19:53:09 schrieb Mike Turquette:
-> Device Tree binding for the basic clock multiplexor, plus the setup
-> function to register the clock.  Based on the existing fixed-clock
-> binding.
+On Mon, 2013-06-03 at 14:59 -0400, Eric Paris wrote:
+> selinux_inode_permission had some heavy lifting done to make it more
+> performance polite.  But it still does largely the same thing as
+> inode_has_perm.  So move that work into inode_has_perm and call
+> inode_has_perm from selinux_inode_permission.
 > 
-> Also relocate declaration of of_fixed_factor_clk_setup to keep things
-> tidy.
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+>  security/selinux/hooks.c | 92 ++++++++++++++++++++++--------------------------
+>  1 file changed, 42 insertions(+), 50 deletions(-)
 > 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 5c6f2cd..cfecb52 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
 
-[...]
-
+> @@ -1514,6 +1538,14 @@ static int inode_has_perm(const struct cred *cred,
+>  	sid = cred_sid(cred);
+>  	isec = inode->i_security;
+>  
+> +	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
+> +	audited = avc_audit_required(perms, &avd, rc, dontaudit, &denied);
+> +	if (likely(!audited))
+> +		return rc;
 > +
-> +	reg = of_iomap(node, 0);
-> +	pr_err("%s: reg is 0x%p\n", __func__, reg);
-> +
-> +	if (of_property_read_u32(node, "mask", &mask)) {
-> +		pr_err("%s: missing mask property for %s\n", __func__, node->name);
-> +		return;
-> +	}
-> +
-> +	if (of_property_read_u32(node, "shift", &shift))
-> +		pr_debug("%s: missing shift property defaults to zero for %s\n",
-> +				__func__, node->name);
-> +
-> +	if (of_property_read_bool(node, "index_one"))
-> +		clk_mux_flags |= CLK_MUX_INDEX_ONE;
-> +
-> +	clk = clk_register_mux_table(NULL, clk_name, parent_names, num_parents,
-> +			0, reg, 0, mask, clk_mux_flags,
+> +	rc2 = audit_inode_permission(inode, adp, perms, audited, denied, flags);
+> +	if (rc2)
+> +		return rc2;
+>  	return avc_has_perm_flags(sid, isec->sid, isec->sclass, perms, adp, flags);
+>  }
+>  
 
-                      ^- should probably be shift
+Should just return rc, not avc_has_perm_flags().  I fixed that in the
+2/2 patch and this should work just fine.  Kills a little performance,
+but still works.
 
+-Eric
 
-Otherwise looks cool and I'm currently trying it with my Rockchip code.
-
-
-Heiko
