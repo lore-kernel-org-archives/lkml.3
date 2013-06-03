@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3FCU0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:26:54 -0400
-Received: from sauhun.de ([89.238.76.85]:34598 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974Ab3FCU0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:26:51 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH] pwm: devm: alloc correct pointer size
-Date: Mon,  3 Jun 2013 22:27:17 +0200
-Message-Id: <1370291306-3276-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753288Ab3FCU1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:27:03 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:49390 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab3FCU06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 16:26:58 -0400
+Date: Mon, 3 Jun 2013 22:26:56 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Rob Landley <rob@landley.net>
+Cc: Andreas Mohr <andi@lisas.de>, Kris Rusocki <kszysiu@braxis.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: cover CONFIG_BINFMT_SCRIPT in init.txt
+Message-ID: <20130603202656.GA1102@rhlx01.hs-esslingen.de>
+References: <20130530203310.GA5097@rhlx01.hs-esslingen.de>
+ <1370258172.2776.57@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370258172.2776.57@driftwood>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The allocated object should be the size of what the pointer is pointing
-to and not the size of the pointer itself.
+Hi,
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/pwm/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Mon, Jun 03, 2013 at 06:16:12AM -0500, Rob Landley wrote:
+> On 05/30/2013 03:33:10 PM, Andreas Mohr wrote:
+> >It's somewhat sad to see that that file remained at only one
+> >initial commit
+> >since 2010, thus thumbs up for your help!
+> >
+> >Docs in general seem to be a wee bit too unmaintained.
+> 
+> Are you volunteering?
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index 32221cb..0cf0f65 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -694,7 +694,7 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id)
- {
- 	struct pwm_device **ptr, *pwm;
- 
--	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
-+	ptr = devres_alloc(devm_pwm_release, sizeof(*ptr), GFP_KERNEL);
- 	if (!ptr)
- 		return ERR_PTR(-ENOMEM);
- 
-@@ -724,7 +724,7 @@ struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
- {
- 	struct pwm_device **ptr, *pwm;
- 
--	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
-+	ptr = devres_alloc(devm_pwm_release, sizeof(*ptr), GFP_KERNEL);
- 	if (!ptr)
- 		return ERR_PTR(-ENOMEM);
- 
--- 
-1.7.10.4
+Yeah (sort of ;) - in fact I keep piling up some doc updates locally
+and am just waiting for them to reach critical mass
+(but first I need to get some certain driver updates submitted anyway).
 
+Andreas Mohr
