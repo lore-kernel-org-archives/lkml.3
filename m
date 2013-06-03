@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab3FCSLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:11:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44043 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759273Ab3FCSLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:11:16 -0400
-Date: Mon, 3 Jun 2013 19:11:10 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 0/4] EFI 1:1 mapping
-Message-ID: <20130603181110.GA25060@srcf.ucam.org>
-References: <20130603081148.GB13607@nazgul.tnic>
- <1370269642.2910.4.camel@dabdike>
- <20130603143010.GA20252@srcf.ucam.org>
- <1370270282.2910.9.camel@dabdike>
- <20130603152122.GA21312@srcf.ucam.org>
- <1370276286.2910.29.camel@dabdike>
- <20130603162435.GA22563@srcf.ucam.org>
- <1370277307.2910.39.camel@dabdike>
- <20130603164237.GA23146@srcf.ucam.org>
- <1370282703.9888.5.camel@dabdike>
+	id S1759593Ab3FCSMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:12:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46352 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758041Ab3FCSMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 14:12:48 -0400
+Date: Mon, 3 Jun 2013 14:12:02 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, metin d <metdos@yahoo.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 10/10] mm: workingset: keep shadow entries in check
+Message-ID: <20130603181202.GI15576@cmpxchg.org>
+References: <1369937046-27666-1-git-send-email-hannes@cmpxchg.org>
+ <1369937046-27666-11-git-send-email-hannes@cmpxchg.org>
+ <20130603082533.GH5910@twins.programming.kicks-ass.net>
+ <20130603152032.GF15576@cmpxchg.org>
+ <20130603171558.GE8923@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370282703.9888.5.camel@dabdike>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20130603171558.GE8923@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:05:03AM -0700, James Bottomley wrote:
-> On Mon, 2013-06-03 at 17:42 +0100, Matthew Garrett wrote:
-> > Why do you persist in this belief that all system vendors are going to 
-> > have run a shell, let alone any kind of test suite? That runs counter to 
-> > everything we've learned about x86 firmware. People verify that it runs 
-> > Windows and then ship it.
+On Mon, Jun 03, 2013 at 07:15:58PM +0200, Peter Zijlstra wrote:
+> On Mon, Jun 03, 2013 at 11:20:32AM -0400, Johannes Weiner wrote:
+> > On Mon, Jun 03, 2013 at 10:25:33AM +0200, Peter Zijlstra wrote:
+> > > On Thu, May 30, 2013 at 02:04:06PM -0400, Johannes Weiner wrote:
+> > > > Previously, page cache radix tree nodes were freed after reclaim
+> > > > emptied out their page pointers.  But now reclaim stores shadow
+> > > > entries in their place, which are only reclaimed when the inodes
+> > > > themselves are reclaimed.  This is problematic for bigger files that
+> > > > are still in use after they have a significant amount of their cache
+> > > > reclaimed, without any of those pages actually refaulting.  The shadow
+> > > > entries will just sit there and waste memory.  In the worst case, the
+> > > > shadow entries will accumulate until the machine runs out of memory.
+> > > > 
+> > > 
+> > > Can't we simply prune all refault entries that have a distance larger
+> > > than the memory size? Then we must assume that no refault entry means
+> > > its too old, which I think is a fair assumption.
+> > 
+> > Two workloads bound to two nodes might not push pages through the LRUs
+> > at the same pace, so a distance might be bigger than memory due to the
+> > faster moving node, yet still be a hit in the slower moving one.  We
+> > can't really know until we evaluate it on a per-zone basis.
 > 
-> I don't, but I find it hard to believe no vendor ever runs an EFI shell
-> on their systems.  The feedback I got from a couple of OEMs is that they
-> use the shell mostly for internal testing.
+> But wasn't patch 1 of this series about making sure each zone is scanned
+> proportionally to its size?
 
-There are vendors that do, and I expect that there are vendors who 
-don't. There are vendors who will make changes to firmware and run the 
-EFI test suite, and there are vendors who will make changes to firmware 
-and run Windows.
+Only within any given zonelist.  It's just so that pages used together
+are aged fairly.  But if the tasks are isolated from each other their
+pages may age at different paces without it being unfair since the
+tasks do not contend for the same memory.
 
-> > The problem there is that you're saying "In theory". We know that 
-> > Windows doesn't behave this way, so we have no legitimate expectation 
-> > that it'll work. We know that it doesn't on some Apple hardware.
-> 
-> Fine, you say we need to call SetVirtualAddressMap because windows does,
-> I agree, I'm just saying we get additional safety from calling it with
-> the 1:1 map ... I don't see what the problem is.
+> But given that, sure maybe 1 memory size is a bit strict, but surely we
+> can put a limit on things at about 2 memory sizes?
 
-No. I'm saying that calling it with the 1:1 map is something very 
-different to the behaviour of Windows, and I'm saying that doing so is 
-known to cause variable writes on some Apple hardware to stop working. 
-If we're aiming for maximum compatibility, we need to call 
-SetVirtualAddressMap() with addresses above the canonicalisation hole.
+That's what this 10/10 patch does (prune everything older than 2 *
+global_dirtyable_memory()), so I think we're talking past each other.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Maybe the wording of the changelog was confusing?  The paragraph you
+quoted above explains the problem resulting from 9/10 but which this
+patch 10/10 fixes.
