@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab3FCNxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:53:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34859 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab3FCNxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:53:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,793,1363158000"; 
-   d="scan'208";a="311565093"
-Message-ID: <51AC9FD8.1080400@linux.intel.com>
-Date: Mon, 03 Jun 2013 16:53:28 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1758064Ab3FCNyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:54:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54733 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab3FCNyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:54:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
+        ulf.hansson@linaro.org
+Subject: Re: [PATCH 08/21] ARM: ux500: Supply the I2C clocks lookup to the DBX500 DT
+Date: Mon, 03 Jun 2013 15:54:07 +0200
+Message-ID: <2199337.TqRF93pcHr@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1370266965-7901-9-git-send-email-lee.jones@linaro.org>
+References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-9-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Alex Rosenbaum <alexr@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v8 net-next 2/7] net: add low latency socket poll
-References: <20130603080107.18273.34279.stgit@ladj378.jer.intel.com>  <20130603080128.18273.2408.stgit@ladj378.jer.intel.com> <1370264704.24311.129.camel@edumazet-glaptop>
-In-Reply-To: <1370264704.24311.129.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:epQacR8IbHqj4mxewg0Hw7vea0AEwFgpnDU1cRG/vn/
+ QuQ/W+E4DWNz1lmOqFXCcdx1LLM9qM4s8kAGEUPyo7u/TOnzSH
+ H1jy5n7AfXWudEy20S4UUgOtL5FvG2Jp/gB8g2bJJn0B1L+ARh
+ jLH7Muy6CY1a7cA/GMyfU7RDDqJOoBiwUC69r8yXEat5RpoShs
+ 9V+ygmafOyYYrgDi0Dah/03FoqodDSpYrHnvo/0crJ+hUqDXaA
+ 7BUF8DLJOTfcf0wWJiXpRHUZ5UfQusKj2Jsi/jyggy55V/s0iI
+ CjvmuiSiIEXSUJ5UlCA5yfr2C9dn2IkMEjQYh1R23Ila4i4Boz
+ Fu76rynP6B91+Jcdh9K0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 16:05, Eric Dumazet wrote:
-> On Mon, 2013-06-03 at 11:01 +0300, Eliezer Tamir wrote:
->> --- a/net/core/sysctl_net_core.c
->> +++ b/net/core/sysctl_net_core.c
->> @@ -19,6 +19,7 @@
->>   #include <net/ip.h>
->>   #include <net/sock.h>
->>   #include <net/net_ratelimit.h>
->> +#include <net/ll_poll.h>
->>
->>   static int one = 1;
->>
->> @@ -284,6 +285,15 @@ static struct ctl_table net_core_table[] = {
->>   		.proc_handler	= flow_limit_table_len_sysctl
->>   	},
->>   #endif /* CONFIG_NET_FLOW_LIMIT */
->> +#ifdef CONFIG_NET_LL_RX_POLL
->> +	{
->> +		.procname	= "low_latency_poll",
->> +		.data		= &sysctl_net_ll_poll,
->> +		.maxlen		= sizeof(unsigned long),
->> +		.mode		= 0644,
->> +		.proc_handler	= proc_dointvec
->
-> proc_doulongvec_minmax
+On Monday 03 June 2013 14:42:32 Lee Jones wrote:
+> @@ -559,6 +559,8 @@
+>                         v-i2c-supply = <&db8500_vape_reg>;
+>  
+>                         clock-frequency = <400000>;
+> +                       clocks = <&clk 100>, <&clk 67>;
+> +                       clock-names = "nmk-i2c.0", "apb_pclk";
+>                 };
+>  
+>                 i2c@80122000 {
+> @@ -572,6 +574,9 @@
+>                         v-i2c-supply = <&db8500_vape_reg>;
+>  
+>                         clock-frequency = <400000>;
+> +
+> +                       clocks = <&clk 85>, <&clk 42>;
+> +                       clock-names = "nmk-i2c.1", "apb_pclk";
+>                 };
 
-Thank you.
+Same comment actually as for the uart patch, also SDI and MSP
+have the same problem.
+
+	Arnd
