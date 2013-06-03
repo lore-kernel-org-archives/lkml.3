@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3FCD1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:27:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36641 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3FCD1N (ORCPT
+	id S1752007Ab3FCDcR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 23:32:17 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:59496 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab3FCDcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:27:13 -0400
-Date: Sun, 02 Jun 2013 20:27:03 -0700 (PDT)
-Message-Id: <20130602.202703.1059637861388689182.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: klamm@yandex-team.ru, paulmck@linux.vnet.ibm.com, brouer@redhat.com,
-        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, David.Laight@ACULAB.COM
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1370229169.24311.119.camel@edumazet-glaptop>
-References: <1370215895.24311.93.camel@edumazet-glaptop>
-	<20130602.195826.721294433730539253.davem@davemloft.net>
-	<1370229169.24311.119.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Jun 2013 23:32:09 -0400
+Date: Sun, 2 Jun 2013 20:32:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata fixes for v3.10-rc4
+Message-ID: <20130603033213.GB6071@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sun, 02 Jun 2013 20:12:49 -0700
+Hello, Linus.
 
-> On Sun, 2013-06-02 at 19:58 -0700, David Miller wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Sun, 02 Jun 2013 16:31:35 -0700
->> 
->> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
->> >> On 29.05.2013 23:06, Eric Dumazet wrote:
->> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
->> >> >
->> >> > True, these lookup functions are usually structured the same around the
->> >> > hlist_nulls_for_each_entry_rcu() loop.
->> >> >
->> >> > A barrier() right before the loop seems to be a benefit, the size of
->> >> > assembly code is reduced by 48 bytes.
->> >> >
->> >> > And its one of the documented way to handle this kind of problems
->> >> > (Documentation/atomic_ops.txt line 114)
->> >> >
->> >> > I guess we should amend this documentation, eventually.
->> >> >
->> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
->> >> >
->> >> 
->> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
->> >> 
->> >> Many thanks to you, Paul E. McKenney and David Laight for your
->> >> patches, help and participation in this discussion.
->> > 
->> > Thanks to you !
->> > 
->> > David, is there any problem with the patch ?
->> > 
->> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
->> > tell me what is needed to get it merged.
->> 
->> It's not a networking patch, it's a patch for generic RCU upstream.
->> So it either goes through Paul McKenney, or directly via Linus on
->> linux-kernel.
-> 
-> Well, whole discussion went on linux kernel, and you were the original
-> committer of this patch five years ago.
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
-> 
-> So please Paul or David make sure the patch goes in.
-> 
-> My only concern is that Paul seems quite busy these days.
+libata changes for v3.10-rc4.  Nothing too interesting.  PCI ID
+additions, some sata_rcar fixes and a fringe bug fix for DMADIR
+handling which shouldn't affect any device remotely modern.  The
+changes are available in the following git branch
 
-Ok I can take it then, no problem.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.10-fixes
+
+for you to fetch changes up to 52a2a1087b5924de00484f35ef5e2a73f61dbd22:
+
+  sata_rcar: fix interrupt handling (2013-06-02 00:54:45 -0700)
+
+Thanks.
+
+----------------------------------------------------------------
+Chew, Chiau Ee (1):
+      ata_piix: add PCI IDs for Intel BayTail
+
+George Spelvin (1):
+      ahci: add an observed PCI ID for Marvell 88se9172 SATA controller
+
+Sergei Shtylyov (2):
+      sata_rcar: clear STOP bit in bmdma_start() method
+      sata_rcar: fix interrupt handling
+
+Tejun Heo (1):
+      libata: update "Maintained by:" tags
+
+Vincent Pelletier (1):
+      libata: make ata_exec_internal_sg honor DMADIR
+
+ drivers/ata/acard-ahci.c   |  2 +-
+ drivers/ata/ahci.c         |  4 +++-
+ drivers/ata/ahci.h         |  2 +-
+ drivers/ata/ata_piix.c     | 17 ++++++++++++++++-
+ drivers/ata/libahci.c      |  2 +-
+ drivers/ata/libata-core.c  |  8 +++++++-
+ drivers/ata/libata-eh.c    |  2 +-
+ drivers/ata/libata-scsi.c  |  2 +-
+ drivers/ata/libata-sff.c   |  2 +-
+ drivers/ata/pdc_adma.c     |  2 +-
+ drivers/ata/sata_promise.c |  2 +-
+ drivers/ata/sata_rcar.c    | 24 ++++++++++++------------
+ drivers/ata/sata_sil.c     |  2 +-
+ drivers/ata/sata_sx4.c     |  2 +-
+ drivers/ata/sata_via.c     |  2 +-
+ 15 files changed, 49 insertions(+), 26 deletions(-)
+
+--
+tejun
