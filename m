@@ -1,132 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3FCPvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:51:33 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49562 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab3FCPvb (ORCPT
+	id S1758932Ab3FCPwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:52:05 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:49646 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3FCPwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:51:31 -0400
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Subject: [PATCH] arm64: Add support to pass earlyprintk argument via device tree
-Date: Mon,  3 Jun 2013 21:21:11 +0530
-Message-Id: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Jun 2013 11:52:02 -0400
+MIME-Version: 1.0
+Date: Mon, 3 Jun 2013 17:52:01 +0200
+Message-ID: <CAOPDcRyMr2RL+4azAzDeBK0Ja_9zNvWFjBy3Z8XL9BKH_a+A7w@mail.gmail.com>
+Subject: Clarifications on PFN_UP macro
+From: stl <st.lambert02@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for defining and passing earlyprintk
-related information i.e. device and address information via
-device tree by adding it inside "chosen" node.
+Hello,
+I need some clarifications concerning the macro
 
-This will help user to just specify "earlyprintk" from bootargs
-without actually knowing the address and device to enable
-earlyprintk.
+#define PFN_UP(x)    (((x) + PAGE_SIZE-1) >> PAGE_SHIFT)
 
-Mechanism:
+found in "pfn.h"
 
-One can just append earlyprintk=device-type,address (same as we pass
-through command line) in "/chosen" node to notify kernel which is the
-earlyprintk device and what is its address.
+I suppose that its aim is to give the page frame number of the page
+following the page holding the physical adress x, contrary to
+PFN_DOWN(x) which give the page frame number of the page holding the
+adress x.
 
-Backward Compatibility:
+Assuming that the first page has the range 0x0000 to 0x0FFF,
+the second 0x1000 to 0x1FFF and so on, it seems that there is
+an issu with the starting adress of each page, for example:
+x = 0x10000  (PFN number 10)
+0x10000 + 0xFFF >> 12    =    10, but should be 11 no?
 
-This patch also allows existing method of specifying earlyprintk
-parameter via bootargs.
+I certainly misunderstood something.
+Could someone clarify this point please?
 
-Existing method i.e. passing via bootargs will still have precedence
-over device tree i.e. if one specifies earlyprintk=device-type,address
-in bootargs then kernel will use information from bootargs instead of
-device tree.
-
-If user just specifies earlyprintk (without =...) then kernel will
-look for device tree earlyprintk parameter.
-
-Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Signed-off-by: Anup Patel <anup.patel@linaro.org>
----
- arch/arm64/kernel/early_printk.c |    7 +++++++
- arch/arm64/kernel/setup.c        |   21 ++++++++++++++++++++-
- 2 files changed, 27 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index fbb6e18..4e6f845 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -29,6 +29,8 @@
- static void __iomem *early_base;
- static void (*printch)(char ch);
- 
-+extern char *earlyprintk_dt_args;
-+
- /*
-  * PL011 single character TX.
-  */
-@@ -116,6 +118,11 @@ static int __init setup_early_printk(char *buf)
- 	phys_addr_t paddr = 0;
- 
- 	if (!buf) {
-+		/* Try to check if Device Tree has this argument or not ? */
-+		buf = earlyprintk_dt_args;
-+	}
-+
-+	if (!buf) {
- 		pr_warning("No earlyprintk arguments passed.\n");
- 		return 0;
- 	}
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 6a9a532..fb2d56f 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -60,6 +60,8 @@ EXPORT_SYMBOL(processor_id);
- unsigned int elf_hwcap __read_mostly;
- EXPORT_SYMBOL_GPL(elf_hwcap);
- 
-+char *earlyprintk_dt_args;
-+
- static const char *cpu_name;
- static const char *machine_name;
- phys_addr_t __fdt_pointer __initdata;
-@@ -122,6 +124,23 @@ static void __init setup_processor(void)
- 	elf_hwcap = 0;
- }
- 
-+int __init early_init_dt_scan_chosen_arm64(unsigned long node,
-+					   const char *uname,
-+					   int depth, void *data)
-+{
-+	char *prop;
-+
-+	/* Check if this is chosen node */
-+	if (early_init_dt_scan_chosen(node, uname, depth, data) == 0)
-+		return 0;
-+
-+	prop = of_get_flat_dt_prop(node, "earlyprintk", NULL);
-+	if (prop)
-+		earlyprintk_dt_args = prop;
-+
-+	return 1;
-+}
-+
- static void __init setup_machine_fdt(phys_addr_t dt_phys)
- {
- 	struct boot_param_header *devtree;
-@@ -165,7 +184,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
- 	pr_info("Machine: %s\n", machine_name);
- 
- 	/* Retrieve various information from the /chosen node */
--	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-+	of_scan_flat_dt(early_init_dt_scan_chosen_arm64, boot_command_line);
- 	/* Initialize {size,address}-cells info */
- 	of_scan_flat_dt(early_init_dt_scan_root, NULL);
- 	/* Setup memory, calling early_init_dt_add_memory_arch */
--- 
-1.7.9.5
-
+Thanks.
