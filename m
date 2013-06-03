@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3FCI2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:28:46 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61959 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab3FCI2n (ORCPT
+	id S1753586Ab3FCIeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:34:31 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:42274 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab3FCIe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:28:43 -0400
-X-AuditID: 9c93017d-b7c04ae00000207d-ca-51ac53b9e11f
-Date: Mon, 3 Jun 2013 17:28:41 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v4][PATCH 3/6] mm: vmscan: break up __remove_mapping()
-Message-ID: <20130603082841.GB2795@blaptop>
-References: <20130531183855.44DDF928@viggo.jf.intel.com>
- <20130531183859.F179225E@viggo.jf.intel.com>
+	Mon, 3 Jun 2013 04:34:29 -0400
+Date: Mon, 3 Jun 2013 10:34:24 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>, x86@kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.10-rc4
+In-Reply-To: <alpine.DEB.2.00.1306031018320.18831@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1306031022150.19041@ayla.of.borg>
+References: <alpine.DEB.2.00.1306031018320.18831@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130531183859.F179225E@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:38:59AM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Our goal here is to eventually reduce the number of repetitive
-> acquire/release operations on mapping->tree_lock.
-> 
-> Logically, this patch has two steps:
-> 1. rename __remove_mapping() to lock_remove_mapping() since
->    "__" usually means "this us the unlocked version.
-> 2. Recreate __remove_mapping() to _be_ the lock_remove_mapping()
->    but without the locks.
-> 
-> I think this actually makes the code flow around the locking
-> _much_ more straighforward since the locking just becomes:
-> 
-> 	spin_lock_irq(&mapping->tree_lock);
-> 	ret = __remove_mapping(mapping, page);
-> 	spin_unlock_irq(&mapping->tree_lock);
-> 
-> One non-obvious part of this patch: the
-> 
-> 	freepage = mapping->a_ops->freepage;
-> 
-> used to happen under the mapping->tree_lock, but this patch
-> moves it to outside of the lock.  All of the other
-> a_ops->freepage users do it outside the lock, and we only
-> assign it when we create inodes, so that makes it safe.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Acked-by: Mel Gorman <mgorman@suse.de>
+On Mon, 3 Jun 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.10-rc4 to v3.10-rc3[3], the summaries are:
+>   - build errors: +6/-2
+>   - build warnings: +66/-132
 
-Reviewed-by: Minchan Kin <minchan@kernel.org>
+  + arch/powerpc/sysdev/mpic.c: error: case label does not reduce to an integer constant:  => 890:9, 898:9, 886:9, 894:9
 
-Just a nitpick below.
+powerpc-randconfig
 
-> 
-> ---
-> 
->  linux.git-davehans/mm/vmscan.c |   43 ++++++++++++++++++++++++-----------------
->  1 file changed, 26 insertions(+), 17 deletions(-)
-> 
-> diff -puN mm/vmscan.c~make-remove-mapping-without-locks mm/vmscan.c
-> --- linux.git/mm/vmscan.c~make-remove-mapping-without-locks	2013-05-30 16:07:51.210104924 -0700
-> +++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:51.214105100 -0700
-> @@ -450,12 +450,12 @@ static pageout_t pageout(struct page *pa
->   * Same as remove_mapping, but if the page is removed from the mapping, it
->   * gets returned with a refcount of 0.
->   */
-> -static int __remove_mapping(struct address_space *mapping, struct page *page)
-> +static int __remove_mapping(struct address_space *mapping,
-> +			    struct page *page)
+  + error: No rule to make target /etc/sound/msndinit.bin:  => N/A
+  + error: No rule to make target /etc/sound/msndperm.bin:  => N/A
 
-Unnecessary change.
+i386-randconfig
 
--- 
-Kind regards,
-Minchan Kim
+  + error: spi-rspi.c: undefined reference to `shdma_chan_filter':  => .text+0x64f28), .text+0x65108)
+  
+sh-randconfig
+
+There seems to be something wrong with the dependencies for SH_DMAE_BASE,
+with more failures in linux-next for kota2_defconfig and marzen_defconfig
+on ARM (http://kisskb.ellerman.id.au/kisskb/buildresult/8848370/ resp.
+ http://kisskb.ellerman.id.au/kisskb/buildresult/8848367/)
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6290/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6268/ (all 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
