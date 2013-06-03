@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab3FCNUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:20:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64131 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab3FCNUe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:20:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC] dw_apb_timer_of: use clocksource_of_init
-Date: Mon, 03 Jun 2013 15:20:49 +0200
-Message-ID: <2776800.oNsvP2SGCJ@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <201306031415.29411.heiko@sntech.de>
-References: <201306030055.15413.heiko@sntech.de> <1822564.TIKVDZSzqK@wuerfel> <201306031415.29411.heiko@sntech.de>
+	id S1757781Ab3FCNUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:20:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44347 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756977Ab3FCNUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:20:35 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ankur Kishore <a-kishore@ti.com>
+Subject: [PATCH v3] ARM: dts: AM43x: initial support
+Date: Mon, 3 Jun 2013 18:49:54 +0530
+Message-ID: <1370265594-12883-1-git-send-email-afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V02:K0:MkybEPSxmvkvzRNJLerfP1mCOiLb5I+4mUU5uy/68u9
- +GbOPsGi9/lT23brv/nXz330IsMQb8TWSsY/Vd/QRH5VXtR5P+
- 5ocVgRWTfFLWLPJOf1y/WpRX+ps6vjT06Ph0o0cEpYu3VCCBva
- CDeDRH7HsBqtc6XE2QsdCjSExdabaAgaRjxsDyz0O0UdGtqO1e
- HTiUoe1ETVRHj7/JzC8W1v2JNbDSUpgbscwTJckVK2h/Z1k9vv
- zudGM+UMMLtmuoEm8rESKX5QaZBe1f98RdQ4QDZsZY0wwO3qzF
- xh6zV6kS4YEF/oFnepqG6+/ny6D/vtLMnpurRnw3RgK03XXzQD
- qePoQOySGt/h6zoiebRI=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 June 2013 14:15:28 Heiko Stübner wrote:
-> dw_apb_timer_init used to search the devicetree for matching timer
-> devices, making calls to it from board files necessary.
-> 
-> Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
-> With this change the function gets called once for each timer node
-> and tracks these number of calls to attach clockevent and clocksource
-> devices to the nodes.
-> 
-> Also convert all previous users of dw_apb_timer_init to use
-> clocksource_of_init.
-> 
-> Tested on the upcoming rk3066 code.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
+represented here are the minimal DT nodes necessary to get kernel
+booting.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+In DT nodes, "ti,hwmod" property has not been added, this would be
+added along with PRCM support for AM43x.
+
+Signed-off-by: Ankur Kishore <a-kishore@ti.com>
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+
+v3: Make use of C preprocessor, rebased over Benoit's 'for_3.11/dts' branch
+v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
+
+ arch/arm/boot/dts/am4372.dtsi | 68 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 arch/arm/boot/dts/am4372.dtsi
+
+diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+new file mode 100644
+index 0000000..ddc1df7
+--- /dev/null
++++ b/arch/arm/boot/dts/am4372.dtsi
+@@ -0,0 +1,68 @@
++/*
++ * Device Tree Source for AM4372 SoC
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++#include "skeleton.dtsi"
++
++/ {
++	compatible = "ti,am4372", "ti,am43";
++	interrupt-parent = <&gic>;
++
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	cpus {
++		cpu@0 {
++			compatible = "arm,cortex-a9";
++		};
++	};
++
++	gic: interrupt-controller@48241000 {
++		compatible = "arm,cortex-a9-gic";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = <0x48241000 0x1000>,
++		      <0x48240100 0x0100>;
++	};
++
++	ocp {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		uart0: serial@44e09000 {
++			compatible = "ti,am4372-uart","ti,omap2-uart";
++			reg = <0x44e09000 0x2000>;
++			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
++		};
++
++		timer1: timer@44e31000 {
++			compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
++			reg = <0x44e31000 0x400>;
++			interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
++			ti,timer-alwon;
++		};
++
++		timer2: timer@48040000  {
++			compatible = "ti,am4372-timer","ti,am335x-timer";
++			reg = <0x48040000  0x400>;
++			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
++		};
++
++		counter32k: counter@44e86000 {
++			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
++			reg = <0x44e86000 0x40>;
++		};
++	};
++};
+-- 
+1.7.12
+
