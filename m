@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687Ab3FCXAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:00:02 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53485 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758131Ab3FCW7y (ORCPT
+	id S1759241Ab3FCXCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:02:45 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44373 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758645Ab3FCXCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:59:54 -0400
-Message-ID: <51AD1FE9.80709@codeaurora.org>
-Date: Mon, 03 Jun 2013 15:59:53 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the decompressor
-References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org> <20130603222321.GP18614@n2100.arm.linux.org.uk> <51AD1AB3.9050908@codeaurora.org> <20130603224555.GR18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130603224555.GR18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 19:02:39 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH] percpu-refcount: Don't use silly cmpxchg()
+Date: Mon,  3 Jun 2013 16:02:29 -0700
+Message-Id: <1370300549-2177-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1370039205-14071-1-git-send-email-koverstreet@google.com>
+References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/13 15:45, Russell King - ARM Linux wrote:
-> On Mon, Jun 03, 2013 at 03:37:39PM -0700, Stephen Boyd wrote:
->> In my case I'm booting a kernel with textoffset = 0x208000 but RAM
->> starts at 0x0. Does "minimum of RAM start" mean 0x0 or 0x200000?
-> The basic requirement for zImage's is no less than the start of RAM
-> plus 32K.  Or let me put it another way - start of writable memory
-> plus 32K.
->
-> Whether you need an offset of 0x200000 or not is not for the
-> decompressor to know.  If you're having to avoid the first 0x200000
-> bytes of memory for some reason (eg, secure firmware or DSP needs
-> it left free) then there's no way for the decompressor to know that,
-> so it's irrelevant.
->
-> So, lets say that your platform has a DSP which needs the first 0x200000
-> bytes left free.  So the boot loader _already_ needs to know to load
-> the image not at zero, but above 0x200000.  The additional 32K
-> requirement is really nothing new and so should be treated in just the
-> same way.
->
-> Leave at least 32K of usable memory below the zImage at all times.
+The cmpxcgh() was just to ensure the debug check didn't race, which was
+a bit excessive. The caller is supposed to do the appropriate
+synchronization, which means percpu_ref_kill() can just do a simple
+store.
 
-Understood. On my device writeable RAM actually starts at 0x0 but I have
-compiled in support for devices which don't have writeable memory at
-0x0, instead they have writeable memory starting at 0x200000. Because I
-have a kernel supporting more than one device with differing memory
-layouts I run into this problem. The same problem will occur to any
-devices in the multi-platform kernel when a device with unwriteable
-memory near the bottom (such as MSM8960) joins the multi-platform defconfig.
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ lib/percpu-refcount.c | 19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
-Let me try to word it in your example. I have compiled in support for a
-platform that has a DSP which needs the first 0x200000 bytes left free.
-I have also compiled in support for a platform that doesn't have this
-requirement. I plan to run the zImage on the second platform (the one
-without the DSP requirement). The bootloader I'm running this zImage on
-has no idea that I've compiled in support for the other platform with
-the DSP requirement so it assumes it can load the zImage at the start of
-RAM (0x0) plus 32K. This is bad because then the page tables get written
-into my compressed data and it fails to decompress.
-
-I believe you think the bootloader should know about this, but I can't
-tell how it could know.
-
+diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+index e65820a..04be7ea 100644
+--- a/lib/percpu-refcount.c
++++ b/lib/percpu-refcount.c
+@@ -107,22 +107,11 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+  */
+ void percpu_ref_kill(struct percpu_ref *ref)
+ {
+-	unsigned __percpu *pcpu_count, *old, *new;
++	WARN_ONCE(REF_STATUS(ref->pcpu_count) == PCPU_REF_DEAD,
++		  "percpu_ref_kill() called more than once!\n");
+ 
+-	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+-
+-	do {
+-		if (REF_STATUS(pcpu_count) == PCPU_REF_DEAD) {
+-			WARN(1, "percpu_ref_kill() called more than once!\n");
+-			return;
+-		}
+-
+-		old = pcpu_count;
+-		new = (unsigned __percpu *)
+-			(((unsigned long) pcpu_count)|PCPU_REF_DEAD);
+-
+-		pcpu_count = cmpxchg(&ref->pcpu_count, old, new);
+-	} while (pcpu_count != old);
++	ref->pcpu_count = (unsigned __percpu *)
++		(((unsigned long) ref->pcpu_count)|PCPU_REF_DEAD);
+ 
+ 	call_rcu(&ref->rcu, percpu_ref_kill_rcu);
+ }
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.2.1
 
