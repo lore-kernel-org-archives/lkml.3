@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3FCM0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:26:43 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:60437 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757359Ab3FCM0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:26:39 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1757542Ab3FCM1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:27:05 -0400
+Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:57496 "EHLO
+	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753564Ab3FCM1C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:27:02 -0400
+Message-ID: <51AC8B9D.1060702@calxeda.com>
+Date: Mon, 03 Jun 2013 07:27:09 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH v2] include/linux/skbuff.h: using '(u16) ~0U' instead of '~0U'
-Date: Mon, 3 Jun 2013 13:26:29 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7262@saturn3.aculab.com>
-In-Reply-To: <51AC7CD4.2060801@asianux.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2] include/linux/skbuff.h: using '(u16) ~0U' instead of '~0U'
-Thread-Index: Ac5gTP47znuaL0AITMyRQ3C0h7fPxgACE3hg
-References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com> <51AC60AA.8010107@asianux.com> <CAHp75Vc19Kii7_TF+9aF4ZeKAa4_92DCVL+u1duZDTu38o2qsw@mail.gmail.com> <51AC7546.4010002@asianux.com> <51AC7CD4.2060801@asianux.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Chen Gang" <gang.chen@asianux.com>,
-        "Andy Shevchenko" <andy.shevchenko@gmail.com>, <edumazet@google.com>
-Cc: "Pravin Shelar" <pshelar@nicira.com>, <mgorman@suse.de>,
-        "David Miller" <davem@davemloft.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, "netdev" <netdev@vger.kernel.org>,
-        "Ben Hutchings" <bhutchings@solarflare.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "timur@tabi.org" <timur@tabi.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "clemens@ladisch.de" <clemens@ladisch.de>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v3] ata: increase retry count but shorten duration for
+ Calxeda controller
+References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com> <1370014046-5202-1-git-send-email-mark.langsdorf@calxeda.com> <20130602080010.GB8286@mtj.dyndns.org>
+In-Reply-To: <20130602080010.GB8286@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r53CQnK0007121
 
-> +#define SKB_HEADER_UNSET_16	((unsigned short) ~0U)
-> +
+On 06/02/2013 03:00 AM, Tejun Heo wrote:
+> On Fri, May 31, 2013 at 10:27:26AM -0500, Mark Langsdorf wrote:
+> 
+> For the third time, explain the above in the comment; otherwise, it's
+> not going in.
 
-The _16 part isn't really correct, the type could be changed
-and then it would be wrong.
+Sorry, I completely misread your requirement. I'll move it to the
+comment as requested.
 
-I think I might have used SKB_HEADER_OFFSET.
+--Mark Langsdorf
+Calxeda, Inc.
 
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
