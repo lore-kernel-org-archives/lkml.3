@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab3FCOQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:16:31 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:36145
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755177Ab3FCOQ2 convert rfc822-to-8bit (ORCPT
+	id S1758107Ab3FCORA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:17:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45640 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab3FCOQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:16:28 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI9371I154dI542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Jiri Kosina <jkosina@suse.cz>, Thomas Meyer <thomas@m3y3r.de>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] HID: hyperv: Cocci spatch "memdup.spatch"
-Thread-Topic: [PATCH] HID: hyperv: Cocci spatch "memdup.spatch"
-Thread-Index: AQHOXqxHPTIDgUkoikOFQGfKwqNoSpkj31AAgAAseRA=
-Date: Mon, 3 Jun 2013 14:14:09 +0000
-Message-ID: <e91f5ef1d111418e8383867c3d0c81eb@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1370079631.29224.9.camel@localhost.localdomain>
- <alpine.LNX.2.00.1306031334040.6750@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1306031334040.6750@pobox.suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.56.200.45]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Jun 2013 10:16:58 -0400
+Message-ID: <51ACA533.8080904@ti.com>
+Date: Mon, 3 Jun 2013 16:16:19 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%M3Y3R.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704005)(54534003)(24454002)(199002)(13464003)(377454002)(189002)(51856001)(50466002)(47446002)(74502001)(66066001)(63696002)(74876001)(49866001)(74706001)(65816001)(76796001)(53806001)(46102001)(54356001)(47776003)(69226001)(23726002)(74662001)(20776003)(31966008)(76786001)(6806003)(56816002)(33646001)(80022001)(76576001)(81342001)(54316002)(47736001)(44976003)(16676001)(56776001)(59766001)(77982001)(46406003)(74366001)(79102001)(47976001)(50986001)(76482001)(81542001)(4396001)(74316001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB018;H:TK5EX14MLTC104.redmond.corp.microsoft.com;CLIP:131.107.125.37;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 08660C8631
+To: Dan Murphy <dmurphy@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v10 1/2] ARM: dts: omap4-panda: Update the LED support
+ for the panda DTS
+References: <1370015095-26746-1-git-send-email-dmurphy@ti.com>
+In-Reply-To: <1370015095-26746-1-git-send-email-dmurphy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dan,
 
+On 05/31/2013 05:44 PM, Dan Murphy wrote:
+> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+> are different.
+> 
+> A1-A3 = gpio_wk7
+> ES = gpio_110
+> 
+> There is no change to LED D2
+> 
+> Abstract away the pinmux and the LED definitions for the two boards into
+> the respective DTS files.
+> 
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
 
-> -----Original Message-----
-> From: Jiri Kosina [mailto:jkosina@suse.cz]
-> Sent: Monday, June 03, 2013 7:35 AM
-> To: Thomas Meyer
-> Cc: KY Srinivasan; Haiyang Zhang; devel@linuxdriverproject.org; linux-
-> input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] HID: hyperv: Cocci spatch "memdup.spatch"
-> 
-> On Sat, 1 Jun 2013, Thomas Meyer wrote:
-> 
-> > Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> > ---
-> >
-> > diff -u -p a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
-> > --- a/drivers/hid/hid-hyperv.c
-> > +++ b/drivers/hid/hid-hyperv.c
-> > @@ -199,13 +199,11 @@ static void mousevsc_on_receive_device_i
-> >  	if (desc->bLength == 0)
-> >  		goto cleanup;
-> >
-> > -	input_device->hid_desc = kzalloc(desc->bLength, GFP_ATOMIC);
-> > +	input_device->hid_desc = kmemdup(desc, desc->bLength,
-> GFP_ATOMIC);
-> >
-> >  	if (!input_device->hid_desc)
-> >  		goto cleanup;
-> >
-> > -	memcpy(input_device->hid_desc, desc, desc->bLength);
-> > -
-> >  	input_device->report_desc_size = desc->desc[0].wDescriptorLength;
-> >  	if (input_device->report_desc_size == 0) {
-> >  		input_device->dev_info_status = -EINVAL;
-> >
-> 
-> I guess you are going to get some pushback from some maintainers due to
-> non-descriptive subject and missing changelog :)
-> 
-> I have fixed this for the hyperv patch and applied it, thanks.
+Thanks, I've just applied it in my branch.
 
-Thanks Jiri!
+Regards,
+Benoit
 
-K. Y
+> ---
+> v10 - Update gpio entries to use gpio macros - https://patchwork.kernel.org/patch/2644561/ 
+> v9 - Removed comments for mux config - https://patchwork.kernel.org/patch/2644391/
+> v8 - Rebase to latest and use pinctrl macros - https://patchwork.kernel.org/patch/2629351/
+> v7 - Update headline to add spaces - https://patchwork.kernel.org/patch/2583661/
+> v6 - Review comments updated - https://patchwork.kernel.org/patch/2582771/
+> v5 - Provide pincrtl phandle to the gpio-led driver - https://patchwork.kernel.org/patch/2573981/
+>  arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
+>  arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+), 1 deletions(-)
 > 
-> --
-> Jiri Kosina
-> SUSE Labs
+> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> index d5d144a..800fa4e 100644
+> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> @@ -16,8 +16,13 @@
+>  		reg = <0x80000000 0x40000000>; /* 1 GB */
+>  	};
+>  
+> -	leds {
+> +	leds: leds {
+>  		compatible = "gpio-leds";
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <
+> +			&led_wkgpio_pins
+> +		>;
+> +
+>  		heartbeat {
+>  			label = "pandaboard::status1";
+>  			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+> @@ -157,6 +162,15 @@
+>  	};
+>  };
+>  
+> +&omap4_pmx_wkup {
+> +	led_wkgpio_pins: pinmux_leds_wkpins {
+> +		pinctrl-single,pins = <
+> +			0x1a (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk7 */
+> +			0x1c (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk8 */
+> +		>;
+> +	};
+> +};
+> +
+>  &i2c1 {
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&i2c1_pins>;
+> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+> index 5cfdf19..56c4354 100644
+> --- a/arch/arm/boot/dts/omap4-panda-es.dts
+> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
+> @@ -34,3 +34,31 @@
+>  		0x5e (PIN_INPUT | MUX_MODE0)		/* hdmi_sda.hdmi_sda */
+>  		>;
+>  };
+> +
+> +&omap4_pmx_core {
+> +	led_gpio_pins: gpio_led_pmx {
+> +		pinctrl-single,pins = <
+> +			0xb6 (PIN_OUTPUT | MUX_MODE3)	/* gpio_110 */
+> +		>;
+> +	};
+> +};
+> +
+> +&led_wkgpio_pins {
+> +	pinctrl-single,pins = <
+> +		0x1c (PIN_OUTPUT | MUX_MODE3)	/* gpio_wk8 */
+> +	>;
+> +};
+> +
+> +&leds {
+> +	pinctrl-0 = <
+> +		&led_gpio_pins
+> +		&led_wkgpio_pins
+> +	>;
+> +
+> +	heartbeat {
+> +		gpios = <&gpio4 14 GPIO_ACTIVE_HIGH>;
+> +	};
+> +	mmc {
+> +		gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+> +	};
+> +};
 > 
-
 
