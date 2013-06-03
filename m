@@ -1,103 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab3FCQs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:48:56 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:53798 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785Ab3FCQsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:48:54 -0400
-Date: Mon, 3 Jun 2013 18:48:47 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130603184847.4434c7ea@holzheu>
-In-Reply-To: <20130603155940.GA6714@redhat.com>
-References: <51A006CF.90105@gmail.com>
-	<87k3mnahkf.fsf@xmission.com>
-	<51A076FE.3060604@gmail.com>
-	<20130525145217.0549138a@holzheu>
-	<20130528135500.GC7088@redhat.com>
-	<20130529135144.7f95c4c0@holzheu>
-	<20130530203847.GB5968@redhat.com>
-	<20130531162127.6d512233@holzheu>
-	<20130531160158.GC13057@redhat.com>
-	<20130603152718.5ba4d05f@holzheu>
-	<20130603155940.GA6714@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060316-0342-0000-0000-00000535F922
+	id S1759295Ab3FCQtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:49:04 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46327 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758785Ab3FCQs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:48:59 -0400
+Date: Mon, 3 Jun 2013 12:48:39 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130603164839.GG15576@cmpxchg.org>
+References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
+ <20130530150539.GA18155@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601061151.GC15576@cmpxchg.org>
+ <20130603153432.GC18588@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603153432.GC18588@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jun 2013 11:59:40 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Mon, Jun 03, 2013 at 03:27:18PM +0200, Michael Holzheu wrote:
+On Mon, Jun 03, 2013 at 05:34:32PM +0200, Michal Hocko wrote:
+> On Sat 01-06-13 02:11:51, Johannes Weiner wrote:
+> [...]
+> > From: Johannes Weiner <hannes@cmpxchg.org>
+> > Subject: [PATCH] memcg: more robust oom handling
+> > 
+> > The memcg OOM handling is incredibly fragile because once a memcg goes
+> > OOM, one task (kernel or userspace) is responsible for resolving the
+> > situation.  Every other task that gets caught trying to charge memory
+> > gets stuck in a waitqueue while potentially holding various filesystem
+> > and mm locks on which the OOM handling task may now deadlock.
+> > 
+> > Do two things to charge attempts under OOM:
+> > 
+> > 1. Do not trap system calls (buffered IO and friends), just return
+> >    -ENOMEM.  Userspace should be able to handle this... right?
+> > 
+> > 2. Do not trap page faults directly in the charging context.  Instead,
+> >    remember the OOMing memcg in the task struct and fully unwind the
+> >    page fault stack first.  Then synchronize the memcg OOM from
+> >    pagefault_out_of_memory()
 > 
-> [..]
-> > > If not, how would remap_pfn_range() work with HSA region when
-> > > /proc/vmcore is mmaped()?
-> > 
-> > I am no memory management expert, so I discussed that with Martin
-> > Schwidefsky (s390 architecture maintainer). Perhaps something like
-> > the following could work:
-> > 
-> > After vmcore_mmap() is called the HSA pages are not initially
-> > mapped in the page tables. So when user space accesses those parts
-> > of /proc/vmcore, a fault will be generated. We implement a mechanism
-> > that in this case the HSA is copied to a new page in the page cache
-> > and a mapping is created for it. Since the page is allocated in the
-> > page cache, it can be released afterwards by the kernel when we get
-> > memory pressure.
-> > 
-> > Our current idea for such an implementation:
-> > 
-> > * Create new address space (struct address_space) for /proc/vmcore.
-> > * Implement new vm_operations_struct "vmcore_mmap_ops" with
-> >   new vmcore_fault() ".fault" callback for /proc/vmcore.
-> > * Set vma->vm_ops to vmcore_mmap_ops in mmap_vmcore().
-> > * The vmcore_fault() function will get a new page cache page,
-> >   copy HSA page to page cache page add it to vmcore address space.
-> >   To see how this could work, we looked into the functions
-> >   filemap_fault() in "mm/filemap.c" and relay_buf_fault() in
-> >   "kernel/relay.c".
-> > 
-> > What do you think?
+> I think this should work and I really like it! Nice work Johannes, I
+> never dared to go that deep and my opposite approach was also much more
+> fragile.
 > 
-> I am not mm expert either but above proposal sounds reasonable to me.
+> I am just afraid about all the other archs that do not support (from
+> quick grep it looks like: blackfin, c6x, h8300, metag, mn10300,
+> openrisc, score and tile). What would be an alternative for them?
+> #ifdefs for the old code (something like ARCH_HAS_FAULT_OOM_RETRY)? This
+> would be acceptable for me.
+
+blackfin is NOMMU but I guess the others should be converted to the
+proper OOM protocol anyway and not just kill the faulting task.  I can
+update them in the next version of the patch (series).
+
+> > Not-quite-signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  arch/x86/mm/fault.c        |   2 +
+> >  include/linux/memcontrol.h |   6 +++
+> >  include/linux/sched.h      |   6 +++
+> >  mm/memcontrol.c            | 104 +++++++++++++++++++++++++--------------------
+> >  mm/oom_kill.c              |   7 ++-
+> >  5 files changed, 78 insertions(+), 47 deletions(-)
+> > 
+> [...]
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index e692a02..cf60aef 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1282,6 +1282,8 @@ struct task_struct {
+> >  				 * execve */
+> >  	unsigned in_iowait:1;
+> >  
+> > +	unsigned in_userfault:1;
+> > +
 > 
-> So remap_pfn_range() call will go in arch dependent code so that arch
-> can decide which range can be mapped right away and which ranges will
-> be filed in when fault happens? I am assuming that s390 will map
-> everything except for pfn between 0 and HSA_SIZE.
+> [This is more a nit pick but before I forget while I am reading through
+> the rest of the patch.]
+> 
+> OK there is a lot of room around those bit fields but as this is only
+> for memcg and you are enlarging the structure by the pointer then you
+> can reuse bottom bit of memcg pointer.
 
-Yes, for [0 - HSA_SIZE] the fault handler will be called and for
-the rest we establish a mapping with remap_pfn_range() as it is
-currently done. Therefore no fault handler will be called for that part
-of /proc/vmcore.
+I just didn't want to put anything in the arch code that looks too
+memcgish, even though it's the only user right now.  But granted, it
+will also probably remain the only user for a while.
 
-I will try to find out if it is doable that way.
+> > @@ -2085,56 +2087,76 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
+> >  }
+> >  
+> >  /*
+> > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
+> > + * try to call OOM killer
+> >   */
+> > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+> > -				  int order)
+> > +static void mem_cgroup_oom(struct mem_cgroup *memcg,
+> > +			   gfp_t mask, int order,
+> > +			   bool in_userfault)
+> >  {
+> > -	struct oom_wait_info owait;
+> > -	bool locked, need_to_kill;
+> > -
+> > -	owait.memcg = memcg;
+> > -	owait.wait.flags = 0;
+> > -	owait.wait.func = memcg_oom_wake_function;
+> > -	owait.wait.private = current;
+> > -	INIT_LIST_HEAD(&owait.wait.task_list);
+> > -	need_to_kill = true;
+> > -	mem_cgroup_mark_under_oom(memcg);
+> > +	bool locked, need_to_kill = true;
+> >  
+> >  	/* At first, try to OOM lock hierarchy under memcg.*/
+> >  	spin_lock(&memcg_oom_lock);
+> >  	locked = mem_cgroup_oom_lock(memcg);
+> > -	/*
+> > -	 * Even if signal_pending(), we can't quit charge() loop without
+> > -	 * accounting. So, UNINTERRUPTIBLE is appropriate. But SIGKILL
+> > -	 * under OOM is always welcomed, use TASK_KILLABLE here.
+> > -	 */
+> > -	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
+> > -	if (!locked || memcg->oom_kill_disable)
+> > +	if (!locked || memcg->oom_kill_disable) {
+> >  		need_to_kill = false;
+> > +		if (in_userfault) {
+> > +			/*
+> > +			 * We start sleeping on the OOM waitqueue only
+> > +			 * after unwinding the page fault stack, so
+> > +			 * make sure we detect wakeups that happen
+> > +			 * between now and then.
+> > +			 */
+> > +			mem_cgroup_mark_under_oom(memcg);
+> > +			current->memcg_oom.wakeups =
+> > +				atomic_read(&memcg->oom_wakeups);
+> > +			css_get(&memcg->css);
+> > +			current->memcg_oom.memcg = memcg;
+> > +		}
+> > +	}
+> >  	if (locked)
+> >  		mem_cgroup_oom_notify(memcg);
+> >  	spin_unlock(&memcg_oom_lock);
+> >  
+> >  	if (need_to_kill) {
+> > -		finish_wait(&memcg_oom_waitq, &owait.wait);
+> >  		mem_cgroup_out_of_memory(memcg, mask, order);
+> > -	} else {
+> > -		schedule();
+> > -		finish_wait(&memcg_oom_waitq, &owait.wait);
+> > +		memcg_oom_recover(memcg);
+> 
+> Why do we need to call memcg_oom_recover here? We do not know that any
+> charges have been released. Say mem_cgroup_out_of_memory selected a task
+> which migrated to our group (without its charges) so we would kill the
+> poor guy and free no memory from this group.
+> Now you wake up oom waiters to refault but they will end up in the same
+> situation. I think it should be sufficient to wait for memcg_oom_recover
+> until the memory is uncharged (which we do already).
 
-> And regular s390 kdump will map everyting right away and will not
-> have to rely on fault mechanism?
+It's a leftover from how it was before (see the memcg_wakeup_oom
+below), but you are right, we can get rid of it.
 
-Yes, as kdump on the other archs.
+> >  	}
+> > -	spin_lock(&memcg_oom_lock);
+> > -	if (locked)
+> > +
+> > +	if (locked) {
+> > +		spin_lock(&memcg_oom_lock);
+> >  		mem_cgroup_oom_unlock(memcg);
+> > -	memcg_wakeup_oom(memcg);
+> > -	spin_unlock(&memcg_oom_lock);
+> > +		spin_unlock(&memcg_oom_lock);
+> > +	}
+> > +}
+> >  
+> > -	mem_cgroup_unmark_under_oom(memcg);
+> [...]
+> > @@ -2647,16 +2665,12 @@ again:
+> >  			css_put(&memcg->css);
+> >  			goto nomem;
+> >  		case CHARGE_NOMEM: /* OOM routine works */
+> > -			if (!oom) {
+> > +			if (!oom || oom_check) {
+> 
+> OK, this allows us to remove the confusing nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES
+> from the branch where oom_check is set to true
 
-Thanks
-Michael
+Oops, will update.
 
+Thanks for the review, Michal!
