@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781Ab3FCNUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:20:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44347 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756977Ab3FCNUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:20:35 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ankur Kishore <a-kishore@ti.com>
-Subject: [PATCH v3] ARM: dts: AM43x: initial support
-Date: Mon, 3 Jun 2013 18:49:54 +0530
-Message-ID: <1370265594-12883-1-git-send-email-afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757740Ab3FCNWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:22:53 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:38467 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757501Ab3FCNWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:22:50 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: tj@kernel.org, timur@tabi.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, clemens@ladisch.de,
+        sergei.shtylyov@cogentembedded.com
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH v4] ata: increase retry count but shorten duration for Calxeda controller
+Date: Mon,  3 Jun 2013 08:22:54 -0500
+Message-Id: <1370265774-13939-1-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1369842679-9680-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT source (minimal) for AM4372 SoC to represent AM43x SoC's. Those
-represented here are the minimal DT nodes necessary to get kernel
-booting.
+Increase the retry count for the hard reset function to 100 but
+shorten the time out period to 500 ms. See the comment for
+ahci_highbank_hardreset for the reasons why those vaulues were
+chosen.
 
-In DT nodes, "ti,hwmod" property has not been added, this would be
-added along with PRCM support for AM43x.
-
-Signed-off-by: Ankur Kishore <a-kishore@ti.com>
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 ---
+Changes from v3
+	Move the detail to a comment on the ahci_highbank_hardreset function
+Changes from v2
+        Add static to the timing variable definition
+Changes from v1
+        Add const to the timing variable definition
+        Added more detail in why the various numbers were chosen
 
-v3: Make use of C preprocessor, rebased over Benoit's 'for_3.11/dts' branch
-v2: Add gptimer 1ms, timer2, synctimer and remove twd local timer
+ drivers/ata/sata_highbank.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
- arch/arm/boot/dts/am4372.dtsi | 68 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 arch/arm/boot/dts/am4372.dtsi
-
-diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-new file mode 100644
-index 0000000..ddc1df7
---- /dev/null
-+++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -0,0 +1,68 @@
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index b20aa96..c846fd3 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -196,10 +196,26 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
+ 	return 0;
+ }
+ 
 +/*
-+ * Device Tree Source for AM4372 SoC
++ * The Calxeda SATA phy intermittently fails to bring up a link with Gen3
++ * Retrying the phy hard reset can work around the issue, but the drive
++ * may fail again. In less than 150 out of 15000 test runs, it took more
++ * than 10 tries for the link to be established (but never more than 35).
++ * Triple the maximum observed retry count to provide plenty of margin for
++ * rare events and to guarantee that the link is established.
 + *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
++ * Also, the default 2 second time-out on a failed drive is too long in
++ * this situation. The uboot implementation of the same driver function
++ * uses a much shorter time-out period and never experiences a time out
++ * issue. Reducing the time-out to 500ms improves the responsiveness.
++ * The other timing constants were kept the same as the stock AHCI driver.
++ * This change was also tested 15000 times on 24 drives and none of them
++ * experienced a time out.
 + */
-+
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	compatible = "ti,am4372", "ti,am43";
-+	interrupt-parent = <&gic>;
-+
-+
-+	aliases {
-+		serial0 = &uart0;
-+	};
-+
-+	cpus {
-+		cpu@0 {
-+			compatible = "arm,cortex-a9";
-+		};
-+	};
-+
-+	gic: interrupt-controller@48241000 {
-+		compatible = "arm,cortex-a9-gic";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0x48241000 0x1000>,
-+		      <0x48240100 0x0100>;
-+	};
-+
-+	ocp {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		uart0: serial@44e09000 {
-+			compatible = "ti,am4372-uart","ti,omap2-uart";
-+			reg = <0x44e09000 0x2000>;
-+			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-+		};
-+
-+		timer1: timer@44e31000 {
-+			compatible = "ti,am4372-timer-1ms","ti,am335x-timer-1ms";
-+			reg = <0x44e31000 0x400>;
-+			interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
-+			ti,timer-alwon;
-+		};
-+
-+		timer2: timer@48040000  {
-+			compatible = "ti,am4372-timer","ti,am335x-timer";
-+			reg = <0x48040000  0x400>;
-+			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
-+		};
-+
-+		counter32k: counter@44e86000 {
-+			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
-+			reg = <0x44e86000 0x40>;
-+		};
-+	};
-+};
+ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 				unsigned long deadline)
+ {
+-	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
++	static const unsigned long timing[] = { 5, 100, 500};
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
+@@ -207,7 +223,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 	bool online;
+ 	u32 sstatus;
+ 	int rc;
+-	int retry = 10;
++	int retry = 100;
+ 
+ 	ahci_stop_engine(ap);
+ 
 -- 
-1.7.12
+1.8.1.2
 
