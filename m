@@ -1,128 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab3FCUes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:34:48 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51988 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758000Ab3FCUel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:34:41 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: =?UTF-8?q?=5BPATCHv13=204/4=5D=20zswap=3A=20add=20documentation?=
-Date: Mon,  3 Jun 2013 15:33:05 -0500
-Message-Id: <1370291585-26102-5-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060320-5806-0000-0000-000021821B43
+	id S1757835Ab3FCUeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:34:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45426 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab3FCUeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 16:34:07 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>, arm@kernel.org
+Subject: [PATCHv7 00/11] Remove ARM local timer API
+Date: Mon,  3 Jun 2013 13:33:51 -0700
+Message-Id: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the documentation file for the zswap functionality
+In light of Mark Rutland's recent work on divorcing the ARM architected
+timers from the ARM local timer API and introducing a generic arch hook for
+broadcast it seems that we should remove the local timer API entirely.
+Doing so will reduce the architecture dependencies of our timer drivers,
+reduce code in ARM core, and simplify timer drivers because they no longer
+go through an architecture layer that is essentially a hotplug notifier.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- Documentation/vm/zswap.txt |   68 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/vm/zswap.txt
+Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+be accepted now so that we can clean up the timer drivers that are
+used in both UP and SMP situations. Right now these drivers have to ignore
+the timer setup callback on the boot CPU to avoid registering clockevents
+twice. This is not very symmetric and causes convuluted code that does
+the same thing in two places.
 
-diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
-new file mode 100644
-index 0000000..7e492d8
---- /dev/null
-+++ b/Documentation/vm/zswap.txt
-@@ -0,0 +1,68 @@
-+Overview:
-+
-+Zswap is a lightweight compressed cache for swap pages. It takes pages that are
-+in the process of being swapped out and attempts to compress them into a
-+dynamically allocated RAM-based memory pool.  zswap basically trades CPU cycles
-+for potentially reduced swap I/O.  This trade-off can also result in a
-+significant performance improvement if reads from the compressed cache are
-+faster than reads from a swap device.
-+
-+NOTE: Zswap is a new feature as of v3.11 and interacts heavily with memory
-+reclaim.  This interaction has not be fully explored on the large set of
-+potential configurations and workloads that exist.  For this reason, zswap
-+is a work in progress and should be considered experimental.
-+
-+Some potential benefits:
-+* Desktop/laptop users with limited RAM capacities can mitigate the
-+    performance impact of swapping.
-+* Overcommitted guests that share a common I/O resource can
-+    dramatically reduce their swap I/O pressure, avoiding heavy handed I/O
-+    throttling by the hypervisor. This allows more work to get done with less
-+    impact to the guest workload and guests sharing the I/O subsystem
-+* Users with SSDs as swap devices can extend the life of the device by
-+    drastically reducing life-shortening writes.
-+
-+Zswap evicts pages from compressed cache on an LRU basis to the backing swap
-+device when the compressed pool reaches it size limit.  This requirement had
-+been identified in prior community discussions.
-+
-+To enabled zswap, the "enabled" attribute must be set to 1 at boot time.  e.g.
-+zswap.enabled=1
-+
-+Design:
-+
-+Zswap receives pages for compression through the Frontswap API and is able to
-+evict pages from its own compressed pool on an LRU basis and write them back to
-+the backing swap device in the case that the compressed pool is full.
-+
-+Zswap makes use of zbud for the managing the compressed memory pool.  Each
-+allocation in zbud is not directly accessible by address.  Rather, a handle is
-+return by the allocation routine and that handle must be mapped before being
-+accessed.  The compressed memory pool grows on demand and shrinks as compressed
-+pages are freed.  The pool is not preallocated.
-+
-+When a swap page is passed from frontswap to zswap, zswap maintains a mapping
-+of the swap entry, a combination of the swap type and swap offset, to the zbud
-+handle that references that compressed swap page.  This mapping is achieved
-+with a red-black tree per swap type.  The swap offset is the search key for the
-+tree nodes.
-+
-+During a page fault on a PTE that is a swap entry, frontswap calls the zswap
-+load function to decompress the page into the page allocated by the page fault
-+handler.
-+
-+Once there are no PTEs referencing a swap page stored in zswap (i.e. the count
-+in the swap_map goes to 0) the swap code calls the zswap invalidate function,
-+via frontswap, to free the compressed entry.
-+
-+Zswap seeks to be simple in its policies.  Sysfs attributes allow for one user
-+controlled policies:
-+* max_pool_percent - The maximum percentage of memory that the compressed
-+    pool can occupy.
-+
-+Zswap allows the compressor to be selected at kernel boot time by setting the
-+“compressor” attribute.  The default compressor is lzo.  e.g.
-+zswap.compressor=deflate
-+
-+A debugfs interface is provided for various statistic about pool size, number
-+of pages stored, and various counters for the reasons pages are rejected.
+Patches based on v3.10-rc1
+
+I'm still looking for Acks/Tested-by on PRIMA2.
+
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
+
+Note: A hotplug notifier is used by both x86 for the apb_timer (see 
+apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+metag_generic.c) so this is not new.
+
+Changes since v6:
+ * Picked up acks and resent
+
+Changes since v5:
+ * Rebased onto v3.10-rc1
+ * Rebase caused minor updates to mct patch
+
+Changes since v4:
+ * Rebased onto next-20130418
+ * Rebase caused minor updates to mct patch and twd Kconfig
+
+Changes since v3:
+ * New patch to fix SMP with dummy timers registered after a global timer
+ * Push this_cpu_ptr lower to avoid preemptible false positive warnings
+ * Collected acks/tested-bys
+
+Changes since v2:
+ * Bug fixes in smp_twd from Tony Lindgren's testing
+ * Move smp_twd to use late_time_init hook
+ * Collected Acks
+
+Changes since v1:
+ * Picked up Mark's generic dummy timer driver
+ * Split out omap changes into new patch
+
+Mark Rutland (1):
+  clocksource: add generic dummy timer driver
+
+Stephen Boyd (10):
+  clockevents: Prefer CPU local devices over global devices
+  ARM: smp: Remove duplicate dummy timer implementation
+  ARM: smp_twd: Divorce smp_twd from local timer API
+  ARM: OMAP2+: Divorce from local timer API
+  ARM: EXYNOS4: Divorce mct from local timer API
+  ARM: PRIMA2: Divorce timer-marco from local timer API
+  ARM: msm: Divorce msm_timer from local timer API
+  clocksource: time-armada-370-xp: Fix sparse warning
+  clocksource: time-armada-370-xp: Divorce from local timer API
+  ARM: smp: Remove local timer API
+
+ arch/arm/Kconfig                         |  12 +--
+ arch/arm/include/asm/localtimer.h        |  34 ---------
+ arch/arm/kernel/smp.c                    |  87 ---------------------
+ arch/arm/kernel/smp_twd.c                |  64 ++++++++++------
+ arch/arm/mach-highbank/Kconfig           |   2 +-
+ arch/arm/mach-imx/Kconfig                |   2 +-
+ arch/arm/mach-msm/timer.c                | 126 +++++++++++++++++--------------
+ arch/arm/mach-omap2/Kconfig              |   3 +-
+ arch/arm/mach-omap2/timer.c              |   7 --
+ arch/arm/mach-realview/Kconfig           |   8 +-
+ arch/arm/mach-spear/Kconfig              |   2 +-
+ arch/arm/mach-tegra/Kconfig              |   2 +-
+ arch/arm/mach-ux500/Kconfig              |   2 +-
+ arch/arm/mach-vexpress/Kconfig           |   2 +-
+ arch/arm/mach-zynq/Kconfig               |   2 +-
+ drivers/clocksource/Makefile             |   1 +
+ drivers/clocksource/dummy_timer.c        |  69 +++++++++++++++++
+ drivers/clocksource/exynos_mct.c         |  60 ++++++++++-----
+ drivers/clocksource/time-armada-370-xp.c |  92 +++++++++++-----------
+ drivers/clocksource/timer-marco.c        | 100 +++++++++++++-----------
+ include/linux/time-armada-370-xp.h       |   4 +-
+ kernel/time/tick-common.c                |   5 +-
+ 22 files changed, 340 insertions(+), 346 deletions(-)
+ delete mode 100644 arch/arm/include/asm/localtimer.h
+ create mode 100644 drivers/clocksource/dummy_timer.c
+
 -- 
-1.7.9.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
