@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab3FCT33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:29:29 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:41953 "EHLO
+	id S1758166Ab3FCT37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:29:59 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:42032 "EHLO
 	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130Ab3FCT30 (ORCPT
+	with ESMTP id S1757622Ab3FCT3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:29:26 -0400
-Message-ID: <51ACEE60.6020406@hds.com>
-Date: Mon, 03 Jun 2013 15:28:32 -0400
+	Mon, 3 Jun 2013 15:29:54 -0400
+Message-ID: <51ACEE88.6080200@hds.com>
+Date: Mon, 03 Jun 2013 15:29:12 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: linux-kernel@vger.kernel.org, x86@kernel.org, rostedt@goodmis.org,
 CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
         linux-edac@vger.kernel.org, tony.luck@intel.com,
         dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
-Subject: [PATCH v13 1/3] tracing: Add DEFINE_EVENT_FN() macro
+Subject: [PATCH v13 2/3] trace,x86: Introduce entering/exiting_irq()
 References: <51ACEDBB.6040706@hds.com>
 In-Reply-To: <51ACEDBB.6040706@hds.com>
 Content-Type: text/plain; charset=UTF-8
@@ -35,81 +35,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+When implementing tracepoints in interrupt handers, if the tracepoints are
+simply added in the performance sensitive path of interrupt handers,
+it may cause potential performance problem due to the time penalty.
 
-Each TRACE_EVENT() adds several helper functions. If two or more trace events
-share the same structure and print format, they can also share most of these
-helper functions and save a lot of space from duplicate code. This is why the
-DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
+To solve the problem, an idea is to prepare non-trace/trace irq handers and 
+switch their IDTs at the enabling/disabling time.
 
-Some events require a trigger to be called at registering and unregistering of
-the event and to do so they use TRACE_EVENT_FN().
+To do this, this patch introduces entering_irq()/exiting_irq() for pre/post-
+processing of each irq handler.
 
-If multiple events require a trigger, they currently have no choice but to use
-TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This unfortunately
-causes a lot of wasted duplicate code created.
+A way to use them is as follows.
 
-By adding a DEFINE_EVENT_FN(), these events can still use a
-DECLARE_EVENT_CLASS() and then define their own triggers.
+Non-trace irq handler:
+smp_irq_handler()
+{
+	entering_irq(); /* pre-processing of this handler */
+	__smp_irq_handler(); /*
+                          * common logic between non-trace and trace handlers
+                          * in a vector.
+                          */
+	exiting_irq(); /* post-processing of this handler */
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+}
+
+Trace irq_handler:
+smp_trace_irq_handler()
+{
+	entering_irq(); /* pre-processing of this handler */
+	trace_irq_entry(); /* tracepoint for irq entry */
+	__smp_irq_handler(); /*
+                          * common logic between non-trace and trace handlers
+                          * in a vector.
+                          */
+	trace_irq_exit(); /* tracepoint for irq exit */
+	exiting_irq(); /* post-processing of this handler */
+
+}
+
+If tracepoints can place outside entering_irq()/exiting_irq() as follows, 
+it looks cleaner.
+
+smp_trace_irq_handler()
+{
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+}
+
+But it doesn't work.
+The problem is with irq_enter/exit() being called. They must be called before
+trace_irq_enter/exit(),  because of the rcu_irq_enter() must be called before 
+any tracepoints are used, as tracepoints use  rcu to synchronize.
+
+As a possible alternative, we may be able to call irq_enter() first as follows
+if irq_enter() can nest.
+
+smp_trace_irq_hander()
+{
+	irq_entry();
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+	irq_exit();
+}
+
+But it doesn't work, either.
+If irq_enter() is nested, it may have a time penalty because it has to check if it
+was already called or not. The time penalty is not desired in performance sensitive
+paths even if it is tiny.
+
 Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- include/linux/tracepoint.h   |    2 ++
- include/trace/define_trace.h |    5 +++++
- include/trace/ftrace.h       |    4 ++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/apic.h |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 2f322c3..9bf59e5 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
- #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
- #define DEFINE_EVENT(template, name, proto, args)		\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
-+	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_CONDITION(template, name, proto,		\
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index 1905ca8..02e1003 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -44,6 +44,10 @@
- #define DEFINE_EVENT(template, name, proto, args) \
- 	DEFINE_TRACE(name)
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 3388034..f8119b5 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -12,6 +12,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mpspec.h>
+ #include <asm/msr.h>
++#include <asm/idle.h>
  
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
-+	DEFINE_TRACE_FN(name, reg, unreg)
-+
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_TRACE(name)
-@@ -91,6 +95,7 @@
- #undef TRACE_EVENT_CONDITION
- #undef DECLARE_EVENT_CLASS
- #undef DEFINE_EVENT
-+#undef DEFINE_EVENT_FN
- #undef DEFINE_EVENT_PRINT
- #undef DEFINE_EVENT_CONDITION
- #undef TRACE_HEADER_MULTI_READ
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 19edd7f..d615f78 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -71,6 +71,10 @@
- 	static struct ftrace_event_call	__used		\
- 	__attribute__((__aligned__(4))) event_##name
+ #define ARCH_APICTIMER_STOPS_ON_C3	1
  
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
-+	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+@@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);
+ #endif
+ 
+ #endif /* CONFIG_X86_LOCAL_APIC */
++extern void irq_enter(void);
++extern void irq_exit(void);
 +
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
--- 1.7.1 
++static inline void entering_irq(void)
++{
++	irq_enter();
++	exit_idle();
++}
++
++static inline void entering_ack_irq(void)
++{
++	ack_APIC_irq();
++	entering_irq();
++}
++
++static inline void exiting_irq(void)
++{
++	irq_exit();
++}
++
++static inline void exiting_ack_irq(void)
++{
++	irq_exit();
++	/* Ack only at the end to avoid potential reentry */
++	ack_APIC_irq();
++}
+ 
+ #endif /* _ASM_X86_APIC_H */
+-- 1.7.1
 
