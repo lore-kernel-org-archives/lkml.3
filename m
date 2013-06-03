@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab3FCVdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:33:52 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:41505 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3FCVdr (ORCPT
+	id S1757832Ab3FCVeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:34:15 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:55177 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755833Ab3FCVeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:33:47 -0400
-Date: Mon, 3 Jun 2013 17:33:45 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
- decompressor
-In-Reply-To: <51AD0703.6050408@codeaurora.org>
-Message-ID: <alpine.LFD.2.03.1306031726410.1200@syhkavp.arg>
-References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Mon, 3 Jun 2013 17:34:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130603183018.GJ15576@cmpxchg.org>
+References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
+ <20130530150539.GA18155@dhcp22.suse.cz> <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz> <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz> <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601061151.GC15576@cmpxchg.org> <20130603153432.GC18588@dhcp22.suse.cz>
+ <20130603164839.GG15576@cmpxchg.org> <20130603183018.GJ15576@cmpxchg.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Mon, 3 Jun 2013 17:33:40 -0400
+Message-ID: <CAHGf_=rFhhRM3CqmSJEFrYMFafUzOU7WHvwQrguXOFwbKbbDLQ@mail.gmail.com>
+Subject: Re: [patch] mm, memcg: add oom killer delay
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 05/24/13 15:05, Stephen Boyd wrote:
-> > I see a few solutions.
-> >
-> >  1) Relocate with caches off and then turn on caches after we're
-> >     running in a location where we won't overwrite ourselves.
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [PATCH] memcg: do not sleep on OOM waitqueue with full charge context
+>
+> The memcg OOM handling is incredibly fragile because once a memcg goes
+> OOM, one task (kernel or userspace) is responsible for resolving the
+> situation.  Every other task that gets caught trying to charge memory
+> gets stuck in a waitqueue while potentially holding various filesystem
+> and mm locks on which the OOM handling task may now deadlock.
+>
+> Do two things:
+>
+> 1. When OOMing in a system call (buffered IO and friends), invoke the
+>    OOM killer but do not trap other tasks and just return -ENOMEM for
+>    everyone.  Userspace should be able to handle this... right?
+>
+> 2. When OOMing in a page fault, invoke the OOM killer but do not trap
+>    other chargers directly in the charging code.  Instead, remember
+>    the OOMing memcg in the task struct and then fully unwind the page
+>    fault stack first.  Then synchronize the memcg OOM from
+>    pagefault_out_of_memory().
+>
+> While reworking the OOM routine, also remove a needless OOM waitqueue
+> wakeup when invoking the killer.  Only uncharges and limit increases,
+> things that actually change the memory situation, should do wakeups.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Due to the cost of doing memory copy with the cache off, thisoption 
-should be conditionally used and only when there is an actual conflict.
+>From point of the memcg oom notification view, it is NOT supported on the case
+that an oom handler process is subjected its own memcg limit. All
+memcg developers
+clearly agreed it since it began. Even though, anyway, people have a
+right to shoot their own foot. :)
+However, this patch fixes more than that. OK, I prefer it. Good fix!
 
-> >  2) Have temporary page tables for the relocation phase that live
-> >     just below the location we're going to relocate to.
-> >
-> >  3) Force bootloaders loading these types of images to load the
-> >     zImage at least as high as the TEXT_OFFSET is compiled to.
-> >
-> > I don't think we can convince everyone that #3 is ok to do. I'm
-> > leaning towards #2 since we get all the benefits of the cache
-> > during the relocation phase but #1 is the obviously simple fix.
-
-I'd consider #2 too.
-
-
-Nicolas
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
