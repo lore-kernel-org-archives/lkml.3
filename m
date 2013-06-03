@@ -1,42 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758932Ab3FCPwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:52:05 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:49646 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab3FCPwC (ORCPT
+	id S1758974Ab3FCPwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:52:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17721 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3FCPwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:52:02 -0400
-MIME-Version: 1.0
-Date: Mon, 3 Jun 2013 17:52:01 +0200
-Message-ID: <CAOPDcRyMr2RL+4azAzDeBK0Ja_9zNvWFjBy3Z8XL9BKH_a+A7w@mail.gmail.com>
-Subject: Clarifications on PFN_UP macro
-From: stl <st.lambert02@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Jun 2013 11:52:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, konrad@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
+Subject: [PATCH] xen/smp: Fixup NOHZ per cpu data when onlining an offline CPU.
+Date: Mon,  3 Jun 2013 11:51:52 -0400
+Message-Id: <1370274712-3415-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I need some clarifications concerning the macro
+The xen_play_dead is an undead function. When the vCPU is told to
+offline it ends up calling xen_play_dead wherin it calls the
+VCPUOP_down hypercall which offlines the vCPU. However, when the
+vCPU is onlined back, it resumes execution right after
+VCPUOP_down hypercall.
 
-#define PFN_UP(x)    (((x) + PAGE_SIZE-1) >> PAGE_SHIFT)
+That was OK (albeit the API for play_dead assumes that the CPU
+stays dead and never returns) but with commit 4b0c0f294
+(tick: Cleanup NOHZ per cpu data on cpu down) that is no longer safe
+as said commit resets the ts->inidle which at the start of the
+cpu_idle loop was set.
 
-found in "pfn.h"
+The net effect is that we get this warn:
 
-I suppose that its aim is to give the page frame number of the page
-following the page holding the physical adress x, contrary to
-PFN_DOWN(x) which give the page frame number of the page holding the
-adress x.
+Broke affinity for irq 16
+installing Xen timer for CPU 1
+cpu 1 spinlock event irq 48
+------------[ cut here ]------------
+WARNING: at /home/konrad/linux-linus/kernel/time/tick-sched.c:935 tick_nohz_idle_exit+0x195/0x1b0()
+Modules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc3upstream-00068-gdcdbe33 #1
+Hardware name: BIOSTAR Group N61PB-M2S/N61PB-M2S, BIOS 6.00 PG 09/03/2009
+ ffffffff8193b448 ffff880039da5e60 ffffffff816707c8 ffff880039da5ea0
+ ffffffff8108ce8b ffff880039da4010 ffff88003fa8e500 ffff880039da4010
+ 0000000000000001 ffff880039da4000 ffff880039da4010 ffff880039da5eb0
+Call Trace:
+ [<ffffffff816707c8>] dump_stack+0x19/0x1b
+ [<ffffffff8108ce8b>] warn_slowpath_common+0x6b/0xa0
+ [<ffffffff8108ced5>] warn_slowpath_null+0x15/0x20
+ [<ffffffff810e4745>] tick_nohz_idle_exit+0x195/0x1b0
+ [<ffffffff810da755>] cpu_startup_entry+0x205/0x250
+ [<ffffffff81661070>] cpu_bringup_and_idle+0x13/0x15
+---[ end trace 915c8c486004dda1 ]---
 
-Assuming that the first page has the range 0x0000 to 0x0FFF,
-the second 0x1000 to 0x1FFF and so on, it seems that there is
-an issu with the starting adress of each page, for example:
-x = 0x10000  (PFN number 10)
-0x10000 + 0xFFF >> 12    =    10, but should be 11 no?
+b/c ts_inidle is set to zero. Thomas suggested that we just add a workaround
+to call tick_nohz_idle_enter before returning from xen_play_dead() - and
+that is what this patch does and fixes the issue.
 
-I certainly misunderstood something.
-Could someone clarify this point please?
+We also add the stable part b/c git commit 4b0c0f294 is on the stable
+tree.
 
-Thanks.
+CC: stable@vger.kernel.org
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/smp.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index fb44426..d99cae8 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -17,6 +17,7 @@
+ #include <linux/slab.h>
+ #include <linux/smp.h>
+ #include <linux/irq_work.h>
++#include <linux/tick.h>
+ 
+ #include <asm/paravirt.h>
+ #include <asm/desc.h>
+@@ -447,6 +448,13 @@ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
+ 	play_dead_common();
+ 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
+ 	cpu_bringup();
++	/*
++	 * commit 4b0c0f294 (tick: Cleanup NOHZ per cpu data on cpu down)
++	 * clears certain data that the cpu_idle loop (which called us
++	 * and that we return from) expects. The only way to get that
++	 * data back is to call:
++	 */
++	tick_nohz_idle_enter();
+ }
+ 
+ #else /* !CONFIG_HOTPLUG_CPU */
+-- 
+1.8.1.4
+
