@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab3FCWNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:13:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4097 "EHLO
+	id S1759355Ab3FCWNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:13:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23918 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759115Ab3FCWMk (ORCPT
+	with ESMTP id S1759101Ab3FCWMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:40 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=_1xTFJL4K3cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=WvCumczFClAA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=KmqCZUEVAza2QQZapJAA:9 a=L03L2QfmqWoA:10 a=qJl0yQZNg3oA:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:38 -0400
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=KRzPvbhR7qkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=gkifgL1Z3PQA:10 a=CbDCq_QkAAAA:8 a=VwQbUJbxAAAA:8 a=z11f-joXAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=E3yz0KKPV6YA:10 a=CJVq-v20pXUA:10 a=jeBq3FmKZ4MA:10 a=CjYXQKFBhWSymi5A:21 a=X5CC4MxToUbXtVCp:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221159.316290756@goodmis.org>
+Message-Id: <20130603221200.647918318@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:57 -0400
+Date: Mon, 03 Jun 2013 18:11:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [41/65] macvlan: fix passthru mode race between dev removal and rx path
+Cc: Shlomo Pongratz <shlomop@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [49/65] iscsi-target: Fix processing of OOO commands
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0041-macvlan-fix-passthru-mode-race-between-dev-removal-a.patch
+Content-Disposition: inline; filename=0049-iscsi-target-Fix-processing-of-OOO-commands.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,81 +30,53 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Shlomo Pongratz <shlomop@mellanox.com>
 
-[ Upstream commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c ]
+[ Upstream commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de ]
 
-Currently, if macvlan in passthru mode is created and data are rxed and
-you remove this device, following panic happens:
+Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
 
-NULL pointer dereference at 0000000000000198
-IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
+Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
 
-I'm using following script to trigger this:
-<script>
-while [ 1 ]
-do
-	ip link add link e1 name macvtap0 type macvtap mode passthru
-	ip link set e1 up
-	ip link set macvtap0 up
-	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
-	cat /dev/tap$IFINDEX  >/dev/null &
-	ip link del dev macvtap0
-done
-</script>
+The routine iterates until it finds an entry whose serial number is greater than the serial number of
+the new one, thus the new entry should be inserted before that entry and not after.
 
-I run this script while "ping -f" is running on another machine to send
-packets to e1 rx.
-
-Reason of the panic is that list_first_entry() is blindly called in
-macvlan_handle_frame() even if the list was empty. vlan is set to
-incorrect pointer which leads to the crash.
-
-I'm fixing this by protecting port->vlans list by rcu and by preventing
-from getting incorrect pointer in case the list is empty.
-
-Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/macvlan.c |    7 ++++---
+ drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
  1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 666fc20..0bec603 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -204,7 +204,8 @@ static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
- 	}
+diff --git a/drivers/target/iscsi/iscsi_target_erl1.c b/drivers/target/iscsi/iscsi_target_erl1.c
+index 3df8a2c..a0b78d6 100644
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -819,7 +819,7 @@ static int iscsit_attach_ooo_cmdsn(
+ 		/*
+ 		 * CmdSN is greater than the tail of the list.
+ 		 */
+-		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
++		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
+ 			list_add_tail(&ooo_cmdsn->ooo_list,
+ 					&sess->sess_ooo_cmdsn_list);
+ 		else {
+@@ -829,11 +829,12 @@ static int iscsit_attach_ooo_cmdsn(
+ 			 */
+ 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
+ 						ooo_list) {
+-				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
++				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
+ 					continue;
  
- 	if (port->passthru)
--		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
-+		vlan = list_first_or_null_rcu(&port->vlans,
-+					      struct macvlan_dev, list);
- 	else
- 		vlan = macvlan_hash_lookup(port, eth->h_dest);
- 	if (vlan == NULL)
-@@ -771,7 +772,7 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
- 	if (err < 0)
- 		goto destroy_port;
- 
--	list_add_tail(&vlan->list, &port->vlans);
-+	list_add_tail_rcu(&vlan->list, &port->vlans);
- 	netif_stacked_transfer_operstate(lowerdev, dev);
- 
- 	return 0;
-@@ -797,7 +798,7 @@ void macvlan_dellink(struct net_device *dev, struct list_head *head)
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 
--	list_del(&vlan->list);
-+	list_del_rcu(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
- }
- EXPORT_SYMBOL_GPL(macvlan_dellink);
++				/* Insert before this entry */
+ 				list_add(&ooo_cmdsn->ooo_list,
+-					&ooo_tmp->ooo_list);
++					ooo_tmp->ooo_list.prev);
+ 				break;
+ 			}
+ 		}
 -- 
 1.7.10.4
 
