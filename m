@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab3FCPoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:44:02 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:56738 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab3FCPoA (ORCPT
+	id S1758858Ab3FCPop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:44:45 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49391 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756694Ab3FCPoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:44:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAWiN8oSfH9fZVvnMtfehaY+D-9qhtqu4fwedVOv5Q-uB0WNYw@mail.gmail.com>
-References: <CAAWiN8oSfH9fZVvnMtfehaY+D-9qhtqu4fwedVOv5Q-uB0WNYw@mail.gmail.com>
-Date: Mon, 3 Jun 2013 17:43:58 +0200
-Message-ID: <CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
-Subject: Re: Why Linux OS Desktop is not popular?
-From: Mats Liljegren <liljegren.mats2@gmail.com>
-To: Amit C <amit.linux.os.desktop@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Jun 2013 11:44:44 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>
+Cc: Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v1 0/8] small bugfixes and code improvements for zram
+Date: Mon,  3 Jun 2013 23:42:12 +0800
+Message-Id: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 11:42 AM, Amit C
-<amit.linux.os.desktop@gmail.com> wrote:
-> Hi All,
->
-> Linux OS Desktop has not become very popular because of the following reasons:
->
-> 1. It is not because its GUI is not good.
-> 2. It is because if I buy a new gadget/device/hardware, I am not sure
-> whether it will work with Linux Desktop.
-> 3. The reason for number 2 is that the vendor introducing
-> gadget/device/hardware does not write a device driver for Linux.
-> 4. The reason for number 3 is that developing new device driver on
-> linux is hard.
-> 5. The way to solve number 4 is to move to data oriented device driver
-> development where the framework for driver is already available for
-> all kinds of devices (PCI, USB, Firewire, etc.) and the only thing a
-> device driver developer has to do is to collect io/virtual addresses
-> from the vendor/manual and feed into a table (structure of structures,
-> etc.) and the framework will pick up this data and configure the new
-> gadget/device/hardware instantly.
->
-> I do not want to pay for Microsoft OS but can Linux community give me
-> a usable Linux Desktop. I have both Windows and Linux on my laptop and
-> I use Microsoft just to connect to Internet because the USB dongle
-> that I use for connecting to Internet does not work on Linux. I am in
-> India and here USB dongles connecting to Internet are very popular
-> because you can use them anywhere.
+This patchset is to fix issues in zram found by code inspection.
+There is still one more issue left: should we repalce zram_stat64_xxx()
+with atomic64_xxx()?
 
-The big difference between Windows and Linux is that Windows is
-developed by a single company, while Linux is developed by a community
-including several companies as well as hobbyists. You can become part
-of this community by participating in the development. It is not as
-easy to become part of developing Windows.
+Jiang Liu (8):
+  zram: simplify and optimize zram_to_dev()
+  zram: avoid invalid memory access in zram_exit()
+  zram: use zram->lock to protect zram_free_page() in swap free notify
+    path
+  zram: destroy all devices on error recovery path in zram_init()
+  zram: avoid double free in error recovery path of zram_bvec_write()
+  zram: avoid access beyond the zram device
+  zram: optimize memory operations with clear_page()/copy_page()
+  zram: protect sysfs handler from invalid memory access
 
-The way Linux progress is by people realizing they have a pain they
-want to fix. The fix is done with one or several patches. If the
-maintainers like the patches, they become part of Linux. This is how
-these pains are fixed.
+ drivers/staging/zram/zram_drv.c   | 41 +++++++++++++++++++++++++--------------
+ drivers/staging/zram/zram_sysfs.c | 15 ++++----------
+ 2 files changed, 30 insertions(+), 26 deletions(-)
 
-You start this by experimenting for yourself until you've found a
-solution you like. Then you send out patch(es) labeled "RFC" (Request
-For Comments) to LKML to see if people think your idea will work.
-There is a long way to go then until it actually ends up in the kernel
-since there is a lot of quality assurance needed to be done, but
-eventually the pain gets solved.
+-- 
+1.8.1.2
 
-It is very hard to discuss any solutions without those RFC patches,
-since no one knows whether the idea will work or exactly what the idea
-consists of. So it's unlikely you'll get much constructive response
-until you've tested the solution yourself and sent out patches for
-comments so others might test it. Just keep it as small as possible
-while still proving the idea.
-
-I look forward to your patches, so I can better understand what you
-want to accomplish.
-
-Regards
-Mats Liljegren
