@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab3FCKMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:12:16 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:50313
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751728Ab3FCKML (ORCPT
+	id S1756130Ab3FCKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:13:28 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62883 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab3FCKN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:12:11 -0400
-X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
-X-SpamScore: 7
-X-BigFish: VS7(zzzz1f42h1ee6h1ce5h1fdah201ch1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz8275bhz2ei87h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1c0dh1d0ch1d2eh1d3fh1dfeh1dffhff4m129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH-v2] Set irq thread to RT priority on creation
-Date: Mon, 3 Jun 2013 12:12:02 +0200
-Message-ID: <1370254322-17240-1-git-send-email-meltedpianoman@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.LFD.2.02.1305302147290.2905@ionos>
-References: <alpine.LFD.2.02.1305302147290.2905@ionos>
-X-OriginalArrivalTime: 03 Jun 2013 10:12:07.0969 (UTC) FILETIME=[CDF31110:01CE6042]
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: oce.com
+	Mon, 3 Jun 2013 06:13:26 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v4 0/7] xilinxfb changes
+Date: Mon,  3 Jun 2013 12:13:15 +0200
+Message-Id: <cover.1370254386.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-9717-1370254402-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a threaded irq handler is installed the irq thread is initially created
-on normal scheduling priority. Only after the the irq thread is woken up it
-immediately sets its priority to RT_FIFO MAX_USER_RT_PRIO/2.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-This means that interrupts that occur directly after the irq handler is
-installed will be handled on a normal scheduling priority instead of the
-realtime priority that you would expect. Fixed this by setting the RT
-priority on creation of the irq_thread.
+--=_mimegpg-monstr-desktop-9717-1370254402-0001
 
-This solves the following issue with a UART device driver:
-On start of the application there is already data present in the uart RX
-fifo buffer. On opening the uart device the hard & threaded interrupt
-handlers are installed and the interrupts are enabled. Immediately a hard
-irq occurs because there is still data in the RX fifo. Because the threaded
-irq handler is still on normal scheduling, my application is not immediatly
-interrupted by the threaded handler and continues to run: it tries to flush
-the uart input buffer and writes data to the uart device. After this the
-threaded handler finally gets scheduled in and fills the buffer with the
-"old" received data. When my application reads data from the uart port it
-receives the "old" data and gives an error.
+Hi,
 
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
----
+I have done more changes in the driver to support probing
+on little and big endian system where detection is done
+directly on the hardware.
+I have also done some cleanups to get it to the better shape.
 
-v2:
- * Removed the sched_setscheduler() call in irq_thread() function
- * Updated commit log why this solves an issue for me with a UART driver
+Thanks for your review,
+Michal
 
- kernel/irq/manage.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Changes in v4:
+- Acked by Arnd
+- Remove "video: xilinxfb: Fix sparse warnings"
+  patch because it is trying to fix incorrect API
+  usage and sparse should warn about it.
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index fa17855..e16caa8 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -840,9 +840,6 @@ static void irq_thread_dtor(struct callback_head *unused)
- static int irq_thread(void *data)
- {
- 	struct callback_head on_exit_work;
--	static const struct sched_param param = {
--		.sched_priority = MAX_USER_RT_PRIO/2,
--	};
- 	struct irqaction *action = data;
- 	struct irq_desc *desc = irq_to_desc(action->irq);
- 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
-@@ -854,8 +851,6 @@ static int irq_thread(void *data)
- 	else
- 		handler_fn = irq_thread_fn;
- 
--	sched_setscheduler(current, SCHED_FIFO, &param);
--
- 	init_task_work(&on_exit_work, irq_thread_dtor);
- 	task_work_add(current, &on_exit_work, false);
- 
-@@ -950,6 +945,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	 */
- 	if (new->thread_fn && !nested) {
- 		struct task_struct *t;
-+		static const struct sched_param param = {
-+			.sched_priority = MAX_USER_RT_PRIO/2,
-+		};
- 
- 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
- 				   new->name);
-@@ -957,6 +955,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			ret = PTR_ERR(t);
- 			goto out_mput;
- 		}
-+
-+		sched_setscheduler(t, SCHED_FIFO, &param);
-+
- 		/*
- 		 * We keep the reference to the task struct even if
- 		 * the thread dies to avoid that the interrupt code
--- 
-1.7.9.5
+Changes in v3:
+- fix commit message
+- Remove out_be IO name from function name
+- Change patch subject from "Do not use out_be32 IO function"
+  to "Do not name out_be32 in function name"
+- New patch in this patchset based on discussions
+- New patch in this patchset based on discussions
+- New patch in this patchset
+- New patch in this patchset based on discussions
+
+Changes in v2:
+- use of_property_read_u32 helper function
+
+Michal Simek (7):
+  video: xilinxfb: Fix OF probing on little-endian systems
+  video: xilinxfb: Do not name out_be32 in function name
+  video: xilinxfb: Rename PLB_ACCESS_FLAG to BUS_ACCESS_FLAG
+  video: xilinxfb: Use drvdata->regs_phys instead of physaddr
+  video: xilinxfb: Group bus initialization
+  video: xilinxfb: Add support for little endian accesses
+  video: xilinxfb: Use driver for Xilinx ARM Zynq
+
+ drivers/video/Kconfig    |   2 +-
+ drivers/video/xilinxfb.c | 135 +++++++++++++++++++++++------------------------
+ 2 files changed, 68 insertions(+), 69 deletions(-)
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-9717-1370254402-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGsbEIACgkQykllyylKDCHRkACfT0eCE/iqClD1fmcYOkHJEwtV
+1GMAn0GQr+VZqVPi0NzxHHLVMXf07O3V
+=5uOg
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-9717-1370254402-0001--
