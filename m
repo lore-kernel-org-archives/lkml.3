@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759841Ab3FCWYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:24:50 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62349 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759832Ab3FCWYi (ORCPT
+	id S1758856Ab3FCWZD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:25:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9887 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758647Ab3FCWLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:24:38 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 3 Jun 2013 15:25:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
- timesout when delay very less
-Message-ID: <20130603222514.GA9082@roeck-us.net>
-References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
- <20130603152725.GA2644@roeck-us.net>
- <CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 18:11:55 -0400
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=sQjOkQ3aMgUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=davTPD3CKI0A:10 a=yPCof4ZbAAAA:8 a=wggVRkVUAAAA:8 a=VwQbUJbxAAAA:8 a=m5Q0o0PiCI1hxLtGswwA:9 a=5iE5eHtFvpoA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130603221152.651788885@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Jun 2013 18:10:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [03/65] ASoC: wm8994: missing break in wm8994_aif3_hw_params()
+References: <20130603221016.243553628@goodmis.org>
+Content-Disposition: inline; filename=0003-ASoC-wm8994-missing-break-in-wm8994_aif3_hw_params.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 10:23:04PM +0530, anish singh wrote:
-> On Mon, Jun 3, 2013 at 8:57 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Sun, Jun 02, 2013 at 03:43:07PM +0530, anish kumar wrote:
-> >> Certain watchdog drivers use a timer to keep kicking the watchdog at
-> >> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
-> >> we can't guarantee that watchdog will be pinged fast enough
-> >> for all system loads, especially if timeout is configured for
-> >> less than or equal to 1 second(basically small values).
-> >>
-> >> As suggested by Wim Van Sebroeck & Guenter Roeck we should
-> >> add this functionality of individual watchdog drivers in the core
-> >> watchdog core.
-> >>
-> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> >
-> > Not exactly what I had in mind. My idea was to enable the softdog only if
-> > the hardware watchdog's maximum timeout was low (say, less than a couple
-> > of minutes), and if a timeout larger than its maximum value was configured.
-> 
-> watchdog_timeout_invalid wouldn't this check will fail if the user space tries
-> to set maximum timeout more that what driver can support?It would work
-> for pika_wdt.c as it is old watchdog driver and doesn't register with watchdog
-> framwork but new drivers has to pass this api.
-> 
-> OR
-> 
-> Do you want to remove this check and go as explained by you?I would
-> favour this approach though.
-> 
-One would still have a check, but the enforced limits would no longer be
-the driver limits, but larger limits implemented in the watchdog core.
+3.6.11.5 stable review patch.
+If anyone has any objections, please let me know.
 
-> > In that case, I would have set the hardware watchdog to its maximum value
-> > and use the softdog to ping it at a rate of, say, 50% of this maximum.
-> >
-> > If userspace would not ping the watchdog within its configured value,
-> > I would stop pinging the hardware watchdog and let it time out.
-> 
-> One more question.Why is the return value of watchdog_ping int? Anyway
-> we discard it.
+------------------
 
-I can not answer that question.
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Guenter
+[ Upstream commit 4495e46fe18f198366961bb2b324a694ef8a9b44 ]
+
+The missing break here means that we always return early and the
+function is a no-op.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ sound/soc/codecs/wm8994.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index 6c9eeca..7911480 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2778,6 +2778,7 @@ static int wm8994_aif3_hw_params(struct snd_pcm_substream *substream,
+ 		default:
+ 			return 0;
+ 		}
++		break;
+ 	default:
+ 		return 0;
+ 	}
+-- 
+1.7.10.4
+
+
