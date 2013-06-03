@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759083Ab3FCWWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:22:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27975 "EHLO
+	id S1759904Ab3FCWWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:22:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20804 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758801Ab3FCWMA (ORCPT
+	with ESMTP id S1758784Ab3FCWL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:00 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=sFaEtk7krlQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=U8dQHKfu5ZEA:10 a=yPCof4ZbAAAA:8 a=tHz9FfFoAAAA:8 a=VwQbUJbxAAAA:8 a=RUSTWMQ1nkjDhUZoypYA:9 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=9EuFBfuGW6owQClQ:21 a=bddKreHdEC-6ch5t:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:11:59 -0400
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=pmMIZtSJ5KsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VcHyjQdWaU8A:10 a=tmtSDGaQAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=B9-N0CrjNPqreQ1gjakA:9 a=jkObVMfX7fAA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221154.001317406@goodmis.org>
+Message-Id: <20130603221154.159834794@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:27 -0400
+Date: Mon, 03 Jun 2013 18:10:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [11/65] xen/vcpu/pvhvm: Fix vcpu hotplugging hanging.
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [12/65] sd: fix array cache flushing bug causing performance problems
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0011-xen-vcpu-pvhvm-Fix-vcpu-hotplugging-hanging.patch
+Content-Disposition: inline; filename=0012-sd-fix-array-cache-flushing-bug-causing-performance-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,111 +30,107 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-[ Upstream commit 7f1fc268c47491fd5e63548f6415fc8604e13003 ]
+[ Upstream commit 39c60a0948cc06139e2fbfe084f83cb7e7deae3b ]
 
-If a user did:
+Some arrays synchronize their full non volatile cache when the sd driver sends
+a SYNCHRONIZE CACHE command.  Unfortunately, they can have Terrabytes of this
+and we send a SYNCHRONIZE CACHE for every barrier if an array reports it has a
+writeback cache.  This leads to massive slowdowns on journalled filesystems.
 
-	echo 0 > /sys/devices/system/cpu/cpu1/online
-	echo 1 > /sys/devices/system/cpu/cpu1/online
+The fix is to allow userspace to turn off the writeback cache setting as a
+temporary measure (i.e. without doing the MODE SELECT to write it back to the
+device), so even though the device reported it has a writeback cache, the
+user, knowing that the cache is non volatile and all they care about is
+filesystem correctness, can turn that bit off in the kernel and avoid the
+performance ruinous (and safety irrelevant) SYNCHRONIZE CACHE commands.
 
-we would (this a build with DEBUG enabled) get to:
-smpboot: ++++++++++++++++++++=_---CPU UP  1
-.. snip..
-smpboot: Stack at about ffff880074c0ff44
-smpboot: CPU1: has booted.
+The way you do this is add a 'temporary' prefix when performing the usual
+cache setting operations, so
 
-and hang. The RCU mechanism would kick in an try to IPI the CPU1
-but the IPIs (and all other interrupts) would never arrive at the
-CPU1. At first glance at least. A bit digging in the hypervisor
-trace shows that (using xenanalyze):
+echo temporary write through > /sys/class/scsi_disk/<disk>/cache_type
 
-[vla] d4v1 vec 243 injecting
-   0.043163027 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043163639 --|x d4v1 vmentry cycles 1468
-]  0.043164913 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043164913 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-   0.043164913 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043165526 --|x d4v1 vmentry cycles 1472
-]  0.043166800 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043166800 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-
-there is a pending event (subsequent debugging shows it is the IPI
-from the VCPU0 when smpboot.c on VCPU1 has done
-"set_cpu_online(smp_processor_id(), true)") and the guest VCPU1 is
-interrupted with the callback IPI (0xf3 aka 243) which ends up calling
-__xen_evtchn_do_upcall.
-
-The __xen_evtchn_do_upcall seems to do *something* but not acknowledge
-the pending events. And the moment the guest does a 'cli' (that is the
-ffffffff81673254 in the log above) the hypervisor is invoked again to
-inject the IPI (0xf3) to tell the guest it has pending interrupts.
-This repeats itself forever.
-
-The culprit was the per_cpu(xen_vcpu, cpu) pointer. At the bootup
-we set each per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] but later on use the VCPUOP_register_vcpu_info
-to register per-CPU  structures (xen_vcpu_setup).
-This is used to allow events for more than 32 VCPUs and for performance
-optimizations reasons.
-
-When the user performs the VCPU hotplug we end up calling the
-the xen_vcpu_setup once more. We make the hypercall which returns
--EINVAL as it does not allow multiple registration calls (and
-already has re-assigned where the events are being set). We pick
-the fallback case and set per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] (which is a good fallback during bootup).
-However the hypervisor is still setting events in the register
-per-cpu structure (per_cpu(xen_vcpu_info, cpu)).
-
-As such when the events are set by the hypervisor (such as timer one),
-and when we iterate in __xen_evtchn_do_upcall we end up reading stale
-events from the shared_info->vcpu_info[vcpu] instead of the
-per_cpu(xen_vcpu_info, cpu) structures. Hence we never acknowledge the
-events that the hypervisor has set and the hypervisor keeps on reminding
-us to ack the events which we never do.
-
-The fix is simple. Don't on the second time when xen_vcpu_setup is
-called over-write the per_cpu(xen_vcpu, cpu) if it points to
-per_cpu(xen_vcpu_info).
-
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: stable@vger.kernel.org
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Ric Wheeler <rwheeler@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/xen/enlighten.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/scsi/sd.c |   20 ++++++++++++++++++++
+ drivers/scsi/sd.h |    1 +
+ 2 files changed, 21 insertions(+)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 0dc16d6..d11cf12 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -154,6 +154,21 @@ static void xen_vcpu_setup(int cpu)
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 4df73e5..88ced02 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -141,6 +141,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
++	const char *temp = "temporary ";
+ 	int len;
  
- 	BUG_ON(HYPERVISOR_shared_info == &xen_dummy_shared_info);
+ 	if (sdp->type != TYPE_DISK)
+@@ -149,6 +150,13 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 		 * it's not worth the risk */
+ 		return -EINVAL;
  
-+	/*
-+	 * This path is called twice on PVHVM - first during bootup via
-+	 * smp_init -> xen_hvm_cpu_notify, and then if the VCPU is being
-+	 * hotplugged: cpu_up -> xen_hvm_cpu_notify.
-+	 * As we can only do the VCPUOP_register_vcpu_info once lets
-+	 * not over-write its result.
-+	 *
-+	 * For PV it is called during restore (xen_vcpu_restore) and bootup
-+	 * (xen_setup_vcpu_info_placement). The hotplug mechanism does not
-+	 * use this function.
-+	 */
-+	if (xen_hvm_domain()) {
-+		if (per_cpu(xen_vcpu, cpu) == &per_cpu(xen_vcpu_info, cpu))
-+			return;
++	if (strncmp(buf, temp, sizeof(temp) - 1) == 0) {
++		buf += sizeof(temp) - 1;
++		sdkp->cache_override = 1;
++	} else {
++		sdkp->cache_override = 0;
 +	}
- 	if (cpu < MAX_VIRT_CPUS)
- 		per_cpu(xen_vcpu,cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
++
+ 	for (i = 0; i < ARRAY_SIZE(sd_cache_types); i++) {
+ 		len = strlen(sd_cache_types[i]);
+ 		if (strncmp(sd_cache_types[i], buf, len) == 0 &&
+@@ -161,6 +169,13 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 	rcd = ct & 0x01 ? 1 : 0;
+ 	wce = ct & 0x02 ? 1 : 0;
++
++	if (sdkp->cache_override) {
++		sdkp->WCE = wce;
++		sdkp->RCD = rcd;
++		return count;
++	}
++
+ 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
+ 			    SD_MAX_RETRIES, &data, NULL))
+ 		return -EINVAL;
+@@ -2127,6 +2142,10 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 	int old_rcd = sdkp->RCD;
+ 	int old_dpofua = sdkp->DPOFUA;
  
++
++	if (sdkp->cache_override)
++		return;
++
+ 	first_len = 4;
+ 	if (sdp->skip_ms_page_8) {
+ 		if (sdp->type == TYPE_RBC)
+@@ -2613,6 +2632,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+ 	sdkp->capacity = 0;
+ 	sdkp->media_present = 1;
+ 	sdkp->write_prot = 0;
++	sdkp->cache_override = 0;
+ 	sdkp->WCE = 0;
+ 	sdkp->RCD = 0;
+ 	sdkp->ATO = 0;
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index f703f48..e2b2956 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -67,6 +67,7 @@ struct scsi_disk {
+ 	u8		protection_type;/* Data Integrity Field */
+ 	u8		provisioning_mode;
+ 	unsigned	ATO : 1;	/* state of disk ATO bit */
++	unsigned	cache_override : 1; /* temp override of WCE,RCD */
+ 	unsigned	WCE : 1;	/* state of disk WCE bit */
+ 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+ 	unsigned	DPOFUA : 1;	/* state of disk DPOFUA bit */
 -- 
 1.7.10.4
 
