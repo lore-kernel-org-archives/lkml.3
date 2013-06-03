@@ -1,195 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3FCMPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:15:47 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:45755 "EHLO gloria.sntech.de"
+	id S1757223Ab3FCMQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:16:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41262 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab3FCMPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:15:43 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: [RFC] dw_apb_timer_of: use clocksource_of_init
-Date: Mon, 3 Jun 2013 14:15:28 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <201306031146.57611.heiko@sntech.de> <1822564.TIKVDZSzqK@wuerfel>
-In-Reply-To: <1822564.TIKVDZSzqK@wuerfel>
+	id S1757320Ab3FCMQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 08:16:44 -0400
+From: J Keerthy <j-keerthy@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <swarren@wwwdotorg.org>, <broonie@opensource.wolfsonmicro.com>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <mturquette@linaro.org>,
+        <sameo@linux.intel.com>, <wim@iguana.be>, <lgirdwood@gmail.com>,
+        <gg@slimlogic.co.uk>, <t-kristo@ti.com>, J Keerthy <j-keerthy@ti.com>,
+        Ian Lartey <ian@slimlogic.co.uk>
+Subject: [PATCH] mfd: DT bindings for the palmas family MFD
+Date: Mon, 3 Jun 2013 17:38:53 +0530
+Message-ID: <1370261333-5121-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306031415.29411.heiko@sntech.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dw_apb_timer_init used to search the devicetree for matching timer
-devices, making calls to it from board files necessary.
+From: Graeme Gregory <gg@slimlogic.co.uk> 
 
-Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
-With this change the function gets called once for each timer node
-and tracks these number of calls to attach clockevent and clocksource
-devices to the nodes.
+Add the various binding files for the palmas family of chips. There is a
+top level MFD binding then a seperate binding for regulators IP blocks on chips.
 
-Also convert all previous users of dw_apb_timer_init to use
-clocksource_of_init.
-
-Tested on the upcoming rk3066 code.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
 ---
-so something like this?
+ Documentation/devicetree/bindings/mfd/palmas.txt   |   49 ++++++
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |  165 ++++++++++++++++++++
+ 2 files changed, 214 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/palmas-pmic.txt
 
- arch/arm/mach-picoxcell/Kconfig       |    1 +
- arch/arm/mach-picoxcell/common.c      |    4 +-
- arch/arm/mach-socfpga/Kconfig         |    1 +
- arch/arm/mach-socfpga/socfpga.c       |    4 +-
- drivers/clocksource/dw_apb_timer_of.c |   41 ++++++++++++++++-----------------
- include/linux/dw_apb_timer.h          |    1 -
- 6 files changed, 26 insertions(+), 26 deletions(-)
-
-diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
-index 13bae78..3ef6bbe 100644
---- a/arch/arm/mach-picoxcell/Kconfig
-+++ b/arch/arm/mach-picoxcell/Kconfig
-@@ -6,6 +6,7 @@ config ARCH_PICOXCELL
- 	select CPU_V6K
- 	select DW_APB_TIMER
- 	select DW_APB_TIMER_OF
-+	select CLKSRC_OF
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_TCM
- 	select NO_IOPORT
-diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
-index 70b441a..170f085 100644
---- a/arch/arm/mach-picoxcell/common.c
-+++ b/arch/arm/mach-picoxcell/common.c
-@@ -15,7 +15,7 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
--#include <linux/dw_apb_timer.h>
-+#include <linux/clocksource.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -88,7 +88,7 @@ DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
- 	.map_io		= picoxcell_map_io,
- 	.nr_irqs	= NR_IRQS_LEGACY,
- 	.init_irq	= irqchip_init,
--	.init_time	= dw_apb_timer_init,
-+	.init_time	= clocksource_of_init,
- 	.init_machine	= picoxcell_init_machine,
- 	.dt_compat	= picoxcell_dt_match,
- 	.restart	= picoxcell_wdt_restart,
-diff --git a/arch/arm/mach-socfpga/Kconfig b/arch/arm/mach-socfpga/Kconfig
-index 566e804..1c95288 100644
---- a/arch/arm/mach-socfpga/Kconfig
-+++ b/arch/arm/mach-socfpga/Kconfig
-@@ -9,6 +9,7 @@ config ARCH_SOCFPGA
- 	select CPU_V7
- 	select DW_APB_TIMER
- 	select DW_APB_TIMER_OF
-+	select CLKSRC_OF
- 	select GENERIC_CLOCKEVENTS
- 	select GPIO_PL061 if GPIOLIB
- 	select HAVE_ARM_SCU
-diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
-index 46a0513..921ff67 100644
---- a/arch/arm/mach-socfpga/socfpga.c
-+++ b/arch/arm/mach-socfpga/socfpga.c
-@@ -14,7 +14,7 @@
-  * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
--#include <linux/dw_apb_timer.h>
-+#include <linux/clocksource.h>
- #include <linux/clk-provider.h>
- #include <linux/irqchip.h>
- #include <linux/of_address.h>
-@@ -120,7 +120,7 @@ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
- 	.smp		= smp_ops(socfpga_smp_ops),
- 	.map_io		= socfpga_map_io,
- 	.init_irq	= socfpga_init_irq,
--	.init_time	= dw_apb_timer_init,
-+	.init_time	= clocksource_of_init,
- 	.init_machine	= socfpga_cyclone5_init,
- 	.restart	= socfpga_cyclone5_restart,
- 	.dt_compat	= altera_dt_match,
-diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-index 1964f87..cef5544 100644
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -133,27 +133,26 @@ static void init_sched_clock(void)
- 	setup_sched_clock(read_sched_clock, 32, sched_rate);
- }
- 
--static const struct of_device_id osctimer_ids[] __initconst = {
--	{ .compatible = "picochip,pc3x2-timer" },
--	{ .compatible = "snps,dw-apb-timer-osc" },
--	{},
--};
--
--void __init dw_apb_timer_init(void)
-+static int num_called;
-+static void __init dw_apb_timer_init(struct device_node *timer)
- {
--	struct device_node *event_timer, *source_timer;
--
--	event_timer = of_find_matching_node(NULL, osctimer_ids);
--	if (!event_timer)
--		panic("No timer for clockevent");
--	add_clockevent(event_timer);
--
--	source_timer = of_find_matching_node(event_timer, osctimer_ids);
--	if (!source_timer)
--		panic("No timer for clocksource");
--	add_clocksource(source_timer);
--
--	of_node_put(source_timer);
-+	switch (num_called) {
-+	case 0:
-+		pr_debug("%s: found clockevent timer\n", __func__);
-+		add_clockevent(timer);
-+		of_node_put(timer);
-+		break;
-+	case 1:
-+		pr_debug("%s: found clocksource timer\n", __func__);
-+		add_clocksource(timer);
-+		of_node_put(timer);
-+		init_sched_clock();
-+		break;
-+	default:
-+		break;
-+	}
- 
--	init_sched_clock();
-+	num_called++;
- }
-+CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
-+CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
-diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
-index dd755ce..07261d5 100644
---- a/include/linux/dw_apb_timer.h
-+++ b/include/linux/dw_apb_timer.h
-@@ -53,5 +53,4 @@ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs);
- cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs);
- void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs);
- 
--extern void dw_apb_timer_init(void);
- #endif /* __DW_APB_TIMER_H__ */
+diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+new file mode 100644
+index 0000000..c6c5e78
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+@@ -0,0 +1,49 @@
++* palmas device tree bindings
++
++The TI palmas family current members :-
++twl6035 (palmas)
++twl6037 (palmas)
++tps65913 (palmas)
++tps65914 (palmas)
++
++Required properties:
++- compatible : Should be from the list
++  ti,twl6035
++  ti,twl6036
++  ti,twl6037
++  ti,tps65913
++  ti,tps65914
++  ti,tps80036
++and also the generic series names
++  ti,palmas
++- interrupt-controller : palmas has its own internal IRQs
++- #interrupt-cells : should be set to 2 for IRQ number and flags
++  The first cell is the IRQ number.
++  The second cell is the flags, encoded as the trigger masks from
++  Documentation/devicetree/bindings/interrupts.txt
++- interrupt-parent : The parent interrupt controller.
++
++Optional properties:
++  ti,mux_padX : set the pad register X (1-2) to the correct muxing for the
++  		hardware, if not set will use muxing in OTP.
++
++Example:
++
++palmas {
++	compatible = "ti,twl6035", "ti,palmas";
++	reg = <0x48>
++	interrupt-parent = <&intc>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++
++	ti,mux-pad1 = <0>;
++	ti,mux-pad2 = <0>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	pmic {
++		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
++		....
++	};
++}
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+new file mode 100644
+index 0000000..f7bbc3e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -0,0 +1,165 @@
++* palmas regulator IP block devicetree bindings
++
++Required properties:
++- compatible : Should be from the list
++  ti,twl6035-pmic
++  ti,twl6036-pmic
++  ti,twl6037-pmic
++  ti,tps65913-pmic
++  ti,tps65914-pmic
++and also the generic series names
++  ti,palmas-pmic
++
++Optional properties:
++- ti,ldo6-vibrator : ldo6 is in vibrator mode
++
++Optional nodes:
++- regulators : should contain the constrains and init information for the
++	       regulators. It should contain a subnode per regulator from the
++	       list.
++	       For ti,palmas-pmic - smps12, smps123, smps3 depending on OTP,
++	       smps45, smps457, smps7 depending on varient, smps6, smps[8-10],
++	       ldo[1-9], ldoln, ldousb
++
++	       optional chip specific regulator fields :-
++	       ti,warm-reset - maintain voltage during warm reset(boolean)
++	       ti,roof-floor - control voltage selection by pin(boolean)
++	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
++	       2 - eco, 3 - forced pwm
++	       ti,tstep - slope control 0 - Jump, 1 10mV/us, 2 5mV/us, 3 2.5mV/us
++	       ti,smps-range - OTP has the wrong range set for the hardware so override
++	       0 - low range, 1 - high range
++
++Example:
++
++pmic@0 {
++	compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
++	interrupt-parent = <&palmas>;
++	interrupts = <14 0>;
++	interrupt-name = "short-irq";
++
++	ti,ldo6_vibrator;
++
++	regulators {
++		smps12_reg : smps12 {
++			regulator-name = "smps12";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1500000>;
++			regulator-always-on;
++			regulator-boot-on;
++			ti,warm-reset;
++			ti,roof-floor;
++			ti,mode-sleep = <0>;
++			ti,tstep = <0>;
++			ti,smps-range = <1>;
++		};
++
++		smps3_reg: smps3 {
++			regulator-name = "smps3";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1310000>;
++		};
++
++		smps45_reg: smps45 {
++			regulator-name = "smps45";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1310000>;
++		};
++
++		smps6_reg: smps6 {
++			regulator-name = "smps6";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1200000>;
++		};
++
++		smps7_reg: smps7 {
++			regulator-name = "smps7";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		smps8_reg: smps8 {
++			regulator-name = "smps8";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1310000>;
++		};
++
++		smps9_reg: smps9 {
++			regulator-name = "smps9";
++			regulator-min-microvolt = <2100000>;
++			regulator-max-microvolt = <2100000>;
++		};
++
++		smps10_reg: smps10 {
++			regulator-name = "smps10";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++		};
++
++		ldo1_reg: ldo1 {
++			regulator-name = "ldo1";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++		};
++
++		ldo2_reg: ldo2 {
++			regulator-name = "ldo2";
++			regulator-min-microvolt = <2900000>;
++			regulator-max-microvolt = <2900000>;
++		};
++
++		ldo3_reg: ldo3 {
++			regulator-name = "ldo3";
++			regulator-min-microvolt = <3000000>;
++			regulator-max-microvolt = <3000000>;
++		};
++
++		ldo4_reg: ldo4 {
++			regulator-name = "ldo4";
++			regulator-min-microvolt = <2200000>;
++			regulator-max-microvolt = <2200000>;
++		};
++
++		ldo5_reg: ldo5 {
++			regulator-name = "ldo5";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		ldo6_reg: ldo6 {
++			regulator-name = "ldo6";
++			regulator-min-microvolt = <1500000>;
++			regulator-max-microvolt = <1500000>;
++		};
++
++		ldo7_reg: ldo7 {
++			regulator-name = "ldo7";
++			regulator-min-microvolt = <1500000>;
++			regulator-max-microvolt = <1500000>;
++		};
++
++		ldo8_reg: ldo8 {
++			regulator-name = "ldo8";
++			regulator-min-microvolt = <1500000>;
++			regulator-max-microvolt = <1500000>;
++		};
++
++		ldo9_reg: ldo9 {
++			regulator-name = "ldo9";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		ldoln_reg: ldoln {
++			regulator-name = "ldoln";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		ldousb_reg: ldousb {
++			regulator-name = "ldousb";
++			regulator-min-microvolt = <3250000>;
++			regulator-max-microvolt = <3250000>;
++		};
++	};
++};
 -- 
-1.7.2.3
+1.7.5.4
 
