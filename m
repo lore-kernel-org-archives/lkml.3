@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab3FCKsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:48:24 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:61015 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab3FCKsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:48:19 -0400
+	id S1756754Ab3FCKss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:48:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57270 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756110Ab3FCKsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 06:48:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
+Date: Mon, 03 Jun 2013 12:57:47 +0200
+Message-ID: <2413427.Abjbfkms0Z@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com>
+References: <51A7BFA6.3070800@semaphore.gr> <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com> <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51AC6472.3060606@asianux.com>
-References: <51A71E49.1000707@asianux.com>
-	<CAMuHMdUz8o4d=RiAMW8-pCrnZyfoH9EETVqjcb7E1GqCgYmQ7g@mail.gmail.com>
-	<51A93FA0.1050203@biophys.uni-duesseldorf.de>
-	<51A94281.7050708@biophys.uni-duesseldorf.de>
-	<51AC6472.3060606@asianux.com>
-Date: Mon, 3 Jun 2013 12:48:18 +0200
-X-Google-Sender-Auth: 3qdiP_pVsqlWKWmKHqRUT95FJMs
-Message-ID: <CAMuHMdVLA_zgeGxTTzfXnBYZiihH3w+LLcW0cRzVk_dvkFojgg@mail.gmail.com>
-Subject: Re: [PATCH] arch: m68k: include: asm: the 3rd parameter of 'insl' and
- 'outsl' need '<< 2'
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: schmitz <schmitz@biophys.uni-duesseldorf.de>,
-        Greg Ungerer <gerg@uclinux.org>, schmitz@debian.org,
-        Sam Ravnborg <sam@ravnborg.org>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 11:40 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> On 06/01/2013 08:38 AM, schmitz wrote:
->>>>> The related git number:
->>>>>   for parport.h: "4914802 m68k,m68knommu: merge header files" in 2009
->>>>>   for io_mm.h: "84b16b7 m68k/atari: ROM port ISA adapter support" in
->>>>> Apr 6 2013
->>>>>
->>>>> The related warning (make EXTRA_CFLAG=-W ARCH=m68k allmodconfig):
->>>>>   arch/m68k/include/asm/parport.h:14:0: warning: "insl" redefined
->>>>> [enabled by default]
->>>>>   arch/m68k/include/asm/io_mm.h:403:0: note: this is the location of
->>>>> the previous definition
->>>>>   arch/m68k/include/asm/parport.h:15:0: warning: "outsl" redefined
->>>>> [enabled by default]
->>>>>   arch/m68k/include/asm/io_mm.h:406:0: note: this is the location of
->>>>> the previous definition
->>>>>
->>> Is that the same problem Thorsten reported recently? parport.h should
->>> either use what the arch io.h include defined, or (in the case of Q40
->>> on m68k) undef and redefine as needed.
->> It appears this is the same issue, see message ID
->> loom.20130511T171757-995@post.gmane.org to linux-m68k (May 12th, by
->> Thorsten Glaser).
->>
->> This _only_ applies to use of insl/outsl macros in parport_pc.h, which
->> is only used by Q40 on m68k. I see no reason to change anything in io.h
->> to cope with this warning.
->
-> It sounds reasonable.
->
-> And excuse me, could you provide the related link directly ?  I don't
-> know how to see the detail of 'loom.20130511T171757-995@post.gmane.org'.
+On Monday, June 03, 2013 12:25:02 PM Viresh Kumar wrote:
+> Sent half written mail.. sorry.. will continue from where I left.
+> 
+> On 3 June 2013 12:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> 
+> > So, obviously the calculations aren't the same..
+> 
+> Now, this is how I understood these two different variables:
+> - cpuinfo.max_freq: maximum frequency (in kHz) which is
+> supported by this CPU
+> - policy->max: Maximum frequency forced by user or governor
+> 
+> When somebody sets policy->max, he expects cpufreq core to
+> use the range between min and max as the slope cpufreq core
+> has and adjust its frequencies accordingly..
+> 
+> Don't know if I am right or wrong :(
 
-http://www.spinics.net/lists/linux-m68k/msg06041.html
+The reality is that the set of frequencies to use is constant and changing
+policy->max doesn't change that set.  There are just fewer frequencies the
+governor can choose from if policy->max is below cpuinfo.max_freq.
 
-Gr{oetje,eeting}s,
+The question is if we want policy->max to re-scale them effectively (i.e. to
+change weights so that the maximum load maps to the highest frequency available
+at the moment) or if we want policy->max to work as a cap (i.e. to map all
+loads above certain value to the maximum frequency available at the moment, so
+that the criteria for selecting the lower frequencies don't change).  In my
+opinion the second option is better, because it means "OK, we can't use some
+high frequencies, but let's not hurt performance for the loads that wouldn't
+require them anyway".  Otherwise, we'll effectively throttle all loads and
+that not only causes performance to drop, but also causes more energy to be
+used overall.
 
-                        Geert
+Thanks,
+Rafael
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
