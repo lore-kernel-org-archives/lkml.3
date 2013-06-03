@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3FCNPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:15:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:32929 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512Ab3FCNPc convert rfc822-to-8bit (ORCPT
+	id S1757571Ab3FCNSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:18:30 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:41115 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab3FCNS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:15:32 -0400
-Date: Mon, 3 Jun 2013 14:15:27 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Achin Gupta <Achin.Gupta@arm.com>
-Subject: Re: [RFC PATCH 2/3] drivers: mfd: vexpress: add timeout API to
- vexpress config interface
-Message-ID: <20130603131527.GC22821@e102568-lin.cambridge.arm.com>
-References: <1369399986-15649-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1369399986-15649-3-git-send-email-lorenzo.pieralisi@arm.com>
- <1370254532.3407.36.camel@linaro1.home>
- <20130603115219.GA22821@e102568-lin.cambridge.arm.com>
- <1370261030.16073.5.camel@linaro1.home>
+	Mon, 3 Jun 2013 09:18:28 -0400
+Date: Mon, 3 Jun 2013 15:18:23 +0200
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, lwoodman@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 07/13] x86, numa, mem-hotplug: Mark nodes which the
+ kernel resides in.
+Message-ID: <20130603131823.GA4729@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1369387762-17865-8-git-send-email-tangchen@cn.fujitsu.com>
+ <20130531162401.GA31139@dhcp-192-168-178-175.profitbricks.localdomain>
+ <51AC4759.6090101@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1370261030.16073.5.camel@linaro1.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 03 Jun 2013 13:15:28.0374 (UTC) FILETIME=[6AB3A960:01CE605C]
-X-MC-Unique: 113060314153005301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <51AC4759.6090101@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 01:03:50PM +0100, Jon Medhurst (Tixy) wrote:
-> On Mon, 2013-06-03 at 12:52 +0100, Lorenzo Pieralisi wrote:
-> > On Mon, Jun 03, 2013 at 11:15:32AM +0100, Jon Medhurst (Tixy) wrote:
-> > > On Fri, 2013-05-24 at 13:53 +0100, Lorenzo Pieralisi wrote:
-> > > > In case some transactions to the Serial Power Controller (SPC) are lost owing
-> > > > to multiple operations handled at once by the M3 controller the OS needs to
-> > > > rely on a configuration API that can time out so that failures do not result
-> > > > in an unusable system.
-> > > > 
-> > > > This patch adds a timeout API to the vexpress config programming interface,
-> > > > and refactors the existing read/write functions so that they can be reused
-> > > > seamlessly on top of the newly defined API.
-> > > 
-> > > Isn't one of the main purposes of the config interface to serialise
-> > > transactions to the config bus, so why would the SPC be handling
-> > > multiple transactions at once? And if we can in fact loose transactions
-> > > doesn't this mean we get random failures in the system? E.g. if this
-> > > happened at boot in vexpress_spc_populate_opps then cpufreq will fail.
-> > 
-> > It has more to do with firmware carrying out background operations like
-> > powering up a cluster when a DVFS is requested.
+Hi Tang,
+
+On Mon, Jun 03, 2013 at 03:35:53PM +0800, Tang Chen wrote:
+> Hi Vasilis,
+>
+[...]
+> >The ranges above belong to node 0, but the node's bit is never marked.
+> >
+> >With a buggy bios that marks all memory as hotpluggable, this results in a
+> >panic, because both checks against hotpluggable bit and memblock_kernel_bitmask
+> >(in early_mem_hotplug_init) fail, the numa regions have all been merged together
+> >and memblock_reserve_hotpluggable is called for all memory.
+> >
+> >With a correct bios (some part of initial memory is not hotplug-able) the kernel
+> >can boot since the hotpluggable bit check works ok, but extra dimms on node 0
+> >will still be allowed to be in MOVABLE_ZONE.
+> >
 > 
-> Would that make it drop transactions or just take a longer time to get
-> around to servicing them?
+> OK, I see the problem. But would you please give me a call trace
+> that can show
+> how this could happen. I think the memory block info should be the same as
+> numa_meminfo. Can we fix the caller to make it set nid correctly ?
 
-It should just take longer to service them, that's what the behaviour
-should be.
+memblock_reserve() calls memblock_add_region with nid == MAX_NUMNODES. So
+all calls of memblock_reserve() in arch/x86/kernel/setup.c will cause memblock
+additions with this non-specific node id I think.
 
-Lorenzo
+Call sites I have seen in practice in my tests are trim_low_memory_range,
+early_reserve_initrd, reserve_brk, all from setup_arch.
 
+The MAX_NUMNODES case also happens when setup_arch adds memblocks for e820 map
+entries:
+
+setup_arch
+  memblock_x86_fill
+    memblock_add <--(calls memblock_add_region with nid == MAX_NUMNODES)
+
+The problem is that these functions are called before numa/srat discovery in
+early_initmem_init. So we don't have the numa_meminfo yet when these memblocks
+are added/reserved. If calls can be re-ordered that would work, otherwise we should
+update nid memblock fields after numa_meminfo has been setup.
+
+> 
+> >Actually this behaviour (being able to have MOVABLE memory on nodes with kernel
+> >reserved memblocks) sort of matches the policy I requested in v2 :). But i
+> >suspect that is not your intent i.e. you want memblock_kernel_nodemask_bitmap to
+> >prevent movable reservations for the whole node where kernel has reserved
+> >memblocks.
+> 
+> I intended to set the whole node which the kernel resides in as
+> un-hotpluggable.
+> 
+> >
+> >Is there a way to get accurate nid information for memblocks at early boot? I
+> >suspect pfn_to_nid doesn't work yet at this stage (i got a panic when I
+> >attempted iirc)
+> 
+> In such an early time, I think we can only get nid from
+> numa_meminfo. So as I
+> said above, I'd like to fix this problem by making memblock has correct nid.
+> 
+> And I read the patch below. I think if we get nid from numa_meminfo,
+> than we
+> don't need to call memblock_get_region_node().
+> 
+
+ok. If we update the memblock nid fields from numa_meminfo,
+memblock_get_region_node will always return the correct node id.
+
+thanks,
+
+- Vasilis
