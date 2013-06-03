@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab3FCPxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:53:20 -0400
-Received: from www.sr71.net ([198.145.64.142]:58268 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758624Ab3FCPxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:53:17 -0400
-Message-ID: <51ACBBEA.2040804@sr71.net>
-Date: Mon, 03 Jun 2013 08:53:14 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759070Ab3FCPxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:53:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:65081 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759032Ab3FCPxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:53:25 -0400
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 23/39] thp: wait_split_huge_page(): serialize over i_mmap_mutex
- too
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-24-git-send-email-kirill.shutemov@linux.intel.com> <519BEFAE.1080800@sr71.net> <20130603150214.54C34E0090@blue.fi.intel.com>
-In-Reply-To: <20130603150214.54C34E0090@blue.fi.intel.com>
+In-Reply-To: <CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
+References: <CAAWiN8oSfH9fZVvnMtfehaY+D-9qhtqu4fwedVOv5Q-uB0WNYw@mail.gmail.com>
+	<CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
+Date: Mon, 3 Jun 2013 17:53:24 +0200
+Message-ID: <CAFLxGvwxPnzTQ+SCjQeHgTBOKmfyahy-oXz66xCXB2EW3J2AXw@mail.gmail.com>
+Subject: Re: Why Linux OS Desktop is not popular?
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Mats Liljegren <liljegren.mats2@gmail.com>
+Cc: Amit C <amit.linux.os.desktop@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please don't feed the trolls.
 
-On 06/03/2013 08:02 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
->>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com
->>> -#define wait_split_huge_page(__anon_vma, __pmd)				\
->>> +#define wait_split_huge_page(__vma, __pmd)				\
->>>  	do {								\
->>>  		pmd_t *____pmd = (__pmd);				\
->>> -		anon_vma_lock_write(__anon_vma);			\
->>> -		anon_vma_unlock_write(__anon_vma);			\
->>> +		struct address_space *__mapping =			\
->>> +					vma->vm_file->f_mapping;	\
->>> +		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
->>> +		if (__mapping)						\
->>> +			mutex_lock(&__mapping->i_mmap_mutex);		\
->>> +		if (__anon_vma) {					\
->>> +			anon_vma_lock_write(__anon_vma);		\
->>> +			anon_vma_unlock_write(__anon_vma);		\
->>> +		}							\
->>> +		if (__mapping)						\
->>> +			mutex_unlock(&__mapping->i_mmap_mutex);		\
->>>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
->>>  		       pmd_trans_huge(*____pmd));			\
->>>  	} while (0)
-...
->> Could you also describe the lengths to which you've gone to try and keep
->> this macro from growing in to any larger of an abomination.  Is it truly
->> _impossible_ to turn this in to a normal function?  Or will it simply be
->> a larger amount of work that you can do right now?  What would it take?
-> 
-> Okay, I've tried once again. The patch is below. It looks too invasive for
-> me. What do you think?
+On Mon, Jun 3, 2013 at 5:43 PM, Mats Liljegren
+<liljegren.mats2@gmail.com> wrote:
+> On Tue, May 28, 2013 at 11:42 AM, Amit C
+> <amit.linux.os.desktop@gmail.com> wrote:
+>> Hi All,
+>>
+>> Linux OS Desktop has not become very popular because of the following reasons:
+>>
+>> 1. It is not because its GUI is not good.
+>> 2. It is because if I buy a new gadget/device/hardware, I am not sure
+>> whether it will work with Linux Desktop.
+>> 3. The reason for number 2 is that the vendor introducing
+>> gadget/device/hardware does not write a device driver for Linux.
+>> 4. The reason for number 3 is that developing new device driver on
+>> linux is hard.
+>> 5. The way to solve number 4 is to move to data oriented device driver
+>> development where the framework for driver is already available for
+>> all kinds of devices (PCI, USB, Firewire, etc.) and the only thing a
+>> device driver developer has to do is to collect io/virtual addresses
+>> from the vendor/manual and feed into a table (structure of structures,
+>> etc.) and the framework will pick up this data and configure the new
+>> gadget/device/hardware instantly.
+>>
+>> I do not want to pay for Microsoft OS but can Linux community give me
+>> a usable Linux Desktop. I have both Windows and Linux on my laptop and
+>> I use Microsoft just to connect to Internet because the USB dongle
+>> that I use for connecting to Internet does not work on Linux. I am in
+>> India and here USB dongles connecting to Internet are very popular
+>> because you can use them anywhere.
+>
+> The big difference between Windows and Linux is that Windows is
+> developed by a single company, while Linux is developed by a community
+> including several companies as well as hobbyists. You can become part
+> of this community by participating in the development. It is not as
+> easy to become part of developing Windows.
+>
+> The way Linux progress is by people realizing they have a pain they
+> want to fix. The fix is done with one or several patches. If the
+> maintainers like the patches, they become part of Linux. This is how
+> these pains are fixed.
+>
+> You start this by experimenting for yourself until you've found a
+> solution you like. Then you send out patch(es) labeled "RFC" (Request
+> For Comments) to LKML to see if people think your idea will work.
+> There is a long way to go then until it actually ends up in the kernel
+> since there is a lot of quality assurance needed to be done, but
+> eventually the pain gets solved.
+>
+> It is very hard to discuss any solutions without those RFC patches,
+> since no one knows whether the idea will work or exactly what the idea
+> consists of. So it's unlikely you'll get much constructive response
+> until you've tested the solution yourself and sent out patches for
+> comments so others might test it. Just keep it as small as possible
+> while still proving the idea.
+>
+> I look forward to your patches, so I can better understand what you
+> want to accomplish.
+>
+> Regards
+> Mats Liljegren
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-That patch looks great to me, actually.  It really looks to just be
-superficially moving code around.  The diffstat is even too:
 
->  include/linux/huge_mm.h  |   35 ++++++++++++++--------------
->  include/linux/mm.h       |   24 +++++++++++++++++--
->  include/linux/mm_types.h |   37 +++++++++++++++++++++++++++++
->  include/linux/rmap.h     |   58 -----------------------------------------------
->  mm/memory.c              |    8 +++---
->  5 files changed, 81 insertions(+), 81 deletions(-)
 
+-- 
+Thanks,
+//richard
