@@ -1,184 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab3FCQHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:07:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45358 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722Ab3FCQHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:07:51 -0400
-Date: Mon, 3 Jun 2013 12:05:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 19/19] kvm hypervisor: Add directed yield in vcpu
- block path
-Message-ID: <20130603160540.GI4224@phenom.dumpdata.com>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
- <20130601192645.5966.42685.sendpatchset@codeblue>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130601192645.5966.42685.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1759278Ab3FCQIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:08:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11871 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752767Ab3FCQIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:08:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,794,1363158000"; 
+   d="scan'208";a="344094051"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <51ACBBEA.2040804@sr71.net>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-24-git-send-email-kirill.shutemov@linux.intel.com>
+ <519BEFAE.1080800@sr71.net>
+ <20130603150214.54C34E0090@blue.fi.intel.com>
+ <51ACBBEA.2040804@sr71.net>
+Subject: Re: [PATCHv4 23/39] thp: wait_split_huge_page(): serialize over
+ i_mmap_mutex too
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130603160920.737A1E0090@blue.fi.intel.com>
+Date: Mon,  3 Jun 2013 19:09:20 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 12:56:45AM +0530, Raghavendra K T wrote:
-> kvm hypervisor: Add directed yield in vcpu block path
+Dave Hansen wrote:
 > 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> On 06/03/2013 08:02 AM, Kirill A. Shutemov wrote:
+> > Dave Hansen wrote:
+> >> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> >>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com
+> >>> -#define wait_split_huge_page(__anon_vma, __pmd)				\
+> >>> +#define wait_split_huge_page(__vma, __pmd)				\
+> >>>  	do {								\
+> >>>  		pmd_t *____pmd = (__pmd);				\
+> >>> -		anon_vma_lock_write(__anon_vma);			\
+> >>> -		anon_vma_unlock_write(__anon_vma);			\
+> >>> +		struct address_space *__mapping =			\
+> >>> +					vma->vm_file->f_mapping;	\
+> >>> +		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
+> >>> +		if (__mapping)						\
+> >>> +			mutex_lock(&__mapping->i_mmap_mutex);		\
+> >>> +		if (__anon_vma) {					\
+> >>> +			anon_vma_lock_write(__anon_vma);		\
+> >>> +			anon_vma_unlock_write(__anon_vma);		\
+> >>> +		}							\
+> >>> +		if (__mapping)						\
+> >>> +			mutex_unlock(&__mapping->i_mmap_mutex);		\
+> >>>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+> >>>  		       pmd_trans_huge(*____pmd));			\
+> >>>  	} while (0)
+> ...
+> >> Could you also describe the lengths to which you've gone to try and keep
+> >> this macro from growing in to any larger of an abomination.  Is it truly
+> >> _impossible_ to turn this in to a normal function?  Or will it simply be
+> >> a larger amount of work that you can do right now?  What would it take?
+> > 
+> > Okay, I've tried once again. The patch is below. It looks too invasive for
+> > me. What do you think?
 > 
-> We use the improved PLE handler logic in vcpu block patch for
-> scheduling rather than plain schedule, so that we can make
-> intelligent decisions
+> That patch looks great to me, actually.  It really looks to just be
+> superficially moving code around.  The diffstat is even too:
 
-You are missing '.' there, and
+One of blocker I see is new dependency <linux/mm.h> -> <linux/fs.h>.
+It makes header files nightmare worse.
 
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  arch/ia64/include/asm/kvm_host.h    |    5 +++++
->  arch/powerpc/include/asm/kvm_host.h |    5 +++++
->  arch/s390/include/asm/kvm_host.h    |    5 +++++
->  arch/x86/include/asm/kvm_host.h     |    2 +-
->  arch/x86/kvm/x86.c                  |    8 ++++++++
->  include/linux/kvm_host.h            |    2 +-
->  virt/kvm/kvm_main.c                 |    6 ++++--
->  7 files changed, 29 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-> index 989dd3f..999ab15 100644
-> --- a/arch/ia64/include/asm/kvm_host.h
-> +++ b/arch/ia64/include/asm/kvm_host.h
-> @@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
->  int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
->  void kvm_sal_emul(struct kvm_vcpu *vcpu);
->  
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #define __KVM_HAVE_ARCH_VM_ALLOC 1
->  struct kvm *kvm_arch_alloc_vm(void);
->  void kvm_arch_free_vm(struct kvm *kvm);
-> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-> index af326cd..1aeecc0 100644
-> --- a/arch/powerpc/include/asm/kvm_host.h
-> +++ b/arch/powerpc/include/asm/kvm_host.h
-> @@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
->  #define __KVM_HAVE_ARCH_WQP
->  #define __KVM_HAVE_CREATE_DEVICE
->  
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #endif /* __POWERPC_KVM_HOST_H__ */
-> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-> index 16bd5d1..db09a56 100644
-> --- a/arch/s390/include/asm/kvm_host.h
-> +++ b/arch/s390/include/asm/kvm_host.h
-> @@ -266,4 +266,9 @@ struct kvm_arch{
->  };
->  
->  extern int sie64a(struct kvm_s390_sie_block *, u64 *);
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #endif
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 95702de..72ff791 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -1042,5 +1042,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
->  int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
->  void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
->  void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
-> -
-> +void kvm_do_schedule(struct kvm_vcpu *vcpu);
->  #endif /* _ASM_X86_KVM_HOST_H */
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index b963c86..d26c4be 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7281,6 +7281,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
->  			kvm_x86_ops->interrupt_allowed(vcpu);
->  }
->  
-> +void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	/* We try to yield to a kikced vcpu else do a schedule */
-
-s/kikced/kicked/
-
-> +	if (kvm_vcpu_on_spin(vcpu) <= 0)
-> +		schedule();
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_do_schedule);
-> +
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index f0eea07..39efc18 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -565,7 +565,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
->  void kvm_vcpu_block(struct kvm_vcpu *vcpu);
->  void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
->  bool kvm_vcpu_yield_to(struct kvm_vcpu *target);
-> -void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-> +bool kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
->  void kvm_resched(struct kvm_vcpu *vcpu);
->  void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
->  void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 302681c..8387247 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1685,7 +1685,7 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
->  		if (signal_pending(current))
->  			break;
->  
-> -		schedule();
-> +		kvm_do_schedule(vcpu);
->  	}
->  
->  	finish_wait(&vcpu->wq, &wait);
-> @@ -1786,7 +1786,7 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
->  }
->  #endif
->  
-> -void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-> +bool kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  {
->  	struct kvm *kvm = me->kvm;
->  	struct kvm_vcpu *vcpu;
-> @@ -1835,6 +1835,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  
->  	/* Ensure vcpu is not eligible during next spinloop */
->  	kvm_vcpu_set_dy_eligible(me, false);
-> +
-> +	return yielded;
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
->  
-> 
+-- 
+ Kirill A. Shutemov
