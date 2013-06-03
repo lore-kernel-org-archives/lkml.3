@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab3FCSnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 14:43:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62888 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab3FCSnp (ORCPT
+	id S1758890Ab3FCSsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:48:35 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60450 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754989Ab3FCSsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 14:43:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] serial: omap: repair building without PM_SLEEP
-Date: Mon, 3 Jun 2013 20:43:38 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Felipe Balbi <balbi@ti.com>
-References: <1844339.mxci2DdvBF@wuerfel> <20130603170730.GA30767@kroah.com>
-In-Reply-To: <20130603170730.GA30767@kroah.com>
+	Mon, 3 Jun 2013 14:48:31 -0400
+Date: Mon, 3 Jun 2013 19:48:07 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Message-ID: <20130603184807.GR31367@sirena.org.uk>
+References: <1370280888-15072-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306032043.38656.arnd@arndb.de>
-X-Provags-ID: V02:K0:+FD3Cg7baMwgQw4luKP30s+77f1HLE9ZLa4uhNi/fmI
- bfXPMxl+q8Oe1IxMMzwEYC319KQydp6eeaCOW/QStvvzSjs0ts
- Es4MUUpuQAaDqi4wAObwKPAdHoOth7V1J6XYJ8HaQxjoWsL/o+
- S38KXkCCElhbvEDpMq1fb0PTK5OIcjKvqN/zCkRCvTpPg5zT0b
- p5Ehx3+3IgX4N5AAHM1oRY1UMmUeWxiUniwuqQCt6kTsgucEd3
- ecT5JaXq1geMTNBcULIhC28aeEH9RfMc02whNmQAO+XGjmhA4B
- Tiq5suxTca323vU1odTTtiHnhT35I4c2uyfUi+Jdwzagr/PNA8
- 8n/Y0YuI/dagkzj2wfpo=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zHDeOHGDnzKksZSU"
+Content-Disposition: inline
+In-Reply-To: <1370280888-15072-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: assume registers are volatile iff no cache
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 June 2013, Greg Kroah-Hartman wrote:
-> On Sat, Jun 01, 2013 at 11:18:13AM +0200, Arnd Bergmann wrote:
-> > A recent bug fix in 3.10, ddd85e225c "serial: omap: prevent runtime PM for
-> > "no_console_suspend"", introduced a regression from an obvious typo:
-> 
-> I don't see that commit id, or commit, in Linus's tree at all.  Where do
-> you see it?
-> 
-> > drivers/tty/serial/omap-serial.c:1677:14: error: 'serial_omap_complete' 
-> >       undeclared here (not in a function)
-> > 
-> > This changes the incorrectly added macro to the one that we need instead.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> > Please apply for 3.10-rc
-> 
-> Really?  It doesn't apply to 3.10-rc3 or -rc4 from what I can tell.
 
-Sorry, my mistake. Since the bug was introduced as part of a bug fix
-I assumed it was in 3.10-rc but did not look carefully. The problem
-only exists in tty-next at the moment.
+--zHDeOHGDnzKksZSU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Arnd
+On Mon, Jun 03, 2013 at 11:34:48AM -0600, Stephen Warren wrote:
+
+> If a regmap has a cache, it's likely that registers are not volatile,
+> perhaps with exceptions. Otherwise, the cache would not be useful. Encode
+> this assumption into regmap_volatile()'s default return value, for the
+> case where a regmap doesn't specify which registers are volatile.
+
+I already sent out a patch of my own for this.
+
+--zHDeOHGDnzKksZSU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRrOTfAAoJELSic+t+oim9ZCwP/R97vZ424INjyjZwpQuY/7UA
+2cOkPHx4oua5c042Cvf+LuqhRTss8djm9182L+eofMQz8B1mFRycTOKYkqlbjOvC
+CMICK6+j6vh0Yu49qGV0MLqveNror2zyseoPBQQIVSGLIZwARnr97JRDuSPNlfsi
+s+HotGak6SyaYxEl2/6rU35udrcoXQRjesYcEYOsGr1lroJH5RbzwMdrG97k+GLA
+5lbvW8ADkIApMKp8mdBE5X/jqtL3TtEy7+gsqFhaQu864/3W1WCd+DZLrrGgKAbG
+V/MBVHIVEIH3T/oTH1xmzzi2t/sYzzdFqGmwcIRpp0MpuesLMcn1WXmEkPIRxGa6
+YtQZSl11VSM7qnAbEWNkE0Zm2BgtHdq1msmWhKNGhY7mCsJ8iXroOKiikDV9zZz9
+MzL89a+KoR59Dl7kAG997hcpfDFSqdKQX+SSfI7uYQKx9KZaWHUgEj7dr8nmlQyg
+BcVNKwhuSpVWlLiaCqMa40yAXNadf3G/r/DMc9l0GoMGrWOEqerV8RYu2OhlnPaI
+Z6tI8tAInGWs0C0IStkG6B9YwT5ZJ8PsxbuYGTVdMJVFSENFGNDLWX5kEEBnfhHu
+9CSmGVPfvc6x6JzP0R53GDImbhRnF7cxQRekJ++tF7uIQRUXLid0p3Pa7PK9W9Kf
+gZpocOVgtUVcYDy8Qetj
+=17vk
+-----END PGP SIGNATURE-----
+
+--zHDeOHGDnzKksZSU--
