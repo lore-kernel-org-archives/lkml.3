@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab3FCRy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 13:54:26 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45156 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757041Ab3FCRxn (ORCPT
+	id S1758695Ab3FCSAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 14:00:16 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57566 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab3FCSAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 13:53:43 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH RFC 1/3] clk: of: helper for determining number of parent clocks
-Date: Mon,  3 Jun 2013 10:53:08 -0700
-Message-Id: <1370281990-15090-2-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
+	Mon, 3 Jun 2013 14:00:11 -0400
+Date: Mon, 3 Jun 2013 11:00:08 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+In-Reply-To: <20130531144636.6b34c6ba48105482d1241a40@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1306031049070.7956@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com> <20130531144636.6b34c6ba48105482d1241a40@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Walks the "clocks" array of parent clock phandles and returns the
-number.
+On Fri, 31 May 2013, Andrew Morton wrote:
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
-DT gurus, please let me know if this is stupid.  I am unfamiliar with
-parsing DT blobs and associated APIs.
+> > Admins may set the oom killer delay using the new interface:
+> > 
+> > 	# echo 60000 > memory.oom_delay_millisecs
+> > 
+> > This will defer oom killing to the kernel only after 60 seconds has
+> > elapsed by putting the task to sleep for 60 seconds.
+> 
+> How often is that delay actually useful, in the real world?
+> 
+> IOW, in what proportion of cases does the system just remain stuck for
+> 60 seconds and then get an oom-killing?
+> 
 
- drivers/clk/clk.c            | 6 ++++++
- include/linux/clk-provider.h | 1 +
- 2 files changed, 7 insertions(+)
+It wouldn't be the system, it would just be the oom memcg that would be 
+stuck.  We actually use 10s by default, but it's adjustable for users in 
+their own memcg hierarchies.  It gives just enough time for userspace to 
+deal with the situation and then defer to the kernel if it's unresponsive, 
+this tends to happen quite regularly when you have many, many servers.  
+Same situation if the userspace oom handler has died and isn't running, 
+perhaps because of its own memory constraints (everything on our systems 
+is memory constrained).  Obviously it isn't going to reenable the oom 
+killer before it dies from SIGSEGV.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index af0dbcc..73e0358 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2082,6 +2082,12 @@ struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
- 	return clk;
- }
- 
-+int of_clk_get_parent_count(struct device_node *np)
-+{
-+	return of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+}
-+EXPORT_SYMBOL_GPL(of_clk_get_parent_count);
-+
- const char *of_clk_get_parent_name(struct device_node *np, int index)
- {
- 	struct of_phandle_args clkspec;
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 265f384..f8d38f2 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -442,6 +442,7 @@ void of_clk_del_provider(struct device_node *np);
- struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
- 				  void *data);
- struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
-+int of_clk_get_parent_count(struct device_node *np);
- const char *of_clk_get_parent_name(struct device_node *np, int index);
- 
- void of_clk_init(const struct of_device_id *matches);
--- 
-1.8.1.2
+I'd argue that the current functionality that allows users to disable the 
+oom killer for a memcg indefinitely is a bit ridiculous.  It requires 
+admin intervention to fix such a state and it would be pointless to have 
+an oom memcg for a week, a month, a year, just completely deadlocked on 
+making forward progress and consuming resources.
 
+memory.oom_delay_millisecs in my patch is limited to MAX_SCHEDULE_TIMEOUT 
+just as a sanity check since we currently allow indefinite oom killer 
+disabling.  I think if we were to rethink disabling the oom killer 
+entirely via memory.oom_control and realize such a condition over a 
+prolonged period is insane then this memory.oom_delay_millisecs ceiling 
+would be better defined as something in minutes.
+
+At the same time, we really like userspace oom notifications so users can 
+implement their own handlers.  So where's the compromise between instantly 
+oom killing something and waiting forever for userspace to respond?  My 
+suggestion is memory.oom_delay_millisecs.
