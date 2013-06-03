@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab3FCA7D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 20:59:03 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44924 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3FCA6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 20:58:55 -0400
-Date: Mon, 3 Jun 2013 08:58:49 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: "Catalin Marinas" <catalin.marinas@arm.com>
-Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: Re: Re: [PATCH 2/3] mm/kmemleak.c: Use list_for_each_entry_safe to reconstruct function scan_gray_list
-References: <519224D8.5090704@gmail.com>, 
-	<20130530144028.GF23631@arm.com>
-X-Priority: 3
-X-GUID: FAB18D1D-89D4-4516-AC3C-7990CBC53379
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
+	id S1756213Ab3FCBJp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 21:09:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47431 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755254Ab3FCBJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jun 2013 21:09:41 -0400
+Message-ID: <1370221774.2096.7.camel@joe-AO722>
+Subject: Re: [PATCH 3/4] sys/reboot: boolize C_A_D
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: liguang <lig.fnst@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Date: Sun, 02 Jun 2013 18:09:34 -0700
+In-Reply-To: <20130531160259.553761ddeb6095d22e8cea0d@linux-foundation.org>
+References: <1369900686-5936-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <1369900686-5936-3-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <20130531160259.553761ddeb6095d22e8cea0d@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Message-ID: <201306030858459339090@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r530xQUq003295
 
->On Tue, May 14, 2013 at 12:49:44PM +0100, majianpeng wrote:
->> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->> ---
->>  mm/kmemleak.c | 8 +-------
->>  1 file changed, 1 insertion(+), 7 deletions(-)
->> 
->> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
->> index b1525db..f0ece93 100644
->> --- a/mm/kmemleak.c
->> +++ b/mm/kmemleak.c
->> @@ -1225,22 +1225,16 @@ static void scan_gray_list(void)
->>  	 * from inside the loop. The kmemleak objects cannot be freed from
->>  	 * outside the loop because their use_count was incremented.
->>  	 */
->> -	object = list_entry(gray_list.next, typeof(*object), gray_list);
->> -	while (&object->gray_list != &gray_list) {
->> +	list_for_each_entry_safe(object, tmp, &gray_list, gray_list) {
->>  		cond_resched();
->>  
->>  		/* may add new objects to the list */
->>  		if (!scan_should_stop())
->>  			scan_object(object);
->>  
->> -		tmp = list_entry(object->gray_list.next, typeof(*object),
->> -				 gray_list);
->> -
->>  		/* remove the object from the list and release it */
->>  		list_del(&object->gray_list);
->>  		put_object(object);
->> -
->> -		object = tmp;
->>  	}
->>  	WARN_ON(!list_empty(&gray_list));
->
->I tried this patch for a few days and I hit the WARN_ON after the loop.
->During scanning, new entries may be added at the end of the loop but we
->need to loop until all the entries have been removed. I probably had a
->reason why I had the 'while' loop.
->
->The key difference is that list_for_each_entry_safe() gets the next
->entry (n or tmp above) before scan_object() and it may hit the end of
->the list. However, scan_object() may do a list_add_tail(&gray_list)
->hence we need to get the next entry after this function.
->
->Basically list_for_each_entry_safe() is not safe with tail additions.
->I'll revert this patch (hasn't reached mainline anyway).
->
-Ok, i see. 
-Thanks!
->Thanks.
->
->-- 
->Catalinÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Fri, 2013-05-31 at 16:02 -0700, Andrew Morton wrote:
+> there's no rule
+> which states that sizeof(bool) must equal sizeof(int).
+
+For gcc, sizeof(_Bool) isn't sizeof(int) so it would
+work for one endian but not the other.
+
+gcc has sizeof(_Bool) == sizeof(unsigned char)
+
