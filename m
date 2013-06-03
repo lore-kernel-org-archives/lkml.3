@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab3FCDjZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:39:25 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:37180 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3FCDjU (ORCPT
+	id S1752776Ab3FCDm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jun 2013 23:42:26 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39218 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3FCDmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:39:20 -0400
-Date: Sun, 2 Jun 2013 20:39:24 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup fixes for v3.10-rc4
-Message-ID: <20130603033924.GC6071@mtj.dyndns.org>
+	Sun, 2 Jun 2013 23:42:17 -0400
+Date: Sun, 2 Jun 2013 20:42:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, klamm@yandex-team.ru, brouer@redhat.com,
+        dipankar@in.ibm.com, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, David.Laight@ACULAB.COM
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130603034203.GB29614@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1369854387.5109.77.camel@edumazet-glaptop>
+ <51A70CF4.1020807@yandex-team.ru>
+ <1370215895.24311.93.camel@edumazet-glaptop>
+ <20130602.195826.721294433730539253.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130602.195826.721294433730539253.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060303-5518-0000-0000-00000F469481
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Sun, Jun 02, 2013 at 07:58:26PM -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Sun, 02 Jun 2013 16:31:35 -0700
+> 
+> > On Thu, 2013-05-30 at 12:25 +0400, Roman Gushchin wrote:
+> >> On 29.05.2013 23:06, Eric Dumazet wrote:
+> >> > On Wed, 2013-05-29 at 14:09 +0400, Roman Gushchin wrote:
+> >> >
+> >> > True, these lookup functions are usually structured the same around the
+> >> > hlist_nulls_for_each_entry_rcu() loop.
+> >> >
+> >> > A barrier() right before the loop seems to be a benefit, the size of
+> >> > assembly code is reduced by 48 bytes.
+> >> >
+> >> > And its one of the documented way to handle this kind of problems
+> >> > (Documentation/atomic_ops.txt line 114)
+> >> >
+> >> > I guess we should amend this documentation, eventually.
+> >> >
+> >> > Thanks, please add you "Signed-off-by" if you agree with the patch.
+> >> >
+> >> 
+> >> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> >> 
+> >> Many thanks to you, Paul E. McKenney and David Laight for your
+> >> patches, help and participation in this discussion.
+> > 
+> > Thanks to you !
+> > 
+> > David, is there any problem with the patch ?
+> > 
+> > http://patchwork.ozlabs.org/patch/247360/ says "Not applicable", please
+> > tell me what is needed to get it merged.
+> 
+> It's not a networking patch, it's a patch for generic RCU upstream.
+> So it either goes through Paul McKenney, or directly via Linus on
+> linux-kernel.
 
-This pull request contains
+I would be happy to take it.
 
-* Fix for yet another xattr bug which may lead to NULL deref.
+							Thanx, Paul
 
-* A subtle bug in for_each_descendant_pre().  This bug requires quite
-  specific conditions to trigger and isn't too likely to actually
-  happen in the wild, but maybe that just makes it that much more
-  nastier.
-
-* A warning message added for silly cgroup re-mount (not -o remount,
-  but unmount followed by mount) behavior.
-
-The changes are available in the following git branch
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.10-fixes
-
-for you to fetch changes up to 2a0ff3fbe39bc93f719ff857e5a359d9780579ff:
-
-  cgroup: warn about mismatching options of a new mount of an existing hierarchy (2013-05-29 07:59:39 +0900)
-
-Thanks.
-
-----------------------------------------------------------------
-Jeff Liu (1):
-      cgroup: warn about mismatching options of a new mount of an existing hierarchy
-
-Li Zefan (1):
-      cgroup: initialize xattr before calling d_instantiate()
-
-Tejun Heo (1):
-      cgroup: fix a subtle bug in descendant pre-order walk
-
- include/linux/cgroup.h |  2 +-
- kernel/cgroup.c        | 31 ++++++++++++++++---------------
- 2 files changed, 17 insertions(+), 16 deletions(-)
-
---
-tejun
