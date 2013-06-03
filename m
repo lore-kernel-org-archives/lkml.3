@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab3FCJET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:04:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:8715 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab3FCJES (ORCPT
+	id S1754587Ab3FCJFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:05:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:47034 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180Ab3FCJFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:04:18 -0400
-X-AuditID: cbfee68e-b7f276d000002279-bc-51ac5c0f3ac9
+	Mon, 3 Jun 2013 05:05:08 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-2d-51ac5c416e28
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Srinidhi Kasagar'" <srinidhi.kasagar@stericsson.com>,
-        Jingoo Han <jg1.han@samsung.com>,
+To: "'Anton Vorontsov'" <cbou@mail.ru>
+Cc: Anton Vorontsov <avorontsov@ru.mvista.com>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
         "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
-Subject: [PATCH V2] mfd: replace strict_strtoul() with kstrtoul()
-Date: Mon, 03 Jun 2013 18:04:15 +0900
-Message-id: <000801ce6039$526d9a00$f748ce00$@samsung.com>
+Subject: [PATCH V2] power: replace strict_strtoul() with kstrtoul()
+Date: Mon, 03 Jun 2013 18:05:05 +0900
+Message-id: <000901ce6039$7071c670$51555350$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5gOUvXV7YQ6ccrSoK4xN8jkywViQ==
+Thread-index: Ac5gOWs+3JYf8JRjQReQHIrCdRxWNg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zY13+mDWBBnum2li8nHCY0eLywkus
-	Fve/HmW0mPJnOZPF5V1z2CxOd7Na3NrSxObA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx/ela9g9
-	Pm+SC2CL4rJJSc3JLEst0rdL4Mr43zeHveCORMXWy13MDYxnhLsYOTkkBEwkVr45zwxhi0lc
-	uLeerYuRi0NIYBmjxI39W5hgin5svMoKkZjOKDGxewczhPOLUeLb1d/sIFVsAmoSX74cBrNF
-	BLQkuo+dZwOxmQX+Mko8310GYgsLOEpc+n4arIZFQFXi6tGpYDavgKXEgYbNLBC2oMSPyfdY
-	IHq1JNbvPM4EYctLbF7zFupUBYkdZ18zQuzSk9jxaD4jRI2IxL4X7xhBjpMQuMQu0bzsJxPE
-	MgGJb5MPAQ3lAErISmw6ADVHUuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0
-	IiO94sTc4tK8dL3k/NxNjJC47NvBePOA9SHGZKD1E5mlRJPzgXGdVxJvaGxmZGFqYmpsZG5p
-	RpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGnElttgqsompfFk1t931i/8xi
-	2x/PSJGZ2UXbj/t6XKoqY3ryLPHoxjX7Xxr4zf++QfqYLo9qke/6ec7bKzt0v+vrv7zGHJUz
-	v617j6LJky6HoKyyvWff39gv38j5hOfc9uaAVz6m+W3fuVsffKzj/Ki481RZpoNhiq/Ba/Xy
-	b2fu90ecFCpXYinOSDTUYi4qTgQAFg2J1eECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQV3+mDWBBtefmFu8nHCY0eLywkus
-	Fve/HmW0mPJnOZPF5V1z2CxOd7Na3NrSxObA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx/ela9g9
-	Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
-	zAE6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8b9vDnvBHYmKrZe7
-	mBsYzwh3MXJySAiYSPzYeJUVwhaTuHBvPVsXIxeHkMB0RomJ3TuYIZxfjBLfrv5mB6liE1CT
-	+PLlMJgtIqAl0X3sPBuIzSzwl1Hi+e4yEFtYwFHi0vfTYDUsAqoSV49OBbN5BSwlDjRsZoGw
-	BSV+TL7HAtGrJbF+53EmCFteYvOat8wQFylI7Dj7mhFil57EjkfzGSFqRCT2vXjHOIFRYBaS
-	UbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH/TPpHYyrGiwOMQpw
-	MCrx8AZ4rAkUYk0sK67MPcQowcGsJMJ7JRAoxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnA
-	hJRXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYx6Sx3ec/9z
-	SphR7LxlScAlw/6Pbxas3aS3l61qq+zBTQ4JK2KvBzz1NQvazeSz9lLMzlkGxmmMvG68F0pK
-	miJUJijGPog/lu/wcK1T/61znInHVgm2uxxaP0dd+P/dlNtF62+IfZt2KFAodF8Wj9OzyBo/
-	7SIWH8+Kry8PMvmX/D30eF3G8jolluKMREMt5qLiRADwVATfPgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zA13HmDWBBu8eG1m8nHCY0WLv1btM
+	Fr92bmO2mLhyMrPF5YWXWC0u75rD5sDmsXPWXXaPzSu0PKbMPcLqMefYPBaPvi2rGD0+b5IL
+	YIvisklJzcksSy3St0vgypg/eRdjwTKBiqffrjE1MC7i7WLk5JAQMJG427ibCcIWk7hwbz1b
+	FyMXh5DAMkaJXSsXssIUXTv1lhkisYhRYtmNI2AdQgK/GCUOb84GsdkE1CS+fDnMDmKLCKhI
+	zLx3iAmkgVngFKPE/u3LGUESwgLOEmv23GEBsVkEVCWaf70HG8QrYCkx7etTRghbUOLH5Htg
+	NcwCWhLrdx5ngrDlJTavAbkC5CIFiR1nXzNCLNOTeLL6LCNEjYjEvhfvGEEWSwhcYpdoOjET
+	apmAxLfJh4BsDqCErMSmA1BzJCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5K
+	LzLWK07MLS7NS9dLzs/dxAiJx/4djHcPWB9iTAZaP5FZSjQ5HxjPeSXxhsZmRhamJqbGRuaW
+	ZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpgzFwUMFvYTFafr3Bbr13L6RVG
+	BYebj1361bSeh7dR3vJQs+h+YV7Z2QsOfZma8VR5ecr2+a/sTvWJzIsVv9FisOeDp8TXhZsk
+	RX5NFxZebMGY9nu68YQSpWf/FTXbgq5uFVt9PlUhd13WmRUKl7ti9StNbLj4j/7v2eV44LzE
+	zemVd4SXKczTUmIpzkg01GIuKk4EAIRlkjfdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3HmDWBBp9P6Vm8nHCY0WLv1btM
+	Fr92bmO2mLhyMrPF5YWXWC0u75rD5sDmsXPWXXaPzSu0PKbMPcLqMefYPBaPvi2rGD0+b5IL
+	YItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMATpD
+	SaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5gxf/IuxoJlAhVPv11jamBc
+	xNvFyMkhIWAice3UW2YIW0ziwr31bF2MXBxCAosYJZbdOMIEkhAS+MUocXhzNojNJqAm8eXL
+	YXYQW0RARWLmvUNMIA3MAqcYJfZvX84IkhAWcJZYs+cOC4jNIqAq0fzrPdggXgFLiWlfnzJC
+	2IISPybfA6thFtCSWL/zOBOELS+xeQ3MRQoSO86+ZoRYpifxZPVZRogaEYl9L94xTmAUmIVk
+	1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHR/kx6B+OqBotDjAIc
+	jEo8vAEeawKFWBPLiitzDzFKcDArifBeCQQK8aYkVlalFuXHF5XmpBYfYkwG+nQis5Rocj4w
+	EeWVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+Mk6ZxPDH0X
+	TT7tedvwZaedutlmvhChiHX3brOuFZjCGJEXECV9zyPgkf8PhshfU3fEbzU9U1EqsfNl/6+J
+	M/NklnGJrGVmnir0JV1MbJpV06MzNesepjTdklrAbfbyxyL2m3wf/3l4iNySXCVn1ScVymZf
+	68QvxTkp8OZZozUz532vuM/EzKvEUpyRaKjFXFScCAB7UeCAOgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,104 +63,64 @@ Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
 Changes since v1:
 - Used return code from kstrtoul().
-- Changed the type of 'user_reg' from 'unsigned long' to 'u8'.
-- Replaced kstrtoul() with kstrtou8() to handle u8 variable.
 
- drivers/mfd/aat2870-core.c   |    5 +++--
- drivers/mfd/ab3100-core.c    |   16 ++++++----------
- drivers/mfd/ab8500-debugfs.c |    2 +-
- 3 files changed, 10 insertions(+), 13 deletions(-)
+ drivers/power/ab8500_fg.c        |    6 +++---
+ drivers/power/pcf50633-charger.c |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/aat2870-core.c b/drivers/mfd/aat2870-core.c
-index dfdb0a2..d4f5945 100644
---- a/drivers/mfd/aat2870-core.c
-+++ b/drivers/mfd/aat2870-core.c
-@@ -312,8 +312,9 @@ static ssize_t aat2870_reg_write_file(struct file *file,
- 	while (*start == ' ')
- 		start++;
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index c5391f5..308e511 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2465,9 +2465,9 @@ static ssize_t charge_full_store(struct ab8500_fg *di, const char *buf,
+ 				 size_t count)
+ {
+ 	unsigned long charge_full;
+-	ssize_t ret = -EINVAL;
++	ssize_t ret;
  
--	if (strict_strtoul(start, 16, &val))
+-	ret = strict_strtoul(buf, 10, &charge_full);
++	ret = kstrtoul(buf, 10, &charge_full);
+ 
+ 	dev_dbg(di->dev, "Ret %zd charge_full %lu", ret, charge_full);
+ 
+@@ -2489,7 +2489,7 @@ static ssize_t charge_now_store(struct ab8500_fg *di, const char *buf,
+ 	unsigned long charge_now;
+ 	ssize_t ret;
+ 
+-	ret = strict_strtoul(buf, 10, &charge_now);
++	ret = kstrtoul(buf, 10, &charge_now);
+ 
+ 	dev_dbg(di->dev, "Ret %zd charge_now %lu was %d",
+ 		ret, charge_now, di->bat_cap.prev_mah);
+diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
+index 17fd77f..771c4f0 100644
+--- a/drivers/power/pcf50633-charger.c
++++ b/drivers/power/pcf50633-charger.c
+@@ -191,9 +191,9 @@ static ssize_t set_usblim(struct device *dev,
+ 	unsigned long ma;
+ 	int ret;
+ 
+-	ret = strict_strtoul(buf, 10, &ma);
++	ret = kstrtoul(buf, 10, &ma);
+ 	if (ret)
 -		return -EINVAL;
-+	ret = kstrtoul(start, 16, &val);
-+	if (ret)
 +		return ret;
  
- 	ret = aat2870->write(aat2870, (u8)addr, (u8)val);
+ 	pcf50633_mbc_usb_curlim_set(mbc->pcf, ma);
+ 
+@@ -228,9 +228,9 @@ static ssize_t set_chglim(struct device *dev,
+ 	if (!mbc->pcf->pdata->charger_reference_current_ma)
+ 		return -ENODEV;
+ 
+-	ret = strict_strtoul(buf, 10, &ma);
++	ret = kstrtoul(buf, 10, &ma);
  	if (ret)
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index a9bb140..9cc1bd3 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -491,7 +491,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
- 	char buf[32];
- 	ssize_t buf_size;
- 	int regp;
--	unsigned long user_reg;
-+	u8 user_reg;
- 	int err;
- 	int i = 0;
- 
-@@ -514,22 +514,20 @@ static ssize_t ab3100_get_set_reg(struct file *file,
- 	/*
- 	 * Advance pointer to end of string then terminate
- 	 * the register string. This is needed to satisfy
--	 * the strict_strtoul() function.
-+	 * the kstrtou8() function.
- 	 */
- 	while ((i < buf_size) && (buf[i] != ' '))
- 		i++;
- 	buf[i] = '\0';
- 
--	err = strict_strtoul(&buf[regp], 16, &user_reg);
-+	err = kstrtou8(&buf[regp], 16, &user_reg);
- 	if (err)
- 		return err;
--	if (user_reg > 0xff)
 -		return -EINVAL;
++		return ret;
  
- 	/* Either we read or we write a register here */
- 	if (!priv->mode) {
- 		/* Reading */
--		u8 reg = (u8) user_reg;
-+		u8 reg = user_reg;
- 		u8 regvalue;
- 
- 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
-@@ -540,7 +538,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
- 	} else {
- 		int valp;
- 		unsigned long user_value;
--		u8 reg = (u8) user_reg;
-+		u8 reg = user_reg;
- 		u8 value;
- 		u8 regvalue;
- 
-@@ -557,11 +555,9 @@ static ssize_t ab3100_get_set_reg(struct file *file,
- 			i++;
- 		buf[i] = '\0';
- 
--		err = strict_strtoul(&buf[valp], 16, &user_value);
-+		err = kstrtoul(&buf[valp], 16, &user_value);
- 		if (err)
- 			return err;
--		if (user_reg > 0xff)
--			return -EINVAL;
- 
- 		value = (u8) user_value;
- 		ab3100_set_register_interruptible(ab3100, reg, value);
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index 37b7ce4..11656c2 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -2757,7 +2757,7 @@ static ssize_t show_irq(struct device *dev,
- 	unsigned int irq_index;
- 	int err;
- 
--	err = strict_strtoul(attr->attr.name, 0, &name);
-+	err = kstrtoul(attr->attr.name, 0, &name);
- 	if (err)
- 		return err;
- 
+ 	mbcc5 = (ma << 8) / mbc->pcf->pdata->charger_reference_current_ma;
+ 	if (mbcc5 > 255)
 -- 
 1.7.10.4
 
