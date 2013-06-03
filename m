@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab3FCLzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 07:55:03 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:62128 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3FCLzA (ORCPT
+	id S1757195Ab3FCL4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 07:56:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35680 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958Ab3FCL4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 07:55:00 -0400
+	Mon, 3 Jun 2013 07:56:03 -0400
+Message-ID: <51AC844C.1050500@linaro.org>
+Date: Mon, 03 Jun 2013 17:25:56 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CACDNBm3WJ_U22uqKuVssV4ntATTHnz_8=pq9_qa33S+eKreKSA@mail.gmail.com>
-References: <1369988485-23176-1-git-send-email-wangxfdu@gmail.com>
-	<CAHp75Veb+FK=5u_HBUp+KNT4__GjbSg1T-kq1tGebDq2pEJOBA@mail.gmail.com>
-	<CACDNBm3WJ_U22uqKuVssV4ntATTHnz_8=pq9_qa33S+eKreKSA@mail.gmail.com>
-Date: Mon, 3 Jun 2013 14:54:59 +0300
-Message-ID: <CAHp75VfeVZRzyW0jKH=oVPPQv3=tmg214D9=tBs0j3_==20UZg@mail.gmail.com>
-Subject: Re: [PATCH] dma: mmp_pdma: support for getting residual bytes
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Xiang Wang <wangxfdu@gmail.com>
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tomasz Figa <t.figa@samsung.com>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, arnd@arndb.de,
+        kgene.kim@samsung.com, olof@lixom.net, patches@linaro.org
+Subject: Re: [PATCH 3/3] ARM: S5P64X0: Remove duplicate uncompress code
+References: <1370000944-19786-1-git-send-email-tushar.behera@linaro.org> <51A9B3BC.9000405@gmail.com> <51AC18FF.9010108@linaro.org> <13570629.4jzYey0dyq@amdc1227>
+In-Reply-To: <13570629.4jzYey0dyq@amdc1227>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 6:22 AM, Xiang Wang <wangxfdu@gmail.com> wrote:
-> 2013/5/31 Andy Shevchenko <andy.shevchenko@gmail.com>:
->> On Fri, May 31, 2013 at 11:21 AM, Xiang Wang <wangxfdu@gmail.com> wrote:
->>> In some of our drivers (e.g. UART) we may stop a running DMA
->>> before it finishes. So we need to know how many bytes have
->>> been transferred.
 >>
->> Couple of comments below.
+>> Tomasz,
 >>
->>> --- a/drivers/dma/mmp_pdma.c
->>> +++ b/drivers/dma/mmp_pdma.c
+>> I had somehow missed that mail.
 >>
->>> @@ -589,7 +638,13 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
->>>                 mmp_pdma_free_desc_list(chan, &chan->chain_pending);
->>>                 mmp_pdma_free_desc_list(chan, &chan->chain_running);
->>>                 spin_unlock_irqrestore(&chan->desc_lock, flags);
->>> -               chan->idle = true;
->>> +               chan->status = DMA_SUCCESS;
->>> +               chan->bytes_residue = 0;
->>> +               break;
->>> +       case DMA_PAUSE:
->>> +               disable_chan(chan->phy);
->>> +               chan->status = DMA_PAUSED;
->>> +               chan->bytes_residue = mmp_pdma_get_bytes_residue(chan);
+>> The patch that I have additionally makes calculation of uart_base
+>> conditional on DEBUG_LL in line with the rest of the patches.
 >>
->> Does it mean user has to do DMA_PAUSE first to get more or less
->> accurate residue?
->> Logically that sound correct, but in general we may allow user to get
->> approximate residue value of on going transfer.
-
-> Your comment makes sense. But if the user is allowed to query the
-> residue value in real-time, we cannot just return a saved value to
-> him.
-
-Right.
-
-> Why I use a saved value (chan->bytes_residue)?
-> In current mmp pdma driver, a phy channel will be freed after the
-> transmission finishes (chan->phy is set to NULL). So we cannot get the
-> physical channel information after we call DMA_TERMINATE_ALL or DMA
-> finishes itself.
-
-I don't see any contradiction to workflow.
-So, If you call device_tx_status() when transfer is completed or
-aborted you will get 0 as a residue, which is correct.
-
-> That is to say, when the use queries the channel information at these
-> points, the chan->phy is usually NULL.
-
->>> @@ -637,7 +692,8 @@ static enum dma_status mmp_pdma_tx_status(struct dma_chan *dchan,
->>>         unsigned long flags;
->>>
->>>         spin_lock_irqsave(&chan->desc_lock, flags);
->>> -       ret = dma_cookie_status(dchan, cookie, txstate);
->>> +       ret = chan->status;
->>> +       dma_set_residue(txstate, chan->bytes_residue);
->>>         spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> Would you mind re-spining your patch with those changes?
 >>
->> Besides my patch which removes this spinlock I think the workflow
->> should be something like
->>
->> status = dma_cookie_status()
->> if status == DMA_SUCCESS or !txstate:
->> return status
->>
->> dma_set_residue()
->> return status
->>
->> Because there is no reason to return residue of successfully finished
->> transfer. It should be 0.
+>> Alternately, I can take your patch and do above modifications in them.
+> 
+> Unfortunately I'm unlikely to find time to do it myself in nearest future, so 
+> feel free to do it. Thanks.
+> 
+> Keep in mind, however, that this patch was a dependency of
+> 
+> [PATCH 0/6] Samsung watchdog support clean-up
+> http://thread.gmane.org/gmane.linux.kernel.samsung-soc/18736/focus=18951
+> 
+> so I would like to keep this series applicable.
+> 
 
-> There is one exception from my point of view. When we are receiving
-> data from peripheral devices, we usually start a DMA transaction with
-> a target length of 4K for example. When a timed-out event occurs in
-> peripheral device, it will notify DMA controller and DMA controller
-> will send out a End of Receive interrupt (Marvell specific?).
+Sure. I will ensure that there is minimal change to the original patch
+that you submitted.
 
-Might be your hardware specifics, in our case we have got a timeout
-interrupt from uart controller.
+> Best regards,
+> 
 
-> In such situation, DMA status is also DMA_SUCCESS. But the residual
-> bytes is not 0 and the user must query it.
 
-Which sounds wrong approach.
-
-P.S. take a look at  drivers/tty/serial/8250/8250_dma.c
-
---
-With Best Regards,
-Andy Shevchenko
+-- 
+Tushar Behera
