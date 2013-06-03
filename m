@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab3FCWXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:23:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34344 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758856Ab3FCWXe (ORCPT
+	id S1759816Ab3FCWVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:21:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32917 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758814Ab3FCWMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:23:34 -0400
-Date: Mon, 3 Jun 2013 23:23:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
-	decompressor
-Message-ID: <20130603222321.GP18614@n2100.arm.linux.org.uk>
-References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AD0703.6050408@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 3 Jun 2013 18:12:01 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=WpD12FY-48YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=N1bbi4PdpE4A:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=5RAGcMhyOaGCbW0FJhMA:9 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=9J5VuaLb3qoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130603221154.654385631@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Jun 2013 18:10:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [15/65] tick: Cleanup NOHZ per cpu data on cpu down
+References: <20130603221016.243553628@goodmis.org>
+Content-Disposition: inline; filename=0015-tick-Cleanup-NOHZ-per-cpu-data-on-cpu-down.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 02:13:39PM -0700, Stephen Boyd wrote:
-> Resending due to rmk's vacation.
-> 
-> On 05/24/13 15:05, Stephen Boyd wrote:
-> > I've noticed another problem now that our caches are used. On MSM
-> > we have TEXT_OFFSET set to at least 0x208000 if we've built-in
-> > support for MSM8x60/8960. If I boot a kernel with the MSM code
-> > built-in that requires the higher text offset, but I load my
-> > compressed kernel below that address (such as 0x0) the
-> > decompression fails.
-> >
-> > This happens because the page tables are written into the
-> > compressed data region before we relocate ourself to a higher
-> > location.
+3.6.11.5 stable review patch.
+If anyone has any objections, please let me know.
 
-We've always required kernel images to be loaded above RAM+32K for
-exactly this issue.
+------------------
 
-> > This is bad because we just wrote our page tables into the
-> > compressed data. Nobody notices though and we finish relocating
-> > ourselves and then we call decompress_kernel() which fails
-> > randomly. (BTW, why does error() sit in a while loop forever?
+From: Thomas Gleixner <tglx@linutronix.de>
 
-It loops forever because there is _nothing_ else to be done.  It's
-already printed a message explaining why stuff has failed:
+[ Upstream commit 4b0c0f294f60abcdd20994a8341a95c8ac5eeb96 ]
 
-void error(char *x)
-{
-        arch_error(x);
+Prarit reported a crash on CPU offline/online. The reason is that on
+CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
+up. If at cpu online an interrupt happens before the per cpu tick
+device is registered the irq_enter() check potentially sees stale data
+and dereferences a NULL pointer.
 
-        putstr("\n\n");
-        putstr(x);
-        putstr("\n\n -- System halted");
+Cleanup the data after the cpu is dead.
 
-        while(1);       /* Halt */
-}
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Cc: Mike Galbraith <bitbucket@online.de>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/time/tick-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and the while loop is to prevent us trying to do something stupid
-after failure.  Basically, error() never returns.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index e430b97..7dba89d 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -909,7 +909,7 @@ void tick_cancel_sched_timer(int cpu)
+ 		hrtimer_cancel(&ts->sched_timer);
+ # endif
+ 
+-	ts->nohz_mode = NOHZ_MODE_INACTIVE;
++	memset(ts, 0, sizeof(*ts));
+ }
+ #endif
+ 
+-- 
+1.7.10.4
 
-I've no idea why you say the following:
 
-> > We
-> > can't get any information about why the decompression failed if
-> > we have debug_ll enabled. I had to patch the error() routine to
-> > not while loop forever to get that print after do_decompress to
-> > be useful.)
-
-Maybe your implementation of puts() for the decompressor is faulty then?
-Because it works for me - when something goes wrong with the decompression,
-I get a message such as:
-
-Decompressing kernel...
-
-CRC error
-
- -- System halted
-
-> > I see a few solutions.
-> >
-> >  1) Relocate with caches off and then turn on caches after we're
-> >     running in a location where we won't overwrite ourselves.
-> >
-> >  2) Have temporary page tables for the relocation phase that live
-> >     just below the location we're going to relocate to.
-> >
-> >  3) Force bootloaders loading these types of images to load the
-> >     zImage at least as high as the TEXT_OFFSET is compiled to.
-> >
-> > I don't think we can convince everyone that #3 is ok to do. I'm
-> > leaning towards #2 since we get all the benefits of the cache
-> > during the relocation phase but #1 is the obviously simple fix.
-
-(3) is what we've always required in the past.  We already have code
-to relocate the compressed image, so we _might_ be able to do (1).
-
-The easy solution is to continue saying "minimum of RAM start + 32K"
-as we've always had in the past though.
