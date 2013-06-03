@@ -1,127 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab3FCXrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:47:33 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:33650 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3FCXrZ convert rfc822-to-8bit (ORCPT
+	id S1758766Ab3FCXxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:53:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26659 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab3FCXxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 19:47:25 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: KY Srinivasan <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Topic: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Index: AQHOYKwt0WWCuQi7zEiY91yfnSwWB5klEP6AgAAGWQCAAAYKgA==
-Date: Mon, 3 Jun 2013 23:47:22 +0000
-Message-ID: <1370303241.2013.21.camel@dabdike.int.hansenpartnership.com>
-References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
-	 <1370301688-27286-1-git-send-email-kys@microsoft.com>
-	 <1370300581.2013.14.camel@dabdike.int.hansenpartnership.com>
-	 <154d86b83ab94931a097c32e1c8e4987@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <154d86b83ab94931a097c32e1c8e4987@SN2PR03MB061.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <77A61E00CA0C5246BB59D166600FC796@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Mon, 3 Jun 2013 19:53:05 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=8UkHzMSrflQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ITzkURZ2-D4A:10 a=X_fZRB_91hZS_PbnhDYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370303581.26799.109.camel@gandalf.local.home>
+Subject: Re: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
+        linux-edac@vger.kernel.org, tony.luck@intel.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Date: Mon, 03 Jun 2013 19:53:01 -0400
+In-Reply-To: <51ACEEB4.1010302@hds.com>
+References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 23:25 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > Sent: Monday, June 03, 2013 7:03 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> > scsi@vger.kernel.org
-> > Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a module
-> > parameter
-> > 
-> > On Mon, 2013-06-03 at 16:21 -0700, K. Y. Srinivasan wrote:
-> > > The standard scsi timeout is not appropriate in some of the environments
-> > where
-> > > Hyper-V is deployed. Set this timeout appropriately for all devices managed
-> > > by this driver. Further make this a module parameter.
-> > >
-> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > ---
-> > >  drivers/scsi/storvsc_drv.c |    9 +++++++++
-> > >  1 files changed, 9 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> > > index 16a3a0c..8d29a95 100644
-> > > --- a/drivers/scsi/storvsc_drv.c
-> > > +++ b/drivers/scsi/storvsc_drv.c
-> > > @@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 * PAGE_SIZE);
-> > >  module_param(storvsc_ringbuffer_size, int, S_IRUGO);
-> > >  MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-> > >
-> > > +/*
-> > > + * Timeout in seconds for all devices managed by this driver.
-> > > + */
-> > > +static int storvsc_timeout = 180;
-> > > +module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
-> > > +MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
-> > > +
-> > >  #define STORVSC_MAX_IO_REQUESTS				128
-> > >
-> > >  /*
-> > > @@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct scsi_device
-> > *sdevice)
-> > >
-> > >  	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
-> > >
-> > > +	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout *
-> > HZ));
-> > 
-> > Why does this need to be a module parameter?  It's already a sysfs one
-> > in the scsi_device class?  Three minutes is also a bit large.  The
-> > default is 30s with huge cache arrays recommending upping this to
-> > 60s ... you're three times this.
-> 
-> James,
-> This number was arrived at based on some testing that was done on the
-> cloud. On our cloud, we have a  120 second
-> timeouts that trigger broader VM level recovery  and in cases where
-> there is storage access issues
-> (which is when we would hit this timeout), it will be better to defer
-> to the fabric level recovery than attempt
-> Scsi level recovery/retry.  The default value chosen for devices
-> managed by storvsc should be just fine, 
+On Mon, 2013-06-03 at 15:29 -0400, Seiji Aguchi wrote:
 
-So are you sure you want to set the command timeout to 3 minutes? ...
-it's an incredibly high value.  The actual complete timeout is this
-value multiplied by the number of retries, which is 5 for disk devices,
-so you'll be waiting up to 15 minutes before we signal a failure in some
-circumstances.  It sounds like you want the actual path length of error
-recovery to be on average 3 minutes.
+Yeah, I believe this does work. But you probably should add a comment
+like the following:
 
-The value of the timeout should be a compromise between the longest time
-you want the user to wait for a failure and the longest time a device
-should take to respond.
+/*
+ * The current_idt_descr_ptr can only be set out of interrupt context
+ * to avoid races. Once set, the load_current_idt() is called by
+interrupt
+ * context either by NMI, debug, or via a smp_call_function(). That way
+ * the IDT will always be set back to the expected descriptor.
+ */
+>  
+> +extern atomic_long_t current_idt_descr_ptr;
+> +static inline void load_current_idt(void)
+> +{
+> +	if (atomic_long_read(&current_idt_descr_ptr))
 
-> I made it a module parameter to have more flexibility.
+Also, we should probably add here:
+		unsigned long new_idt = atomic_long_read(&current_idt_descr_ptr);
 
-It's *already* a sysfs parameter ... why do you want an additional
-module parameter?  Multiple parameters for the same quantity, especially
-ones which can't be altered at runtime like module parameters, end up
-confusing users.
+		if (WARN_ON_ONCE(!validate_idt(new_idt))
+			return;
+		load_idt((const struct desc_ptr *)new_idt);
 
-James
+> +		load_idt((const struct desc_ptr *)
+> +			 atomic_long_read(&current_idt_descr_ptr));
+> +	else
+> +		load_idt((const struct desc_ptr *)&idt_descr);
+> +}
+> +
+
+Then have 
+
+bool validate_idt(unsigned long idt)
+{
+	switch(idt) {
+	case (unsigned long)&trace_idt_descr:
+	case (unsigned long)&idt_descr:
+		return 0;
+	}
+	return -1;
+}
+
+This way we wont be opening up any easy root holes where if a process
+finds a way to modify some arbitrary kernel memory, we can prevent it
+from modifying the current_idt_descr_ptr and have a nice way to exploit
+the IDT. Sure, one can argue that if they can modify arbitrary kernel
+memory, we may already be lost, but lets not make it easier for them
+than need be.
+
+-- Steve
+
 
