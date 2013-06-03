@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3FCTeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:34:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50226 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229Ab3FCTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:34:05 -0400
-Message-ID: <1370288034.19018.1.camel@localhost>
-Subject: Re: [RFC PATCH 1/2] selinux: merge selinux_inode_permission and
- inode_has_perm
-From: Eric Paris <eparis@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: sds@tycho.nsa.gov, linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
-Date: Mon, 03 Jun 2013 15:33:54 -0400
-In-Reply-To: <1370285941-18367-1-git-send-email-eparis@redhat.com>
-References: <1370285941-18367-1-git-send-email-eparis@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758746Ab3FCTgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:36:08 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59363 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab3FCTgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 15:36:06 -0400
+Date: Mon, 3 Jun 2013 14:07:05 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: linux-kernel@vger.kernel.org
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130603180705.GA10200@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1370280485-10047-1-git-send-email-joern@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 14:59 -0400, Eric Paris wrote:
-> selinux_inode_permission had some heavy lifting done to make it more
-> performance polite.  But it still does largely the same thing as
-> inode_has_perm.  So move that work into inode_has_perm and call
-> inode_has_perm from selinux_inode_permission.
+On Mon, 3 June 2013 13:28:03 -0400, Joern Engel wrote:
 > 
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> ---
->  security/selinux/hooks.c | 92 ++++++++++++++++++++++--------------------------
->  1 file changed, 42 insertions(+), 50 deletions(-)
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 5c6f2cd..cfecb52 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
+> Drawback is that object size is growing.  I think an ideal compiler
+> should be able to optimize all the overhead away, but 4.7 just isn't
+> there yet.  Or maybe I just messed up - patches are only
+> compile-tested after all.  Comments/ideas are welcome.
 
-> @@ -1514,6 +1538,14 @@ static int inode_has_perm(const struct cred *cred,
->  	sid = cred_sid(cred);
->  	isec = inode->i_security;
->  
-> +	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
-> +	audited = avc_audit_required(perms, &avd, rc, dontaudit, &denied);
-> +	if (likely(!audited))
-> +		return rc;
-> +
-> +	rc2 = audit_inode_permission(inode, adp, perms, audited, denied, flags);
-> +	if (rc2)
-> +		return rc2;
->  	return avc_has_perm_flags(sid, isec->sid, isec->sclass, perms, adp, flags);
->  }
->  
+Actually, replacing the inline function with a bit of macro hell seems
+to yield identical object size again.  And in the case of
+compression.o, it even removes 528 bytes or so of object code.
 
-Should just return rc, not avc_has_perm_flags().  I fixed that in the
-2/2 patch and this should work just fine.  Kills a little performance,
-but still works.
+New 1/2 below.
 
--Eric
+Jörn
+
+--
+A defeated army first battles and then seeks victory.
+-- Sun Tzu
+
+[PATCH 1/2] list: add list_for_each_entry_del
+
+I have seen a lot of boilerplate code that either follows the pattern of
+	while (!list_empty(head)) {
+		pos = list_entry(head->next, struct foo, list);
+		list_del(pos->list);
+		...
+	}
+or some variant thereof.
+
+With this patch in, people can use
+	list_for_each_entry_del(pos, head, list) {
+		...
+	}
+
+The patch also adds a list_for_each_del variant, even though I have
+only found a single user for that one so far.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ include/linux/list.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 6a1f8df..49325ca 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -483,6 +483,27 @@ static inline void list_splice_tail_init(struct list_head *list,
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+ 
+ /**
++ * list_for_each_remove - iterate over a list, deleting each entry
++ * @pos:	the &struct list_head to use as a loop cursor.
++ * @head:	the head of your list.
++ *
++ * Calls list_del() on pos on each iteration
++ */
++#define list_for_each_del(pos, head) \
++	while (list_empty(head) ? 0 : (pos = (head)->next, list_del(pos), 1))
++
++/**
++ * list_for_each_entry_remove - iterate over a list of given type, deleting each entry
++ * @pos:	the type * to use as loop cursor.
++ * @head:	the head of your list.
++ * @member:	the name of the list_struct within the struct
++ *
++ * Calls list_del() on pos on each iteration
++ */
++#define list_for_each_entry_del(pos, head, member) \
++	while (list_empty(head) ? 0 : (pos = list_first_entry((head), typeof(*pos), member), list_del(&pos->member), 1))
++
++/**
+  * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
+  * @pos:	the type * to use as a loop cursor.
+  * @n:		another type * to use as temporary storage
+-- 
+1.7.10.4
 
