@@ -1,234 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab3FCUhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:37:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45475 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757285Ab3FCUeI (ORCPT
+	id S1757862Ab3FCUig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:38:36 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:59162 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757698Ab3FCUhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:34:08 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Subject: [PATCHv7 08/11] ARM: msm: Divorce msm_timer from local timer API
-Date: Mon,  3 Jun 2013 13:33:59 -0700
-Message-Id: <1370291642-13259-9-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
-In-Reply-To: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
-References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 3 Jun 2013 16:37:32 -0400
+Date: Mon, 3 Jun 2013 13:37:27 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 2/2 v2] sata highbank: add bit-banged SGPIO driver support
+Message-ID: <20130603203727.GB29989@mtj.dyndns.org>
+References: <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
+ <1370266538-14211-1-git-send-email-mark.langsdorf@calxeda.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370266538-14211-1-git-send-email-mark.langsdorf@calxeda.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the msm_timer from the local timer API. This will allow
-us to remove ARM local timer support in the near future and gets
-us closer to moving this driver to drivers/clocksource.
+Hello, Mark.
 
-Acked-by: David Brown <davidb@codeaurora.org>
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
-Cc: Daniel Walker <dwalker@fifo99.com>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/timer.c | 126 +++++++++++++++++++++++++---------------------
- 1 file changed, 70 insertions(+), 56 deletions(-)
+In general, please try to reply to reviews addressing each point.  It
+gives much better sense of what's going on to the reviewer and also
+helps the reviewee to avoid misunderstandings or missing points.
 
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 284313f..df947aa 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/clocksource.h>
- #include <linux/clockchips.h>
-+#include <linux/cpu.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-@@ -25,7 +26,6 @@
- #include <linux/of_irq.h>
- 
- #include <asm/mach/time.h>
--#include <asm/localtimer.h>
- #include <asm/sched_clock.h>
- 
- #include "common.h"
-@@ -49,7 +49,7 @@ static void __iomem *sts_base;
- 
- static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
- {
--	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+	struct clock_event_device *evt = dev_id;
- 	/* Stop the timer tick */
- 	if (evt->mode == CLOCK_EVT_MODE_ONESHOT) {
- 		u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
-@@ -101,18 +101,7 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
- 	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
- }
- 
--static struct clock_event_device msm_clockevent = {
--	.name		= "gp_timer",
--	.features	= CLOCK_EVT_FEAT_ONESHOT,
--	.rating		= 200,
--	.set_next_event	= msm_timer_set_next_event,
--	.set_mode	= msm_timer_set_mode,
--};
--
--static union {
--	struct clock_event_device *evt;
--	struct clock_event_device * __percpu *percpu_evt;
--} msm_evt;
-+static struct clock_event_device __percpu *msm_evt;
- 
- static void __iomem *source_base;
- 
-@@ -138,37 +127,65 @@ static struct clocksource msm_clocksource = {
- 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
--#ifdef CONFIG_LOCAL_TIMERS
-+static int msm_timer_irq;
-+static int msm_timer_has_ppi;
-+
- static int __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
- {
--	/* Use existing clock_event for cpu 0 */
--	if (!smp_processor_id())
--		return 0;
--
--	evt->irq = msm_clockevent.irq;
--	evt->name = "local_timer";
--	evt->features = msm_clockevent.features;
--	evt->rating = msm_clockevent.rating;
-+	int cpu = smp_processor_id();
-+	int err;
-+
-+	evt->irq = msm_timer_irq;
-+	evt->name = "msm_timer";
-+	evt->features = CLOCK_EVT_FEAT_ONESHOT;
-+	evt->rating = 200;
- 	evt->set_mode = msm_timer_set_mode;
- 	evt->set_next_event = msm_timer_set_next_event;
-+	evt->cpumask = cpumask_of(cpu);
-+
-+	clockevents_config_and_register(evt, GPT_HZ, 4, 0xffffffff);
-+
-+	if (msm_timer_has_ppi) {
-+		enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
-+	} else {
-+		err = request_irq(evt->irq, msm_timer_interrupt,
-+				IRQF_TIMER | IRQF_NOBALANCING |
-+				IRQF_TRIGGER_RISING, "gp_timer", evt);
-+		if (err)
-+			pr_err("request_irq failed\n");
-+	}
- 
--	*__this_cpu_ptr(msm_evt.percpu_evt) = evt;
--	clockevents_config_and_register(evt, GPT_HZ, 4, 0xf0000000);
--	enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
- 	return 0;
- }
- 
--static void msm_local_timer_stop(struct clock_event_device *evt)
-+static void __cpuinit msm_local_timer_stop(struct clock_event_device *evt)
- {
- 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
- 	disable_percpu_irq(evt->irq);
- }
- 
--static struct local_timer_ops msm_local_timer_ops __cpuinitdata = {
--	.setup	= msm_local_timer_setup,
--	.stop	= msm_local_timer_stop,
-+static int __cpuinit msm_timer_cpu_notify(struct notifier_block *self,
-+					   unsigned long action, void *hcpu)
-+{
-+	/*
-+	 * Grab cpu pointer in each case to avoid spurious
-+	 * preemptible warnings
-+	 */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		msm_local_timer_setup(this_cpu_ptr(msm_evt));
-+		break;
-+	case CPU_DYING:
-+		msm_local_timer_stop(this_cpu_ptr(msm_evt));
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block msm_timer_cpu_nb __cpuinitdata = {
-+	.notifier_call = msm_timer_cpu_notify,
- };
--#endif /* CONFIG_LOCAL_TIMERS */
- 
- static notrace u32 msm_sched_clock_read(void)
- {
-@@ -178,38 +195,35 @@ static notrace u32 msm_sched_clock_read(void)
- static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
- 				  bool percpu)
- {
--	struct clock_event_device *ce = &msm_clockevent;
- 	struct clocksource *cs = &msm_clocksource;
--	int res;
-+	int res = 0;
-+
-+	msm_timer_irq = irq;
-+	msm_timer_has_ppi = percpu;
-+
-+	msm_evt = alloc_percpu(struct clock_event_device);
-+	if (!msm_evt) {
-+		pr_err("memory allocation failed for clockevents\n");
-+		goto err;
-+	}
- 
--	ce->cpumask = cpumask_of(0);
--	ce->irq = irq;
-+	if (percpu)
-+		res = request_percpu_irq(irq, msm_timer_interrupt,
-+					 "gp_timer", msm_evt);
- 
--	clockevents_config_and_register(ce, GPT_HZ, 4, 0xffffffff);
--	if (percpu) {
--		msm_evt.percpu_evt = alloc_percpu(struct clock_event_device *);
--		if (!msm_evt.percpu_evt) {
--			pr_err("memory allocation failed for %s\n", ce->name);
-+	if (res) {
-+		pr_err("request_percpu_irq failed\n");
-+	} else {
-+		res = register_cpu_notifier(&msm_timer_cpu_nb);
-+		if (res) {
-+			free_percpu_irq(irq, msm_evt);
- 			goto err;
- 		}
--		*__this_cpu_ptr(msm_evt.percpu_evt) = ce;
--		res = request_percpu_irq(ce->irq, msm_timer_interrupt,
--					 ce->name, msm_evt.percpu_evt);
--		if (!res) {
--			enable_percpu_irq(ce->irq, IRQ_TYPE_EDGE_RISING);
--#ifdef CONFIG_LOCAL_TIMERS
--			local_timer_register(&msm_local_timer_ops);
--#endif
--		}
--	} else {
--		msm_evt.evt = ce;
--		res = request_irq(ce->irq, msm_timer_interrupt,
--				  IRQF_TIMER | IRQF_NOBALANCING |
--				  IRQF_TRIGGER_RISING, ce->name, &msm_evt.evt);
-+
-+		/* Immediately configure the timer on the boot CPU */
-+		msm_local_timer_setup(__this_cpu_ptr(msm_evt));
- 	}
- 
--	if (res)
--		pr_err("request_irq failed for %s\n", ce->name);
- err:
- 	writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
- 	res = clocksource_register_hz(cs, dgt_hz);
+> +static DEFINE_SPINLOCK(sgpio_lock);
+> +#define SCLOCK				0
+> +#define SLOAD				1
+> +#define SDATA				2
+> +#define SGPIO_PINS			3
+> +#define SGPIO_PORTS			8
+> +
+> +/* can be cast as an ahci_host_priv for compatibility with most functions */
+
+This sounds awfully scary.  What's going on here?  Are you actually
+overriding ahci_host_priv?  If so, please don't ever do things like
+that.  Do it properly.  Add host_priv->platform_priv or whatever and
+chain the pointer there.  If you're worried about the extra deref,
+update ahci core such that it allows specifying extra size and you can
+embed ahci_host_priv in your own priv.  ie.
+
+	struct ecx_host_priv {
+		struct ahci_host_priv	ahci_priv;	/* must be the first field */
+		/* your own stuff */
+	};
+
+And tell ahci core sizeof(ecx_host_priv) some way, but really, just
+having a plain pointer should be enough, I think.
+
+> +struct ecx_host_priv {
+> +	void __iomem	*mmio;		/* bus-independent mem map */
+> +	unsigned int	flags;		/* AHCI_HFLAG_* */
+> +	u32		cap;		/* cap to use */
+> +	u32		cap2;		/* cap2 to use */
+> +	u32		port_map;	/* port map to use */
+> +	u32		saved_cap;	/* saved initial cap */
+> +	u32		saved_cap2;	/* saved initial cap2 */
+> +	u32		saved_port_map;	/* saved initial port_map */
+> +	u32		em_loc;		/* enclosure management location */
+> +	u32		em_buf_sz;      /* EM buffer size in byte */
+> +	u32		em_msg_type;    /* EM message type */
+> +	struct clk	*clk;		/* Only for platforms supporting clk */
+> +	u32		n_ports;
+> +	unsigned	sgpio_gpio[SGPIO_PINS];
+> +	u32		sgpio_pattern;
+> +	u32		port_to_sgpio[SGPIO_PORTS];
+> +};
+> +
+> +#define SGPIO_SIGNALS			3
+> +#define ECX_ACTIVITY_BITS		0x300000
+> +#define ECX_ACTIVITY_SHIFT		2
+> +#define ECX_LOCATE_BITS		0x80000
+> +#define ECX_LOCATE_SHIFT		1
+> +#define ECX_FAULT_BITS			0x400000
+> +#define ECX_FAULT_SHIFT			0
+> +static inline int sgpio_bit_shift(struct ecx_host_priv *hpriv, u32 port,
+> +				u32 shift)
+> +{
+> +	return 1 << (3 * hpriv->port_to_sgpio[port] + shift);
+> +}
+> +
+> +static void ecx_parse_sgpio(struct ecx_host_priv *hpriv, u32 port, u32 state)
+
+Would be kinda nice to have comment explaining what the function does
+as @state == 0 turns off everything while anything else would just
+turn things on.
+
+> +static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+> +					ssize_t size)
+> +{
+...
+> +	if (!hpriv->em_msg_type & EM_MSG_TYPE_LED)
+> +		return size;
+
+Is this really correct?  You first negate and convert it to bool and
+then bit-wise and it with a mask?  How is supposed to work?
+
+> -	ahci_save_initial_config(dev, hpriv, 0, 0);
+> +	ahci_save_initial_config(dev, (struct ahci_host_priv *) hpriv, 0, 0);
+
+Ugh....... how is this supposed to work?  What if ahci_host_priv grows
+larger than ecx one in the future? :(
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+tejun
