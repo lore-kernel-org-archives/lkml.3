@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab3FCJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:27:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22987 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab3FCJ1H (ORCPT
+	id S1754944Ab3FCJ3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:29:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42615 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3FCJ3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:27:07 -0400
-Date: Mon, 3 Jun 2013 12:26:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mike Miller <mike.miller@hp.com>
-Cc: iss_storagedev@hp.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] cciss: info leak in cciss_ioctl32_passthru()
-Message-ID: <20130603092645.GD16171@debian>
+	Mon, 3 Jun 2013 05:29:30 -0400
+USER-AGENT: Mutt/1.5.21 (2010-09-15)
 MIME-Version: 1.0
+Message-ID: <20130603092725.GE16171@debian>
+Date: Mon, 3 Jun 2013 02:27:25 -0700 (PDT)
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] fanotify: info leak in copy_event_to_user()
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arg64 struct has a hole after ->buf_size which isn't cleared.
-Or if any of the calls to copy_from_user() fail then that would
-cause an information leak as well.
+The ->reserverd field isn't cleared so we leak one byte of stack
+information to userspace.
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 6374dc1..34971aa 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1201,6 +1201,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
- 	int err;
- 	u32 cp;
- 
-+	memset(&arg64, 0, sizeof(arg64));
- 	err = 0;
- 	err |=
- 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 6c80083..77cc85d 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -122,6 +122,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
