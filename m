@@ -1,110 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110Ab3FCEFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 00:05:42 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:35209 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab3FCEFe (ORCPT
+	id S1751197Ab3FCEKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 00:10:19 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49379 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3FCEKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 00:05:34 -0400
-Message-ID: <51AC15FA.4060800@synopsys.com>
-Date: Mon, 3 Jun 2013 09:35:14 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Rob Herring <rob.herring@calxeda.com>, "Rob Landley" <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
-References: <20130530211944.05F4D3E0A90@localhost> <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com> <alpine.LFD.2.02.1305311835040.2905@ionos> <20130531221814.534DF3E08FE@localhost>
-In-Reply-To: <20130531221814.534DF3E08FE@localhost>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.14]
+	Mon, 3 Jun 2013 00:10:13 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-48-51ac1723d1aa
+From: Jingoo Han <jg1.han@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "'Shuah Khan'" <shuah.kh@samsung.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com, rpurdie@rpsys.net, FlorianSchandinat@gmx.de,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        rafael.j.wysocki@intel.com, Jingoo Han <jg1.han@samsung.com>
+References: <1370128047-2444-1-git-send-email-shuah.kh@samsung.com>
+In-reply-to: <1370128047-2444-1-git-send-email-shuah.kh@samsung.com>
+Subject: Re: [PATCH v3] backlight: Convert from Legacy pm ops to dev_pm_ops
+Date: Mon, 03 Jun 2013 13:10:10 +0900
+Message-id: <001a01ce6010$3daaf3c0$b900db40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQK9QIxMUpghtMTMupkAiMbuzB1IwZdFnuOw
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+Zka6y+JpAgxO7JS3mrF/DZtE58xqj
+	xeWFl1gtTvR9YLW4vGsOm8W6hy+YLB6veMtusXvXU1aLL5+5LL7+dLBYP/8WmwO3x85Zd9k9
+	PnyM81i85yWTx6sLd1g8Tsz4zeKxZ/4PVo++LasYPY7f2M7k8XmTXABnFJdNSmpOZllqkb5d
+	AlfGsZ66gpkCFdfbDBoYV/N2MXJySAiYSLzevoERwhaTuHBvPVsXIxeHkMAyRomDf3tYYIoW
+	PZ3MCJFYxCixefdTdgjnF6PErscfmUGq2ATUJL58OQyU4OAQEQiROP0zEaSGWeAjo0T3tcVM
+	IDVCAs4S598dZgOxOQVcJL4d/wa2WljAW6Jl7yo2kF4WAVWJ39esQcK8ApYSxx7PYoWwBSV+
+	TL4HdhCzgJbE5m1NrBC2vMTmNW+ZIQ5VkNhx9jUjRFxEYt+Ld2C2iICRxModR5hB7pEQWMoh
+	cXXbHXaQBIuAgMS3yYdYQPZKCMhKbDoANUdS4uCKGywTGCVmIVk9C8nqWUhWz0KybgEjyypG
+	0dSC5ILipPQiY73ixNzi0rx0veT83E2MkCTQv4Px7gHrQ4zJQOsnMkuJJucDk0heSbyhsZmR
+	hamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgPepaLv3yytjbg
+	c1eiv8W039XbTp5QS1ub4f7YmLtvtd2z11t99zn7Za1Xs2KI447jLC+Zq2JlNI+fcf+OX9VN
+	L2PMLt2YE++752xI6LkwvitzE87V/dK6vWVPzZvYxnb2Wn9GlvR37vu7/jb6yOccillhp/7T
+	tNN8Z9sensUJe74u1bvXu1aJpTgj0VCLuag4EQB2HtZlGAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEKsWRmVeSWpSXmKPExsVy+t9jAV1l8TWBBlPPCFvMWb+GzaJz5jVG
+	i8sLL7FanOj7wGpxedccNot1D18wWTxe8ZbdYveup6wWXz5zWXz96WCxfv4tNgduj52z7rJ7
+	fPgY57F4z0smj1cX7rB4nJjxm8Vjz/wfrB59W1Yxehy/sZ3J4/MmuQDOqAZGm4zUxJTUIoXU
+	vOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygY5UUyhJzSoFCAYnFxUr6
+	dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGcd66gpmClRcbzNoYFzN28XIySEhYCKx6OlkRghb
+	TOLCvfVsXYxcHEICixglNu9+yg7h/GKU2PX4IzNIFZuAmsSXL4eBEhwcIgIhEqd/JoLUMAt8
+	ZJTovraYCaRGSMBZ4vy7w2wgNqeAi8S349/ANggLeEu07F3FBtLLIqAq8fuaNUiYV8BS4tjj
+	WawQtqDEj8n3WEBsZgEtic3bmlghbHmJzWveMkMcqiCx4+xrRoi4iMS+F+/AbBEBI4mVO44w
+	T2AUmoVk1Cwko2YhGTULSfsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEp5pnUDsaV
+	DRaHGAU4GJV4eDu2rwoUYk0sK67MPcQowcGsJMKbvHJ1oBBvSmJlVWpRfnxRaU5q8SHGZKBH
+	JzJLiSbnA9NfXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw
+	ymuyXrO/zXw47lKnSMqWa1+yFEILDj3jebFsua9colj7cqeI+HCPrhQm4z0LnorvUdTbahP3
+	lv9txMsFz3g+xvL2fcgpMuqx2pfCx+pzv7qzs6jywYovM0MEDs2XPGi5edLe08AgDDkuGb/4
+	kUCzbsl/tbN7PnQ5vL7JqBgusj+V++rVq2+VWIozEg21mIuKEwFs2rqWdQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2013 03:48 AM, Grant Likely wrote:
-> On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
->> irq chip.
->>> +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
->>> +{
->>> +	struct irq_domain *domain = irq_desc_get_handler_data(desc);
->>> +
->>> +	generic_handle_irq(irq_find_mapping(domain, irq));
->>> +}
->> ...
->>
->>> +	for (i = 0; i < nrirqs; i++) {
->>> +		unsigned int irq = irq_of_parse_and_map(ictl, i);
->>> +
->>> +		irq_set_handler_data(irq, domain);
->>> +		irq_set_chained_handler(irq, tb10x_irq_cascade);
->>> +	}
->> I might be completely confused, but this does not make any sense at
->> all.
->>
->> You allocate a linear domain and then map the interrupts in the
->> domain. The mapping function retrieves the hardware interrupt number
->> and creates a virtual interrupt number, installs the chip and the
->> handler for the interrupt and finally returns the virtual interrupt
->> number.
->>
->> Now you take that virtual interrupt number and install
->> tb10x_irq_cascade as the handler. irq_set_chained_handler() will
->> startup (unmask) the interrupt right away.
->>
->> In the cascade handler you take the virtual interrupt number, which
->> you get as argument, and find the mapping, i.e. the matching VIRTUAL
->> interrupt number for the VIRTUAL interrupt number and then call the
->> handler.
->>
->> How is this supposed to work?
-> I think what is going on here is that the tb10x interrupt controller
-> appears to be more of a front-end to another interrupt controller with
-> each input wired up 1:1 to the interrupt inputs of the other controller.
-> (I don't know why someone would design an interrupt controller that way,
-> but that's another issue). 
+On Sunday, June 02, 2013 8:07 AM, Shuah Khan wrote:
+> 
+> Convert drivers/video/backlight/class to use dev_pm_ops for power
+> management and remove Legacy PM ops hooks. With this change, backlight
+> class registers suspend/resume callbacks via class->pm (dev_pm_ops)
+> instead of Legacy class->suspend/resume. When __device_suspend() runs
+> call-backs, it will find class->pm ops for the backlight class.
+> 
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> Cc: Shuah Khan <shuahkhan@gmail.com>
 
-Actually ARC700 core has an integrated intc with 32 lines and ability to
-mask/unmask each of the lines, priority/level per line etc. Simpler SoCs don't
-need to have anymore.
+CC'ed Andrew Morton,
 
-> The loop above is mapping each of the
-> interrupt inputs on the parent controller so that each child controller
-> can be chained to it as an input. I can't think of how else it could be
-> set up with the current code if the drivers were kept separate.
->
-> Christian, what is the parent interrupt controller for this SoC? It
-> really feels like the tb10x-ictl belongs as part of the parent
-> controller. I went and looked at the parent node, and I saw this:
->
-> 		intc: interrupt-controller {
-> 				compatible = "snps,arc700-intc";
-> 				interrupt-controller;
-> 				#interrupt-cells = <1>;
-> 		};
->
-> I noticed the conspicuous absence of a reg property. Is this something
-> architectural? 
+It looks good.
 
-Indeed, the intc is not memory mapped. It is accessed via the separate AUX address
-space (and separate r/w instructions) similar to x86 I/O address space.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-> If I were working on this system I'd drop the
-> snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
-> encapsulated the properties of both (you would of course want to share
-> handler functions for the 'normal' inputs without the custom features).
-> That would eliminate the goofyness of listing 27 separate interrupts in
-> the abilis,tb10x-ictl interrupts property.
 
-But how is this different from other systems with a primary in-core intc and a
-cascaded external intc. How do they do it. I guess I need to read up more on this.
+Best regards,
+Jingoo Han
 
--Vineet
+> ---
+> 
+> v2: Updated changelog to correct device class.
+> v3: Updated changelog to correct device class.
+> 
+>  drivers/video/backlight/backlight.c |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> index c74e7aa..0ffb251 100644
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+> @@ -208,7 +208,7 @@ static ssize_t backlight_show_actual_brightness(struct device *dev,
+> 
+>  static struct class *backlight_class;
+> 
+> -static int backlight_suspend(struct device *dev, pm_message_t state)
+> +static int backlight_suspend(struct device *dev)
+>  {
+>  	struct backlight_device *bd = to_backlight_device(dev);
+> 
+> @@ -236,6 +236,9 @@ static int backlight_resume(struct device *dev)
+>  	return 0;
+>  }
+> 
+> +static SIMPLE_DEV_PM_OPS(backlight_class_dev_pm_ops, backlight_suspend,
+> +			 backlight_resume);
+> +
+>  static void bl_device_release(struct device *dev)
+>  {
+>  	struct backlight_device *bd = to_backlight_device(dev);
+> @@ -414,8 +417,7 @@ static int __init backlight_class_init(void)
+>  	}
+> 
+>  	backlight_class->dev_attrs = bl_device_attributes;
+> -	backlight_class->suspend = backlight_suspend;
+> -	backlight_class->resume = backlight_resume;
+> +	backlight_class->pm = &backlight_class_dev_pm_ops;
+>  	return 0;
+>  }
+> 
+> --
+> 1.7.10.4
+> 
+
+
