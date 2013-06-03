@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759681Ab3FCWUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:20:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2298 "EHLO
+	id S1759701Ab3FCWU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:20:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13491 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758844Ab3FCWMI (ORCPT
+	with ESMTP id S1758847Ab3FCWMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 18:12:08 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qjx5VBhp9ksA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=9lB-MH-noSIA:10 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=wMNdZWldAAAA:8 a=ZY_3e3sGf6pazHRnfYUA:9 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ez8N2QTBFYUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=CktM0wh3hBkA:10 a=LpQP-O61AAAA:8 a=VwQbUJbxAAAA:8 a=f3sFeNDE-ck_AaCaTmYA:9 a=YDjxKKMXsvQA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221155.322552777@goodmis.org>
+Message-Id: <20130603221154.480685059@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:35 -0400
+Date: Mon, 03 Jun 2013 18:10:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: <stable@kernel.org>, Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [19/65] powerpc: Bring all threads online prior to migration/hibernation
+Cc: Tirupathi Reddy <tirupath@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [14/65] timer: Dont reinitialize the cpu base lock during CPU_UP_PREPARE
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0019-powerpc-Bring-all-threads-online-prior-to-migration-.patch
+Content-Disposition: inline; filename=0014-timer-Don-t-reinitialize-the-cpu-base-lock-during-CP.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,260 +30,88 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+From: Tirupathi Reddy <tirupath@codeaurora.org>
 
-[ Upstream commit 120496ac2d2d60aee68d3123a68169502a85f4b5 ]
+[ Upstream commit 42a5cf46cd56f46267d2a9fcf2655f4078cd3042 ]
 
-This patch brings online all threads which are present but not online
-prior to migration/hibernation.  After migration/hibernation those
-threads are taken back offline.
+An inactive timer's base can refer to a offline cpu's base.
 
-During migration/hibernation all online CPUs must call H_JOIN, this is
-required by the hypervisor.  Without this patch, threads that are offline
-(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
-deadlocked (all threads either JOIN'd or CEDE'd).
+In the current code, cpu_base's lock is blindly reinitialized each
+time a CPU is brought up. If a CPU is brought online during the period
+that another thread is trying to modify an inactive timer on that CPU
+with holding its timer base lock, then the lock will be reinitialized
+under its feet. This leads to following SPIN_BUG().
 
-Cc: <stable@kernel.org>
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
+<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
+<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
+<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
+<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
+<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
+<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
+<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
+<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
+<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
+<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
+<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
+<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
+<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
+<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
+
+As an example, this particular crash occurred when CPU #3 is executing
+mod_timer() on an inactive timer whose base is refered to offlined CPU
+#2.  The code locked the timer_base corresponding to CPU #2. Before it
+could proceed, CPU #2 came online and reinitialized the spinlock
+corresponding to its base. Thus now CPU #3 held a lock which was
+reinitialized. When CPU #3 finally ended up unlocking the old cpu_base
+corresponding to CPU #2, we hit the above SPIN_BUG().
+
+CPU #0		CPU #3				       CPU #2
+------		-------				       -------
+.....		 ......				      <Offline>
+		mod_timer()
+		 lock_timer_base
+		   spin_lock_irqsave(&base->lock)
+
+cpu_up(2)	 .....				        ......
+							init_timers_cpu()
+....		 .....				    	spin_lock_init(&base->lock)
+.....		   spin_unlock_irqrestore(&base->lock)  ......
+		   <spin_bug>
+
+Allocation of per_cpu timer vector bases is done only once under
+"tvec_base_done[]" check. In the current code, spinlock_initialization
+of base->lock isn't under this check. When a CPU is up each time the
+base lock is reinitialized. Move base spinlock initialization under
+the check.
+
+Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1368520142-4136-1-git-send-email-tirupath@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/powerpc/include/asm/rtas.h          |    2 +
- arch/powerpc/kernel/rtas.c               |  113 ++++++++++++++++++++++++++++++
- arch/powerpc/platforms/pseries/suspend.c |   22 ++++++
- 3 files changed, 137 insertions(+)
+ kernel/timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
-index 557cff8..5e7e008 100644
---- a/arch/powerpc/include/asm/rtas.h
-+++ b/arch/powerpc/include/asm/rtas.h
-@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsigned short hex);
- extern void rtas_initialize(void);
- extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
- extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
-+extern int rtas_online_cpus_mask(cpumask_var_t cpus);
-+extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
- extern int rtas_ibm_suspend_me(struct rtas_args *);
- 
- struct rtc_time;
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index fcec382..225e9f2 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/capability.h>
- #include <linux/delay.h>
-+#include <linux/cpu.h>
- #include <linux/smp.h>
- #include <linux/completion.h>
- #include <linux/cpumask.h>
-@@ -808,6 +809,95 @@ static void rtas_percpu_suspend_me(void *info)
- 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
- }
- 
-+enum rtas_cpu_state {
-+	DOWN,
-+	UP,
-+};
-+
-+#ifndef CONFIG_SMP
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
-+{
-+	if (!cpumask_empty(cpus)) {
-+		cpumask_clear(cpus);
-+		return -EINVAL;
-+	} else
-+		return 0;
-+}
-+#else
-+/* On return cpumask will be altered to indicate CPUs changed.
-+ * CPUs with states changed will be set in the mask,
-+ * CPUs with status unchanged will be unset in the mask. */
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
-+{
-+	int cpu;
-+	int cpuret = 0;
-+	int ret = 0;
-+
-+	if (cpumask_empty(cpus))
-+		return 0;
-+
-+	for_each_cpu(cpu, cpus) {
-+		switch (state) {
-+		case DOWN:
-+			cpuret = cpu_down(cpu);
-+			break;
-+		case UP:
-+			cpuret = cpu_up(cpu);
-+			break;
-+		}
-+		if (cpuret) {
-+			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
-+					__func__,
-+					((state == UP) ? "up" : "down"),
-+					cpu, cpuret);
-+			if (!ret)
-+				ret = cpuret;
-+			if (state == UP) {
-+				/* clear bits for unchanged cpus, return */
-+				cpumask_shift_right(cpus, cpus, cpu);
-+				cpumask_shift_left(cpus, cpus, cpu);
-+				break;
-+			} else {
-+				/* clear bit for unchanged cpu, continue */
-+				cpumask_clear_cpu(cpu, cpus);
-+			}
-+		}
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
-+int rtas_online_cpus_mask(cpumask_var_t cpus)
-+{
-+	int ret;
-+
-+	ret = rtas_cpu_state_change_mask(UP, cpus);
-+
-+	if (ret) {
-+		cpumask_var_t tmp_mask;
-+
-+		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
-+			return ret;
-+
-+		/* Use tmp_mask to preserve cpus mask from first failure */
-+		cpumask_copy(tmp_mask, cpus);
-+		rtas_offline_cpus_mask(tmp_mask);
-+		free_cpumask_var(tmp_mask);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(rtas_online_cpus_mask);
-+
-+int rtas_offline_cpus_mask(cpumask_var_t cpus)
-+{
-+	return rtas_cpu_state_change_mask(DOWN, cpus);
-+}
-+EXPORT_SYMBOL(rtas_offline_cpus_mask);
-+
- int rtas_ibm_suspend_me(struct rtas_args *args)
- {
- 	long state;
-@@ -815,6 +905,8 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
- 	struct rtas_suspend_me_data data;
- 	DECLARE_COMPLETION_ONSTACK(done);
-+	cpumask_var_t offline_mask;
-+	int cpuret;
- 
- 	if (!rtas_service_present("ibm,suspend-me"))
- 		return -ENOSYS;
-@@ -838,11 +930,24 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 		return 0;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 46ef2b1..4cefc08 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1692,12 +1692,12 @@ static int __cpuinit init_timers_cpu(int cpu)
+ 			boot_done = 1;
+ 			base = &boot_tvec_bases;
+ 		}
++		spin_lock_init(&base->lock);
+ 		tvec_base_done[cpu] = 1;
+ 	} else {
+ 		base = per_cpu(tvec_bases, cpu);
  	}
  
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	atomic_set(&data.working, 0);
- 	atomic_set(&data.done, 0);
- 	atomic_set(&data.error, 0);
- 	data.token = rtas_token("ibm,suspend-me");
- 	data.complete = &done;
-+
-+	/* All present CPUs must be online */
-+	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
-+	cpuret = rtas_online_cpus_mask(offline_mask);
-+	if (cpuret) {
-+		pr_err("%s: Could not bring present CPUs online.\n", __func__);
-+		atomic_set(&data.error, cpuret);
-+		goto out;
-+	}
-+
- 	stop_topology_update();
+-	spin_lock_init(&base->lock);
  
- 	/* Call function on all CPUs.  One of us will make the
-@@ -858,6 +963,14 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 
- 	start_topology_update();
- 
-+	/* Take down CPUs not online prior to suspend */
-+	cpuret = rtas_offline_cpus_mask(offline_mask);
-+	if (cpuret)
-+		pr_warn("%s: Could not restore CPUs to offline state.\n",
-+				__func__);
-+
-+out:
-+	free_cpumask_var(offline_mask);
- 	return atomic_read(&data.error);
- }
- #else /* CONFIG_PPC_PSERIES */
-diff --git a/arch/powerpc/platforms/pseries/suspend.c b/arch/powerpc/platforms/pseries/suspend.c
-index 47226e0..5f997e7 100644
---- a/arch/powerpc/platforms/pseries/suspend.c
-+++ b/arch/powerpc/platforms/pseries/suspend.c
-@@ -16,6 +16,7 @@
-   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-   */
- 
-+#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/suspend.h>
- #include <linux/stat.h>
-@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct device *dev,
- 			       struct device_attribute *attr,
- 			       const char *buf, size_t count)
- {
-+	cpumask_var_t offline_mask;
- 	int rc;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	stream_id = simple_strtoul(buf, NULL, 16);
- 
- 	do {
-@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct device *dev,
- 	} while (rc == -EAGAIN);
- 
- 	if (!rc) {
-+		/* All present CPUs must be online */
-+		cpumask_andnot(offline_mask, cpu_present_mask,
-+				cpu_online_mask);
-+		rc = rtas_online_cpus_mask(offline_mask);
-+		if (rc) {
-+			pr_err("%s: Could not bring present CPUs online.\n",
-+					__func__);
-+			goto out;
-+		}
-+
- 		stop_topology_update();
- 		rc = pm_suspend(PM_SUSPEND_MEM);
- 		start_topology_update();
-+
-+		/* Take down CPUs not online prior to suspend */
-+		if (!rtas_offline_cpus_mask(offline_mask))
-+			pr_warn("%s: Could not restore CPUs to offline "
-+					"state.\n", __func__);
- 	}
- 
- 	stream_id = 0;
- 
- 	if (!rc)
- 		rc = count;
-+out:
-+	free_cpumask_var(offline_mask);
- 	return rc;
- }
- 
+ 	for (j = 0; j < TVN_SIZE; j++) {
+ 		INIT_LIST_HEAD(base->tv5.vec + j);
 -- 
 1.7.10.4
 
