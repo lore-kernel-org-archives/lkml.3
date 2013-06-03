@@ -1,224 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab3FCPCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:02:50 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46303 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757296Ab3FCPCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:02:48 -0400
-Date: Mon, 3 Jun 2013 11:01:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, metin d <metdos@yahoo.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 10/10] mm: workingset: keep shadow entries in check
-Message-ID: <20130603150154.GE15576@cmpxchg.org>
-References: <1369937046-27666-1-git-send-email-hannes@cmpxchg.org>
- <1369937046-27666-11-git-send-email-hannes@cmpxchg.org>
- <20130603082209.GG5910@twins.programming.kicks-ass.net>
+	id S1758599Ab3FCPC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:02:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36408 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab3FCPCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 11:02:53 -0400
+Date: Mon, 3 Jun 2013 08:02:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v4 3/6] staging: android: binder: fix
+ BINDER_SET_MAX_THREADS declaration
+Message-ID: <20130603150252.GA2334@kroah.com>
+References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
+ <1369217581-16285-4-git-send-email-serban.constantinescu@arm.com>
+ <CAMP5XgeBsr63tcHxoMb2D5dJPuetyLnxNVi8_2V0FM69+AwFbQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130603082209.GG5910@twins.programming.kicks-ass.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5XgeBsr63tcHxoMb2D5dJPuetyLnxNVi8_2V0FM69+AwFbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 10:22:09AM +0200, Peter Zijlstra wrote:
-> On Thu, May 30, 2013 at 02:04:06PM -0400, Johannes Weiner wrote:
-> > 2. a list of files that contain shadow entries is maintained.  If the
-> >    global number of shadows exceeds a certain threshold, a shrinker is
-> >    activated that reclaims old entries from the mappings.  This is
-> >    heavy-handed but it should not be a common case and is only there
-> >    to protect from accidentally/maliciously induced OOM kills.
+On Fri, May 31, 2013 at 04:17:34PM -0700, Arve Hjønnevåg wrote:
+> On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
+> <serban.constantinescu@arm.com> wrote:
+> > This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
+> > instead of size_t for setting the max threads. Thus using the same
+> > handler for 32 and 64bit kernels.
+> >
+> > This value is stored internally in struct binder_proc and set to 15
+> > on open_binder() in the libbinder API(thus no need for a 64bit size_t
+> > on 64bit platforms).
+> >
+> > The change does not affect existing 32bit ABI.
+> >
+> > Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> > ---
+> >  drivers/staging/android/binder.h |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+> > index 2f94d16..1761541 100644
+> > --- a/drivers/staging/android/binder.h
+> > +++ b/drivers/staging/android/binder.h
+> > @@ -86,7 +86,7 @@ struct binder_version {
+> >
+> >  #define BINDER_WRITE_READ              _IOWR('b', 1, struct binder_write_read)
+> >  #define        BINDER_SET_IDLE_TIMEOUT         _IOW('b', 3, __s64)
+> > -#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, size_t)
+> > +#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, __u32)
+> >  #define        BINDER_SET_IDLE_PRIORITY        _IOW('b', 6, __s32)
+> >  #define        BINDER_SET_CONTEXT_MGR          _IOW('b', 7, __s32)
+> >  #define        BINDER_THREAD_EXIT              _IOW('b', 8, __s32)
+> > --
+> > 1.7.9.5
+> >
 > 
-> Grrr.. another global files list. We've been trying rather hard to get
-> rid of the first one :/
-> 
-> I see why you want it but ugh.
+> Acked-by: Arve Hjønnevåg <arve@android.com>
 
-I'll try to make it per-SB like the inode list.  It probably won't be
-per-SB shrinkers because of the global nature of the shadow limit, but
-at least per-SB inode lists should be doable.
+What about patches 1 and 2 in this series?
 
-> I have similar worries for your global time counter, large machines
-> might thrash on that one cacheline.
+thanks,
 
-Fair enough.
-
-So I'm trying the following idea: instead of the global time counter,
-have per-zone time counters and store the zone along with those local
-timestamps in the shadow entries (nid | zid | time).  On refault, we
-can calculate the zone-local distance first and then use the inverse
-of the zone's eviction proportion to scale it to a global distance.
-
-Delta for 9/10:
-
----
- include/linux/mmzone.h |  1 +
- mm/workingset.c        | 74 ++++++++++++++++++++++++++++++--------------------
- 2 files changed, 46 insertions(+), 29 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 505bd80..24e9805 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -206,6 +206,7 @@ struct zone_reclaim_stat {
- struct lruvec {
- 	struct list_head lists[NR_LRU_LISTS];
- 	struct zone_reclaim_stat reclaim_stat;
-+	atomic_long_t workingset_time;
- 	struct prop_local_percpu evictions;
- 	long shrink_active;
- #ifdef CONFIG_MEMCG
-diff --git a/mm/workingset.c b/mm/workingset.c
-index 7986aa4..5fd7277 100644
---- a/mm/workingset.c
-+++ b/mm/workingset.c
-@@ -85,27 +85,10 @@
-  */
- 
- /*
-- * Monotonic workingset clock for non-resident pages.
-- *
-- * The refault distance of a page is the number of ticks that occurred
-- * between that page's eviction and subsequent refault.
-- *
-- * Every page slot that is taken away from the inactive list is one
-- * more slot the inactive list would have to grow again in order to
-- * hold the current non-resident pages in memory as well.
-- *
-- * As the refault distance needs to reflect the space missing on the
-- * inactive list, the workingset time is advanced every time the
-- * inactive list is shrunk.  This means eviction, but also activation.
-- */
--static atomic_long_t workingset_time;
--
--/*
-  * Workingset clock snapshots are stored in the page cache radix tree
-  * as exceptional entries (shadows).
-  */
- #define EV_SHIFT	RADIX_TREE_EXCEPTIONAL_SHIFT
--#define EV_MASK		(~0UL >> EV_SHIFT)
- 
- /*
-  * Per-zone proportional eviction counter to keep track of recent zone
-@@ -115,12 +98,12 @@ static struct prop_descriptor global_evictions;
- 
- void *workingset_eviction(struct address_space *mapping, struct page *page)
- {
-+	struct zone *zone = page_zone(page);
- 	struct lruvec *lruvec;
- 	unsigned long time;
- 
--	time = atomic_long_inc_return(&workingset_time);
--
--	lruvec = mem_cgroup_zone_lruvec(page_zone(page), NULL);
-+	lruvec = mem_cgroup_zone_lruvec(zone, NULL);
-+	time = atomic_long_inc_return(&lruvec->workingset_time);
- 	prop_inc_percpu(&global_evictions, &lruvec->evictions);
- 
- 	/*
-@@ -132,21 +115,57 @@ void *workingset_eviction(struct address_space *mapping, struct page *page)
- 	if (mapping_exiting(mapping))
- 		return NULL;
- 
-+	time = (time << NODES_SHIFT) | zone->node;
-+	time = (time << ZONES_SHIFT) | zone_idx(zone);
-+
- 	return (void *)((time << EV_SHIFT) | RADIX_TREE_EXCEPTIONAL_ENTRY);
- }
- 
--unsigned long workingset_refault_distance(struct page *page)
-+static void lruvec_refault_distance(unsigned long shadow,
-+				    struct lruvec **lruvec,
-+				    unsigned long *distance)
- {
- 	unsigned long time_of_eviction;
-+	struct zone *zone;
- 	unsigned long now;
-+	int zid, nid;
-+
-+	shadow >>= EV_SHIFT;
-+	zid = shadow & ((1UL << ZONES_SHIFT) - 1);
-+	shadow >>= ZONES_SHIFT;
-+	nid = shadow & ((1UL << NODES_SHIFT) - 1);
-+	shadow >>= NODES_SHIFT;
-+	time_of_eviction = shadow;
-+	zone = NODE_DATA(nid)->node_zones + zid;
-+
-+	*lruvec = mem_cgroup_zone_lruvec(zone, NULL);
-+
-+	now = atomic_long_read(&(*lruvec)->workingset_time);
-+
-+	*distance = (now - time_of_eviction) &
-+		(~0UL >> (EV_SHIFT + ZONES_SHIFT + NODES_SHIFT));
-+}
-+
-+unsigned long workingset_refault_distance(struct page *page)
-+{
-+	unsigned long refault_distance;
-+	unsigned long lruvec_distance;
-+	struct lruvec *lruvec;
-+	long denominator;
-+	long numerator;
- 
- 	if (!page)
- 		return ~0UL;
- 
- 	BUG_ON(!radix_tree_exceptional_entry(page));
--	time_of_eviction = (unsigned long)page >> EV_SHIFT;
--	now = atomic_long_read(&workingset_time);
--	return (now - time_of_eviction) & EV_MASK;
-+	lruvec_refault_distance((unsigned long)page,
-+				&lruvec, &lruvec_distance);
-+	prop_fraction_percpu(&global_evictions, &lruvec->evictions,
-+			     &numerator, &denominator);
-+	if (!numerator)
-+		numerator = 1;
-+	refault_distance = mult_frac(lruvec_distance, denominator, numerator);
-+	return refault_distance;
- }
- EXPORT_SYMBOL(workingset_refault_distance);
- 
-@@ -187,8 +206,7 @@ void workingset_zone_balance(struct zone *zone, unsigned long refault_distance)
- 	 */
- 	prop_fraction_percpu(&global_evictions, &lruvec->evictions,
- 			     &numerator, &denominator);
--	missing = refault_distance * numerator;
--	do_div(missing, denominator);
-+	missing = mult_frac(refault_distance, numerator, denominator);
- 
- 	/*
- 	 * Protected pages should be challenged when the refault
-@@ -207,9 +225,6 @@ void workingset_zone_balance(struct zone *zone, unsigned long refault_distance)
- void workingset_activation(struct page *page)
- {
- 	struct lruvec *lruvec;
--
--	atomic_long_inc(&workingset_time);
--
- 	/*
- 	 * The lists are rebalanced when the inactive list is observed
- 	 * to be too small for activations.  An activation means that
-@@ -217,6 +232,7 @@ void workingset_activation(struct page *page)
- 	 * page, so back off further deactivation.
- 	 */
- 	lruvec = mem_cgroup_zone_lruvec(page_zone(page), NULL);
-+	atomic_long_inc(&lruvec->workingset_time);
- 	if (lruvec->shrink_active > 0)
- 		lruvec->shrink_active--;
- }
--- 
-1.8.2.3
-
+greg k-h
