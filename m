@@ -1,247 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3FCJlK (ORCPT <rfc822;w@1wt.eu>);
+	id S1756685Ab3FCJlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:41:16 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30744 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab3FCJlK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jun 2013 05:41:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab3FCJlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:41:08 -0400
-Date: Mon, 3 Jun 2013 11:42:01 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH RFC -tip 2/6] perf/x86: IRQ-bound performance events
-Message-ID: <20130603094200.GD30878@dhcp-26-207.brq.redhat.com>
-References: <cover.1370251263.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1370251263.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-AuditID: cbfee690-b7f6f6d00000740c-89-51ac64b4d8fa
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Marc Zyngier'" <marc.zyngier@arm.com>,
+        "'Stephen Boyd'" <sboyd@codeaurora.org>
+Cc: "'John Stultz'" <john.stultz@linaro.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "'Mark Rutland'" <Mark.Rutland@arm.com>,
+        "'Barry Song'" <baohua.song@csr.com>,
+        "'Daniel Walker'" <dwalker@fifo99.com>,
+        "'Bryan Huntsman'" <bryanh@codeaurora.org>,
+        "'Tony Lindgren'" <tony@atomide.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Daniel Lezcano'" <daniel.lezcano@linaro.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>
+References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
+ <20130531174526.GD599@codeaurora.org> <51A8E71D.1000407@linaro.org>
+ <20130531221633.GG599@codeaurora.org> <51AC59AB.4080802@arm.com>
+In-reply-to: <51AC59AB.4080802@arm.com>
+Subject: RE: [PATCHv6 00/11] Remove ARM local timer API
+Date: Mon, 03 Jun 2013 18:41:08 +0900
+Message-id: <049801ce603e$79aad240$6d0076c0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5gN+pCmyiYq84RStS4h0Kgp/2HwwABi1ow
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t8zfd0tKWsCDfY9MLU49mULm8XfScfY
+	LV7OvMpq8e/YFCaLeZ9lLaYua2O1OPNb12LT42usFhP3n2W3uLxrDlDpnX9sFkuvX2Sy+HGm
+	m8Vi86apzBbHZixhtNh/xctBwGPNvDWMHr9/TWL0+PZ1EovH5b5eJo9dO+ewepyevJ/FY9Oq
+	TjaPO9f2sHm8O3eO3WPzknqPz5vkArijuGxSUnMyy1KL9O0SuDLaFr5mKWjmqLgz/yprA+NC
+	ti5GTg4JAROJppk/mSFsMYkL99YDxbk4hASWMUr8X7KFFabo1uHnLBCJ6YwSX1++YYZw/jJK
+	tOydzAhSxSagIXH4/TN2EFtEIEDi941bYGOZBSaySFzaoQHRcIZR4tKnVWANnALqElcap4PZ
+	wgLmEh9XrAOzWQRUJSY0HAOzeQVsJc5/XsoEYQtK/Jh8jwViqJbE+p3HmSBseYnNa94CLeMA
+	OlVd4tFfXYgbjCS292xhgygRkdj34h0jyA0SAhc4JL4tX8YCsUtA4tvkQywQvbISmw5Ag0JS
+	4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiE73ixNzi0rx0veT83E2MkHQy
+	YQfjvQPWhxiTgdZPZJYSTc4HpqO8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NT
+	C1KL4otKc1KLDzEycXBKNTC6NUYX/t91yaZBQelymJmzgzBbR/jVOZ89s85NWnD3TatKSqDU
+	EwulNpk/IaKHN1W9Dc7cnJB6z4A7SHt3mNiceU5zVDz8LBz/e/W3KokwJTLHvM6T6N0vNOuY
+	D4ODWaXk8Tib2L+Rp66oz7+us9Nqx4otN5a/eV8x0dWMc+FTR1OLqSzrnJRYijMSDbWYi4oT
+	AUsgLKE9AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnk+LIzCtJLcpLzFFi42I5/e+xoO6WlDWBBrt+6Fsc+7KFzeLvpGPs
+	Fi9nXmW1+HdsCpPFvM+yFlOXtbFanPmta7Hp8TVWi4n7z7JbXN41B6j0zj82i6XXLzJZ/DjT
+	zWKxedNUZotjM5YwWuy/4uUg4LFm3hpGj9+/JjF6fPs6icXjcl8vk8eunXNYPU5P3s/isWlV
+	J5vHnWt72DzenTvH7rF5Sb3H501yAdxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6
+	hpYW5koKeYm5qbZKLj4Bum6ZOUDvKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEy
+	QAMJ6xgz2ha+Zilo5qi4M/8qawPjQrYuRk4OCQETiVuHn7NA2GISF+6tB4pzcQgJTGeU+Pry
+	DTOE85dRomXvZEaQKjYBDYnD75+xg9giAgESv2/cYgaxmQUmskhc2qEB0XCGUeLSp1VgDZwC
+	6hJXGqeD2cIC5hIfV6wDs1kEVCUmNBwDs3kFbCXOf17KBGELSvyYfI8FYqiWxPqdx5kgbHmJ
+	zWveAi3jADpVXeLRX12IG4wktvdsYYMoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSia
+	WpBcUJyUnmukV5yYW1yal66XnJ+7iRGcrJ5J72Bc1WBxiFGAg1GJhzfAY02gEGtiWXFl7iFG
+	CQ5mJRHeK4FAId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HJtK8knhDYxMzI0sjMwsjE3Nz
+	0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDkNbORZxTSuBd95uOJNtvdQtsW7zsQXMO4
+	Xd9nef5N98P7/+3O8chTVEv8sIW1iud8mobUvS5lyYzfPY5h/2yVMv+IpIXfdDnUGfJ+UtPH
+	X7eEL8iXGf6sy7m44f5Ph9+/lXfwT2Tcui3fzcxs+7wpppansgJOKZyIfNp1QC5zvUvyN+db
+	fy2VWIozEg21mIuKEwE3qMQ1mgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic changes to x86 performance framework to further enable
-implementations of IRQ-bound performance events.
+Marc Zyngier wrote:
+> 
+> On 31/05/13 23:16, Stephen Boyd wrote:
+> > On 05/31, John Stultz wrote:
+> >> On 05/31/2013 10:45 AM, Stephen Boyd wrote:
+> >>> Comments have been light for this round so I think we're about
+> >>> ready to merge. John/Thomas, can you pick up these patches or
+> >>> shall I route them through arm-soc or something else?
+> >>
+> >>
+> >> So there looks to be a fair amount of additions in the ARM tree, do
+> >> those already have acks from Arnd/Olof/other folks? (I think I was
+> >> only cc'ed on the first two patches).
+> >
+> > I'm still missing acks from Kukjin and Barry.
+> 
+Stephen, I replied on exynos stuff in this series.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.c       |   33 +++++++++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event.h       |    5 ++++
- arch/x86/kernel/cpu/perf_event_amd.c   |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c |    4 +++
- arch/x86/kernel/cpu/perf_event_knc.c   |    2 +
- arch/x86/kernel/cpu/perf_event_p4.c    |    2 +
- arch/x86/kernel/cpu/perf_event_p6.c    |    2 +
- 7 files changed, 47 insertions(+), 3 deletions(-)
+> I don't think that should hold off the patch series. It's been tested on
+> most other platforms over the course of several months. If the platform
+> maintainers aren't responsive enough, fixing the issues becomes their
+> problem.
+> 
+Marc, I understand what you're saying. Let me look at the regarding exynos
+stuff carefully.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 1025f3c..d02842d 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -525,6 +525,11 @@ static void x86_pmu_disable(struct pmu *pmu)
- 	x86_pmu.disable_all();
- }
- 
-+static void x86_pmu__disable_irq(struct pmu *pmu, int irq)
-+{
-+	x86_pmu.disable_irq(irq);
-+}
-+
- void x86_pmu_enable_all(int added)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -540,6 +545,10 @@ void x86_pmu_enable_all(int added)
- 	}
- }
- 
-+void x86_pmu_enable_irq_nop_int(int irq)
-+{
-+}
-+
- static struct pmu pmu;
- 
- static inline int is_x86_event(struct perf_event *event)
-@@ -920,6 +929,11 @@ static void x86_pmu_enable(struct pmu *pmu)
- 	x86_pmu.enable_all(added);
- }
- 
-+static void x86_pmu__enable_irq(struct pmu *pmu, int irq)
-+{
-+	x86_pmu.enable_irq(irq);
-+}
-+
- static DEFINE_PER_CPU(u64 [X86_PMC_IDX_MAX], pmc_prev_left);
- 
- /*
-@@ -1065,7 +1079,12 @@ static void x86_pmu_start(struct perf_event *event, int flags)
- 	event->hw.state = 0;
- 
- 	cpuc->events[idx] = event;
--	__set_bit(idx, cpuc->active_mask);
-+	if (is_interrupt_event(event)) {
-+		__set_bit(idx, cpuc->actirq_mask);
-+		perf_event_irq_add(event);
-+	} else {
-+		__set_bit(idx, cpuc->active_mask);
-+	}
- 	__set_bit(idx, cpuc->running);
- 	x86_pmu.enable(event);
- 	perf_event_update_userpage(event);
-@@ -1102,6 +1121,7 @@ void perf_event_print_debug(void)
- 		pr_info("CPU#%d: pebs:       %016llx\n", cpu, pebs);
- 	}
- 	pr_info("CPU#%d: active:     %016llx\n", cpu, *(u64 *)cpuc->active_mask);
-+	pr_info("CPU#%d: actirq:     %016llx\n", cpu, *(u64 *)cpuc->actirq_mask);
- 
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
- 		rdmsrl(x86_pmu_config_addr(idx), pmc_ctrl);
-@@ -1130,8 +1150,11 @@ void x86_pmu_stop(struct perf_event *event, int flags)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 
--	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
-+	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask) ||
-+	    __test_and_clear_bit(hwc->idx, cpuc->actirq_mask)) {
- 		x86_pmu.disable(event);
-+		if (unlikely(is_interrupt_event(event)))
-+			perf_event_irq_del(event);
- 		cpuc->events[hwc->idx] = NULL;
- 		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
- 		hwc->state |= PERF_HES_STOPPED;
-@@ -1199,7 +1222,8 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
--		if (!test_bit(idx, cpuc->active_mask)) {
-+		if (!test_bit(idx, cpuc->active_mask) &&
-+		    !test_bit(idx, cpuc->actirq_mask)) {
- 			/*
- 			 * Though we deactivated the counter some cpus
- 			 * might still deliver spurious interrupts still
-@@ -1826,6 +1850,9 @@ static struct pmu pmu = {
- 	.pmu_enable		= x86_pmu_enable,
- 	.pmu_disable		= x86_pmu_disable,
- 
-+	.pmu_enable_irq		= x86_pmu__enable_irq,
-+	.pmu_disable_irq	= x86_pmu__disable_irq,
-+
- 	.attr_groups		= x86_pmu_attr_groups,
- 
- 	.event_init		= x86_pmu_event_init,
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index ba9aadf..9dd59a9 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -125,6 +125,7 @@ struct cpu_hw_events {
- 	 */
- 	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
- 	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-+	unsigned long		actirq_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	int			enabled;
- 
-@@ -345,6 +346,8 @@ struct x86_pmu {
- 	int		(*handle_irq)(struct pt_regs *);
- 	void		(*disable_all)(void);
- 	void		(*enable_all)(int added);
-+	void		(*disable_irq)(int irq);
-+	void		(*enable_irq)(int irq);
- 	void		(*enable)(struct perf_event *);
- 	void		(*disable)(struct perf_event *);
- 	int		(*hw_config)(struct perf_event *event);
-@@ -528,6 +531,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
- 
- void x86_pmu_enable_all(int added);
- 
-+void x86_pmu_enable_irq_nop_int(int irq);
-+
- int perf_assign_events(struct event_constraint **constraints, int n,
- 			int wmin, int wmax, int *assign);
- int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 4cbe032..74f123a 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -622,6 +622,8 @@ static __initconst const struct x86_pmu amd_pmu = {
- 	.handle_irq		= x86_pmu_handle_irq,
- 	.disable_all		= x86_pmu_disable_all,
- 	.enable_all		= x86_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= x86_pmu_enable_event,
- 	.disable		= x86_pmu_disable_event,
- 	.hw_config		= amd_pmu_hw_config,
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f60d41f..74f8652 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1676,6 +1676,8 @@ static __initconst const struct x86_pmu core_pmu = {
- 	.handle_irq		= x86_pmu_handle_irq,
- 	.disable_all		= x86_pmu_disable_all,
- 	.enable_all		= core_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= core_pmu_enable_event,
- 	.disable		= x86_pmu_disable_event,
- 	.hw_config		= x86_pmu_hw_config,
-@@ -1818,6 +1820,8 @@ static __initconst const struct x86_pmu intel_pmu = {
- 	.handle_irq		= intel_pmu_handle_irq,
- 	.disable_all		= intel_pmu_disable_all,
- 	.enable_all		= intel_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= intel_pmu_enable_event,
- 	.disable		= intel_pmu_disable_event,
- 	.hw_config		= intel_pmu_hw_config,
-diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
-index 838fa87..a2bfc16 100644
---- a/arch/x86/kernel/cpu/perf_event_knc.c
-+++ b/arch/x86/kernel/cpu/perf_event_knc.c
-@@ -289,6 +289,8 @@ static const struct x86_pmu knc_pmu __initconst = {
- 	.handle_irq		= knc_pmu_handle_irq,
- 	.disable_all		= knc_pmu_disable_all,
- 	.enable_all		= knc_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= knc_pmu_enable_event,
- 	.disable		= knc_pmu_disable_event,
- 	.hw_config		= x86_pmu_hw_config,
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 3486e66..3665e48 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1286,6 +1286,8 @@ static __initconst const struct x86_pmu p4_pmu = {
- 	.handle_irq		= p4_pmu_handle_irq,
- 	.disable_all		= p4_pmu_disable_all,
- 	.enable_all		= p4_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= p4_pmu_enable_event,
- 	.disable		= p4_pmu_disable_event,
- 	.eventsel		= MSR_P4_BPU_CCCR0,
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index b1e2fe1..7328dae 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -202,6 +202,8 @@ static __initconst const struct x86_pmu p6_pmu = {
- 	.handle_irq		= x86_pmu_handle_irq,
- 	.disable_all		= p6_pmu_disable_all,
- 	.enable_all		= p6_pmu_enable_all,
-+	.disable_irq		= x86_pmu_enable_irq_nop_int,
-+	.enable_irq		= x86_pmu_enable_irq_nop_int,
- 	.enable			= p6_pmu_enable_event,
- 	.disable		= p6_pmu_disable_event,
- 	.hw_config		= x86_pmu_hw_config,
--- 
-1.7.7.6
+Thanks.
 
+- Kukjin
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
