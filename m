@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab3FCQIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:08:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11871 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab3FCQIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:08:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,794,1363158000"; 
-   d="scan'208";a="344094051"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <51ACBBEA.2040804@sr71.net>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-24-git-send-email-kirill.shutemov@linux.intel.com>
- <519BEFAE.1080800@sr71.net>
- <20130603150214.54C34E0090@blue.fi.intel.com>
- <51ACBBEA.2040804@sr71.net>
-Subject: Re: [PATCHv4 23/39] thp: wait_split_huge_page(): serialize over
- i_mmap_mutex too
+	id S1759290Ab3FCQM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:12:27 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:52929 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756694Ab3FCQMZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:12:25 -0400
+Message-ID: <51ACC066.1010902@semaphore.gr>
+Date: Mon, 03 Jun 2013 19:12:22 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
+References: <51A7BFA6.3070800@semaphore.gr> <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com> <CAKohpo=EyudEW+EX=b7=Wp-7ceqjVksDTwwSJf77_LNFaaNL3w@mail.gmail.com> <2413427.Abjbfkms0Z@vostro.rjw.lan> <CAKohpomLkogSHD+5Wobb34qHPnb7_vWE1Xz4K5MD=Q50kOpfuA@mail.gmail.com>
+In-Reply-To: <CAKohpomLkogSHD+5Wobb34qHPnb7_vWE1Xz4K5MD=Q50kOpfuA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130603160920.737A1E0090@blue.fi.intel.com>
-Date: Mon,  3 Jun 2013 19:09:20 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
+On 06/03/2013 02:24 PM, Viresh Kumar wrote:
+> On 3 June 2013 16:27, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> The question is if we want policy->max to re-scale them effectively (i.e. to
+>> change weights so that the maximum load maps to the highest frequency available
+>> at the moment) or if we want policy->max to work as a cap (i.e. to map all
+>> loads above certain value to the maximum frequency available at the moment, so
+>> that the criteria for selecting the lower frequencies don't change).  In my
+>> opinion the second option is better, because it means "OK, we can't use some
+>> high frequencies, but let's not hurt performance for the loads that wouldn't
+>> require them anyway".  Otherwise, we'll effectively throttle all loads and
+>> that not only causes performance to drop, but also causes more energy to be
+>> used overall.
 > 
-> On 06/03/2013 08:02 AM, Kirill A. Shutemov wrote:
-> > Dave Hansen wrote:
-> >> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> >>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com
-> >>> -#define wait_split_huge_page(__anon_vma, __pmd)				\
-> >>> +#define wait_split_huge_page(__vma, __pmd)				\
-> >>>  	do {								\
-> >>>  		pmd_t *____pmd = (__pmd);				\
-> >>> -		anon_vma_lock_write(__anon_vma);			\
-> >>> -		anon_vma_unlock_write(__anon_vma);			\
-> >>> +		struct address_space *__mapping =			\
-> >>> +					vma->vm_file->f_mapping;	\
-> >>> +		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
-> >>> +		if (__mapping)						\
-> >>> +			mutex_lock(&__mapping->i_mmap_mutex);		\
-> >>> +		if (__anon_vma) {					\
-> >>> +			anon_vma_lock_write(__anon_vma);		\
-> >>> +			anon_vma_unlock_write(__anon_vma);		\
-> >>> +		}							\
-> >>> +		if (__mapping)						\
-> >>> +			mutex_unlock(&__mapping->i_mmap_mutex);		\
-> >>>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
-> >>>  		       pmd_trans_huge(*____pmd));			\
-> >>>  	} while (0)
-> ...
-> >> Could you also describe the lengths to which you've gone to try and keep
-> >> this macro from growing in to any larger of an abomination.  Is it truly
-> >> _impossible_ to turn this in to a normal function?  Or will it simply be
-> >> a larger amount of work that you can do right now?  What would it take?
-> > 
-> > Okay, I've tried once again. The patch is below. It looks too invasive for
-> > me. What do you think?
+> I wouldn't say that I don't agree with you as I do to some extent.
 > 
-> That patch looks great to me, actually.  It really looks to just be
-> superficially moving code around.  The diffstat is even too:
+> But the question that comes to my mind now is: Why is policy->max reduced
+> in the first place? User doesn't have control over which freqs to expose, so
+> available_frequencies will stay the same. The only thing he is capable
+> of doing is: reduce policy->max.. Which in a way means that.. "I don't want to
+> use higher frequencies (power, thermal reasons) and I know performance will
+> go down with it and I don't care for it now."
+> 
+> And this way I feel policy->max isn't a bad choice either.
+> 
+> BUT as you said: policy->max isn't there to say don't be so aggressive now in
+> increasing frequencies but just only to say, don't go over this frequency..
+> 
+> So, probably we can use cpuinfo.max_freq :)
+> 
 
-One of blocker I see is new dependency <linux/mm.h> -> <linux/fs.h>.
-It makes header files nightmare worse.
+Both of you know better than me, but I also believe that cpuinfo.max is more
+appropriate. Although, the decision was taken, let me share a spreadsheet to show
+the 2 cases.
+https://docs.google.com/spreadsheet/ccc?key=0AnMfNYUV1k0ddHh1OUFXa0kxcGZJaXd4am1sdmVWT0E&usp=sharing
 
--- 
- Kirill A. Shutemov
+I will prepare the v2 of this patch that uses cpuinfo.max_freq instead of policy-max.
+Also, I will split the patch into 3 parts as suggested.
+
+
+Thank you for your comments and suggestions!
+Stratos
