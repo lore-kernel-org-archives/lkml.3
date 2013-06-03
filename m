@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759302Ab3FCQNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:13:37 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46531 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab3FCQNg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:13:36 -0400
+	id S1759397Ab3FCQOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:14:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36453 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759306Ab3FCQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:14:21 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <kishon@ti.com>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <gregkh@linuxfoundation.org>,
+        <benoit.cousson@linaro.org>, <anish198519851985@gmail.com>,
+        <pmeerw@pmeerw.net>
+Subject: [PATCH 0/5] dwc3: omap: adapt dwc3 to use extcon framework
+Date: Mon, 3 Jun 2013 21:43:35 +0530
+Message-ID: <1370276020-17446-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <51ACB6DB.6040809@gmail.com>
-References: <51ACB6DB.6040809@gmail.com>
-Date: Tue, 4 Jun 2013 01:13:34 +0900
-Message-ID: <CAAmzW4MiDzUv4v=ZtGcvOW0e-i9Po0EBJDoLSVeXg9oYXpzDnw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm, vmalloc: Only call setup_vmalloc_vm only in __get_vm_area_node
-From: JoonSoo Kim <js1304@gmail.com>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Zhang.
+The first three patches deals with cleanup of extcon inorder to get
+through compilation without any issues. It also adds an API to get
+extcon device from dt node which I felt was missing.
 
-2013/6/4 Zhang Yanfei <zhangyanfei.yes@gmail.com>:
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->
-> Now for insert_vmalloc_vm, it only calls the two functions:
-> - setup_vmalloc_vm: fill vm_struct and vmap_area instances
-> - clear_vm_unlist: clear VM_UNLIST bit in vm_struct->flags
->
-> So in function __get_vm_area_node, if VM_UNLIST bit unset
-> in flags, that is the else branch here, we don't need to
-> clear VM_UNLIST bit for vm->flags since this bit is obviously
-> not set. That is to say, we could only call setup_vmalloc_vm
-> instead of insert_vmalloc_vm here. And then we could even
-> remove the if test here.
->
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+The next two patches deals with adapt dwc3 to use extcon framework.
+The 4th patch (usb: dwc3: omap: improve error handling of dwc3_omap_probe)
+should have ideally been sent to Felipe, however since
+there will be merge conflicts with the 5th patch
+(usb: dwc3: use extcon fwrk to receive connect/disconnect)
+in this series, I've sent in the same series.
 
-For all three patches,
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Once this patch series get merged, dwc3 in omap would be functional
+in device mode. However there is still some discussion on modelling
+SMPS10 regulator. Once that gets finalized, dwc3 should be functional
+in host mode as well.
 
-> ---
->  mm/vmalloc.c |   11 +----------
->  1 files changed, 1 insertions(+), 10 deletions(-)
->
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index d365724..6580c76 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -1367,16 +1367,7 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
->                 return NULL;
->         }
->
-> -       /*
-> -        * When this function is called from __vmalloc_node_range,
-> -        * we add VM_UNLIST flag to avoid accessing uninitialized
-> -        * members of vm_struct such as pages and nr_pages fields.
-> -        * They will be set later.
-> -        */
-> -       if (flags & VM_UNLIST)
-> -               setup_vmalloc_vm(area, va, flags, caller);
-> -       else
-> -               insert_vmalloc_vm(area, va, flags, caller);
-> +       setup_vmalloc_vm(area, va, flags, caller);
->
->         return area;
->  }
-> --
-> 1.7.1
+Kishon Vijay Abraham I (5):
+  extcon: Add an API to get extcon device from dt node
+  extcon: Kconfig: Make extcon config type as bool
+  extcon: add EXPORT_SYMBOL_GPL for exported functions
+  usb: dwc3: omap: improve error handling of dwc3_omap_probe
+  usb: dwc3: use extcon fwrk to receive connect/disconnect
+
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +
+ drivers/extcon/Kconfig                             |    2 +-
+ drivers/extcon/extcon-class.c                      |   42 +++++++
+ drivers/usb/dwc3/dwc3-omap.c                       |  133 ++++++++++++++++----
+ include/linux/extcon.h                             |    8 ++
+ include/linux/usb/dwc3-omap.h                      |   30 -----
+ 6 files changed, 168 insertions(+), 52 deletions(-)
+ delete mode 100644 include/linux/usb/dwc3-omap.h
+
+-- 
+1.7.10.4
+
