@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759150Ab3FCWqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:46:11 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34405 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621Ab3FCWqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:46:06 -0400
-Date: Mon, 3 Jun 2013 23:45:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
-	decompressor
-Message-ID: <20130603224555.GR18614@n2100.arm.linux.org.uk>
-References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org> <20130603222321.GP18614@n2100.arm.linux.org.uk> <51AD1AB3.9050908@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AD1AB3.9050908@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1759591Ab3FCWqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:46:31 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:50494
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757635Ab3FCWqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 18:46:24 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a module parameter
+Date: Mon,  3 Jun 2013 16:21:24 -0700
+Message-Id: <1370301688-27286-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1370301519-27196-1-git-send-email-kys@microsoft.com>
+References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 03:37:39PM -0700, Stephen Boyd wrote:
-> On 06/03/13 15:23, Russell King - ARM Linux wrote:
-> > On Mon, Jun 03, 2013 at 02:13:39PM -0700, Stephen Boyd wrote:
-> >> We
-> >> can't get any information about why the decompression failed if
-> >> we have debug_ll enabled. I had to patch the error() routine to
-> >> not while loop forever to get that print after do_decompress to
-> >> be useful.)
-> > Maybe your implementation of puts() for the decompressor is faulty then?
-> > Because it works for me - when something goes wrong with the decompression,
-> > I get a message such as:
-> >
-> > Decompressing kernel...
-> >
-> > CRC error
-> >
-> >  -- System halted
-> >
-> 
-> I was expecting to see
-> 
-> Decompressing kernel...
-> 
-> CRC error
-> 
-> decompressor returned an error
-> 
-> 
-> but since we loop forever this code in arch/arm/boot/compressed/misc.c
-> doesn't do anything:
-> 
->         if (ret)
->                 error("decompressor returned an error");
+The standard scsi timeout is not appropriate in some of the environments where
+Hyper-V is deployed. Set this timeout appropriately for all devices managed
+by this driver. Further make this a module parameter.
 
-I think that's just a final catch-all in case one of the decompressors
-doesn't use the error() function pointer it was passed.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/scsi/storvsc_drv.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-> In my case I'm booting a kernel with textoffset = 0x208000 but RAM
-> starts at 0x0. Does "minimum of RAM start" mean 0x0 or 0x200000?
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 16a3a0c..8d29a95 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 * PAGE_SIZE);
+ module_param(storvsc_ringbuffer_size, int, S_IRUGO);
+ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+ 
++/*
++ * Timeout in seconds for all devices managed by this driver.
++ */
++static int storvsc_timeout = 180;
++module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
++MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
++
+ #define STORVSC_MAX_IO_REQUESTS				128
+ 
+ /*
+@@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ 
+ 	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
+ 
++	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout * HZ));
++
+ 	sdevice->no_write_same = 1;
+ 
+ 	return 0;
+-- 
+1.7.4.1
 
-The basic requirement for zImage's is no less than the start of RAM
-plus 32K.  Or let me put it another way - start of writable memory
-plus 32K.
-
-Whether you need an offset of 0x200000 or not is not for the
-decompressor to know.  If you're having to avoid the first 0x200000
-bytes of memory for some reason (eg, secure firmware or DSP needs
-it left free) then there's no way for the decompressor to know that,
-so it's irrelevant.
-
-So, lets say that your platform has a DSP which needs the first 0x200000
-bytes left free.  So the boot loader _already_ needs to know to load
-the image not at zero, but above 0x200000.  The additional 32K
-requirement is really nothing new and so should be treated in just the
-same way.
-
-Leave at least 32K of usable memory below the zImage at all times.
