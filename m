@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab3FCPEW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:04:22 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:51787 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758581Ab3FCPES (ORCPT
+	id S1758685Ab3FCPEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:04:51 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:42446 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758623Ab3FCPEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:04:18 -0400
+	Mon, 3 Jun 2013 11:04:22 -0400
 From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
         linux-s390 <linux-s390@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 0/9] dasd: implement block timeout
-Date: Mon,  3 Jun 2013 17:03:13 +0200
-Message-Id: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Hannes Reinecke <hare@suse.de>, Stefan Weinhuber <wein@de.ibm.com>
+Subject: [PATCH 5/9] dasd: Reduce amount of messages for specific errors
+Date: Mon,  3 Jun 2013 17:03:18 +0200
+Message-Id: <1370271802-30019-6-git-send-email-schwidefsky@de.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
+References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060315-0542-0000-0000-0000056F659D
+x-cbid: 13060314-5024-0000-0000-000006396336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a re-send of a patch series Hannes sent last january. Stefan
-looked at the patches and our tests went well, so I guess this is ready
-for upstream integration.
+From: Hannes Reinecke <hare@suse.de>
 
-The changes to block/blk-core.c and block/blk-timeout.c look good
-to me, but I would like to request an acked-by from Jens for the
-block layer parts in patch #6 and #7 of the series (pretty please :-)
+Whenever a request has been aborted internally by the driver
+there is no sense data to be had. And printing lots of messages
+stalls the system, so better to print out a short one-liner.
 
-The original patch description from Hannes:
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Stefan Weinhuber <wein@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ drivers/s390/block/dasd_erp.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-This patch series implements a block timeout handler for
-DASDs. The main impetus was to allow for a fixed upper
-timeout value after which a request is aborted.
-This is required eg when implementing a host-based
-mirroring system where otherwise the entire mirror
-would stall under certain circumstances.
-
-Changes since v1:
-- Fixed lock inversion in dasd_times_out()
-- Checked for 'device->block' when writing to 'timeout' attribute
-- Check against 'UINT_MAX' when verifying the 'timeout' value
-
-Once I got the required acked-by I can carry the patch set in the
-linux-s390 tree for the next merge window.
-
-Hannes Reinecke (9):
-  dasd: Clarify comment
-  dasd: make number of retries configurable
-  dasd: process all requests in the device tasklet
-  dasd: Implement block timeout handling
-  dasd: Reduce amount of messages for specific errors
-  block,dasd: detailed I/O errors
-  block: check for timeout function in blk_rq_timed_out()
-  dasd: Add 'timeout' attribute
-  dasd: Fail all requests when DASD_FLAG_ABORTIO is set
-
- arch/s390/include/uapi/asm/dasd.h |    4 ++
- block/blk-core.c                  |    3 +
- block/blk-timeout.c               |    5 +-
- drivers/s390/block/dasd.c         |  115 +++++++++++++++++++++++++++++++++----
- drivers/s390/block/dasd_devmap.c  |   97 +++++++++++++++++++++++++++++++
- drivers/s390/block/dasd_diag.c    |    8 ++-
- drivers/s390/block/dasd_eckd.c    |   15 +++--
- drivers/s390/block/dasd_erp.c     |    8 +++
- drivers/s390/block/dasd_fba.c     |   10 +++-
- drivers/s390/block/dasd_int.h     |   10 ++++
- drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
- 11 files changed, 313 insertions(+), 21 deletions(-)
-
+diff --git a/drivers/s390/block/dasd_erp.c b/drivers/s390/block/dasd_erp.c
+index 3250cb4..8d11f77 100644
+--- a/drivers/s390/block/dasd_erp.c
++++ b/drivers/s390/block/dasd_erp.c
+@@ -159,6 +159,14 @@ dasd_log_sense(struct dasd_ccw_req *cqr, struct irb *irb)
+ 	struct dasd_device *device;
+ 
+ 	device = cqr->startdev;
++	if (cqr->intrc == -ETIMEDOUT) {
++		dev_err(&device->cdev->dev, "cqr %p timeout error", cqr);
++		return;
++	}
++	if (cqr->intrc == -ENOLINK) {
++		dev_err(&device->cdev->dev, "cqr %p transport error", cqr);
++		return;
++	}
+ 	/* dump sense data */
+ 	if (device->discipline && device->discipline->dump_sense)
+ 		device->discipline->dump_sense(device, cqr, irb);
 -- 
 1.7.9.5
 
