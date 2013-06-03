@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab3FCWUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:20:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23918 "EHLO
+	id S1759681Ab3FCWUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:20:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2298 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758859Ab3FCWMJ (ORCPT
+	with ESMTP id S1758844Ab3FCWMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:09 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=z_sPhABLsS0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=F--5JshdJuoA:10 a=6zZ5Uxn1AAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=KmqCZUEVAza2QQZapJAA:9 a=QwnTS9JGZEsA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=TtEOPA0o8PXBGpZC:21 a=_L3K2Xh6OEcGpk7P:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:08 -0400
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qjx5VBhp9ksA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=9lB-MH-noSIA:10 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=wMNdZWldAAAA:8 a=ZY_3e3sGf6pazHRnfYUA:9 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221157.212819719@goodmis.org>
+Message-Id: <20130603221155.322552777@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:44 -0400
+Date: Mon, 03 Jun 2013 18:10:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Christopher Harvey <charvey@matrox.com>,
-        Mathieu Larouche <mathieu.larouche@matrox.com>,
-        Julia Lemire <jlemire@matrox.com>, Dave Airlie <airlied@redhat.com>
-Subject: [28/65] drm/mgag200: Fix framebuffer base address programming
+Cc: <stable@kernel.org>, Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [19/65] powerpc: Bring all threads online prior to migration/hibernation
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0028-drm-mgag200-Fix-framebuffer-base-address-programming.patch
+Content-Disposition: inline; filename=0019-powerpc-Bring-all-threads-online-prior-to-migration-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,76 +30,259 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-[ Upstream commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e ]
+[ Upstream commit 120496ac2d2d60aee68d3123a68169502a85f4b5 ]
 
-Higher bits of the base address of framebuffers weren't being
-programmed properly. This caused framebuffers that didn't happen to be
-allocated at a low enough address to not be displayed properly.
+This patch brings online all threads which are present but not online
+prior to migration/hibernation.  After migration/hibernation those
+threads are taken back offline.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Mathieu Larouche <mathieu.larouche@matrox.com>
-Acked-by: Julia Lemire <jlemire@matrox.com>
-Tested-by: Julia Lemire <jlemire@matrox.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+During migration/hibernation all online CPUs must call H_JOIN, this is
+required by the hypervisor.  Without this patch, threads that are offline
+(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
+deadlocked (all threads either JOIN'd or CEDE'd).
+
+Cc: <stable@kernel.org>
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/rtas.h          |    2 +
+ arch/powerpc/kernel/rtas.c               |  113 ++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/pseries/suspend.c |   22 ++++++
+ 3 files changed, 137 insertions(+)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 26518cc..85ef6cc 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -658,12 +658,26 @@ static void mga_g200wb_commit(struct drm_crtc *crtc)
- 	WREG_DAC(MGA1064_GEN_IO_DATA, tmp);
+diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
+index 557cff8..5e7e008 100644
+--- a/arch/powerpc/include/asm/rtas.h
++++ b/arch/powerpc/include/asm/rtas.h
+@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsigned short hex);
+ extern void rtas_initialize(void);
+ extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
+ extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
++extern int rtas_online_cpus_mask(cpumask_var_t cpus);
++extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
+ extern int rtas_ibm_suspend_me(struct rtas_args *);
+ 
+ struct rtc_time;
+diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
+index fcec382..225e9f2 100644
+--- a/arch/powerpc/kernel/rtas.c
++++ b/arch/powerpc/kernel/rtas.c
+@@ -19,6 +19,7 @@
+ #include <linux/init.h>
+ #include <linux/capability.h>
+ #include <linux/delay.h>
++#include <linux/cpu.h>
+ #include <linux/smp.h>
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+@@ -808,6 +809,95 @@ static void rtas_percpu_suspend_me(void *info)
+ 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
  }
  
--
-+/*
-+   This is how the framebuffer base address is stored in g200 cards:
-+   * Assume @offset is the gpu_addr variable of the framebuffer object
-+   * Then addr is the number of _pixels_ (not bytes) from the start of
-+     VRAM to the first pixel we want to display. (divided by 2 for 32bit
-+     framebuffers)
-+   * addr is stored in the CRTCEXT0, CRTCC and CRTCD registers
-+   addr<20> -> CRTCEXT0<6>
-+   addr<19-16> -> CRTCEXT0<3-0>
-+   addr<15-8> -> CRTCC<7-0>
-+   addr<7-0> -> CRTCD<7-0>
-+   CRTCEXT0 has to be programmed last to trigger an update and make the
-+   new addr variable take effect.
-+ */
- void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
++enum rtas_cpu_state {
++	DOWN,
++	UP,
++};
++
++#ifndef CONFIG_SMP
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	if (!cpumask_empty(cpus)) {
++		cpumask_clear(cpus);
++		return -EINVAL;
++	} else
++		return 0;
++}
++#else
++/* On return cpumask will be altered to indicate CPUs changed.
++ * CPUs with states changed will be set in the mask,
++ * CPUs with status unchanged will be unset in the mask. */
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	int cpu;
++	int cpuret = 0;
++	int ret = 0;
++
++	if (cpumask_empty(cpus))
++		return 0;
++
++	for_each_cpu(cpu, cpus) {
++		switch (state) {
++		case DOWN:
++			cpuret = cpu_down(cpu);
++			break;
++		case UP:
++			cpuret = cpu_up(cpu);
++			break;
++		}
++		if (cpuret) {
++			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
++					__func__,
++					((state == UP) ? "up" : "down"),
++					cpu, cpuret);
++			if (!ret)
++				ret = cpuret;
++			if (state == UP) {
++				/* clear bits for unchanged cpus, return */
++				cpumask_shift_right(cpus, cpus, cpu);
++				cpumask_shift_left(cpus, cpus, cpu);
++				break;
++			} else {
++				/* clear bit for unchanged cpu, continue */
++				cpumask_clear_cpu(cpu, cpus);
++			}
++		}
++	}
++
++	return ret;
++}
++#endif
++
++int rtas_online_cpus_mask(cpumask_var_t cpus)
++{
++	int ret;
++
++	ret = rtas_cpu_state_change_mask(UP, cpus);
++
++	if (ret) {
++		cpumask_var_t tmp_mask;
++
++		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
++			return ret;
++
++		/* Use tmp_mask to preserve cpus mask from first failure */
++		cpumask_copy(tmp_mask, cpus);
++		rtas_offline_cpus_mask(tmp_mask);
++		free_cpumask_var(tmp_mask);
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(rtas_online_cpus_mask);
++
++int rtas_offline_cpus_mask(cpumask_var_t cpus)
++{
++	return rtas_cpu_state_change_mask(DOWN, cpus);
++}
++EXPORT_SYMBOL(rtas_offline_cpus_mask);
++
+ int rtas_ibm_suspend_me(struct rtas_args *args)
  {
- 	struct mga_device *mdev = crtc->dev->dev_private;
- 	u32 addr;
- 	int count;
-+	u8 crtcext0;
+ 	long state;
+@@ -815,6 +905,8 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
+ 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
+ 	struct rtas_suspend_me_data data;
+ 	DECLARE_COMPLETION_ONSTACK(done);
++	cpumask_var_t offline_mask;
++	int cpuret;
  
- 	while (RREG8(0x1fda) & 0x08);
- 	while (!(RREG8(0x1fda) & 0x08));
-@@ -671,10 +685,17 @@ void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
- 	count = RREG8(MGAREG_VCOUNT) + 2;
- 	while (RREG8(MGAREG_VCOUNT) < count);
+ 	if (!rtas_service_present("ibm,suspend-me"))
+ 		return -ENOSYS;
+@@ -838,11 +930,24 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
+ 		return 0;
+ 	}
  
--	addr = offset >> 2;
-+	WREG8(MGAREG_CRTCEXT_INDEX, 0);
-+	crtcext0 = RREG8(MGAREG_CRTCEXT_DATA);
-+	crtcext0 &= 0xB0;
-+	addr = offset / 8;
-+	/* Can't store addresses any higher than that...
-+	   but we also don't have more than 16MB of memory, so it should be fine. */
-+	WARN_ON(addr > 0x1fffff);
-+	crtcext0 |= (!!(addr & (1<<20)))<<6;
- 	WREG_CRT(0x0d, (u8)(addr & 0xff));
- 	WREG_CRT(0x0c, (u8)(addr >> 8) & 0xff);
--	WREG_CRT(0xaf, (u8)(addr >> 16) & 0xf);
-+	WREG_ECRT(0x0, ((u8)(addr >> 16) & 0xf) | crtcext0);
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	atomic_set(&data.working, 0);
+ 	atomic_set(&data.done, 0);
+ 	atomic_set(&data.error, 0);
+ 	data.token = rtas_token("ibm,suspend-me");
+ 	data.complete = &done;
++
++	/* All present CPUs must be online */
++	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
++	cpuret = rtas_online_cpus_mask(offline_mask);
++	if (cpuret) {
++		pr_err("%s: Could not bring present CPUs online.\n", __func__);
++		atomic_set(&data.error, cpuret);
++		goto out;
++	}
++
+ 	stop_topology_update();
+ 
+ 	/* Call function on all CPUs.  One of us will make the
+@@ -858,6 +963,14 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
+ 
+ 	start_topology_update();
+ 
++	/* Take down CPUs not online prior to suspend */
++	cpuret = rtas_offline_cpus_mask(offline_mask);
++	if (cpuret)
++		pr_warn("%s: Could not restore CPUs to offline state.\n",
++				__func__);
++
++out:
++	free_cpumask_var(offline_mask);
+ 	return atomic_read(&data.error);
  }
+ #else /* CONFIG_PPC_PSERIES */
+diff --git a/arch/powerpc/platforms/pseries/suspend.c b/arch/powerpc/platforms/pseries/suspend.c
+index 47226e0..5f997e7 100644
+--- a/arch/powerpc/platforms/pseries/suspend.c
++++ b/arch/powerpc/platforms/pseries/suspend.c
+@@ -16,6 +16,7 @@
+   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+   */
  
++#include <linux/cpu.h>
+ #include <linux/delay.h>
+ #include <linux/suspend.h>
+ #include <linux/stat.h>
+@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct device *dev,
+ 			       struct device_attribute *attr,
+ 			       const char *buf, size_t count)
+ {
++	cpumask_var_t offline_mask;
+ 	int rc;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	stream_id = simple_strtoul(buf, NULL, 16);
+ 
+ 	do {
+@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct device *dev,
+ 	} while (rc == -EAGAIN);
+ 
+ 	if (!rc) {
++		/* All present CPUs must be online */
++		cpumask_andnot(offline_mask, cpu_present_mask,
++				cpu_online_mask);
++		rc = rtas_online_cpus_mask(offline_mask);
++		if (rc) {
++			pr_err("%s: Could not bring present CPUs online.\n",
++					__func__);
++			goto out;
++		}
++
+ 		stop_topology_update();
+ 		rc = pm_suspend(PM_SUSPEND_MEM);
+ 		start_topology_update();
++
++		/* Take down CPUs not online prior to suspend */
++		if (!rtas_offline_cpus_mask(offline_mask))
++			pr_warn("%s: Could not restore CPUs to offline "
++					"state.\n", __func__);
+ 	}
+ 
+ 	stream_id = 0;
+ 
+ 	if (!rc)
+ 		rc = count;
++out:
++	free_cpumask_var(offline_mask);
+ 	return rc;
+ }
  
 -- 
 1.7.10.4
