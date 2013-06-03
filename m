@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab3FCQ01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:26:27 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:43868 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752767Ab3FCQ00 (ORCPT
+	id S1759009Ab3FCQbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:31:42 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:33122 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3FCQbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:26:26 -0400
-Date: Mon, 3 Jun 2013 17:25:18 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 5/5] arm64/xen: introduce CONFIG_XEN and hypercall.S
- on ARM64
-Message-ID: <20130603162517.GC32295@arm.com>
-References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
- <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
+	Mon, 3 Jun 2013 12:31:40 -0400
+Date: Mon, 3 Jun 2013 18:31:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130603163012.GA23257@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1305291817280.520@chino.kir.corp.google.com>
+ <20130530150539.GA18155@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601061151.GC15576@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370273624-26976-5-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130601061151.GC15576@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 04:33:44PM +0100, Stefano Stabellini wrote:
-> --- /dev/null
-> +++ b/arch/arm64/xen/hypercall.S
-...
-> +/*
-> + * The Xen hypercall calling convention is very similar to the ARM AEBI
-> + * procedure calling convention: the first paramter is passed in x0, the
-> + * second in x1, the third in x2 and the fourth in x3. Considering that
-> + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
-> + * in rx, differently from the procedure calling convention of using the
-> + * stack for that case.
+On Sat 01-06-13 02:11:51, Johannes Weiner wrote:
+> @@ -2076,6 +2077,7 @@ static void memcg_wakeup_oom(struct mem_cgroup *memcg)
+>  {
+>  	/* for filtering, pass "memcg" as argument. */
+>  	__wake_up(&memcg_oom_waitq, TASK_NORMAL, 0, memcg);
+> +	atomic_inc(&memcg->oom_wakeups);
+>  }
+>  
+>  static void memcg_oom_recover(struct mem_cgroup *memcg)
+[...]
+> +	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
+> +	/* Only sleep if we didn't miss any wakeups since OOM */
+> +	if (atomic_read(&memcg->oom_wakeups) == current->memcg_oom.wakeups)
+> +		schedule();
 
-You may want to use the AArch64 ABI here where parameters are passed in
-x0-x7, return in x0.
+On the way home it occured to me that the ordering might be wrong here.
+The wake up can be lost here.
+					__wake_up(memcg_oom_waitq)
+					<preempted>
+prepare_to_wait
+atomic_read(&memcg->oom_wakeups)
+					atomic_inc(oom_wakeups)
 
-BTW, I think it's missing a MAINTAINERS file update.
-
-Otherwise, the series looks good. How do you plan to upstream this?
-
+I guess we want atomic_inc before __wake_up, right?
 -- 
-Catalin
+Michal Hocko
+SUSE Labs
