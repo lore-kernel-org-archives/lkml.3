@@ -1,449 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab3FCOU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:20:29 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:45902 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab3FCOUZ convert rfc822-to-8bit (ORCPT
+	id S1758166Ab3FCOVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:21:05 -0400
+Received: from mailhub5.stratus.com ([134.111.1.18]:56556 "EHLO
+	mailhub5.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab3FCOVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:20:25 -0400
+	Mon, 3 Jun 2013 10:21:03 -0400
+Date: Mon, 3 Jun 2013 10:17:17 -0400 (EDT)
+From: Joe Lawrence <joe.lawrence@stratus.com>
+X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
+To: Joe Lawrence <joe.lawrence@stratus.com>
+cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: Please add to stable:  module: don't unlink the module until
+ we've removed all exposure.
+In-Reply-To: <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com>
+Message-ID: <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
+References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1370184474-14392-1-git-send-email-adis@hamzadis.com>
-References: <1370184474-14392-1-git-send-email-adis@hamzadis.com>
-Date: Mon, 3 Jun 2013 10:20:24 -0400
-Message-ID: <CADnq5_PRxEZ9RwnoCK_HgHn3+KKJRaJizhhppWNzrhEUncJRZA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] radeon: Fix system hang issue when using KMS with
- older cards
-From: Alex Deucher <alexdeucher@gmail.com>
-To: =?UTF-8?B?QWRpcyBIYW16acSH?= <adis@hamzadis.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 03 Jun 2013 14:20:56.0827 (UTC) FILETIME=[903E04B0:01CE6065]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 2, 2013 at 10:47 AM, Adis Hamzić <adis@hamzadis.com> wrote:
-> The current radeon driver initialization routines, when using KMS, are written
-> so that the IRQ installation routine is called before initializing the WB buffer
-> and the CP rings. With some ASICs, though, the IRQ routine tries to access the
-> GFX_INDEX ring causing a call to RREG32 with the value of -1 in
-> radeon_fence_read. This, in turn causes the system to completely hang with some
-> cards, requiring a hard reset.
->
-> A call stack that can cause such a hang looks like this (using rv515 ASIC for the
-> example here):
->  * rv515_init (rv515.c)
->  * radeon_irq_kms_init (radeon_irq_kms.c)
->  * drm_irq_install (drm_irq.c)
->  * radeon_driver_irq_preinstall_kms (radeon_irq_kms.c)
->  * rs600_irq_process (rs600.c)
->  * radeon_fence_process - due to SW interrupt (radeon_fence.c)
->  * radeon_fence_read (radeon_fence.c)
->  * hang due to RREG32(-1)
->
-> The patch moves the IRQ installation to the card startup routine, after the ring
-> has been initialized, but before the IRQ has been set. This fixes the issue, but
-> requires a check to see if the IRQ is already installed, as is the case in the
-> system resume codepath.
-> I have tested the patch on three machines using the rv515, the rv770 and the
-> evergreen ASIC. They worked without issues.
->
-> This seems to be a known issue and has been reported on several bug tracking
-> sites by various distributions (see links below). Most of reports recommend
-> booting the system with KMS disabled and then enabling KMS by reloading the
-> radeon module. For some reason, this was indeed a usable workaround, however,
-> UMS is now deprecated and disabled by default.
->
-> Bug reports:
-> https://bugzilla.redhat.com/show_bug.cgi?id=845745
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/561789
-> https://bbs.archlinux.org/viewtopic.php?id=156964
+[Cc: stable@vger.kernel.org]
 
-Thanks for tracking this down.  I've applied it to my fixes tree.
+Third time is a charm?  The stable address was incorrect from the first 
+msg in this thread, but the relevant bits remain quoted below...
 
-Alex
+On Mon, 3 Jun 2013, Joe Lawrence wrote:
 
->
-> Signed-off-by: Adis Hamzić <adis@hamzadis.com>
-> ---
->  drivers/gpu/drm/radeon/evergreen.c | 10 ++++++----
->  drivers/gpu/drm/radeon/ni.c        | 10 ++++++----
->  drivers/gpu/drm/radeon/r100.c      |  9 ++++++---
->  drivers/gpu/drm/radeon/r300.c      |  9 ++++++---
->  drivers/gpu/drm/radeon/r420.c      | 10 ++++++----
->  drivers/gpu/drm/radeon/r520.c      |  9 ++++++---
->  drivers/gpu/drm/radeon/r600.c      | 10 ++++++----
->  drivers/gpu/drm/radeon/rs400.c     |  9 ++++++---
->  drivers/gpu/drm/radeon/rs600.c     |  9 ++++++---
->  drivers/gpu/drm/radeon/rs690.c     |  9 ++++++---
->  drivers/gpu/drm/radeon/rv515.c     |  9 ++++++---
->  drivers/gpu/drm/radeon/rv770.c     | 10 ++++++----
->  drivers/gpu/drm/radeon/si.c        | 10 ++++++----
->  13 files changed, 78 insertions(+), 45 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-> index 8546e3b..0f89ce3 100644
-> --- a/drivers/gpu/drm/radeon/evergreen.c
-> +++ b/drivers/gpu/drm/radeon/evergreen.c
-> @@ -4754,6 +4754,12 @@ static int evergreen_startup(struct radeon_device *rdev)
->                 rdev->ring[R600_RING_TYPE_UVD_INDEX].ring_size = 0;
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r = r600_irq_init(rdev);
->         if (r) {
->                 DRM_ERROR("radeon: IH init failed (%d).\n", r);
-> @@ -4923,10 +4929,6 @@ int evergreen_init(struct radeon_device *rdev)
->         if (r)
->                 return r;
->
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
-> -
->         rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
->         r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
->
-> diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-> index 7969c0c..8458330 100644
-> --- a/drivers/gpu/drm/radeon/ni.c
-> +++ b/drivers/gpu/drm/radeon/ni.c
-> @@ -2025,6 +2025,12 @@ static int cayman_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r = r600_irq_init(rdev);
->         if (r) {
->                 DRM_ERROR("radeon: IH init failed (%d).\n", r);
-> @@ -2190,10 +2196,6 @@ int cayman_init(struct radeon_device *rdev)
->         if (r)
->                 return r;
->
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
-> -
->         ring->ring_obj = NULL;
->         r600_ring_init(rdev, ring, 1024 * 1024);
->
-> diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-> index 4973bff..d0314ec 100644
-> --- a/drivers/gpu/drm/radeon/r100.c
-> +++ b/drivers/gpu/drm/radeon/r100.c
-> @@ -3869,6 +3869,12 @@ static int r100_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r100_irq_set(rdev);
->         rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -4024,9 +4030,6 @@ int r100_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/r300.c b/drivers/gpu/drm/radeon/r300.c
-> index c60350e..b9b776f 100644
-> --- a/drivers/gpu/drm/radeon/r300.c
-> +++ b/drivers/gpu/drm/radeon/r300.c
-> @@ -1382,6 +1382,12 @@ static int r300_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r100_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -1516,9 +1522,6 @@ int r300_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/r420.c b/drivers/gpu/drm/radeon/r420.c
-> index 6fce2eb..4e796ec 100644
-> --- a/drivers/gpu/drm/radeon/r420.c
-> +++ b/drivers/gpu/drm/radeon/r420.c
-> @@ -265,6 +265,12 @@ static int r420_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r100_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -411,10 +417,6 @@ int r420_init(struct radeon_device *rdev)
->         if (r) {
->                 return r;
->         }
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r) {
-> -               return r;
-> -       }
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r) {
-> diff --git a/drivers/gpu/drm/radeon/r520.c b/drivers/gpu/drm/radeon/r520.c
-> index f795a4e..e1aece7 100644
-> --- a/drivers/gpu/drm/radeon/r520.c
-> +++ b/drivers/gpu/drm/radeon/r520.c
-> @@ -194,6 +194,12 @@ static int r520_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         rs600_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -297,9 +303,6 @@ int r520_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-> index b45e648..0f30d0d 100644
-> --- a/drivers/gpu/drm/radeon/r600.c
-> +++ b/drivers/gpu/drm/radeon/r600.c
-> @@ -3202,6 +3202,12 @@ static int r600_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r = r600_irq_init(rdev);
->         if (r) {
->                 DRM_ERROR("radeon: IH init failed (%d).\n", r);
-> @@ -3356,10 +3362,6 @@ int r600_init(struct radeon_device *rdev)
->         if (r)
->                 return r;
->
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
-> -
->         rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
->         r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
->
-> diff --git a/drivers/gpu/drm/radeon/rs400.c b/drivers/gpu/drm/radeon/rs400.c
-> index 73051ce..233a9b9 100644
-> --- a/drivers/gpu/drm/radeon/rs400.c
-> +++ b/drivers/gpu/drm/radeon/rs400.c
-> @@ -417,6 +417,12 @@ static int rs400_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r100_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -535,9 +541,6 @@ int rs400_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
-> index 46fa1b0..670b555 100644
-> --- a/drivers/gpu/drm/radeon/rs600.c
-> +++ b/drivers/gpu/drm/radeon/rs600.c
-> @@ -923,6 +923,12 @@ static int rs600_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         rs600_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -1047,9 +1053,6 @@ int rs600_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
-> index ab4c86c..55880d5 100644
-> --- a/drivers/gpu/drm/radeon/rs690.c
-> +++ b/drivers/gpu/drm/radeon/rs690.c
-> @@ -651,6 +651,12 @@ static int rs690_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         rs600_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -776,9 +782,6 @@ int rs690_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
-> index ffcba73..21c7d7b 100644
-> --- a/drivers/gpu/drm/radeon/rv515.c
-> +++ b/drivers/gpu/drm/radeon/rv515.c
-> @@ -532,6 +532,12 @@ static int rv515_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         rs600_irq_set(rdev);
->         rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
->         /* 1M ring buffer */
-> @@ -662,9 +668,6 @@ int rv515_init(struct radeon_device *rdev)
->         r = radeon_fence_driver_init(rdev);
->         if (r)
->                 return r;
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
->         /* Memory manager */
->         r = radeon_bo_init(rdev);
->         if (r)
-> diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-> index 08aef24..4a62ad2 100644
-> --- a/drivers/gpu/drm/radeon/rv770.c
-> +++ b/drivers/gpu/drm/radeon/rv770.c
-> @@ -1887,6 +1887,12 @@ static int rv770_startup(struct radeon_device *rdev)
->                 rdev->ring[R600_RING_TYPE_UVD_INDEX].ring_size = 0;
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r = r600_irq_init(rdev);
->         if (r) {
->                 DRM_ERROR("radeon: IH init failed (%d).\n", r);
-> @@ -2045,10 +2051,6 @@ int rv770_init(struct radeon_device *rdev)
->         if (r)
->                 return r;
->
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
-> -
->         rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
->         r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
->
-> diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-> index d1ba9d8..a1b0da6 100644
-> --- a/drivers/gpu/drm/radeon/si.c
-> +++ b/drivers/gpu/drm/radeon/si.c
-> @@ -5350,6 +5350,12 @@ static int si_startup(struct radeon_device *rdev)
->         }
->
->         /* Enable IRQ */
-> +       if (!rdev->irq.installed) {
-> +               r = radeon_irq_kms_init(rdev);
-> +               if (r)
-> +                       return r;
-> +       }
-> +
->         r = si_irq_init(rdev);
->         if (r) {
->                 DRM_ERROR("radeon: IH init failed (%d).\n", r);
-> @@ -5533,10 +5539,6 @@ int si_init(struct radeon_device *rdev)
->         if (r)
->                 return r;
->
-> -       r = radeon_irq_kms_init(rdev);
-> -       if (r)
-> -               return r;
-> -
->         ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
->         ring->ring_obj = NULL;
->         r600_ring_init(rdev, ring, 1024 * 1024);
-> --
-> 1.8.3
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> [fixing Cc: stable@kernel.org address]
+> 
+> On Sun, 2 Jun 2013, Joe Lawrence wrote:
+> 
+> > On Sun, 2 Jun 2013, Rusty Russell wrote:
+> > 
+> > > Ben Greear <greearb@candelatech.com> writes:
+> > > 
+> > > > It turns out, the bug I spent yesterday chasing in various 3.9 kernels is apparently
+> > > > fixed by the commit in the title (c9c390bb5535380d40614571894ef0c00bc026ff).
+> > > 
+> > > Apparently being the operative word.
+> > > 
+> > > This commit avoids the entire "module insert failed due to sysfs race"
+> > > path in the common case, it doesn't fix any actual problem.
+> > > 
+> > > I think the real commit you want is Linus' kobject fix
+> > > a49b7e82cab0f9b41f483359be83f44fbb6b4979 "kobject: fix kset_find_obj()
+> > > race with concurrent last kobject_put()".
+> > > 
+> > > Or is that already in stable?
+> > 
+> > Hi Rusty,
+> >  
+> > I had pointed Ben (offlist) to that bugzilla entry without realizing
+> > there were other earlier related fixes in this space.  Re-viewing bz-
+> > 58011, it looks like it was opened against 3.8.12, while Ben and myself
+> > had encountered module loading problems in versions 3.9 and
+> > 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
+> > a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
+> > kobject_put()".
+> > 
+> > That said, it doesn't appear that commit 944a1fa "module: don't unlink the
+> > module until we've removed all exposure" has not made it into any stable  
+> > kernel.  On my system, applying this on top of 3.9 resolved a module
+> > unload/load race that would occasionally occur on boot (two video adapters
+> > of the same make, the module unloads for whatever reason and I see "module
+> > is already loaded" and "sysfs: cannot create duplicate filename
+> > '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
+> > were interested in these warnings/crashes.
+> > 
+> > Hope this clarifies things.
+> > 
+> > Regards,
+> > 
+> > -- Joe
+> > 
+> 
