@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab3FCKNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:13:45 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40231 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756559Ab3FCKNj (ORCPT
+	id S1756949Ab3FCKNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:13:50 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55734 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756681Ab3FCKNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:13:39 -0400
+	Mon, 3 Jun 2013 06:13:42 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
         Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH v4 4/7] video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-Date: Mon,  3 Jun 2013 12:13:19 +0200
-Message-Id: <75dcc7f6bdffb73163aced18a72f6c77b5930422.1370254386.git.michal.simek@xilinx.com>
+Subject: [PATCH v4 5/7] video: xilinxfb: Group bus initialization
+Date: Mon,  3 Jun 2013 12:13:20 +0200
+Message-Id: <565293cecf0605bfb1e8eb9c657731ac4975e496.1370254386.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1370254386.git.michal.simek@xilinx.com>
 References: <cover.1370254386.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1370254386.git.michal.simek@xilinx.com>
 References: <cover.1370254386.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-9772-1370254415-0001";
+    boundary="=_mimegpg-monstr-desktop-9785-1370254418-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,57 +34,156 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-9772-1370254415-0001
+--=_mimegpg-monstr-desktop-9785-1370254418-0001
 
-physaddr will be remove in the next patch.
+Move of_address_to_resource() to xilinxfb_assign()
+which simplify driver probing.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 Changes in v4: None
 Changes in v3:
-- New patch in this patchset based on discussions
+- New patch in this patchset
 
 Changes in v2: None
 
- drivers/video/xilinxfb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/xilinxfb.c | 56 +++++++++++++-----------------------------------
+ 1 file changed, 15 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index d94c992..1b55f18 100644
+index 1b55f18..bd3b85d 100644
 --- a/drivers/video/xilinxfb.c
 +++ b/drivers/video/xilinxfb.c
-@@ -325,7 +325,7 @@ static int xilinxfb_assign(struct device *dev,
+@@ -227,33 +227,23 @@ static struct fb_ops xilinxfb_ops =
+  * Bus independent setup/teardown
+  */
+
+-static int xilinxfb_assign(struct device *dev,
++static int xilinxfb_assign(struct platform_device *pdev,
+ 			   struct xilinxfb_drvdata *drvdata,
+-			   unsigned long physaddr,
+ 			   struct xilinxfb_platform_data *pdata)
+ {
+ 	int rc;
++	struct device *dev = &pdev->dev;
+ 	int fbsize = pdata->xvirt * pdata->yvirt * BYTES_PER_PIXEL;
 
  	if (drvdata->flags & BUS_ACCESS_FLAG) {
- 		/* Put a banner in the log (for DEBUG) */
--		dev_dbg(dev, "regs: phys=%lx, virt=%p\n", physaddr,
-+		dev_dbg(dev, "regs: phys=%x, virt=%p\n", drvdata->regs_phys,
- 					drvdata->regs);
- 	}
- 	/* Put a banner in the log (for DEBUG) */
-@@ -353,7 +353,7 @@ err_fbmem:
+-		/*
+-		 * Map the control registers in if the controller
+-		 * is on direct BUS interface.
+-		 */
+-		if (!request_mem_region(physaddr, 8, DRIVER_NAME)) {
+-			dev_err(dev, "Couldn't lock memory region at 0x%08lX\n",
+-				physaddr);
+-			rc = -ENODEV;
+-			goto err_region;
+-		}
++		struct resource *res;
 
- err_map:
+-		drvdata->regs_phys = physaddr;
+-		drvdata->regs = ioremap(physaddr, 8);
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		drvdata->regs_phys = res->start;
++		drvdata->regs = devm_request_and_ioremap(&pdev->dev, res);
+ 		if (!drvdata->regs) {
+-			dev_err(dev, "Couldn't lock memory region at 0x%08lX\n",
+-				physaddr);
+-			rc = -ENODEV;
+-			goto err_map;
++			rc = -EADDRNOTAVAIL;
++			goto err_region;
+ 		}
+ 	}
+
+@@ -349,11 +339,7 @@ err_cmap:
+
+ err_fbmem:
  	if (drvdata->flags & BUS_ACCESS_FLAG)
--		release_mem_region(physaddr, 8);
-+		release_mem_region(drvdata->regs_phys, 8);
+-		iounmap(drvdata->regs);
+-
+-err_map:
+-	if (drvdata->flags & BUS_ACCESS_FLAG)
+-		release_mem_region(drvdata->regs_phys, 8);
++		devm_iounmap(dev, drvdata->regs);
 
  err_region:
  	kfree(drvdata);
+@@ -384,10 +370,8 @@ static int xilinxfb_release(struct device *dev)
+ 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+
+ 	/* Release the resources, as allocated based on interface */
+-	if (drvdata->flags & BUS_ACCESS_FLAG) {
+-		iounmap(drvdata->regs);
+-		release_mem_region(drvdata->regs_phys, 8);
+-	}
++	if (drvdata->flags & BUS_ACCESS_FLAG)
++		devm_iounmap(dev, drvdata->regs);
+ #ifdef CONFIG_PPC_DCR
+ 	else
+ 		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
+@@ -408,8 +392,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	const u32 *prop;
+ 	u32 tft_access = 0;
+ 	struct xilinxfb_platform_data pdata;
+-	struct resource res;
+-	int size, rc;
++	int size;
+ 	struct xilinxfb_drvdata *drvdata;
+
+ 	/* Copy with the default pdata (not a ptr reference!) */
+@@ -435,22 +418,17 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	 */
+ 	if (tft_access) {
+ 		drvdata->flags |= BUS_ACCESS_FLAG;
+-		rc = of_address_to_resource(op->dev.of_node, 0, &res);
+-		if (rc) {
+-			dev_err(&op->dev, "invalid address\n");
+-			goto err;
+-		}
+ 	}
+ #ifdef CONFIG_PPC_DCR
+ 	else {
+ 		int start;
+-		res.start = 0;
+ 		start = dcr_resource_start(op->dev.of_node, 0);
+ 		drvdata->dcr_len = dcr_resource_len(op->dev.of_node, 0);
+ 		drvdata->dcr_host = dcr_map(op->dev.of_node, start, drvdata->dcr_len);
+ 		if (!DCR_MAP_OK(drvdata->dcr_host)) {
+ 			dev_err(&op->dev, "invalid DCR address\n");
+-			goto err;
++			kfree(drvdata);
++			return -ENODEV;
+ 		}
+ 	}
+ #endif
+@@ -477,11 +455,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 		pdata.rotate_screen = 1;
+
+ 	dev_set_drvdata(&op->dev, drvdata);
+-	return xilinxfb_assign(&op->dev, drvdata, res.start, &pdata);
+-
+- err:
+-	kfree(drvdata);
+-	return -ENODEV;
++	return xilinxfb_assign(op, drvdata, &pdata);
+ }
+
+ static int xilinxfb_of_remove(struct platform_device *op)
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-9772-1370254415-0001
+--=_mimegpg-monstr-desktop-9785-1370254418-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGsbE8ACgkQykllyylKDCG3QACggdcxXyk5+c0k9OyIt2ZqfSdA
-ci8An0krRs/WFWoO/q0xWredK+TEBRtx
-=eWzn
+iEYEABECAAYFAlGsbFIACgkQykllyylKDCHyVgCeNtHpyFWsginVfOVbAOpzfUC4
+jbYAn1uxeCnb2odm70dgYsOpEY793nY5
+=ToQ3
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-9772-1370254415-0001--
+--=_mimegpg-monstr-desktop-9785-1370254418-0001--
