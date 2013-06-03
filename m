@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3FCWTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:19:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30104 "EHLO
+	id S1759591Ab3FCWT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:19:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9887 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758878Ab3FCWMM (ORCPT
+	with ESMTP id S1758877Ab3FCWML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:12:12 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QFGbgjh4F0sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Et1R_80RBKYA:10 a=jdP34snFAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=kvLdEOgq-jFY0uASci0A:9 a=9mtjllxcxZAA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:11 -0400
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zyjggLdaQYMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=7yqKIxGHasUA:10 a=J1Y8HTJGAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221155.665495896@goodmis.org>
+Message-Id: <20130603221158.375966242@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:37 -0400
+Date: Mon, 03 Jun 2013 18:10:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [21/65] ath9k: fix key allocation error handling for powersave keys
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [35/65] net: vlan,ethtool: netdev_features_t is more than 32 bit
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0021-ath9k-fix-key-allocation-error-handling-for-powersav.patch
+Content-Disposition: inline; filename=0035-net-vlan-ethtool-netdev_features_t-is-more-than-32-b.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,55 +30,44 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-[ Upstream commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 ]
+[ Upstream commit b29d3145183da4e07d4b570fa8acdd3ac4a5c572 ]
 
-If no keycache slots are available, ath_key_config can return -ENOSPC.
-If the key index is not checked for errors, it can lead to logspam that
-looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
-This can cause follow-up errors if the invalid keycache index gets
-used for tx.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/ath/ath9k/main.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/8021q/vlan_dev.c |    2 +-
+ net/core/ethtool.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index 61e08e6..e032723 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1292,6 +1292,7 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
- 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
- 	struct ieee80211_key_conf ps_key = { };
-+	int key;
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 4024424..a841735 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -611,7 +611,7 @@ static netdev_features_t vlan_dev_fix_features(struct net_device *dev,
+ 	netdev_features_t features)
+ {
+ 	struct net_device *real_dev = vlan_dev_priv(dev)->real_dev;
+-	u32 old_features = features;
++	netdev_features_t old_features = features;
  
- 	ath_node_attach(sc, sta, vif);
+ 	features &= real_dev->vlan_features;
+ 	features |= NETIF_F_RXCSUM;
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index cbf033d..fa1370c 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1418,7 +1418,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
+ 	void __user *useraddr = ifr->ifr_data;
+ 	u32 ethcmd;
+ 	int rc;
+-	u32 old_features;
++	netdev_features_t old_features;
  
-@@ -1299,7 +1300,9 @@ static int ath9k_sta_add(struct ieee80211_hw *hw,
- 	    vif->type != NL80211_IFTYPE_AP_VLAN)
- 		return 0;
- 
--	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
-+	key = ath_key_config(common, vif, sta, &ps_key);
-+	if (key > 0)
-+		an->ps_key = key;
- 
- 	return 0;
- }
-@@ -1316,6 +1319,7 @@ static void ath9k_del_ps_key(struct ath_softc *sc,
- 	    return;
- 
- 	ath_key_delete(common, &ps_key);
-+	an->ps_key = 0;
- }
- 
- static int ath9k_sta_remove(struct ieee80211_hw *hw,
+ 	if (!dev || !netif_device_present(dev))
+ 		return -ENODEV;
 -- 
 1.7.10.4
 
