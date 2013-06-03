@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3FCD76 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jun 2013 23:59:58 -0400
-Received: from smtp303.phy.lolipop.jp ([210.157.22.87]:55228 "EHLO
-	smtp303.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3FCD7v (ORCPT
+	id S1751020Ab3FCEBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 00:01:07 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:12005 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab3FCEBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jun 2013 23:59:51 -0400
-Message-ID: <51AC14B4.4050003@sakamocchi.jp>
-Date: Mon, 03 Jun 2013 12:59:48 +0900
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 3 Jun 2013 00:01:03 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhoRAHYUrFF5LBcU/2dsb2JhbABQCoMJuguFIQQBfxd0giMBAQU6HCMQCAMYCSUPBSUDIROIDLp9Fo1VH4EdB4NYA5c9kUGDISo
+Date: Mon, 3 Jun 2013 14:00:38 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: xfs@oss.sgi.com, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: 3.9.4 Oops running xfstests (WAS Re: 3.9.3: Oops running
+ xfstests)
+Message-ID: <20130603040038.GX29466@dastard>
+References: <510292845.4997401.1369279175460.JavaMail.root@redhat.com>
+ <986348673.5787542.1369385526612.JavaMail.root@redhat.com>
+ <20130527053608.GS29466@dastard>
+ <1588848128.8530921.1369885528565.JavaMail.root@redhat.com>
+ <20130530052049.GK29466@dastard>
+ <1824023060.8558101.1369892432333.JavaMail.root@redhat.com>
+ <1462663454.9294499.1369969415681.JavaMail.root@redhat.com>
+ <20130531060415.GU29466@dastard>
+ <1517224799.10311874.1370228651422.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [PATCH] firewire: introduce fw_driver.probe and .remove methods
-References: <51A20AEE.7060201@sakamocchi.jp> <20130526233513.1a95d0d5@stein> <20130526225757.GA32606@kroah.com> <51A742A1.8010108@sakamocchi.jp> <20130603002749.4fdc36a5@stein> <20130602223843.GA7194@kroah.com> <20130603013502.4df9bc6b@stein>
-In-Reply-To: <20130603013502.4df9bc6b@stein>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1517224799.10311874.1370228651422.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan and Greg,
+On Sun, Jun 02, 2013 at 11:04:11PM -0400, CAI Qian wrote:
+> 
+> > There's memory corruption all over the place.  It is most likely
+> > that trinity is causing this - it's purpose is to trigger corruption
+> > issues, but they aren't always immediately seen.  If you can trigger
+> > this xfs trace without trinity having been run and without all the
+> > RCU/idle/scheduler/cgroup issues occuring at the same time, then
+> > it's likely to be caused by XFS. But right now, I'd say XFS is just
+> > an innocent bystander caught in the crossfire. There's nothing I can
+> > do from an XFS persepctive to track this down...
+> OK, this can be reproduced by just running LTP and then xfstests without
+> trinity at all...
 
-I test Stefan's patches and it works well with my devices.
+Cai, can you be more precise about what is triggering it?  LTP and
+xfstests do a large amount of stuff, and stack traces do not do not
+help narrow down the cause at all.  Can you provide the follwoing
+information and perform the follwoing steps:
 
- > This is one of two(?) drivers on which he is currently working on;
+	1. What xfstest is tripping over it? 
+	2. Can you reproduce it just by running that one specific test
+	  on a pristine system (i.e. freshly mkfs'd filesystems,
+	  immediately after boot)
+	3. if you can't reproduce it like that, does it reproduce on
+	  an xfstest run on a pristine system? If so, what command
+	  line are you running, and what are the filesystem
+	  configurations?
+	4. if you cannot reproduce it just with xfstests and you need
+	  to run LTP first, then can you just run the xfstest that
+	  is failing after running LTP and see if that triggers the
+	  problem. If it does, please take a metadump of the
+	  filesystems after LTP has run, save them, and if the
+	  single test then fails send me the metadumps and your
+	  xfstests command line.
+	5. If all else fails, bisect the kernel to identify the
+	  commit that introduces the problem....
 
-Yes. I'm developing for two driver modules for some firewire sound 
-device. One is "snd-fireworks" as Stefan mentioned and another is 
-"snd-bebob" for BridgeCo.'s BeBoB based firewire sound devices. Both of 
-them is now out of tree and in my github repository.
+Cheers,
 
- >> Are there other firewire drivers in other trees in linux-next
- >> right now?
+Dave.
 
-I know the persons who work for "snd-dice", an driver module is for TC 
-Applied Technologies' Dice based firewire sound devices. I'll inform 
-them about your patches and topic branch.
-
-
-Thanks a lot!
-
-Takashi Sakamoto
-o-takashi@sakamocchi.jp
-
-(Jun 03 2013 08:35), Stefan Richter wrote:
-> On Jun 02 Greg Kroah-Hartman wrote:
->> On Mon, Jun 03, 2013 at 12:27:49AM +0200, Stefan Richter wrote:
->>> Although all in-tree drivers are being converted to the new methods,
->>> support for the old methods is left in place for the time being, aiming
->>> to avoid conflicts if/when new drivers are being merged into the
->>> mainline via other trees.
->>
->> Are there other firewire drivers in other trees in linux-next right now?
->> If not, I'd just recommend converting everything over and not using the
->> old functions at all.  Especially as there really isn't that many
->> firewire drivers, and new ones are pretty rare these days, right?
->
-> I think there is none in -next at the moment.  But Sakamoto-san posted an
-> RFC just two days ago:
-> http://mailman.alsa-project.org/pipermail/alsa-devel/2013-June/062614.html
->
-> This is one of two(?) drivers on which he is currently working on; the
-> other one is the one which is going to need the new id argument
-> in .probe().  And then there is another person working on yet another
-> sound/firewire/ driver, but upstreaming of that driver might take a
-> little more time for some more integration steps, from what I heard.
->
-> So, alternatively I could fold "firewire: remove support of
-> fw_driver.driver.probe and .remove methods" into this one and commit it to
-> a stable topic branch in linux1394.git (to be merged early after 3.10),
-> and the audio driver developers could pull this topic branch if they want
-> to and when they want to.
->
->> Other than that, your patch looks good.
->
-> Thanks for review.
-
+-- 
+Dave Chinner
+david@fromorbit.com
