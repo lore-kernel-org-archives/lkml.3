@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab3FCMgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:36:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21412 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab3FCMgk (ORCPT
+	id S1757267Ab3FCMkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:40:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60314 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753195Ab3FCMkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:36:40 -0400
-Date: Mon, 3 Jun 2013 08:36:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] frontswap: fix incorrect zeroing and allocation size for
- frontswap_map
-Message-ID: <20130603123634.GE6893@phenom.dumpdata.com>
-References: <1370130777-6707-1-git-send-email-akinobu.mita@gmail.com>
+	Mon, 3 Jun 2013 08:40:36 -0400
+Date: Mon, 3 Jun 2013 13:39:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: A bug about system call on ARM
+Message-ID: <20130603123953.GE32242@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
+ <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
+ <20130529094826.GD13095@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <20130603101809.GK18614@n2100.arm.linux.org.uk>
+ <20130603102723.GD32242@mudshark.cambridge.arm.com>
+ <20130603104534.GL18614@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370130777-6707-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <20130603104534.GL18614@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 08:52:57AM +0900, Akinobu Mita wrote:
-> The bitmap accessed by bitops must have enough size to hold the required
-> numbers of bits rounded up to a multiple of BITS_PER_LONG.  And the bitmap
-> must not be zeroed by memset() if the number of bits cleared is not
-> a multiple of BITS_PER_LONG.
+On Mon, Jun 03, 2013 at 11:45:34AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Jun 03, 2013 at 11:27:23AM +0100, Will Deacon wrote:
+> > On Mon, Jun 03, 2013 at 11:18:09AM +0100, Russell King - ARM Linux wrote:
+> > > On Thu, May 30, 2013 at 12:41:12PM +0100, Will Deacon wrote:
+> > > > +#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
+> > > > +	/*
+> > > > +	 * We may have faulted trying to load the SWI instruction due to
+> > > > +	 * concurrent page aging on another CPU. In this case, return
+> > > > +	 * back to the swi instruction and fault the page back.
+> > > > +	 */
+> > > > +9001:
+> > > > +	sub	lr, lr, #4
+> > > > +	str	lr, [sp, #S_PC]
+> > > > +	b	ret_fast_syscall
+> > > > +#endif
+> > > 
+> > > The comment is wrong.  If we get here, it means that the fault from
+> > > trying to loading the instruction can't be fixed up.  Arguably, that
+> > > should result in a SIGSEGV being sent immediately, but we'll get to
+> > > that when we then try to re-load the instruction.
+> > 
+> > Why would we kill the application in this case? The reported problem is
+> > where one CPU ages the page containing the swi instruction (mkold =>
+> > clears L_PTE_YOUNG => write 0 to the pte) in between the other CPU executing
+> > the swi and the kernel trying to read the immediate. The VMA is fine.
 > 
-> This fixes incorrect zeroing and allocation size for frontswap_map.
-> The incorrect zeroing part doesn't cause any problem because
-> frontswap_map is freed just after zeroing.  But the wrongly calculated
-> allocation size may cause the problem.
+> If you mark the instruction was a user-accessing instruction, the kernel
+> will handle the resulting exception, trying to make the page accessible.
+> If it is successful, then execution resumes as normal at the faulting
+> instruction and continues as if nothing happened.
 > 
-> For 32bit systems, the allocation size of frontswap_map is about twice as
-> large as required size.  For 64bit systems, the allocation size is smaller
-> than requeired if the number of bits is not a multiple of BITS_PER_LONG.
-       ^^^^^^^^^
-       required.
+> If it can't make the page accessible (eg, out of memory) the exception
+> handler path (your code above) will be called instead.  Normal action in
+> that case would be for a system call to return -EFAULT, but in this case
+> we can't know what the syscall was, so we don't know if userspace will
+> even pay attention to the returned error code.  In any case, if the page
+> is no longer accessible, it's going to end up being killed by a SEGV
+> when we eventually return to userspace anyway.
 
-Looks OK to me. Thanks for catching this. I will test it out and if it
-does not break any regression tests should go for the next rc.
+Yes, of course, the fault handling will sort out non-fatal faults for us, so
+I'll update the comment.
 
-Thanks!
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  mm/frontswap.c | 2 +-
->  mm/swapfile.c  | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index 538367e..1b24bdc 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -319,7 +319,7 @@ void __frontswap_invalidate_area(unsigned type)
->  			return;
->  		frontswap_ops->invalidate_area(type);
->  		atomic_set(&sis->frontswap_pages, 0);
-> -		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> +		bitmap_zero(sis->frontswap_map, sis->max);
->  	}
->  	clear_bit(type, need_init);
->  }
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 6c340d9..746af55b 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -2116,7 +2116,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
->  	}
->  	/* frontswap enabled? set up bit-per-page map for frontswap */
->  	if (frontswap_enabled)
-> -		frontswap_map = vzalloc(maxpages / sizeof(long));
-> +		frontswap_map = vzalloc(BITS_TO_LONGS(maxpages) * sizeof(long));
->  
->  	if (p->bdev) {
->  		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
-> -- 
-> 1.8.1.4
-> 
+Thanks,
+
+Will
