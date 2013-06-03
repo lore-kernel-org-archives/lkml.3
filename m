@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760030Ab3FCWce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:32:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14464 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759707Ab3FCWaL (ORCPT
+	id S1759935Ab3FCWhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:37:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52397 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759031Ab3FCWhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:30:11 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=vCG9REZFoRsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=bHI8Os6LvnwA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=vpVRfoo1AAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=MSl-tDqOz04A:10 a=0yVQzcu7H6MA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221202.559620546@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:11:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [60/65] btrfs: dont stop searching after encountering the wrong item
-References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0060-btrfs-don-t-stop-searching-after-encountering-the-wr.patch
+	Mon, 3 Jun 2013 18:37:40 -0400
+Message-ID: <51AD1AB3.9050908@codeaurora.org>
+Date: Mon, 03 Jun 2013 15:37:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the decompressor
+References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org> <20130523231531.GT18614@n2100.arm.linux.org.uk> <20130524220539.GB599@codeaurora.org> <51AD0703.6050408@codeaurora.org> <20130603222321.GP18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130603222321.GP18614@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.5 stable review patch.
-If anyone has any objections, please let me know.
+On 06/03/13 15:23, Russell King - ARM Linux wrote:
+> On Mon, Jun 03, 2013 at 02:13:39PM -0700, Stephen Boyd wrote:
+>> We
+>> can't get any information about why the decompression failed if
+>> we have debug_ll enabled. I had to patch the error() routine to
+>> not while loop forever to get that print after do_decompress to
+>> be useful.)
+> Maybe your implementation of puts() for the decompressor is faulty then?
+> Because it works for me - when something goes wrong with the decompression,
+> I get a message such as:
+>
+> Decompressing kernel...
+>
+> CRC error
+>
+>  -- System halted
+>
 
-------------------
+I was expecting to see
 
-From: Gabriel de Perthuis <g2p.code@gmail.com>
+Decompressing kernel...
 
-[ Upstream commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 ]
+CRC error
 
-The search ioctl skips items that are too large for a result buffer, but
-inline items of a certain size occuring before any search result is
-found would trigger an overflow and stop the search entirely.
+decompressor returned an error
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- fs/btrfs/ioctl.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+but since we loop forever this code in arch/arm/boot/compressed/misc.c
+doesn't do anything:
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 9df50fa..8613626 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1707,7 +1707,11 @@ static noinline int copy_to_sk(struct btrfs_root *root,
- 		item_off = btrfs_item_ptr_offset(leaf, i);
- 		item_len = btrfs_item_size_nr(leaf, i);
- 
--		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
-+		btrfs_item_key_to_cpu(leaf, key, i);
-+		if (!key_in_sk(key, sk))
-+			continue;
-+
-+		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
- 			item_len = 0;
- 
- 		if (sizeof(sh) + item_len + *sk_offset >
-@@ -1716,10 +1720,6 @@ static noinline int copy_to_sk(struct btrfs_root *root,
- 			goto overflow;
- 		}
- 
--		btrfs_item_key_to_cpu(leaf, key, i);
--		if (!key_in_sk(key, sk))
--			continue;
--
- 		sh.objectid = key->objectid;
- 		sh.offset = key->offset;
- 		sh.type = key->type;
+        if (ret)
+                error("decompressor returned an error");
+
+
+I guess that is desired though because you say we shouldn't do something
+stupid.
+
+>>> I see a few solutions.
+>>>
+>>>  1) Relocate with caches off and then turn on caches after we're
+>>>     running in a location where we won't overwrite ourselves.
+>>>
+>>>  2) Have temporary page tables for the relocation phase that live
+>>>     just below the location we're going to relocate to.
+>>>
+>>>  3) Force bootloaders loading these types of images to load the
+>>>     zImage at least as high as the TEXT_OFFSET is compiled to.
+>>>
+>>> I don't think we can convince everyone that #3 is ok to do. I'm
+>>> leaning towards #2 since we get all the benefits of the cache
+>>> during the relocation phase but #1 is the obviously simple fix.
+> (3) is what we've always required in the past.  We already have code
+> to relocate the compressed image, so we _might_ be able to do (1).
+>
+> The easy solution is to continue saying "minimum of RAM start + 32K"
+> as we've always had in the past though.
+
+In my case I'm booting a kernel with textoffset = 0x208000 but RAM
+starts at 0x0. Does "minimum of RAM start" mean 0x0 or 0x200000?
+
 -- 
-1.7.10.4
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
