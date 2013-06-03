@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab3FCJYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 05:24:45 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:40741 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312Ab3FCJYn (ORCPT
+	id S1755703Ab3FCJZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 05:25:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40638 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3FCJZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 05:24:43 -0400
-X-Spam-Score: -100.8
-Message-ID: <51AC60AA.8010107@asianux.com>
-Date: Mon, 03 Jun 2013 17:23:54 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 3 Jun 2013 05:25:35 -0400
+Date: Mon, 3 Jun 2013 12:25:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chirag Kantharia <chirag.kantharia@hp.com>
+Cc: iss_storagedev@hp.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] cpqarray: info leak in ida_locked_ioctl()
+Message-ID: <20130603092516.GC16171@debian>
 MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: edumazet@google.com, Pravin Shelar <pshelar@nicira.com>, mgorman@suse.de,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] include/linux/skbuff.h: using '0xffff' instead of '~0U'
-References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com>
-In-Reply-To: <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2013 05:05 AM, Andy Shevchenko wrote:
-> On Thu, May 30, 2013 at 9:03 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> >
->> > Both 'transport_header' and 'mac_header' are u16, which are never equal
->> > to '~0U'.
->> >
->> > So need use '0xffff' instead of '~0U'.
-> Why not "(u16)~0" ?
-> Or even better "!= USHORT_MAX"?
-> 
-> Or mac_header + 1 == 0, though it less clear.
+The pciinfo struct has a two byte hole after ->dev_fn so stack
+information could be leaked to the user.
 
-It seems they are just the same as '0xffff' (are all 'magic' number).
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-We'd better to give a meaningful name to it just like Ben said.
-
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 639d26b..2b94403 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1193,6 +1193,7 @@ out_passthru:
+ 		ida_pci_info_struct pciinfo;
+ 
+ 		if (!arg) return -EINVAL;
++		memset(&pciinfo, 0, sizeof(pciinfo));
+ 		pciinfo.bus = host->pci_dev->bus->number;
+ 		pciinfo.dev_fn = host->pci_dev->devfn;
+ 		pciinfo.board_id = host->board_id;
