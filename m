@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3FCKNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:13:50 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55734 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756681Ab3FCKNm (ORCPT
+	id S1757067Ab3FCKOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:14:06 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62342 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756814Ab3FCKNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:13:42 -0400
+	Mon, 3 Jun 2013 06:13:44 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
         Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH v4 5/7] video: xilinxfb: Group bus initialization
-Date: Mon,  3 Jun 2013 12:13:20 +0200
-Message-Id: <565293cecf0605bfb1e8eb9c657731ac4975e496.1370254386.git.michal.simek@xilinx.com>
+Subject: [PATCH v4 6/7] video: xilinxfb: Add support for little endian accesses
+Date: Mon,  3 Jun 2013 12:13:21 +0200
+Message-Id: <818df253e24e333befbbdb35c027a3cece1830a9.1370254386.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <cover.1370254386.git.michal.simek@xilinx.com>
 References: <cover.1370254386.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1370254386.git.michal.simek@xilinx.com>
 References: <cover.1370254386.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-9785-1370254418-0001";
+    boundary="=_mimegpg-monstr-desktop-9798-1370254420-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,156 +34,101 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-9785-1370254418-0001
+--=_mimegpg-monstr-desktop-9798-1370254420-0001
 
-Move of_address_to_resource() to xilinxfb_assign()
-which simplify driver probing.
+Dynamically detect endianess on IP and use
+ioread/iowrite functions instead of powerpc and microblaze
+specific out_be32.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
-Changes in v4: None
+Changes in v4:
+- Acked by Arnd
+
 Changes in v3:
-- New patch in this patchset
+- New patch in this patchset based on discussions
 
 Changes in v2: None
 
- drivers/video/xilinxfb.c | 56 +++++++++++++-----------------------------------
- 1 file changed, 15 insertions(+), 41 deletions(-)
+ drivers/video/xilinxfb.c | 30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 1b55f18..bd3b85d 100644
+index bd3b85d..f3d4a69 100644
 --- a/drivers/video/xilinxfb.c
 +++ b/drivers/video/xilinxfb.c
-@@ -227,33 +227,23 @@ static struct fb_ops xilinxfb_ops =
-  * Bus independent setup/teardown
-  */
+@@ -117,6 +117,7 @@ static struct fb_var_screeninfo xilinx_fb_var = {
 
--static int xilinxfb_assign(struct device *dev,
-+static int xilinxfb_assign(struct platform_device *pdev,
- 			   struct xilinxfb_drvdata *drvdata,
--			   unsigned long physaddr,
- 			   struct xilinxfb_platform_data *pdata)
+
+ #define BUS_ACCESS_FLAG		0x1 /* 1 = BUS, 0 = DCR */
++#define LITTLE_ENDIAN_ACCESS	0x2 /* LITTLE ENDIAN IO functions */
+
+ struct xilinxfb_drvdata {
+
+@@ -153,14 +154,33 @@ struct xilinxfb_drvdata {
+ static void xilinx_fb_out32(struct xilinxfb_drvdata *drvdata, u32 offset,
+ 				u32 val)
  {
- 	int rc;
-+	struct device *dev = &pdev->dev;
- 	int fbsize = pdata->xvirt * pdata->yvirt * BYTES_PER_PIXEL;
-
- 	if (drvdata->flags & BUS_ACCESS_FLAG) {
--		/*
--		 * Map the control registers in if the controller
--		 * is on direct BUS interface.
--		 */
--		if (!request_mem_region(physaddr, 8, DRIVER_NAME)) {
--			dev_err(dev, "Couldn't lock memory region at 0x%08lX\n",
--				physaddr);
--			rc = -ENODEV;
--			goto err_region;
--		}
-+		struct resource *res;
-
--		drvdata->regs_phys = physaddr;
--		drvdata->regs = ioremap(physaddr, 8);
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+		drvdata->regs_phys = res->start;
-+		drvdata->regs = devm_request_and_ioremap(&pdev->dev, res);
- 		if (!drvdata->regs) {
--			dev_err(dev, "Couldn't lock memory region at 0x%08lX\n",
--				physaddr);
--			rc = -ENODEV;
--			goto err_map;
-+			rc = -EADDRNOTAVAIL;
-+			goto err_region;
- 		}
- 	}
-
-@@ -349,11 +339,7 @@ err_cmap:
-
- err_fbmem:
- 	if (drvdata->flags & BUS_ACCESS_FLAG)
--		iounmap(drvdata->regs);
--
--err_map:
 -	if (drvdata->flags & BUS_ACCESS_FLAG)
--		release_mem_region(drvdata->regs_phys, 8);
-+		devm_iounmap(dev, drvdata->regs);
-
- err_region:
- 	kfree(drvdata);
-@@ -384,10 +370,8 @@ static int xilinxfb_release(struct device *dev)
- 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
-
- 	/* Release the resources, as allocated based on interface */
--	if (drvdata->flags & BUS_ACCESS_FLAG) {
--		iounmap(drvdata->regs);
--		release_mem_region(drvdata->regs_phys, 8);
--	}
-+	if (drvdata->flags & BUS_ACCESS_FLAG)
-+		devm_iounmap(dev, drvdata->regs);
+-		out_be32(drvdata->regs + (offset << 2), val);
++	if (drvdata->flags & BUS_ACCESS_FLAG) {
++		if (drvdata->flags & LITTLE_ENDIAN_ACCESS)
++			iowrite32(val, drvdata->regs + (offset << 2));
++		else
++			iowrite32be(val, drvdata->regs + (offset << 2));
++	}
  #ifdef CONFIG_PPC_DCR
  	else
- 		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
-@@ -408,8 +392,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 	const u32 *prop;
- 	u32 tft_access = 0;
- 	struct xilinxfb_platform_data pdata;
--	struct resource res;
--	int size, rc;
-+	int size;
- 	struct xilinxfb_drvdata *drvdata;
-
- 	/* Copy with the default pdata (not a ptr reference!) */
-@@ -435,22 +418,17 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 	 */
- 	if (tft_access) {
- 		drvdata->flags |= BUS_ACCESS_FLAG;
--		rc = of_address_to_resource(op->dev.of_node, 0, &res);
--		if (rc) {
--			dev_err(&op->dev, "invalid address\n");
--			goto err;
--		}
- 	}
- #ifdef CONFIG_PPC_DCR
- 	else {
- 		int start;
--		res.start = 0;
- 		start = dcr_resource_start(op->dev.of_node, 0);
- 		drvdata->dcr_len = dcr_resource_len(op->dev.of_node, 0);
- 		drvdata->dcr_host = dcr_map(op->dev.of_node, start, drvdata->dcr_len);
- 		if (!DCR_MAP_OK(drvdata->dcr_host)) {
- 			dev_err(&op->dev, "invalid DCR address\n");
--			goto err;
-+			kfree(drvdata);
-+			return -ENODEV;
- 		}
- 	}
+ 		dcr_write(drvdata->dcr_host, offset, val);
  #endif
-@@ -477,11 +455,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 		pdata.rotate_screen = 1;
-
- 	dev_set_drvdata(&op->dev, drvdata);
--	return xilinxfb_assign(&op->dev, drvdata, res.start, &pdata);
--
-- err:
--	kfree(drvdata);
--	return -ENODEV;
-+	return xilinxfb_assign(op, drvdata, &pdata);
  }
 
- static int xilinxfb_of_remove(struct platform_device *op)
++static u32 xilinx_fb_in32(struct xilinxfb_drvdata *drvdata, u32 offset)
++{
++	if (drvdata->flags & BUS_ACCESS_FLAG) {
++		if (drvdata->flags & LITTLE_ENDIAN_ACCESS)
++			return ioread32(drvdata->regs + (offset << 2));
++		else
++			return ioread32be(drvdata->regs + (offset << 2));
++	}
++#ifdef CONFIG_PPC_DCR
++	else
++		return dcr_read(drvdata->dcr_host, offset);
++#endif
++	return 0;
++}
++
+ static int
+ xilinx_fb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue,
+ 	unsigned transp, struct fb_info *fbi)
+@@ -271,6 +291,12 @@ static int xilinxfb_assign(struct platform_device *pdev,
+
+ 	/* Tell the hardware where the frame buffer is */
+ 	xilinx_fb_out32(drvdata, REG_FB_ADDR, drvdata->fb_phys);
++	rc = xilinx_fb_in32(drvdata, REG_FB_ADDR);
++	/* Endianess detection */
++	if (rc != drvdata->fb_phys) {
++		drvdata->flags |= LITTLE_ENDIAN_ACCESS;
++		xilinx_fb_out32(drvdata, REG_FB_ADDR, drvdata->fb_phys);
++	}
+
+ 	/* Turn on the display */
+ 	drvdata->reg_ctrl_default = REG_CTRL_ENABLE;
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-9785-1370254418-0001
+--=_mimegpg-monstr-desktop-9798-1370254420-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGsbFIACgkQykllyylKDCHyVgCeNtHpyFWsginVfOVbAOpzfUC4
-jbYAn1uxeCnb2odm70dgYsOpEY793nY5
-=ToQ3
+iEYEABECAAYFAlGsbFQACgkQykllyylKDCF8ewCeLODXNYkSRQThULFJ0zXOP4Re
+YEMAn3ZN8ZHZ7SQCADewiGGiZoGTloV/
+=aMDV
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-9785-1370254418-0001--
+--=_mimegpg-monstr-desktop-9798-1370254420-0001--
