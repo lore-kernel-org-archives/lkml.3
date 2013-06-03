@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab3FCOiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 10:38:07 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42949 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755177Ab3FCOiF (ORCPT
+	id S1758388Ab3FCOi3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 10:38:29 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50872 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3FCOi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 10:38:05 -0400
-Message-ID: <1370270282.2910.9.camel@dabdike>
-Subject: Re: [PATCH 0/4] EFI 1:1 mapping
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Date: Mon, 03 Jun 2013 07:38:02 -0700
-In-Reply-To: <20130603143010.GA20252@srcf.ucam.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
-	 <20130602225620.GA5496@srcf.ucam.org> <20130603081148.GB13607@nazgul.tnic>
-	 <1370269642.2910.4.camel@dabdike> <20130603143010.GA20252@srcf.ucam.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 10:38:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK7N6voRDGCCwG1CxNoaUYrWDZrA6yMHU7Jjsc01JN_cb-puvw@mail.gmail.com>
+References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
+	<CAK7N6voRDGCCwG1CxNoaUYrWDZrA6yMHU7Jjsc01JN_cb-puvw@mail.gmail.com>
+Date: Mon, 3 Jun 2013 20:08:24 +0530
+Message-ID: <CAK7N6vqUM+NovH_vtf40OeKstzRrTM2FOZb+cp-nq0k6vVtjag@mail.gmail.com>
+Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
+ timesout when delay very less
+From: anish singh <anish198519851985@gmail.com>
+To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
+Cc: linux-watchdog@vger.kernel.org,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        anish kumar <anish198519851985@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 15:30 +0100, Matthew Garrett wrote:
-> On Mon, Jun 03, 2013 at 07:27:22AM -0700, James Bottomley wrote:
-> 
-> > That's correct.  I think not calling SetVirtualAddressMap() and just
-> > using a 1:1 mapping is far safer (having looked at what tianocore does
-> > for SetVirtualAddressMap()).  The chances are that all the UEFI bioses
-> > are only tested with windows, so the pointer chases it has to do to
-> > switch address maps only work with the operations windows does.
-> 
-> Windows calls SetVirtualAddressMap(), so the only way these systems have 
-> been tested is with SetVirtualAddressMap().
+any inputs?
 
-I know, but that's not what I said.
-
-If you look at the implementation, SetVirtualAddressMap() does a massive
-pointer chase through the images.  It not only tries to relocate the
-text and data, but it also tries to relocate all the users of the data.
-Some of these sources of data are boot time and some runtime.  Those
-both need to be relocated by a separate pointer chase.  What we saw with
-the QueryVariableInfo() problem was that a boot time pointer wasn't
-relocated.  That's got to mean that windows only calls QueryVariableInfo
-from runtime.
-
-My point is that if we elect to call SetVirtualAddressMap() we'll be
-restricted to only making the calls at boot time that windows does
-otherwise we'll end up with these unrelocated pointers.  That's a huge
-nasty verification burden on us.  Alternatively, if we never call
-SetVirtualAddressMap() it seems to me that we just don't have to worry
-about pointer relocation issues.  Thus, I think it would be better we
-use the 1:1 mapping instead of calling SetVirtualAddressMap().
-
-James
-
-
+On Sun, Jun 2, 2013 at 3:56 PM, anish singh <anish198519851985@gmail.com> wrote:
+> On Sun, Jun 2, 2013 at 3:43 PM, anish kumar <anish198519851985@gmail.com> wrote:
+>> Certain watchdog drivers use a timer to keep kicking the watchdog at
+>> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
+>> we can't guarantee that watchdog will be pinged fast enough
+>> for all system loads, especially if timeout is configured for
+>> less than or equal to 1 second(basically small values).
+>>
+>> As suggested by Wim Van Sebroeck & Guenter Roeck we should
+>> add this functionality of individual watchdog drivers in the core
+>> watchdog core.
+>>
+>> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+>> ---
+>>  drivers/watchdog/watchdog_dev.c |   34 +++++++++++++++++++++++++++++-----
+>>  include/linux/watchdog.h        |    1 +
+>>  2 files changed, 30 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+>> index faf4e18..0305803 100644
+>> --- a/drivers/watchdog/watchdog_dev.c
+>> +++ b/drivers/watchdog/watchdog_dev.c
+>> @@ -41,9 +41,14 @@
+>>  #include <linux/miscdevice.h>  /* For handling misc devices */
+>>  #include <linux/init.h>                /* For __init/__exit/... */
+>>  #include <linux/uaccess.h>     /* For copy_to_user/put_user/... */
+>> +#include <linux/timer.h>
+>> +#include <linux/jiffies.h>
+>>
+>>  #include "watchdog_core.h"
+>>
+>> +/* Timer heartbeat (500ms) */
+>> +#define WDT_TIMEOUT    (HZ/2) /* should this be sysfs? */
+>> +
+>>  /* the dev_t structure to store the dynamically allocated watchdog devices */
+>>  static dev_t watchdog_devt;
+>>  /* the watchdog device behind /dev/watchdog */
+>> @@ -73,16 +78,33 @@ static int watchdog_ping(struct watchdog_device *wddev)
+> I think watchdog_ping function prototype should be changed as nowhere
+> we use the return value.
+>>         if (!watchdog_active(wddev))
+>>                 goto out_ping;
+>>
+>> -       if (wddev->ops->ping)
+>> -               err = wddev->ops->ping(wddev);  /* ping the watchdog */
+>> -       else
+>> -               err = wddev->ops->start(wddev); /* restart watchdog */
+>> +       /* should we check ping interval value i.e. timeout value
+>> +          if it is less than certain threshold then only we
+>> +          should add this logic of periodic pinging? */
+>> +       if (time_before(jiffies, (unsigned long)wddev->timeout)) {
+>> +               if (wddev->ops->ping)
+>> +                       err = wddev->ops->ping(wddev);/* ping the watchdog */
+>> +               else
+>> +                       err = wddev->ops->start(wddev);/* restart watchdog */
+>> +               mod_timer(&wddev->timer, jiffies + WDT_TIMEOUT);
+>> +       } else {
+>> +               /*
+>> +                *what we should when we find out that userspace
+>> +                *has timed out?
+>> +                **/
+>> +       }
+>>
+>>  out_ping:
+>>         mutex_unlock(&wddev->lock);
+>>         return err;
+>>  }
+>>
+>> +static void watchdog_ping_wrapper(unsigned long priv)
+> if we change the watchdog_ping api then we don't need this wrapper.
+>> +{
+>> +       struct watchdog_device *wdd = (void *)priv;
+>> +       watchdog_ping(wdd);
+>> +}
+>> +
+>>  /*
+>>   *     watchdog_start: wrapper to start the watchdog.
+>>   *     @wddev: the watchdog device to start
+>> @@ -109,7 +131,8 @@ static int watchdog_start(struct watchdog_device *wddev)
+>>         err = wddev->ops->start(wddev);
+>>         if (err == 0)
+>>                 set_bit(WDOG_ACTIVE, &wddev->status);
+>> -
+>> +
+>> +       mod_timer(&wddev->timer, jiffies + WDT_TIMEOUT);
+>>  out_start:
+>>         mutex_unlock(&wddev->lock);
+>>         return err;
+>> @@ -552,6 +575,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+>>                         old_wdd = NULL;
+>>                 }
+>>         }
+>> +       setup_timer(&watchdog->timer, 0, (long)watchdog_ping_wrapper);
+>>         return err;
+>>  }
+>>
+>> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+>> index 2a3038e..e5f18f7 100644
+>> --- a/include/linux/watchdog.h
+>> +++ b/include/linux/watchdog.h
+>> @@ -84,6 +84,7 @@ struct watchdog_device {
+>>         const struct watchdog_ops *ops;
+>>         unsigned int bootstatus;
+>>         unsigned int timeout;
+>> +       struct timer_list timer;
+> should we use hrtimer? or timer would do?
+>>         unsigned int min_timeout;
+>>         unsigned int max_timeout;
+>>         void *driver_data;
+>> --
+>> 1.7.10.4
+>>
