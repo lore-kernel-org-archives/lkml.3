@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab3FCKXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:23:40 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57241 "EHLO hydra.sisk.pl"
+	id S1754944Ab3FCKZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:25:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750Ab3FCKXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:23:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: ondemand: Change the calculation of target frequency
-Date: Mon, 03 Jun 2013 12:32:36 +0200
-Message-ID: <4899012.FZHBNtJbTr@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com>
-References: <51A7BFA6.3070800@semaphore.gr> <3146671.7pOpkCChrO@vostro.rjw.lan> <CAKohpokGDFvtaBMKxLTJCkx_WN+HN4eZ7LZ2upBLsXAsmcq7kA@mail.gmail.com>
+	id S1753097Ab3FCKZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 06:25:32 -0400
+Date: Mon, 3 Jun 2013 13:25:30 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: fix sil/dil/bpl/spl in the mod/rm fields
+Message-ID: <20130603102530.GH4725@redhat.com>
+References: <1369924555-30216-1-git-send-email-pbonzini@redhat.com>
+ <51A7717D.6030203@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51A7717D.6030203@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 03, 2013 12:21:47 PM Viresh Kumar wrote:
-> On 2 June 2013 01:07, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Saturday, June 01, 2013 08:26:47 PM Viresh Kumar wrote:
+On Thu, May 30, 2013 at 05:34:21PM +0200, Paolo Bonzini wrote:
+> Il 30/05/2013 16:35, Paolo Bonzini ha scritto:
+> > The x86-64 extended low-byte registers were fetched correctly from reg,
+> > but not from mod/rm.
+> > 
+> > This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
+> > not enough.
 > 
-> >> Even removal of __cpufreq_driver_getavg() should be done in a separate
-> >> patch, so that it can be reverted easily if required later.
-> >
-> > Why would you want to revert it separately?
+> Well, it is enough but it takes 2 minutes to reach the point where
+> hardware virtualization is used.  It is doing a lot of stuff in
+> emulation mode because FS and GS have leftovers from the A20 test:
 > 
-> We might not need to revert all the changes that Stratos is doing.
-> Only a revert of getavg() and its users + a small fix in governor would
-> be enough. Stratos patch isn't only about removing getavg() but how
-> ondemand works and so breaking stuff might be more useful.
+> FS =0000 0000000000000000 0000ffff 00009300 DPL=0 DS16 [-WA]
+> GS =ffff 00000000000ffff0 0000ffff 00009300 DPL=0 DS16 [-WA]
+> 
+> 0x00000000000113be:  in     $0x92,%al
+> 0x00000000000113c0:  or     $0x2,%al
+> 0x00000000000113c2:  out    %al,$0x92
+> 0x00000000000113c4:  xor    %ax,%ax
+> 0x00000000000113c6:  mov    %ax,%fs
+> 0x00000000000113c8:  dec    %ax
+> 0x00000000000113c9:  mov    %ax,%gs
+> 0x00000000000113cb:  inc    %ax
+> 0x00000000000113cc:  mov    %ax,%fs:0x200
+> 0x00000000000113d0:  cmp    %gs:0x210,%ax
+> 0x00000000000113d5:  je     0x113cb
+> 
+This is 16 bit code that sets them up. So 32bit transition code does not
+reload them?
 
-Yes, it's probably better to do the getavg() removal as a separate patch.
+> The DPL < RPL test fails.  Any ideas?  Should we introduce a new
+> intermediate value for emulate_invalid_guest_state (0=none, 1=some, 2=full)?
+> 
+> Paolo
+> 
+> > Cc: gnatapov@redhat.com
+> > Cc: kvm@vger.kernel.org
+> > Cc: <stable@vger.kernel.org> # 3.9
+> > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> > ---
+> >  arch/x86/kvm/emulate.c | 5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> > index aa68106..028b34f 100644
+> > --- a/arch/x86/kvm/emulate.c
+> > +++ b/arch/x86/kvm/emulate.c
+> > @@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
+> >  	ctxt->modrm_seg = VCPU_SREG_DS;
+> >  
+> >  	if (ctxt->modrm_mod == 3) {
+> > +		int highbyte_regs = ctxt->rex_prefix == 0;
+> > +
+> >  		op->type = OP_REG;
+> >  		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+> > -		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
+> > +		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
+> > +					       highbyte_regs && (ctxt->d & ByteOp));
+> >  		if (ctxt->d & Sse) {
+> >  			op->type = OP_XMM;
+> >  			op->bytes = 16;
+> > 
 
-> >> >> "Proportional to load" means C * load, so why is "policy->max / 100" *the* right C?
-> >> >
-> >> > I think, finally(?) I see your point. The right C should be "policy->cpuinfo.max_freq / 100".
-> >>
-> >> Why are you changing it to cpuinfo.max_freq?? This is fixed once a driver is
-> >> initialized.. but user may request a lower max freq for a governor or policy.
-> >> Which is actually reflected in policy->max I believe.
-> >
-> > Which doesn't matter.  The formula should provide the same results regardless
-> > of the user settings except that the selected frequency should be capped by
-> > policy->max (instead of being proportional to it).  I think using
-> > cpuinfo.max_freq here is correct.
-> 
-> I am confused now about what to use.. This is how I read it:
-> 
-> Assumption: CPU supports following freq range.. 500 MHz, 600 MHz, 700 MHz,
-> 800 MHz, 900 MHz, 1 GHz
-> 
-> cpuinfo.max_freq = 1 GHz
-> policy->max is set to 600 MHz
-> 
-> Case 1: Use policy->max:
-> 
-> We need load to be over 500/600 (i.e. .834) to move to 600 MHz.
-> 
-> Case 2: Use cpuinfo.max_freq..
-> 
-> We need load to be over 500/1000 (i.e. .5) to move to 600 MHz.
-> 
-> So, obviously the calculations aren't the same..
-
-No, they aren't.
-
-My point is that the set of frequencies to choose from doesn't change with
-the changes of user settings, so the computation should use things that
-don't with the user settings either.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--
+			Gleb.
