@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3FCKwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:52:12 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:50397 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3FCKwH convert rfc822-to-8bit (ORCPT
+	id S1757043Ab3FCKwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:52:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:36995 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab3FCKwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:52:07 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [PATCHv2] Add TI-Nspire timer support
-From: Daniel Tang <dt.tangr@gmail.com>
-In-Reply-To: <51AC5772.5090604@linaro.org>
-Date: Mon, 3 Jun 2013 20:51:59 +1000
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D8C877A7-38A4-45E2-B00C-C2C8105CE54D@gmail.com>
-References: <AE2AF524-C495-4D6B-B622-816B3254D384@gmail.com> <51AC5772.5090604@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-X-Mailer: Apple Mail (2.1503)
+	Mon, 3 Jun 2013 06:52:40 -0400
+X-Spam-Score: -100.8
+Message-ID: <51AC7546.4010002@asianux.com>
+Date: Mon, 03 Jun 2013 18:51:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: edumazet@google.com, Pravin Shelar <pshelar@nicira.com>, mgorman@suse.de,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [PATCH] include/linux/skbuff.h: using '0xffff' instead of '~0U'
+References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com> <51AC60AA.8010107@asianux.com> <CAHp75Vc19Kii7_TF+9aF4ZeKAa4_92DCVL+u1duZDTu38o2qsw@mail.gmail.com>
+In-Reply-To: <CAHp75Vc19Kii7_TF+9aF4ZeKAa4_92DCVL+u1duZDTu38o2qsw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 03/06/2013, at 6:44 PM, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-
+On 06/03/2013 06:14 PM, Andy Shevchenko wrote:
+> On Mon, Jun 3, 2013 at 12:23 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>> On 06/01/2013 05:05 AM, Andy Shevchenko wrote:
 > 
-> The patch sounds good for me. If nobody complains, I will queue it for 3.11.
+>>> Why not "(u16)~0" ?
+>> We'd better to give a meaningful name to it just like Ben said.
 > 
-> Please in the future, add the subsystem name in the subject line as:
+> Yeah, you could give a name, though I don't see this needs for
+> constants like (u16)~0. It's a usual way to mark some values
+> uninitialized.
+> Just an example from kernel:
 > 
-> clocksource: Add TI-Nspire timer ...
+>         /* This is limited by 16 bit "slot" numbers,
+>          * and by available on-disk context storage.
+>          *
+>          * Also (u16)~0 is special (denotes a "free" extent).
 > 
 
+After "fgrep -rn 'u16' * | fgrep '~0'", it seems better to define a
+meaningful macro for it (e.g. "#define SKB_HEADER_WAS_UNSET    0xffff").
 
-Thanks, will keep that in mind next time.
 
-Cheers,
-Daniel Tang
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
