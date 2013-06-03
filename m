@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab3FCXJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 19:09:26 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:65152 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758645Ab3FCXJS (ORCPT
+	id S1759075Ab3FCXNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 19:13:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41089 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757635Ab3FCXNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 19:09:18 -0400
-Date: Mon, 3 Jun 2013 16:09:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] percpu-refcount: Don't use silly cmpxchg()
-Message-ID: <20130603230913.GE29989@mtj.dyndns.org>
-References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
- <1370300549-2177-1-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370300549-2177-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 19:13:04 -0400
+Date: Mon, 3 Jun 2013 16:13:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: rtc-linux@googlegroups.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH] rtc: rtc-twl: ensure IRQ is wakeup enabled
+Message-Id: <20130603161303.55e9da049744656541e9048f@linux-foundation.org>
+In-Reply-To: <1370039827-25033-1-git-send-email-khilman@linaro.org>
+References: <1370039827-25033-1-git-send-email-khilman@linaro.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 04:02:29PM -0700, Kent Overstreet wrote:
-> The cmpxcgh() was just to ensure the debug check didn't race, which was
-> a bit excessive. The caller is supposed to do the appropriate
-> synchronization, which means percpu_ref_kill() can just do a simple
-> store.
+On Fri, 31 May 2013 15:37:07 -0700 Kevin Hilman <khilman@linaro.org> wrote:
+
+> Currently, the RTC IRQ is never wakeup-enabled so is not capable of
+> bringing the system out of suspend.
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> On OMAP platforms, we have gotten by without this because the TWL RTC
+> is on an I2C-connected chip which is capable of waking up the OMAP via
+> the IO ring when the OMAP is in low-power states.
+> 
+> However, if the OMAP suspends without hitting the low-power states
+> (and the IO ring is not enabled), RTC wakeups will not work because
+> the IRQ is not wakeup enabled.
+> 
+> To fix, ensure the RTC IRQ is wakeup enabled whenever the RTC alarm is
+> set.
+> 
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -213,12 +213,24 @@ static int mask_rtc_irq_bit(unsigned char bit)
+>  
+>  static int twl_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
+>  {
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	int irq = platform_get_irq(pdev, 0);
+> +	static bool twl_rtc_wake_enabled;
+>  	int ret;
+>  
+> -	if (enabled)
+> +	if (enabled) {
+>  		ret = set_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
+> -	else
+> +		if (device_can_wakeup(dev) && !twl_rtc_wake_enabled) {
+> +			enable_irq_wake(irq);
+> +			twl_rtc_wake_enabled = true;
+> +		}
+> +	} else {
+>  		ret = mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
+> +		if (twl_rtc_wake_enabled) {
+> +			disable_irq_wake(irq);
+> +			twl_rtc_wake_enabled = false;
+> +		}
+> +	}
 
-Applied to percpu/for-3.11.
+Why do we need this (slightly racy) logic with twl_rtc_wake_enabled? 
+Other drivers don't do this.
 
-The only concern I have left now is that we now have bitwise-and and
-test instead of just test in the hot path (get/put) to test whether
-the percpu part is alive.  As x86 has single and-and-test instruction
-which doesn't require an output register, this only adds a single
-instruction but this may lead to more overhead on other architectures.
+Should we test device_may_wakeup() befre running disable_irq_wake()? 
+Most drivers seem to do this, but it's all a bit foggy.
 
-The and-and-test was added because RCU free needs to have access to
-the percpu pointer after the pointer is killed and can be removed by
-adding another field to struct percpu_ref which remembers the pointer
-separately from the original percpu pointer, which I think is a better
-trade-off given that it makes the hot path lighter and adding another
-pointer field to struct percpu_ref isn't really gonna affect anything.
-Plus, it'd also make the code simpler.
-
-Anyways, it's not a big concern at this point and we can address it
-later.
-
-Thanks a lot, everyone!
-
--- 
-tejun
