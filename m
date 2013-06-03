@@ -1,84 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab3FCMkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 08:40:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60314 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753195Ab3FCMkg (ORCPT
+	id S1757379Ab3FCMov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 08:44:51 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:33558 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435Ab3FCMos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 08:40:36 -0400
-Date: Mon, 3 Jun 2013 13:39:53 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: A bug about system call on ARM
-Message-ID: <20130603123953.GE32242@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1610991B85E@CNBJMBX05.corpusers.net>
- <CAFLxGvyy=73dGQqG8W6SXZah7WQZ4gJAeeHXN8opKaOuG-5yUQ@mail.gmail.com>
- <20130529094826.GD13095@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
- <20130530090949.GC7483@mudshark.cambridge.arm.com>
- <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <20130603101809.GK18614@n2100.arm.linux.org.uk>
- <20130603102723.GD32242@mudshark.cambridge.arm.com>
- <20130603104534.GL18614@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130603104534.GL18614@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jun 2013 08:44:48 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Subject: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
+Date: Mon,  3 Jun 2013 14:44:43 +0200
+Message-Id: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-27049-1370263483-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:45:34AM +0100, Russell King - ARM Linux wrote:
-> On Mon, Jun 03, 2013 at 11:27:23AM +0100, Will Deacon wrote:
-> > On Mon, Jun 03, 2013 at 11:18:09AM +0100, Russell King - ARM Linux wrote:
-> > > On Thu, May 30, 2013 at 12:41:12PM +0100, Will Deacon wrote:
-> > > > +#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
-> > > > +	/*
-> > > > +	 * We may have faulted trying to load the SWI instruction due to
-> > > > +	 * concurrent page aging on another CPU. In this case, return
-> > > > +	 * back to the swi instruction and fault the page back.
-> > > > +	 */
-> > > > +9001:
-> > > > +	sub	lr, lr, #4
-> > > > +	str	lr, [sp, #S_PC]
-> > > > +	b	ret_fast_syscall
-> > > > +#endif
-> > > 
-> > > The comment is wrong.  If we get here, it means that the fault from
-> > > trying to loading the instruction can't be fixed up.  Arguably, that
-> > > should result in a SIGSEGV being sent immediately, but we'll get to
-> > > that when we then try to re-load the instruction.
-> > 
-> > Why would we kill the application in this case? The reported problem is
-> > where one CPU ages the page containing the swi instruction (mkold =>
-> > clears L_PTE_YOUNG => write 0 to the pte) in between the other CPU executing
-> > the swi and the kernel trying to read the immediate. The VMA is fine.
-> 
-> If you mark the instruction was a user-accessing instruction, the kernel
-> will handle the resulting exception, trying to make the page accessible.
-> If it is successful, then execution resumes as normal at the faulting
-> instruction and continues as if nothing happened.
-> 
-> If it can't make the page accessible (eg, out of memory) the exception
-> handler path (your code above) will be called instead.  Normal action in
-> that case would be for a system call to return -EFAULT, but in this case
-> we can't know what the syscall was, so we don't know if userspace will
-> even pay attention to the returned error code.  In any case, if the page
-> is no longer accessible, it's going to end up being killed by a SEGV
-> when we eventually return to userspace anyway.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Yes, of course, the fault handling will sort out non-fatal faults for us, so
-I'll update the comment.
+--=_mimegpg-monstr-desktop-27049-1370263483-0001
 
-Thanks,
+Check that dma_ops are initialized correctly.
 
-Will
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Functions dma_mmap_attrs(), dma_get_sgtable_attrs()
+already have this checking.
+
+---
+ include/asm-generic/dma-mapping-common.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index de8bf89..d430cab 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -16,6 +16,7 @@ static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
+ 	dma_addr_t addr;
+
+ 	kmemcheck_mark_initialized(ptr, size);
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	addr = ops->map_page(dev, virt_to_page(ptr),
+ 			     (unsigned long)ptr & ~PAGE_MASK, size,
+@@ -33,6 +34,7 @@ static inline void dma_unmap_single_attrs(struct device *dev, dma_addr_t addr,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->unmap_page)
+ 		ops->unmap_page(dev, addr, size, dir, attrs);
+@@ -49,6 +51,7 @@ static inline int dma_map_sg_attrs(struct device *dev, struct scatterlist *sg,
+
+ 	for_each_sg(sg, s, nents, i)
+ 		kmemcheck_mark_initialized(sg_virt(s), s->length);
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	ents = ops->map_sg(dev, sg, nents, dir, attrs);
+ 	debug_dma_map_sg(dev, sg, nents, ents, dir);
+@@ -62,6 +65,7 @@ static inline void dma_unmap_sg_attrs(struct device *dev, struct scatterlist *sg
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	debug_dma_unmap_sg(dev, sg, nents, dir);
+ 	if (ops->unmap_sg)
+@@ -76,6 +80,7 @@ static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
+ 	dma_addr_t addr;
+
+ 	kmemcheck_mark_initialized(page_address(page) + offset, size);
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	addr = ops->map_page(dev, page, offset, size, dir, NULL);
+ 	debug_dma_map_page(dev, page, offset, size, dir, addr, false);
+@@ -88,6 +93,7 @@ static inline void dma_unmap_page(struct device *dev, dma_addr_t addr,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->unmap_page)
+ 		ops->unmap_page(dev, addr, size, dir, NULL);
+@@ -100,6 +106,7 @@ static inline void dma_sync_single_for_cpu(struct device *dev, dma_addr_t addr,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_single_for_cpu)
+ 		ops->sync_single_for_cpu(dev, addr, size, dir);
+@@ -112,6 +119,7 @@ static inline void dma_sync_single_for_device(struct device *dev,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_single_for_device)
+ 		ops->sync_single_for_device(dev, addr, size, dir);
+@@ -126,6 +134,7 @@ static inline void dma_sync_single_range_for_cpu(struct device *dev,
+ {
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_single_for_cpu)
+ 		ops->sync_single_for_cpu(dev, addr + offset, size, dir);
+@@ -140,6 +149,7 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
+ {
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_single_for_device)
+ 		ops->sync_single_for_device(dev, addr + offset, size, dir);
+@@ -152,6 +162,7 @@ dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_sg_for_cpu)
+ 		ops->sync_sg_for_cpu(dev, sg, nelems, dir);
+@@ -164,6 +175,7 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+
++	BUG_ON(!ops);
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (ops->sync_sg_for_device)
+ 		ops->sync_sg_for_device(dev, sg, nelems, dir);
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-27049-1370263483-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGsj7sACgkQykllyylKDCF+BwCfcGw7D+F0LY0QF1D+qM5u7+ZG
+vkUAoJpumEj7S5dkgR5NCQ+QIaoI6yWd
+=PNeh
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-27049-1370263483-0001--
