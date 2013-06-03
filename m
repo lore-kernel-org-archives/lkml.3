@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab3FCTgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 15:36:08 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59363 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab3FCTgG (ORCPT
+	id S1758943Ab3FCTj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 15:39:28 -0400
+Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:42630 "EHLO
+	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756229Ab3FCTjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 15:36:06 -0400
-Date: Mon, 3 Jun 2013 14:07:05 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
-Message-ID: <20130603180705.GA10200@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+	Mon, 3 Jun 2013 15:39:23 -0400
+X-Greylist: delayed 1144 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jun 2013 15:39:23 EDT
+Date: Mon, 3 Jun 2013 19:20:17 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: JoonSoo Kim <js1304@gmail.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+In-Reply-To: <CAAmzW4M8rX9WGo_FYeyBQ8=Ht-mRnQz1TGhLfbFuKhm3r8grGA@mail.gmail.com>
+Message-ID: <0000013f0b7b993c-35844ed2-81be-4146-ab3c-6c803006576b-000000@email.amazonses.com>
+References: <1364010673.6345.156.camel@gandalf.local.home> <1364227073.6345.182.camel@gandalf.local.home> <1364228039.6345.183.camel@gandalf.local.home> <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
+ <1364234613.6345.184.camel@gandalf.local.home> <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com> <1364236355.6345.185.camel@gandalf.local.home> <20130327025957.GA17125@lge.com> <1364355032.6345.200.camel@gandalf.local.home>
+ <20130327061351.GB17125@lge.com> <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com> <1369751967.15552.12.camel@gandalf.local.home> <alpine.DEB.2.02.1305281121420.1627@gentwo.org>
+ <0000013eec62261a-77052f34-f1cb-41b2-ae90-7575a2d0472c-000000@email.amazonses.com> <CAAmzW4M8rX9WGo_FYeyBQ8=Ht-mRnQz1TGhLfbFuKhm3r8grGA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1370280485-10047-1-git-send-email-joern@logfs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.06.03-54.240.9.74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 June 2013 13:28:03 -0400, Joern Engel wrote:
-> 
-> Drawback is that object size is growing.  I think an ideal compiler
-> should be able to optimize all the overhead away, but 4.7 just isn't
-> there yet.  Or maybe I just messed up - patches are only
-> compile-tested after all.  Comments/ideas are welcome.
+On Tue, 4 Jun 2013, JoonSoo Kim wrote:
 
-Actually, replacing the inline function with a bit of macro hell seems
-to yield identical object size again.  And in the case of
-compression.o, it even removes 528 bytes or so of object code.
+> And I re-read Steven initial problem report in RT kernel and find that
+> unfreeze_partial() do lock and unlock several times. This means that
+> each page in cpu partial list doesn't come from same node. Why do we
+> add other node's slab to this cpu partial list? This is also not good
+> for general case. How about considering node affinity in __slab_free()?
+> IMHO, if we implement this, Steven's problem can be solved.
 
-New 1/2 below.
+We may need the other nodes pages if we consistently allocate from there.
+__slab_alloc() ensures that only pages from the correct node are used. It
+will drop pages that do not come from the proper nodes.
 
-Jörn
-
---
-A defeated army first battles and then seeks victory.
--- Sun Tzu
-
-[PATCH 1/2] list: add list_for_each_entry_del
-
-I have seen a lot of boilerplate code that either follows the pattern of
-	while (!list_empty(head)) {
-		pos = list_entry(head->next, struct foo, list);
-		list_del(pos->list);
-		...
-	}
-or some variant thereof.
-
-With this patch in, people can use
-	list_for_each_entry_del(pos, head, list) {
-		...
-	}
-
-The patch also adds a list_for_each_del variant, even though I have
-only found a single user for that one so far.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- include/linux/list.h |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/include/linux/list.h b/include/linux/list.h
-index 6a1f8df..49325ca 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -483,6 +483,27 @@ static inline void list_splice_tail_init(struct list_head *list,
- 	     pos = list_entry(pos->member.next, typeof(*pos), member))
- 
- /**
-+ * list_for_each_remove - iterate over a list, deleting each entry
-+ * @pos:	the &struct list_head to use as a loop cursor.
-+ * @head:	the head of your list.
-+ *
-+ * Calls list_del() on pos on each iteration
-+ */
-+#define list_for_each_del(pos, head) \
-+	while (list_empty(head) ? 0 : (pos = (head)->next, list_del(pos), 1))
-+
-+/**
-+ * list_for_each_entry_remove - iterate over a list of given type, deleting each entry
-+ * @pos:	the type * to use as loop cursor.
-+ * @head:	the head of your list.
-+ * @member:	the name of the list_struct within the struct
-+ *
-+ * Calls list_del() on pos on each iteration
-+ */
-+#define list_for_each_entry_del(pos, head, member) \
-+	while (list_empty(head) ? 0 : (pos = list_first_entry((head), typeof(*pos), member), list_del(&pos->member), 1))
-+
-+/**
-  * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
-  * @pos:	the type * to use as a loop cursor.
-  * @n:		another type * to use as temporary storage
--- 
-1.7.10.4
+Filtering in __slab_free would mean that we cannot improve performance on
+remote frees.
 
