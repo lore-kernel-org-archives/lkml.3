@@ -1,104 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab3FCKal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:30:41 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:42690 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab3FCKai (ORCPT
+	id S1756211Ab3FCKbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:31:45 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:62146 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab3FCKbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:30:38 -0400
+	Mon, 3 Jun 2013 06:31:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <000801ce6039$526d9a00$f748ce00$@samsung.com>
-References: <000801ce6039$526d9a00$f748ce00$@samsung.com>
-Date: Mon, 3 Jun 2013 13:30:38 +0300
-Message-ID: <CAHp75VeFW1PWsPoothDvQrMXYvUXzjBkf5akV0ZPXtmnzbMLYw@mail.gmail.com>
-Subject: Re: [PATCH V2] mfd: replace strict_strtoul() with kstrtoul()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+In-Reply-To: <51ac5610.87ebc20a.4198.ffffdc38SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1370012520-30539-1-git-send-email-richard.genoud@gmail.com> <51ac5610.87ebc20a.4198.ffffdc38SMTPIN_ADDED_BROKEN@mx.google.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 3 Jun 2013 12:31:22 +0200
+Message-ID: <CACQ1gAgYj7tPqQ01oYiRZiuMAS3XQhsp9t3t4boPjZCV2wtBBw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] spi: atmel: convert to dma_request_slave_channel_compat()
+To: Richard Genoud <richard.genoud@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: ludovic.desroches@atmel.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 12:04 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> The usage of strict_strtoul() is not preferred, because
-> strict_strtoul() is obsolete. Thus, kstrtoul() should be
-> used.
-
-Few comments below.
-After addressing them take my
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-> --- a/drivers/mfd/ab3100-core.c
-> +++ b/drivers/mfd/ab3100-core.c
-
-> @@ -514,22 +514,20 @@ static ssize_t ab3100_get_set_reg(struct file *file,
->         /*
->          * Advance pointer to end of string then terminate
->          * the register string. This is needed to satisfy
-> -        * the strict_strtoul() function.
-> +        * the kstrtou8() function.
->          */
->         while ((i < buf_size) && (buf[i] != ' '))
->                 i++;
->         buf[i] = '\0';
+2013/6/3 Ludovic Desroches <ludovic.desroches@atmel.com>:
+> On Fri, May 31, 2013 at 05:01:59PM +0200, Richard Genoud wrote:
+>> Use generic DMA DT helper.
+>> Platforms booting with or without DT populated are both supported.
+>>
+>> Based on Ludovic Desroches <ludovic.desroches@atmel.com> patchset
+>> "ARM: at91: move to generic DMA device tree binding"
+>>
+>> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 >
-> -       err = strict_strtoul(&buf[regp], 16, &user_reg);
-> +       err = kstrtou8(&buf[regp], 16, &user_reg);
->         if (err)
->                 return err;
-> -       if (user_reg > 0xff)
-> -               return -EINVAL;
+> Looks fine for me to so
+> Acked-by: Ludovic Desroches <ludovic.desroches@gmail.com>
 >
->         /* Either we read or we write a register here */
->         if (!priv->mode) {
->                 /* Reading */
-> -               u8 reg = (u8) user_reg;
-> +               u8 reg = user_reg;
-
-Since the reg and user_reg have same type I think no harm to drop away
-this local reg variable.
-
->                 u8 regvalue;
+> One comment below
 >
->                 ab3100_get_register_interruptible(ab3100, reg, &regvalue);
-> @@ -540,7 +538,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
->         } else {
->                 int valp;
->                 unsigned long user_value;
-> -               u8 reg = (u8) user_reg;
-> +               u8 reg = user_reg;
-
-Same idea.
-
->                 u8 value;
->                 u8 regvalue;
+Response below.
+>> ---
+>>  drivers/spi/spi-atmel.c |   42 +++++++++++++++++++++++++++---------------
+>>  1 file changed, 27 insertions(+), 15 deletions(-)
+>>
+>> rebased on linux-next next-20130531
+>>
+>> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+>> index 31cfc87..ea1ec00 100644
+>> --- a/drivers/spi/spi-atmel.c
+>> +++ b/drivers/spi/spi-atmel.c
+>> @@ -424,10 +424,15 @@ static int atmel_spi_dma_slave_config(struct atmel_spi *as,
+>>       return err;
+>>  }
+>>
+>> -static bool filter(struct dma_chan *chan, void *slave)
+>> +static bool filter(struct dma_chan *chan, void *pdata)
+>>  {
+>> -     struct  at_dma_slave *sl = slave;
+>> +     struct atmel_spi_dma *sl_pdata = pdata;
+>> +     struct at_dma_slave *sl;
+>>
+>> +     if (!sl_pdata)
+>> +             return false;
+>> +
+>> +     sl = &sl_pdata->dma_slave;
+>>       if (sl->dma_dev == chan->device->dev) {
 >
-> @@ -557,11 +555,9 @@ static ssize_t ab3100_get_set_reg(struct file *file,
->                         i++;
->                 buf[i] = '\0';
->
-> -               err = strict_strtoul(&buf[valp], 16, &user_value);
-> +               err = kstrtoul(&buf[valp], 16, &user_value);
+> I am wondering if a null pointer dereference can happen here. In
+> atmel_spi_configure_dma sdata was checked so maybe sl should be check
+> here.
 
-kstrtou8() as well (see below)
+sdata was checked, but there was no point checking it:
+if as is not null, as->dma.dma_slave is defined ; so its address is not null.
+it's the same in the filter function now:
+if sl_pdata is not null, sl_pdata->dma_slave is defined ; so its
+address is not null.
 
->                 if (err)
->                         return err;
-> -               if (user_reg > 0xff)
-> -                       return -EINVAL;
+I added a check on sl_pdata in this patch, maybe a (BUG|WARN)_ON()
+would have been better, as it really should not happen.
 
-It seems a bug, and further the u8 is used for value as well.
 
->                 value = (u8) user_value;
+>>               chan->private = sl;
+>>               return true;
+>> @@ -438,24 +443,31 @@ static bool filter(struct dma_chan *chan, void *slave)
+>>
+>>  static int atmel_spi_configure_dma(struct atmel_spi *as)
+>>  {
+>> -     struct at_dma_slave *sdata = &as->dma.dma_slave;
+>>       struct dma_slave_config slave_config;
+>> +     struct device *dev = &as->pdev->dev;
+>>       int err;
+>>
+>> -     if (sdata && sdata->dma_dev) {
+>> -             dma_cap_mask_t mask;
+>> +     dma_cap_mask_t mask;
+>> +     dma_cap_zero(mask);
+>> +     dma_cap_set(DMA_SLAVE, mask);
+>>
+>> -             /* Try to grab two DMA channels */
+>> -             dma_cap_zero(mask);
+>> -             dma_cap_set(DMA_SLAVE, mask);
+>> -             as->dma.chan_tx = dma_request_channel(mask, filter, sdata);
+>> -             if (as->dma.chan_tx)
+>> -                     as->dma.chan_rx =
+>> -                             dma_request_channel(mask, filter, sdata);
+>> +     as->dma.chan_tx = dma_request_slave_channel_compat(mask, filter,
+>> +                                                        &as->dma,
+>> +                                                        dev, "tx");
+>> +     if (!as->dma.chan_tx) {
+>> +             dev_err(dev,
+>> +                     "DMA TX channel not available, SPI unable to use DMA\n");
+>> +             err = -EBUSY;
+>> +             goto error;
+>>       }
+>> -     if (!as->dma.chan_rx || !as->dma.chan_tx) {
+>> -             dev_err(&as->pdev->dev,
+>> -                     "DMA channel not available, SPI unable to use DMA\n");
+>> +
+>> +     as->dma.chan_rx = dma_request_slave_channel_compat(mask, filter,
+>> +                                                        &as->dma,
+>> +                                                        dev, "rx");
+>> +
+>> +     if (!as->dma.chan_rx) {
+>> +             dev_err(dev,
+>> +                     "DMA RX channel not available, SPI unable to use DMA\n");
+>>               err = -EBUSY;
+>>               goto error;
+>>       }
+>> --
+>> 1.7.10.4
+>>
 
-Thus, you can easily use u8 type for user_value and drop off val variable.
+Best regards,
 
---
-With Best Regards,
-Andy Shevchenko
+Richard.
