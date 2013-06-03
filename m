@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284Ab3FCUyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 16:54:23 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:41201 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab3FCUyU (ORCPT
+	id S1757852Ab3FCU6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 16:58:10 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:50308 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab3FCU6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 16:54:20 -0400
+	Mon, 3 Jun 2013 16:58:08 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: "Strashko\, Grygorii" <grygorii.strashko@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: twl-core: convert to module_init()
+References: <1370033794-5357-1-git-send-email-khilman@linaro.org>
+	<902E09E6452B0E43903E4F2D568737AB31F402@DNCE04.ent.ti.com>
+Date: Mon, 03 Jun 2013 13:58:03 -0700
+In-Reply-To: <902E09E6452B0E43903E4F2D568737AB31F402@DNCE04.ent.ti.com>
+	(Grygorii Strashko's message of "Sat, 1 Jun 2013 07:59:03 +0000")
+Message-ID: <87li6qlxno.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <51ACFDF2.4040600@infradead.org>
-References: <20130603163717.a6f78476e57d92fadd6f6a23@canb.auug.org.au>
-	<51ACFDF2.4040600@infradead.org>
-Date: Mon, 3 Jun 2013 22:54:19 +0200
-X-Google-Sender-Auth: axMXci_Syh_fmhrpaYEgjXweVvE
-Message-ID: <CAMuHMdUALrScFE895xRiBvgUpVa9Tvic5M7YxefrEgyeMaSjhw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 3 (fonts.c & vivi)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 10:34 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 06/02/13 23:37, Stephen Rothwell wrote:
->> Changes since 20130531:
-> on x86_64:
+"Strashko, Grygorii" <grygorii.strashko@ti.com> writes:
+
+> Hi Kevin,
 >
-> warning: (VIDEO_VIVI && USB_SISUSBVGA && SOLO6X10) selects FONT_SUPPORT which has unmet direct dependencies (HAS_IOMEM && VT)
-> warning: (VIDEO_VIVI && FB_VGA16 && FB_S3 && FB_VT8623 && FB_ARK && USB_SISUSBVGA_CON && SOLO6X10) selects FONT_8x16 which has unmet direct dependencies (HAS_IOMEM && VT && FONT_SUPPORT)
+> It's done alreday here:
+> https://patchwork.kernel.org/patch/2477541/ - mfd: twl-core: convert to module_i2c_driver()
+>  (Samuel has taken this one)
 
-I knew about thet warning. But I thought it was harmless, as none of the font
-code really depends on console support...
+Excellent, thanks for pointing it out, somehow I missed that thread.  My
+patch can be ignored.
 
-> drivers/built-in.o: In function `vivi_init':
-> vivi.c:(.init.text+0x1a3da): undefined reference to `find_font'
->
-> when CONFIG_VT is not enabled.
+> - and -
+> https://patchwork.kernel.org/patch/2477561/ - i2c: omap: convert to module_platform_driver()
+>  (you can vote here - TWL can't be shifted without I2C)
 
-... but I missed that drivers/video/console is not used if CONFIG_VT=y.
-Sorry for that.
+This one (combined with the first one) makes twl_rtc fail to initialize
+properly on OMAP3 DT boot, with an error like this:
 
-> Just make CONFIG_VIDEO_VIVI depend on VT ?
+         twl_rtc rtc.22: hctosys: invalid date/time
 
-Does this (whitespace-damaged copy-and-paste) help?
+Reverting that you get the expected result:
 
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -12,7 +12,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o
-                                      modedb.o fbcvt.o
- fb-objs                           := $(fb-y)
+          twl_rtc rtc.22: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
 
--obj-$(CONFIG_VT)                 += console/
-+obj-y                            += console/
- obj-$(CONFIG_LOGO)               += logo/
- obj-y                            += backlight/
+I didn't debug any further, but for now, at least patch 2 needs a little
+more work/debug.
 
-It shouldn't make a difference if nothing inside drivers/video/console
-is enabled,
-as all objects in drivers/video/console/Makefile are conditional.
-
-BTW, my plan was to move the font code to lib/font, but I haven't done that yet.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Kevin
