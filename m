@@ -1,211 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab3FCQCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:02:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33540 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758938Ab3FCQCS (ORCPT
+	id S1759216Ab3FCQC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:02:59 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:5890 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758938Ab3FCQC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:02:18 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=w5NR5vgd4yIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=0jC6bcFkUTUA:10 a=VwQbUJbxAAAA:8 a=1f2KdLKwJRynbfznIPcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370275337.26799.94.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/2] [GIT PULL] rcu/ftrace: Fix livelock from overhead
- of RCU debugging
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 03 Jun 2013 12:02:17 -0400
-In-Reply-To: <20130529185300.403107512@goodmis.org>
-References: <20130529185300.403107512@goodmis.org>
+	Mon, 3 Jun 2013 12:02:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,794,1363132800"; 
+   d="scan'208";a="5267897"
+Message-ID: <1370275373.24512.37.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] dtc: ensure #line directives don't consume data from
+ the next line
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>,
+        <linux-kbuild@vger.kernel.org>, <jdl@jdl.com>,
+        Stephen Warren <swarren@nvidia.com>
+Date: Mon, 3 Jun 2013 17:02:53 +0100
+In-Reply-To: <1370273816-19411-1-git-send-email-swarren@wwwdotorg.org>
+References: <1370273816-19411-1-git-send-email-swarren@wwwdotorg.org>
+Organization: Citrix Systems, Inc.
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-29 at 14:53 -0400, Steven Rostedt wrote:
-> Linus,
+On Mon, 2013-06-03 at 09:36 -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> [ If you don't care to read the background of these patches,
->   just jump down to the "Please pull" line. I included this
->   description in the tag as well. ]
+> Previously, the #line parsing regex ended with ({WS}+[0-9]+)?. The {WS}
+> could match line-break characters. If the #line directive did not contain
+> the optional flags field at the end, this could cause any integer data on
+> the next line to be consumed as part of the #line directive parsing. This
+> could cause syntax errors (i.e. #line parsing consuming the leading 0
+> from a hex literal 0x1234, leaving x1234 to be parsed as cell data,
+> which is a syntax error), or invalid compilation results (i.e. simply
+> consuming literal 1234 as part of the #line processing, thus removing it
+> from the cell data).
+> 
+> Fix this by replacing {WS} with [ \t] so that it can't match line-breaks.
+> 
+> Convert all instances of {WS}, even though the other instances should be
+> irrelevant for any well-formed #line directive. This is done for
+> consistency and ultimate safety.
+> 
+> This is a port of upstream dtc commit a1ee6f0 (with same subject) to the
+> kernel's copy of dtc.
 
-Hi Linus,
-
-I noticed that this hasn't been pulled yet. Is there any issue with it,
-or has it just been missed due to your travels?  I have a few more
-patches I'm currently testing that I built on top of these commits. I'll
-have another pull request today or tomorrow.
-
-These changes touched RCU but has been acked by Paul.
-
-Thanks,
-
--- Steve
+FWIW I have tested the upstream commit via my device-tree.git. If that
+is considered sufficient then it is OK by me to apply
+   Tested-by: Ian Campbell <ian.campbell@citrix.com>
+to this change too.
 
 > 
-> I was testing a config for one bug and triggered a livelock lockup. A
-> NMI watchdog dump showed what was happening:
+> Reported-by: Ian Campbell <Ian.Campbell@citrix.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> This is a fix for 3.10.
 > 
-> [   65.972000] NMI backtrace for cpu 2
-> [   65.972000] CPU: 2 PID: 48 Comm: kworker/2:1 Not tainted 3.10.0-rc2-test+ #151
-> [   65.972000] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-> [   65.972000] task: ffff880078dc2140 ti: ffff880078dc4000 task.ti: ffff880078dc4000
-> [   65.972000] RIP: 0010:[<ffffffff810c2259>]  [<ffffffff810c2259>] ftrace_ops_list_func+0x144/0x151
-> [   65.972000] RSP: 0000:ffff880078dc5ac8  EFLAGS: 00000006
-> [   65.972000] RAX: 0000000000008000 RBX: 0000000000000001 RCX: 000000000000000f
-> [   65.972000] RDX: 0000000000000002 RSI: ffffffff810c0e9f RDI: ffffffff810b73f7
-> [   65.972000] RBP: ffff880078dc5af8 R08: ffff880078dc5be0 R09: ffff880078dc5bb0
-> [   65.972000] R10: ffffffff81a3c730 R11: 0000000000000001 R12: 0000000000008000
-> [   65.972000] R13: ffffffff810b73f7 R14: 0000000000000000 R15: ffffffff810c0e9f
-> [   65.972000] FS:  0000000000000000(0000) GS:ffff88007aa00000(0000) knlGS:0000000000000000
-> [   65.972000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   65.972000] CR2: 0000000000000168 CR3: 0000000001a0b000 CR4: 00000000000007e0
-> [   65.972000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   65.972000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   65.972000] Stack:
-> [   65.972000]  ffff880078d97480 0000000000000001 ffffffff810b9148 ffff880078d97480
-> [   65.972000]  0000000000000000 ffffffff810bb6ba ffff880078dc5bd0 ffffffff814fa7c0
-> [   65.972000]  0000000000000000 ffffffff810bb6ba ffff880078dc5c00 ffffffff814fa7c0
-> [   65.972000] Call Trace:
-> [   65.972000]  [<ffffffff810b9148>] ? check_for_new_grace_period+0x115/0x115
-> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
-> [   65.972000]  [<ffffffff814fa7c0>] ftrace_call+0x5/0x2f
-> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
-> [   65.972000]  [<ffffffff814fa7c0>] ? ftrace_call+0x5/0x2f
-> [   65.972000]  [<ffffffff810b73fc>] ? rcu_is_cpu_idle+0x5/0x69
-> [   65.972000]  [<ffffffff810558d3>] ? debug_lockdep_rcu_enabled+0x5/0x35
-> [   65.972000]  [<ffffffff810b73fc>] ? rcu_is_cpu_idle+0x5/0x69
-> [   65.972000]  [<ffffffff810c0e9f>] ? rcu_read_lock_held+0x19/0x3c
-> [   65.972000]  [<ffffffff810c0f90>] ftrace_ops_test+0x47/0x93
-> [   65.972000]  [<ffffffff810b9148>] ? check_for_new_grace_period+0x115/0x115
-> [   65.972000]  [<ffffffff810c21e1>] ftrace_ops_list_func+0xcc/0x151
-> [   65.972000]  [<ffffffff814fa7c0>] ftrace_call+0x5/0x2f
-> [   65.972000]  [<ffffffff810c2234>] ? ftrace_ops_list_func+0x11f/0x151
-> [   65.972000]  [<ffffffff810bb6b2>] ? rcu_note_context_switch+0x206/0x260
-> [   67.972000]  [<ffffffff810b914d>] ? rcu_preempt_qs+0x5/0x53
-> [   65.972000]  [<ffffffff81086f41>] ? trace_hardirqs_off+0xd/0xf
-> [   65.972000]  [<ffffffff810b914d>] ? rcu_preempt_qs+0x5/0x53
-> [   65.972000]  [<ffffffff810bb6ba>] ? rcu_note_context_switch+0x20e/0x260
-> [   65.972000]  [<ffffffff814f2bca>] ? schedule+0x64/0x66
-> [   65.972000]  [<ffffffff814f246e>] __schedule+0x67/0x710
-> [   65.972000]  [<ffffffff81052e5e>] ? worker_thread+0x1e9/0x1f3
-> [   65.972000]  [<ffffffff81052e5e>] ? worker_thread+0x1e9/0x1f3
-> [   65.972000]  [<ffffffff814f2bca>] schedule+0x64/0x66
-> [   65.972000]  [<ffffffff81052e63>] worker_thread+0x1ee/0x1f3
-> [   65.972000]  [<ffffffff81052c75>] ? rescuer_thread+0x26c/0x26c
-> [   65.972000]  [<ffffffff8105a8bf>] kthread+0xb1/0xb9
-> [   65.972000]  [<ffffffff81064b3c>] ? finish_task_switch+0x7c/0xf8
-> [   65.972000]  [<ffffffff8105a80e>] ? __init_kthread_worker+0x59/0x59
-> [   65.972000]  [<ffffffff814faadc>] ret_from_fork+0x7c/0xb0
-> [   65.972000]  [<ffffffff8105a80e>] ? __init_kthread_worker+0x59/0x59
+>  scripts/dtc/dtc-lexer.l             |    2 +-
+>  scripts/dtc/dtc-lexer.lex.c_shipped |  232 +++++++++++++++++------------------
+>  2 files changed, 117 insertions(+), 117 deletions(-)
 > 
-> What happened was that ftrace's function tracer uses
-> hlist_for_each_entry_rcu() which uses rcu_dereference_raw(), and also
-> calls rcu_dereference_raw() directly. As this macro is defined as
-> rcu_dereference_check() and will call rcu_read_lock_sched_held() which
-> does various rcu checks as well as lockdep and such, when it happens for
-> *every* function call in the kernel it slows the system down where it
-> can live lock (interrupts taking too long to finish, before another
-> interrupt is triggered).
-> 
-> To give an idea of the abuse that function tracing is taking, every
-> function that is traced can do the following:
-> 
-> in __ftrace_ops_list_func() we have:
-> 
->         do_for_each_ftrace_op(op, ftrace_ops_list) {
->                 if (ftrace_ops_test(op, ip))
->                         op->func(ip, parent_ip, op, regs);
->         } while_for_each_ftrace_op(op);
-> 
-> Where:
-> 
-> #define do_for_each_ftrace_op(op, list)                 \
->         op = rcu_dereference_raw(list);                 \
->         do
-> 
-> and
-> 
-> #define while_for_each_ftrace_op(op)                            \
->         while (likely(op = rcu_dereference_raw((op)->next)) &&  \
->                unlikely((op) != &ftrace_list_end))
-> 
-> And ftrace_ops_test() has:
-> 
->         filter_hash = rcu_dereference_raw(ops->filter_hash);
->         notrace_hash = rcu_dereference_raw(ops->notrace_hash);
-> 
->         if ((ftrace_hash_empty(filter_hash) ||
->              ftrace_lookup_ip(filter_hash, ip)) &&
->             (ftrace_hash_empty(notrace_hash) ||
->              !ftrace_lookup_ip(notrace_hash, ip)))
->                 ret = 1;
-> 
-> Where ftrace_lookup_ip() has:
-> 
->         hlist_for_each_entry_rcu(entry, hhd, hlist) {
-> 
-> Now that is 6 calls to rcu_dereference_raw() that happens for every
-> single function that is traced! And this doesn't count possibly more by
-> the callbacks that were registered by the function tracer, or multiple
-> loops by while_for_each_ftrace_op(). When rcu debugging is on, that's 6
-> calls to rcu_read_lock_sched_held() which not only does several calls
-> that is traced by the function tracer (luckily the recursion protection
-> catches those), but those calls also call preempt_disable/enable (that
-> gets traced by the function tracer). Worse yet, lock_is_held() is called
-> that disables and then re-enables interrupts, and does a search for
-> locks held.
-> 
-> All this overhead that is done for every function call that is traced
-> (which could be most of the functions in the kernel) and does it at
-> least 6 times. This can drastically slow things down so much that we get
-> a live lock in the system.
-> 
-> Now, we could put a bunch of notrace in the RCU code, but as RCU is a
-> more critical subsystem than tracing, and used more often, I find that
-> it is advantageous to be able to trace RCU. RCU is also a more complex
-> subsystem than tracing, and having that ability to trace RCU is an asset
-> to help debug it and give us better confidence that it works. Thus, I
-> believe it is better to remove some of the debugability from the tracing
-> infrastructure than to remove it from RCU. Not to mention, even
-> eliminating the recursive calls by the RCU being traced, it doesn't
-> remove the RCU functions being called or the lockdep function being
-> called 6 times for every function traced.
-> 
-> After discussing this with Paul McKenney, I added two new RCU interfaces:
-> 
->  rcu_dereference_raw_notrace()
->  hlist_for_each_entry_raw_notrace()
-> 
-> The function tracer now uses these and this prevents the live lock.
-> 
-> 
-> Please pull the latest trace-fixes-v3.10-rc3-v2 tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> trace-fixes-v3.10-rc3-v2
-> 
-> Tag SHA1: 066277682313adbca025f177cff8a211f2b4f46d
-> Head SHA1: 1bb539ca36e21c2f4fce0865e11df384bc7b7656
-> 
-> 
-> Steven Rostedt (2):
->       rcu: Add _notrace variation of rcu_dereference_raw() and hlist_for_each_entry_rcu()
->       ftrace: Use the rcu _notrace variants for rcu_dereference_raw() and friends
-> 
-> ----
->  include/linux/rculist.h  |   20 ++++++++++++++++++++
->  include/linux/rcupdate.h |    9 +++++++++
->  kernel/trace/ftrace.c    |   18 +++++++++---------
->  3 files changed, 38 insertions(+), 9 deletions(-)
+> diff --git a/scripts/dtc/dtc-lexer.l b/scripts/dtc/dtc-lexer.l
+> index 254d5af..3b41bfc 100644
+> --- a/scripts/dtc/dtc-lexer.l
+> +++ b/scripts/dtc/dtc-lexer.l
+> @@ -71,7 +71,7 @@ static int pop_input_file(void);
+>  			push_input_file(name);
+>  		}
+>  
+> -<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
+> +<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)? {
+>  			char *line, *tmp, *fn;
+>  			/* skip text before line # */
+>  			line = yytext;
+> diff --git a/scripts/dtc/dtc-lexer.lex.c_shipped b/scripts/dtc/dtc-lexer.lex.c_shipped
+> index a6c5fcd..2d30f41 100644
+> --- a/scripts/dtc/dtc-lexer.lex.c_shipped
+> +++ b/scripts/dtc/dtc-lexer.lex.c_shipped
+> @@ -405,19 +405,19 @@ static yyconst flex_int16_t yy_accept[161] =
+>  static yyconst flex_int32_t yy_ec[256] =
+>      {   0,
+>          1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
+> -        2,    2,    2,    1,    1,    1,    1,    1,    1,    1,
+> +        4,    4,    4,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+> -        1,    2,    4,    5,    6,    1,    1,    7,    8,    1,
+> -        1,    9,   10,   10,   11,   10,   12,   13,   14,   15,
+> -       15,   15,   15,   15,   15,   15,   15,   16,    1,   17,
+> -       18,   19,   10,   10,   20,   20,   20,   20,   20,   20,
+> -       21,   21,   21,   21,   21,   22,   21,   21,   21,   21,
+> -       21,   21,   21,   21,   23,   21,   21,   24,   21,   21,
+> -        1,   25,   26,    1,   21,    1,   20,   27,   28,   29,
+> -
+> -       30,   20,   21,   21,   31,   21,   21,   32,   33,   34,
+> -       35,   36,   21,   37,   38,   39,   40,   41,   21,   24,
+> -       42,   21,   43,   44,   45,    1,    1,    1,    1,    1,
+> +        1,    2,    5,    6,    7,    1,    1,    8,    9,    1,
+> +        1,   10,   11,   11,   12,   11,   13,   14,   15,   16,
+> +       16,   16,   16,   16,   16,   16,   16,   17,    1,   18,
+> +       19,   20,   11,   11,   21,   21,   21,   21,   21,   21,
+> +       22,   22,   22,   22,   22,   23,   22,   22,   22,   22,
+> +       22,   22,   22,   22,   24,   22,   22,   25,   22,   22,
+> +        1,   26,   27,    1,   22,    1,   21,   28,   29,   30,
+> +
+> +       31,   21,   22,   22,   32,   22,   22,   33,   34,   35,
+> +       36,   37,   22,   38,   39,   40,   41,   42,   22,   25,
+> +       43,   22,   44,   45,   46,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+> @@ -434,36 +434,36 @@ static yyconst flex_int32_t yy_ec[256] =
+>          1,    1,    1,    1,    1
+>      } ;
+>  
+> -static yyconst flex_int32_t yy_meta[46] =
+> +static yyconst flex_int32_t yy_meta[47] =
+>      {   0,
+> -        1,    1,    1,    1,    1,    2,    3,    1,    2,    2,
+> -        2,    4,    5,    5,    5,    6,    1,    1,    1,    7,
+> -        8,    8,    8,    8,    1,    1,    7,    7,    7,    7,
+> -        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+> -        8,    8,    3,    1,    1
+> +        1,    1,    1,    1,    1,    1,    2,    3,    1,    2,
+> +        2,    2,    4,    5,    5,    5,    6,    1,    1,    1,
+> +        7,    8,    8,    8,    8,    1,    1,    7,    7,    7,
+> +        7,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+> +        8,    8,    8,    3,    1,    1
+>      } ;
+>  
+>  static yyconst flex_int16_t yy_base[175] =
+>      {   0,
+> -        0,  388,  381,   40,   41,  386,   71,  385,   34,   44,
+> -      390,  395,   60,   62,  371,  112,  111,  111,  111,  104,
+> -      370,  106,  371,  342,  124,  119,    0,  144,  395,    0,
+> -      123,    0,  159,  153,  165,  167,  395,  130,  395,  382,
+> -      395,    0,  372,  122,  395,  157,  374,  379,  350,   21,
+> -      346,  349,  395,  395,  395,  395,  395,  362,  395,  395,
+> -      181,  346,  342,  395,  359,    0,  191,  343,  190,  351,
+> -      350,    0,    0,    0,  173,  362,  177,  367,  357,  329,
+> -      335,  328,  337,  331,  206,  329,  334,  327,  395,  338,
+> -      170,  314,  346,  345,  318,  325,  343,  158,  316,  212,
+> -
+> -      322,  319,  320,  395,  340,  336,  308,  305,  314,  304,
+> -      295,  138,  208,  220,  395,  292,  305,  265,  264,  254,
+> -      201,  222,  285,  275,  273,  270,  236,  235,  225,  115,
+> -      395,  395,  252,  216,  216,  217,  214,  230,  209,  220,
+> -      213,  239,  211,  217,  216,  209,  229,  395,  240,  225,
+> -      206,  169,  395,  395,  116,  106,   99,   54,  395,  395,
+> -      254,  260,  268,  272,  276,  282,  289,  293,  301,  309,
+> -      313,  319,  327,  335
+> +        0,  385,  378,   40,   41,  383,   72,  382,   34,   44,
+> +      388,  393,   61,  117,  368,  116,  115,  115,  115,   48,
+> +      367,  107,  368,  339,  127,  120,    0,  147,  393,    0,
+> +      127,    0,  133,  156,  168,  153,  393,  125,  393,  380,
+> +      393,    0,  369,  127,  393,  160,  371,  377,  347,   21,
+> +      343,  346,  393,  393,  393,  393,  393,  359,  393,  393,
+> +      183,  343,  339,  393,  356,    0,  183,  340,  187,  348,
+> +      347,    0,    0,    0,  178,  359,  195,  365,  354,  326,
+> +      332,  325,  334,  328,  204,  326,  331,  324,  393,  335,
+> +      150,  311,  343,  342,  315,  322,  340,  179,  313,  207,
+> +
+> +      319,  316,  317,  393,  337,  333,  305,  302,  311,  301,
+> +      310,  190,  338,  337,  393,  307,  322,  301,  305,  277,
+> +      208,  311,  307,  278,  271,  270,  248,  246,  213,  130,
+> +      393,  393,  263,  235,  207,  221,  218,  229,  213,  213,
+> +      206,  234,  218,  210,  208,  193,  219,  393,  223,  204,
+> +      176,  157,  393,  393,  120,  106,   97,  119,  393,  393,
+> +      245,  251,  259,  263,  267,  273,  280,  284,  292,  300,
+> +      304,  310,  318,  326
+>      } ;
+>  
+>  static yyconst flex_int16_t yy_def[175] =
+> @@ -489,108 +489,108 @@ static yyconst flex_int16_t yy_def[175] =
+>        160,  160,  160,  160
+>      } ;
+>  
+> -static yyconst flex_int16_t yy_nxt[441] =
+> +static yyconst flex_int16_t yy_nxt[440] =
+>      {   0,
+> -       12,   13,   14,   15,   16,   12,   17,   18,   12,   12,
+> -       12,   19,   12,   12,   12,   12,   20,   21,   22,   23,
+> -       23,   23,   23,   23,   12,   12,   23,   23,   23,   23,
+> +       12,   13,   14,   13,   15,   16,   12,   17,   18,   12,
+> +       12,   12,   19,   12,   12,   12,   12,   20,   21,   22,
+> +       23,   23,   23,   23,   23,   12,   12,   23,   23,   23,
+>         23,   23,   23,   23,   23,   23,   23,   23,   23,   23,
+> -       23,   23,   12,   24,   12,   25,   34,   35,   35,   25,
+> -       81,   26,   26,   27,   27,   27,   34,   35,   35,   82,
+> -       28,   36,   36,   36,   36,  159,   29,   28,   28,   28,
+> -       28,   12,   13,   14,   15,   16,   30,   17,   18,   30,
+> -       30,   30,   26,   30,   30,   30,   12,   20,   21,   22,
+> -       31,   31,   31,   31,   31,   32,   12,   31,   31,   31,
+> +       23,   23,   23,   12,   24,   12,   25,   34,   35,   35,
+> +       25,   81,   26,   26,   27,   27,   27,   34,   35,   35,
+> +       82,   28,   36,   36,   36,   53,   54,   29,   28,   28,
+> +       28,   28,   12,   13,   14,   13,   15,   16,   30,   17,
+> +       18,   30,   30,   30,   26,   30,   30,   30,   12,   20,
+> +       21,   22,   31,   31,   31,   31,   31,   32,   12,   31,
+>  
+>         31,   31,   31,   31,   31,   31,   31,   31,   31,   31,
+> -       31,   31,   31,   12,   24,   12,   39,   41,   45,   47,
+> -       53,   54,   48,   56,   57,   61,   61,   47,   66,   45,
+> -       48,   66,   66,   66,   39,   46,   40,   49,   59,   50,
+> -      158,   51,  122,   52,  157,   49,   46,   50,  136,   63,
+> -      137,   52,  156,   43,   40,   62,   65,   65,   65,   59,
+> -       61,   61,  123,   65,   75,   69,   69,   69,   36,   36,
+> -       65,   65,   65,   65,   70,   71,   72,   69,   69,   69,
+> -       45,   46,   61,   61,  109,   77,   70,   71,   93,  110,
+> -       68,   70,   71,   85,   85,   85,   66,   46,  155,   66,
+> -
+> -       66,   66,   69,   69,   69,  122,   59,  100,  100,   61,
+> -       61,   70,   71,  100,  100,  148,  112,  154,   85,   85,
+> -       85,   61,   61,  129,  129,  123,  129,  129,  135,  135,
+> -      135,  142,  142,  148,  143,  149,  153,  135,  135,  135,
+> -      142,  142,  160,  143,  152,  151,  150,  146,  145,  144,
+> -      141,  140,  139,  149,   38,   38,   38,   38,   38,   38,
+> -       38,   38,   42,  138,  134,  133,   42,   42,   44,   44,
+> -       44,   44,   44,   44,   44,   44,   58,   58,   58,   58,
+> -       64,  132,   64,   66,  131,  130,   66,  160,   66,   66,
+> -       67,  128,  127,   67,   67,   67,   67,   73,  126,   73,
+> -
+> -       73,   76,   76,   76,   76,   76,   76,   76,   76,   78,
+> -       78,   78,   78,   78,   78,   78,   78,   91,  125,   91,
+> -       92,  124,   92,   92,  120,   92,   92,  121,  121,  121,
+> -      121,  121,  121,  121,  121,  147,  147,  147,  147,  147,
+> -      147,  147,  147,  119,  118,  117,  116,  115,   47,  114,
+> -      110,  113,  111,  108,  107,  106,   48,  105,  104,   89,
+> -      103,  102,  101,   99,   98,   97,   96,   95,   94,   79,
+> -       77,   90,   89,   88,   59,   87,   86,   59,   84,   83,
+> -       80,   79,   77,   74,  160,   60,   59,   55,   37,  160,
+> -       33,   25,   26,   25,   11,  160,  160,  160,  160,  160,
+> +       31,   31,   31,   31,   31,   12,   24,   12,   36,   36,
+> +       36,   39,   41,   45,   47,   56,   57,   48,   61,   47,
+> +       39,  159,   48,   66,   61,   45,   66,   66,   66,  158,
+> +       46,   40,   49,   59,   50,  157,   51,   49,   52,   50,
+> +       40,   63,   46,   52,   36,   36,   36,  156,   43,   62,
+> +       65,   65,   65,   59,  136,   68,  137,   65,   75,   69,
+> +       69,   69,   70,   71,   65,   65,   65,   65,   70,   71,
+> +       72,   69,   69,   69,   61,   46,   45,  155,  154,   66,
+> +       70,   71,   66,   66,   66,  122,   85,   85,   85,   59,
+> +
+> +       69,   69,   69,   46,   77,  100,  109,   93,  100,   70,
+> +       71,  110,  112,  122,  129,  123,  153,   85,   85,   85,
+> +      135,  135,  135,  148,  148,  160,  135,  135,  135,  152,
+> +      142,  142,  142,  123,  143,  142,  142,  142,  151,  143,
+> +      150,  146,  145,  149,  149,   38,   38,   38,   38,   38,
+> +       38,   38,   38,   42,  144,  141,  140,   42,   42,   44,
+> +       44,   44,   44,   44,   44,   44,   44,   58,   58,   58,
+> +       58,   64,  139,   64,   66,  138,  134,   66,  133,   66,
+> +       66,   67,  132,  131,   67,   67,   67,   67,   73,  130,
+> +       73,   73,   76,   76,   76,   76,   76,   76,   76,   76,
+> +
+> +       78,   78,   78,   78,   78,   78,   78,   78,   91,  160,
+> +       91,   92,  129,   92,   92,  128,   92,   92,  121,  121,
+> +      121,  121,  121,  121,  121,  121,  147,  147,  147,  147,
+> +      147,  147,  147,  147,  127,  126,  125,  124,   61,   61,
+> +      120,  119,  118,  117,  116,  115,   47,  114,  110,  113,
+> +      111,  108,  107,  106,   48,  105,  104,   89,  103,  102,
+> +      101,   99,   98,   97,   96,   95,   94,   79,   77,   90,
+> +       89,   88,   59,   87,   86,   59,   84,   83,   80,   79,
+> +       77,   74,  160,   60,   59,   55,   37,  160,   33,   25,
+> +       26,   25,   11,  160,  160,  160,  160,  160,  160,  160,
+>  
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+> -      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
+> +      160,  160,  160,  160,  160,  160,  160,  160,  160
+>      } ;
+>  
+> -static yyconst flex_int16_t yy_chk[441] =
+> +static yyconst flex_int16_t yy_chk[440] =
+>      {   0,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+>          1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+> -        1,    1,    1,    1,    1,    4,    9,    9,    9,   10,
+> -       50,    4,    5,    5,    5,    5,   10,   10,   10,   50,
+> -        5,   13,   13,   14,   14,  158,    5,    5,    5,    5,
+> -        5,    7,    7,    7,    7,    7,    7,    7,    7,    7,
+> +        1,    1,    1,    1,    1,    1,    4,    9,    9,    9,
+> +       10,   50,    4,    5,    5,    5,    5,   10,   10,   10,
+> +       50,    5,   13,   13,   13,   20,   20,    5,    5,    5,
+> +        5,    5,    7,    7,    7,    7,    7,    7,    7,    7,
+>          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
+>          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
+>  
+>          7,    7,    7,    7,    7,    7,    7,    7,    7,    7,
+> -        7,    7,    7,    7,    7,    7,   16,   17,   18,   19,
+> -       20,   20,   19,   22,   22,   25,   25,   26,   31,   44,
+> -       26,   31,   31,   31,   38,   18,   16,   19,   31,   19,
+> -      157,   19,  112,   19,  156,   26,   44,   26,  130,   26,
+> -      130,   26,  155,   17,   38,   25,   28,   28,   28,   28,
+> -       33,   33,  112,   28,   46,   34,   34,   34,   36,   36,
+> -       28,   28,   28,   28,   34,   34,   34,   35,   35,   35,
+> -       75,   46,   61,   61,   98,   77,   35,   35,   77,   98,
+> -       33,   91,   91,   61,   61,   61,   67,   75,  152,   67,
+> -
+> -       67,   67,   69,   69,   69,  121,   67,   85,   85,  113,
+> -      113,   69,   69,  100,  100,  143,  100,  151,   85,   85,
+> -       85,  114,  114,  122,  122,  121,  129,  129,  135,  135,
+> -      135,  138,  138,  147,  138,  143,  150,  129,  129,  129,
+> -      142,  142,  149,  142,  146,  145,  144,  141,  140,  139,
+> -      137,  136,  134,  147,  161,  161,  161,  161,  161,  161,
+> -      161,  161,  162,  133,  128,  127,  162,  162,  163,  163,
+> -      163,  163,  163,  163,  163,  163,  164,  164,  164,  164,
+> -      165,  126,  165,  166,  125,  124,  166,  123,  166,  166,
+> -      167,  120,  119,  167,  167,  167,  167,  168,  118,  168,
+> -
+> -      168,  169,  169,  169,  169,  169,  169,  169,  169,  170,
+> -      170,  170,  170,  170,  170,  170,  170,  171,  117,  171,
+> -      172,  116,  172,  172,  111,  172,  172,  173,  173,  173,
+> -      173,  173,  173,  173,  173,  174,  174,  174,  174,  174,
+> -      174,  174,  174,  110,  109,  108,  107,  106,  105,  103,
+> -      102,  101,   99,   97,   96,   95,   94,   93,   92,   90,
+> -       88,   87,   86,   84,   83,   82,   81,   80,   79,   78,
+> -       76,   71,   70,   68,   65,   63,   62,   58,   52,   51,
+> -       49,   48,   47,   43,   40,   24,   23,   21,   15,   11,
+> -        8,    6,    3,    2,  160,  160,  160,  160,  160,  160,
+> +        7,    7,    7,    7,    7,    7,    7,    7,   14,   14,
+> +       14,   16,   17,   18,   19,   22,   22,   19,   25,   26,
+> +       38,  158,   26,   31,   33,   44,   31,   31,   31,  157,
+> +       18,   16,   19,   31,   19,  156,   19,   26,   19,   26,
+> +       38,   26,   44,   26,   36,   36,   36,  155,   17,   25,
+> +       28,   28,   28,   28,  130,   33,  130,   28,   46,   34,
+> +       34,   34,   91,   91,   28,   28,   28,   28,   34,   34,
+> +       34,   35,   35,   35,   61,   46,   75,  152,  151,   67,
+> +       35,   35,   67,   67,   67,  112,   61,   61,   61,   67,
+> +
+> +       69,   69,   69,   75,   77,   85,   98,   77,  100,   69,
+> +       69,   98,  100,  121,  129,  112,  150,   85,   85,   85,
+> +      135,  135,  135,  143,  147,  149,  129,  129,  129,  146,
+> +      138,  138,  138,  121,  138,  142,  142,  142,  145,  142,
+> +      144,  141,  140,  143,  147,  161,  161,  161,  161,  161,
+> +      161,  161,  161,  162,  139,  137,  136,  162,  162,  163,
+> +      163,  163,  163,  163,  163,  163,  163,  164,  164,  164,
+> +      164,  165,  134,  165,  166,  133,  128,  166,  127,  166,
+> +      166,  167,  126,  125,  167,  167,  167,  167,  168,  124,
+> +      168,  168,  169,  169,  169,  169,  169,  169,  169,  169,
+> +
+> +      170,  170,  170,  170,  170,  170,  170,  170,  171,  123,
+> +      171,  172,  122,  172,  172,  120,  172,  172,  173,  173,
+> +      173,  173,  173,  173,  173,  173,  174,  174,  174,  174,
+> +      174,  174,  174,  174,  119,  118,  117,  116,  114,  113,
+> +      111,  110,  109,  108,  107,  106,  105,  103,  102,  101,
+> +       99,   97,   96,   95,   94,   93,   92,   90,   88,   87,
+> +       86,   84,   83,   82,   81,   80,   79,   78,   76,   71,
+> +       70,   68,   65,   63,   62,   58,   52,   51,   49,   48,
+> +       47,   43,   40,   24,   23,   21,   15,   11,    8,    6,
+> +        3,    2,  160,  160,  160,  160,  160,  160,  160,  160,
+>  
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+>        160,  160,  160,  160,  160,  160,  160,  160,  160,  160,
+> -      160,  160,  160,  160,  160,  160,  160,  160,  160,  160
+> +      160,  160,  160,  160,  160,  160,  160,  160,  160
+>      } ;
+>  
+>  static yy_state_type yy_last_accepting_state;
 
 
