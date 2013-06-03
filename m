@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab3FCNfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 09:35:05 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:64997 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab3FCNe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 09:34:59 -0400
+	id S1757939Ab3FCNf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 09:35:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34674 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757274Ab3FCNfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 09:35:24 -0400
+Date: Mon, 3 Jun 2013 15:36:19 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH RFC -tip 0/6] perf: IRQ-bound performance events
+Message-ID: <20130603133618.GK30878@dhcp-26-207.brq.redhat.com>
+References: <20130603094132.GB30878@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.195.149.54]
-Date: Mon, 3 Jun 2013 15:34:57 +0200
-Message-ID: <CAFaRD2FP0rrQstV1GszP_URO+cZZuQdyRxOYUEmA+5BvopUAvQ@mail.gmail.com>
-Subject: [PATCH] timekeeping: handle epoch roll-over (2038) on 32-bit systems
-From: Tobias Waldekranz <tobias@waldekranz.com>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603094132.GB30878@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ktime_get_update_offsets, calculate the current time in the same
-way as in ktime_get.
+On Mon, Jun 03, 2013 at 11:41:32AM +0200, Alexander Gordeev wrote:
+> # ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k sleep 1
+> 
+>  Performance counter stats for process id '8':
+> 
+>                  0 L1-dcache-load-misses                                       
+> 
+>        1.001235781 seconds time elapsed
+> 
+> # ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
+> Mon 03 Jun 2013 04:42:59 AM EDT  -0.891274 seconds
+> 
+>  Performance counter stats for process id '8':
 
-On 32-bit systems, the current time is truncated via the call to
-ktime_set, the following subtraction of offs_real will result in an
-inaccurate time when the current number of seconds since epoch can no
-longer fit in 31-bits (2038-01-19 03:14:07 UTC). This will send
-hrtimer_interrupt into an infinite loop on some architectures (arm),
-or emit an oops on others(x86).
+Oops, the most interesting part did not make it in. Very sorry :) Here:
 
-Signed-off-by: Tobias Waldekranz <tobias@waldekranz.com>
----
- kernel/time/timekeeping.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+# ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
+Mon 03 Jun 2013 09:32:49 AM EDT  -0.719514 seconds
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 98cd470..b484ab2 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1600,8 +1600,8 @@ ktime_t ktime_get_update_offsets(ktime_t
-*offs_real, ktime_t *offs_boot,
-  do {
-  seq = read_seqcount_begin(&timekeeper_seq);
+ Performance counter stats for process id '8':
 
-- secs = tk->xtime_sec;
-- nsecs = timekeeping_get_ns(tk);
-+ secs = tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
-+ nsecs = timekeeping_get_ns(tk) + tk->wall_to_monotonic.tv_nsec;
+               447 L1-dcache-load-misses                                       
 
-  *offs_real = tk->offs_real;
-  *offs_boot = tk->offs_boot;
-@@ -1609,7 +1609,6 @@ ktime_t ktime_get_update_offsets(ktime_t
-*offs_real, ktime_t *offs_boot,
-  } while (read_seqcount_retry(&timekeeper_seq, seq));
+       0.720874208 seconds time elapsed
 
-  now = ktime_add_ns(ktime_set(secs, 0), nsecs);
-- now = ktime_sub(now, *offs_real);
-  return now;
- }
- #endif
---
-1.7.10.4
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
