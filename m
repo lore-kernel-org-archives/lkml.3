@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3FCLK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 07:10:29 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:36784 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab3FCLK0 (ORCPT
+	id S1756451Ab3FCLQS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 07:16:18 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64157 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab3FCLQQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 07:10:26 -0400
+	Mon, 3 Jun 2013 07:16:16 -0400
+Date: Mon, 03 Jun 2013 06:16:12 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation: cover CONFIG_BINFMT_SCRIPT in init.txt
+To: Andreas Mohr <andi@lisas.de>
+Cc: Kris Rusocki <kszysiu@braxis.org>, linux-doc@vger.kernel.org,
+        andi@lisas.de, linux-kernel@vger.kernel.org
+In-Reply-To: <20130530203310.GA5097@rhlx01.hs-esslingen.de> (from
+	andi@lisas.de on Thu May 30 15:33:10 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1370258172.2776.57@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <001501ce6039$c967d2b0$5c377810$@samsung.com>
-References: <001501ce6039$c967d2b0$5c377810$@samsung.com>
-Date: Mon, 3 Jun 2013 14:10:26 +0300
-Message-ID: <CAHp75VdUzw3wwQU5VnBGe3oPYEoHc8HO51C6VmViNF=B-bazyw@mail.gmail.com>
-Subject: Re: [PATCH V2] rtc: rtc-pcf2123: replace strict_strtoul() with kstrtoul()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 12:07 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> The usage of strict_strtoul() is not preferred, because
-> strict_strtoul() is obsolete. Thus, kstrtoul() should be
-> used.
+On 05/30/2013 03:33:10 PM, Andreas Mohr wrote:
+> On Thu, May 30, 2013 at 01:24:15PM -0600, Kris Rusocki wrote:
+> > From: Kris Rusocki <kszysiu@braxis.org>
+> >
+> > Now that binfmt_script is configurable, explain yet another possible
+> > cause of boot failure (a script w/CONFIG_BINFMT_SCRIPT != y).
+> 
+> Nice catch, and thanks for your effort!
+> 
+> It's somewhat sad to see that that file remained at only one initial  
+> commit
+> since 2010, thus thumbs up for your help!
+> 
+> Docs in general seem to be a wee bit too unmaintained.
 
-There is an issue, after fixing it take my
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Are you volunteering?
 
-> --- a/drivers/rtc/rtc-pcf2123.c
-> +++ b/drivers/rtc/rtc-pcf2123.c
-
-
-> @@ -117,9 +118,9 @@ static ssize_t pcf2123_store(struct device *dev, struct device_attribute *attr,
->
->         r = container_of(attr, struct pcf2123_sysfs_reg, attr);
->
-> -       if (strict_strtoul(r->name, 16, &reg)
-> -               || strict_strtoul(buffer, 10, &val))
-> -               return -EINVAL;
-> +       ret = kstrtoul(r->name, 16, &reg) || kstrtoul(buffer, 10, &val);
-
-This is not correct. Please, split to two sequential checks.
-
-> +       if (ret)
-> +               return ret;
-
---
-With Best Regards,
-Andy Shevchenko
+Rob
