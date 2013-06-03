@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3FCKrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 06:47:40 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:41450 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753278Ab3FCKri (ORCPT
+	id S1756253Ab3FCKsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 06:48:24 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61015 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363Ab3FCKsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 06:47:38 -0400
-Message-ID: <51AC73F3.3040300@st.com>
-Date: Mon, 03 Jun 2013 11:46:11 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 3 Jun 2013 06:48:19 -0400
 MIME-Version: 1.0
-To: Barry Song <21cnbao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Barry Song <baohua.song@csr.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v1 2/2] ARM:prima2:move postcore_initcalls to init_machine.
-References: <1369993439-24216-1-git-send-email-srinivas.kandagatla@st.com> <1369993517-24735-1-git-send-email-srinivas.kandagatla@st.com> <CAGsJ_4yu2MT5o7hbX67KPhrejS9D1BbPcship4zxtXs3G9tE-Q@mail.gmail.com> <51AC5A53.1090700@st.com> <CAGsJ_4zTJamdH2-3vfqPSrOA+egST3rH_+2mPrhy6=1ZWJxnRg@mail.gmail.com>
-In-Reply-To: <CAGsJ_4zTJamdH2-3vfqPSrOA+egST3rH_+2mPrhy6=1ZWJxnRg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51AC6472.3060606@asianux.com>
+References: <51A71E49.1000707@asianux.com>
+	<CAMuHMdUz8o4d=RiAMW8-pCrnZyfoH9EETVqjcb7E1GqCgYmQ7g@mail.gmail.com>
+	<51A93FA0.1050203@biophys.uni-duesseldorf.de>
+	<51A94281.7050708@biophys.uni-duesseldorf.de>
+	<51AC6472.3060606@asianux.com>
+Date: Mon, 3 Jun 2013 12:48:18 +0200
+X-Google-Sender-Auth: 3qdiP_pVsqlWKWmKHqRUT95FJMs
+Message-ID: <CAMuHMdVLA_zgeGxTTzfXnBYZiihH3w+LLcW0cRzVk_dvkFojgg@mail.gmail.com>
+Subject: Re: [PATCH] arch: m68k: include: asm: the 3rd parameter of 'insl' and
+ 'outsl' need '<< 2'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: schmitz <schmitz@biophys.uni-duesseldorf.de>,
+        Greg Ungerer <gerg@uclinux.org>, schmitz@debian.org,
+        Sam Ravnborg <sam@ravnborg.org>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/13 11:07, Barry Song wrote:
-> i want to move sirfsoc_of_pwrc_init and sirfsoc_of_pwrc_init to
-> sirfsoc_pm_init as only suspend entries need them. then the result is
-> like:
-> 
->  int __init sirfsoc_pm_init(void)
->  {
-> +       sirfsoc_of_pwrc_init();
-> +       sirfsoc_memc_init();
->         suspend_set_ops(&sirfsoc_pm_ops);
->         return 0;
->  }
-> @@ -98,7 +103,7 @@ static const struct of_device_id pwrc_ids[] = {
->         {}
->  };
+On Mon, Jun 3, 2013 at 11:40 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> On 06/01/2013 08:38 AM, schmitz wrote:
+>>>>> The related git number:
+>>>>>   for parport.h: "4914802 m68k,m68knommu: merge header files" in 2009
+>>>>>   for io_mm.h: "84b16b7 m68k/atari: ROM port ISA adapter support" in
+>>>>> Apr 6 2013
+>>>>>
+>>>>> The related warning (make EXTRA_CFLAG=-W ARCH=m68k allmodconfig):
+>>>>>   arch/m68k/include/asm/parport.h:14:0: warning: "insl" redefined
+>>>>> [enabled by default]
+>>>>>   arch/m68k/include/asm/io_mm.h:403:0: note: this is the location of
+>>>>> the previous definition
+>>>>>   arch/m68k/include/asm/parport.h:15:0: warning: "outsl" redefined
+>>>>> [enabled by default]
+>>>>>   arch/m68k/include/asm/io_mm.h:406:0: note: this is the location of
+>>>>> the previous definition
+>>>>>
+>>> Is that the same problem Thorsten reported recently? parport.h should
+>>> either use what the arch io.h include defined, or (in the case of Q40
+>>> on m68k) undef and redefine as needed.
+>> It appears this is the same issue, see message ID
+>> loom.20130511T171757-995@post.gmane.org to linux-m68k (May 12th, by
+>> Thorsten Glaser).
+>>
+>> This _only_ applies to use of insl/outsl macros in parport_pc.h, which
+>> is only used by Q40 on m68k. I see no reason to change anything in io.h
+>> to cope with this warning.
+>
+> It sounds reasonable.
+>
+> And excuse me, could you provide the related link directly ?  I don't
+> know how to see the detail of 'loom.20130511T171757-995@post.gmane.org'.
 
-It looks good, and should fix the issue too.
+http://www.spinics.net/lists/linux-m68k/msg06041.html
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
