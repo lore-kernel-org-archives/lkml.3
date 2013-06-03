@@ -1,126 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759408Ab3FCQQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 12:16:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59972 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759322Ab3FCQOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 12:14:22 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <gregkh@linuxfoundation.org>,
-        <benoit.cousson@linaro.org>, <anish198519851985@gmail.com>,
-        <pmeerw@pmeerw.net>
-Subject: [PATCH 1/5] extcon: Add an API to get extcon device from dt node
-Date: Mon, 3 Jun 2013 21:43:36 +0530
-Message-ID: <1370276020-17446-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370276020-17446-1-git-send-email-kishon@ti.com>
-References: <1370276020-17446-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1759360Ab3FCQSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 12:18:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43266 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759251Ab3FCQSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 12:18:08 -0400
+Message-ID: <1370276286.2910.29.camel@dabdike>
+Subject: Re: [PATCH 0/4] EFI 1:1 mapping
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Date: Mon, 03 Jun 2013 09:18:06 -0700
+In-Reply-To: <20130603152122.GA21312@srcf.ucam.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+	 <20130602225620.GA5496@srcf.ucam.org> <20130603081148.GB13607@nazgul.tnic>
+	 <1370269642.2910.4.camel@dabdike> <20130603143010.GA20252@srcf.ucam.org>
+	 <1370270282.2910.9.camel@dabdike> <20130603152122.GA21312@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added an API of_extcon_get_extcon_dev() to be used by drivers to get
-extcon device in the case of dt boot (this can be used instead of
-extcon_get_extcon_dev()).
+On Mon, 2013-06-03 at 16:21 +0100, Matthew Garrett wrote:
+> On Mon, Jun 03, 2013 at 07:38:02AM -0700, James Bottomley wrote:
+> > On Mon, 2013-06-03 at 15:30 +0100, Matthew Garrett wrote:
+> > > Windows calls SetVirtualAddressMap(), so the only way these systems have 
+> > > been tested is with SetVirtualAddressMap().
+> > 
+> > I know, but that's not what I said.
+> > 
+> > If you look at the implementation, SetVirtualAddressMap() does a massive
+> > pointer chase through the images.  It not only tries to relocate the
+> > text and data, but it also tries to relocate all the users of the data.
+> > Some of these sources of data are boot time and some runtime.  Those
+> > both need to be relocated by a separate pointer chase.  What we saw with
+> > the QueryVariableInfo() problem was that a boot time pointer wasn't
+> > relocated.  That's got to mean that windows only calls QueryVariableInfo
+> > from runtime.
+> 
+> Sure.
+> 
+> > My point is that if we elect to call SetVirtualAddressMap() we'll be
+> > restricted to only making the calls at boot time that windows does
+> > otherwise we'll end up with these unrelocated pointers.  That's a huge
+> > nasty verification burden on us.  Alternatively, if we never call
+> > SetVirtualAddressMap() it seems to me that we just don't have to worry
+> > about pointer relocation issues.  Thus, I think it would be better we
+> > use the 1:1 mapping instead of calling SetVirtualAddressMap().
+> 
+> Some hardware just arbitrarily fails some calls if 
+> SetVirtualAddressMap() isn't called. As you pointed out, the only 
+> situation that these systems are ever tested in is the one where calls 
+> are made in roughly the same order as Windows, ie:
+> 
+> Calls made in boot services:
+> 
+> GetTime()
+> Getvariable()
+> ExitBootServices()
+> 
+> Calls made in runtime:
+> 
+> SetVirtualAddressMap()
+> GetNextVariable()
+> GetVariable()
+> SetVariable()
+> 
+> So far I haven't been able to convince Windows to make any other runtime 
+> calls, which makes me a little unhappy about even calling 
+> QueryVariableInfo() during runtime, but on the other hand our options 
+> there are either to call it or to kill Samsungs, so I think we're stuck 
+> with it. But, overall, refusing to call SetVirtualAddressMap() simply 
+> isn't an option.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/extcon/extcon-class.c |   40 ++++++++++++++++++++++++++++++++++++++++
- include/linux/extcon.h        |    8 ++++++++
- 2 files changed, 48 insertions(+)
+I don't entirely buy that.  All EFI programs run with the physical
+address map, therefore every API an EFI program uses is also tested, at
+boot time only, obviously.  However, the ExitBootServices() code seems
+to be much simpler, so I don't think it will cause too many bugs.  The
+UEFI test suites also seem to try UEFI calls before and after
+ExitBootServices(), so I think relying on a 1:1 mapping looks safer to
+me.
 
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 60adc04..265d549 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -31,6 +31,7 @@
- #include <linux/extcon.h>
- #include <linux/slab.h>
- #include <linux/sysfs.h>
-+#include <linux/of_platform.h>
- 
- /*
-  * extcon_cable_name suggests the standard cable names for commonly used
-@@ -392,6 +393,45 @@ int extcon_set_cable_state(struct extcon_dev *edev,
- }
- EXPORT_SYMBOL_GPL(extcon_set_cable_state);
- 
-+struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
-+{
-+	struct class_dev_iter iter;
-+	struct device *extcon_dev;
-+	struct device_node *node;
-+	struct platform_device *extcon_parent_dev;
-+
-+	if (!dev->of_node) {
-+		dev_dbg(dev, "device does not have a device node entry\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	node = of_parse_phandle(dev->of_node, "extcon", index);
-+	if (!node) {
-+		dev_dbg(dev, "failed to get phandle in %s node\n",
-+			dev->of_node->full_name);
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	extcon_parent_dev = of_find_device_by_node(node);
-+	if (!extcon_parent_dev) {
-+		dev_dbg(dev, "unable to find device by node\n");
-+		return ERR_PTR(-EPROBE_DEFER);
-+	}
-+
-+	class_dev_iter_init(&iter, extcon_class, NULL, NULL);
-+	while ((extcon_dev = class_dev_iter_next(&iter))) {
-+		if (extcon_dev->parent != &extcon_parent_dev->dev)
-+			continue;
-+
-+		class_dev_iter_exit(&iter);
-+		return dev_get_drvdata(extcon_dev);
-+	}
-+
-+	class_dev_iter_exit(&iter);
-+	return ERR_PTR(-ENODEV);
-+}
-+EXPORT_SYMBOL_GPL(of_extcon_get_extcon_dev);
-+
- /**
-  * extcon_get_extcon_dev() - Get the extcon device instance from the name
-  * @extcon_name:	The extcon name provided with extcon_dev_register()
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index fcb51c8..3858bb9 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -182,6 +182,8 @@ struct extcon_specific_cable_nb {
-  */
- extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
- extern void extcon_dev_unregister(struct extcon_dev *edev);
-+extern struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev,
-+	int index);
- extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
- 
- /*
-@@ -292,6 +294,12 @@ static inline int extcon_set_cable_state(struct extcon_dev *edev,
- 	return 0;
- }
- 
-+static inline struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev,
-+	int index)
-+{
-+	return NULL;
-+}
-+
- static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
- {
- 	return NULL;
--- 
-1.7.10.4
+James
+
+
 
