@@ -1,141 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab3FCEpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 00:45:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49356 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab3FCEoX (ORCPT
+	id S1751423Ab3FCExN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 00:53:13 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52664 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab3FCExD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 00:44:23 -0400
-X-AuditID: 9c930197-b7be3ae000000eab-a2-51ac1f206dfe
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH/RFC v2 4/4] perf inject: Add --time-filter option
-Date: Mon,  3 Jun 2013 13:44:13 +0900
-Message-Id: <1370234653-31582-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1370234653-31582-1-git-send-email-namhyung@kernel.org>
-References: <1370234653-31582-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Jun 2013 00:53:03 -0400
+Message-ID: <51AC2121.1060903@linux.vnet.ibm.com>
+Date: Mon, 03 Jun 2013 12:52:49 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC PATCH] sched: smart wake-affine
+References: <51A43B16.9080801@linux.vnet.ibm.com> <51ABFF6A.60206@linux.vnet.ibm.com> <1370228941.5988.66.camel@marge.simpson.net> <51AC0CD4.9070302@linux.vnet.ibm.com> <1370231597.5988.79.camel@marge.simpson.net>
+In-Reply-To: <1370231597.5988.79.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060304-4790-0000-0000-00000897E623
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 06/03/2013 11:53 AM, Mike Galbraith wrote:
+> On Mon, 2013-06-03 at 11:26 +0800, Michael Wang wrote: 
+>> On 06/03/2013 11:09 AM, Mike Galbraith wrote:
+>>> On Mon, 2013-06-03 at 10:28 +0800, Michael Wang wrote: 
+>>>> On 05/28/2013 01:05 PM, Michael Wang wrote:
+>>>>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+>>>>> this will bring benefit if waker's cpu cached hot data for wakee, or the
+>>>>> extreme ping-pong case.
+>>>>>
+>>>>> And testing show it could benefit hackbench 15% at most.
+>>>>>
+>>>>> However, the whole stuff is somewhat blindly and time-consuming, some
+>>>>> workload therefore suffer.
+>>>>>
+>>>>> And testing show it could damage pgbench 50% at most.
+>>>>>
+>>>>> Thus, wake-affine stuff should be smarter, and realise when to stop
+>>>>> it's thankless effort.
+>>>>
+>>>> Is there any comments?
+>>>
+>>> (I haven't had time to test-drive yet, -rt munches time like popcorn)
+>>
+>> I see ;-)
+>>
+>> During my testing, this one works well on the box, solved the issues of
+>> pgbench and won't harm hackbench any, I think we have caught some good
+>> point here :)
+> 
+> Some wider spectrum testing needs doing though.
 
-The --time-filter option is for limiting samples within a range of
-time.  A time range looks like <time1>-<time2> and at most one of them
-can be omitted.  This can be useful when analyzing a part of a huge
-data only.
+That's right, the benchmark I currently have is hackbench, pgbench,
+ebizzy, aim7, tbench, dbench, kbench, is there any other good candidate
+we should add to the test?
 
-It's unclear how to specify a time range when used with a pipe.  It
-seems that we need to support relative time too.
+Hackbench is a good
+> sign, but localhost and db type stuff that really suffer from misses
+> would be good to test.  Java crud tends to be sensitive too.  I used to
+> watch vmark (crap) as an indicator,
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Documentation/perf-inject.txt |  7 +++++++
- tools/perf/builtin-inject.c              | 35 ++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+)
+I can't get it from google...do you mean vmmark?
 
-diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
-index a00a34276c54..5bc474369dfb 100644
---- a/tools/perf/Documentation/perf-inject.txt
-+++ b/tools/perf/Documentation/perf-inject.txt
-@@ -41,6 +41,13 @@ OPTIONS
- 	tasks slept. sched_switch contains a callchain where a task slept and
- 	sched_stat contains a timeslice how long a task slept.
- 
-+-X::
-+--time-filter::
-+	Display samples within a range of time only. A time range can be given
-+	like 'time1-time2' and treated as a start time and an end time
-+	respectively. The time format is like "<sec>.<usec>". Either of time1
-+	or time2 can be omitted.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-archive[1]
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 84ad6abe4258..4fcd75508b24 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -28,6 +28,7 @@ struct perf_inject {
- 	int		 pipe_output,
- 			 output;
- 	u64		 bytes_written;
-+	u64		 time_start, time_end;
- 	struct list_head samples;
- };
- 
-@@ -112,6 +113,14 @@ static int perf_event__repipe_sample(struct perf_tool *tool,
- 				     struct perf_evsel *evsel,
- 				     struct machine *machine)
- {
-+	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
-+
-+	if (inject->time_start && inject->time_start > sample->time)
-+		return 0;
-+
-+	if (inject->time_end && inject->time_end < sample->time)
-+		return 0;
-+
- 	if (evsel->handler.func) {
- 		inject_handler f = evsel->handler.func;
- 		return f(tool, event, sample, evsel, machine);
-@@ -206,6 +215,13 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 	struct addr_location al;
- 	struct thread *thread;
- 	u8 cpumode;
-+	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
-+
-+	if (inject->time_start && inject->time_start > sample->time)
-+		return 0;
-+
-+	if (inject->time_end && inject->time_end < sample->time)
-+		return 0;
- 
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
-@@ -393,6 +409,23 @@ static int __cmd_inject(struct perf_inject *inject)
- 	return ret;
- }
- 
-+static int
-+parse_time_filter(const struct option *opt, const char *str,
-+		  int unset __maybe_unused)
-+{
-+	struct perf_inject *inject = opt->value;
-+	char *sep = strchr(str, '-');
-+
-+	if (sep == NULL)
-+		return parse_nsec_time(str, &inject->time_start);
-+	else if (sep == str)
-+		return parse_nsec_time(++str, &inject->time_end);
-+
-+	*sep++ = '\0';
-+	return parse_nsec_time(str, &inject->time_start) ||
-+		parse_nsec_time(sep, &inject->time_end);
-+}
-+
- int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_inject inject = {
-@@ -427,6 +460,8 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			    "where and how long tasks slept"),
- 		OPT_INCR('v', "verbose", &verbose,
- 			 "be more verbose (show build ids, etc)"),
-+		OPT_CALLBACK('X', "time-filter", &inject, "time[-time]",
-+			     "Only display entries in the time range", parse_time_filter),
- 		OPT_END()
- 	};
- 	const char * const inject_usage[] = {
--- 
-1.7.11.7
+if you see unhappiness there, you'll
+> very likely see it in other loads as well, it is very fond of cache
+> affine wakeups, but loathes preemption (super heavy loads usually do).
+
+I agree that this idea, in other work, 'stop wake-affine when current is
+busy with wakeup' may miss the chance to bring benefit, although I could
+not find such workload, but I can't do promise...
+
+However, IMHO, wake-affine is actually an additional accelerator, if we
+want to adopt it without any knob, what we have to make sure is, it
+won't damage any workload, rather than it catch all the chances to bring
+benefit.
+
+Here my point is, we stop the additional accelerator if it seems to
+bring damage, and we currently found one such case ;-)
+
+So the worst result of this idea is missing the timing to accelerate,
+however, since such acceleration will sacrifice others and we don't want
+knob, just filter it out.
+
+Regards,
+Michael Wang
+
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
