@@ -1,86 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3FCIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 04:09:29 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:36963 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3FCIJY (ORCPT
+	id S1754647Ab3FCIJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 04:09:42 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:46329 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754150Ab3FCIJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 04:09:24 -0400
+	Mon, 3 Jun 2013 04:09:36 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
+Subject: [PATCH 1/2] dma: mmp_pdma: add protect when alloc/free phy channels
+Date: Mon, 3 Jun 2013 16:02:08 +0800
+Message-ID: <1370246529-17155-2-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1370246529-17155-1-git-send-email-wangxfdu@gmail.com>
+References: <1370246529-17155-1-git-send-email-wangxfdu@gmail.com>
 MIME-Version: 1.0
-Date: Mon, 3 Jun 2013 11:09:23 +0300
-Message-ID: <CA+ydwtrTb0zSiUPj7FpPhwj4WNLLZTNLM4HNDiQJ=Ef9JswntQ@mail.gmail.com>
-Subject: kernel/events/callchain.c:141 suspicious rcu_dereference_check() usage!
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Xiang Wang <wangx@marvell.com>
 
-Hit this while fuzzing v3.10-rc4-0-gd683b96 with trinity.
+In mmp pdma, phy channels are allocated/freed dynamically
+and frequently. But no proper protection is added.
+Conflict will happen when multi-users are requesting phy
+channels at the same time. Use spinlock to protect.
 
-Tommi
+Signed-off-by: Xiang Wang <wangx@marvell.com>
+---
+ drivers/dma/mmp_pdma.c |   41 +++++++++++++++++++++++++----------------
+ 1 files changed, 25 insertions(+), 16 deletions(-)
 
-[ 8703.304587]
-[ 8703.305106] ===============================
-[ 8703.305106] [ INFO: suspicious RCU usage. ]
-[ 8703.305106] 3.10.0-rc4 #1 Tainted: G          I
-[ 8703.305106] -------------------------------
-[ 8703.305106] /build/linux/kernel/events/callchain.c:141 suspicious
-rcu_dereference_check() usage!
-[ 8703.305106]
-[ 8703.305106] other info that might help us debug this:
-[ 8703.305106]
-[ 8703.305106]
-[ 8703.305106] rcu_scheduler_active = 1, debug_locks = 0
-[ 8703.305106] 2 locks held by trinity-child28/23333:
-[ 8703.305106]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff8229f128>]
-__schedule+0x1c8/0xa00
-[ 8703.305106]  #1:  (&ctx->lock){-.-...}, at: [<ffffffff811cd037>]
-__perf_event_task_sched_out+0x407/0x4b0
-[ 8703.305106]
-[ 8703.305106] stack backtrace:
-[ 8703.305106] CPU: 1 PID: 23333 Comm: trinity-child28 Tainted: G
-    I  3.10.0-rc4 #1
-[ 8703.305106] Hardware name: Hewlett-Packard HP Compaq dc7800 Small
-Form Factor/0AA8h, BIOS 786F1 v01.24 03/18/2008
-[ 8703.305106]  0000000000000001 ffff880103899a00 ffffffff8228e109
-ffff880103899a30
-[ 8703.305106]  ffffffff81176f06 0000000000000001 0000000000000000
-ffff8800d46e1bd8
-[ 8703.305106]  ffff880103899b88 ffff880103899a78 ffffffff811d36a3
-ffff880102ab1a08
-[ 8703.305106] Call Trace:
-[ 8703.305106]  [<ffffffff8228e109>] dump_stack+0x19/0x1b
-[ 8703.305106]  [<ffffffff81176f06>] lockdep_rcu_suspicious+0x116/0x140
-[ 8703.305106]  [<ffffffff811d36a3>] perf_callchain+0x153/0x290
-[ 8703.305106]  [<ffffffff811cf286>] perf_prepare_sample+0x86/0x2b0
-[ 8703.305106]  [<ffffffff8107cbe8>] intel_pmu_drain_bts_buffer+0xf8/0x1b0
-[ 8703.305106]  [<ffffffff8115219d>] ? sched_clock_local+0x1d/0x90
-[ 8703.305106]  [<ffffffff81173058>] ? trace_hardirqs_off_caller+0x28/0xe0
-[ 8703.305106]  [<ffffffff8107ddb3>] intel_pmu_disable_event+0x33/0x140
-[ 8703.305106]  [<ffffffff81077573>] x86_pmu_stop+0x43/0xd0
-[ 8703.305106]  [<ffffffff81077636>] x86_pmu_del+0x36/0x100
-[ 8703.305106]  [<ffffffff811c8c8a>] event_sched_out.isra.28+0xba/0x150
-[ 8703.305106]  [<ffffffff811c8d76>] group_sched_out+0x56/0xd0
-[ 8703.305106]  [<ffffffff811c9614>] ctx_sched_out+0x104/0x130
-[ 8703.305106]  [<ffffffff811cd048>] __perf_event_task_sched_out+0x418/0x4b0
-[ 8703.305106]  [<ffffffff811ccc97>] ? __perf_event_task_sched_out+0x67/0x4b0
-[ 8703.305106]  [<ffffffff81173058>] ? trace_hardirqs_off_caller+0x28/0xe0
-[ 8703.305106]  [<ffffffff8117311d>] ? trace_hardirqs_off+0xd/0x10
-[ 8703.305106]  [<ffffffff8114a5c7>] perf_event_task_sched_out+0x87/0xa0
-[ 8703.305106]  [<ffffffff814deb67>] ? do_raw_spin_unlock+0xa7/0xc0
-[ 8703.305106]  [<ffffffff822a16c2>] ? _raw_spin_unlock+0x22/0x40
-[ 8703.305106]  [<ffffffff8115348d>] ? __dequeue_entity+0x3d/0x50
-[ 8703.305106]  [<ffffffff81157376>] ? set_next_entity+0x26/0x90
-[ 8703.305106]  [<ffffffff811574f3>] ? pick_next_task_fair+0xd3/0x150
-[ 8703.305106]  [<ffffffff8229f5f8>] __schedule+0x698/0xa00
-[ 8703.305106]  [<ffffffff8229f9b5>] schedule+0x55/0x60
-[ 8703.305106]  [<ffffffff822a2ea9>] sysret_careful+0x19/0x1c
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c26699f..21820c9 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -121,6 +121,7 @@ struct mmp_pdma_device {
+ 	struct device			*dev;
+ 	struct dma_device		device;
+ 	struct mmp_pdma_phy		*phy;
++	spinlock_t phy_lock; /* protect alloc/free phy channels */
+ };
+ 
+ #define tx_to_mmp_pdma_desc(tx) container_of(tx, struct mmp_pdma_desc_sw, async_tx)
+@@ -219,6 +220,7 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 	int prio, i;
+ 	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
+ 	struct mmp_pdma_phy *phy;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * dma channel priorities
+@@ -227,6 +229,8 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 	 * ch 8 - 11, 24 - 27  <--> (2)
+ 	 * ch 12 - 15, 28 - 31  <--> (3)
+ 	 */
++
++	spin_lock_irqsave(&pdev->phy_lock, flags);
+ 	for (prio = 0; prio <= (((pdev->dma_channels - 1) & 0xf) >> 2); prio++) {
+ 		for (i = 0; i < pdev->dma_channels; i++) {
+ 			if (prio != ((i & 0xf) >> 2))
+@@ -234,14 +238,29 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
+ 			phy = &pdev->phy[i];
+ 			if (!phy->vchan) {
+ 				phy->vchan = pchan;
++				spin_unlock_irqrestore(&pdev->phy_lock, flags);
+ 				return phy;
+ 			}
+ 		}
+ 	}
+ 
++	spin_unlock_irqrestore(&pdev->phy_lock, flags);
+ 	return NULL;
+ }
+ 
++static void free_phy(struct mmp_pdma_chan *pchan)
++{
++	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
++	unsigned long flags;
++	if (!pchan->phy)
++		return;
++
++	spin_lock_irqsave(&pdev->phy_lock, flags);
++	pchan->phy->vchan = NULL;
++	pchan->phy = NULL;
++	spin_unlock_irqrestore(&pdev->phy_lock, flags);
++}
++
+ /* desc->tx_list ==> pending list */
+ static void append_pending_queue(struct mmp_pdma_chan *chan,
+ 					struct mmp_pdma_desc_sw *desc)
+@@ -277,10 +296,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
+ 
+ 	if (list_empty(&chan->chain_pending)) {
+ 		/* chance to re-fetch phy channel with higher prio */
+-		if (chan->phy) {
+-			chan->phy->vchan = NULL;
+-			chan->phy = NULL;
+-		}
++		free_phy(chan);
+ 		dev_dbg(chan->dev, "no pending list\n");
+ 		return;
+ 	}
+@@ -377,10 +393,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
+ 		dev_err(chan->dev, "unable to allocate descriptor pool\n");
+ 		return -ENOMEM;
+ 	}
+-	if (chan->phy) {
+-		chan->phy->vchan = NULL;
+-		chan->phy = NULL;
+-	}
++	free_phy(chan);
+ 	chan->idle = true;
+ 	chan->dev_addr = 0;
+ 	return 1;
+@@ -411,10 +424,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
+ 	chan->desc_pool = NULL;
+ 	chan->idle = true;
+ 	chan->dev_addr = 0;
+-	if (chan->phy) {
+-		chan->phy->vchan = NULL;
+-		chan->phy = NULL;
+-	}
++	free_phy(chan);
+ 	return;
+ }
+ 
+@@ -581,10 +591,7 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+ 	switch (cmd) {
+ 	case DMA_TERMINATE_ALL:
+ 		disable_chan(chan->phy);
+-		if (chan->phy) {
+-			chan->phy->vchan = NULL;
+-			chan->phy = NULL;
+-		}
++		free_phy(chan);
+ 		spin_lock_irqsave(&chan->desc_lock, flags);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
+ 		mmp_pdma_free_desc_list(chan, &chan->chain_running);
+@@ -777,6 +784,8 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 		return -ENOMEM;
+ 	pdev->dev = &op->dev;
+ 
++	spin_lock_init(&pdev->phy_lock);
++
+ 	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
+ 	if (!iores)
+ 		return -EINVAL;
+-- 
+1.7.5.4
+
