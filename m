@@ -1,108 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab3FCPtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 11:49:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60071 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3FCPtk (ORCPT
+	id S1758806Ab3FCPvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 11:51:33 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:49562 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3FCPvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 11:49:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        ulf.hansson@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 21/21] clk: ux500: Supply provider look-up functionality to support Device Tree
-Date: Mon, 03 Jun 2013 17:49:54 +0200
-Message-ID: <2458719.gboIs9CIQE@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.10.0-rc3-next-20130527+; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1370266965-7901-22-git-send-email-lee.jones@linaro.org>
-References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-22-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:4xFORhHjLskqlcKnbB23ITRHJ0PP1KqptZbvZHqmkGJ
- IkcITRkR7RG4wEedB/Ug7pBEhm8wuRzNSdvfOrYpnOh5yABjxF
- SNFspwwYsDP6Gdk1xUg2eIT5LjkfHk08HQWMNlx8fJsT0ZQqjY
- NS3X08BSU4+LP3Anv0QLtopoa+41ArSFluF0QXbdi7Rz6rQ3ja
- 2ETkQRNIFBKqyX12k63mEovzLaXWq18ek1ubTcAAz7Xx588WM4
- lUZlv5QFmyu+RhtS1Urgv27kNqRLhXLtqTg91E4OpVKs2jq5s5
- iE3d88YdwgBe9IuDvC/St8eKCUUTRbsZRZA6Q/9Idcj9MT2N0r
- m99slXKm4fX04GUbRdA8=
+	Mon, 3 Jun 2013 11:51:31 -0400
+From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>
+Subject: [PATCH] arm64: Add support to pass earlyprintk argument via device tree
+Date: Mon,  3 Jun 2013 21:21:11 +0530
+Message-Id: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 June 2013 14:42:45 Lee Jones wrote:
-> In this patch we're populating a clk_data array, one clock per element to
-> act as a clk look-up using indexes supplied from Device Tree.
+This patch adds support for defining and passing earlyprintk
+related information i.e. device and address information via
+device tree by adding it inside "chosen" node.
 
-This is the first time I actually take a closer look at clock bindings.
-It feels odd to have a single index when you have multiple clock
-providers in hardware.
+This will help user to just specify "earlyprintk" from bootargs
+without actually knowing the address and device to enable
+earlyprintk.
 
-> +struct clk *clks[CLK_MAX];
-> +
-> +const static struct of_device_id u8500_clk_of_match[] = {
-> +	{ .compatible = "stericsson,u8500-clk", },
-> +	{ },
-> +};
+Mechanism:
 
->From the code in drivers/clk/ux500, I would have expected two separate
-clock nodes: the prcmu and the prcc, each with their own number
-space.
+One can just append earlyprintk=device-type,address (same as we pass
+through command line) in "/chosen" node to notify kernel which is the
+earlyprintk device and what is its address.
 
->  void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
->  		    u32 clkrst5_base, u32 clkrst6_base)
->  {
->  	struct prcmu_fw_version *fw_version;
->  	const char *sgaclk_parent = NULL;
-> +	static struct clk_onecell_data clk_data;
-> +	struct device_node *np = NULL;
->  	struct clk *clk;
->  
->  	/* Clock sources */
->  	clk = clk_reg_prcmu_gate("soc0_pll", NULL, PRCMU_PLLSOC0,
->  				CLK_IS_ROOT|CLK_IGNORE_UNUSED);
->  	clk_register_clkdev(clk, "soc0_pll", NULL);
-> +	clks[soc0_pll] = clk;
->  
->  	clk = clk_reg_prcmu_gate("soc1_pll", NULL, PRCMU_PLLSOC1,
->  				CLK_IS_ROOT|CLK_IGNORE_UNUSED);
->  	clk_register_clkdev(clk, "soc1_pll", NULL);
-> +	clks[soc1_pll] = clk;
->  
->  	clk = clk_reg_prcmu_gate("ddr_pll", NULL, PRCMU_PLLDDR,
->  				CLK_IS_ROOT|CLK_IGNORE_UNUSED);
->  	clk_register_clkdev(clk, "ddr_pll", NULL);
-> +	clks[ddr_pll] = clk;
+Backward Compatibility:
 
-It seems the actual numbers for the PCRMU clocks are defined
-in drivers/mfd/dbx500-prcmu-regs.h, at PRCM_ACLK_MGT through
-PRCM_MSP1CLK_MGT, where each clock has its own register.
+This patch also allows existing method of specifying earlyprintk
+parameter via bootargs.
 
-> @@ -218,106 +296,130 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
->  	clk = clk_reg_prcc_pclk("p1_pclk0", "per1clk", clkrst1_base,
->  				BIT(0), 0);
->  	clk_register_clkdev(clk, "apb_pclk", "uart0");
-> +	clks[uart0] = clk;
->  
->  	clk = clk_reg_prcc_pclk("p1_pclk1", "per1clk", clkrst1_base,
->  				BIT(1), 0);
->  	clk_register_clkdev(clk, "apb_pclk", "uart1");
-> +	clks[uart1] = clk;
->  
->  	clk = clk_reg_prcc_pclk("p1_pclk2", "per1clk", clkrst1_base,
->  				BIT(2), 0);
->  	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.1");
-> +	clks[nmk_i2c1] = clk;
+Existing method i.e. passing via bootargs will still have precedence
+over device tree i.e. if one specifies earlyprintk=device-type,address
+in bootargs then kernel will use information from bootargs instead of
+device tree.
 
-The prcc clocks are inherently numbered, there is a set of six
-registers with 8 bits each, so the number you use can simply
-be the index from 0 to 48, or use #clock-cells=<2> and pass both.
-Using the same numbers as the hardware in the binding is much less
-ambiguous than making up your own number space that you have to
-then document in the binding and update every time a new chip
-gets released.
+If user just specifies earlyprintk (without =...) then kernel will
+look for device tree earlyprintk parameter.
 
-	Arnd
+Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Signed-off-by: Anup Patel <anup.patel@linaro.org>
+---
+ arch/arm64/kernel/early_printk.c |    7 +++++++
+ arch/arm64/kernel/setup.c        |   21 ++++++++++++++++++++-
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
+index fbb6e18..4e6f845 100644
+--- a/arch/arm64/kernel/early_printk.c
++++ b/arch/arm64/kernel/early_printk.c
+@@ -29,6 +29,8 @@
+ static void __iomem *early_base;
+ static void (*printch)(char ch);
+ 
++extern char *earlyprintk_dt_args;
++
+ /*
+  * PL011 single character TX.
+  */
+@@ -116,6 +118,11 @@ static int __init setup_early_printk(char *buf)
+ 	phys_addr_t paddr = 0;
+ 
+ 	if (!buf) {
++		/* Try to check if Device Tree has this argument or not ? */
++		buf = earlyprintk_dt_args;
++	}
++
++	if (!buf) {
+ 		pr_warning("No earlyprintk arguments passed.\n");
+ 		return 0;
+ 	}
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 6a9a532..fb2d56f 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -60,6 +60,8 @@ EXPORT_SYMBOL(processor_id);
+ unsigned int elf_hwcap __read_mostly;
+ EXPORT_SYMBOL_GPL(elf_hwcap);
+ 
++char *earlyprintk_dt_args;
++
+ static const char *cpu_name;
+ static const char *machine_name;
+ phys_addr_t __fdt_pointer __initdata;
+@@ -122,6 +124,23 @@ static void __init setup_processor(void)
+ 	elf_hwcap = 0;
+ }
+ 
++int __init early_init_dt_scan_chosen_arm64(unsigned long node,
++					   const char *uname,
++					   int depth, void *data)
++{
++	char *prop;
++
++	/* Check if this is chosen node */
++	if (early_init_dt_scan_chosen(node, uname, depth, data) == 0)
++		return 0;
++
++	prop = of_get_flat_dt_prop(node, "earlyprintk", NULL);
++	if (prop)
++		earlyprintk_dt_args = prop;
++
++	return 1;
++}
++
+ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+ {
+ 	struct boot_param_header *devtree;
+@@ -165,7 +184,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+ 	pr_info("Machine: %s\n", machine_name);
+ 
+ 	/* Retrieve various information from the /chosen node */
+-	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
++	of_scan_flat_dt(early_init_dt_scan_chosen_arm64, boot_command_line);
+ 	/* Initialize {size,address}-cells info */
+ 	of_scan_flat_dt(early_init_dt_scan_root, NULL);
+ 	/* Setup memory, calling early_init_dt_add_memory_arch */
+-- 
+1.7.9.5
+
