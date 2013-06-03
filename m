@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3FCVoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 17:44:34 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:57458 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab3FCVo0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 17:44:26 -0400
+	id S1758716Ab3FCVyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 17:54:23 -0400
+Received: from fieldses.org ([174.143.236.118]:35954 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758525Ab3FCVyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 17:54:15 -0400
+Date: Mon, 3 Jun 2013 17:53:41 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v1 01/11] cifs: use posix_unblock_lock instead of
+ locks_delete_block
+Message-ID: <20130603215341.GD2109@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+ <1370056054-25449-2-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130603150252.GA2334@kroah.com>
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
-	<1369217581-16285-4-git-send-email-serban.constantinescu@arm.com>
-	<CAMP5XgeBsr63tcHxoMb2D5dJPuetyLnxNVi8_2V0FM69+AwFbQ@mail.gmail.com>
-	<20130603150252.GA2334@kroah.com>
-Date: Mon, 3 Jun 2013 14:44:25 -0700
-Message-ID: <CAMP5XgdHDv_Lr=CXrD51XTrxq1t=16-OK-Q0Ww79wdgm2QXGtA@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] staging: android: binder: fix BINDER_SET_MAX_THREADS
- declaration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370056054-25449-2-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 8:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, May 31, 2013 at 04:17:34PM -0700, Arve Hjønnevåg wrote:
->> On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
->> <serban.constantinescu@arm.com> wrote:
->> > This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
->> > instead of size_t for setting the max threads. Thus using the same
->> > handler for 32 and 64bit kernels.
->> >
->> > This value is stored internally in struct binder_proc and set to 15
->> > on open_binder() in the libbinder API(thus no need for a 64bit size_t
->> > on 64bit platforms).
->> >
->> > The change does not affect existing 32bit ABI.
->> >
->> > Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
->> > ---
->> >  drivers/staging/android/binder.h |    2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
->> > index 2f94d16..1761541 100644
->> > --- a/drivers/staging/android/binder.h
->> > +++ b/drivers/staging/android/binder.h
->> > @@ -86,7 +86,7 @@ struct binder_version {
->> >
->> >  #define BINDER_WRITE_READ              _IOWR('b', 1, struct binder_write_read)
->> >  #define        BINDER_SET_IDLE_TIMEOUT         _IOW('b', 3, __s64)
->> > -#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, size_t)
->> > +#define        BINDER_SET_MAX_THREADS          _IOW('b', 5, __u32)
->> >  #define        BINDER_SET_IDLE_PRIORITY        _IOW('b', 6, __s32)
->> >  #define        BINDER_SET_CONTEXT_MGR          _IOW('b', 7, __s32)
->> >  #define        BINDER_THREAD_EXIT              _IOW('b', 8, __s32)
->> > --
->> > 1.7.9.5
->> >
->>
->> Acked-by: Arve Hjønnevåg <arve@android.com>
->
-> What about patches 1 and 2 in this series?
->
+On Fri, May 31, 2013 at 11:07:24PM -0400, Jeff Layton wrote:
+> commit 66189be74 (CIFS: Fix VFS lock usage for oplocked files) exported
+> the locks_delete_block symbol. There's already an exported helper
+> function that provides this capability however, so make cifs use that
+> instead and turn locks_delete_block back into a static function.
+> 
+> Note that if fl->fl_next == NULL then this lock has already been through
+> locks_delete_block(), so we should be OK to ignore an ENOENT error here
+> and simply not retry the lock.
 
-I apparently only responded privately to those. I just resent them.
+ACK.--b.
 
-> thanks,
->
-> greg k-h
-
-
-
---
-Arve Hjønnevåg
+> 
+> Cc: Pavel Shilovsky <piastryyy@gmail.com>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/cifs/file.c     |    2 +-
+>  fs/locks.c         |    3 +--
+>  include/linux/fs.h |    5 -----
+>  3 files changed, 2 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 48b29d2..44a4f18 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -999,7 +999,7 @@ try_again:
+>  		rc = wait_event_interruptible(flock->fl_wait, !flock->fl_next);
+>  		if (!rc)
+>  			goto try_again;
+> -		locks_delete_block(flock);
+> +		posix_unblock_lock(file, flock);
+>  	}
+>  	return rc;
+>  }
+> diff --git a/fs/locks.c b/fs/locks.c
+> index cb424a4..7a02064 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -496,13 +496,12 @@ static void __locks_delete_block(struct file_lock *waiter)
+>  
+>  /*
+>   */
+> -void locks_delete_block(struct file_lock *waiter)
+> +static void locks_delete_block(struct file_lock *waiter)
+>  {
+>  	lock_flocks();
+>  	__locks_delete_block(waiter);
+>  	unlock_flocks();
+>  }
+> -EXPORT_SYMBOL(locks_delete_block);
+>  
+>  /* Insert waiter into blocker's block list.
+>   * We use a circular list so that processes can be easily woken up in
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 43db02e..b9d7816 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1006,7 +1006,6 @@ extern int vfs_setlease(struct file *, long, struct file_lock **);
+>  extern int lease_modify(struct file_lock **, int);
+>  extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+>  extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
+> -extern void locks_delete_block(struct file_lock *waiter);
+>  extern void lock_flocks(void);
+>  extern void unlock_flocks(void);
+>  #else /* !CONFIG_FILE_LOCKING */
+> @@ -1151,10 +1150,6 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
+>  	return 1;
+>  }
+>  
+> -static inline void locks_delete_block(struct file_lock *waiter)
+> -{
+> -}
+> -
+>  static inline void lock_flocks(void)
+>  {
+>  }
+> -- 
+> 1.7.1
+> 
