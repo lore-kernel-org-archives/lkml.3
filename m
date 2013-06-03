@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab3FCWbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:31:14 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52901 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759637Ab3FCWbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:31:06 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 0/3] clk: dt: bindings for mux & divider clocks
-Date: Tue, 4 Jun 2013 00:31:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306040031.02935.heiko@sntech.de>
+	id S1759979Ab3FCWac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:30:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6606 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759643Ab3FCWaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 18:30:10 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=FpHKU8Ff_xgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mNcsKcCz_5cA:10 a=YhdJeHolAAAA:8 a=VwQbUJbxAAAA:8 a=_jlGtV7tAAAA:8 a=u6Kjp6XQMGfe5Rn6x1sA:9 a=L1RTw_NLzc0A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130603221202.711933097@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Jun 2013 18:11:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [61/65] hwmon: fix error return code in abituguru_probe()
+References: <20130603221016.243553628@goodmis.org>
+Content-Disposition: inline; filename=0061-hwmon-fix-error-return-code-in-abituguru_probe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 3. Juni 2013, 19:53:07 schrieb Mike Turquette:
-> This series introduces binding definitions for common register-mapped
-> clock multiplexor and divider IP blocks, and the corresponding setup
-> functions once they are matched.  The bindings are close the struct
-> definitions but please don't hold that against the binding: the struct
-> definitions closely model the hardware.
-> 
-> The only missing basic clock type is the gate clock.  A binding for that
-> was posted some time back and is similar in spirit to these[1].  I guess
-> we'll need to decide whether register-level programming details belong
-> in DT.  I believe they do since those details describe the hardware.
-> 
-> Note that there is still no generic clock driver that matches these
-> basic types, but it would be trivial to write one.  Thoughts on that?
-> Is it better for each of the basic clock types to be a driver that
-> matches, or should there be one drivers/clk/clk-basic.c which matches
-> all of the basic clock building blocks?  I like the latter for aesthetic
-> purposes.
-> 
-> I am using this code while converting the OMAP4 clock data over to DT
-> and some common boilerplate code can be factored out of several clock
-> drivers if this is merged.
+3.6.11.5 stable review patch.
+If anyone has any objections, please let me know.
 
-apart from the stuff pointed out in the replies to the patches this works 
-really well on my upcoming Rockchip platform and saves quite a lot silly clock 
-definitions whose only purpose is to hold the shift and width values.
+------------------
 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-So, for this series:
+[ Upstream commit ecacb0b17c08fae89f65468727f0e4b8e91da4e1 ]
 
-Tested-by: Heiko Stuebner <heiko@sntech.de>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: stable@vger.kernel.org
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/hwmon/abituguru.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
+index d4419b4..b13409c 100644
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1410,14 +1410,18 @@ static int __devinit abituguru_probe(struct platform_device *pdev)
+ 	pr_info("found Abit uGuru\n");
+ 
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
+-- 
+1.7.10.4
+
 
