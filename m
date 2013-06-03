@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759897Ab3FCWXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 18:23:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8852 "EHLO
+	id S1759886Ab3FCWWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 18:22:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14070 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758713Ab3FCWL4 (ORCPT
+	with ESMTP id S1758798Ab3FCWMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 18:11:56 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LjxYcFONNe0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6lSTn4viUbIA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=aKHjQHsr9158Kq3lC44A:9 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 3 Jun 2013 18:12:00 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9EJDhe1-xzEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MIETxrNxWykA:10 a=9AzMRrQhAAAA:8 a=VkbnAb4FAAAA:8 a=2IzVV_4oBMwMYoTLWpEA:9 a=SxxB86fLhQ4A:10 a=jeBq3FmKZ4MA:10 a=ku8ijnxeQ8pGZUrg:21 a=IuVnpM8ufwAspDgI:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130603221153.315507011@goodmis.org>
+Message-Id: <20130603221156.491465850@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Jun 2013 18:10:23 -0400
+Date: Mon, 03 Jun 2013 18:10:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mikulas Patocka <mpatocka@redhat.com>, <stable@kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [07/65] dm bufio: avoid a possible __vmalloc deadlock
+Cc: Chris Metcalf <cmetcalf@tilera.com>, <stable@vger.linux.org>
+Subject: [25/65] tile: support new Tilera hypervisor
 References: <20130603221016.243553628@goodmis.org>
-Content-Disposition: inline; filename=0007-dm-bufio-avoid-a-possible-__vmalloc-deadlock.patch
+Content-Disposition: inline; filename=0025-tile-support-new-Tilera-hypervisor.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,84 +29,170 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-[ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
+[ Upstream commit c539914dcd9a68c63305e055b14115a6a19578a8 ]
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+The Tilera hypervisor shipped in releases up through MDE 4.1 launches
+the client operating system (i.e. Linux) at privilege level 1 (PL1).
+Starting with MDE 4.2, as part of the work to enable KVM, the
+Tilera hypervisor launches Linux at PL2 instead.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+This commit makes the KERNEL_PL option default to 2 for tilegx, while
+still saying at 1 for tilepro, which doesn't have an updated hypervisor.
+It also explains how and when you might want to choose another value.
+In addition, we change a small buglet in the on-chip Ethernet driver,
+where we were failing to use the KERNEL_PL constant in an API call.
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
+To make the transition cleaner, this change also provides the updated
+hv_init() API for the new hypervisor that supports announcing Linux's
+compiled-in PL, so the hypervisor can generate a suitable error in the
+case of a mismatched hypervisor and Linux binary.
 
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@kernel.org
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[ Set and clear PF_MEMALLOC manually - SR ]
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: stable@vger.linux.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ arch/tile/Kconfig                  |   14 ++++++++++----
+ arch/tile/include/hv/hypervisor.h  |   27 ++++++++++++++++++++++++---
+ arch/tile/kernel/head_32.S         |    2 +-
+ arch/tile/kernel/head_64.S         |   12 +++++++++---
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ 5 files changed, 45 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index c0fc827..a1f2487 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
- {
-+	unsigned noio_flag;
-+	void *ptr;
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 932e443..569f719 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -360,11 +360,17 @@ config HARDWALL
+ config KERNEL_PL
+ 	int "Processor protection level for kernel"
+ 	range 1 2
+-	default "1"
++	default 2 if TILEGX
++	default 1 if !TILEGX
+ 	---help---
+-	  This setting determines the processor protection level the
+-	  kernel will be built to run at.  Generally you should use
+-	  the default value here.
++	  Since MDE 4.2, the Tilera hypervisor runs the kernel
++	  at PL2 by default.  If running under an older hypervisor,
++	  or as a KVM guest, you must run at PL1.  (The current
++	  hypervisor may also be recompiled with "make HV_PL=2" to
++	  allow it to run a kernel at PL1, but clients running at PL1
++	  are not expected to be supported indefinitely.)
 +
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
++	  If you're not sure, don't change the default.
+ 
+ source "arch/tile/gxio/Kconfig"
+ 
+diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
+index ccd847e..837dca5 100644
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -107,7 +107,22 @@
+ #define HV_DISPATCH_ENTRY_SIZE 32
+ 
+ /** Version of the hypervisor interface defined by this file */
+-#define _HV_VERSION 11
++#define _HV_VERSION 13
++
++/** Last version of the hypervisor interface with old hv_init() ABI.
++ *
++ * The change from version 12 to version 13 corresponds to launching
++ * the client by default at PL2 instead of PL1 (corresponding to the
++ * hv itself running at PL3 instead of PL2).  To make this explicit,
++ * the hv_init() API was also extended so the client can report its
++ * desired PL, resulting in a more helpful failure diagnostic.  If you
++ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
++ * argument, the hypervisor will assume client_pl = 1.
++ *
++ * Note that this is a deprecated solution and we do not expect to
++ * support clients of the Tilera hypervisor running at PL1 indefinitely.
++ */
++#define _HV_VERSION_OLD_HV_INIT 12
+ 
+ /* Index into hypervisor interface dispatch code blocks.
+  *
+@@ -377,7 +392,11 @@ typedef int HV_Errno;
+ #ifndef __ASSEMBLER__
+ 
+ /** Pass HV_VERSION to hv_init to request this version of the interface. */
+-typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
++typedef enum {
++  HV_VERSION = _HV_VERSION,
++  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
++
++} HV_VersionNumber;
+ 
+ /** Initializes the hypervisor.
+  *
+@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
+  * that this program expects, typically HV_VERSION.
+  * @param chip_num Architecture number of the chip the client was built for.
+  * @param chip_rev_num Revision number of the chip the client was built for.
++ * @param client_pl Privilege level the client is built for
++ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
+  */
+ void hv_init(HV_VersionNumber interface_version_number,
+-             int chip_num, int chip_rev_num);
++             int chip_num, int chip_rev_num, int client_pl);
+ 
+ 
+ /** Queries we can make for hv_sysconf().
+diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
+index f71bfee..ac11530 100644
+--- a/arch/tile/kernel/head_32.S
++++ b/arch/tile/kernel/head_32.S
+@@ -38,7 +38,7 @@ ENTRY(_start)
+ 	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
++	  moveli r0, _HV_VERSION_OLD_HV_INIT
+ 	  jal hv_init
+ 	}
+ 	/* Get a reasonable default ASID in r0 */
+diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
+index f9a2734..6093964 100644
+--- a/arch/tile/kernel/head_64.S
++++ b/arch/tile/kernel/head_64.S
+@@ -34,13 +34,19 @@
+ ENTRY(_start)
+ 	/* Notify the hypervisor of what version of the API we want */
+ 	{
++#if KERNEL_PL == 1 && _HV_VERSION == 13
++	  /* Support older hypervisors by asking for API version 12. */
++	  movei r0, _HV_VERSION_OLD_HV_INIT
++#else
++	  movei r0, _HV_VERSION
++#endif
+ 	  movei r1, TILE_CHIP
+-	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
+-	  jal hv_init
++	  movei r2, TILE_CHIP_REV
++	  movei r3, KERNEL_PL
+ 	}
++	jal hv_init
+ 	/* Get a reasonable default ASID in r0 */
+ 	{
+ 	  move r0, zero
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 4e98100..04a321a 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+ 		if (info->has_iqueue) {
+ 			gxio_mpipe_request_notif_ring_interrupt(
+ 				&context, cpu_x(cpu), cpu_y(cpu),
+-				1, ingress_irq, info->iqueue.ring);
++				KERNEL_PL, ingress_irq, info->iqueue.ring);
+ 		}
  	}
  
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY) {
-+		noio_flag = current->flags;
-+		current->flags |= PF_MEMALLOC;
-+	}
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-+
-+	return ptr;
- }
- 
- /*
 -- 
 1.7.10.4
 
