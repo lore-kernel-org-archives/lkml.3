@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3FDWnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:43:40 -0400
-Received: from 1wt.eu ([62.212.114.60]:35737 "EHLO 1wt.eu"
+	id S1754155Ab3FDW4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:56:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:35756 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835Ab3FDWn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:28 -0400
-Message-Id: <20130604172134.419170494@1wt.eu>
+	id S1753775Ab3FDWng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:36 -0400
+Message-Id: <20130604172136.025416845@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:09 +0200
+Date: Tue, 04 Jun 2013 19:23:48 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 099/184] Bluetooth: RFCOMM - Fix info leak via getsockname()
+Cc: Kevin Dankwardt <k@kcomputing.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Willy Tarreau <w@1wt.eu>
+Subject: [ 138/184] fat: Fix stat->f_namelen
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,38 +23,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Kevin Dankwardt <k@kcomputing.com>
 
-[ Upstream commit 9344a972961d1a6d2c04d9008b13617bcb6ec2ef ]
+commit eeb5b4ae81f4a750355fa0c15f4fea22fdf83be1 upstream.
 
-The RFCOMM code fails to initialize the trailing padding byte of struct
-sockaddr_rc added for alignment. It that for leaks one byte kernel stack
-via the getsockname() syscall. Add an explicit memset(0) before filling
-the structure to avoid the info leak.
+I found that the length of a file name when created cannot exceed 255
+characters, yet, pathconf(), via statfs(), returns the maximum as 260.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kevin Dankwardt <k@kcomputing.com>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/bluetooth/rfcomm/sock.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/fat/inode.c           | 2 +-
+ fs/fat/namei_vfat.c      | 6 +++---
+ include/linux/msdos_fs.h | 3 ++-
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
-index 1ae3f80..c47b7c4 100644
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -543,6 +543,7 @@ static int rfcomm_sock_getname(struct socket *sock, struct sockaddr *addr, int *
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 76b7961..c187e92 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -558,7 +558,7 @@ static int fat_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	buf->f_bavail = sbi->free_clusters;
+ 	buf->f_fsid.val[0] = (u32)id;
+ 	buf->f_fsid.val[1] = (u32)(id >> 32);
+-	buf->f_namelen = sbi->options.isvfat ? 260 : 12;
++	buf->f_namelen = sbi->options.isvfat ? FAT_LFN_LEN : 12;
  
- 	BT_DBG("sock %p, sk %p", sock, sk);
+ 	return 0;
+ }
+diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+index 72646e2..67b3df1 100644
+--- a/fs/fat/namei_vfat.c
++++ b/fs/fat/namei_vfat.c
+@@ -502,14 +502,14 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+ 		*outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
+ 		if (*outlen < 0)
+ 			return *outlen;
+-		else if (*outlen > 255)
++		else if (*outlen > FAT_LFN_LEN)
+ 			return -ENAMETOOLONG;
  
-+	memset(sa, 0, sizeof(*sa));
- 	sa->rc_family  = AF_BLUETOOTH;
- 	sa->rc_channel = rfcomm_pi(sk)->channel;
- 	if (peer)
+ 		op = &outname[*outlen * sizeof(wchar_t)];
+ 	} else {
+ 		if (nls) {
+ 			for (i = 0, ip = name, op = outname, *outlen = 0;
+-			     i < len && *outlen <= 255;
++			     i < len && *outlen <= FAT_LFN_LEN;
+ 			     *outlen += 1)
+ 			{
+ 				if (escape && (*ip == ':')) {
+@@ -549,7 +549,7 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+ 				return -ENAMETOOLONG;
+ 		} else {
+ 			for (i = 0, ip = name, op = outname, *outlen = 0;
+-			     i < len && *outlen <= 255;
++			     i < len && *outlen <= FAT_LFN_LEN;
+ 			     i++, *outlen += 1)
+ 			{
+ 				*op++ = *ip++;
+diff --git a/include/linux/msdos_fs.h b/include/linux/msdos_fs.h
+index ce38f1c..34066e6 100644
+--- a/include/linux/msdos_fs.h
++++ b/include/linux/msdos_fs.h
+@@ -15,6 +15,7 @@
+ #define MSDOS_DPB_BITS	4		/* log2(MSDOS_DPB) */
+ #define MSDOS_DPS	(SECTOR_SIZE / sizeof(struct msdos_dir_entry))
+ #define MSDOS_DPS_BITS	4		/* log2(MSDOS_DPS) */
++#define MSDOS_LONGNAME	256		/* maximum name length */
+ #define CF_LE_W(v)	le16_to_cpu(v)
+ #define CF_LE_L(v)	le32_to_cpu(v)
+ #define CT_LE_W(v)	cpu_to_le16(v)
+@@ -47,8 +48,8 @@
+ #define DELETED_FLAG	0xe5	/* marks file as deleted when in name[0] */
+ #define IS_FREE(n)	(!*(n) || *(n) == DELETED_FLAG)
+ 
++#define FAT_LFN_LEN	255	/* maximum long name length */
+ #define MSDOS_NAME	11	/* maximum name length */
+-#define MSDOS_LONGNAME	256	/* maximum name length */
+ #define MSDOS_SLOTS	21	/* max # of slots for short and long names */
+ #define MSDOS_DOT	".          "	/* ".", padded to MSDOS_NAME chars */
+ #define MSDOS_DOTDOT	"..         "	/* "..", padded to MSDOS_NAME chars */
 -- 
 1.7.12.2.21.g234cd45.dirty
 
