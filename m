@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3FDXNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:13:23 -0400
-Received: from 1wt.eu ([62.212.114.60]:35438 "EHLO 1wt.eu"
+	id S1753284Ab3FDXNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:13:30 -0400
+Received: from 1wt.eu ([62.212.114.60]:35435 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab3FDWmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752978Ab3FDWmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:19 -0400
-Message-Id: <20130604172131.760685135@1wt.eu>
+Message-Id: <20130604172131.927812188@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:05 +0200
+Date: Tue, 04 Jun 2013 19:22:09 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 035/184] hugetlb: fix resv_map leak in error path
+Subject: [ 039/184] mm: fix invalidate_complete_page2() lock ordering
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,112 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit c50ac050811d6485616a193eb0f37bfbd191cc89 upstream
+commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
 
-When called for anonymous (non-shared) mappings, hugetlb_reserve_pages()
-does a resv_map_alloc().  It depends on code in hugetlbfs's
-vm_ops->close() to release that allocation.
+In fuzzing with trinity, lockdep protested "possible irq lock inversion
+dependency detected" when isolate_lru_page() reenabled interrupts while
+still holding the supposedly irq-safe tree_lock:
 
-However, in the mmap() failure path, we do a plain unmap_region() without
-the remove_vma() which actually calls vm_ops->close().
+invalidate_inode_pages2
+  invalidate_complete_page2
+    spin_lock_irq(&mapping->tree_lock)
+    clear_page_mlock
+      isolate_lru_page
+        spin_unlock_irq(&zone->lru_lock)
 
-This is a decent fix.  This leak could get reintroduced if new code (say,
-after hugetlb_reserve_pages() in hugetlbfs_file_mmap()) decides to return
-an error.  But, I think it would have to unroll the reservation anyway.
+isolate_lru_page() is correct to enable interrupts unconditionally:
+invalidate_complete_page2() is incorrect to call clear_page_mlock() while
+holding tree_lock, which is supposed to nest inside lru_lock.
 
-Christoph's test case:
+Both truncate_complete_page() and invalidate_complete_page() call
+clear_page_mlock() before taking tree_lock to remove page from radix_tree.
+ I guess invalidate_complete_page2() preferred to test PageDirty (again)
+under tree_lock before committing to the munlock; but since the page has
+already been unmapped, its state is already somewhat inconsistent, and no
+worse if clear_page_mlock() moved up.
 
-	http://marc.info/?l=linux-mm&m=133728900729735
-
-This patch applies to 3.4 and later.  A version for earlier kernels is at
-https://lkml.org/lkml/2012/5/22/418.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: Christoph Lameter <cl@linux.com>
-Tested-by: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: <stable@vger.kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ying Han <yinghan@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[dannf: backported to Debian's 2.6.32]
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- mm/hugetlb.c | 28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ mm/truncate.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 20f9240..3d61035 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1772,6 +1772,15 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
- 		kref_get(&reservations->refs);
- }
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 258bda7..b41d26d 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -376,11 +376,12 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
+ 		return 0;
  
-+static void resv_map_put(struct vm_area_struct *vma)
-+{
-+	struct resv_map *reservations = vma_resv_map(vma);
++	clear_page_mlock(page);
 +
-+	if (!reservations)
-+		return;
-+	kref_put(&reservations->refs, resv_map_release);
-+}
-+
- static void hugetlb_vm_op_close(struct vm_area_struct *vma)
- {
- 	struct hstate *h = hstate_vma(vma);
-@@ -1788,7 +1797,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
- 		reserve = (end - start) -
- 			region_count(&reservations->regions, start, end);
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (PageDirty(page))
+ 		goto failed;
  
--		kref_put(&reservations->refs, resv_map_release);
-+		resv_map_put(vma);
- 
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
-@@ -2472,12 +2481,16 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
- 	}
- 
--	if (chg < 0)
--		return chg;
-+	if (chg < 0) {
-+		ret = chg;
-+		goto out_err;
-+	}
- 
- 	/* There must be enough pages in the subpool for the mapping */
--	if (hugepage_subpool_get_pages(spool, chg))
--		return -ENOSPC;
-+	if (hugepage_subpool_get_pages(spool, chg)) {
-+		ret = -ENOSPC;
-+		goto out_err;
-+	}
- 
- 	/*
- 	 * Check enough hugepages are available for the reservation.
-@@ -2486,7 +2499,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
- 		hugepage_subpool_put_pages(spool, chg);
--		return ret;
-+		goto out_err;
- 	}
- 
- 	/*
-@@ -2503,6 +2516,9 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
-+out_err:
-+	resv_map_put(vma);
-+	return ret;
- }
- 
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+-	clear_page_mlock(page);
+ 	BUG_ON(page_has_private(page));
+ 	__remove_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
