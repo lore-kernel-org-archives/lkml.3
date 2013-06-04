@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3FDK7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 06:59:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63764 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3FDK73 (ORCPT
+	id S1752778Ab3FDLDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:03:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51398 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab3FDLD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 06:59:29 -0400
+	Tue, 4 Jun 2013 07:03:28 -0400
+Date: Tue, 4 Jun 2013 13:03:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: add const qualifier to perf_pmu_register's 'name'
+ arg
+Message-ID: <20130604110314.GN8923@twins.programming.kicks-ass.net>
+References: <1370339148-5566-1-git-send-email-mjonker@synopsys.com>
+ <20130604095801.GM8923@twins.programming.kicks-ass.net>
+ <51ADBB1D.9060805@synopsys.com>
 MIME-Version: 1.0
-In-Reply-To: <20130604095657.GA9581@balto.lan>
-References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
-	<1369920465-13905-5-git-send-email-fabio.baltieri@linaro.org>
-	<CACRpkda8h_zewd2M7QzvoLn15iDEUv8XYCGqro62chiCcYaM8Q@mail.gmail.com>
-	<20130604095657.GA9581@balto.lan>
-Date: Tue, 4 Jun 2013 12:59:28 +0200
-Message-ID: <CACRpkda6L+mr-CYSmLY9i=uE4dZiXfo1QhtbfBjxo2mC2orK-g@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ARM: ux500: Provide auxdata to ux500 ASoC driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ADBB1D.9060805@synopsys.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 11:56 AM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
-> On Tue, Jun 04, 2013 at 11:03:41AM +0200, Linus Walleij wrote:
->>
->> Patch applied to my ux500-devicetree branch after some rebasing.
->
-> Thanks!  I saw that a lot patches are stacking up in the tree, do you
-> plan to send an intermediate pull request to get these on
-> arm-soc/for-next (and linux-next)?
+On Tue, Jun 04, 2013 at 03:32:05PM +0530, Vineet Gupta wrote:
+> On 06/04/2013 03:28 PM, Peter Zijlstra wrote:
+> > On Tue, Jun 04, 2013 at 11:45:48AM +0200, Mischa Jonker wrote:
+> >> This allows us to use pdev->name for registering a PMU device.
+> >> IMO the name is not supposed to be changed anyway.
+> >>
+> > Indeed, and thanks! 
+> >
+> > PS. WTH is a metag?
+> 
+> It's the cpu core from Imagination Tech - their port got merged in 3.9 (along with
+> ARC from Synopsys).
 
-Yes it's just that new things come in all the time.
+So its Meta-G, not me-tag :-) Google gave me the below, its not exactly
+clear what kind of animal it is or what the G stands for. Too much
+marketing speak, too little useful information.
 
-I might just draw a line at some point and say any more
-changes need to go into v3.12.
+http://www.imgtec.com/meta/meta-technology.asp
 
-Yours,
-Linus Walleij
+Simlar 'complaint' for the ARC stuff really, only marketing speak :-)
+
+
