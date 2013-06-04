@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab3FDWZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:25:56 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3FDWZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:25:54 -0400
-Message-ID: <51AE6964.1090002@oracle.com>
-Date: Tue, 04 Jun 2013 17:25:40 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jfs: Convert jfs_error to jfs_sb_err
-References: <76a131f2845ec3f75dd80be6808e513ae3ea4255.1370323137.git.joe@perches.com>  <51AE0F37.3020104@oracle.com> <1370363289.2385.41.camel@joe-AO722>
-In-Reply-To: <1370363289.2385.41.camel@joe-AO722>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1752182Ab3FDWlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:35138 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab3FDWkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:40:42 -0400
+Message-Id: <20130604172130.389042968@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Tue, 04 Jun 2013 19:21:32 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Jens Axboe <jens.axboe@oracle.com>, Thomas Bork <tom@eisfair.net>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 002/184] Revert "block: improve queue_should_plug() by
+In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 11:28 AM, Joe Perches wrote:
-> On Tue, 2013-06-04 at 11:00 -0500, Dave Kleikamp wrote:
->> I generally like this cleanup except for one thing.
->>
->> On 06/04/2013 12:22 AM, Joe Perches wrote:
->>> Use a more current logging style.
->>>
->>> Rename function jfs_error to jfs_sb_err.
->>
->> Why the rename? If you're going to rename it, the new name should be
->> more descriptive, such as jfs_report_and_handle_error(), but I don't
->> like that because it's too long. jfs_error() is similiar to ext4_error()
->> or btrfs_error(). I don't understand the name change.
-> 
-> Pick a name.  I don't much care what it is really.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-I'm just going to stick with jfs_error, since I'm not convinced changing
-the name has any benefit.
+------------------
+ looking at IO depths"
 
-> This one takes a super_block * and emits a logging message
-> so I chose jfs_sb_err to try to describe the sb * bit.
-> 
-> I like the _err suffix is a bit better than the
-> _error suffix as it's a bit more name consistent
-> with other kernel logging mechanisms like dev_err,
-> pr_err, etc, but if you want to remain consistent
-> with other fs/,,, fine by me.
+From: Jens Axboe <jens.axboe@oracle.com>
 
-It's more than a logging mechanism. It will also make the file-system
-read-only, or panic (or do nothing else) depending on the errors= mount
-option.
+This reverts commit fb1e75389bd06fd5987e9cda1b4e0305c782f854.
 
-> I think the other fs _error names are sub-optimal.
+"Benjamin S." <sbenni@gmx.de> reports that the patch in question
+causes a big drop in sequential throughput for him, dropping from
+200MB/sec down to only 70MB/sec.
 
-They perform a similar function, so I'm going to leave it as is. Even if
-the names are imperfect, it's good to have some similarities in the
-names of the functions between file systems.
+Needs to be investigated more fully, for now lets just revert the
+offending commit.
 
-> These functions are a bit overloaded too when
-> CONFIG_PRINTK is not enabled.  The format and args
-> still exist in code and I believe can not be
-> optimized away by the compiler
-> 
-> I think using macro or an in-place expansion to
-> separate the 2 parts of the reporting and then the
-> handling of of the error would be better as it
-> would allow smaller embedded use.
+Conflicts:
 
-I can hold off on this a little while if you want to explore that idea
-as an alternate.
+	include/linux/blkdev.h
 
->>> Add __printf format and argument verification.
->>
->> good
-> 
-> I submitted a patch a few years ago to do that too.
-> Dunno what happened to it,
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
+(cherry picked from commit 79da0644a8e0838522828f106e4049639eea6baf)
+Cc: Thomas Bork <tom@eisfair.net>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ block/blk-core.c       | 11 ++---------
+ include/linux/blkdev.h |  4 +---
+ 2 files changed, 3 insertions(+), 12 deletions(-)
 
-I might have put it off and then forgot about it. I don't remember it
-specifically.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index cffd737..00ac586 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1149,7 +1149,7 @@ void init_request_from_bio(struct request *req, struct bio *bio)
+  */
+ static inline bool queue_should_plug(struct request_queue *q)
+ {
+-	return !(blk_queue_nonrot(q) && blk_queue_queuing(q));
++	return !(blk_queue_nonrot(q) && blk_queue_tagged(q));
+ }
+ 
+ static int __make_request(struct request_queue *q, struct bio *bio)
+@@ -1861,15 +1861,8 @@ void blk_dequeue_request(struct request *rq)
+ 	 * and to it is freed is accounted as io that is in progress at
+ 	 * the driver side.
+ 	 */
+-	if (blk_account_rq(rq)) {
++	if (blk_account_rq(rq))
+ 		q->in_flight[rq_is_sync(rq)]++;
+-		/*
+-		 * Mark this device as supporting hardware queuing, if
+-		 * we have more IOs in flight than 4.
+-		 */
+-		if (!blk_queue_queuing(q) && queue_in_flight(q) > 4)
+-			set_bit(QUEUE_FLAG_CQ, &q->queue_flags);
+-	}
+ }
+ 
+ /**
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 5eb6cb0..ec9c10b 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -456,8 +456,7 @@ struct request_queue
+ #define QUEUE_FLAG_NONROT      14	/* non-rotational device (SSD) */
+ #define QUEUE_FLAG_VIRT        QUEUE_FLAG_NONROT /* paravirt device */
+ #define QUEUE_FLAG_IO_STAT     15	/* do IO stats */
+-#define QUEUE_FLAG_CQ	       16	/* hardware does queuing */
+-#define QUEUE_FLAG_DISCARD     17	/* supports DISCARD */
++#define QUEUE_FLAG_DISCARD     16	/* supports DISCARD */
+ 
+ #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+ 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
+@@ -580,7 +579,6 @@ enum {
+ 
+ #define blk_queue_plugged(q)	test_bit(QUEUE_FLAG_PLUGGED, &(q)->queue_flags)
+ #define blk_queue_tagged(q)	test_bit(QUEUE_FLAG_QUEUED, &(q)->queue_flags)
+-#define blk_queue_queuing(q)	test_bit(QUEUE_FLAG_CQ, &(q)->queue_flags)
+ #define blk_queue_stopped(q)	test_bit(QUEUE_FLAG_STOPPED, &(q)->queue_flags)
+ #define blk_queue_nomerges(q)	test_bit(QUEUE_FLAG_NOMERGES, &(q)->queue_flags)
+ #define blk_queue_nonrot(q)	test_bit(QUEUE_FLAG_NONROT, &(q)->queue_flags)
+-- 
+1.7.12.2.21.g234cd45.dirty
 
-> 
->>> Remove embedded function names from formats.
->>> Add %pf, __builtin_return_address(0) to jfs_sb_err.
->>
->> I like this.
-> 
-> It also reduces stack needs a bit by removing that
-> 256 byte temp buffer.
+
 
