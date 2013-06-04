@@ -1,76 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279Ab3FDTiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 15:38:24 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37856 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3FDTiW (ORCPT
+	id S1751085Ab3FDTmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 15:42:44 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36350 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3FDTml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 15:38:22 -0400
-Date: Tue, 4 Jun 2013 12:36:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130604193619.GA14916@htj.dyndns.org>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <1370254735-13012-5-git-send-email-mhocko@suse.cz>
- <20130604010737.GF29989@mtj.dyndns.org>
- <20130604134523.GH31242@dhcp22.suse.cz>
+	Tue, 4 Jun 2013 15:42:41 -0400
+Message-ID: <51AE4324.4050903@linux.vnet.ibm.com>
+Date: Tue, 04 Jun 2013 14:42:28 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604134523.GH31242@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2]  drivers/base: Use attribute groups to create sysfs
+ memory files
+References: <51A908A3.7010006@linux.vnet.ibm.com> <51A91A0F.4020408@linux.vnet.ibm.com>
+In-Reply-To: <51A91A0F.4020408@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060419-8256-0000-0000-000007CB794D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Michal.
+Update the sysfs memory code to create/delete files at the time of device
+and subsystem registration.
 
-On Tue, Jun 04, 2013 at 03:45:23PM +0200, Michal Hocko wrote:
-> Is this something that you find serious enough to block this series?
-> I do not want to push hard but I would like to settle with something
-> finally. This is taking way longer than I would like.
+The current code creates files in the root memory directory explicitly through
+the use of init_* routines. The files for each memory block are created and
+deleted explicitly using the mem_[create|delete]_simple_file macros.
 
-I really don't think memcg can afford to add more mess than there
-already is.  Let's try to get things right with each change, please.
-Can we please see how the other approach would look like?  I have a
-suspicion that it's likely be simpler but the devils are in the
-details and all...
+This patch creates attribute groups for the memory root files and files in
+each memory block directory so that they are created and deleted implicitly
+at subsys and device register and unregister time.
 
-> > The iteration only depends on the current position.  Can't you factor
-> > out skipping part outside the function rather than rolling into this
-> > monstery thing with predicate callback?  Just test the condition
-> > outside and call a function to skip whatever is necessary?
-> > 
-> > Also, cgroup_rightmost_descendant() can be pretty expensive depending
-> > on how your tree looks like. 
-> 
-> I have no problem using something else. This was just the easiest to
-> use and it behaves more-or-less good for hierarchies which are more or
-> less balanced. If this turns out to be a problem we can introduce a
-> new cgroup_skip_subtree which would get to last->sibling or go up the
-> parent chain until there is non-NULL sibling. But what would be the next
-> selling point here if we made it perfect right now? ;)
+This did necessitate moving the register_memory() updating it to set the
+dev.groups field.
 
-Yeah, sure thing.  I was just worried because the skipping here might
-not be as good as the code seems to indicate.  There will be cases,
-which aren't too uncommon, where the skipping doesn't save much
-compared to just continuing the pre-order walk, so....  And nobody
-would really notice it unless [s]he looks really hard for it, which is
-the more worrisome part for me.  Maybe just stick a comment there
-explaining that we probably want something better in the future?
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
-Thanks.
+Patch updated to correct formatting errors.
+Please cc me on responses/comments.
+---
 
--- 
-tejun
+ drivers/base/memory.c |  143 +++++++++++++++++++++-----------------------------
+ 1 file changed, 62 insertions(+), 81 deletions(-)
+
+
+Index: linux/drivers/base/memory.c
+===================================================================
+--- linux.orig/drivers/base/memory.c	2013-05-31 14:14:40.000000000 -0500
++++ linux/drivers/base/memory.c	2013-05-31 14:15:05.000000000 -0500
+@@ -77,22 +77,6 @@
+ 	kfree(mem);
+ }
+ 
+-/*
+- * register_memory - Setup a sysfs device for a memory block
+- */
+-static
+-int register_memory(struct memory_block *memory)
+-{
+-	int error;
+-
+-	memory->dev.bus = &memory_subsys;
+-	memory->dev.id = memory->start_section_nr / sections_per_block;
+-	memory->dev.release = memory_block_release;
+-
+-	error = device_register(&memory->dev);
+-	return error;
+-}
+-
+ unsigned long __weak memory_block_size_bytes(void)
+ {
+ 	return MIN_MEMORY_BLOCK_SIZE;
+@@ -371,11 +355,6 @@
+ static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+ 
+-#define mem_create_simple_file(mem, attr_name)	\
+-	device_create_file(&mem->dev, &dev_attr_##attr_name)
+-#define mem_remove_simple_file(mem, attr_name)	\
+-	device_remove_file(&mem->dev, &dev_attr_##attr_name)
+-
+ /*
+  * Block size attribute stuff
+  */
+@@ -388,12 +367,6 @@
+ 
+ static DEVICE_ATTR(block_size_bytes, 0444, print_block_size, NULL);
+ 
+-static int block_size_init(void)
+-{
+-	return device_create_file(memory_subsys.dev_root,
+-				  &dev_attr_block_size_bytes);
+-}
+-
+ /*
+  * Some architectures will have custom drivers to do this, and
+  * will not need to do it from userspace.  The fake hot-add code
+@@ -429,17 +402,8 @@
+ out:
+ 	return ret;
+ }
+-static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+ 
+-static int memory_probe_init(void)
+-{
+-	return device_create_file(memory_subsys.dev_root, &dev_attr_probe);
+-}
+-#else
+-static inline int memory_probe_init(void)
+-{
+-	return 0;
+-}
++static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+ #endif
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+@@ -485,23 +449,6 @@
+ 
+ static DEVICE_ATTR(soft_offline_page, S_IWUSR, NULL, store_soft_offline_page);
+ static DEVICE_ATTR(hard_offline_page, S_IWUSR, NULL, store_hard_offline_page);
+-
+-static __init int memory_fail_init(void)
+-{
+-	int err;
+-
+-	err = device_create_file(memory_subsys.dev_root,
+-				&dev_attr_soft_offline_page);
+-	if (!err)
+-		err = device_create_file(memory_subsys.dev_root,
+-				&dev_attr_hard_offline_page);
+-	return err;
+-}
+-#else
+-static inline int memory_fail_init(void)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ /*
+@@ -546,6 +493,41 @@
+ 	return find_memory_block_hinted(section, NULL);
+ }
+ 
++static struct attribute *memory_memblk_attrs[] = {
++	&dev_attr_phys_index.attr,
++	&dev_attr_end_phys_index.attr,
++	&dev_attr_state.attr,
++	&dev_attr_phys_device.attr,
++	&dev_attr_removable.attr,
++	NULL
++};
++
++static struct attribute_group memory_memblk_attr_group = {
++	.attrs = memory_memblk_attrs,
++};
++
++static const struct attribute_group *memory_memblk_attr_groups[] = {
++	&memory_memblk_attr_group,
++	NULL,
++};
++
++/*
++ * register_memory - Setup a sysfs device for a memory block
++ */
++static
++int register_memory(struct memory_block *memory)
++{
++	int error;
++
++	memory->dev.bus = &memory_subsys;
++	memory->dev.id = memory->start_section_nr / sections_per_block;
++	memory->dev.release = memory_block_release;
++	memory->dev.groups = memory_memblk_attr_groups;
++
++	error = device_register(&memory->dev);
++	return error;
++}
++
+ static int init_memory_block(struct memory_block **memory,
+ 			     struct mem_section *section, unsigned long state)
+ {
+@@ -569,16 +551,6 @@
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+ 
+ 	ret = register_memory(mem);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_index);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, end_phys_index);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, state);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_device);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, removable);
+ 
+ 	*memory = mem;
+ 	return ret;
+@@ -656,14 +628,9 @@
+ 	unregister_mem_sect_under_nodes(mem, __section_nr(section));
+ 
+ 	mem->section_count--;
+-	if (mem->section_count == 0) {
+-		mem_remove_simple_file(mem, phys_index);
+-		mem_remove_simple_file(mem, end_phys_index);
+-		mem_remove_simple_file(mem, state);
+-		mem_remove_simple_file(mem, phys_device);
+-		mem_remove_simple_file(mem, removable);
++	if (mem->section_count == 0)
+ 		unregister_memory(mem);
+-	} else
++	else
+ 		kobject_put(&mem->dev.kobj);
+ 
+ 	mutex_unlock(&mem_sysfs_mutex);
+@@ -700,6 +667,29 @@
+ 	return mem->state == MEM_OFFLINE;
+ }
+ 
++static struct attribute *memory_root_attrs[] = {
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++	&dev_attr_probe.attr,
++#endif
++
++#ifdef CONFIG_MEMORY_FAILURE
++	&dev_attr_soft_offline_page.attr,
++	&dev_attr_hard_offline_page.attr,
++#endif
++
++	&dev_attr_block_size_bytes.attr,
++	NULL
++};
++
++static struct attribute_group memory_root_attr_group = {
++	.attrs = memory_root_attrs,
++};
++
++static const struct attribute_group *memory_root_attr_groups[] = {
++	&memory_root_attr_group,
++	NULL,
++};
++
+ /*
+  * Initialize the sysfs support for memory devices...
+  */
+@@ -711,7 +701,7 @@
+ 	unsigned long block_sz;
+ 	struct memory_block *mem = NULL;
+ 
+-	ret = subsys_system_register(&memory_subsys, NULL);
++	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -734,15 +724,6 @@
+ 			ret = err;
+ 	}
+ 
+-	err = memory_probe_init();
+-	if (!ret)
+-		ret = err;
+-	err = memory_fail_init();
+-	if (!ret)
+-		ret = err;
+-	err = block_size_init();
+-	if (!ret)
+-		ret = err;
+ out:
+ 	if (ret)
+ 		printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
+
