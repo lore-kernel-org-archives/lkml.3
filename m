@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab3FDWl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:41:28 -0400
-Received: from 1wt.eu ([62.212.114.60]:35216 "EHLO 1wt.eu"
+	id S1752608Ab3FDWlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:35 -0400
+Received: from 1wt.eu ([62.212.114.60]:35254 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab3FDWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:11 -0400
-Message-Id: <20130604172132.218543802@1wt.eu>
+	id S1751825Ab3FDWl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:29 -0400
+Message-Id: <20130604172132.712738520@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:16 +0200
+Date: Tue, 04 Jun 2013 19:22:28 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 046/184] x86, ioapic: initialize nr_ioapic_registers early in
+Cc: Petr Matousek <pmatouse@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 058/184] KVM: x86: invalid opcode oops on SET_SREGS with
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,100 +22,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- mp_register_ioapic()
+ OSXSAVE bit set (CVE-2012-4461)
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Petr Matousek <pmatouse@redhat.com>
 
-Lin Bao reported that one of the HP platforms failed to boot
-2.6.32 kernel, when the BIOS enabled interrupt-remapping and
-x2apic before handing over the control to the Linux kernel.
+commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
 
-During boot, Linux kernel masks all the interrupt sources
-(8259, IO-APIC RTE's), setup the interrupt-remapping hardware
-with the OS controlled table and unmasks the 8259 interrupts
-but not the IO-APIC RTE's (as the newly setup interrupt-remapping
-table and the IO-APIC RTE's are not yet programmed by the kernel).
+On hosts without the XSAVE support unprivileged local user can trigger
+oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
+cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
+ioctl.
 
-Shortly after this, IO-APIC RTE's and the interrupt-remapping table
-entries are programmed based on the ACPI tables etc. So the
-expectation is that any interrupt during this window will be dropped
-and not see the intermediate configuration.
+invalid opcode: 0000 [#2] SMP
+Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
+...
+Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
+EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
+EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
+EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
+ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
+task.ti=d7c62000)
+Stack:
+ 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
+ ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
+ c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
+Call Trace:
+ [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
+...
+ [<c12bfb44>] ? syscall_call+0x7/0xb
+Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
+1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
+d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
+EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
+0068:d7c63e70
 
-In the reported problematic case, BIOS has configured the IO-APIC
-in virtual wire-B mode. Between the window of the kernel setting up
-new interrupt-remapping table  and the IO-APIC RTE's are properly
-configured, an interrupt gets routed by the IO-APIC RTE (setup
-by the virtual wire-B configuration) and sees the empty
-interrupt-remapping table entry, resulting in vt-d fault causing
-the platform to generate NMI. And the OS panics on this unexpected NMI.
+QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
+and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
+out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
+X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
+X86_FEATURE_XSAVE even on hosts that do not support it, might be
+susceptible to this attack from inside the guest as well.
 
-This problem doesn't happen with more recent kernels and closer
-look at the 2.6.32 kernel shows that the code which masks
-the IO-APIC RTE's is not working as expected as the nr_ioapic_registers
-for each IO-APIC is not yet initialized at this point. In the later
-kernels we initialize nr_ioapic_registers much before and
-everything works as expected.
+Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
 
-For 2.6.[32..34] kernels, fix this issue by initializing
-nr_ioapic_registers early in mp_register_ioapic()
-
-[ Relevant upstream commit info:
-  commit 7716a5c4ff5f1f3dc5e9edcab125cbf7fceef0af
-  Author: Eric W. Biederman <ebiederm@xmission.com>
-  Date:   Tue Mar 30 01:07:12 2010 -0700
-
-    x86, ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
-
-  As the upstream commit depends on quite a few prior commits
-  and some followup fixes in the mainline, we just picked
-  the smallest relevant hunk for fixing the issue at hand.
-  Problematic platform uses ACPI for IO-APIC, VT-d enumeration etc
-  and this hunk only touches the ACPI based platforms.
-
-  nr_ioapic_reigsters initialization in enable_IO_APIC() is still
-  retained, so that other configurations like legacy MPS table based
-  enumeration etc works with no change.
-]
-
-Reported-and-tested-by: Zhang, Lin-Bao <linbao.zhang@hp.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@vger.kernel.org
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[bwh: Backported to 2.6.32: XSAVE is not supported at all, so always
+ deny setting OSXSAVE]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/apic/io_apic.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 8928d97..d256bc3 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -4262,6 +4262,7 @@ static int bad_ioapic(unsigned long address)
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-+	int entries;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 79905f2..ec9728f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4719,6 +4719,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 	int pending_vec, max_bits;
+ 	struct descriptor_table dt;
  
- 	if (bad_ioapic(address))
- 		return;
-@@ -4280,10 +4281,14 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
-+	entries = io_apic_get_redir_entries(idx);
- 	mp_gsi_routing[idx].gsi_base = gsi_base;
--	mp_gsi_routing[idx].gsi_end = gsi_base +
--	    io_apic_get_redir_entries(idx);
-+	mp_gsi_routing[idx].gsi_end = gsi_base + entries;
++	if (sregs->cr4 & X86_CR4_OSXSAVE)
++		return -EINVAL;
++
+ 	vcpu_load(vcpu);
  
-+	/*
-+	 * The number of IO-APIC IRQ registers (== #pins):
-+	 */
-+	nr_ioapic_registers[idx] = entries + 1;
- 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
- 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
- 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
+ 	dt.limit = sregs->idt.limit;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
