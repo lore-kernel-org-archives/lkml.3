@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab3FDOb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:31:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48966 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab3FDObZ (ORCPT
+	id S1755209Ab3FDOiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:38:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58482 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3FDOiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:31:25 -0400
-Message-ID: <51ADFA36.7080405@gmail.com>
-Date: Tue, 04 Jun 2013 22:31:18 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Tue, 4 Jun 2013 10:38:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, resend] pch_phub: re-use native MAC address parser
+Date: Tue, 04 Jun 2013 16:38:11 +0200
+Message-ID: <3489856.nvZgTyoe0K@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <CAHp75VdrXdA7uwpYoo5To-niMn8wSCdwu_p6fArq+Vd6kb-0EA@mail.gmail.com>
+References: <1369756498-5670-1-git-send-email-andriy.shevchenko@linux.intel.com> <201306041603.15653.arnd@arndb.de> <CAHp75VdrXdA7uwpYoo5To-niMn8wSCdwu_p6fArq+Vd6kb-0EA@mail.gmail.com>
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 1/8] zram: simplify and optimize zram_to_dev()
-References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-2-git-send-email-jiang.liu@huawei.com> <51ADE6F1.90709@redhat.com>
-In-Reply-To: <51ADE6F1.90709@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5CkE5ybGDDXpmfQqzda6IajFHnzenXDNXrR5zenENTV
+ 1xb6WnvclW4bySy5DUmN6wJevDWKvkBNmFQce9gMxZuC7w6igc
+ AHPQvcwIf7Y0sy806yxQXNmmKV1G2Np5zBM0sf+nnSrb2TJjHA
+ rPTY+FG37LNVLTkNpJuc3VMbukqrnRoxXVf4NCfPcL/+gluaN0
+ xdwErzZ6zu9RUVzYLyZ+Ht8gjf65nnjwoS2pdDBZIbFvWbKbsG
+ 9GIE/xiu2HmzlgUUTUdHQGCa2ZyrhOkHpnKo0kIC1wncdBEpgy
+ PjX9gBscePbinaj4V+pZawqvWQgirWOsxZzt4KULNIfBkBSV4l
+ PS7Szgs/Hmvuh+bxCUng=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04 Jun 2013 09:09:05 PM CST, Jerome Marchand wrote:
-> Hi,
->
-> Please write a commit message, no matter how straightforward a patch may
-> seem to you.
-> Also the subject suffers from dyslexia: it's dev_to_zram, not zram_to_dev.
->
-> Thanks,
-> Jerome
-Hi Jerome,
-     Thanks for review, will fix it in next version.
-Regards!
-Gerry
+On Tuesday 04 June 2013 17:21:16 Andy Shevchenko wrote:
 
->
-> On 06/03/2013 05:42 PM, Jiang Liu wrote:
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->>  drivers/staging/zram/zram_sysfs.c | 13 ++-----------
->>  1 file changed, 2 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
->> index e6a929d..8cb7822 100644
->> --- a/drivers/staging/zram/zram_sysfs.c
->> +++ b/drivers/staging/zram/zram_sysfs.c
->> @@ -30,18 +30,9 @@ static u64 zram_stat64_read(struct zram *zram, u64 *v)
->>  	return val;
->>  }
->>
->> -static struct zram *dev_to_zram(struct device *dev)
->> +static inline struct zram *dev_to_zram(struct device *dev)
->>  {
->> -	int i;
->> -	struct zram *zram = NULL;
->> -
->> -	for (i = 0; i < zram_get_num_devices(); i++) {
->> -		zram = &zram_devices[i];
->> -		if (disk_to_dev(zram->disk) == dev)
->> -			break;
->> -	}
->> -
->> -	return zram;
->> +	return (struct zram *)dev_to_disk(dev)->private_data;
->>  }
->>
->>  static ssize_t disksize_show(struct device *dev,
->>
->
+> > The easiest solution would be to
+> > make the entire driver "depend on NET".
+> 
+> I don't feel that is good idea. Driver is an abstraction to the ROM,
+> it doesn't mean you can't read ROM without network framework.
 
+Right, makes sense.
+
+> It seems proper solution is to move mac_pton() outside of CONFIG_NET,
+> though I don't know how to do this easily.
+
+If we want to use it outside of CONFIG_NET, it cannot be part of net/core/*.c.
+Maybe we can move the function to lib/mac_pton.c instead and create a
+Kconfig symbol that gets selected by CONFIG_NET and by any driver lib
+PCH_PHUB that needs it.
+
+	Arnd
