@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab3FDRDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:03:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48588 "EHLO
+	id S1758671Ab3FDRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:03:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758565Ab3FDRDM (ORCPT
+	with ESMTP id S1756844Ab3FDRDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:03:12 -0400
+	Tue, 4 Jun 2013 13:03:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 39/75] ARM: 7723/1: crypto: sha1-armv4-large.S: fix SP handling
-Date: Tue,  4 Jun 2013 09:55:23 -0700
-Message-Id: <1370364959-9475-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 44/75] cifs: fix potential buffer overrun when composing a new options string
+Date: Tue,  4 Jun 2013 09:55:28 -0700
+Message-Id: <1370364959-9475-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,44 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 934fc24df10abfd5aff533d0d044a17669d77d79 upstream.
+commit 166faf21bd14bc5c5295a44874bf7f3930c30b20 upstream.
 
-Make the SHA1 asm code ABI conformant by making sure all stack
-accesses occur above the stack pointer.
+Consider the case where we have a very short ip= string in the original
+mount options, and when we chase a referral we end up with a very long
+IPv6 address. Be sure to allow for that possibility when estimating the
+size of the string to allocate.
 
-Origin:
-http://git.openssl.org/gitweb/?p=openssl.git;a=commit;h=1a9d60d2
-
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/crypto/sha1-armv4-large.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifs_dfs_ref.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/crypto/sha1-armv4-large.S b/arch/arm/crypto/sha1-armv4-large.S
-index 92c6eed..99207c4 100644
---- a/arch/arm/crypto/sha1-armv4-large.S
-+++ b/arch/arm/crypto/sha1-armv4-large.S
-@@ -195,6 +195,7 @@ ENTRY(sha1_block_data_order)
- 	add	r3,r3,r10			@ E+=F_00_19(B,C,D)
- 	cmp	r14,sp
- 	bne	.L_00_15		@ [((11+4)*5+2)*3]
-+	sub	sp,sp,#25*4
- #if __ARM_ARCH__<7
- 	ldrb	r10,[r1,#2]
- 	ldrb	r9,[r1,#3]
-@@ -290,7 +291,6 @@ ENTRY(sha1_block_data_order)
- 	add	r3,r3,r10			@ E+=F_00_19(B,C,D)
- 
- 	ldr	r8,.LK_20_39		@ [+15+16*4]
--	sub	sp,sp,#25*4
- 	cmn	sp,#0			@ [+3], clear carry to denote 20_39
- .L_20_39_or_60_79:
- 	ldr	r9,[r14,#15*4]
+diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
+index 210fce2..47c1155 100644
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -18,6 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/vfs.h>
+ #include <linux/fs.h>
++#include <linux/inet.h>
+ #include "cifsglob.h"
+ #include "cifsproto.h"
+ #include "cifsfs.h"
+@@ -150,7 +151,8 @@ char *cifs_compose_mount_options(const char *sb_mountdata,
+ 	 * assuming that we have 'unc=' and 'ip=' in
+ 	 * the original sb_mountdata
+ 	 */
+-	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12;
++	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12 +
++			INET6_ADDRSTRLEN;
+ 	mountdata = kzalloc(md_len+1, GFP_KERNEL);
+ 	if (mountdata == NULL) {
+ 		rc = -ENOMEM;
 -- 
 1.8.1.2
 
