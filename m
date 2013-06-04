@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab3FDXLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:11:40 -0400
-Received: from 1wt.eu ([62.212.114.60]:35487 "EHLO 1wt.eu"
+	id S1755346Ab3FDXL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:11:57 -0400
+Received: from 1wt.eu ([62.212.114.60]:35480 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab3FDWm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:29 -0400
-Message-Id: <20130604172133.497585069@1wt.eu>
+	id S1753067Ab3FDWm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:27 -0400
+Message-Id: <20130604172134.002162423@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:47 +0200
+Date: Tue, 04 Jun 2013 19:22:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Xiaotian Feng <dannyfeng@tencent.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hayes Wang <hayeswang@realtek.com>, Thomas Bork <tom@eisfair.net>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 077/184] libata: fix Null pointer dereference on disk error
+Subject: [ 089/184] r8169: correct settings of rtl8102e.
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +23,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiaotian Feng <xtfeng@gmail.com>
+From: Hayes Wang <hayeswang@realtek.com>
 
-commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
+Adjust and remove certain settings of RTL8102E which are for previous chips.
 
-Following oops were observed when disk error happened:
-
-[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
-[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
-[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
-[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
-[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
-[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
-[ 4291.783408] Oops: 0000 [#1] SMP
-[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
-[ 4291.934235] CPU 9
-[ 4291.958301] Pid: 27942, comm: hwinfo ......
-
-ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
-
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Acked-off-by: Francois Romieu <romieu@fr.zoreil.com>
+(cherry picked from commit d24e9aafe5d5dfdf6d114b29e67f8afd5fae5ef0)
+Cc: Thomas Bork <tom@eisfair.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/ata/libata-scsi.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/r8169.c | 20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 553edcc..57e895a1 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -338,7 +338,8 @@ ata_scsi_activity_show(struct device *dev, struct device_attribute *attr,
- 	struct ata_port *ap = ata_shost_to_port(sdev->host);
- 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 3ebe50c..6197140 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -3076,7 +3076,7 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		goto err_out_mwi_3;
+ 	}
  
--	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
-+	if (atadev && ap->ops->sw_activity_show &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
- 		return ap->ops->sw_activity_show(atadev, buf);
- 	return -EINVAL;
+-	tp->cp_cmd = PCIMulRW | RxChkSum;
++	tp->cp_cmd = RxChkSum;
+ 
+ 	if ((sizeof(dma_addr_t) > 4) &&
+ 	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) && use_dac) {
+@@ -3824,8 +3824,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 	Cxpl_dbg_sel | \
+ 	ASF | \
+ 	PktCntrDisable | \
+-	PCIDAC | \
+-	PCIMulRW)
++	Mac_dbgo_sel)
+ 
+ static void rtl_hw_start_8102e_1(void __iomem *ioaddr, struct pci_dev *pdev)
+ {
+@@ -3855,8 +3854,6 @@ static void rtl_hw_start_8102e_1(void __iomem *ioaddr, struct pci_dev *pdev)
+ 	if ((cfg1 & LEDS0) && (cfg1 & LEDS1))
+ 		RTL_W8(Config1, cfg1 & ~LEDS0);
+ 
+-	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R810X_CPCMD_QUIRK_MASK);
+-
+ 	rtl_ephy_init(ioaddr, e_info_8102e_1, ARRAY_SIZE(e_info_8102e_1));
  }
-@@ -353,7 +354,8 @@ ata_scsi_activity_store(struct device *dev, struct device_attribute *attr,
- 	enum sw_activity val;
- 	int rc;
  
--	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
-+	if (atadev && ap->ops->sw_activity_store &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
- 		val = simple_strtoul(buf, NULL, 0);
- 		switch (val) {
- 		case OFF: case BLINK_ON: case BLINK_OFF:
+@@ -3868,8 +3865,6 @@ static void rtl_hw_start_8102e_2(void __iomem *ioaddr, struct pci_dev *pdev)
+ 
+ 	RTL_W8(Config1, MEMMAP | IOMAP | VPD | PMEnable);
+ 	RTL_W8(Config3, RTL_R8(Config3) & ~Beacon_en);
+-
+-	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R810X_CPCMD_QUIRK_MASK);
+ }
+ 
+ static void rtl_hw_start_8102e_3(void __iomem *ioaddr, struct pci_dev *pdev)
+@@ -3895,6 +3890,8 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 		}
+ 	}
+ 
++	RTL_W8(Cfg9346, Cfg9346_Unlock);
++
+ 	switch (tp->mac_version) {
+ 	case RTL_GIGA_MAC_VER_07:
+ 		rtl_hw_start_8102e_1(ioaddr, pdev);
+@@ -3909,14 +3906,13 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 		break;
+ 	}
+ 
+-	RTL_W8(Cfg9346, Cfg9346_Unlock);
++	RTL_W8(Cfg9346, Cfg9346_Lock);
+ 
+ 	RTL_W8(EarlyTxThres, EarlyTxThld);
+ 
+ 	rtl_set_rx_max_size(ioaddr, tp->rx_buf_sz);
+ 
+-	tp->cp_cmd |= rtl_rw_cpluscmd(ioaddr) | PCIMulRW;
+-
++	tp->cp_cmd &= ~R810X_CPCMD_QUIRK_MASK;
+ 	RTL_W16(CPlusCmd, tp->cp_cmd);
+ 
+ 	RTL_W16(IntrMitigate, 0x0000);
+@@ -3926,14 +3922,10 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+ 	rtl_set_rx_tx_config_registers(tp);
+ 
+-	RTL_W8(Cfg9346, Cfg9346_Lock);
+-
+ 	RTL_R8(IntrMask);
+ 
+ 	rtl_set_rx_mode(dev);
+ 
+-	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+-
+ 	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xf000);
+ 
+ 	RTL_W16(IntrMask, tp->intr_event);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
