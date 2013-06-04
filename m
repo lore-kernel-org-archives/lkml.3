@@ -1,154 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3FDNet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:34:49 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:58680 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751418Ab3FDNes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:34:48 -0400
-Date: Tue, 4 Jun 2013 08:34:46 -0500
-From: Robin Holt <holt@sgi.com>
-To: Frank Mehnert <frank.mehnert@oracle.com>
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: Handling NUMA page migration
-Message-ID: <20130604133446.GP3658@sgi.com>
-References: <201306040922.10235.frank.mehnert@oracle.com>
- <20130604115807.GF3672@sgi.com>
- <201306041414.52237.frank.mehnert@oracle.com>
+	id S1754162Ab3FDNgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:36:05 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:56297 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab3FDNgC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 09:36:02 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
-Content-Disposition: inline
-In-Reply-To: <201306041414.52237.frank.mehnert@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130604132322.GA10933@srcf.ucam.org>
+References: <cover.1348652044.git.lv.zheng@intel.com> <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
+ <20121010174406.GA13861@srcf.ucam.org> <1350069843.7065.65.camel@rhapsody>
+ <CACxGe6tC+=98uD=Oc=u-=NHzVKgG9r_3eg+-sG-DQYUnCGw0sA@mail.gmail.com> <20130604132322.GA10933@srcf.ucam.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 4 Jun 2013 14:35:39 +0100
+X-Google-Sender-Auth: spB7tk2WzEZ9unA_3zu_4rf2Gzw
+Message-ID: <CACxGe6vYKq0QpeXHzgMabjkY4x9rVbm7OpXs6boAntVvPK=vrA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Khalid Aziz <khalid@gonehiking.org>, Matthew Garrett <mjg@redhat.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, Al Stone <al.stone@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 4, 2013 at 2:23 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Tue, Jun 04, 2013 at 11:53:56AM +0100, Grant Likely wrote:
+>
+>> Matthew, can you point me at the license Microsoft is using for the
+>> DBG2 table? I can download the document from Microsoft's site without
+>> seeing any reference to it being licensed only for BIOS implementers.
+>> All I see is a "this document is provided 'as-is', blah blah blah"
+>> blurb at the beginning of the document. It may be that Microsoft has
+>> changed the license on this document in the last 6 months.
+>
+> The DBGP spec still seems to have the restrictive license, but I can't
+> find it on DBG2.
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Matthew. I'll follow up with Microsoft on DBGP.
 
-On Tue, Jun 04, 2013 at 02:14:45PM +0200, Frank Mehnert wrote:
-> On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
-> > This is probably more appropriate to be directed at the linux-mm
-> > mailing list.
-> >=20
-> > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
-> > > Hi,
-> > >=20
-> > > our memory management on Linux hosts conflicts with NUMA page migrati=
-on.
-> > > I assume this problem existed for a longer time but Linux 3.8 introdu=
-ced
-> > > automatic NUMA page balancing which makes the problem visible on
-> > > multi-node hosts leading to kernel oopses.
-> > >=20
-> > > NUMA page migration means that the physical address of a page changes.
-> > > This is fatal if the application assumes that this never happens for
-> > > that page as it was supposed to be pinned.
-> > >=20
-> > > We have two kind of pinned memory:
-> > >=20
-> > > A) 1. allocate memory in userland with mmap()
-> > >=20
-> > >    2. madvise(MADV_DONTFORK)
-> > >    3. pin with get_user_pages().
-> > >    4. flush dcache_page()
-> > >    5. vm_flags |=3D (VM_DONTCOPY | VM_LOCKED)
-> > >   =20
-> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > >      =20
-> > >        VM_DONTCOPY | VM_LOCKED | 0xff)
-> >=20
-> > I don't think this type of allocation should be affected.  The
-> > get_user_pages() call should elevate the pages reference count which
-> > should prevent migration from completing.  I would, however, wait for
-> > a more definitive answer.
->=20
-> Thanks Robin! Actually case B) is more important for us so I'm waiting
-> for more feedback :)
-
-If you have a good test case, you might want to try adding a get_page()
-in there to see if that mitigates the problem.  It would at least be
-interesting to know if it has an effect.
-
-Robin
-
->=20
-> Frank
->=20
-> > > B) 1. allocate memory with alloc_pages()
-> > >=20
-> > >    2. SetPageReserved()
-> > >    3. vm_mmap() to allocate a userspace mapping
-> > >    4. vm_insert_page()
-> > >    5. vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)
-> > >   =20
-> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > >       0xff)
-> > >=20
-> > > At least the memory allocated like B) is affected by automatic NUMA p=
-age
-> > > migration. I'm not sure about A).
-> > >=20
-> > > 1. How can I prevent automatic NUMA page migration on this memory?
-> > > 2. Can NUMA page migration also be handled on such kind of memory wit=
-hout
-> > >=20
-> > >    preventing migration?
-> > >=20
-> > > Thanks,
-> > >=20
-> > > Frank
-> >=20
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
- in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
->=20
-> --=20
-> Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-> ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
->=20
-> Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-> Registergericht: Amtsgericht M=FCnchen, HRA 95603
-> Gesch=E4ftsf=FChrer: J=FCrgen Kunz
->=20
-> Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-> Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-> Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-> Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
-
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRrez2AAoJELMAcI/i6zvGpeAQAK2pZORRhgdsJry6AVTi9No3
-o+GEZ3q/Iy1BvuTxaLr2ccL0mamHUrjbY/C465cYnIXX9/Jkf6EnoQ1JPY1BoOpv
-E4NhnPGWCRVDeb8YAcMRVI5io69ppdO66zTrdhVBN3LGJ7k0wVilRbgXhVlqlL8b
-ABEZ3Tiiuf+8aGJS2wfdcMk9AyqQB5szIAKT4u3TD6kxHuqQU2VwMRalZIMmmR2K
-1lo2igwUuEr1MVxBY9j9kGkGClOyBQZmclPSIzYGi3jDxdbUJkA+2JeAFjt8nyYe
-GVYYk59EyEHgVBb271GRhNY4kCJ+nmPgszexi2XJwWKraRw6jq28AfOggaO/EStb
-5xkbGo9W9AWz2dN/vlXy+8dQlmi2ZiRlCDTr/jBdYh5IyzY7RkYrCCMjKYnW4dug
-erMzpbZV620sGohvU87coCDOKfrdBu5D85WxAIBc4582whVGb5ZCMMw2mIe44gm2
-/fAgqBgeSWyYls4FrWhi1nyAebEEcdvxwyHMurmdWNQYtAbNabLIOzcUABwYwWki
-x73sZPsdp4hMNnWaXFkBRtgH32zTaeWK0LMsvtYYkDvNFNV1evX9vy7FLzGstkPv
-PQWxt3bh6uAGH7O2svH0flMWVeoLyn5tL2VDtmackmiDwYQTo0jDysQba3bBAnHR
-uAJVtN7SVuOFoyrZ/F8o
-=JcAm
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
+g.
