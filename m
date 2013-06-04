@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab3FDRAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:00:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48400 "EHLO
+	id S1758029Ab3FDRA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:00:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48412 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab3FDRAl (ORCPT
+	with ESMTP id S1757832Ab3FDRAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:00:41 -0400
+	Tue, 4 Jun 2013 13:00:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 33/75] USB: cxacru: potential underflow in cxacru_cm_get_array()
-Date: Tue,  4 Jun 2013 09:55:17 -0700
-Message-Id: <1370364959-9475-34-git-send-email-kamal@canonical.com>
+Subject: [PATCH 32/75] drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
+Date: Tue,  4 Jun 2013 09:55:16 -0700
+Message-Id: <1370364959-9475-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,35 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Niels Ole Salscheider <niels_ole@salscheider-online.de>
 
-commit 2a0ebf80aa95cc758d4725f74a7016e992606a39 upstream.
+commit fc986034540102cd090237bf3f70262e1ae80d9c upstream.
 
-The value of "offd" comes off the instance->rcv_buf[] and we used it as
-the offset into an array.  The problem is that we check the upper bound
-but not for negative values.
+Add ULL prefix to avoid overflow.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/atm/cxacru.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c  | 4 ++--
+ drivers/gpu/drm/radeon/radeon_ttm.c | 2 +-
+ drivers/gpu/drm/radeon/si.c         | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
-index b7eb86a..8a7eb77 100644
---- a/drivers/usb/atm/cxacru.c
-+++ b/drivers/usb/atm/cxacru.c
-@@ -686,7 +686,8 @@ static int cxacru_cm_get_array(struct cxacru_data *instance, enum cxacru_cm_requ
- {
- 	int ret, len;
- 	__le32 *buf;
--	int offb, offd;
-+	int offb;
-+	unsigned int offd;
- 	const int stride = CMD_PACKET_SIZE / (4 * 2) - 1;
- 	int buflen =  ((size - 1) / stride + 1 + size * 2) * 4;
- 
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 90dc470..b336afc 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2400,8 +2400,8 @@ int evergreen_mc_init(struct radeon_device *rdev)
+ 		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE);
+ 	} else {
+ 		/* size in MB on evergreen/cayman/tn */
+-		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	}
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	r700_vram_gtt_location(rdev, &rdev->mc);
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 93f760e..6c0ce89 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -726,7 +726,7 @@ int radeon_ttm_init(struct radeon_device *rdev)
+ 		return r;
+ 	}
+ 	DRM_INFO("radeon: %uM of VRAM memory ready\n",
+-		 (unsigned)rdev->mc.real_vram_size / (1024 * 1024));
++		 (unsigned) (rdev->mc.real_vram_size / (1024 * 1024)));
+ 	r = ttm_bo_init_mm(&rdev->mman.bdev, TTM_PL_TT,
+ 				rdev->mc.gtt_size >> PAGE_SHIFT);
+ 	if (r) {
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 40d766e..2972782 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2411,8 +2411,8 @@ static int si_mc_init(struct radeon_device *rdev)
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
 -- 
 1.8.1.2
 
