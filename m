@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3FDXTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:19:11 -0400
-Received: from 1wt.eu ([62.212.114.60]:35324 "EHLO 1wt.eu"
+	id S1753262Ab3FDXT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:19:29 -0400
+Received: from 1wt.eu ([62.212.114.60]:35320 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585Ab3FDWlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:51 -0400
-Message-Id: <20130604172132.548436309@1wt.eu>
+	id S1751136Ab3FDWlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:50 -0400
+Message-Id: <20130604172132.959690964@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:24 +0200
+Date: Tue, 04 Jun 2013 19:22:34 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ram Gupta <ram.gupta5@gmail.com>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 054/184] xen/bootup: allow {read|write}_cr8 pvops call.
+Subject: [ 064/184] serial: 8250, increase PASS_LIMIT
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,70 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jiri Slaby <jirislaby@gmail.com>
 
-commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
+With virtual machines like qemu, it's pretty common to see "too much
+work for irq4" messages nowadays. This happens when a bunch of output
+is printed on the emulated serial console. This is caused by too low
+PASS_LIMIT. When ISR loops more than the limit, it spits the message.
 
-We actually do not do anything about it. Just return a default
-value of zero and if the kernel tries to write anything but 0
-we BUG_ON.
+I've been using a kernel with doubled the limit and I couldn't see no
+problems. Maybe it's time to get rid of the message now?
 
-This fixes the case when an user tries to suspend the machine
-and it blows up in save_processor_state b/c 'read_cr8' is set
-to NULL and we get:
+[2.6.32: background info from Ram Gupta]
 
-kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
-invalid opcode: 0000 [#1] SMP
-Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
-RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
+> I need a patch for serial driver that increases PASS_LIMIT merged in
+> 3.1. I am using 2.6.32 kernel which experiences kernel panic
+> occasionally. It will be great if you can backport to 2.6.32 and 3.0
+> kernel. The commit ID is e7328ae1  serial: 8250, increase PASS_LIMIT
 
-.. snip..
-Call Trace:
- [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
- [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
- [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+(cherry picked from commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3)
+Cc: Ram Gupta <ram.gupta5@gmail.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/xen/enlighten.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/serial/8250.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index f1539ff..126a093 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -776,7 +776,16 @@ static void xen_write_cr4(unsigned long cr4)
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 6a451e8..12e1e9e 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -81,7 +81,7 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
+ #define DEBUG_INTR(fmt...)	do { } while (0)
+ #endif
  
- 	native_write_cr4(cr4);
- }
--
-+#ifdef CONFIG_X86_64
-+static inline unsigned long xen_read_cr8(void)
-+{
-+	return 0;
-+}
-+static inline void xen_write_cr8(unsigned long val)
-+{
-+	BUG_ON(val);
-+}
-+#endif
- static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- {
- 	int ret;
-@@ -942,6 +951,11 @@ static const struct pv_cpu_ops xen_cpu_ops __initdata = {
- 	.read_cr4_safe = native_read_cr4_safe,
- 	.write_cr4 = xen_write_cr4,
+-#define PASS_LIMIT	256
++#define PASS_LIMIT	512
  
-+#ifdef CONFIG_X86_64
-+	.read_cr8 = xen_read_cr8,
-+	.write_cr8 = xen_write_cr8,
-+#endif
-+
- 	.wbinvd = native_wbinvd,
+ #define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
  
- 	.read_msr = native_read_msr_safe,
 -- 
 1.7.12.2.21.g234cd45.dirty
 
