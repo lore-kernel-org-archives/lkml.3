@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3FDWxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:53:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41238 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754255Ab3FDWn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:57 -0400
-X-Sasl-enc: j/UeW2GC5ErhGGX8wXBnwo367GOpVSCIjGsOij5piD1V 1370385835
-Date: Tue, 4 Jun 2013 15:44:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [hv] BUG: kernel freezes after [   13.356381] PCI: CLS 0 bytes,
- default 64
-Message-ID: <20130604224424.GB533@kroah.com>
-References: <20130604141536.GA13324@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604141536.GA13324@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754977Ab3FDWx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:53:27 -0400
+Received: from 1wt.eu ([62.212.114.60]:35804 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab3FDWnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:51 -0400
+Message-Id: <20130604172133.829088753@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Tue, 04 Jun 2013 19:22:55 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 085/184] xfrm_user: fix info leak in copy_to_user_policy()
+In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 10:15:36PM +0800, Fengguang Wu wrote:
-> Greetings,
-> 
-> I got the below dmesg (kernel freezes at the end of it) and the first bad commit is
-> 
-> commit cf6a2eacbcb2593b5b91d0817915c4f0464bb534
-> Author: K. Y. Srinivasan <kys@microsoft.com>
-> Date:   Thu Dec 1 09:59:34 2011 -0800
-> 
->     drivers: hv: Don't OOPS when you cannot init vmbus
->     
->     The hv vmbus driver was causing an OOPS since it was trying to register drivers
->     on top of the bus even if initialization of the bus has failed for some
->     reason (such as the odd chance someone would run a hv enabled kernel in a
->     non-hv environment).
->     
->     Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
->     Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
->     Cc: stable <stable@vger.kernel.org>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> [   13.356381] PCI: CLS 0 bytes, default 64
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Ick, not good.  K.Y., any reason why I shouldn't just revert this?
+------------------
 
-thanks,
+From: Mathias Krause <minipli@googlemail.com>
 
-greg k-h
+[ Upstream commit 7b789836f434c87168eab067cfbed1ec4783dffd ]
+
+The memory reserved to dump the xfrm policy includes multiple padding
+bytes added by the compiler for alignment (padding bytes in struct
+xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
+memset(0) before filling the buffer to avoid the heap info leak.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ net/xfrm/xfrm_user.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 4823a15..3de81fe 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1076,6 +1076,7 @@ static void copy_from_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy
+ 
+ static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
+ {
++	memset(p, 0, sizeof(*p));
+ 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
+ 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
+ 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
+-- 
+1.7.12.2.21.g234cd45.dirty
+
+
+
