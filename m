@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab3FDG5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:57:03 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52511 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758811Ab3FDG47 (ORCPT
+	id S1759725Ab3FDG6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:58:43 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:60009 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759387Ab3FDG6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:56:59 -0400
-Message-ID: <51AD8FB1.2020706@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 14:56:49 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 4 Jun 2013 02:58:42 -0400
+Message-ID: <51AD901C.30607@intel.com>
+Date: Tue, 04 Jun 2013 07:58:36 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, fenghua.yu@intel.com
-Subject: Re: [PATCH] code clean in __flush_tlb_one()
-References: <51AD8902.60603@linux.vnet.ibm.com> <51AD8F07.5060706@intel.com>
-In-Reply-To: <51AD8F07.5060706@intel.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UEFI: Don't pass boot services regions to SetVirtualAddressMap()
+References: <1370211145-7273-1-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1370211145-7273-1-git-send-email-matthew.garrett@nebula.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060406-5816-0000-0000-00000843954C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 02:53 PM, Alex Shi wrote:
-> On 06/04/2013 02:28 PM, Michael Wang wrote:
->> Remove the extra space in __flush_tlb_one()
+On 06/02/2013 11:12 PM, Matthew Garrett wrote:
+> We need to map boot services regions during startup in order to avoid
+> firmware bugs, but we shouldn't be passing those regions to
+> SetVirtualAddressMap(). Ensure that we're only passing regions that are
+> marked as being mapped at runtime.
 > 
-> It even don't need a reviewed-by. :)
-
-Still thanks for your review :)
-
-Regards,
-Michael Wang
-
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+>  arch/x86/platform/efi/efi.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
 > 
-> Thanks!
->>
->> CC: Thomas Gleixner <tglx@linutronix.de>
->> CC: Ingo Molnar <mingo@redhat.com>
->> CC: "H. Peter Anvin" <hpa@zytor.com>
->> CC: Alex Shi <alex.shi@intel.com>
->> CC: Fenghua Yu <fenghua.yu@intel.com>
->> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
->> ---
->>  arch/x86/include/asm/tlbflush.h |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/tlbflush.h
->> b/arch/x86/include/asm/tlbflush.h
->> index 50a7fc0..cf51200 100644
->> --- a/arch/x86/include/asm/tlbflush.h
->> +++ b/arch/x86/include/asm/tlbflush.h
->> @@ -62,7 +62,7 @@ static inline void __flush_tlb_all(void)
->>
->>  static inline void __flush_tlb_one(unsigned long addr)
->>  {
->> -		__flush_tlb_single(addr);
->> +	__flush_tlb_single(addr);
->>  }
->>
->>  #define TLB_FLUSH_ALL	-1UL
->>
-> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 63e167a..add0e37 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -922,6 +922,13 @@ void __init efi_enter_virtual_mode(void)
+>  			va = efi_ioremap(md->phys_addr, size,
+>  					 md->type, md->attribute);
+>  
+> +		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
+> +			if (!va)
+> +				pr_err("ioremap of 0x%llX failed!\n",
+> +				       (unsigned long long)md->phys_addr);
+> +			continue;
+> +		}
+> +
+>  		md->virt_addr = (u64) (unsigned long) va;
+>  
+>  		if (!va) {
 > 
 
+Is there any point in calling efi_ioremap() for non-runtime regions in
+this case? In other words, why not the following patch?
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 63e167a..a438ed3 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -903,9 +903,7 @@ void __init efi_enter_virtual_mode(void)
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+-		    md->type != EFI_BOOT_SERVICES_CODE &&
+-		    md->type != EFI_BOOT_SERVICES_DATA)
++		if (!(md->attribute & EFI_MEMORY_RUNTIME))
+ 			continue;
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
