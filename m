@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab3FDXW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:22:56 -0400
-Received: from 1wt.eu ([62.212.114.60]:35237 "EHLO 1wt.eu"
+	id S1752433Ab3FDWlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:20 -0400
+Received: from 1wt.eu ([62.212.114.60]:35168 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab3FDWlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:21 -0400
-Message-Id: <20130604172132.094825787@1wt.eu>
+	id S1751815Ab3FDWku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:40:50 -0400
+Message-Id: <20130604172132.630488257@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:13 +0200
+Date: Tue, 04 Jun 2013 19:22:26 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 043/184] ALSA: seq: Fix missing error handling in
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 056/184] KVM: x86: relax MSR_KVM_SYSTEM_TIME alignment check
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,79 +21,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- snd_seq_timer_open()
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 66efdc71d95887b652a742a5dae51fa834d71465 upstream.
+RHEL5 i386 guests register non 32-byte aligned addresses:
 
-snd_seq_timer_open() didn't catch the whole error path but let through
-if the timer id is a slave.  This may lead to Oops by accessing the
-uninitialized pointer.
+kvm-clock: cpu 1, msr 0:3018aa5, secondary cpu clock
+kvm-clock: cpu 2, msr 0:301f8e9, secondary cpu clock
+kvm-clock: cpu 3, msr 0:302672d, secondary cpu clock
 
- BUG: unable to handle kernel NULL pointer dereference at 00000000000002ae
- IP: [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- PGD 785cd067 PUD 76964067 PMD 0
- Oops: 0002 [#4] SMP
- CPU 0
- Pid: 4288, comm: trinity-child7 Tainted: G      D W 3.9.0-rc1+ #100 Bochs Bochs
- RIP: 0010:[<ffffffff819b3477>]  [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- RSP: 0018:ffff88006ece7d38  EFLAGS: 00010246
- RAX: 0000000000000286 RBX: ffff88007851b400 RCX: 0000000000000000
- RDX: 000000000000ffff RSI: ffff88006ece7d58 RDI: ffff88006ece7d38
- RBP: ffff88006ece7d98 R08: 000000000000000a R09: 000000000000fffe
- R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
- R13: ffff8800792c5400 R14: 0000000000e8f000 R15: 0000000000000007
- FS:  00007f7aaa650700(0000) GS:ffff88007f800000(0000) GS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 00000000000002ae CR3: 000000006efec000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process trinity-child7 (pid: 4288, threadinfo ffff88006ece6000, task ffff880076a8a290)
- Stack:
-  0000000000000286 ffffffff828f2be0 ffff88006ece7d58 ffffffff810f354d
-  65636e6575716573 2065756575712072 ffff8800792c0030 0000000000000000
-  ffff88006ece7d98 ffff8800792c5400 ffff88007851b400 ffff8800792c5520
- Call Trace:
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff819b17e9>] snd_seq_queue_timer_open+0x29/0x70
-  [<ffffffff819ae01a>] snd_seq_ioctl_set_queue_timer+0xda/0x120
-  [<ffffffff819acb9b>] snd_seq_do_ioctl+0x9b/0xd0
-  [<ffffffff819acbe0>] snd_seq_ioctl+0x10/0x20
-  [<ffffffff811b9542>] do_vfs_ioctl+0x522/0x570
-  [<ffffffff8130a4b3>] ? file_has_perm+0x83/0xa0
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff811b95ed>] sys_ioctl+0x5d/0xa0
-  [<ffffffff813663fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81faed69>] system_call_fastpath+0x16/0x1b
+Check for an address+len that would cross page boundary
+instead.
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/core/seq/seq_timer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kvm/x86.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/seq/seq_timer.c b/sound/core/seq/seq_timer.c
-index f745c31..c2ec4ef 100644
---- a/sound/core/seq/seq_timer.c
-+++ b/sound/core/seq/seq_timer.c
-@@ -291,10 +291,10 @@ int snd_seq_timer_open(struct snd_seq_queue *q)
- 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
- 			err = snd_timer_open(&t, str, &tid, q->queue);
- 		}
--		if (err < 0) {
--			snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
--			return err;
--		}
-+	}
-+	if (err < 0) {
-+		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
-+		return err;
- 	}
- 	t->callback = snd_seq_timer_interrupt;
- 	t->callback_data = q;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index e24e9ce..79905f2 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -925,9 +925,10 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
+ 
+-		/* Check that the address is 32-byte aligned. */
+-		if (vcpu->arch.time_offset &
+-				(sizeof(struct pvclock_vcpu_time_info) - 1))
++		/* Check that address+len does not cross page boundary */
++		if ((vcpu->arch.time_offset + 
++			sizeof(struct pvclock_vcpu_time_info) - 1)
++			& PAGE_MASK)
+ 			break;
+ 
+ 		vcpu->arch.time_page =
 -- 
 1.7.12.2.21.g234cd45.dirty
 
