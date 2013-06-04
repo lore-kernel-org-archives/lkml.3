@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab3FDXNa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:13:30 -0400
-Received: from 1wt.eu ([62.212.114.60]:35435 "EHLO 1wt.eu"
+	id S1755426Ab3FDXNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:13:25 -0400
+Received: from 1wt.eu ([62.212.114.60]:35434 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab3FDWmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752977Ab3FDWmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:19 -0400
-Message-Id: <20130604172131.927812188@1wt.eu>
+Message-Id: <20130604172131.177303297@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:09 +0200
+Date: Tue, 04 Jun 2013 19:21:51 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
+Cc: Emese Revfy <re.emese@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 039/184] mm: fix invalidate_complete_page2() lock ordering
+Subject: [ 021/184] kernel/signal.c: stop info leak via the tkill and
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,67 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ the tgkill syscalls
 
-From: Hugh Dickins <hughd@google.com>
+From: Emese Revfy <re.emese@gmail.com>
 
-commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
+commit b9e146d8eb3b9ecae5086d373b50fa0c1f3e7f0f upstream.
 
-In fuzzing with trinity, lockdep protested "possible irq lock inversion
-dependency detected" when isolate_lru_page() reenabled interrupts while
-still holding the supposedly irq-safe tree_lock:
+This fixes a kernel memory contents leak via the tkill and tgkill syscalls
+for compat processes.
 
-invalidate_inode_pages2
-  invalidate_complete_page2
-    spin_lock_irq(&mapping->tree_lock)
-    clear_page_mlock
-      isolate_lru_page
-        spin_unlock_irq(&zone->lru_lock)
+This is visible in the siginfo_t->_sifields._rt.si_sigval.sival_ptr field
+when handling signals delivered from tkill.
 
-isolate_lru_page() is correct to enable interrupts unconditionally:
-invalidate_complete_page2() is incorrect to call clear_page_mlock() while
-holding tree_lock, which is supposed to nest inside lru_lock.
+The place of the infoleak:
 
-Both truncate_complete_page() and invalidate_complete_page() call
-clear_page_mlock() before taking tree_lock to remove page from radix_tree.
- I guess invalidate_complete_page2() preferred to test PageDirty (again)
-under tree_lock before committing to the munlock; but since the page has
-already been unmapped, its state is already somewhat inconsistent, and no
-worse if clear_page_mlock() moved up.
+int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+{
+        ...
+        put_user_ex(ptr_to_compat(from->si_ptr), &to->si_ptr);
+        ...
+}
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ying Han <yinghan@google.com>
+Signed-off-by: Emese Revfy <re.emese@gmail.com>
+Reviewed-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- mm/truncate.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/signal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 258bda7..b41d26d 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -376,11 +376,12 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
- 		return 0;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 1929014..845de15 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2301,7 +2301,7 @@ do_send_specific(pid_t tgid, pid_t pid, int sig, struct siginfo *info)
  
-+	clear_page_mlock(page);
-+
- 	spin_lock_irq(&mapping->tree_lock);
- 	if (PageDirty(page))
- 		goto failed;
+ static int do_tkill(pid_t tgid, pid_t pid, int sig)
+ {
+-	struct siginfo info;
++	struct siginfo info = {};
  
--	clear_page_mlock(page);
- 	BUG_ON(page_has_private(page));
- 	__remove_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
+ 	info.si_signo = sig;
+ 	info.si_errno = 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
