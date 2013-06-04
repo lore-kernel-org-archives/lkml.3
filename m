@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab3FDJel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:34:41 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:50072 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3FDJek (ORCPT
+	id S1751626Ab3FDJfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:35:08 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:33553 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3FDJfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:34:40 -0400
+	Tue, 4 Jun 2013 05:35:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370337737-30812-3-git-send-email-namhyung@kernel.org>
-References: <1370337737-30812-1-git-send-email-namhyung@kernel.org>
-	<1370337737-30812-3-git-send-email-namhyung@kernel.org>
-Date: Tue, 4 Jun 2013 12:34:38 +0300
-X-Google-Sender-Auth: A1SPgkyIkiLy8p7UbVRn4wDLrn8
-Message-ID: <CAOJsxLHru=Ahw2iKMK=Sb=NJ_Yo2892HkSV-yBHk24sNuHjo=A@mail.gmail.com>
-Subject: Re: [PATCH 2/6] perf gtk/hists: Add support for callchains
-From: Pekka Enberg <penberg@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1370262068-16658-1-git-send-email-emilgoode@gmail.com>
+References: <1370262068-16658-1-git-send-email-emilgoode@gmail.com>
+From: Lorenzo Colitti <lorenzo@google.com>
+Date: Tue, 4 Jun 2013 18:34:42 +0900
+Message-ID: <CAKD1Yr06MX0KOsiYVLnum0HhGN-g826qsTwnD3svu2p5Cxum5g@mail.gmail.com>
+Subject: Re: [PATCH] net: ipv6: Fix incompatible pointer type warning
+To: Emil Goode <emilgoode@gmail.com>
+Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        kaber@trash.net, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 12:22 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, Jun 3, 2013 at 9:21 PM, Emil Goode <emilgoode@gmail.com> wrote:
+> This fixes the sparse warning below about assignment from
+> incompatible pointer type.
 >
-> Display callchain information in the symbol column.  It's only enabled
-> when recorded with -g and has symbol sort key.
+> In the following commit the third argument in function ipv6_chk_addr
+> was changed to const and struct nf_ipv6_ops was introduced with
+> the third argument of .chk_addr beeing const.
 >
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> 2a7851bffb008ff4882eee673da74718997b4265
+> ("netfilter: add nf_ipv6_ops hook to fix xt_addrtype with IPv6")
+>
+> The below commit introduced the warning as the third argument of
+> dummy_ipv6_chk_addr and .ipv6_chk_addr in struct pingv6_ops is
+> missing a const.
+>
+> 6d0bfe22611602f36617bc7aa2ffa1bbb2f54c67
+> ("net: ipv6: Add IPv6 support to the ping socket.")
+>
+> Sparse output:
+>
+> net/ipv6/ping.c: In function ‘pingv6_init’:
+> net/ipv6/ping.c:87:27: warning:
+>         assignment from incompatible pointer type [enabled by default]
+>
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  include/net/ping.h |    2 +-
+>  net/ipv6/ping.c    |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/net/ping.h b/include/net/ping.h
+> index 9242fa0..2db4860 100644
+> --- a/include/net/ping.h
+> +++ b/include/net/ping.h
+> @@ -38,7 +38,7 @@ struct pingv6_ops {
+>         void (*ipv6_icmp_error)(struct sock *sk, struct sk_buff *skb, int err,
+>                                 __be16 port, u32 info, u8 *payload);
+>         int (*ipv6_chk_addr)(struct net *net, const struct in6_addr *addr,
+> -                            struct net_device *dev, int strict);
+> +                            const struct net_device *dev, int strict);
+>  };
+>
+>  struct ping_table {
+> diff --git a/net/ipv6/ping.c b/net/ipv6/ping.c
+> index a6462d6..c2e9669 100644
+> --- a/net/ipv6/ping.c
+> +++ b/net/ipv6/ping.c
+> @@ -73,7 +73,7 @@ int dummy_icmpv6_err_convert(u8 type, u8 code, int *err)
+>  void dummy_ipv6_icmp_error(struct sock *sk, struct sk_buff *skb, int err,
+>                             __be16 port, u32 info, u8 *payload) {}
+>  int dummy_ipv6_chk_addr(struct net *net, const struct in6_addr *addr,
+> -                       struct net_device *dev, int strict)
+> +                       const struct net_device *dev, int strict)
+>  {
+>         return 0;
+>  }
+> --
+> 1.7.10.4
+>
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Lorenzo Colitti <lorenzo@google.com>
