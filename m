@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab3FDP3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:29:43 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:52197 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3FDP3k (ORCPT
+	id S1754762Ab3FDPg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:36:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43715 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861Ab3FDPgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:29:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130604144451.GJ14973@somewhere>
-References: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
-	<20130603224836.GA9388@somewhere>
-	<CAKfTPtCB_ftNWjgAM9s79dX_tuS4yevjdD0YxvKfKS4dxz=LLQ@mail.gmail.com>
-	<20130604093611.GJ8923@twins.programming.kicks-ass.net>
-	<20130604102620.GB14012@somewhere>
-	<CAKfTPtCLYnhQH3Mcx5dhRi9+9_679fdrhm8iZBSpgyu8VmevYw@mail.gmail.com>
-	<20130604111900.GB14973@somewhere>
-	<CAKfTPtCSr-M3ZLNF0NoHuSQTC1sP8wWo-m+hRttL3nZ1iCOHgA@mail.gmail.com>
-	<20130604144451.GJ14973@somewhere>
-Date: Tue, 4 Jun 2013 17:29:39 +0200
-Message-ID: <CAKfTPtD1GR7ymQWByKGw23yBYc2gpMyZBG7w52=fzMvMLN3VzQ@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Jun 2013 11:36:55 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/2] ARM: ux500: Silence compiler warnings due to missing ux500_read_asicid() __init
+Date: Tue,  4 Jun 2013 16:36:47 +0100
+Message-Id: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 June 2013 16:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Jun 04, 2013 at 01:48:47PM +0200, Vincent Guittot wrote:
->> On 4 June 2013 13:19, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Tue, Jun 04, 2013 at 01:11:47PM +0200, Vincent Guittot wrote:
->> >> On 4 June 2013 12:26, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> > On Tue, Jun 04, 2013 at 11:36:11AM +0200, Peter Zijlstra wrote:
->> >> >>
->> >> >> The best I can seem to come up with is something like the below; but I think
->> >> >> its ghastly. Surely we can do something saner with that bit.
->> >> >>
->> >> >> Having to clear it at 3 different places is just wrong.
->> >> >
->> >> > We could clear the flag early in scheduler_ipi() and set some
->> >> > specific value in rq->idle_balance that tells we want nohz idle
->> >> > balancing from the softirq, something like this untested:
->> >>
->> >> I'm not sure that we can have less than 2 places to clear it: cancel
->> >> place or acknowledge place otherwise we can face a situation where
->> >> idle load balance will be triggered 2 consecutive times because
->> >> NOHZ_BALANCE_KICK will be cleared before the idle load balance has
->> >> been done and had a chance to migrate tasks.
->> >
->> > I guess it depends what is the minimum value of rq->next_balance, it seems
->> > to be large enough to avoid this kind of incident. Although I don't
->> > know well the whole logic with rq->next_balance and ilb trigger so I must
->> > defer to you.
->>
->> In the trace that was showing the issue, i can see that both CPU0 and
->> CPU1 were trying to trig ILB almost simultaneously and the
->> test_and_set NOHZ_BALANCE_KICK filters one request so i would say that
->> clearing the bit before the end of the idle load balance sequence can
->> generate such sequence
->
-> I see.
->
->>
->> In the sequence below, i have minimized the clear of NOHZ_BALANCE_KICK
->> in 2 places : acknowledge and cancel. I have reused part of the
->> proposal from peter which clears the bit if the condition doesn't
->> match but i have reordered the tests to done that only if all other
->> condition are matching
->>
->>  static inline bool got_nohz_idle_kick(void)
->>  {
->> - int cpu = smp_processor_id();
->> - return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
->> + bool nohz_kick = test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
->> +
->> +       if (!nohz_kick)
->> +               return false;
->> +
->> +       if (idle_cpu(cpu) && !need_resched())
->> +               return true;
->> +
->> +       clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
->> +       return false;
->>  }
->>
->>  #else /* CONFIG_NO_HZ_COMMON */
->> @@ -1393,8 +1401,9 @@ static void sched_ttwu_pending(void)
->>
->>  void scheduler_ipi(void)
->>  {
->> - if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
->> -    && !tick_nohz_full_cpu(smp_processor_id()))
->> + if (llist_empty(&this_rq()->wake_list)
->> + && !tick_nohz_full_cpu(smp_processor_id())
->> + && !got_nohz_idle_kick())
->>   return;
->
-> But we still need got_nohz_idle_kick() to be the first check, don't we? Otherwise
-> if we run an "idle -> quick task slice -> idle" sequence we may keep the flag
-> but lose the notifying IPI in between.
+WARNING: vmlinux.o(.text.unlikely+0x1e8): Section mismatch in reference from\
+ the function ux500_read_asicid() to the function .init.text:iotable_init()
+The function ux500_read_asicid() references
+the function __init iotable_init().
+This is often because ux500_read_asicid lacks a __init
 
-I'm not sure to catch the sequence you are describing above: "idle ->
-quick task slice -> idle".
-In addition, got_nohz_idle_kick must be the last tested condition (in
-my proposal) in order to clear NOHZ_BALANCE_KICK only if we are sure
-that we are going to return without possibility to trig the Idle load
-balance
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/id.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Vincent
+diff --git a/arch/arm/mach-ux500/id.c b/arch/arm/mach-ux500/id.c
+index 0d33d1a..b16e7c1 100644
+--- a/arch/arm/mach-ux500/id.c
++++ b/arch/arm/mach-ux500/id.c
+@@ -21,7 +21,7 @@
+ 
+ struct dbx500_asic_id dbx500_id;
+ 
+-static unsigned int ux500_read_asicid(phys_addr_t addr)
++static unsigned int __init ux500_read_asicid(phys_addr_t addr)
+ {
+ 	phys_addr_t base = addr & ~0xfff;
+ 	struct map_desc desc = {
+-- 
+1.7.10.4
+
