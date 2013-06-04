@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3FDMP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:15:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab3FDMP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:15:56 -0400
-Date: Tue, 4 Jun 2013 08:15:17 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jim Rees <rees@umich.edu>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, viro@zeniv.linux.org.uk,
-        matthew@wil.cx, dhowells@redhat.com, sage@inktank.com,
-        smfrench@gmail.com, swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: Re: [PATCH v1 00/11] locks: scalability improvements for file
- locking
-Message-ID: <20130604081517.0ad9f983@corrin.poochiereds.net>
-In-Reply-To: <20130604115644.GA4180@umich.edu>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-	<20130603213101.GC2109@fieldses.org>
-	<20130604065417.46080a57@tlielax.poochiereds.net>
-	<20130604115644.GA4180@umich.edu>
+	id S1754376Ab3FDMQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:16:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12203 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab3FDMQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:16:31 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ldwk5sxjx74A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=d1pqzc9q_nUA:10 a=pGLkceISAAAA:8 a=Q2wVtQmV3_NYaSgvCuIA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370348189.26799.117.camel@gandalf.local.home>
+Subject: Re: [PATCH v2][RFC] tracing/context-tracking: Add
+ preempt_schedule_context() for tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Tue, 04 Jun 2013 08:16:29 -0400
+In-Reply-To: <20130604120949.GD14973@somewhere>
+References: <1369943981.26799.43.camel@gandalf.local.home>
+	 <20130531134319.GE5932@somewhere>
+	 <1370013528.26799.49.camel@gandalf.local.home>
+	 <20130531160101.GB5910@twins.programming.kicks-ass.net>
+	 <1370050218.26799.87.camel@gandalf.local.home>
+	 <20130604120949.GD14973@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jun 2013 07:56:44 -0400
-Jim Rees <rees@umich.edu> wrote:
-
-> Jeff Layton wrote:
+On Tue, 2013-06-04 at 14:09 +0200, Frederic Weisbecker wrote:
+>  
+> > +/**
+> > + * preempt_schedule_context - preempt_schedule called by tracing
+> > + *
+> > + * The tracing infrastructure uses preempt_enable_notrace to prevent
+> > + * recursion and tracing preempt enabling caused by the tracing
+> > + * infrastructure itself. But as tracing can happen in areas coming
+> > + * from userspace or just about to enter userspace, a preempt enable
+> > + * can occur before user_exit() is called. This will cause the scheduler
+> > + * to be called when the system is still in usermode.
+> > + *
+> > + * To prevent this, the preempt_enable_notrace will use this function
+> > + * instead of preempt_schedule() to exit user context if needed before
+> > + * calling the scheduler.
+> > + */
+> > +void __sched notrace preempt_schedule_context(void)
+> > +{
+> > +	struct thread_info *ti = current_thread_info();
+> > +	enum ctx_state prev_ctx;
+> > +
+> > +	if (likely(ti->preempt_count || irqs_disabled()))
+> > +		return;
 > 
->   > Might be nice to look at some profiles to confirm all of that.  I'd also
->   > be curious how much variation there was in the results above, as they're
->   > pretty close.
->   > 
->   
->   The above is just a random representative sample. The results are
->   pretty close when running this test, but I can average up several runs
->   and present the numbers. I plan to get a bare-metal test box on which
->   to run some more detailed testing and maybe some profiling this week.
+> or:
+>         if (!preemptible())
+>                 return;
+
+Sure, but this is a cut and paste from preempt_schedule(). If I make
+that change here, I would want to make that there too.
+
+Peter, should I use !preemptible() or keep it like preempt_schedule()
+and make a clean up change for 3.11?
+
 > 
-> Just contributing more runs into the mean doesn't tell us anything about the
-> variance. With numbers that close you need the variance to tell whether it's
-> a significant change.
+> > +
+> > +	/*
+> > +	 * Need to disable preemption in case user_exit() is traced
+> > +	 * and the tracer calls preempt_enable_notrace() causing
+> > +	 * an infinite recursion.
+> > +	 */
+> > +	preempt_disable_notrace();
+> > +	prev_ctx = exception_enter();
+> > +	preempt_enable_no_resched_notrace();
+> > +
+> > +	preempt_schedule();
+> > +
+> > +	preempt_disable_notrace();
+> > +	exception_exit(prev_ctx);
+> > +	preempt_enable_notrace();
+> > +}
+> > +EXPORT_SYMBOL(preempt_schedule_context);
+> 
+> That's quite a tricky change but I can't think of anything better.
 
-Thanks. I'll see if I can get some standard deviation numbers here, and
-I'll do it on some bare metal to ensure that virtualization doesn't
-skew any results.
+Yeah, I had a few other solutions that were even worse than this one.
+Then I finally decided this was the best of the worse.
 
-FWIW, they were all consistently very close to one another when I ran
-these tests, and the times were all consistently shorter than the
-unpatched kernel.
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-That said, this test is pretty rough. Doing this with "time" measures
-other things that aren't related to locking. So I'll also see if I
-can come up with a way to measure the actual locking performance more
-accurately too.
+Thanks,
 
--- 
-Jeff Layton <jlayton@redhat.com>
+-- Steve
+
+> 
+> 
+> >  /**
+> >   * user_exit - Inform the context tracking that the CPU is
+> > -- 
+> > 1.7.3.4
+> > 
+> > 
+> > 
+
+
