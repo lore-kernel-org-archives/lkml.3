@@ -1,690 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab3FDXIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:08:17 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:55807 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab3FDXIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 19:08:13 -0400
-MIME-Version: 1.0
-Date: Wed, 5 Jun 2013 01:08:12 +0200
-Message-ID: <CAG-aW07oTun9z_bOTLE25X+60KmCG1c0nMFecLrf_UAzNMF2Pw@mail.gmail.com>
-Subject: 3.10-rc4: mtrr_cleanup: can not find optimal value, please specify mtrr_gran_size/mtrr_chunk_size
-From: Matt <jackdachef@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753256Ab3FDWmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:42:40 -0400
+Received: from 1wt.eu ([62.212.114.60]:35462 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab3FDWmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:22 -0400
+Message-Id: <20130604172133.663926864@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Tue, 04 Jun 2013 19:22:51 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Eddie Wai <eddie.wai@broadcom.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 081/184] SCSI: bnx2i: Fixed NULL ptr deference for 1G bnx2
+In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
+------------------
+ Linux iSCSI offload
 
-I noticed today the following error messages in /var/log/kern.log :
+From: Eddie Wai <eddie.wai@broadcom.com>
 
+commit d6532207116307eb7ecbfa7b9e02c53230096a50 upstream.
 
-Jun  5 00:26:48 localhost kernel: [    0.000000] MTRR default type: uncachable
-Jun  5 00:26:48 localhost kernel: [    0.000000] MTRR fixed ranges enabled:
-Jun  5 00:26:48 localhost kernel: [    0.000000]   00000-9FFFF write-back
-Jun  5 00:26:48 localhost kernel: [    0.000000]   A0000-BFFFF uncachable
-Jun  5 00:26:48 localhost kernel: [    0.000000]   C0000-D3FFF write-protect
-Jun  5 00:26:48 localhost kernel: [    0.000000]   D4000-DFFFF uncachable
-Jun  5 00:26:48 localhost kernel: [    0.000000]   E0000-E3FFF write-protect
-Jun  5 00:26:48 localhost kernel: [    0.000000]   E4000-E7FFF write-through
-Jun  5 00:26:48 localhost kernel: [    0.000000]   E8000-EBFFF write-protect
-Jun  5 00:26:48 localhost kernel: [    0.000000]   EC000-EFFFF write-through
-Jun  5 00:26:48 localhost kernel: [    0.000000]   F0000-FFFFF write-protect
-Jun  5 00:26:48 localhost kernel: [    0.000000] MTRR variable ranges enabled:
-Jun  5 00:26:48 localhost kernel: [    0.000000]   0 base 000000000
-mask E00000000 write-back
-Jun  5 00:26:48 localhost kernel: [    0.000000]   1 base 200000000
-mask FC0000000 write-back
-Jun  5 00:26:48 localhost kernel: [    0.000000]   2 base 0C0000000
-mask FC0000000 uncachable
-Jun  5 00:26:48 localhost kernel: [    0.000000]   3 disabled
-Jun  5 00:26:48 localhost kernel: [    0.000000]   4 disabled
-Jun  5 00:26:48 localhost kernel: [    0.000000]   5 disabled
-Jun  5 00:26:48 localhost kernel: [    0.000000]   6 disabled
-Jun  5 00:26:48 localhost kernel: [    0.000000]   7 disabled
-Jun  5 00:26:48 localhost kernel: [    0.000000] x86 PAT enabled: cpu
-0, old 0x7040600070406, new 0x7010600070106
-Jun  5 00:26:48 localhost kernel: [    0.000000] original variable MTRRs
-Jun  5 00:26:48 localhost kernel: [    0.000000] reg 0, base: 0GB,
-range: 8GB, type WB
-Jun  5 00:26:48 localhost kernel: [    0.000000] reg 1, base: 8GB,
-range: 1GB, type WB
-Jun  5 00:26:48 localhost kernel: [    0.000000] reg 2, base: 3GB,
-range: 1GB, type UC
-Jun  5 00:26:48 localhost kernel: [    0.000000] total RAM covered: 8192M
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 64K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 128K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 128K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1G
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000] *BAD*gran_size: 1G
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:26:48 localhost kernel: [    0.000000]  gran_size: 2G
-chunk_size: 2G num_reg: 2   lose cover RAM: 2G
-Jun  5 00:26:48 localhost kernel: [    0.000000] mtrr_cleanup: can not
-find optimal value
-Jun  5 00:26:48 localhost kernel: [    0.000000] please specify
-mtrr_gran_size/mtrr_chunk_size
+This patch fixes the following kernel panic invoked by uninitialized fields
+in the chip initialization for the 1G bnx2 iSCSI offload.
+
+One of the bits in the chip initialization is being used by the latest
+firmware to control overflow packets.  When this control bit gets enabled
+erroneously, it would ultimately result in a bad packet placement which would
+cause the bnx2 driver to dereference a NULL ptr in the placement handler.
+
+This can happen under certain stress I/O environment under the Linux
+iSCSI offload operation.
+
+This change only affects Broadcom's 5709 chipset.
+
+Unable to handle kernel NULL pointer dereference at 0000000000000008 RIP:
+ [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
+Pid: 0, comm: swapper Tainted: G     ---- 2.6.18-333.el5debug #2
+RIP: 0010:[<ffffffff881f0e7d>]  [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
+RSP: 0018:ffff8101b575bd50  EFLAGS: 00010216
+RAX: 0000000000000005 RBX: ffff81007c5fb180 RCX: 0000000000000000
+RDX: 0000000000000ffc RSI: 00000000817e8000 RDI: 0000000000000220
+RBP: ffff81015bbd7ec0 R08: ffff8100817e9000 R09: 0000000000000000
+R10: ffff81007c5fb180 R11: 00000000000000c8 R12: 000000007a25a010
+R13: 0000000000000000 R14: 0000000000000005 R15: ffff810159f80558
+FS:  0000000000000000(0000) GS:ffff8101afebc240(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 0000000000201000 CR4: 00000000000006a0
+Process swapper (pid: 0, threadinfo ffff8101b5754000, task ffff8101afebd820)
+Stack:  000000000000000b ffff810159f80000 0000000000000040 ffff810159f80520
+ ffff810159f80500 00cf00cf8008e84b ffffc200100939e0 ffff810009035b20
+ 0000502900000000 000000be00000001 ffff8100817e7810 00d08101b575bea8
+Call Trace:
+ <IRQ>  [<ffffffff8008e0d0>] show_schedstat+0x1c2/0x25b
+ [<ffffffff881f1886>] :bnx2:bnx2_poll+0xf6/0x231
+ [<ffffffff8000c9b9>] net_rx_action+0xac/0x1b1
+ [<ffffffff800125a0>] __do_softirq+0x89/0x133
+ [<ffffffff8005e30c>] call_softirq+0x1c/0x28
+ [<ffffffff8006d5de>] do_softirq+0x2c/0x7d
+ [<ffffffff8006d46e>] do_IRQ+0xee/0xf7
+ [<ffffffff8005d625>] ret_from_intr+0x0/0xa
+ <EOI>  [<ffffffff801a5780>] acpi_processor_idle_simple+0x1c5/0x341
+ [<ffffffff801a573d>] acpi_processor_idle_simple+0x182/0x341
+ [<ffffffff801a55bb>] acpi_processor_idle_simple+0x0/0x341
+ [<ffffffff80049560>] cpu_idle+0x95/0xb8
+ [<ffffffff80078b1c>] start_secondary+0x479/0x488
+
+Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ drivers/scsi/bnx2i/bnx2i_hwi.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
+index 5c8d763..1ab55d6 100644
+--- a/drivers/scsi/bnx2i/bnx2i_hwi.c
++++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
+@@ -1156,6 +1156,9 @@ int bnx2i_send_fw_iscsi_init_msg(struct bnx2i_hba *hba)
+ 	int rc = 0;
+ 	u64 mask64;
+ 
++	memset(&iscsi_init, 0x00, sizeof(struct iscsi_kwqe_init1));
++	memset(&iscsi_init2, 0x00, sizeof(struct iscsi_kwqe_init2));
++
+ 	bnx2i_adjust_qp_size(hba);
+ 
+ 	iscsi_init.flags =
+-- 
+1.7.12.2.21.g234cd45.dirty
 
 
 
-when trying to append some commands, e.g.:
-
-enable_mtrr_cleanup mtrr_spare_reg_nr=1 mtrr_gran_size=32M mtrr_chunk_size=128M
-
-or
-
-enable_mtrr_cleanup mtrr_spare_reg_nr=0
-
-it doesn't make any change
-
-
-this would yield the following result:
-
-
-Jun  5 00:20:47 localhost kernel: [    0.000000] MTRR default type: uncachable
-Jun  5 00:20:47 localhost kernel: [    0.000000] MTRR fixed ranges enabled:
-Jun  5 00:20:47 localhost kernel: [    0.000000]   00000-9FFFF write-back
-Jun  5 00:20:47 localhost kernel: [    0.000000]   A0000-BFFFF uncachable
-Jun  5 00:20:47 localhost kernel: [    0.000000]   C0000-D3FFF write-protect
-Jun  5 00:20:47 localhost kernel: [    0.000000]   D4000-DFFFF uncachable
-Jun  5 00:20:47 localhost kernel: [    0.000000]   E0000-E3FFF write-protect
-Jun  5 00:20:47 localhost kernel: [    0.000000]   E4000-E7FFF write-through
-Jun  5 00:20:47 localhost kernel: [    0.000000]   E8000-EBFFF write-protect
-Jun  5 00:20:47 localhost kernel: [    0.000000]   EC000-EFFFF write-through
-Jun  5 00:20:47 localhost kernel: [    0.000000]   F0000-FFFFF write-protect
-Jun  5 00:20:47 localhost kernel: [    0.000000] MTRR variable ranges enabled:
-Jun  5 00:20:47 localhost kernel: [    0.000000]   0 base 000000000
-mask E00000000 write-back
-Jun  5 00:20:47 localhost kernel: [    0.000000]   1 base 200000000
-mask FC0000000 write-back
-Jun  5 00:20:47 localhost kernel: [    0.000000]   2 base 0C0000000
-mask FC0000000 uncachable
-Jun  5 00:20:47 localhost kernel: [    0.000000]   3 disabled
-Jun  5 00:20:47 localhost kernel: [    0.000000]   4 disabled
-Jun  5 00:20:47 localhost kernel: [    0.000000]   5 disabled
-Jun  5 00:20:47 localhost kernel: [    0.000000]   6 disabled
-Jun  5 00:20:47 localhost kernel: [    0.000000]   7 disabled
-Jun  5 00:20:47 localhost kernel: [    0.000000] x86 PAT enabled: cpu
-0, old 0x7040600070406, new 0x7010600070106
-Jun  5 00:20:47 localhost kernel: [    0.000000] original variable MTRRs
-Jun  5 00:20:47 localhost kernel: [    0.000000] reg 0, base: 0GB,
-range: 8GB, type WB
-Jun  5 00:20:47 localhost kernel: [    0.000000] reg 1, base: 8GB,
-range: 1GB, type WB
-Jun  5 00:20:47 localhost kernel: [    0.000000] reg 2, base: 3GB,
-range: 1GB, type UC
-Jun  5 00:20:47 localhost kernel: [    0.000000] total RAM covered: 8192M
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] invalid
-mtrr_gran_size or mtrr_chunk_size, will find optimal one
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 64K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 128K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 128K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 256K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 512K num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512K
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 1M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 2M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 2M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 4M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 4M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 8M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 8M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 16M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 16M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 32M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 32M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 64M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 64M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 128M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 128M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 256M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 256M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 512M num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 512M
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1G
-chunk_size: 1G num_reg: 4   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000] *BAD*gran_size: 1G
-chunk_size: 2G num_reg: 5   lose cover RAM: -0G
-Jun  5 00:20:47 localhost kernel: [    0.000000]  gran_size: 2G
-chunk_size: 2G num_reg: 2   lose cover RAM: 2G
-Jun  5 00:20:47 localhost kernel: [    0.000000] mtrr_cleanup: can not
-find optimal value
-Jun  5 00:20:47 localhost kernel: [    0.000000] please specify
-mtrr_gran_size/mtrr_chunk_size
-
-
-
-
-
-Is this some kind of kernel BUG due to the negative value (- 0G) ?
-
-MTRR seems to be a topic that is not widely discussed or thoroughly
-understood when using google to find answers.
-
-cat /proc/mtrr
-reg00: base=0x000000000 (    0MB), size= 8192MB, count=1: write-back
-reg01: base=0x200000000 ( 8192MB), size= 1024MB, count=1: write-back
-reg02: base=0x0c0000000 ( 3072MB), size= 1024MB, count=1: uncachable
-
-
-Many thanks in advance
-
-
-Kind Regards
-
-Matt
-
-
-P.S.: I'm not subscribed to the list so please CC me when needed
