@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3FDFTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:19:10 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59781 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3FDFTH (ORCPT
+	id S1755133Ab3FDFTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 01:19:40 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63940 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab3FDFTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 01:19:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <51ACF2F1.1050600@semaphore.gr>
-References: <51ACF2F1.1050600@semaphore.gr>
-Date: Tue, 4 Jun 2013 10:49:06 +0530
-Message-ID: <CAKohpomTRdHdKN3QUf0ba+gFXrEr=PbD4cJc8NSyNPmxfnUsMQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] cpufreq: Remove unused function __cpufreq_driver_getavg
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Jun 2013 01:19:38 -0400
+X-AuditID: 9c93017d-b7c04ae00000207d-a9-51ad78e948e3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCHSET 00/16] perf tools: Cleanups on tracepoint handling
+Date: Tue,  4 Jun 2013 14:19:36 +0900
+Message-Id: <1370323176-13980-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 June 2013 01:18, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> Calculation of frequency target in ondemand governor changed and it is
+Hello,
 
-s/frequency target/target frequency
+This patchset is a resend version of previous work and basis of
+upcoming perf ftrace patchset.  Although I saw no issue on this series
+when I posted earlier, it'd be great if Steve or others take a look at
+it again and give comments.
 
-> independent from measured average frequency.
->
-> Remove unused__cpufreq_driver_getavg function and getavg member from
-> cpufreq_driver struct. Also, remove the callback getavg in
-> acpi_cpufreq_driver.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/Makefile       |  2 +-
->  drivers/cpufreq/acpi-cpufreq.c |  5 -----
->  drivers/cpufreq/cpufreq.c      | 12 ------------
->  include/linux/cpufreq.h        |  6 ------
->  4 files changed, 1 insertion(+), 24 deletions(-)
->
-> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-> index 6ad0b91..aebd4ef 100644
-> --- a/drivers/cpufreq/Makefile
-> +++ b/drivers/cpufreq/Makefile
-> @@ -23,7 +23,7 @@ obj-$(CONFIG_GENERIC_CPUFREQ_CPU0)    += cpufreq-cpu0.o
->  # powernow-k8 can load then. ACPI is preferred to all other hardware-specific drivers.
->  # speedstep-* is preferred over p4-clockmod.
->
-> -obj-$(CONFIG_X86_ACPI_CPUFREQ)         += acpi-cpufreq.o mperf.o
+I also updated 'perf/cleanup' branch on my tree at:
 
-Should this be done in 3/3 ?
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+Thanks,
+Namhyung
+
+
+Namhyung Kim (16):
+  tools lib traceevent: Remove unused install targets
+  tools lib traceevent: Get rid of unused gui target
+  tools lib traceevent: Add const qualifier to string arguments
+  tools lib traceevent: Add trace_seq_reset()
+  tools lib traceevent: Add page_size field to pevent
+  tools lib traceevent: Port kbuffer parser routines
+  perf util: Save page size in a trace file to pevent
+  perf util: Save long size of traced system
+  perf util: Make file/host_bigendian variable local
+  perf util: Skip reading header_event file
+  perf util: Parse header_page to get proper long size
+  perf util: Get rid of unused header_page_* variables
+  perf util: Move latency_format variable to builtin-script.c
+  perf util: Rename read_*() functions in trace-event-info.c
+  perf util: No need to call read_trace_init() in tracing_data_header()
+  perf util: Remove unused enum and macro in trace-event.h
+
+ tools/lib/traceevent/Makefile        |  18 +-
+ tools/lib/traceevent/event-parse.c   |   7 +-
+ tools/lib/traceevent/event-parse.h   |  15 +-
+ tools/lib/traceevent/kbuffer-parse.c | 732 +++++++++++++++++++++++++++++++++++
+ tools/lib/traceevent/kbuffer.h       |  67 ++++
+ tools/lib/traceevent/trace-seq.c     |  13 +
+ tools/perf/builtin-script.c          |   1 +
+ tools/perf/util/trace-event-info.c   |  22 +-
+ tools/perf/util/trace-event-parse.c  |   6 -
+ tools/perf/util/trace-event-read.c   |  52 ++-
+ tools/perf/util/trace-event.h        |  15 -
+ 11 files changed, 875 insertions(+), 73 deletions(-)
+ create mode 100644 tools/lib/traceevent/kbuffer-parse.c
+ create mode 100644 tools/lib/traceevent/kbuffer.h
+
+-- 
+1.7.11.7
+
