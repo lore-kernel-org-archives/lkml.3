@@ -1,242 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab3FDM50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:57:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54834 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3FDM5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:57:23 -0400
-Message-ID: <51ADE41E.3070202@ti.com>
-Date: Tue, 4 Jun 2013 08:57:02 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1754246Ab3FDM7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:59:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58940 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab3FDM7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:59:43 -0400
+Date: Tue, 4 Jun 2013 08:59:39 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, stable@kernel.org,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [07/65] dm bufio: avoid a possible __vmalloc deadlock
+In-Reply-To: <20130603221153.315507011@goodmis.org>
+Message-ID: <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+References: <20130603221016.243553628@goodmis.org> <20130603221153.315507011@goodmis.org>
 MIME-Version: 1.0
-To: amit daniel kachhap <amit.daniel@samsung.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH V4 00/30] thermal: exynos: Add thermal driver for exynos5440
-References: <1368525540-15034-1-git-send-email-amit.daniel@samsung.com> <51939F61.5020904@ti.com> <CADGdYn4MqTLvR4=HS6U7iWxO64Q8carQtApqZnm6kkCf26-D5Q@mail.gmail.com>
-In-Reply-To: <CADGdYn4MqTLvR4=HS6U7iWxO64Q8carQtApqZnm6kkCf26-D5Q@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2CVEKOJKELGVTPCQJUIEG"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2CVEKOJKELGVTPCQJUIEG
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 04-06-2013 00:55, amit daniel kachhap wrote:
-> Hi Eduardo,
->=20
-> On Wed, May 15, 2013 at 8:14 PM, Eduardo Valentin
-> <eduardo.valentin@ti.com> wrote:
->> On 14-05-2013 05:58, Amit Daniel Kachhap wrote:
->>> Changes in V4:
->>>  Almost all the changes in this version is as per suggestion from Edu=
-ardo.The
->>>  major ones are listed below,
->>> * Added kconfig symbol ARCH_HAS_TMU which needs to be enabled by plat=
-form. With
->>>   this change existing symbol EXYNOS_TMU_DATA is not needed.
->>
->> I was more thinking if we could have a single flag that we could use i=
-n
->> thermal drivers. Besides, my proposal for ARCH_HAS_BANDGAP is still no=
-t
->> merged yet.
->=20
-> yes a single flag might be useful such as ARCH_HAS_THERMAL but this
-> patch can work as an intermediate solution.
-
-I think bandgap is a generic enough term IMO.
-
-[1] - http://en.wikipedia.org/wiki/Bandgap_voltage_reference
-[2] - http://en.wikipedia.org/wiki/Silicon_bandgap_temperature_sensor
 
 
->=20
-> Thanks,
-> Amit Daniel
->>
->>> * Movement of freq_clip_table from exynos_tmu.h to exynos_thermal_com=
-mon.h is
->>>   explained in the commit logs.
->>> * Wrote all register description documentation.
->>> * Split 5440 TMU support patch into controller change, configuration =
-data and
->>>   feature addition patches.
->>> * Remove all *LINUX_* in the header files.
->>> * Still regulator enable is kept optional but a TODO: comment is adde=
-d to fix
->>>   it later.
->>>
->>> Changes in V3:
->>> * Added proper dependency of different exynos thermal Kconfig symbols=
-=2E Basically 3
->>>  Kconfig can be enabled now and corresponds to tmu driver. exynos com=
-mon part
->>>  and exynos configuration data. This issue was raised by Rui Zhang.
->>>
->>> Changes in V2:
->>> * Separated SOC data from TMU driver. This is as per suggestion from =
-Eduardo.
->>> * Merged the new file created for exynos5440 TMU controller with the =
-existing
->>>  TMU controller code.
->>> * Removed the DT parsing code as now the SOC specific data are cleanl=
-y put
->>>  inside the data specific file.
->>> * Even the register definations/bitfields are treated as data as ther=
-e is
->>>  some variation across SOC's.
->>>
->>> This patchset adds TMU(Thermal management Unit) driver support for
->>> exynos5440 platform. There are 3 instances of the TMU controllers so
->>> necessary cleanup/re-structure is done to handle multiple thermal zon=
-e.
->>>
->>> Patch (exynos4: Add documentation for Exynos SoC thermal bindings) fr=
-om
->>> Lukasz Majewski is already posted to mainline. Adding it here for com=
-pleteness.
->>> (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg178=
-17.html)
->>>
->>> Patch (thermal: exynos: Support thermal tripping ) from Jonghwan Choi=
- is
->>> added here with some changes.
->>> (https://patchwork.kernel.org/patch/1668371/)
->>>
->>> Patch (thermal: exynos: Support for TMU regulator defined at device t=
-ree)
->>> is a repost of my earlier patch(https://patchwork-mail1.kernel.org/pa=
-tch/2510771/)
->>> and adds regulator support.
->>>
->>> Patch (ARM: dts: Add device tree node for exynos5440 TMU controller) =
-and
->>> patch (arm: exynos: enable ARCH_HAS_TMU) can be merged through exynos=
- platform
->>> maintainer as this can cause merge conflict.
->>>
->>> All these patches are based on thermal maintainers git tree,
->>> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next.
->>>
->>> Amit Daniel Kachhap (29):
->>>   thermal: exynos: Moving exynos thermal files into samsung directory=
+On Mon, 3 Jun 2013, Steven Rostedt wrote:
 
->>>   thermal: exynos: Add ARCH_HAS_TMU config to know the supported soc'=
-s
->>>   thermal: exynos: Remove CPU_THERMAL dependency for using TMU driver=
+> 3.6.11.5 stable review patch.
+> If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Mikulas Patocka <mpatocka@redhat.com>
+> 
+> [ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
+> 
+> This patch uses memalloc_noio_save to avoid a possible deadlock in
+> dm-bufio.  (it could happen only with large block size, at most
+> PAGE_SIZE << MAX_ORDER (typically 8MiB).
+> 
+> __vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+> used for allocation of requested pages, structures vmap_area, vmap_block
+> and vm_struct and the radix tree nodes.
+> 
+> However, the kernel pagetables are allocated always with GFP_KERNEL.
+> Thus the allocation of pagetables can recurse back to the I/O layer and
+> cause a deadlock.
+> 
+> This patch uses the function memalloc_noio_save to set per-process
+> PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+> it. When this flag is set, all allocations in the process are done with
+> implied GFP_NOIO flag, thus the deadlock can't happen.
+> 
+> This should be backported to stable kernels, but they don't have the
+> PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+> functions. So, PF_MEMALLOC should be set and restored instead.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: stable@kernel.org
+> Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+> [ Set and clear PF_MEMALLOC manually - SR ]
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
+>  1 file changed, 25 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+> index c0fc827..a1f2487 100644
+> --- a/drivers/md/dm-bufio.c
+> +++ b/drivers/md/dm-bufio.c
+> @@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
+>  static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+>  			       enum data_mode *data_mode)
+>  {
+> +	unsigned noio_flag;
+> +	void *ptr;
+> +
+>  	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+>  		*data_mode = DATA_MODE_SLAB;
+>  		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+> @@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+>  	}
+>  
+>  	*data_mode = DATA_MODE_VMALLOC;
+> -	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
+> +
+> +	/*
+> +	 * __vmalloc allocates the data pages and auxiliary structures with
+> +	 * gfp_flags that were specified, but pagetables are always allocated
+> +	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
+> +	 *
+> +	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
+> +	 * all allocations done by this process (including pagetables) are done
+> +	 * as if GFP_NOIO was specified.
+> +	 */
+> +
+> +	if (gfp_mask & __GFP_NORETRY) {
+> +		noio_flag = current->flags;
 
->>>   thermal: exynos: Bifurcate exynos thermal common and tmu controller=
+There should be noio_flag = current->flags & PF_MEMALLOC; because we don't 
+want to restore other flags.
 
->>>     code
->>>   thermal: exynos: Rename exynos_thermal.c to exynos_tmu.c
->>>   thermal: exynos: Move exynos_thermal.h from include/* to driver/*
->>>     folder
->>>   thermal: exynos: Bifurcate exynos tmu driver and configuration data=
+> +		current->flags |= PF_MEMALLOC;
+> +	}
+> +
+> +	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
+> +
+> +	if (gfp_mask & __GFP_NORETRY)
+> +		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
+> +
+> +	return ptr;
+>  }
+>  
+>  /*
+> -- 
+> 1.7.10.4
 
->>>   thermal: exynos: Add missing definations and code cleanup
->>>   thermal: exynos: Add extra entries in the tmu platform data
->>>   thermal: exynos: Support thermal tripping
->>>   thermal: exynos: Move register definitions from driver file to data=
-
->>>     file
->>>   thermal: exynos: Fix to clear only the generated interrupts
->>>   thermal: exynos: Add support for instance based register/unregister=
-
->>>   thermal: exynos: Modify private_data to appropriate name driver_dat=
-a
->>>   thermal: exynos: Return success even if no cooling data supplied
->>>   thermal: exynos: Make the zone handling dependent on trip count
->>>   thermal: exynos: Add support to handle many instances of TMU
->>>   thermal: exynos: Add TMU features to check instead of using SOC typ=
-e
->>>   thermal: exynos: use device resource management infrastructure
->>>   thermal: exynos: Add support to access common register for
->>>     multistance
->>>   thermal: exynos: Add support for exynos5440 TMU sensor.
->>>   thermal: exynos: Fix to set the second point correction value
->>>     properly
->>>   thermal: exynos: Add thermal configuration data for exynos5440 TMU
->>>     sensor
->>>   thermal: exynos: Add a compensation logic on swapped e-fuse values
->>>   thermal: exynos: Add hardware mode thermal calibration support
->>>   Documentation: thermal: Explain the exynos thermal driver model
->>>   thermal: exynos: Support for TMU regulator defined at device tree
->>>   ARM: dts: Add device tree node for exynos5440 TMU controller
->>>   arm: exynos: enable ARCH_HAS_TMU
->>>
->>> Lukasz Majewski (1):
->>>   ARM: dts: thermal: exynos4: Add documentation for Exynos SoC therma=
-l
->>>     bindings
->>>
->>>  .../devicetree/bindings/thermal/exynos-thermal.txt |   53 +
->>>  Documentation/thermal/exynos_thermal               |   43 +-
->>>  arch/arm/boot/dts/exynos5440.dtsi                  |   30 +
->>>  arch/arm/mach-exynos/Kconfig                       |    5 +
->>>  drivers/thermal/Kconfig                            |   13 +-
->>>  drivers/thermal/Makefile                           |    2 +-
->>>  drivers/thermal/exynos_thermal.c                   | 1066 ----------=
-----------
->>>  drivers/thermal/samsung/Kconfig                    |   21 +
->>>  drivers/thermal/samsung/Makefile                   |    7 +
->>>  drivers/thermal/samsung/exynos_thermal_common.c    |  407 ++++++++
->>>  drivers/thermal/samsung/exynos_thermal_common.h    |   98 ++
->>>  drivers/thermal/samsung/exynos_tmu.c               |  741 ++++++++++=
-++++
->>>  drivers/thermal/samsung/exynos_tmu.h               |  294 ++++++
->>>  drivers/thermal/samsung/exynos_tmu_data.c          |  225 ++++
->>>  drivers/thermal/samsung/exynos_tmu_data.h          |  155 +++
->>>  include/linux/platform_data/exynos_thermal.h       |  119 ---
->>>  16 files changed, 2076 insertions(+), 1203 deletions(-)
->>>  create mode 100644 Documentation/devicetree/bindings/thermal/exynos-=
-thermal.txt
->>>  delete mode 100644 drivers/thermal/exynos_thermal.c
->>>  create mode 100644 drivers/thermal/samsung/Kconfig
->>>  create mode 100644 drivers/thermal/samsung/Makefile
->>>  create mode 100644 drivers/thermal/samsung/exynos_thermal_common.c
->>>  create mode 100644 drivers/thermal/samsung/exynos_thermal_common.h
->>>  create mode 100644 drivers/thermal/samsung/exynos_tmu.c
->>>  create mode 100644 drivers/thermal/samsung/exynos_tmu.h
->>>  create mode 100644 drivers/thermal/samsung/exynos_tmu_data.c
->>>  create mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
->>>  delete mode 100644 include/linux/platform_data/exynos_thermal.h
->>>
->>>
->>>
->>
->>
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-------enig2CVEKOJKELGVTPCQJUIEG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlGt5B4ACgkQCXcVR3XQvP0KDgEA1WA37hri5t0CiACxgB/E5wtV
-Vg8l1P3PRblXWfzcBWsBAPxQ1LlBLBhLnfzros5870WhXqHJUyjMK5yAZLVuII2h
-=syBA
------END PGP SIGNATURE-----
-
-------enig2CVEKOJKELGVTPCQJUIEG--
+Mikulas
