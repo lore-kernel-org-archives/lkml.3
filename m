@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3FDWoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:44:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:35869 "EHLO 1wt.eu"
+	id S1754407Ab3FDWoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:44:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:35839 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab3FDWoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:16 -0400
-Message-Id: <20130604172135.243236388@1wt.eu>
+	id S1754096Ab3FDWoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:03 -0400
+Message-Id: <20130604172136.766345256@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:29 +0200
+Date: Tue, 04 Jun 2013 19:24:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 119/184] jbd: Fix lock ordering bug in journal_unmap_buffer()
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 156/184] net: fix info leak in compat dev_ifconf()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,41 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 25389bb207987b5774182f763b9fb65ff08761c8 upstream.
+commit 43da5f2e0d0c69ded3d51907d9552310a6b545e8 upstream.
 
-Commit 09e05d48 introduced a wait for transaction commit into
-journal_unmap_buffer() in the case we are truncating a buffer undergoing commit
-in the page stradding i_size on a filesystem with blocksize < pagesize. Sadly
-we forgot to drop buffer lock before waiting for transaction commit and thus
-deadlock is possible when kjournald wants to lock the buffer.
+The implementation of dev_ifconf() for the compat ioctl interface uses
+an intermediate ifc structure allocated in userland for the duration of
+the syscall. Though, it fails to initialize the padding bytes inserted
+for alignment and that for leaks four bytes of kernel stack. Add an
+explicit memset(0) before filling the structure to avoid the info leak.
 
-Fix the problem by dropping the buffer lock before waiting for transaction
-commit. Since we are still holding page lock (and that is OK), buffer cannot
-disappear under us.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 2.6.32: adjust filename, context]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/jbd/transaction.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/compat_ioctl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-index 4eff79c..1352e60 100644
---- a/fs/jbd/transaction.c
-+++ b/fs/jbd/transaction.c
-@@ -1956,7 +1956,9 @@ retry:
- 			spin_unlock(&journal->j_list_lock);
- 			jbd_unlock_bh_state(bh);
- 			spin_unlock(&journal->j_state_lock);
-+			unlock_buffer(bh);
- 			log_wait_commit(journal, tid);
-+			lock_buffer(bh);
- 			goto retry;
- 		}
- 		/*
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 0dd21a4..98d3c58 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -352,6 +352,7 @@ static int dev_ifconf(unsigned int fd, unsigned int cmd, unsigned long arg)
+ 	if (copy_from_user(&ifc32, compat_ptr(arg), sizeof(struct ifconf32)))
+ 		return -EFAULT;
+ 
++	memset(&ifc, 0, sizeof(ifc));
+ 	if (ifc32.ifcbuf == 0) {
+ 		ifc32.ifc_len = 0;
+ 		ifc.ifc_len = 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
