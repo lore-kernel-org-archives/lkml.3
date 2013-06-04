@@ -1,267 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab3FDWke (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:40:34 -0400
-Received: from 1wt.eu ([62.212.114.60]:35097 "EHLO 1wt.eu"
+	id S1752664Ab3FDWll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:41 -0400
+Received: from 1wt.eu ([62.212.114.60]:35273 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab3FDWk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:40:29 -0400
-Message-Id: <20130604172130.280151953@1wt.eu>
+	id S1752098Ab3FDWlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:36 -0400
+Message-Id: <20130604172130.969405668@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:30 +0200
+Date: Tue, 04 Jun 2013 19:21:46 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 000/184] 2.6.32.61-longterm review
-Message-ID: <58df134a4b98edf5b0073e2e1e988fe6@local>
+Cc: Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 016/184] exec: use -ELOOP for max recursion depth
+In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.61 release.
-All patches will be posted as a response to this one. If anyone has any
-issue with these being applied, please let me know. If anyone is a
-maintainer of the proper subsystem, and wants to add a Signed-off-by: line
-to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made within 72 hours. Anything received after that time
-might be too late.
+------------------
 
-This series contains backports for all important fixes from 3.0.y branch up
-to and including 3.0.80, as well as a large number of security backports from
-debian kindly provided by Moritz Muehlenhoff. Note that the changelog was quite
-large, so after a full review, all driver-related fixes that were not related
-to instability or security issues were postponed or dropped. Given the low
-amount of feedback, I'm assuming that drivers do work well and do not need
-some fixes I can't always test. If not, please report issues and indicate
-the patches you want backported, I'll happily queue them for next release.
+From: Kees Cook <keescook@chromium.org>
 
-This kernel was successfully built on i386 and x86_64 with make allmodconfig,
-and on arm with a hardware-specific config.
+commit d740269867021faf4ce38a449353d2b986c34a67 upstream
 
-The following CVE IDs were fixed in 2.6.32.61 :
+To avoid an explosion of request_module calls on a chain of abusive
+scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
+as maximum recursion depth is hit, the error will fail all the way back
+up the chain, aborting immediately.
 
-CVE-2011-2695 CVE-2011-2699 CVE-2012-2390 CVE-2012-3430 CVE-2012-3552
-CVE-2012-4398 CVE-2012-4444 CVE-2012-4461 CVE-2012-4508 CVE-2012-4530
-CVE-2012-4565 CVE-2012-6537 CVE-2012-6539 CVE-2012-6540 CVE-2012-6542
-CVE-2012-6544 CVE-2012-6545 CVE-2012-6546 CVE-2012-6548 CVE-2012-6549
-CVE-2013-0228 CVE-2013-0268 CVE-2013-0349 CVE-2013-0871 CVE-2013-0914
-CVE-2013-1767 CVE-2013-1773 CVE-2013-1774 CVE-2013-1792 CVE-2013-1796
-CVE-2013-1798 CVE-2013-1826 CVE-2013-1860 CVE-2013-1928 CVE-2013-2015
-CVE-2013-2634 CVE-2013-3222 CVE-2013-3223 CVE-2013-3224 CVE-2013-3225
-CVE-2013-3228 CVE-2013-3229 CVE-2013-3231 CVE-2013-3234 CVE-2013-3235
+This also has the side-effect of stopping the user's shell from attempting
+to reexecute the top-level file as a shell script. As seen in the
+dash source:
 
-Please note that the whole -rc patch is not provided anymore, only individual
-patches are provided so that their authors and subsystem maintainers can spot
-issues. If this is a problem for you, please report it so that we try to find
-a solution.
+        if (cmd != path_bshell && errno == ENOEXEC) {
+                *argv-- = cmd;
+                *argv = cmd = path_bshell;
+                goto repeat;
+        }
 
-The diffstat is appended below.
+The above logic was designed for running scripts automatically that lacked
+the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
+things continue to behave as the shell expects.
 
- arch/alpha/kernel/sys_nautilus.c               |   5 +
- arch/arm/include/asm/signal.h                  |   1 +
- arch/avr32/include/asm/signal.h                |   1 +
- arch/cris/include/asm/signal.h                 |   1 +
- arch/h8300/include/asm/signal.h                |   1 +
- arch/m32r/include/asm/signal.h                 |   1 +
- arch/m68k/include/asm/signal.h                 |   1 +
- arch/mips/Makefile                             |   2 +-
- arch/mips/kernel/Makefile                      |   2 +-
- arch/mn10300/include/asm/signal.h              |   1 +
- arch/parisc/kernel/signal32.c                  |   6 +-
- arch/powerpc/include/asm/signal.h              |   1 +
- arch/s390/include/asm/signal.h                 |   1 +
- arch/sparc/include/asm/signal.h                |   1 +
- arch/x86/Kconfig                               |   2 +-
- arch/x86/include/asm/pgtable.h                 |   5 +
- arch/x86/include/asm/signal.h                  |   2 +
- arch/x86/kernel/apic/io_apic.c                 |   9 +-
- arch/x86/kernel/cpu/mcheck/mce.c               |   9 +-
- arch/x86/kernel/efi.c                          |   3 -
- arch/x86/kernel/msr.c                          |   3 +
- arch/x86/kvm/x86.c                             |   9 +
- arch/x86/mm/fault.c                            |   6 +-
- arch/x86/mm/init_64.c                          |   3 +
- arch/x86/xen/enlighten.c                       |  18 +-
- arch/x86/xen/xen-asm_32.S                      |  14 +-
- arch/xtensa/include/asm/signal.h               |   1 +
- block/blk-core.c                               |  14 +-
- block/blk-exec.c                               |   7 +
- block/scsi_ioctl.c                             |   5 +-
- crypto/cryptd.c                                |  11 +-
- drivers/acpi/processor_idle.c                  |   3 +
- drivers/ata/libata-scsi.c                      |   6 +-
- drivers/base/bus.c                             |   4 +-
- drivers/char/ipmi/ipmi_bt_sm.c                 |   4 +-
- drivers/firmware/pcdp.c                        |   4 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |   2 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |  19 +-
- drivers/isdn/isdnloop/isdnloop.c               |  12 -
- drivers/net/bonding/bonding.h                  |   4 +-
- drivers/net/r8169.c                            |  30 +--
- drivers/net/tg3.c                              |   4 +
- drivers/net/wireless/b43legacy/main.c          |   2 +
- drivers/pci/remove.c                           |   2 +
- drivers/scsi/bnx2i/bnx2i_hwi.c                 |   3 +
- drivers/scsi/scsi_lib.c                        |   2 +
- drivers/serial/8250.c                          |   2 +-
- drivers/staging/comedi/comedi_fops.c           |  13 +-
- drivers/staging/comedi/drivers/comedi_test.c   |   2 +-
- drivers/staging/comedi/drivers/das08.c         |   2 +-
- drivers/staging/comedi/drivers/jr3_pci.c       |   2 +-
- drivers/staging/comedi/drivers/ni_labpc.c      |  35 +--
- drivers/staging/comedi/drivers/s626.c          |   2 +-
- drivers/staging/vt6656/rf.c                    |   3 +
- drivers/telephony/ixj.c                        |  24 +-
- drivers/usb/class/cdc-wdm.c                    |  23 +-
- drivers/usb/host/ehci-hcd.c                    |   8 +-
- drivers/usb/host/ehci-q.c                      |  82 +++---
- drivers/usb/host/ehci.h                        |   3 +-
- drivers/usb/host/pci-quirks.c                  |  12 +-
- drivers/usb/serial/garmin_gps.c                |   7 +-
- drivers/usb/serial/io_ti.c                     |   3 +
- drivers/usb/serial/mos7840.c                   |   2 +-
- drivers/usb/serial/sierra.c                    |   1 +
- drivers/usb/serial/whiteheat.c                 |   1 +
- drivers/w1/w1.c                                |   3 +-
- fs/binfmt_elf.c                                |  19 +-
- fs/binfmt_em86.c                               |   1 -
- fs/binfmt_misc.c                               |  11 +-
- fs/binfmt_script.c                             |   8 +-
- fs/btrfs/volumes.c                             |   6 +
- fs/cifs/cifs_dfs_ref.c                         |   2 +
- fs/compat_ioctl.c                              |   3 +
- fs/eventpoll.c                                 |  22 +-
- fs/exec.c                                      |  25 +-
- fs/ext4/acl.c                                  |   6 +-
- fs/ext4/ext4_extents.h                         |   7 +-
- fs/ext4/extents.c                              | 106 ++++++--
- fs/ext4/inode.c                                |   8 +-
- fs/ext4/mballoc.c                              |  12 +-
- fs/ext4/move_extent.c                          |  17 +-
- fs/ext4/namei.c                                |  26 +-
- fs/ext4/super.c                                |  17 +-
- fs/fat/inode.c                                 |   2 +-
- fs/fat/namei_vfat.c                            |   9 +-
- fs/fscache/stats.c                             |   2 +-
- fs/hfsplus/extents.c                           |   2 +-
- fs/isofs/export.c                              |   1 +
- fs/jbd/commit.c                                |  43 +++-
- fs/jbd/transaction.c                           |  99 ++++++--
- fs/nfsd/nfs4xdr.c                              |  11 +-
- fs/nls/nls_base.c                              |  43 +++-
- fs/splice.c                                    |   7 +-
- fs/sysfs/dir.c                                 |  16 +-
- fs/udf/inode.c                                 |   4 +
- fs/udf/namei.c                                 |   1 +
- fs/udf/udf_sb.h                                |   2 +-
- include/asm-generic/signal.h                   |   4 +
- include/linux/binfmts.h                        |   3 +-
- include/linux/blkdev.h                         |   4 +-
- include/linux/kmod.h                           |   2 +
- include/linux/mempolicy.h                      |   2 +-
- include/linux/msdos_fs.h                       |   3 +-
- include/linux/nls.h                            |   5 +-
- include/linux/page-flags.h                     |   8 +-
- include/linux/sched.h                          |  11 +-
- include/linux/socket.h                         |   2 +-
- include/net/inet_sock.h                        |  14 +-
- include/net/ip.h                               |  11 +-
- include/net/ipv6.h                             |  12 +-
- include/net/transp_v6.h                        |   2 +
- include/scsi/scsi.h                            |   8 +-
- include/scsi/scsi_netlink.h                    |   4 +-
- include/trace/events/kmem.h                    |   4 +-
- kernel/async.c                                 |  13 +-
- kernel/cgroup.c                                |   2 -
- kernel/kmod.c                                  |  89 ++++++-
- kernel/posix-cpu-timers.c                      |  23 +-
- kernel/ptrace.c                                |  67 +++--
- kernel/resource.c                              |  50 +++-
- kernel/sched.c                                 |   3 +-
- kernel/signal.c                                |  21 +-
- kernel/softirq.c                               |  17 +-
- kernel/sys.c                                   |   1 +
- kernel/time/tick-broadcast.c                   |   3 +-
- kernel/time/tick-sched.c                       |   2 +-
- kernel/time/timekeeping.c                      |   3 +-
- kernel/timer.c                                 |   2 +-
- kernel/trace/ftrace.c                          |   1 -
- kernel/trace/ring_buffer.c                     |   2 +
- lib/genalloc.c                                 |   2 +-
- mm/hugetlb.c                                   |  29 ++-
- mm/mempolicy.c                                 |  37 ++-
- mm/shmem.c                                     |  10 +-
- mm/truncate.c                                  |   3 +-
- mm/vmscan.c                                    |   2 +
- net/atm/common.c                               |   3 +
- net/atm/pvc.c                                  |   1 +
- net/ax25/af_ax25.c                             |   1 +
- net/bluetooth/af_bluetooth.c                   |   4 +-
- net/bluetooth/hci_sock.c                       |   1 +
- net/bluetooth/hidp/core.c                      |   2 +-
- net/bluetooth/l2cap.c                          |   1 +
- net/bluetooth/rfcomm/sock.c                    |   2 +
- net/bridge/br_stp_bpdu.c                       |   2 +
- net/core/dev.c                                 |   9 +-
- net/core/sock.c                                |   3 +-
- net/dcb/dcbnl.c                                |   1 +
- net/dccp/ipv4.c                                |  15 +-
- net/dccp/ipv6.c                                |   2 +-
- net/ipv4/af_inet.c                             |  16 +-
- net/ipv4/cipso_ipv4.c                          | 113 +++++----
- net/ipv4/icmp.c                                |  23 +-
- net/ipv4/inet_connection_sock.c                |   8 +-
- net/ipv4/ip_options.c                          |  38 ++-
- net/ipv4/ip_output.c                           |  50 ++--
- net/ipv4/ip_sockglue.c                         |  35 ++-
- net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |   8 +
- net/ipv4/raw.c                                 |  19 +-
- net/ipv4/route.c                               |  17 +-
- net/ipv4/syncookies.c                          |   4 +-
- net/ipv4/tcp.c                                 |   2 +-
- net/ipv4/tcp_illinois.c                        |   8 +-
- net/ipv4/tcp_ipv4.c                            |  33 +--
- net/ipv4/tcp_output.c                          |   7 +-
- net/ipv4/udp.c                                 |  21 +-
- net/ipv6/af_inet6.c                            |   2 +
- net/ipv6/ip6_output.c                          |  40 ++-
- net/ipv6/reassembly.c                          |  74 ++----
- net/ipv6/tcp_ipv6.c                            |   2 +-
- net/ipv6/udp.c                                 |   2 +-
- net/irda/af_irda.c                             |   2 +
- net/iucv/af_iucv.c                             |   2 +
- net/llc/af_llc.c                               |   5 +-
- net/netfilter/ipvs/ip_vs_ctl.c                 |   1 +
- net/netfilter/ipvs/ip_vs_xmit.c                |  33 ++-
- net/packet/af_packet.c                         |   1 -
- net/rds/recv.c                                 |   3 +
- net/rose/af_rose.c                             |   1 +
- net/sched/act_gact.c                           |  14 +-
- net/sched/sch_htb.c                            |   2 +-
- net/sctp/auth.c                                |   2 +-
- net/sctp/chunk.c                               |   7 +-
- net/sctp/endpointola.c                         |   5 +
- net/sctp/socket.c                              |   2 +-
- net/socket.c                                   |   6 +-
- net/sunrpc/rpc_pipe.c                          |   2 +-
- net/tipc/socket.c                              |   7 +
- net/unix/af_unix.c                             |   7 +-
- net/xfrm/xfrm_user.c                           |  15 +-
- scripts/Kbuild.include                         |  12 +-
- scripts/gcc-version.sh                         |   6 +-
- scripts/gcc-x86_32-has-stack-protector.sh      |   2 +-
- scripts/gcc-x86_64-has-stack-protector.sh      |   2 +-
- scripts/kconfig/check.sh                       |   2 +-
- scripts/kconfig/lxdialog/check-lxdialog.sh     |   2 +-
- security/keys/process_keys.c                   |   2 +-
- sound/core/seq/seq_timer.c                     |   8 +-
- sound/pci/ac97/ac97_codec.c                    |   2 +
- sound/pci/hda/patch_realtek.c                  | 329 +++++++++++++++++++++++--
- sound/pci/ice1712/ice1712.c                    |   2 +
- usr/gen_init_cpio.c                            |  43 ++--
- virt/kvm/ioapic.c                              |   7 +-
- 203 files changed, 1787 insertions(+), 814 deletions(-)
+Additionally, when tracking recursion, the binfmt handlers should not be
+involved. The recursion being tracked is the depth of calls through
+search_binary_handler(), so that function should be exclusively responsible
+for tracking the depth.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[dannf: backported to Debian's 2.6.32]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ fs/binfmt_em86.c        |  1 -
+ fs/binfmt_misc.c        |  6 ------
+ fs/binfmt_script.c      |  4 +---
+ fs/exec.c               | 10 +++++-----
+ include/linux/binfmts.h |  2 --
+ 5 files changed, 6 insertions(+), 17 deletions(-)
+
+diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
+index 32fb00b..416dcae 100644
+--- a/fs/binfmt_em86.c
++++ b/fs/binfmt_em86.c
+@@ -43,7 +43,6 @@ static int load_em86(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			return -ENOEXEC;
+ 	}
+ 
+-	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index fb93997..258c5ca 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -116,10 +116,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	if (!enabled)
+ 		goto _ret;
+ 
+-	retval = -ENOEXEC;
+-	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
+-		goto _ret;
+-
+ 	/* to keep locking time low, we copy the interpreter string */
+ 	read_lock(&entries_lock);
+ 	fmt = check_file(bprm);
+@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	if (retval < 0)
+ 		goto _error;
+ 
+-	bprm->recursion_depth++;
+-
+ 	retval = search_binary_handler (bprm, regs);
+ 	if (retval < 0)
+ 		goto _error;
+diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
+index 356568c..4fe6b8a 100644
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -22,15 +22,13 @@ static int load_script(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	char interp[BINPRM_BUF_SIZE];
+ 	int retval;
+ 
+-	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
+-	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
++	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
+ 		return -ENOEXEC;
+ 	/*
+ 	 * This section does the #! interpretation.
+ 	 * Sorta complicated, but hopefully it will work.  -TYT
+ 	 */
+ 
+-	bprm->recursion_depth++;
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+diff --git a/fs/exec.c b/fs/exec.c
+index f9f1b11..feb2435 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1285,6 +1285,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	int try,retval;
+ 	struct linux_binfmt *fmt;
+ 
++	/* This allows 4 levels of binfmt rewrites before failing hard. */
++	if (depth > 5)
++		return -ELOOP;
++
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+ 		return retval;
+@@ -1306,12 +1310,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			if (!try_module_get(fmt->module))
+ 				continue;
+ 			read_unlock(&binfmt_lock);
++			bprm->recursion_depth = depth + 1;
+ 			retval = fn(bprm, regs);
+-			/*
+-			 * Restore the depth counter to its starting value
+-			 * in this call, so we don't have to rely on every
+-			 * load_binary function to restore it on return.
+-			 */
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+ 				if (depth == 0)
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index d06c3a4..9ffffec 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -71,8 +71,6 @@ extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ #define BINPRM_FLAGS_EXECFD_BIT 1
+ #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
+ 
+-#define BINPRM_MAX_RECURSION 4
+-
+ /*
+  * This structure defines the functions that are used to load the binary formats that
+  * linux accepts.
+-- 
+1.7.12.2.21.g234cd45.dirty
 
 
 
