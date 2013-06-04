@@ -1,200 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab3FDWAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:00:21 -0400
-Received: from fieldses.org ([174.143.236.118]:57940 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab3FDWAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:00:17 -0400
-Date: Tue, 4 Jun 2013 17:59:50 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 08/11] locks: convert fl_link to a hlist_node
-Message-ID: <20130604215950.GE15594@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-9-git-send-email-jlayton@redhat.com>
+	id S1751892Ab3FDWFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:05:45 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:56033 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab3FDWFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:05:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370056054-25449-9-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130604215521.GA5819@jshin-Toonie>
+References: <20130531150241.GA12006@jshin-Toonie>
+	<tip-6b3389ac21b5e557b957f1497d0ff22bf733e8c3@git.kernel.org>
+	<CAE9FiQUJOfcoU8c_Xwhosb1=9=dyaH6mXkERX-zxCUmEXjeNUg@mail.gmail.com>
+	<20130604213600.GA5021@jshin-Toonie>
+	<20130604215521.GA5819@jshin-Toonie>
+Date: Tue, 4 Jun 2013 15:05:41 -0700
+X-Google-Sender-Auth: q9v-QruR365Jfrbp38w3-eqIhOQ
+Message-ID: <CAE9FiQVqR2KEv5ZWsuL+-guOx6_NEWKMkATfY-Tb8CAV26XMNw@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86, microcode, amd: Fix warnings and errors
+ on with CONFIG_MICROCODE=m
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:07:31PM -0400, Jeff Layton wrote:
-> Testing has shown that iterating over the blocked_list for deadlock
-> detection turns out to be a bottleneck. In order to alleviate that,
-> begin the process of turning it into a hashtable. We start by turning
-> the fl_link into a hlist_node and the global lists into hlists. A later
-> patch will do the conversion of the blocked_list to a hashtable.
+On Tue, Jun 4, 2013 at 2:55 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> On Tue, Jun 04, 2013 at 04:36:00PM -0500, Jacob Shin wrote:
+>>
+>> It's because the load_ucode_amd_ap() (which is __cpuinit because it
+>> can be called during CPU hotplug on).
+>
+> Sorry, let me clarify. find_ucode_in_initrd() is called by
+> load_ucode_amd_ap() during cold boot. However, since
+> load_ucode_amd_ap() is also called during suspend/resume (CPU hotplug)
+> it has to be __cpuinit. Of course during suspend/resume code path,
+> find_ucode_in_initrd() is not called, since it is no longer there in memory.
+>
+>>
+>> Hm.. but yes, I do agree with you, I'm waiting for feedback on this
+>> follow up patch to allow multiple concatanated microcode files:
+>>
+>>   https://lkml.org/lkml/2013/5/31/664
+>>
+>> I'll submit multi-patch patchset to address your feedback as well.
 
-Even simpler would be if we could add a pointer to the (well, a) lock
-that a lockowner is blocking on, and then we'd just have to follow a
-pointer.  I haven't thought that through, though, perhaps that's hard ot
-make work....
+Those microcode should be with initrd.
 
---b.
+During first BP finding and apply it, it is still with initrd that is loaded by
+bootloader.
 
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c         |   32 ++++++++++++++++----------------
->  include/linux/fs.h |    2 +-
->  2 files changed, 17 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index fc35b9e..5ed056b 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -163,8 +163,8 @@ int lease_break_time = 45;
->  #define for_each_lock(inode, lockp) \
->  	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
->  
-> -static LIST_HEAD(file_lock_list);
-> -static LIST_HEAD(blocked_list);
-> +static HLIST_HEAD(file_lock_list);
-> +static HLIST_HEAD(blocked_list);
->  
->  /* Protects the two list heads above */
->  static DEFINE_SPINLOCK(file_lock_lock);
-> @@ -173,7 +173,7 @@ static struct kmem_cache *filelock_cache __read_mostly;
->  
->  static void locks_init_lock_heads(struct file_lock *fl)
->  {
-> -	INIT_LIST_HEAD(&fl->fl_link);
-> +	INIT_HLIST_NODE(&fl->fl_link);
->  	INIT_LIST_HEAD(&fl->fl_block);
->  	init_waitqueue_head(&fl->fl_wait);
->  }
-> @@ -207,7 +207,7 @@ void locks_free_lock(struct file_lock *fl)
->  {
->  	BUG_ON(waitqueue_active(&fl->fl_wait));
->  	BUG_ON(!list_empty(&fl->fl_block));
-> -	BUG_ON(!list_empty(&fl->fl_link));
-> +	BUG_ON(!hlist_unhashed(&fl->fl_link));
->  
->  	locks_release_private(fl);
->  	kmem_cache_free(filelock_cache, fl);
-> @@ -486,7 +486,7 @@ static inline void
->  locks_insert_global_blocked(struct file_lock *waiter)
->  {
->  	spin_lock(&file_lock_lock);
-> -	list_add(&waiter->fl_link, &blocked_list);
-> +	hlist_add_head(&waiter->fl_link, &blocked_list);
->  	spin_unlock(&file_lock_lock);
->  }
->  
-> @@ -494,7 +494,7 @@ static inline void
->  locks_delete_global_blocked(struct file_lock *waiter)
->  {
->  	spin_lock(&file_lock_lock);
-> -	list_del_init(&waiter->fl_link);
-> +	hlist_del_init(&waiter->fl_link);
->  	spin_unlock(&file_lock_lock);
->  }
->  
-> @@ -502,7 +502,7 @@ static inline void
->  locks_insert_global_locks(struct file_lock *waiter)
->  {
->  	spin_lock(&file_lock_lock);
-> -	list_add_tail(&waiter->fl_link, &file_lock_list);
-> +	hlist_add_head(&waiter->fl_link, &file_lock_list);
->  	spin_unlock(&file_lock_lock);
->  }
->  
-> @@ -510,7 +510,7 @@ static inline void
->  locks_delete_global_locks(struct file_lock *waiter)
->  {
->  	spin_lock(&file_lock_lock);
-> -	list_del_init(&waiter->fl_link);
-> +	hlist_del_init(&waiter->fl_link);
->  	spin_unlock(&file_lock_lock);
->  }
->  
-> @@ -705,7 +705,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
->  {
->  	struct file_lock *fl, *ret = NULL;
->  
-> -	list_for_each_entry(fl, &blocked_list, fl_link) {
-> +	hlist_for_each_entry(fl, &blocked_list, fl_link) {
->  		if (posix_same_owner(fl, block_fl)) {
->  			ret = fl->fl_next;
->  			if (likely(ret))
-> @@ -867,7 +867,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  				goto out;
->  			error = FILE_LOCK_DEFERRED;
->  			locks_insert_block(fl, request);
-> -			if (list_empty(&request->fl_link))
-> +			if (hlist_unhashed(&request->fl_link))
->  				locks_insert_global_blocked(request);
->  			goto out;
->    		}
-> @@ -882,10 +882,10 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  	 * Now that we know the request is no longer blocked, we can take it
->  	 * off the global list. Some callers send down partially initialized
->  	 * requests, so we only do this if FL_SLEEP is set. Also, avoid taking
-> -	 * the lock if the list is empty, as that indicates a request that
-> +	 * the lock if the hlist is unhashed, as that indicates a request that
->  	 * never blocked.
->  	 */
-> -	if ((request->fl_flags & FL_SLEEP) && !list_empty(&request->fl_link))
-> +	if ((request->fl_flags & FL_SLEEP) && !hlist_unhashed(&request->fl_link))
->  		locks_delete_global_blocked(request);
->  
->  	/*
-> @@ -2277,11 +2277,11 @@ static int locks_show(struct seq_file *f, void *v)
->  {
->  	struct file_lock *fl, *bfl;
->  
-> -	fl = list_entry(v, struct file_lock, fl_link);
-> +	fl = hlist_entry(v, struct file_lock, fl_link);
->  
->  	lock_get_status(f, fl, *((loff_t *)f->private), "");
->  
-> -	list_for_each_entry(bfl, &blocked_list, fl_link) {
-> +	hlist_for_each_entry(bfl, &blocked_list, fl_link) {
->  		if (bfl->fl_next == fl)
->  			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
->  	}
-> @@ -2295,14 +2295,14 @@ static void *locks_start(struct seq_file *f, loff_t *pos)
->  
->  	spin_lock(&file_lock_lock);
->  	*p = (*pos + 1);
-> -	return seq_list_start(&file_lock_list, *pos);
-> +	return seq_hlist_start(&file_lock_list, *pos);
->  }
->  
->  static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
->  {
->  	loff_t *p = f->private;
->  	++*p;
-> -	return seq_list_next(v, &file_lock_list, pos);
-> +	return seq_hlist_next(v, &file_lock_list, pos);
->  }
->  
->  static void locks_stop(struct seq_file *f, void *v)
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index ccb44ea..07a009e 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -934,7 +934,7 @@ int locks_in_grace(struct net *);
->   */
->  struct file_lock {
->  	struct file_lock *fl_next;	/* singly linked list for this inode  */
-> -	struct list_head fl_link;	/* doubly linked list of all locks */
-> +	struct hlist_node fl_link;	/* node in global lists */
->  	struct list_head fl_block;	/* circular list of blocked processes */
->  	fl_owner_t fl_owner;
->  	unsigned int fl_flags;
-> -- 
-> 1.7.1
-> 
+then kernel may move the initrd to mapped range.
+
+then AP will use those moved blob or saved blob during booting path and
+hot-add path.
+
+so the find_.._in_initrd should be __init and you just need one pointer
+to the blob original or moved.
+
+Thanks
+
+Yinghai
