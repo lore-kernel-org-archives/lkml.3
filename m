@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3FDPi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:38:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56073 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab3FDPiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:38:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC 2/2] USB: host: make USB_ARCH_HAS_?HCI obsolete
-Date: Tue, 04 Jun 2013 17:38:45 +0200
-Message-ID: <1624672.VBbVgzJXAH@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1306041107520.1093-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1306041107520.1093-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:sk4sGel3w8iC91DDWuQJ9a7q2mSThl32TnubuTmiBJV
- f9pMT+z3cgxMmtacd60oqrJKQUzSMUNxE68oWt0d2AI5NCb/lW
- ReqQiyB/bSezJ1ppnL/8ahwtG+zR4ytNcb+5a3IFads+3lHykt
- iaHO3MtWMpB0r6b43/Sq8tHsZ4KRFuDdbVoAY0tpFswT7npOLG
- /4UPXyaBpqTmPmKw7LCwgMq06KjasKxTSAbbly8ouM2rCpbVI7
- A40VrsU84tqXJVH7hPb5weX3609P1oMYTkXVBeg8LHau4sj/JA
- 2MK8wacQhfL2z+a2C69S9SY4N3RKn+jl6IJB+LK1rQ7oO2yDm/
- S9ysHc+2qpfqKIBMOjYI=
+	id S1754269Ab3FDPnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:43:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab3FDPnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 11:43:09 -0400
+Subject: GFS2: Pull request (fixes)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-yxiRlUhWErN3KgdWp4rr"
+Organization: Red Hat UK Ltd
+Date: Tue, 04 Jun 2013 16:40:41 +0100
+Message-ID: <1370360441.2705.10.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013 11:22:01 Alan Stern wrote:
-> 
-> Instead of doing this, it makes more sense to enable USB_ARCH_HAS_HCD
-> whenever host-side USB is enabled.  In other words,
-> 
->         def_bool USB
 
-The problem with this is that a lot of drivers (24 to be exact) are defined
-like
+--=-yxiRlUhWErN3KgdWp4rr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-config INPUT_ATI_REMOTE2
-        tristate "ATI / Philips USB RF remote control"
-        depends on USB_ARCH_HAS_HCD
-        select USB
+Hi,
 
-so that would create a circular dependency unless we change all of them
-at once. I did that when creating this patch, but then decided to
-revert it for now and do smaller steps.
+Please consider pulling the following fixes for GFS2,
 
-We could do
+Steve.
 
-config USB_ARCH_HAS_HCD
-	def_bool USB_SUPPORT
+---------------------------------------------------------------------------=
+---
 
-or
+There are four patches this time. The first fixes a problem where the
+wrong descriptor type was being written into the log for journaled data
+blocks. The second fixes a race relating to the deallocation of allocator
+data. The third provides a fallback if kmalloc is unable to satisfy a
+request to allocate a directory hash table. The fourth fixes the iopen
+glock caching so that inodes are deleted in a more timely manner after
+rmdir/unlink.
 
-config USB_ARCH_HAS_HCD
-	def_bool y
+---------------------------------------------------------------------------=
+--
+The following changes since commit aa4f608478acb7ed69dfcff4f3c404100b78ac49=
+:
 
-which would both have the exact same behavior as 'def_bool HAS_IOMEM'.
- 
-> The HAS_IOMEM won't matter, because USB is defined only when 
-> USB_SUPPORT is enabled, and USB_SUPPORT already depends on HAS_IOMEM.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git=
+/geert/linux-m68k (2013-06-03 18:09:42 +0900)
 
-Right.
+are available in the git repository at:
 
-> Of course, it will then be necessary to remove the dependency on 
-> USB_ARCH_HAS_HCD from the "config USB" entry.  Which is exactly what 
-> you're trying to accomplish, anyway.
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
+ster
 
-That dependency is redundant already, and should certainly be
-removed now.
+Bob Peterson (4):
+      GFS2: Set log descriptor type for jdata blocks
+      GFS2: Increase i_writecount during gfs2_setattr_size
+      GFS2: Fall back to vmalloc if kmalloc fails for dir hash tables
+      GFS2: Don't cache iopen glocks
 
-> > diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> > index e060ecf..045f9d27 100644
-> > --- a/drivers/usb/host/Kconfig
-> > +++ b/drivers/usb/host/Kconfig
-> > @@ -17,7 +17,7 @@ config USB_C67X00_HCD
-> >  
-> >  config USB_XHCI_HCD
-> >       tristate "xHCI HCD (USB 3.0) support"
-> > -     depends on USB_ARCH_HAS_XHCI
-> > +     depends on PCI
-> 
-> You probably don't want to add this dependency.  After all, one of the
-> comments removed above points out that there are non-PCI xHCI
-> controllers.
+ fs/gfs2/bmap.c  |   17 +++++++++++++----
+ fs/gfs2/dir.c   |   43 +++++++++++++++++++++++++++++++++----------
+ fs/gfs2/file.c  |   19 +++++++++++++------
+ fs/gfs2/inode.c |    1 +
+ fs/gfs2/lops.c  |    4 +++-
+ fs/gfs2/rgrp.c  |    4 +++-
+ fs/gfs2/super.c |    6 +++++-
+ 7 files changed, 71 insertions(+), 23 deletions(-)
 
-Yes, that was a mistake. I noticed this myself but forgot to edit
-the file again.
 
-	Arnd
+--=-yxiRlUhWErN3KgdWp4rr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRrgpvAAoJEMrg3m4a/8jSfzMP/iJGIEPIMV+S1724/6sZg6tf
+yIpMgegk78LTTPL3qgKmu2lfbiZ6Z4i6jdJPDYp7nIvTYX2AvTvPsQnx4nP4Iy+t
+2CxIdzDFFY+knSmG3NXHl4wEo0eEQzJhMaksEVPNy24beZhSLk4II0y/3bOl9wO6
+wbusFGFrOYeRr3WuMhUKLF8y6w2l4Sr0XOe1vGQUbbBnQeCJdMZ/aF97knwU4EWm
+vrRzb/fQnX6SGHTso3/bP2SniqhpE6V99UNQGnou5KZ06C7vaEB+Lgg+MFtMS8kd
+AE6cd8D4bjWHG+c6vYy1bzMC7WJtL4be/iVsu+XlqCgMoNCsjZBPiRIqc4UZ32Xt
+33DtP1Gy0m4nO74xJDj5giI/DJIJf4p2vUozuW/td/r7bbXt4wg36/+8sozIsU2w
+0BUCk8NJSGqDfbzrp9rs8kVQhTo41T68Qqb8cxuD9ZOPfTm96CNC5rVvAscNs3cY
+Cp7d2q8tJlHxckVyvKKSYX99ZapoMJfRG/dRdDHZTXp8r+CbtzmOM6EUVfqD1iCF
+4zkcPugP8TeSpMoVIbuP13Yrkj8DgVQ7Lkcgr/dti3290R3CyVmQjqIiwT7tO1Qk
+DrbCDEUCSA4kd7ugxKnXXKsgD0dA++xvHbPMjrEgSQNzTZPgUDoaX9IeKrLx6DGq
+aRSP5ehJafJgvy2i91MW
+=trzS
+-----END PGP SIGNATURE-----
+
+--=-yxiRlUhWErN3KgdWp4rr--
+
