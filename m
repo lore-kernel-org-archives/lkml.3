@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab3FDPKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:10:00 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:64742 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757616Ab3FDPJ6 (ORCPT
+	id S1757403Ab3FDPNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:13:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56549 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab3FDPM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:09:58 -0400
-Message-ID: <51AE033D.8090302@gmail.com>
-Date: Tue, 04 Jun 2013 23:09:49 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Tue, 4 Jun 2013 11:12:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, resend] pch_phub: re-use native MAC address parser
+Date: Tue, 04 Jun 2013 17:12:53 +0200
+Message-ID: <3998159.hQfFS0IV84@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <CAHp75VdrsbPfAx8z2nhAtD2dj-YA9b9bZ-MiYW-aNndTFRRHgg@mail.gmail.com>
+References: <1369756498-5670-1-git-send-email-andriy.shevchenko@linux.intel.com> <3489856.nvZgTyoe0K@wuerfel> <CAHp75VdrsbPfAx8z2nhAtD2dj-YA9b9bZ-MiYW-aNndTFRRHgg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 6/8] zram: avoid access beyond the zram device
-References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-7-git-send-email-jiang.liu@huawei.com> <51ADE87F.9080303@redhat.com>
-In-Reply-To: <51ADE87F.9080303@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:cZH9vy9NkUpqT3RHIayqd7C76dgLC6M+hppmB2c/x9L
+ HFwzBSn5kDZfyfzecJLyFklEhk9+AgixeCh0QE6YmuWuKTAqlS
+ HzHJkAEXRel/lZhakN+G9E9NPWmn399vwPt9sQI0FNMFkqhhgx
+ VtxL1DUC1q6Vm+3taGfoHVKvwIYp6WgGmaV7w377+f8NB3ZicA
+ j+591+ML7wQSGz0UvAAC8XAULGb4z2Y/OapyRKcX+ogMuHx5Q2
+ 7uPVg397SBIX7iDdp7ZdTdQ7WkmaGgMVlTKUutyHt8MY39S6/F
+ dyQ151Hqxbrc2YRct+3ZH7WENzdBOEHCumYAWVtKcROXXMCd2E
+ TLrNxvE4ifd2fwDwpGWU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04 Jun 2013 09:15:43 PM CST, Jerome Marchand wrote:
-> On 06/03/2013 05:42 PM, Jiang Liu wrote:
->> Function valid_io_request() should verify the entire request doesn't
->> exceed the zram device, otherwise it will cause invalid memory access.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->>  drivers/staging/zram/zram_drv.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
->> index 66cf28a..64b51b9 100644
->> --- a/drivers/staging/zram/zram_drv.c
->> +++ b/drivers/staging/zram/zram_drv.c
->> @@ -428,6 +428,10 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
->>  		return 0;
->>  	}
->>
->> +	if (unlikely((bio->bi_sector << SECTOR_SHIFT) + bio->bi_size >=
->> +		     zram->disksize))
->> +		return 0;
->> +
->
-> This test make the first line of previous test redundant. Why not just
-> update it like the following:
->
-> -		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
-> +		((bio->bi_sector << SECTOR_SHIFT) + bio->bi_size >=
-> +			zram->disksize)) ||
->
->
-> Jerome
-Hi Jerome,
-         I think the test "bio->bi_sector >= (zram->disksize >> 
-SECTOR_SHIFT)" is still
-needed to protect "(bio->bi_sector << SECTOR_SHIFT) + bio->bi_size" 
-from wrapping
-around.
-Regards!
-Gerry
+On Tuesday 04 June 2013 17:57:38 Andy Shevchenko wrote:
+> On Tue, Jun 4, 2013 at 5:38 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 04 June 2013 17:21:16 Andy Shevchenko wrote:
 
->
->>  	/* I/O request is valid */
->>  	return 1;
->>  }
->>
->
+> >> It seems proper solution is to move mac_pton() outside of CONFIG_NET,
+> >> though I don't know how to do this easily.
+> >
+> > If we want to use it outside of CONFIG_NET, it cannot be part of net/core/*.c.
+> > Maybe we can move the function to lib/mac_pton.c instead and create a
+> > Kconfig symbol that gets selected by CONFIG_NET and by any driver lib
+> > PCH_PHUB that needs it.
+> 
+> Sounds like a solution. Would you like me to implement this?
 
+Yes, that would be good.
 
+Thanks,
+
+	Arnd
