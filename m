@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3FDXEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:04:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:35600 "EHLO 1wt.eu"
+	id S1755296Ab3FDXEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:04:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:35604 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab3FDWmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753424Ab3FDWmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:54 -0400
-Message-Id: <20130604172134.624567974@1wt.eu>
+Message-Id: <20130604172135.820868480@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:14 +0200
+Date: Tue, 04 Jun 2013 19:23:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>, <stable@kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Thomas Bork <tom@eisfair.net>,
+Cc: Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>, Jan Kara <jack@suse.cz>,
+        Shuah Khan <shuah.khan@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 104/184] USB: EHCI: go back to using the system clock for QH
+Subject: [ 133/184] udf: fix memory leak while allocating blocks during
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,222 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- unlinks
+ write
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-commit 004c19682884d4f40000ce1ded53f4a1d0b18206 upstream
+commit 2fb7d99d0de3fd8ae869f35ab682581d8455887a upstream.
 
-This patch (as1477) fixes a problem affecting a few types of EHCI
-controller.  Contrary to what one might expect, these controllers
-automatically stop their internal frame counter when no ports are
-enabled.  Since ehci-hcd currently relies on the frame counter for
-determining when it should unlink QHs from the async schedule, those
-controllers run into trouble: The frame counter stops and the QHs
-never get unlinked.
+Need to brelse the buffer_head stored in cur_epos and next_epos.
 
-Some systems have also experienced other problems traced back to
-commit b963801164618e25fbdc0cd452ce49c3628b46c8 (USB: ehci-hcd unlink
-speedups), which made the original switch from using the system clock
-to using the frame counter.  It never became clear what the reason was
-for these problems, but evidently it is related to use of the frame
-counter.
-
-To fix all these problems, this patch more or less reverts that commit
-and goes back to using the system clock.  But this can't be done
-cleanly because other changes have since been made to the scan_async()
-subroutine.  One of these changes involved the tricky logic that tries
-to avoid rescanning QHs that have already been seen when the scanning
-loop is restarted, which happens whenever an URB is given back.
-Switching back to clock-based unlinks would make this logic even more
-complicated.
-
-Therefore the new code doesn't rescan the entire async list whenever a
-giveback occurs.  Instead it rescans only the current QH and continues
-on from there.  This requires the use of a separate pointer to keep
-track of the next QH to scan, since the current QH may be unlinked
-while the scanning is in progress.  That new pointer must be global,
-so that it can be adjusted forward whenever the _next_ QH gets
-unlinked.  (uhci-hcd uses this same trick.)
-
-Simplification of the scanning loop removes a level of indentation,
-which accounts for the size of the patch.  The amount of code changed
-is relatively small, and it isn't exactly a reversion of the
-b963801164 commit.
-
-This fixes Bugzilla #32432.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: <stable@kernel.org>
-Tested-by: Matej Kenda <matejken@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Thomas Bork <tom@eisfair.net>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/usb/host/ehci-hcd.c |  8 ++---
- drivers/usb/host/ehci-q.c   | 82 ++++++++++++++++++++++-----------------------
- drivers/usb/host/ehci.h     |  3 +-
- 3 files changed, 45 insertions(+), 48 deletions(-)
+ fs/udf/inode.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 7b2e99c..8d17f780 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -84,7 +84,8 @@ static const char	hcd_name [] = "ehci_hcd";
- #define EHCI_IAA_MSECS		10		/* arbitrary */
- #define EHCI_IO_JIFFIES		(HZ/10)		/* io watchdog > irq_thresh */
- #define EHCI_ASYNC_JIFFIES	(HZ/20)		/* async idle timeout */
--#define EHCI_SHRINK_FRAMES	5		/* async qh unlink delay */
-+#define EHCI_SHRINK_JIFFIES	(DIV_ROUND_UP(HZ, 200) + 1)
-+						/* 200-ms async qh unlink delay */
- 
- /* Initial IRQ latency:  faster than hw default */
- static int log2_irq_thresh = 0;		// 0 to 6
-@@ -139,10 +140,7 @@ timer_action(struct ehci_hcd *ehci, enum ehci_timer_action action)
- 			break;
- 		/* case TIMER_ASYNC_SHRINK: */
- 		default:
--			/* add a jiffie since we synch against the
--			 * 8 KHz uframe counter.
--			 */
--			t = DIV_ROUND_UP(EHCI_SHRINK_FRAMES * HZ, 1000) + 1;
-+			t = EHCI_SHRINK_JIFFIES;
- 			break;
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index 6d24c2c..3c4ffb2 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -648,6 +648,8 @@ static struct buffer_head *inode_getblk(struct inode *inode, sector_t block,
+ 				goal, err);
+ 		if (!newblocknum) {
+ 			brelse(prev_epos.bh);
++			brelse(cur_epos.bh);
++			brelse(next_epos.bh);
+ 			*err = -ENOSPC;
+ 			return NULL;
  		}
- 		mod_timer(&ehci->watchdog, t + jiffies);
-diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
-index 0ee5b4b..3b8fa18 100644
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -1204,6 +1204,8 @@ static void start_unlink_async (struct ehci_hcd *ehci, struct ehci_qh *qh)
+@@ -678,6 +680,8 @@ static struct buffer_head *inode_getblk(struct inode *inode, sector_t block,
+ 	udf_update_extents(inode, laarr, startnum, endnum, &prev_epos);
  
- 	prev->hw->hw_next = qh->hw->hw_next;
- 	prev->qh_next = qh->qh_next;
-+	if (ehci->qh_scan_next == qh)
-+		ehci->qh_scan_next = qh->qh_next.qh;
- 	wmb ();
+ 	brelse(prev_epos.bh);
++	brelse(cur_epos.bh);
++	brelse(next_epos.bh);
  
- 	/* If the controller isn't running, we don't have to wait for it */
-@@ -1229,53 +1231,49 @@ static void scan_async (struct ehci_hcd *ehci)
- 	struct ehci_qh		*qh;
- 	enum ehci_timer_action	action = TIMER_IO_WATCHDOG;
- 
--	ehci->stamp = ehci_readl(ehci, &ehci->regs->frame_index);
- 	timer_action_done (ehci, TIMER_ASYNC_SHRINK);
--rescan:
- 	stopped = !HC_IS_RUNNING(ehci_to_hcd(ehci)->state);
--	qh = ehci->async->qh_next.qh;
--	if (likely (qh != NULL)) {
--		do {
--			/* clean any finished work for this qh */
--			if (!list_empty(&qh->qtd_list) && (stopped ||
--					qh->stamp != ehci->stamp)) {
--				int temp;
--
--				/* unlinks could happen here; completion
--				 * reporting drops the lock.  rescan using
--				 * the latest schedule, but don't rescan
--				 * qhs we already finished (no looping)
--				 * unless the controller is stopped.
--				 */
--				qh = qh_get (qh);
--				qh->stamp = ehci->stamp;
--				temp = qh_completions (ehci, qh);
--				if (qh->needs_rescan)
--					unlink_async(ehci, qh);
--				qh_put (qh);
--				if (temp != 0) {
--					goto rescan;
--				}
--			}
- 
--			/* unlink idle entries, reducing DMA usage as well
--			 * as HCD schedule-scanning costs.  delay for any qh
--			 * we just scanned, there's a not-unusual case that it
--			 * doesn't stay idle for long.
--			 * (plus, avoids some kind of re-activation race.)
-+	ehci->qh_scan_next = ehci->async->qh_next.qh;
-+	while (ehci->qh_scan_next) {
-+		qh = ehci->qh_scan_next;
-+		ehci->qh_scan_next = qh->qh_next.qh;
-+ rescan:
-+		/* clean any finished work for this qh */
-+		if (!list_empty(&qh->qtd_list)) {
-+			int temp;
-+
-+			/*
-+			 * Unlinks could happen here; completion reporting
-+			 * drops the lock.  That's why ehci->qh_scan_next
-+			 * always holds the next qh to scan; if the next qh
-+			 * gets unlinked then ehci->qh_scan_next is adjusted
-+			 * in start_unlink_async().
- 			 */
--			if (list_empty(&qh->qtd_list)
--					&& qh->qh_state == QH_STATE_LINKED) {
--				if (!ehci->reclaim && (stopped ||
--					((ehci->stamp - qh->stamp) & 0x1fff)
--						>= EHCI_SHRINK_FRAMES * 8))
--					start_unlink_async(ehci, qh);
--				else
--					action = TIMER_ASYNC_SHRINK;
--			}
-+			qh = qh_get(qh);
-+			temp = qh_completions(ehci, qh);
-+			if (qh->needs_rescan)
-+				unlink_async(ehci, qh);
-+			qh->unlink_time = jiffies + EHCI_SHRINK_JIFFIES;
-+			qh_put(qh);
-+			if (temp != 0)
-+				goto rescan;
-+		}
- 
--			qh = qh->qh_next.qh;
--		} while (qh);
-+		/* unlink idle entries, reducing DMA usage as well
-+		 * as HCD schedule-scanning costs.  delay for any qh
-+		 * we just scanned, there's a not-unusual case that it
-+		 * doesn't stay idle for long.
-+		 * (plus, avoids some kind of re-activation race.)
-+		 */
-+		if (list_empty(&qh->qtd_list)
-+				&& qh->qh_state == QH_STATE_LINKED) {
-+			if (!ehci->reclaim && (stopped ||
-+					time_after_eq(jiffies, qh->unlink_time)))
-+				start_unlink_async(ehci, qh);
-+			else
-+				action = TIMER_ASYNC_SHRINK;
-+		}
- 	}
- 	if (action == TIMER_ASYNC_SHRINK)
- 		timer_action (ehci, TIMER_ASYNC_SHRINK);
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index 5b3ca74..b2b3416 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -74,6 +74,7 @@ struct ehci_hcd {			/* one per controller */
- 	/* async schedule support */
- 	struct ehci_qh		*async;
- 	struct ehci_qh		*reclaim;
-+	struct ehci_qh		*qh_scan_next;
- 	unsigned		scanning : 1;
- 
- 	/* periodic schedule support */
-@@ -116,7 +117,6 @@ struct ehci_hcd {			/* one per controller */
- 	struct timer_list	iaa_watchdog;
- 	struct timer_list	watchdog;
- 	unsigned long		actions;
--	unsigned		stamp;
- 	unsigned		random_frame;
- 	unsigned long		next_statechange;
- 	ktime_t			last_periodic_enable;
-@@ -335,6 +335,7 @@ struct ehci_qh {
- 	struct ehci_qh		*reclaim;	/* next to reclaim */
- 
- 	struct ehci_hcd		*ehci;
-+	unsigned long		unlink_time;
- 
- 	/*
- 	 * Do NOT use atomic operations for QH refcounting. On some CPUs
+ 	newblock = udf_get_pblock(inode->i_sb, newblocknum,
+ 				iinfo->i_location.partitionReferenceNum, 0);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
