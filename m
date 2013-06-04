@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3FDFaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:30:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab3FDFac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 01:30:32 -0400
-Message-ID: <51AD7B45.1040603@redhat.com>
-Date: Tue, 04 Jun 2013 13:29:41 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758476Ab3FDFd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 01:33:27 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:17969 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752545Ab3FDFdZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 01:33:25 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 4 Jun 2013 13:33:20 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5gQG0DP9vff+kURemvb02abvnWOAAACdagACkCkmA=
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B883@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1610991B865@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B866@CNBJMBX05.corpusers.net>
+ <20130530090949.GC7483@mudshark.cambridge.arm.com>
+ <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+ <20130531111305.GI4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
+ <20130603095425.GA32242@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B87E@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1610991B87E@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: rja@sgi.com, mingo@kernel.org, torvalds@linux-foundation.org, bp@alien8.de,
-        jkosina@suse.cz, jlee@suse.com, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2013 04:06 AM, Matthew Garrett wrote:
-> This patch reworks the UEFI anti-bricking code, including an effective
-> reversion of cc5a080c and 31ff2f20. It turns out that calling
-> QueryVariableInfo() from boot services results in some firmware
-> implementations jumping to physical addresses even after entering virtual
-> mode, so until we have 1:1 mappings for UEFI runtime space this isn't
-> going to work so well.
->
-> Reverting these gets us back to the situation where we'd refuse to create
-> variables on some systems because they classify deleted variables as "used"
-> until the firmware triggers a garbage collection run, which they won't do
-> until they reach a lower threshold. This results in it being impossible to
-> install a bootloader, which is unhelpful.
->
-> Feedback from Samsung indicates that the firmware doesn't need more than
-> 5KB of storage space for its own purposes, so that seems like a reasonable
-> threshold. However, there's still no guarantee that a platform will attempt
-> garbage collection merely because it drops below this threshold. It seems
-> that this is often only triggered if an attempt to write generates a
-> genuine EFI_OUT_OF_RESOURCES error. We can force that by attempting to
-> create a variable larger than the remaining space. This should fail, but if
-> it somehow succeeds we can then immediately delete it.
->
-> I've tested this on the UEFI machines I have available, but I don't have
-> a Samsung and so can't verify that it avoids the bricking problem.
+Hi  Will,
 
-This patch works well on my Dell Windows 8 logo machine.
+Could I know  what's your git branch is  mainly used for ?
 
-This Dell machine will use up ~2K nvram space on each reboot and do 
-garbage collection at boot time when full. With the new 5K threshold, it 
-is only a few reboots away from boot time garbage collection anyway.
-
-Run time garbage collection also works. But the write takes 5 seconds.
+https://git.kernel.org/cgit/linux/kernel/git/will/linux.git
 
 
-Lingzhu Xiang
+I mean if the branch is used for ARM arch maintenance ?
+If yes, I think I can send future bugs about ARM to you directly,
+And do not need ping-pang in the mail list .
+
+Thanks for your help .
+
+-----Original Message-----
+From: Wang, Yalin 
+Sent: Monday, June 03, 2013 5:58 PM
+To: 'Will Deacon'
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: RE: A bug about system call on ARM
+
+Hi  Will
+
+Oh  I see,
+Thanks for your reply 
+
+Yes ,  we are testing for it ,
+But need some time to wait for the result , Because The stability test need some time to reproduce this issue , And this issue doesn't reproduce 100% .
+
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com]
+Sent: Monday, June 03, 2013 5:54 PM
+To: Wang, Yalin
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: A bug about system call on ARM
+
+On Mon, Jun 03, 2013 at 06:25:26AM +0100, Wang, Yalin wrote:
+> Hi  Will,
+> 
+> I have a question about this patch .
+> 
+> If the user space is thumb mode,
+> The PC should be rewind by 2 bytes,
+> So the fix_up code should be
+> 
+> Sub lr, lr, #2 .
+> 
+> 
+> Am I right ?
+
+No, because we don't have OABI-compat support for Thumb applications and force everything down the EABI path instead.
+
+Did you manage to test the patch?
+
+Will
