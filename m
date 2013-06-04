@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab3FDEgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 00:36:32 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:55135 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3FDEga (ORCPT
+	id S1753701Ab3FDEln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 00:41:43 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50406 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab3FDElm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 00:36:30 -0400
-Date: Tue, 4 Jun 2013 07:36:20 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] clocksource: dw_apb_timer_of: use clocksource_of_init
-Message-ID: <20130604043620.GU11798@tarshish>
-References: <201306032157.40488.heiko@sntech.de>
- <201306032159.55685.heiko@sntech.de>
+	Tue, 4 Jun 2013 00:41:42 -0400
+X-AuditID: 9c930179-b7c07ae000000e33-db-51ad7003b85e
+Date: Tue, 4 Jun 2013 13:41:39 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v4][PATCH 1/6] mm: swap: defer clearing of page_private() for
+ swap cache pages
+Message-ID: <20130604044139.GB14719@blaptop>
+References: <20130531183855.44DDF928@viggo.jf.intel.com>
+ <20130531183856.1D7D75AD@viggo.jf.intel.com>
+ <20130603054048.GA27858@blaptop>
+ <51ACADCD.70904@sr71.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201306032159.55685.heiko@sntech.de>
+In-Reply-To: <51ACADCD.70904@sr71.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+On Mon, Jun 03, 2013 at 07:53:01AM -0700, Dave Hansen wrote:
+> On 06/02/2013 10:40 PM, Minchan Kim wrote:
+> >> > diff -puN mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private mm/vmscan.c
+> >> > --- linux.git/mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-30 16:07:50.632079492 -0700
+> >> > +++ linux.git-davehans/mm/vmscan.c	2013-05-30 16:07:50.637079712 -0700
+> >> > @@ -494,6 +494,8 @@ static int __remove_mapping(struct addre
+> >> >  		__delete_from_swap_cache(page);
+> >> >  		spin_unlock_irq(&mapping->tree_lock);
+> >> >  		swapcache_free(swap, page);
+> >> > +		set_page_private(page, 0);
+> >> > +		ClearPageSwapCache(page);
+> > It it worth to support non-atomic version of ClearPageSwapCache?
+> 
+> Just for this, probably not.
+> 
+> It does look like a site where it would be theoretically safe to use
+> non-atomic flag operations since the page is on a one-way trip to the
+> allocator at this point and the __clear_page_locked() now happens _just_
+> after this code.
 
-On Mon, Jun 03, 2013 at 09:59:55PM +0200, Heiko Stübner wrote:
-> dw_apb_timer_init used to search the devicetree for matching timer
-> devices, making calls to it from board files necessary.
-> 
-> Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
-> With this change the function gets called once for each timer node
-> and tracks these number of calls to attach clockevent and clocksource
-> devices to the nodes.
-> 
-> Also remove the calls to dw_apb_timer_init from all previous users, as
-> clocksource_of_init is the default for init_time now.
-> 
-> Tested on the upcoming rk3066 code.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-picoxcell/Kconfig       |    1 +
->  arch/arm/mach-picoxcell/common.c      |    2 -
->  arch/arm/mach-socfpga/Kconfig         |    1 +
->  arch/arm/mach-socfpga/socfpga.c       |    2 -
->  drivers/clocksource/dw_apb_timer_of.c |   41 ++++++++++++++++-----------------
->  include/linux/dw_apb_timer.h          |    1 -
->  6 files changed, 22 insertions(+), 26 deletions(-)
-> 
-> diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
-> index 13bae78..3ef6bbe 100644
-> --- a/arch/arm/mach-picoxcell/Kconfig
-> +++ b/arch/arm/mach-picoxcell/Kconfig
-> @@ -6,6 +6,7 @@ config ARCH_PICOXCELL
->  	select CPU_V6K
->  	select DW_APB_TIMER
->  	select DW_APB_TIMER_OF
-> +	select CLKSRC_OF
+True.
 
-Shouldn't DW_APB_TIMER 'select CLKSRC_OF if OF' instead of selecting is for 
-each and every platform? While at it we can do the same to DW_APB_TIMER_OF.
+> 
+> But, personally, I'm happy to leave it as-is.  The atomic vs. non-atomic
+> flags look to me like a micro-optimization that we should use when we
+> _know_ there will be some tangible benefit.  Otherwise, they're just
+> something extra for developers to trip over and cause very subtle bugs.
 
-baruch
-
+I just asked it because when I read the description of patchset, I felt
+you were very sensitive to the atomic operation on many CPU system with
+several sockets. Anyway, if you don't want it, I don't mind it, either.
 
 -- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Kind regards,
+Minchan Kim
