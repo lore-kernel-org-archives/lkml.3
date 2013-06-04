@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab3FDORh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:17:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46850 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab3FDOIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756112Ab3FDOIV (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Jun 2013 10:08:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46782 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab3FDOIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:08:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 44/70] ACPI / video: Add "Asus UL30VT" to ACPI video detect blacklist
-Date: Tue,  4 Jun 2013 15:07:00 +0100
-Message-Id: <1370354846-14213-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 30/70] rapidio/tsi721: fix bug in MSI interrupt handling
+Date: Tue,  4 Jun 2013 15:06:46 +0100
+Message-Id: <1370354846-14213-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit d0c2ce16bec0afa6013b4c5220ca4c9c67210215 upstream.
+commit 1ccc819da6fda9bee10ab8b72e9adbb5ad3e4959 upstream.
 
-The ACPI video driver can't control backlight correctly on
-Asus UL30VT.  Vendor driver (asus-laptop) can work.  This patch is to
-add "Asus UL30VT" to ACPI video detect blacklist in order to use
-asus-laptop for video control on the "Asus UL30VT" rather than ACPI
-video driver.
+Fix bug in MSI interrupt handling which causes loss of event
+notifications.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=32592
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Typical indication of lost MSI interrupts are stalled message and
+doorbell transfers between RapidIO endpoints.  To avoid loss of MSI
+interrupts all interrupts from the device must be disabled on entering
+the interrupt handler routine and re-enabled when exiting it.
+Re-enabling device interrupts will trigger new MSI message(s) if Tsi721
+registered new events since entering interrupt handler routine.
+
+This patch is applicable to kernel versions starting from v3.2.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/video_detect.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/rapidio/devices/tsi721.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 841bfde..0b59961 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -156,6 +156,14 @@ static struct dmi_system_id video_detect_dmi_table[] = {
- 		DMI_MATCH(DMI_BOARD_NAME, "X360"),
- 		},
- 	},
-+	{
-+	.callback = video_detect_force_vendor,
-+	.ident = "Asus UL30VT",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "UL30VT"),
-+		},
-+	},
- 	{ },
- };
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 5d44252..7fca1da 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -471,6 +471,10 @@ static irqreturn_t tsi721_irqhandler(int irq, void *ptr)
+ 	u32 intval;
+ 	u32 ch_inte;
+ 
++	/* For MSI mode disable all device-level interrupts */
++	if (priv->flags & TSI721_USING_MSI)
++		iowrite32(0, priv->regs + TSI721_DEV_INTE);
++
+ 	dev_int = ioread32(priv->regs + TSI721_DEV_INT);
+ 	if (!dev_int)
+ 		return IRQ_NONE;
+@@ -560,6 +564,14 @@ static irqreturn_t tsi721_irqhandler(int irq, void *ptr)
+ 		}
+ 	}
+ #endif
++
++	/* For MSI mode re-enable device-level interrupts */
++	if (priv->flags & TSI721_USING_MSI) {
++		dev_int = TSI721_DEV_INT_SR2PC_CH | TSI721_DEV_INT_SRIO |
++			TSI721_DEV_INT_SMSG_CH | TSI721_DEV_INT_BDMA_CH;
++		iowrite32(dev_int, priv->regs + TSI721_DEV_INTE);
++	}
++
+ 	return IRQ_HANDLED;
+ }
  
 -- 
 1.8.1.2
