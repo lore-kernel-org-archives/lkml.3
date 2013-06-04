@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab3FDHvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:51:55 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:15911 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab3FDHvx (ORCPT
+	id S1760109Ab3FDH5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:57:33 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46997 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759702Ab3FDH52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:51:53 -0400
-Message-ID: <51AD9C94.4080606@atmel.com>
-Date: Tue, 4 Jun 2013 09:51:48 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 03:57:28 -0400
+Message-ID: <51AD9DE4.7070907@monstr.eu>
+Date: Tue, 04 Jun 2013 09:57:24 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: Michal Simek <monstr@monstr.eu>,
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Hein Tibosch <hein_tibosch@yahoo.es>, <netdev@vger.kernel.org>,
-        <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>, netdev@vger.kernel.org,
+        michal.simek@xilinx.com, linux-kernel@vger.kernel.org,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
         =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
 Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
  SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <51AD8611.8070102@monstr.eu> <20130604064940.GA5107@pengutronix.de>
-In-Reply-To: <20130604064940.GA5107@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <51AD8611.8070102@monstr.eu> <20130604064940.GA5107@pengutronix.de> <51AD9C94.4080606@atmel.com>
+In-Reply-To: <51AD9C94.4080606@atmel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2EKHFDFQHOCEKUGKDCVSM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2013 08:49, Steffen Trumtrar :
-> On Tue, Jun 04, 2013 at 08:15:45AM +0200, Michal Simek wrote:
->> On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
->>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->>>>>
->>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>>>> introduces clear-on-write on ISR register. This behavior is not always
->>>>>> implemented when using Cadence MACB/GEM and is breaking other platforms.
->>>>>> We are using a new Device Tree compatibility string and a capability
->>>>>> property to actually activate this clear-on-write behavior on ISR.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2EKHFDFQHOCEKUGKDCVSM
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 06/04/2013 09:51 AM, Nicolas Ferre wrote:
+> On 04/06/2013 08:49, Steffen Trumtrar :
+>> On Tue, Jun 04, 2013 at 08:15:45AM +0200, Michal Simek wrote:
+>>> On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
+>>>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.c=
+om> wrote:
 >>>>>>
->>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> can we detect it via the IP?
+>>>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+>>>>>>> introduces clear-on-write on ISR register. This behavior is not a=
+lways
+>>>>>>> implemented when using Cadence MACB/GEM and is breaking other pla=
+tforms.
+>>>>>>> We are using a new Device Tree compatibility string and a capabil=
+ity
+>>>>>>> property to actually activate this clear-on-write behavior on ISR=
+=2E
+>>>>>>>
+>>>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+>>>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>>> can we detect it via the IP?
+>>>>>
+>>>>> This was my first proposal, have it based on the value of MACB's
+>>>>> register 'MID' (offset 0x00fc, lower 16 bits).
+>>>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
+>>>>>
+>>>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revi=
+sion
+>>>>> equals to 0x00000119?
+>>>> so no it will not work
 >>>>
->>>> This was my first proposal, have it based on the value of MACB's
->>>> register 'MID' (offset 0x00fc, lower 16 bits).
->>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
+>>>> as the gem on sama5 is 00020119
 >>>>
->>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revision
->>>> equals to 0x00000119?
->>> so no it will not work
+>>>> so version 0x119 too
+>>>>
+>>>> nico
+>>>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 >>>
->>> as the gem on sama5 is 00020119
+>>> Was this added to any queue or branch?
+>>> I would like to enable macb for zynq and not sure if "cdns,zynq-7000-=
+gem"
+>>> compatible string goes to mainline.
 >>>
->>> so version 0x119 too
->>>
->>> nico
->>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 >>
->> Was this added to any queue or branch?
->> I would like to enable macb for zynq and not sure if "cdns,zynq-7000-gem"
->> compatible string goes to mainline.
+>> Hi!
 >>
->
-> Hi!
->
-> This is already in next, but you can use the default compatible as the
+>> This is already in next, but you can use the default compatible as the=
 
-Even more: already in Linus' tree!
+>=20
+> Even more: already in Linus' tree!
 
-> DCR1 is used instead of DT binding.
+Ah I see. v2 is in thunderbird in the same thread and I didn't check this=
 
-Absolutely.
+version for compatible string.
 
-Best regards,
--- 
-Nicolas Ferre
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2EKHFDFQHOCEKUGKDCVSM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGtneQACgkQykllyylKDCHQqwCghnvM2+i5sMOA13K9unWDOupu
+EFgAoJFhjkUJtxG9SG3BUplOs6aF6R3I
+=PVh7
+-----END PGP SIGNATURE-----
+
+------enig2EKHFDFQHOCEKUGKDCVSM--
