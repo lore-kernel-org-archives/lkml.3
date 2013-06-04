@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab3FDIga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:36:30 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44586 "EHLO
+	id S1751883Ab3FDIgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:36:53 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:44599 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3FDIgW (ORCPT
+	with ESMTP id S1751314Ab3FDIgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 04:36:22 -0400
-X-AuditID: 85900ec0-d1ac5b900000151e-25-51ada701b64d
-Subject: [PATCH V2 0/1] kvm/vmx: Output TSC offset
+X-AuditID: 85900ec0-d56cbb900000151e-28-51ada704c1f7
+Subject: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
 To: linux-kernel@vger.kernel.org
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
@@ -19,8 +19,10 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
         Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 04 Jun 2013 17:36:17 +0900
-Message-ID: <20130604083616.22713.24922.stgit@yunodevel>
+Date: Tue, 04 Jun 2013 17:36:19 +0900
+Message-ID: <20130604083619.22713.25360.stgit@yunodevel>
+In-Reply-To: <20130604083616.22713.24922.stgit@yunodevel>
+References: <20130604083616.22713.24922.stgit@yunodevel>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -30,130 +32,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Add a tracepoint write_tsc_offset for tracing TSC offset change.
+We want to merge ftrace's trace data of guest OSs and the host OS using
+TSC for timestamp in chronological order. We need "TSC offset" values for
+each guest when merge those because the TSC value on a guest is always the
+host TSC plus guest's TSC offset. If we get the TSC offset values, we can
+calculate the host TSC value for each guest events from the TSC offset and
+the event TSC value. The host TSC values of the guest events are used when we
+want to merge trace data of guests and the host in chronological order.
+(Note: the trace_clock of both the host and the guest must be set x86-tsc in
+this case)
 
-I'd like to propose a patch which adds a tracepoint at write_tsc_offset for
-tracing guests TSC offset changes. It is required for sorting the trace data of
-a guest and the host in chronological order.
+TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
+vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
+The latter function is executed when kvm clock is updated. Only host can read
+TSC offset value from VMCS, so a host needs to output TSC offset value
+when TSC offset is changed.
 
-In a virtualization environment, it is difficult to analyze performance
-problems, such as a delay of I/O request on a guest. This is because multiple
-guests operate on the host. One of approaches for solving such kind of problems
-is to sort trace data of guests and the host in chronological order.
+Since the TSC offset is not often changed, it could be overwritten by other
+frequent events while tracing. To avoid that, I recommend to use a special
+instance for getting this event:
 
-Raw TSC can be chosen as a timestamp of ftrace. I think TSC is useful for
-merging trace data in chronological order by two reasons. One of the reasons is 
-that guests can directly read raw TSC from the CPU using rdtsc operation. This
-means that raw TSC value is not software clock like sched_clock, so we don't
-need to consider about how the timestamp is calculated. The other is that TSC
-of recent x86 CPUs is constantly incremented. This means that we don't need to
-worry about pace of the timestamp. Therefore, choosing TSC as a timestamp for
-tracing is reasonable to integrate trace data of guests and a host.
+1. set a instance before booting a guest
+ # cd /sys/kernel/debug/tracing/instances
+ # mkdir tsc_offset
+ # cd tsc_offset
+ # echo x86-tsc > trace_clock
+ # echo 1 > events/kvm/kvm_write_tsc_offset/enable
 
-Here, we need to consider about just one matter for using TSC on guests. TSC
-value on a guest is always the host TSC plus the guest's "TSC offset". In other
-words, to merge trace data using TSC as timestamp in chronological order, we
-need to consider TSC offset of the guest.
+2. boot a guest
 
-However, only the host kernel can read the TSC offset from VMCS and TSC offset
-is not output in anywhere now. In other words, tools in userland cannot get
-the TSC offset value, so we cannot merge trace data of guest and the host in
-chronological order. Therefore, I think the TSC offset should be exported for
-userland tools.
-
-In this patch, TSC offset is exported by the tracepoint kvm_write_tsc_offset
-on the host. TSC offset events will be very rare event because guests may
-seldom execute write_tsc. So if we enable this event for a normal buffer of
-ftrace, the events will be overwritten by other events. For a recent linux
-kernel, a multiple buffer function is available. So, I recommend to enable
-this event for a sub buffer of ftrace.
-
-<Example>
-We assume that wakeup-latency for a command is big on a guest. Normally
-we will use ftrace's wakeup-latency tracer or event tracer on the guest, but we
-may not be able to solve this problem. This is because guests often exit to
-the host for several reasons. In the next, we will use TSC as ftrace's timestamp
-and record the trace data on the guest and the host. Then, we get following
-data:
-
- /* guest data */
-            comm-3826  [000] d...49836825726903: sched_wakeup: [detail]
-            comm-3826  [000] d...49836832225344: sched_switch: [detail]
- /* host data */
-        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
-        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
-        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
-        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
-
-Since TSC offset is not considered, these data cannot be merged. If this trace
-data is shown like as follows, we will be able to understand the reason:
-
-        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
-            comm-3826  [000] d.h.49836825726903: sched_wakeup: [detail] <=
-        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
-        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
-            comm-3826  [000] d...49836832225344: sched_switch: [detail] <=
-        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
-        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
-
-In this case, we can understand wakeup-latency was big due to exit to host
-twice. Getting this data sorted in chronological order is our goal.
-
-To merge the data like previous pattern, we apply this patch. Then, we can
-get TSC offset of the guest as follows:
-
-# cat /sys/kernel/debug/tracing/instances/tsc_offset/trace
-.. d...4300151845072: kvm_write_tsc_offset: previous 0 next 18446739773557710924
-                                                     ^      ^^^^^^^^^^^^^^^^^^^^
-
-We use this TSC offset value to a merge script and obtain the following data:
-
-$ ./trace-merge.pl -g guest_data -h host_data -t 18446739773557710924
-
-h        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
-h        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
-g            comm-3826  [000] d.h.50550079226331: sched_wakeup: [detail] <=
-h        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
-h        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
-h        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
-h        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
-g            comm-3826  [000] d...50550079279266: sched_switch: [detail] <=
-h        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
-h        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
-|
-\----guest/host
-
-In this summary, I suggest the patch which TSC offset for each guest can be
-output on the host.
-
-As one example, I will send a merge tool. This tool is not considered
-executing write_tsc on a guest yet.
-
-Changes in V2:
-- Use tracepoint for outputting TSC offset value instead of printk() [1/1]
-
-Thanks!
-
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
-
-Yoshihiro YUNOMAE (1):
-      kvm/vmx: Add a tracepoint write_tsc_offset
-
-
  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
  arch/x86/kvm/vmx.c   |    3 +++
  arch/x86/kvm/x86.c   |    1 +
  3 files changed, 22 insertions(+)
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index fe5e00e..9c22e39 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
+ 		  __print_symbolic(__entry->host_clock, host_clocks))
+ );
+ 
++TRACE_EVENT(kvm_write_tsc_offset,
++	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
++	TP_ARGS(previous_tsc_offset, next_tsc_offset),
++
++	TP_STRUCT__entry(
++		__field(	__u64,	previous_tsc_offset		)
++		__field(	__u64,	next_tsc_offset			)
++	),
++
++	TP_fast_assign(
++		__entry->previous_tsc_offset	= previous_tsc_offset;
++		__entry->next_tsc_offset	= next_tsc_offset;
++	),
++
++	TP_printk("previous=%llu next=%llu",
++		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
++);
++
+ #endif /* CONFIG_X86_64 */
+ 
+ #endif /* _TRACE_KVM_H */
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 25a791e..00f7dde 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2096,6 +2096,7 @@ static void vmx_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
+ 			(nested_cpu_has(vmcs12, CPU_BASED_USE_TSC_OFFSETING) ?
+ 			 vmcs12->tsc_offset : 0));
+ 	} else {
++		trace_kvm_write_tsc_offset(vmcs_read64(TSC_OFFSET), offset);
+ 		vmcs_write64(TSC_OFFSET, offset);
+ 	}
+ }
+@@ -2103,6 +2104,8 @@ static void vmx_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
+ static void vmx_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment, bool host)
+ {
+ 	u64 offset = vmcs_read64(TSC_OFFSET);
++
++	trace_kvm_write_tsc_offset(offset, offset + adjustment);
+ 	vmcs_write64(TSC_OFFSET, offset + adjustment);
+ 	if (is_guest_mode(vcpu)) {
+ 		/* Even when running L2, the adjustment needs to apply to L1 */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 05a8b1a..c942a0c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7264,3 +7264,4 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intr_vmexit);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_invlpga);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_skinit);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intercepts);
++EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_write_tsc_offset);
+
