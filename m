@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab3FDBu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 21:50:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55208 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531Ab3FDBu0 (ORCPT
+	id S1759718Ab3FDBum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 21:50:42 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44483 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759638Ab3FDBuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 21:50:26 -0400
-Date: Tue, 4 Jun 2013 11:49:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>
-Subject: linux-next: manual merge of the pci tree with Linus' tree
-Message-Id: <20130604114955.753909b956c4f8e75ace86a0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Jun_2013_11_49_55_+1000_BU+0X8bymfNj_iEW"
+	Mon, 3 Jun 2013 21:50:40 -0400
+X-AuditID: 9c930197-b7be3ae000000eab-d5-51ad47eede8f
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v3 1/4] perf util: Add parse_nsec_time() function
+Date: Tue,  4 Jun 2013 10:50:29 +0900
+Message-Id: <1370310629-9642-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <51ACBA6C.9010902@gmail.com>
+References: <51ACBA6C.9010902@gmail.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Jun_2013_11_49_55_+1000_BU+0X8bymfNj_iEW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hi Bjorn,
+The parse_nsec_time() function is for parsing a string of time into
+64-bit nsec value.  It's a preparation of time filtering in some of
+perf commands.
 
-Today's linux-next merge of the pci tree got a conflict in
-drivers/acpi/pci_root.c between commit 3f327e39b4b8 ("PCI: acpiphp:
-Re-enumerate devices when host bridge receives Bus Check") from Linus'
-tree and commit 6dc7d22c6738 ("PCI/ACPI: Use dev_printk(),
-acpi_handle_print(), pr_xxx() when possible") from the pci tree.
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/util.c | 33 +++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h |  2 ++
+ 2 files changed, 35 insertions(+)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 59d868add275..205972f6addb 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -269,3 +269,36 @@ void perf_debugfs_set_path(const char *mntpt)
+ 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
+ 	set_tracing_events_path(mntpt);
+ }
++
++int parse_nsec_time(const char *str, u64 *ptime)
++{
++	u64 time_sec, time_nsec;
++	char *end;
++
++	time_sec = strtoul(str, &end, 10);
++	if (*end != '.' && *end != '\0')
++		return -1;
++
++	if (*end == '.') {
++		int i;
++		char nsec_buf[10];
++
++		if (strlen(++end) > 9)
++			return -1;
++
++		strncpy(nsec_buf, end, 9);
++		nsec_buf[9] = '\0';
++
++		/* make it nsec precision */
++		for (i = strlen(nsec_buf); i < 9; i++)
++			nsec_buf[i] = '0';
++
++		time_nsec = strtoul(nsec_buf, &end, 10);
++		if (*end != '\0')
++			return -1;
++	} else
++		time_nsec = 0;
++
++	*ptime = time_sec * NSEC_PER_SEC + time_nsec;
++	return 0;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 7a484c97e500..6c8baf312c8a 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -204,6 +204,8 @@ static inline int has_extension(const char *filename, const char *ext)
+ #define NSEC_PER_MSEC	1000000L
+ #endif
+ 
++int parse_nsec_time(const char *str, u64 *ptime);
++
+ extern unsigned char sane_ctype[256];
+ #define GIT_SPACE		0x01
+ #define GIT_DIGIT		0x02
+-- 
+1.7.11.7
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/acpi/pci_root.c
-index e427dc5,122b4dc..0000000
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@@ -639,11 -620,9 +620,11 @@@ static void _handle_hotplug_event_root(
-  	switch (type) {
-  	case ACPI_NOTIFY_BUS_CHECK:
-  		/* bus enumerate */
-- 		printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
-- 				 (char *)buffer.pointer);
-+ 		acpi_handle_printk(KERN_DEBUG, handle,
-+ 				   "Bus check notify on %s\n", __func__);
- -		if (!root)
- +		if (root)
- +			acpiphp_check_host_bridge(handle);
- +		else
-  			handle_root_bridge_insertion(handle);
- =20
-  		break;
-
---Signature=_Tue__4_Jun_2013_11_49_55_+1000_BU+0X8bymfNj_iEW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRrUfWAAoJEECxmPOUX5FEo08QAKY6fBtD2iU88m70mKV1Ibri
-O3u1L/Xa0Rr9fu3NY7EoYPGJCJpzPGUhy9LkY4LR42kWR8IA868acTWtE7tPWL1e
-X5TvP5qnPVHpcIdT/S4q7COB0fQEC+u/yFVIkdlxV0ejI6HmRKOKXB1PA55DYmxE
-CR+aiP6f8UWv9qf8apiEH/mll/FGFUtm1NIYNVUAKn5PYRBMY5aQ/4abY+2gej7q
-xkZATvgftwC2jBRek3JyxClAtZcYbXL9E5dwhCq2CRHDLEHlST2jW9RIFGcWETwP
-g/mQqf+OhsTY1pfcN2qwJUemV5ZFIEB1YlL9WM9DELbcgKwVz/Ug4OQjQhjlBFwe
-nijwfosUqc0xoqJV9SBoxSUrYjwzwdvvMGTr9WEUlaVzSgFUDwNq+cMw1X9mWGwf
-luLPLq1+nukCiNZ9InIqvv2y8Y193C6CWrBUjUiubUr9SVUPpy6WtfeyY1nbmVHm
-WqSDEThSZx+imqOCr+O3zVdLKCC8r0XYAivgIFOt72/0Nc5cX/h9kE2PvM1C2Gi0
-2qFhA80jpLV407/JkrAh2bTVFCym1fSRfk3Nj+1lh+48e1cgZrnJxueOOD4r6vU+
-y9STNozelyj/fytCfvSI9yvRO1qLCG4XkfmYehpX2VvN5hCtExR6AUIFj5zuSuYL
-XAI+rAQVbXrRXqkBjOk9
-=fuxp
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Jun_2013_11_49_55_+1000_BU+0X8bymfNj_iEW--
