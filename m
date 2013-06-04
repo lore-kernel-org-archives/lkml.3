@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab3FDXRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:17:19 -0400
-Received: from 1wt.eu ([62.212.114.60]:35368 "EHLO 1wt.eu"
+	id S1755046Ab3FDXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:17:16 -0400
+Received: from 1wt.eu ([62.212.114.60]:35370 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab3FDWmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752865Ab3FDWmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:06 -0400
-Message-Id: <20130604172131.469153460@1wt.eu>
+Message-Id: <20130604172130.471073557@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:58 +0200
+Date: Tue, 04 Jun 2013 19:21:34 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mark Rutland <mark.rutland@arm.com>, linux-arm-kernel@lists.infradead.org,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 028/184] genalloc: stop crashing the system when destroying a
+Subject: [ 004/184] clockevents: Dont allow dummy broadcast timers
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,134 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- pool
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+From: Mark Rutland <mark.rutland@arm.com>
 
-commit eedce141cd2dad8d0cefc5468ef41898949a7031 upstream.
+commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
 
-The genalloc code uses the bitmap API from include/linux/bitmap.h and
-lib/bitmap.c, which is based on long values.  Both bitmap_set from
-lib/bitmap.c and bitmap_set_ll, which is the lockless version from
-genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
-the bitmap.
+Currently tick_check_broadcast_device doesn't reject clock_event_devices
+with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
+hardware if they have a higher rating value. In this situation, the
+dummy timer is responsible for broadcasting to itself, and the core
+clockevents code may attempt to call non-existent callbacks for
+programming the dummy, eventually leading to a panic.
 
-That one uses (1 << bits) - 1, 0b111, if you are setting the first three
-bits.  This means that the API counts from the least significant bits
-(LSB from now on) to the MSB.  The LSB in the first long is bit 0, then.
-The same works for the lookup functions.
+This patch makes tick_check_broadcast_device always reject dummy timers,
+preventing this problem.
 
-The genalloc code uses longs for the bitmap, as it should.  In
-include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
-bits[0] as its last member.  When allocating the struct, genalloc should
-reserve enough space for the bitmap.  This should be a proper number of
-longs that can fit the amount of bits in the bitmap.
-
-However, genalloc allocates an integer number of bytes that fit the
-amount of bits, but may not be an integer amount of longs.  9 bytes, for
-example, could be allocated for 70 bits.
-
-This is a problem in itself if the Least Significat Bit in a long is in
-the byte with the largest address, which happens in Big Endian machines.
-This means genalloc is not allocating the byte in which it will try to
-set or check for a bit.
-
-This may end up in memory corruption, where genalloc will try to set the
-bits it has not allocated.  In fact, genalloc may not set these bits
-because it may find them already set, because they were not zeroed since
-they were not allocated.  And that's what causes a BUG when
-gen_pool_destroy is called and check for any set bits.
-
-What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
-on gen_pool_add_virt.  With SLAB and SLUB, this means the whole slab
-will be cleared, not only the requested bytes.  Since struct
-gen_pool_chunk has a size that is a multiple of 8, and slab sizes are
-multiples of 8, we get lucky and allocate and clear the right amount of
-bytes.
-
-Hower, this is not the case with SLOB or with older code that did memset
-after allocating instead of using __GFP_ZERO.
-
-So, a simple module as this (running 3.6.0), will cause a crash when
-rmmod'ed.
-
-  [root@phantom-lp2 foo]# cat foo.c
-  #include <linux/kernel.h>
-  #include <linux/module.h>
-  #include <linux/init.h>
-  #include <linux/genalloc.h>
-
-  MODULE_LICENSE("GPL");
-  MODULE_VERSION("0.1");
-
-  static struct gen_pool *foo_pool;
-
-  static __init int foo_init(void)
-  {
-          int ret;
-          foo_pool = gen_pool_create(10, -1);
-          if (!foo_pool)
-                  return -ENOMEM;
-          ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
-          if (ret) {
-                  gen_pool_destroy(foo_pool);
-                  return ret;
-          }
-          return 0;
-  }
-
-  static __exit void foo_exit(void)
-  {
-          gen_pool_destroy(foo_pool);
-  }
-
-  module_init(foo_init);
-  module_exit(foo_exit);
-  [root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
-  CONFIG_SLOB=y
-  [root@phantom-lp2 foo]# insmod ./foo.ko
-  [root@phantom-lp2 foo]# rmmod foo
-  ------------[ cut here ]------------
-  kernel BUG at lib/genalloc.c:243!
-  cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
-      pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
-      lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
-      sp: c0000000bb0e7be0
-     msr: 8000000000029032
-    current = 0xc0000000bb0e0000
-    paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
-      pid   = 13044, comm = rmmod
-  kernel BUG at lib/genalloc.c:243!
-  [c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
-  [c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
-  [c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
-  --- Exception: c00 (System Call) at 000000800753d1a0
-  SP (fffd0b0e640) is in userspace
-
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- lib/genalloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index eed2bdb..c1fb257 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -52,7 +52,7 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
- 	struct gen_pool_chunk *chunk;
- 	int nbits = size >> pool->min_alloc_order;
- 	int nbytes = sizeof(struct gen_pool_chunk) +
--				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
-+				BITS_TO_LONGS(nbits) * sizeof(long);
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 57b953f..67fe3d9 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -67,7 +67,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
+-	if ((tick_broadcast_device.evtdev &&
++	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
