@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3FDXMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:12:38 -0400
-Received: from 1wt.eu ([62.212.114.60]:35449 "EHLO 1wt.eu"
+	id S1754765Ab3FDXMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:12:35 -0400
+Received: from 1wt.eu ([62.212.114.60]:35451 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010Ab3FDWmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753012Ab3FDWmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:20 -0400
-Message-Id: <20130604172130.760364569@1wt.eu>
+Message-Id: <20130604172132.263705742@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:41 +0200
+Date: Tue, 04 Jun 2013 19:22:17 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Matthew Garrett <mjg@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 011/184] usermodehelper: implement UMH_KILLABLE
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 047/184] x86: Dont use the EFI reboot method by default
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,111 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit d0bd587a80960d7ba7e0c8396e154028c9045c54 upstream
+Testing suggests that at least some Lenovos and some Intels will
+fail to reboot via EFI, attempting to jump to an unmapped
+physical address. In the long run we could handle this by
+providing a page table with a 1:1 mapping of physical addresses,
+but for now it's probably just easier to assume that ACPI or
+legacy methods will be present and reboot via those.
 
-Implement UMH_KILLABLE, should be used along with UMH_WAIT_EXEC/PROC.
-The caller must ensure that subprocess_info->path/etc can not go away
-until call_usermodehelper_freeinfo().
+[2.6.32: additional background information from Jonathan below]
+>
+> Please consider
+>
+>   f70e957cda22 x86: Don't use the EFI reboot method by default,
+>                2011-07-06
+>
+> for application to the 2.6.32.y and 2.6.34.y trees.  The patch was
+> applied upstream late in the 3.0 cycle, so newer kernels don't need
+> it.
+>
+> In 2011, Keith Ward wrote[1]:
+>
+> > When attempting to reboot my my UEFI enabled system, the system hangs when
+> > calling reboot requiring me to manually reset the system via the reset switch.
+> >
+> > Screenshot: http://twitgoo.com/29bq1c
+>
+> Ben Hutchings writes[1]:
+>
+> > Version: 3.0.0-1
+> >
+> > I also had this problem on my own system, but it is fixed now.
+> > I bisected the fix to:
+> >
+> > commit f70e957cda22d309c769805cbb932407a5232219
+> > Author: Matthew Garrett <mjg@redhat.com>
+> > Date:   Wed Jul 6 16:52:37 2011 -0400
+> >
+> >     x86: Don't use the EFI reboot method by default
+> >
+> > which is basically equivalent to the workaround!
+> >
+> > I'll also apply this fix to squeeze as it's so simple.
+>
+> Keith Ward also wrote[1]:
+>
+> > It seems as if this has recently been reported at Ubuntu's Launchpad as well:
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/721576
+>
+> There are a variety of reports of the same panic at that bug on
+> 2.6.32.y-, 2.6.38.y-, and 2.6.39-based kernels.  Passing "reboot=a,w"
+> on the kernel command line avoids trouble for reporters.
 
-call_usermodehelper_exec(UMH_KILLABLE) does
-wait_for_completion_killable.  If it fails, it uses
-xchg(&sub_info->complete, NULL) to serialize with umh_complete() which
-does the same xhcg() to access sub_info->complete.
-
-If call_usermodehelper_exec wins, it can safely return.  umh_complete()
-should get NULL and call call_usermodehelper_freeinfo().
-
-Otherwise we know that umh_complete() was already called, in this case
-call_usermodehelper_exec() falls back to wait_for_completion() which
-should succeed "very soon".
-
-Note: UMH_NO_WAIT == -1 but it obviously should not be used with
-UMH_KILLABLE.  We delay the neccessary cleanup to simplify the back
-porting.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[dannf: backported to Debian's 2.6.32]
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/1309985557-15350-1-git-send-email-mjg@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+(cherry picked from commit f70e957cda22d309c769805cbb932407a5232219)
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/linux/kmod.h |  2 ++
- kernel/kmod.c        | 27 +++++++++++++++++++++++++--
- 2 files changed, 27 insertions(+), 2 deletions(-)
+ arch/x86/kernel/efi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index 0546fe7..93e732e 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -64,6 +64,8 @@ enum umh_wait {
- 	UMH_WAIT_PROC = 1,	/* wait for the process to complete */
- };
+diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
+index cdcfb12..a3e77af 100644
+--- a/arch/x86/kernel/efi.c
++++ b/arch/x86/kernel/efi.c
+@@ -459,9 +459,6 @@ void __init efi_init(void)
+ 	x86_platform.set_wallclock = efi_set_rtc_mmss;
+ #endif
  
-+#define UMH_KILLABLE	4	/* wait for EXEC/PROC killable */
-+
- /* Actually execute the sub-process */
- int call_usermodehelper_exec(struct subprocess_info *info, enum umh_wait wait);
- 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 2a27d17..2c2a020 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -208,7 +208,15 @@ EXPORT_SYMBOL(call_usermodehelper_freeinfo);
- 
- static void umh_complete(struct subprocess_info *sub_info)
- {
--	complete(sub_info->complete);
-+	struct completion *comp = xchg(&sub_info->complete, NULL);
-+	/*
-+	 * See call_usermodehelper_exec(). If xchg() returns NULL
-+	 * we own sub_info, the UMH_KILLABLE caller has gone away.
-+	 */
-+	if (comp)
-+		complete(comp);
-+	else
-+		call_usermodehelper_freeinfo(sub_info);
- }
- 
- /* Keventd can't block, but this (a child) can. */
-@@ -264,6 +272,9 @@ static void __call_usermodehelper(struct work_struct *work)
- 
- 	BUG_ON(atomic_read(&sub_info->cred->usage) != 1);
- 
-+	if (wait != UMH_NO_WAIT)
-+		wait &= ~UMH_KILLABLE;
-+
- 	/* CLONE_VFORK: wait until the usermode helper has execve'd
- 	 * successfully We need the data structures to stay around
- 	 * until that is done.  */
-@@ -525,9 +536,21 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info,
- 	queue_work(khelper_wq, &sub_info->work);
- 	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
- 		goto unlock;
-+
-+	if (wait & UMH_KILLABLE) {
-+		retval = wait_for_completion_killable(&done);
-+		if (!retval)
-+			goto wait_done;
-+
-+		/* umh_complete() will see NULL and free sub_info */
-+		if (xchg(&sub_info->complete, NULL))
-+			goto unlock;
-+		/* fallthrough, umh_complete() was already called */
-+	}
-+
- 	wait_for_completion(&done);
-+wait_done:
- 	retval = sub_info->retval;
+-	/* Setup for EFI runtime service */
+-	reboot_type = BOOT_EFI;
 -
- out:
- 	call_usermodehelper_freeinfo(sub_info);
- unlock:
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+ #endif
 -- 
 1.7.12.2.21.g234cd45.dirty
 
