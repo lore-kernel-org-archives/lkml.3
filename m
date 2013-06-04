@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab3FDPWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:22:18 -0400
-Received: from www.sr71.net ([198.145.64.142]:39799 "EHLO blackbird.sr71.net"
+	id S1754338Ab3FDPYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:24:41 -0400
+Received: from www.sr71.net ([198.145.64.142]:39831 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab3FDPWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:22:15 -0400
-Message-ID: <51AE061F.5060900@sr71.net>
-Date: Tue, 04 Jun 2013 08:22:07 -0700
+	id S1751173Ab3FDPYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 11:24:39 -0400
+Message-ID: <51AE06B6.3030009@sr71.net>
+Date: Tue, 04 Jun 2013 08:24:38 -0700
 From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Minchan Kim <minchan@kernel.org>
-CC: Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
- operations
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200208.6F71D31F@viggo.jf.intel.com> <CAJd=RBC563c64usU2oK40b62c7N0R15KD_4ihFExeT021wUTcw@mail.gmail.com> <20130604050744.GD14719@blaptop>
-In-Reply-To: <20130604050744.GD14719@blaptop>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v5][PATCH 6/6] mm: vmscan: drain batch list during long operations
+References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200210.259954C3@viggo.jf.intel.com> <20130604060553.GF14719@blaptop>
+In-Reply-To: <20130604060553.GF14719@blaptop>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 10:07 PM, Minchan Kim wrote:
->>> > > +       while (!list_empty(remove_list)) {
->>> > > +               page = lru_to_page(remove_list);
->>> > > +               BUG_ON(!PageLocked(page));
->>> > > +               BUG_ON(page_mapping(page) != mapping);
->>> > > +               list_del(&page->lru);
->>> > > +
->>> > > +               if (!__remove_mapping(mapping, page)) {
->>> > > +                       unlock_page(page);
->>> > > +                       list_add(&page->lru, ret_pages);
->>> > > +                       continue;
->>> > > +               }
->>> > > +               list_add(&page->lru, &need_free_mapping);
->>> > > +       }
->>> > > +       spin_unlock_irq(&mapping->tree_lock);
->>> > > +
->> > While reclaiming pages, can we open ears upon IRQ controller,
->> > if the page list length is over 10, or even 20?
-> At the moment, it implicitly could be bounded by SWAP_CLUSTER_MAX and
-> it's the value used by isolate_migratepages_ranges to enable IRQ.
-> I have no idea it's proper value to give a chace to IRQ but at least,
-> Dave's code doesn't break the rule.
-> If we need a tune for that, it could be a another patch to investigate
+On 06/03/2013 11:05 PM, Minchan Kim wrote:
+>> > This ensures that we drain the batch if we are about to perform a
+>> > pageout() or congestion_wait(), either of which will take some
+>> > time.  We expect this to help mitigate the worst of the latency
+>> > increase that the batching could cause.
+> Nice idea but I could see drain before pageout but congestion_wait?
 
-I also wouldn't exactly call this "reclaiming pages".   As Minchan
-mentions, this is already bounded and it's a relatively cheap set of
-operations.  *WAY* cheaper than actually reclaiming a page.
+That comment managed to bitrot a bit :(
 
-Honestly, this whole patch series is about trading latency for increased
-bandwidth reclaiming pages.
+The first version of these had the drain before pageout() only.  Then,
+Mel added a congestion_wait() call, and I modified the series to also
+drain there.  But, some other patches took the congestion_wait() back
+out, so I took that drain back out.
+
+I _believe_ the only congestion_wait() left in there is a cgroup-related
+one that we didn't think would cause very much harm.
