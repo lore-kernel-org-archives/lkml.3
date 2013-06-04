@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3FDWrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:47:09 -0400
-Received: from 1wt.eu ([62.212.114.60]:35926 "EHLO 1wt.eu"
+	id S1754577Ab3FDWob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:44:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:35893 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab3FDWoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:44 -0400
-Message-Id: <20130604172135.737485013@1wt.eu>
+	id S1754508Ab3FDWo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:26 -0400
+Message-Id: <20130604172133.868987403@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:41 +0200
+Date: Tue, 04 Jun 2013 19:22:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, "Theodore Tso" <tytso@mit.edu>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 131/184] ext4: make orphan functions be no-op in no-journal
+Subject: [ 086/184] xfrm_user: fix info leak in copy_to_user_tmpl()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,54 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- mode
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-Instead of checking whether the handle is valid, we check if journal
-is enabled. This avoids taking the s_orphan_lock mutex in all cases
-when there is no journal in use, including the error paths where
-ext4_orphan_del() is called with a handle set to NULL.
+[ Upstream commit 1f86840f897717f86d523a13e99a447e6a5d2fa5 ]
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The memory used for the template copy is a local stack variable. As
+struct xfrm_user_tmpl contains multiple holes added by the compiler for
+alignment, not initializing the memory will lead to leaking stack bytes
+to userland. Add an explicit memset(0) to avoid the info leak.
+
+Initial version of the patch by Brad Spengler.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext4/namei.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/xfrm/xfrm_user.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 828c9c9..230bef5 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2001,7 +2001,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
- 	struct ext4_iloc iloc;
- 	int err = 0, rc;
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 3de81fe..a8d83c4 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1178,6 +1178,7 @@ static int copy_to_user_tmpl(struct xfrm_policy *xp, struct sk_buff *skb)
+ 		struct xfrm_user_tmpl *up = &vec[i];
+ 		struct xfrm_tmpl *kp = &xp->xfrm_vec[i];
  
--	if (!ext4_handle_valid(handle))
-+	if (!EXT4_SB(sb)->s_journal)
- 		return 0;
- 
- 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
-@@ -2082,8 +2082,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
- 	struct ext4_iloc iloc;
- 	int err = 0;
- 
--	/* ext4_handle_valid() assumes a valid handle_t pointer */
--	if (handle && !ext4_handle_valid(handle))
-+	if (!EXT4_SB(inode->i_sb)->s_journal)
- 		return 0;
- 
- 	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
-@@ -2102,7 +2101,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
- 	 * transaction handle with which to update the orphan list on
- 	 * disk, but we still need to remove the inode from the linked
- 	 * list in memory. */
--	if (sbi->s_journal && !handle)
-+	if (!handle)
- 		goto out;
- 
- 	err = ext4_reserve_inode_write(handle, inode, &iloc);
++		memset(up, 0, sizeof(*up));
+ 		memcpy(&up->id, &kp->id, sizeof(up->id));
+ 		up->family = kp->encap_family;
+ 		memcpy(&up->saddr, &kp->saddr, sizeof(up->saddr));
 -- 
 1.7.12.2.21.g234cd45.dirty
 
