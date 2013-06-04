@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760109Ab3FDH5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:57:33 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46997 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759702Ab3FDH52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:57:28 -0400
-Message-ID: <51AD9DE4.7070907@monstr.eu>
-Date: Tue, 04 Jun 2013 09:57:24 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1760119Ab3FDH5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:57:44 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:56633 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759738Ab3FDH5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 03:57:39 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Baruch Siach <baruch@tkos.co.il>
+Subject: Re: [PATCH 3/3] clocksource: dw_apb_timer_of: use clocksource_of_init
+Date: Tue, 4 Jun 2013 09:57:27 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Jamie Iles <jamie@jamieiles.com>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+References: <201306032157.40488.heiko@sntech.de> <201306032159.55685.heiko@sntech.de> <20130604043620.GU11798@tarshish>
+In-Reply-To: <20130604043620.GU11798@tarshish>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Hein Tibosch <hein_tibosch@yahoo.es>, netdev@vger.kernel.org,
-        michal.simek@xilinx.com, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <51AD8611.8070102@monstr.eu> <20130604064940.GA5107@pengutronix.de> <51AD9C94.4080606@atmel.com>
-In-Reply-To: <51AD9C94.4080606@atmel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2EKHFDFQHOCEKUGKDCVSM"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306040957.27920.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2EKHFDFQHOCEKUGKDCVSM
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Am Dienstag, 4. Juni 2013, 06:36:20 schrieb Baruch Siach:
+> Hi Heiko,
+> 
+> On Mon, Jun 03, 2013 at 09:59:55PM +0200, Heiko Stübner wrote:
+> > dw_apb_timer_init used to search the devicetree for matching timer
+> > devices, making calls to it from board files necessary.
+> > 
+> > Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
+> > With this change the function gets called once for each timer node
+> > and tracks these number of calls to attach clockevent and clocksource
+> > devices to the nodes.
+> > 
+> > Also remove the calls to dw_apb_timer_init from all previous users, as
+> > clocksource_of_init is the default for init_time now.
+> > 
+> > Tested on the upcoming rk3066 code.
+> > 
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > Acked-by: Rob Herring <rob.herring@calxeda.com>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> > 
+> >  arch/arm/mach-picoxcell/Kconfig       |    1 +
+> >  arch/arm/mach-picoxcell/common.c      |    2 -
+> >  arch/arm/mach-socfpga/Kconfig         |    1 +
+> >  arch/arm/mach-socfpga/socfpga.c       |    2 -
+> >  drivers/clocksource/dw_apb_timer_of.c |   41
+> >  ++++++++++++++++----------------- include/linux/dw_apb_timer.h         
+> >  |    1 -
+> >  6 files changed, 22 insertions(+), 26 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-picoxcell/Kconfig
+> > b/arch/arm/mach-picoxcell/Kconfig index 13bae78..3ef6bbe 100644
+> > --- a/arch/arm/mach-picoxcell/Kconfig
+> > +++ b/arch/arm/mach-picoxcell/Kconfig
+> > @@ -6,6 +6,7 @@ config ARCH_PICOXCELL
+> > 
+> >  	select CPU_V6K
+> >  	select DW_APB_TIMER
+> >  	select DW_APB_TIMER_OF
+> > 
+> > +	select CLKSRC_OF
+> 
+> Shouldn't DW_APB_TIMER 'select CLKSRC_OF if OF' instead of selecting is for
+> each and every platform? While at it we can do the same to DW_APB_TIMER_OF.
 
-On 06/04/2013 09:51 AM, Nicolas Ferre wrote:
-> On 04/06/2013 08:49, Steffen Trumtrar :
->> On Tue, Jun 04, 2013 at 08:15:45AM +0200, Michal Simek wrote:
->>> On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
->>>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.c=
-om> wrote:
->>>>>>
->>>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>>>>> introduces clear-on-write on ISR register. This behavior is not a=
-lways
->>>>>>> implemented when using Cadence MACB/GEM and is breaking other pla=
-tforms.
->>>>>>> We are using a new Device Tree compatibility string and a capabil=
-ity
->>>>>>> property to actually activate this clear-on-write behavior on ISR=
-=2E
->>>>>>>
->>>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>>> can we detect it via the IP?
->>>>>
->>>>> This was my first proposal, have it based on the value of MACB's
->>>>> register 'MID' (offset 0x00fc, lower 16 bits).
->>>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
->>>>>
->>>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revi=
-sion
->>>>> equals to 0x00000119?
->>>> so no it will not work
->>>>
->>>> as the gem on sama5 is 00020119
->>>>
->>>> so version 0x119 too
->>>>
->>>> nico
->>>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>
->>> Was this added to any queue or branch?
->>> I would like to enable macb for zynq and not sure if "cdns,zynq-7000-=
-gem"
->>> compatible string goes to mainline.
->>>
->>
->> Hi!
->>
->> This is already in next, but you can use the default compatible as the=
+if anything DW_APB_TIMER_OF should select both DW_APB_TIMER and 'CLKSRC_OF if 
+OF', as the base DW_APB_TIMER_OF is the platform glue, that uses DW_APB_TIMER 
+internally.
 
->=20
-> Even more: already in Linus' tree!
-
-Ah I see. v2 is in thunderbird in the same thread and I didn't check this=
-
-version for compatible string.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2EKHFDFQHOCEKUGKDCVSM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGtneQACgkQykllyylKDCHQqwCghnvM2+i5sMOA13K9unWDOupu
-EFgAoJFhjkUJtxG9SG3BUplOs6aF6R3I
-=PVh7
------END PGP SIGNATURE-----
-
-------enig2EKHFDFQHOCEKUGKDCVSM--
+But otherwise sounds sensible to not duplicate these selects everywhere.
