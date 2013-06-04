@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3FDMm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:42:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54079 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab3FDMmx (ORCPT
+	id S1754042Ab3FDMoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:44:00 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41818 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab3FDMn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:42:53 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <tony@atomide.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Fabio Stevam <festevam@gmail.com>
-Subject: [PATCHv3 1/3] arm: introduce config HAS_BANDGAP
-Date: Tue, 4 Jun 2013 08:42:09 -0400
-Message-ID: <1370349729-10517-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <51ADDE7A.6090205@ti.com>
-References: <51ADDE7A.6090205@ti.com>
+	Tue, 4 Jun 2013 08:43:58 -0400
+Date: Tue, 4 Jun 2013 14:43:51 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] tty: serial: Enable uartlite for ARM zynq
+Message-ID: <20130604124351.GC5107@pengutronix.de>
+References: <26d21aaa1f4a5b3bcae1d82f1524ea53ce9a36bd.1370348438.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26d21aaa1f4a5b3bcae1d82f1524ea53ce9a36bd.1370348438.git.michal.simek@xilinx.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:39:27 up 86 days, 22:19, 23 users,  load average: 0.40, 0.63,
+ 0.66
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bandgap is a device used to measure temperature on
-electronic equipments. It is widely used in digital
-integrated circuits. It is based on the dependency
-between silicon voltage and temperature.
+On Tue, Jun 04, 2013 at 02:20:43PM +0200, Michal Simek wrote:
+> Enable it in Kconfig.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>  drivers/tty/serial/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 7e7006f..64250b1 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -576,7 +576,7 @@ config SERIAL_IMX_CONSOLE
+> 
+>  config SERIAL_UARTLITE
+>  	tristate "Xilinx uartlite serial port support"
+> -	depends on PPC32 || MICROBLAZE || MFD_TIMBERDALE
+> +	depends on PPC32 || MICROBLAZE || MFD_TIMBERDALE || ARCH_ZYNQ
+>  	select SERIAL_CORE
+>  	help
+>  	  Say Y here if you want to use the Xilinx uartlite serial controller.
+> --
+> 1.8.2.3
+> 
 
-This patch introduce HAS_BANDGAP config entry.
-This config is a boolean value so that arch
-code can flag if they feature a bandgap device.
+Hi!
 
-This config entry follows the same idea behind
-ARCH_HAS_CPUFREQ.
+Doesn't the Zynq use xilinx_uartps ? (which in turn is actually a Cadence UART)
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-omap@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Fabio Stevam <festevam@gmail.com>
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- arch/arm/Kconfig            | 3 +++
- arch/arm/mach-omap2/Kconfig | 1 +
- 2 files changed, 4 insertions(+)
+Regards,
+Steffen
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index d423d58..bcbdec9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
- 	  and that the relevant menu configurations are displayed for
- 	  it.
- 
-+config ARCH_HAS_BANDGAP
-+	bool
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index f49cd51..8620ab5 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -4,6 +4,7 @@ config ARCH_OMAP
- config ARCH_OMAP2PLUS
- 	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
- 	select ARCH_HAS_CPUFREQ
-+	select ARCH_HAS_BANDGAP
- 	select ARCH_HAS_HOLES_MEMORYMODEL
- 	select ARCH_OMAP
- 	select ARCH_REQUIRE_GPIOLIB
 -- 
-1.8.2.1.342.gfa7285d
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
