@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab3FDWtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:49:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:35887 "EHLO 1wt.eu"
+	id S1754683Ab3FDWtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:49:10 -0400
+Received: from 1wt.eu ([62.212.114.60]:35883 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab3FDWoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:25 -0400
-Message-Id: <20130604172131.510859183@1wt.eu>
+	id S1754233Ab3FDWoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:24 -0400
+Message-Id: <20130604172135.367032999@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:59 +0200
+Date: Tue, 04 Jun 2013 19:23:32 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: T Makphaibulchoke <tmac@hp.com>, Paul Gortmaker <paul.gortmaker@gmail.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 029/184] kernel/resource.c: fix stack overflow in
+Subject: [ 122/184] ext4: Fix max file size and logical block counting
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,108 +22,267 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- __reserve_region_with_split()
+ of extent format file
 
-From: T Makphaibulchoke <tmac@hp.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 4965f5667f36a95b41cda6638875bc992bd7d18b upstream.
+commit f17722f917b2f21497deb6edc62fb1683daa08e6 upstream
 
-Using a recursive call add a non-conflicting region in
-__reserve_region_with_split() could result in a stack overflow in the case
-that the recursive calls are too deep.  Convert the recursive calls to an
-iterative loop to avoid the problem.
+Kazuya Mio reported that he was able to hit BUG_ON(next == lblock)
+in ext4_ext_put_gap_in_cache() while creating a sparse file in extent
+format and fill the tail of file up to its end. We will hit the BUG_ON
+when we write the last block (2^32-1) into the sparse file.
 
-Tested on a machine containing 135 regions.  The kernel no longer panicked
-with stack overflow.
+The root cause of the problem lies in the fact that we specifically set
+s_maxbytes so that block at s_maxbytes fit into on-disk extent format,
+which is 32 bit long. However, we are not storing start and end block
+number, but rather start block number and length in blocks. It means
+that in order to cover extent from 0 to EXT_MAX_BLOCK we need
+EXT_MAX_BLOCK+1 to fit into len (because we counting block 0 as well) -
+and it does not.
 
-Also tested with code arbitrarily adding regions with no conflict,
-embedding two consecutive conflicts and embedding two non-consecutive
-conflicts.
+The only way to fix it without changing the meaning of the struct
+ext4_extent members is, as Kazuya Mio suggested, to lower s_maxbytes
+by one fs block so we can cover the whole extent we can get by the
+on-disk extent format.
 
-Signed-off-by: T Makphaibulchoke <tmac@hp.com>
-Reviewed-by: Ram Pai <linuxram@us.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@gmail.com>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Also in many places EXT_MAX_BLOCK is used as length instead of maximum
+logical block number as the name suggests, it is all a bit messy. So
+this commit renames it to EXT_MAX_BLOCKS and change its usage in some
+places to actually be maximum number of blocks in the extent.
+
+The bug which this commit fixes can be reproduced as follows:
+
+ dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-2))
+ sync
+ dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-1))
+
+Reported-by: Kazuya Mio <k-mio@sx.jp.nec.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[dannf: Applied the backport from RHEL6 to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/resource.c | 50 ++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 38 insertions(+), 12 deletions(-)
+ fs/ext4/ext4_extents.h |  7 +++++--
+ fs/ext4/extents.c      | 39 +++++++++++++++++++--------------------
+ fs/ext4/move_extent.c  | 10 +++++-----
+ fs/ext4/super.c        | 15 ++++++++++++---
+ 4 files changed, 41 insertions(+), 30 deletions(-)
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index fb11a58..207915a 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -533,6 +533,7 @@ static void __init __reserve_region_with_split(struct resource *root,
- 	struct resource *parent = root;
- 	struct resource *conflict;
- 	struct resource *res = kzalloc(sizeof(*res), GFP_ATOMIC);
-+	struct resource *next_res = NULL;
+diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+index bdb6ce7..24fa647 100644
+--- a/fs/ext4/ext4_extents.h
++++ b/fs/ext4/ext4_extents.h
+@@ -137,8 +137,11 @@ typedef int (*ext_prepare_callback)(struct inode *, struct ext4_ext_path *,
+ #define EXT_BREAK      1
+ #define EXT_REPEAT     2
  
- 	if (!res)
- 		return;
-@@ -542,21 +543,46 @@ static void __init __reserve_region_with_split(struct resource *root,
- 	res->end = end;
- 	res->flags = IORESOURCE_BUSY;
+-/* Maximum logical block in a file; ext4_extent's ee_block is __le32 */
+-#define EXT_MAX_BLOCK	0xffffffff
++/*
++ * Maximum number of logical blocks in a file; ext4_extent's ee_block is
++ * __le32.
++ */
++#define EXT_MAX_BLOCKS	0xffffffff
  
--	conflict = __request_resource(parent, res);
--	if (!conflict)
--		return;
-+	while (1) {
+ /*
+  * EXT_INIT_MAX_LEN is the maximum number of blocks we can have in an
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index b4402c8..f4b471d 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -1331,7 +1331,7 @@ got_index:
  
--	/* failed, split and try again */
--	kfree(res);
-+		conflict = __request_resource(parent, res);
-+		if (!conflict) {
-+			if (!next_res)
-+				break;
-+			res = next_res;
-+			next_res = NULL;
-+			continue;
-+		}
+ /*
+  * ext4_ext_next_allocated_block:
+- * returns allocated block in subsequent extent or EXT_MAX_BLOCK.
++ * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
+  * NOTE: it considers block number from index entry as
+  * allocated block. Thus, index entries have to be consistent
+  * with leaves.
+@@ -1345,7 +1345,7 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
+ 	depth = path->p_depth;
  
--	/* conflict covered whole area */
--	if (conflict->start <= start && conflict->end >= end)
--		return;
-+		/* conflict covered whole area */
-+		if (conflict->start <= res->start &&
-+				conflict->end >= res->end) {
-+			kfree(res);
-+			WARN_ON(next_res);
-+			break;
-+		}
-+
-+		/* failed, split and try again */
-+		if (conflict->start > res->start) {
-+			end = res->end;
-+			res->end = conflict->start - 1;
-+			if (conflict->end < end) {
-+				next_res = kzalloc(sizeof(*next_res),
-+						GFP_ATOMIC);
-+				if (!next_res) {
-+					kfree(res);
-+					break;
-+				}
-+				next_res->name = name;
-+				next_res->start = conflict->end + 1;
-+				next_res->end = end;
-+				next_res->flags = IORESOURCE_BUSY;
-+			}
-+		} else {
-+			res->start = conflict->end + 1;
-+		}
-+	}
+ 	if (depth == 0 && path->p_ext == NULL)
+-		return EXT_MAX_BLOCK;
++		return EXT_MAX_BLOCKS;
  
--	if (conflict->start > start)
--		__reserve_region_with_split(root, start, conflict->start-1, name);
--	if (conflict->end < end)
--		__reserve_region_with_split(root, conflict->end+1, end, name);
+ 	while (depth >= 0) {
+ 		if (depth == path->p_depth) {
+@@ -1362,12 +1362,12 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
+ 		depth--;
+ 	}
+ 
+-	return EXT_MAX_BLOCK;
++	return EXT_MAX_BLOCKS;
  }
  
- void __init reserve_region_with_split(struct resource *root,
+ /*
+  * ext4_ext_next_leaf_block:
+- * returns first allocated block from next leaf or EXT_MAX_BLOCK
++ * returns first allocated block from next leaf or EXT_MAX_BLOCKS
+  */
+ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
+ 					struct ext4_ext_path *path)
+@@ -1379,7 +1379,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
+ 
+ 	/* zero-tree has no leaf blocks at all */
+ 	if (depth == 0)
+-		return EXT_MAX_BLOCK;
++		return EXT_MAX_BLOCKS;
+ 
+ 	/* go to index block */
+ 	depth--;
+@@ -1392,7 +1392,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
+ 		depth--;
+ 	}
+ 
+-	return EXT_MAX_BLOCK;
++	return EXT_MAX_BLOCKS;
+ }
+ 
+ /*
+@@ -1572,13 +1572,13 @@ unsigned int ext4_ext_check_overlap(struct inode *inode,
+ 	 */
+ 	if (b2 < b1) {
+ 		b2 = ext4_ext_next_allocated_block(path);
+-		if (b2 == EXT_MAX_BLOCK)
++		if (b2 == EXT_MAX_BLOCKS)
+ 			goto out;
+ 	}
+ 
+ 	/* check for wrap through zero on extent logical start block*/
+ 	if (b1 + len1 < b1) {
+-		len1 = EXT_MAX_BLOCK - b1;
++		len1 = EXT_MAX_BLOCKS - b1;
+ 		newext->ee_len = cpu_to_le16(len1);
+ 		ret = 1;
+ 	}
+@@ -1654,7 +1654,7 @@ repeat:
+ 	fex = EXT_LAST_EXTENT(eh);
+ 	next = ext4_ext_next_leaf_block(inode, path);
+ 	if (le32_to_cpu(newext->ee_block) > le32_to_cpu(fex->ee_block)
+-	    && next != EXT_MAX_BLOCK) {
++	    && next != EXT_MAX_BLOCKS) {
+ 		ext_debug("next leaf block - %d\n", next);
+ 		BUG_ON(npath != NULL);
+ 		npath = ext4_ext_find_extent(inode, next, NULL);
+@@ -1772,7 +1772,7 @@ int ext4_ext_walk_space(struct inode *inode, ext4_lblk_t block,
+ 	BUG_ON(func == NULL);
+ 	BUG_ON(inode == NULL);
+ 
+-	while (block < last && block != EXT_MAX_BLOCK) {
++	while (block < last && block != EXT_MAX_BLOCKS) {
+ 		num = last - block;
+ 		/* find extent for this block */
+ 		down_read(&EXT4_I(inode)->i_data_sem);
+@@ -1900,7 +1900,7 @@ ext4_ext_put_gap_in_cache(struct inode *inode, struct ext4_ext_path *path,
+ 	if (ex == NULL) {
+ 		/* there is no extent yet, so gap is [0;-] */
+ 		lblock = 0;
+-		len = EXT_MAX_BLOCK;
++		len = EXT_MAX_BLOCKS;
+ 		ext_debug("cache gap(whole file):");
+ 	} else if (block < le32_to_cpu(ex->ee_block)) {
+ 		lblock = block;
+@@ -2145,8 +2145,8 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+ 		path[depth].p_ext = ex;
+ 
+ 		a = ex_ee_block > start ? ex_ee_block : start;
+-		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCK ?
+-			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCK;
++		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCKS ?
++			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCKS;
+ 
+ 		ext_debug("  border %u:%u\n", a, b);
+ 
+@@ -3783,15 +3783,14 @@ static int ext4_ext_fiemap_cb(struct inode *inode, struct ext4_ext_path *path,
+ 		flags |= FIEMAP_EXTENT_UNWRITTEN;
+ 
+ 	/*
+-	 * If this extent reaches EXT_MAX_BLOCK, it must be last.
++	 * If this extent reaches EXT_MAX_BLOCKS, it must be last.
+ 	 *
+-	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCK,
++	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCKS,
+ 	 * this also indicates no more allocated blocks.
+ 	 *
+-	 * XXX this might miss a single-block extent at EXT_MAX_BLOCK
+ 	 */
+-	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCK ||
+-	    newex->ec_block + newex->ec_len - 1 == EXT_MAX_BLOCK) {
++	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCKS ||
++	    newex->ec_block + newex->ec_len == EXT_MAX_BLOCKS) {
+ 		loff_t size = i_size_read(inode);
+ 		loff_t bs = EXT4_BLOCK_SIZE(inode->i_sb);
+ 
+@@ -3871,8 +3870,8 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 
+ 		start_blk = start >> inode->i_sb->s_blocksize_bits;
+ 		last_blk = (start + len - 1) >> inode->i_sb->s_blocksize_bits;
+-		if (last_blk >= EXT_MAX_BLOCK)
+-			last_blk = EXT_MAX_BLOCK-1;
++		if (last_blk >= EXT_MAX_BLOCKS)
++			last_blk = EXT_MAX_BLOCKS-1;
+ 		len_blks = ((ext4_lblk_t) last_blk) - start_blk + 1;
+ 
+ 		/*
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index a73ed78..fe81390 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1001,12 +1001,12 @@ mext_check_arguments(struct inode *orig_inode,
+ 		return -EINVAL;
+ 	}
+ 
+-	if ((orig_start > EXT_MAX_BLOCK) ||
+-	    (donor_start > EXT_MAX_BLOCK) ||
+-	    (*len > EXT_MAX_BLOCK) ||
+-	    (orig_start + *len > EXT_MAX_BLOCK))  {
++	if ((orig_start >= EXT_MAX_BLOCKS) ||
++	    (donor_start >= EXT_MAX_BLOCKS) ||
++	    (*len > EXT_MAX_BLOCKS) ||
++	    (orig_start + *len >= EXT_MAX_BLOCKS))  {
+ 		ext4_debug("ext4 move extent: Can't handle over [%u] blocks "
+-			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCK,
++			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCKS,
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index f1e7077..3ce77c5 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1975,6 +1975,12 @@ static void ext4_orphan_cleanup(struct super_block *sb,
+  * in the vfs.  ext4 inode has 48 bits of i_block in fsblock units,
+  * so that won't be a limiting factor.
+  *
++ * However there is other limiting factor. We do store extents in the form
++ * of starting block and length, hence the resulting length of the extent
++ * covering maximum file size must fit into on-disk format containers as
++ * well. Given that length is always by 1 unit bigger than max unit (because
++ * we count 0 as well) we have to lower the s_maxbytes by one fs block.
++ *
+  * Note, this does *not* consider any metadata overhead for vfs i_blocks.
+  */
+ static loff_t ext4_max_size(int blkbits, int has_huge_files)
+@@ -1996,10 +2002,13 @@ static loff_t ext4_max_size(int blkbits, int has_huge_files)
+ 		upper_limit <<= blkbits;
+ 	}
+ 
+-	/* 32-bit extent-start container, ee_block */
+-	res = 1LL << 32;
++	/*
++	 * 32-bit extent-start container, ee_block. We lower the maxbytes
++	 * by one fs block, so ee_len can cover the extent of maximum file
++	 * size
++	 */
++	res = (1LL << 32) - 1;
+ 	res <<= blkbits;
+-	res -= 1;
+ 
+ 	/* Sanity check against vm- & vfs- imposed limits */
+ 	if (res > upper_limit)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
