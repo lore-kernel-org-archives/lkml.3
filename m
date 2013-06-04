@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab3FDJla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:41:30 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53432 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab3FDJl1 convert rfc822-to-8bit (ORCPT
+	id S1752029Ab3FDJnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:43:14 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47601 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3FDJnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:41:27 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Kevin Hilman <khilman@linaro.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "zonque@gmail.com" <zonque@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
-Subject: RE: [PATCH 2/2] rtc: omap: add rtc wakeup support to alarm events
-Thread-Topic: [PATCH 2/2] rtc: omap: add rtc wakeup support to alarm events
-Thread-Index: AQHOXiYQaPj+OUHVHUilAFHAKAjcJ5klUjQg
-Date: Tue, 4 Jun 2013 09:39:27 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC222D4@DBDE04.ent.ti.com>
-References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com>
-	<1369982005-8572-3-git-send-email-gururaja.hebbar@ti.com>
- <87a9nb2gjh.fsf@linaro.org>
-In-Reply-To: <87a9nb2gjh.fsf@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Jun 2013 05:43:12 -0400
+Message-ID: <51ADB6A9.8030006@linaro.org>
+Date: Tue, 04 Jun 2013 15:13:05 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Kevin Hilman <khilman@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, arnd@arndb.de, patches@linaro.org,
+        kgene.kim@samsung.com, olof@lixom.net
+Subject: Re: [PATCH] ARM: EXYNOS: Consolidate multiple low-level UART port
+ definitions
+References: <1369888827-9427-1-git-send-email-tushar.behera@linaro.org> <871u8n105e.fsf@linaro.org>
+In-Reply-To: <871u8n105e.fsf@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 23:11:22, Kevin Hilman wrote:
-> Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
+On 05/31/2013 11:50 PM, Kevin Hilman wrote:
+> Tushar Behera <tushar.behera@linaro.org> writes:
 > 
-> > On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
-> > is available to enable Wakeup feature for Alarm Events.
-> >
-> > Since new platforms/Boards are now added through DT only, this feature
-> > is supported via DT property only.
+>> There are two definitions for low-level UART ports for Exynos platform.
+>> CONFIG_S3C_LOWLEVEL_UART_PORT is used for printing "Uncompressing
+>> Linux... done, booting the kernel." and CONFIG_S3C_UART for other
+>> low-level messages.
+>>
+>> The assumption for both the uart ports is that they are pre-configured
+>> in the bootloader. Since they are essentially the same always, it
+>> would be good to consolidate them to use only one macro, in this case
+>> 'DEBUG_S3C_UART' would be a better option.
+>>
+>> 'DEBUG_S3C_UART' is defined only if DEBUG_LL is enabled. We can safely
+>> disable this option when DEBUG_LL is not defined and we can boot various
+>> boards with different UART port settings. Only drawback of this
+>> approach is that when DEBUG_LL is not defined, we would be missing the
+>> print "Uncompressing Linux... done, booting the kernel."
 > 
-> > Platforms using such IP should add the property "ti,has_irq_wake_enb"
-> > in rtc DT node.
+> Perfectly acceptable to me (and already the case on OMAP.)
 > 
-> This is a property of the IP, not the board.  
-
-Correct.
-
-> Can't you detect this
-> based on the revision of the IP?
-
-Will check this and return.
-
+>> Since CONFIG_S3C_LOWLEVEL_UART_PORT is still used by other Samsung
+>> boards, the consolidation applies only for ARCH_EXYNOS.
+>>
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 > 
-> Kevin
+> Acked-by: Kevin Hilman <khilman@linaro.org>
 > 
 
+Thanks Kevin.
 
-Regards, 
-Gururaja
+I have an updated version of this patch updated for all of Samsung
+platforms.[1]
+
+[1] http://www.gossamer-threads.com/lists/linux/kernel/1723429
+
+-- 
+Tushar Behera
