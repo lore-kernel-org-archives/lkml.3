@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab3FDOVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:21:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46748 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab3FDOIE (ORCPT
+	id S1756686Ab3FDOV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:21:28 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:58015 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755713Ab3FDOVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 28/70] fat: fix possible overflow for fat_clusters
-Date: Tue,  4 Jun 2013 15:06:44 +0100
-Message-Id: <1370354846-14213-29-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
-References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 4 Jun 2013 10:21:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <201306041603.15653.arnd@arndb.de>
+References: <1369756498-5670-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<201306041603.15653.arnd@arndb.de>
+Date: Tue, 4 Jun 2013 17:21:16 +0300
+Message-ID: <CAHp75VdrXdA7uwpYoo5To-niMn8wSCdwu_p6fArq+Vd6kb-0EA@mail.gmail.com>
+Subject: Re: [PATCH, resend] pch_phub: re-use native MAC address parser
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.14 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 4, 2013 at 5:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 28 May 2013, Andy Shevchenko wrote:
+>> We have mac_pton() helper to parse MAC addresses.
+>>
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Hmm, the patch has appeared in linux-next now, and I'm now getting
+> randconfig build errors when CONFIG_NET is disabled, since
+> mac_pton is undefined then.
 
-------------------
+Thanks for catching this.
 
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> The easiest solution would be to
+> make the entire driver "depend on NET".
 
-commit 7b92d03c3239f43e5b86c9cc9630f026d36ee995 upstream.
+I don't feel that is good idea. Driver is an abstraction to the ROM,
+it doesn't mean you can't read ROM without network framework.
+It seems proper solution is to move mac_pton() outside of CONFIG_NET,
+though I don't know how to do this easily.
 
-Intermediate value of fat_clusters can be overflowed on 32bits arch.
-
-Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/fat/inode.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 0038b32..e69b441e 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1218,6 +1218,19 @@ static int fat_read_root(struct inode *inode)
- 	return 0;
- }
- 
-+static unsigned long calc_fat_clusters(struct super_block *sb)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+
-+	/* Divide first to avoid overflow */
-+	if (sbi->fat_bits != 12) {
-+		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
-+		return ent_per_sec * sbi->fat_length;
-+	}
-+
-+	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+}
-+
- /*
-  * Read the super block of an MS-DOS FS.
-  */
-@@ -1415,7 +1428,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		sbi->fat_bits = (total_clusters > MAX_FAT12) ? 16 : 12;
- 
- 	/* check that FAT table does not overflow */
--	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+	fat_clusters = calc_fat_clusters(sb);
- 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
- 	if (total_clusters > MAX_FAT(sb)) {
- 		if (!silent)
--- 
-1.8.1.2
-
+--
+With Best Regards,
+Andy Shevchenko
