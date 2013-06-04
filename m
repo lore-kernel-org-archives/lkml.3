@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab3FDXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:00:56 -0400
-Received: from 1wt.eu ([62.212.114.60]:35678 "EHLO 1wt.eu"
+	id S1754610Ab3FDXAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:00:54 -0400
+Received: from 1wt.eu ([62.212.114.60]:35679 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604Ab3FDWnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753608Ab3FDWnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:43:11 -0400
-Message-Id: <20130604172137.478855609@1wt.eu>
+Message-Id: <20130604172137.222275043@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:23 +0200
+Date: Tue, 04 Jun 2013 19:24:17 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 173/184] atm: update msg_namelen in vcc_recvmsg()
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 167/184] ipv6: discard overlapping fragment
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +23,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 9b3e617f3df53822345a8573b6d358f6b9e5ed87 ]
+commit 70789d7052239992824628db8133de08dc78e593 upstream
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+RFC5722 prohibits reassembling fragments when some data overlaps.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about vcc_recvmsg() not filling the msg_name in case it was set.
+Bug spotted by Zhang Zuotao <zuotao.zhang@6wind.com>.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/atm/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/reassembly.c | 74 +++++++++++----------------------------------------
+ 1 file changed, 15 insertions(+), 59 deletions(-)
 
-diff --git a/net/atm/common.c b/net/atm/common.c
-index 950bd16..6c82d72 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -473,6 +473,8 @@ int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 	struct sk_buff *skb;
- 	int copied, error = -EINVAL;
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index 4d18699..105de22 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -148,16 +148,6 @@ int ip6_frag_match(struct inet_frag_queue *q, void *a)
+ }
+ EXPORT_SYMBOL(ip6_frag_match);
  
-+	msg->msg_namelen = 0;
-+
- 	if (sock->state != SS_CONNECTED)
- 		return -ENOTCONN;
- 	if (flags & ~MSG_DONTWAIT)		/* only handle MSG_DONTWAIT */
+-/* Memory Tracking Functions. */
+-static inline void frag_kfree_skb(struct netns_frags *nf,
+-		struct sk_buff *skb, int *work)
+-{
+-	if (work)
+-		*work -= skb->truesize;
+-	atomic_sub(skb->truesize, &nf->mem);
+-	kfree_skb(skb);
+-}
+-
+ void ip6_frag_init(struct inet_frag_queue *q, void *a)
+ {
+ 	struct frag_queue *fq = container_of(q, struct frag_queue, q);
+@@ -348,58 +338,22 @@ static int ip6_frag_queue(struct frag_queue *fq, struct sk_buff *skb,
+ 		prev = next;
+ 	}
+ 
+-	/* We found where to put this one.  Check for overlap with
+-	 * preceding fragment, and, if needed, align things so that
+-	 * any overlaps are eliminated.
++	/* RFC5722, Section 4:
++	 *                                  When reassembling an IPv6 datagram, if
++	 *   one or more its constituent fragments is determined to be an
++	 *   overlapping fragment, the entire datagram (and any constituent
++	 *   fragments, including those not yet received) MUST be silently
++	 *   discarded.
+ 	 */
+-	if (prev) {
+-		int i = (FRAG6_CB(prev)->offset + prev->len) - offset;
+ 
+-		if (i > 0) {
+-			offset += i;
+-			if (end <= offset)
+-				goto err;
+-			if (!pskb_pull(skb, i))
+-				goto err;
+-			if (skb->ip_summed != CHECKSUM_UNNECESSARY)
+-				skb->ip_summed = CHECKSUM_NONE;
+-		}
+-	}
++	/* Check for overlap with preceding fragment. */
++	if (prev &&
++	    (FRAG6_CB(prev)->offset + prev->len) - offset > 0)
++		goto discard_fq;
+ 
+-	/* Look for overlap with succeeding segments.
+-	 * If we can merge fragments, do it.
+-	 */
+-	while (next && FRAG6_CB(next)->offset < end) {
+-		int i = end - FRAG6_CB(next)->offset; /* overlap is 'i' bytes */
+-
+-		if (i < next->len) {
+-			/* Eat head of the next overlapped fragment
+-			 * and leave the loop. The next ones cannot overlap.
+-			 */
+-			if (!pskb_pull(next, i))
+-				goto err;
+-			FRAG6_CB(next)->offset += i;	/* next fragment */
+-			fq->q.meat -= i;
+-			if (next->ip_summed != CHECKSUM_UNNECESSARY)
+-				next->ip_summed = CHECKSUM_NONE;
+-			break;
+-		} else {
+-			struct sk_buff *free_it = next;
+-
+-			/* Old fragment is completely overridden with
+-			 * new one drop it.
+-			 */
+-			next = next->next;
+-
+-			if (prev)
+-				prev->next = next;
+-			else
+-				fq->q.fragments = next;
+-
+-			fq->q.meat -= free_it->len;
+-			frag_kfree_skb(fq->q.net, free_it, NULL);
+-		}
+-	}
++	/* Look for overlap with succeeding segment. */
++	if (next && FRAG6_CB(next)->offset < end)
++		goto discard_fq;
+ 
+ 	FRAG6_CB(skb)->offset = offset;
+ 
+@@ -436,6 +390,8 @@ static int ip6_frag_queue(struct frag_queue *fq, struct sk_buff *skb,
+ 	write_unlock(&ip6_frags.lock);
+ 	return -1;
+ 
++discard_fq:
++	fq_kill(fq);
+ err:
+ 	IP6_INC_STATS(net, ip6_dst_idev(skb_dst(skb)),
+ 		      IPSTATS_MIB_REASMFAILS);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
