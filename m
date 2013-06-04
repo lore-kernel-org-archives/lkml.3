@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab3FDW4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:56:37 -0400
-Received: from 1wt.eu ([62.212.114.60]:35756 "EHLO 1wt.eu"
+	id S1753940Ab3FDWnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:33 -0400
+Received: from 1wt.eu ([62.212.114.60]:35722 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab3FDWng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:36 -0400
-Message-Id: <20130604172136.025416845@1wt.eu>
+	id S1753757Ab3FDWnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:24 -0400
+Message-Id: <20130604172134.289212229@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:48 +0200
+Date: Tue, 04 Jun 2013 19:23:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kevin Dankwardt <k@kcomputing.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, Willy Tarreau <w@1wt.eu>
-Subject: [ 138/184] fat: Fix stat->f_namelen
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 096/184] telephony: ijx: buffer overflow in ixj_write_cid()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,87 +24,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Dankwardt <k@kcomputing.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit eeb5b4ae81f4a750355fa0c15f4fea22fdf83be1 upstream.
+[Not needed in 3.8 or newer as this driver is removed there. - gregkh]
 
-I found that the length of a file name when created cannot exceed 255
-characters, yet, pathconf(), via statfs(), returns the maximum as 260.
+We get this from user space and nothing has been done to ensure that
+these strings are NUL terminated.
 
-Signed-off-by: Kevin Dankwardt <k@kcomputing.com>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/fat/inode.c           | 2 +-
- fs/fat/namei_vfat.c      | 6 +++---
- include/linux/msdos_fs.h | 3 ++-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/telephony/ixj.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 76b7961..c187e92 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -558,7 +558,7 @@ static int fat_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	buf->f_bavail = sbi->free_clusters;
- 	buf->f_fsid.val[0] = (u32)id;
- 	buf->f_fsid.val[1] = (u32)(id >> 32);
--	buf->f_namelen = sbi->options.isvfat ? 260 : 12;
-+	buf->f_namelen = sbi->options.isvfat ? FAT_LFN_LEN : 12;
+diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
+index 40de151..56eb6cc 100644
+--- a/drivers/telephony/ixj.c
++++ b/drivers/telephony/ixj.c
+@@ -3190,12 +3190,12 @@ static void ixj_write_cid(IXJ *j)
  
- 	return 0;
- }
-diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index 72646e2..67b3df1 100644
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -502,14 +502,14 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
- 		*outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
- 		if (*outlen < 0)
- 			return *outlen;
--		else if (*outlen > 255)
-+		else if (*outlen > FAT_LFN_LEN)
- 			return -ENAMETOOLONG;
+ 	ixj_fsk_alloc(j);
  
- 		op = &outname[*outlen * sizeof(wchar_t)];
- 	} else {
- 		if (nls) {
- 			for (i = 0, ip = name, op = outname, *outlen = 0;
--			     i < len && *outlen <= 255;
-+			     i < len && *outlen <= FAT_LFN_LEN;
- 			     *outlen += 1)
- 			{
- 				if (escape && (*ip == ':')) {
-@@ -549,7 +549,7 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
- 				return -ENAMETOOLONG;
- 		} else {
- 			for (i = 0, ip = name, op = outname, *outlen = 0;
--			     i < len && *outlen <= 255;
-+			     i < len && *outlen <= FAT_LFN_LEN;
- 			     i++, *outlen += 1)
- 			{
- 				*op++ = *ip++;
-diff --git a/include/linux/msdos_fs.h b/include/linux/msdos_fs.h
-index ce38f1c..34066e6 100644
---- a/include/linux/msdos_fs.h
-+++ b/include/linux/msdos_fs.h
-@@ -15,6 +15,7 @@
- #define MSDOS_DPB_BITS	4		/* log2(MSDOS_DPB) */
- #define MSDOS_DPS	(SECTOR_SIZE / sizeof(struct msdos_dir_entry))
- #define MSDOS_DPS_BITS	4		/* log2(MSDOS_DPS) */
-+#define MSDOS_LONGNAME	256		/* maximum name length */
- #define CF_LE_W(v)	le16_to_cpu(v)
- #define CF_LE_L(v)	le32_to_cpu(v)
- #define CT_LE_W(v)	cpu_to_le16(v)
-@@ -47,8 +48,8 @@
- #define DELETED_FLAG	0xe5	/* marks file as deleted when in name[0] */
- #define IS_FREE(n)	(!*(n) || *(n) == DELETED_FLAG)
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
  
-+#define FAT_LFN_LEN	255	/* maximum long name length */
- #define MSDOS_NAME	11	/* maximum name length */
--#define MSDOS_LONGNAME	256	/* maximum name length */
- #define MSDOS_SLOTS	21	/* max # of slots for short and long names */
- #define MSDOS_DOT	".          "	/* ".", padded to MSDOS_NAME chars */
- #define MSDOS_DOTDOT	"..         "	/* "..", padded to MSDOS_NAME chars */
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
+@@ -3340,12 +3340,12 @@ static void ixj_write_cidcw(IXJ *j)
+ 		ixj_pre_cid(j);
+ 	}
+ 	j->flags.cidcw_ack = 0;
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
