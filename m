@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab3FDT1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 15:27:44 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:56609 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3FDT1M (ORCPT
+	id S1752039Ab3FDT2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 15:28:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52424 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3FDTZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 15:27:12 -0400
-Date: Tue, 4 Jun 2013 21:27:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-Message-ID: <20130604192708.GD9321@dhcp22.suse.cz>
-References: <20130531081052.GA32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
- <20130531112116.GC32491@dhcp22.suse.cz>
- <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
- <20130601061151.GC15576@cmpxchg.org>
- <20130603153432.GC18588@dhcp22.suse.cz>
- <20130603164839.GG15576@cmpxchg.org>
- <20130603183018.GJ15576@cmpxchg.org>
- <20130604091749.GB31242@dhcp22.suse.cz>
- <20130604184852.GO15576@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604184852.GO15576@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Jun 2013 15:25:42 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 07/12] ARM: msm: Remove custom clk_set_flags() API
+Date: Tue,  4 Jun 2013 12:25:33 -0700
+Message-Id: <1370373938-32417-8-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
+In-Reply-To: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
+References: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-06-13 14:48:52, Johannes Weiner wrote:
-> On Tue, Jun 04, 2013 at 11:17:49AM +0200, Michal Hocko wrote:
-[...]
-> > > diff --git a/mm/memory.c b/mm/memory.c
-> > > index 6dc1882..ff5e2d7 100644
-> > > --- a/mm/memory.c
-> > > +++ b/mm/memory.c
-> > > @@ -1815,7 +1815,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-> > >  			while (!(page = follow_page_mask(vma, start,
-> > >  						foll_flags, &page_mask))) {
-> > >  				int ret;
-> > > -				unsigned int fault_flags = 0;
-> > > +				unsigned int fault_flags = FAULT_FLAG_KERNEL;
-> > >  
-> > >  				/* For mlock, just skip the stack guard page. */
-> > >  				if (foll_flags & FOLL_MLOCK) {
-> > 
-> > This is also a bit tricky. Say there is an unlikely situation when a
-> > task fails to charge because of memcg OOM, it couldn't lock the oom
-> > so it ended up with current->memcg_oom set and __get_user_pages will
-> > turn VM_FAULT_OOM into ENOMEM but memcg_oom is still there. Then the
-> > following global OOM condition gets confused (well the oom will be
-> > triggered by somebody else so it shouldn't end up in the endless loop
-> > but still...), doesn't it?
-> 
-> But current->memcg_oom is not set up unless current->in_userfault.
-> And get_user_pages does not set this flag.
+Nobody is using this API upstream and it's just contributing
+cruft. Remove it so the MSM clock API is closer to the generic
+struct clock API.
 
-And my selective blindness strikes again :/ For some reason I have read
-those places as they enable the fault flag. Which would make some sense
-if there was a post handling...
+Acked-by: Saravana Kannan <skannan@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/clock-pcom.c       | 10 ----------
+ arch/arm/mach-msm/clock.c            |  8 --------
+ arch/arm/mach-msm/clock.h            |  6 ------
+ arch/arm/mach-msm/include/mach/clk.h |  3 ---
+ 4 files changed, 27 deletions(-)
 
-Anyway, I will get back to the updated patch tomorrow with a clean and
-fresh head.
-
+diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
+index a52c970..bb75f8e 100644
+--- a/arch/arm/mach-msm/clock-pcom.c
++++ b/arch/arm/mach-msm/clock-pcom.c
+@@ -85,15 +85,6 @@ static int pc_clk_set_max_rate(unsigned id, unsigned rate)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-static int pc_clk_set_flags(unsigned id, unsigned flags)
+-{
+-	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS, &id, &flags);
+-	if (rc < 0)
+-		return rc;
+-	else
+-		return (int)id < 0 ? -EINVAL : 0;
+-}
+-
+ static unsigned pc_clk_get_rate(unsigned id)
+ {
+ 	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE, &id, NULL))
+@@ -130,7 +121,6 @@ struct clk_ops clk_ops_pcom = {
+ 	.set_rate = pc_clk_set_rate,
+ 	.set_min_rate = pc_clk_set_min_rate,
+ 	.set_max_rate = pc_clk_set_max_rate,
+-	.set_flags = pc_clk_set_flags,
+ 	.get_rate = pc_clk_get_rate,
+ 	.is_enabled = pc_clk_is_enabled,
+ 	.round_rate = pc_clk_round_rate,
+diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
+index d9145df..5fac2df 100644
+--- a/arch/arm/mach-msm/clock.c
++++ b/arch/arm/mach-msm/clock.c
+@@ -121,14 +121,6 @@ struct clk *clk_get_parent(struct clk *clk)
+ }
+ EXPORT_SYMBOL(clk_get_parent);
+ 
+-int clk_set_flags(struct clk *clk, unsigned long flags)
+-{
+-	if (clk == NULL || IS_ERR(clk))
+-		return -EINVAL;
+-	return clk->ops->set_flags(clk->id, flags);
+-}
+-EXPORT_SYMBOL(clk_set_flags);
+-
+ /* EBI1 is the only shared clock that several clients want to vote on as of
+  * this commit. If this changes in the future, then it might be better to
+  * make clk_min_rate handle the voting or make ebi1_clk_set_min_rate more
+diff --git a/arch/arm/mach-msm/clock.h b/arch/arm/mach-msm/clock.h
+index 2c007f6..a25ff58 100644
+--- a/arch/arm/mach-msm/clock.h
++++ b/arch/arm/mach-msm/clock.h
+@@ -21,11 +21,6 @@
+ #include <linux/list.h>
+ #include <mach/clk.h>
+ 
+-#define CLKFLAG_INVERT			0x00000001
+-#define CLKFLAG_NOINVERT		0x00000002
+-#define CLKFLAG_NONEST			0x00000004
+-#define CLKFLAG_NORESET			0x00000008
+-
+ #define CLK_FIRST_AVAILABLE_FLAG	0x00000100
+ #define CLKFLAG_AUTO_OFF		0x00000200
+ #define CLKFLAG_MIN			0x00000400
+@@ -39,7 +34,6 @@ struct clk_ops {
+ 	int (*set_rate)(unsigned id, unsigned rate);
+ 	int (*set_min_rate)(unsigned id, unsigned rate);
+ 	int (*set_max_rate)(unsigned id, unsigned rate);
+-	int (*set_flags)(unsigned id, unsigned flags);
+ 	unsigned (*get_rate)(unsigned id);
+ 	unsigned (*is_enabled)(unsigned id);
+ 	long (*round_rate)(unsigned id, unsigned rate);
+diff --git a/arch/arm/mach-msm/include/mach/clk.h b/arch/arm/mach-msm/include/mach/clk.h
+index e8d3842..5f1c37d 100644
+--- a/arch/arm/mach-msm/include/mach/clk.h
++++ b/arch/arm/mach-msm/include/mach/clk.h
+@@ -34,7 +34,4 @@ int clk_set_max_rate(struct clk *clk, unsigned long rate);
+ /* Assert/Deassert reset to a hardware block associated with a clock */
+ int clk_reset(struct clk *clk, enum clk_reset_action action);
+ 
+-/* Set clock-specific configuration parameters */
+-int clk_set_flags(struct clk *clk, unsigned long flags);
+-
+ #endif
 -- 
-Michal Hocko
-SUSE Labs
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
