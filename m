@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab3FDNp3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:45:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab3FDNp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:45:27 -0400
-Date: Tue, 4 Jun 2013 15:45:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130604134523.GH31242@dhcp22.suse.cz>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <1370254735-13012-5-git-send-email-mhocko@suse.cz>
- <20130604010737.GF29989@mtj.dyndns.org>
+	id S1754285Ab3FDNtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:49:08 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:48112 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab3FDNtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 09:49:07 -0400
+Message-ID: <51ADF04D.3040703@atmel.com>
+Date: Tue, 4 Jun 2013 15:49:01 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604010737.GF29989@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
+References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <51A34BF9.5000905@atmel.com> <6343931.uK9ItNlUFg@wuerfel>
+In-Reply-To: <6343931.uK9ItNlUFg@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-06-13 18:07:37, Tejun Heo wrote:
-> On Mon, Jun 03, 2013 at 12:18:51PM +0200, Michal Hocko wrote:
-> > The caller of the iterator might know that some nodes or even subtrees
-> > should be skipped but there is no way to tell iterators about that so
-> > the only choice left is to let iterators to visit each node and do the
-> > selection outside of the iterating code. This, however, doesn't scale
-> > well with hierarchies with many groups where only few groups are
-> > interesting.
-> > 
-> > This patch adds mem_cgroup_iter_cond variant of the iterator with a
-> > callback which gets called for every visited node. There are three
-> > possible ways how the callback can influence the walk. Either the node
-> > is visited, it is skipped but the tree walk continues down the tree or
-> > the whole subtree of the current group is skipped.
-> > 
-> > TODO is it correct to reclaim + cond together? What if the cache simply
-> > skips interesting nodes which another predicate would find interesting?
-> 
-> I don't know.  Maybe it's just taste but it looks pretty ugly to me.
-> Why does everything have to be folded into the iteration function?
+On 27/05/2013 14:42, Arnd Bergmann :
+> On Monday 27 May 2013 14:05:13 Nicolas Ferre wrote:
+>> On 27/05/2013 12:48, Alexandre Belloni :
+>> A v3 is not needed simply for this. Thanks, anyway!
+>>
+>> One question though: why not just add
+>>
+>>           select PHYLIB
+>>
+>> In Kconfig entry:
+>>
+>>    config MACH_SAMA5_DT
+>>
+>> ?
+>>
+>> (note that I like to play with everybody's nerves ;-))
+>
+> That would make it impossible to build a sama5 kernel without networking
+> support, which is probably not what you want.
+>
+> Jean-Christophe's suggestion to add the inline helper is best.
 
-There are basically 2 options. Factor out skipping logic into something
-like memcg_cgroup_iter_skip_node and memcg_cgroup_iter_skip_tree or
-bundle the generic predicate into iterators.
-I find the in-iterator version more convenient to use because the caller
-doesn't have to handle skip cases explicitly. All the users would have
-to do the same thing (which is now hidden in the iterator) anyway.
+It seems that it has been clearly rejected by David. So the best 
+solution remains to...
 
-Besides that it helps reducing the memcg code in vmscan (which we try to
-keep at minimum). I already feel guilty for the code this patch set
-adds.
+> Aside from
+> that, please note that
+>
+>>> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+>>> index 705305e..e9ce541 100644
+>>> --- a/arch/arm/mach-at91/board-dt-sama5.c
+>>> +++ b/arch/arm/mach-at91/board-dt-sama5.c
+>>> @@ -47,22 +47,24 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
+>>>    #define GMII_ERCR	11
+>>>    #define GMII_ERDWR	12
+>>>
+>>> -	/* Set delay values */
+>>> -	value = GMII_RCCPSR | 0x8000;
+>>> -	phy_write(phy, GMII_ERCR, value);
+>>> -	value = 0xF2F4;
+>>> -	phy_write(phy, GMII_ERDWR, value);
+>>> -	value = GMII_RRDPSR | 0x8000;
+>>> -	phy_write(phy, GMII_ERCR, value);
+>>> -	value = 0x2222;
+>>> -	phy_write(phy, GMII_ERDWR, value);
+>>> +	if (IS_BUILTIN(CONFIG_PHYLIB)) {
+>>> +		/* Set delay values */
+>>> +		value = GMII_RCCPSR | 0x8000;
+>>> +		phy_write(phy, GMII_ERCR, value);
+>>> +		value = 0xF2F4;
+>>> +		phy_write(phy, GMII_ERDWR, value);
+>>> +		value = GMII_RRDPSR | 0x8000;
+>>> +		phy_write(phy, GMII_ERCR, value);
+>>> +		value = 0x2222;
+>>> +		phy_write(phy, GMII_ERDWR, value);
+>>> +	}
+>>>
+>>>    	return 0;
+>>>    }
+>
+> This part of the patch is not actually needed if you
+>
+>>>    static void __init sama5_dt_device_init(void)
+>>>    {
+>>> -	if (of_machine_is_compatible("atmel,sama5d3xcm"))
+>>> +	if (of_machine_is_compatible("atmel,sama5d3xcm") && IS_BUILTIN(CONFIG_PHYLIB))
+>>>    		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
+>>>    			ksz9021rn_phy_fixup);
+>
+> do this change, or the inline helper.
 
-Is this something that you find serious enough to block this series?
-I do not want to push hard but I would like to settle with something
-finally. This is taking way longer than I would like.
+... simply use this "IS_BUILTIN(CONFIG_PHYLIB)" here -----^^^^^^^^^ (and 
+not above as suggested by Arnd).
 
-> The iteration only depends on the current position.  Can't you factor
-> out skipping part outside the function rather than rolling into this
-> monstery thing with predicate callback?  Just test the condition
-> outside and call a function to skip whatever is necessary?
-> 
-> Also, cgroup_rightmost_descendant() can be pretty expensive depending
-> on how your tree looks like. 
+Jean-Christophe, Alexandre: do you agree with this conclusion?
 
-I have no problem using something else. This was just the easiest to
-use and it behaves more-or-less good for hierarchies which are more or
-less balanced. If this turns out to be a problem we can introduce a
-new cgroup_skip_subtree which would get to last->sibling or go up the
-parent chain until there is non-NULL sibling. But what would be the next
-selling point here if we made it perfect right now? ;)
+I plan to stack this patch for next at91-fixes batch.
 
-> It travels to the rightmost child at
-> each level until it can't.  In extreme cases, you can travel the whole
-> subtree.  This usually isn't a problem for its usecases but yours may
-> be different, I'm not sure.
-
-But that would be the case only if the hierarchy would be right wing
-prevailing (aka politically incorrect for some :P)
+Bye,
 -- 
-Michal Hocko
-SUSE Labs
+Nicolas Ferre
