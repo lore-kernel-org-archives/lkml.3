@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab3FDC7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 22:59:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755384Ab3FDC7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 22:59:30 -0400
-Date: Mon, 3 Jun 2013 22:59:08 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
-Message-ID: <20130604025907.GA3991@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-	Tobias Winter <tobias@linuxdingsda.de>,
-	=?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-	Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1369721825.2776.36@driftwood>
- <51A327A4.7020908@linuxdingsda.de>
- <87obbwbo8s.fsf@nemi.mork.no>
- <51A332E2.1090403@linuxdingsda.de>
- <20130604024959.GA10697@kroah.com>
+	id S1758122Ab3FDDJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 23:09:18 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:62580 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab3FDDJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 23:09:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130604024959.GA10697@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130603222514.GA9082@roeck-us.net>
+References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
+	<20130603152725.GA2644@roeck-us.net>
+	<CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
+	<20130603222514.GA9082@roeck-us.net>
+Date: Tue, 4 Jun 2013 08:39:10 +0530
+Message-ID: <CAK7N6vpZB-bYohKFAjS55GVZO0MP8bHrLwBEja7EpqOXeqSW3g@mail.gmail.com>
+Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
+ timesout when delay very less
+From: anish singh <anish198519851985@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, randy.dunlap@oracle.com,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 07:49:59PM -0700, Greg Kroah-Hartman wrote:
- > On Mon, May 27, 2013 at 02:28:51PM +0200, Bjørn Mork wrote:
- > > But, IMHO, a nicer approach would be to make the allocation completely
- > > dynamic, using e.g. the idr subsystem. Static tables are always feel
- > > like straight jackets to me, no matter how big they are :)
- > 
- > You are right, I didn't change the code to use idr (it predates idr by
- > about a decade or so), because I thought we needed the "rage" logic that
- > the usb-serial minor reservation does.
+On Tue, Jun 4, 2013 at 3:55 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Mon, Jun 03, 2013 at 10:23:04PM +0530, anish singh wrote:
+>> On Mon, Jun 3, 2013 at 8:57 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > On Sun, Jun 02, 2013 at 03:43:07PM +0530, anish kumar wrote:
+>> >> Certain watchdog drivers use a timer to keep kicking the watchdog at
+>> >> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
+>> >> we can't guarantee that watchdog will be pinged fast enough
+>> >> for all system loads, especially if timeout is configured for
+>> >> less than or equal to 1 second(basically small values).
+>> >>
+>> >> As suggested by Wim Van Sebroeck & Guenter Roeck we should
+>> >> add this functionality of individual watchdog drivers in the core
+>> >> watchdog core.
+>> >>
+>> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+>> >
+>> > Not exactly what I had in mind. My idea was to enable the softdog only if
+>> > the hardware watchdog's maximum timeout was low (say, less than a couple
+>> > of minutes), and if a timeout larger than its maximum value was configured.
+>>
+>> watchdog_timeout_invalid wouldn't this check will fail if the user space tries
+>> to set maximum timeout more that what driver can support?It would work
+>> for pika_wdt.c as it is old watchdog driver and doesn't register with watchdog
+>> framwork but new drivers has to pass this api.
+>>
+>> OR
+>>
+>> Do you want to remove this check and go as explained by you?I would
+>> favour this approach though.
+>>
+> One would still have a check, but the enforced limits would no longer be
+> the driver limits, but larger limits implemented in the watchdog core.
+How much larger would be the big question here?Should it be configurable
+property(sysfs?) or some hardcoding based on existing drivers?
 
-Rage logic sounds like my kinda code.
-
-
- > +static int get_free_port(struct usb_serial_port *port)
- >  {
- > -	unsigned int i, j;
- > -	int good_spot;
- > -
- > -	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
- > +	int i;
- >  
- > -	*minor = 0;
- >  	mutex_lock(&table_lock);
- > -	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
- > -		if (serial_table[i])
- > -			continue;
- > +	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
- > +	if (i < 0)
- > +		return -EEXIST;
- > +	port->number = i;
- > +	mutex_unlock(&table_lock);
- > +	return i;
- > +}
-
--EEXIST case misses the mutex unlock.
-
-	Dave
-
+Before going for next patch, it would be better for me to wait for some
+more comments.
+>
+>> > In that case, I would have set the hardware watchdog to its maximum value
+>> > and use the softdog to ping it at a rate of, say, 50% of this maximum.
+>> >
+>> > If userspace would not ping the watchdog within its configured value,
+>> > I would stop pinging the hardware watchdog and let it time out.
+>>
+>> One more question.Why is the return value of watchdog_ping int? Anyway
+>> we discard it.
+>
+> I can not answer that question.
+>
+> Guenter
