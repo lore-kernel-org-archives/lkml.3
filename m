@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3FDMQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:16:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12203 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab3FDMQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:16:31 -0400
-X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ldwk5sxjx74A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=d1pqzc9q_nUA:10 a=pGLkceISAAAA:8 a=Q2wVtQmV3_NYaSgvCuIA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370348189.26799.117.camel@gandalf.local.home>
-Subject: Re: [PATCH v2][RFC] tracing/context-tracking: Add
- preempt_schedule_context() for tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Tue, 04 Jun 2013 08:16:29 -0400
-In-Reply-To: <20130604120949.GD14973@somewhere>
-References: <1369943981.26799.43.camel@gandalf.local.home>
-	 <20130531134319.GE5932@somewhere>
-	 <1370013528.26799.49.camel@gandalf.local.home>
-	 <20130531160101.GB5910@twins.programming.kicks-ass.net>
-	 <1370050218.26799.87.camel@gandalf.local.home>
-	 <20130604120949.GD14973@somewhere>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754480Ab3FDMTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:19:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42781 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753813Ab3FDMTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:19:05 -0400
+Date: Tue, 4 Jun 2013 14:18:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linux EFI <linux-efi@vger.kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130604121852.GE23640@pd.tnic>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-4-git-send-email-bp@alien8.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1370177770-26661-4-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-04 at 14:09 +0200, Frederic Weisbecker wrote:
+On Sun, Jun 02, 2013 at 02:56:09PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> .. for passing miscellaneous options from the kernel command line.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/platform/efi/efi.c | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 82089d8b1954..aea4337f7023 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -88,6 +88,11 @@ static u64 active_size;
 >  
-> > +/**
-> > + * preempt_schedule_context - preempt_schedule called by tracing
-> > + *
-> > + * The tracing infrastructure uses preempt_enable_notrace to prevent
-> > + * recursion and tracing preempt enabling caused by the tracing
-> > + * infrastructure itself. But as tracing can happen in areas coming
-> > + * from userspace or just about to enter userspace, a preempt enable
-> > + * can occur before user_exit() is called. This will cause the scheduler
-> > + * to be called when the system is still in usermode.
-> > + *
-> > + * To prevent this, the preempt_enable_notrace will use this function
-> > + * instead of preempt_schedule() to exit user context if needed before
-> > + * calling the scheduler.
-> > + */
-> > +void __sched notrace preempt_schedule_context(void)
-> > +{
-> > +	struct thread_info *ti = current_thread_info();
-> > +	enum ctx_state prev_ctx;
-> > +
-> > +	if (likely(ti->preempt_count || irqs_disabled()))
-> > +		return;
-> 
-> or:
->         if (!preemptible())
->                 return;
+>  unsigned long x86_efi_facility;
+>  
+> + /* 1:1 mapping of services regions */
+> +#define EFI_CFG_MAP11	BIT(0)
+> +
+> +static unsigned long efi_config;
+> +
+>  /*
+>   * Returns 1 if 'facility' is enabled, 0 otherwise.
+>   */
+> @@ -1167,3 +1172,14 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+>  	return EFI_SUCCESS;
+>  }
+>  EXPORT_SYMBOL_GPL(efi_query_variable_store);
+> +
+> +static int __init parse_efi_cmdline(char *str)
 
-Sure, but this is a cut and paste from preempt_schedule(). If I make
-that change here, I would want to make that there too.
+note to self:
 
-Peter, should I use !preemptible() or keep it like preempt_schedule()
-and make a clean up change for 3.11?
+#ifdef CONFIG_X86_64
 
-> 
-> > +
-> > +	/*
-> > +	 * Need to disable preemption in case user_exit() is traced
-> > +	 * and the tracer calls preempt_enable_notrace() causing
-> > +	 * an infinite recursion.
-> > +	 */
-> > +	preempt_disable_notrace();
-> > +	prev_ctx = exception_enter();
-> > +	preempt_enable_no_resched_notrace();
-> > +
-> > +	preempt_schedule();
-> > +
-> > +	preempt_disable_notrace();
-> > +	exception_exit(prev_ctx);
-> > +	preempt_enable_notrace();
-> > +}
-> > +EXPORT_SYMBOL(preempt_schedule_context);
-> 
-> That's quite a tricky change but I can't think of anything better.
+> +{
+> +	if (*str == '=')
+> +		str++;
+> +	if (!strncmp(str, "1:1_map", 7))
+> +		efi_config |= EFI_CFG_MAP11;
 
-Yeah, I had a few other solutions that were even worse than this one.
-Then I finally decided this was the best of the worse.
+#endif
 
-> 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+to temporarily workaround the 64-bit only requirement.
 
-Thanks,
+-- 
+Regards/Gruss,
+    Boris.
 
--- Steve
-
-> 
-> 
-> >  /**
-> >   * user_exit - Inform the context tracking that the CPU is
-> > -- 
-> > 1.7.3.4
-> > 
-> > 
-> > 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
