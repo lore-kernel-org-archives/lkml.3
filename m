@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3FDWrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:47:11 -0400
-Received: from 1wt.eu ([62.212.114.60]:35923 "EHLO 1wt.eu"
+	id S1754720Ab3FDWrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:47:09 -0400
+Received: from 1wt.eu ([62.212.114.60]:35926 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754199Ab3FDWom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:42 -0400
-Message-Id: <20130604172133.372622019@1wt.eu>
+	id S1754365Ab3FDWoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:44 -0400
+Message-Id: <20130604172135.737485013@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:44 +0200
+Date: Tue, 04 Jun 2013 19:23:41 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, "Theodore Tso" <tytso@mit.edu>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 074/184] staging: comedi: check s->async for poll(), read()
+Subject: [ 131/184] ext4: make orphan functions be no-op in no-journal
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,70 +22,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- and write()
+ mode
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit cc400e185c07c15a42d2635995f422de5b94b696 upstream.
+Instead of checking whether the handle is valid, we check if journal
+is enabled. This avoids taking the s_orphan_lock mutex in all cases
+when there is no journal in use, including the error paths where
+ext4_orphan_del() is called with a handle set to NULL.
 
-Some low-level comedi drivers (incorrectly) point `dev->read_subdev` or
-`dev->write_subdev` to a subdevice that does not support asynchronous
-commands.  Comedi's poll(), read() and write() file operation handlers
-assume these subdevices do support asynchronous commands.  In
-particular, they assume `s->async` is valid (where `s` points to the
-read or write subdevice), which it won't be if it has been set
-incorrectly.  This can lead to a NULL pointer dereference.
-
-Check `s->async` is non-NULL in `comedi_poll()`, `comedi_read()` and
-`comedi_write()` to avoid the bug.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/staging/comedi/comedi_fops.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/ext4/namei.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 193b836..90810e8 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1498,7 +1498,7 @@ static unsigned int comedi_poll(struct file *file, poll_table * wait)
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 828c9c9..230bef5 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2001,7 +2001,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+ 	struct ext4_iloc iloc;
+ 	int err = 0, rc;
  
- 	mask = 0;
- 	read_subdev = comedi_get_read_subdevice(dev_file_info);
--	if (read_subdev) {
-+	if (read_subdev && read_subdev->async) {
- 		poll_wait(file, &read_subdev->async->wait_head, wait);
- 		if (!read_subdev->busy
- 		    || comedi_buf_read_n_available(read_subdev->async) > 0
-@@ -1508,7 +1508,7 @@ static unsigned int comedi_poll(struct file *file, poll_table * wait)
- 		}
- 	}
- 	write_subdev = comedi_get_write_subdevice(dev_file_info);
--	if (write_subdev) {
-+	if (write_subdev && write_subdev->async) {
- 		poll_wait(file, &write_subdev->async->wait_head, wait);
- 		comedi_buf_write_alloc(write_subdev->async,
- 				       write_subdev->async->prealloc_bufsz);
-@@ -1550,7 +1550,7 @@ static ssize_t comedi_write(struct file *file, const char *buf, size_t nbytes,
- 	}
+-	if (!ext4_handle_valid(handle))
++	if (!EXT4_SB(sb)->s_journal)
+ 		return 0;
  
- 	s = comedi_get_write_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
-@@ -1658,7 +1658,7 @@ static ssize_t comedi_read(struct file *file, char *buf, size_t nbytes,
- 	}
+ 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
+@@ -2082,8 +2082,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
+ 	struct ext4_iloc iloc;
+ 	int err = 0;
  
- 	s = comedi_get_read_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
+-	/* ext4_handle_valid() assumes a valid handle_t pointer */
+-	if (handle && !ext4_handle_valid(handle))
++	if (!EXT4_SB(inode->i_sb)->s_journal)
+ 		return 0;
+ 
+ 	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
+@@ -2102,7 +2101,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
+ 	 * transaction handle with which to update the orphan list on
+ 	 * disk, but we still need to remove the inode from the linked
+ 	 * list in memory. */
+-	if (sbi->s_journal && !handle)
++	if (!handle)
+ 		goto out;
+ 
+ 	err = ext4_reserve_inode_write(handle, inode, &iloc);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
