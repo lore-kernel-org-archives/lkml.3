@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab3FDOSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:18:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46834 "EHLO
+	id S1756878Ab3FDOTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:19:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46828 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab3FDOIT (ORCPT
+	with ESMTP id S1755660Ab3FDOIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:19 -0400
+	Tue, 4 Jun 2013 10:08:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Cliff Wickman <cpw@sgi.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, David Sterba <dsterba@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 38/70] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Date: Tue,  4 Jun 2013 15:06:54 +0100
-Message-Id: <1370354846-14213-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 41/70] dm bufio: avoid a possible __vmalloc deadlock
+Date: Tue,  4 Jun 2013 15:06:57 +0100
+Message-Id: <1370354846-14213-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -34,153 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
+commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
 
-A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
-application has a VM_PFNMAP range.  It happened in-house when a
-benchmarker was trying to decipher the memory layout of his program.
+This patch uses memalloc_noio_save to avoid a possible deadlock in
+dm-bufio.  (it could happen only with large block size, at most
+PAGE_SIZE << MAX_ORDER (typically 8MiB).
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+used for allocation of requested pages, structures vmap_area, vmap_block
+and vm_struct and the radix tree nodes.
 
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures.  And
-this is not usually true for VM_PFNMAP areas.  This can result in panics
-on kernel page faults when attempting to address those page structures.
+However, the kernel pagetables are allocated always with GFP_KERNEL.
+Thus the allocation of pagetables can recurse back to the I/O layer and
+cause a deadlock.
 
-There are a half dozen callers of walk_page_range() that walk through a
-task's entire page table (as N.  Horiguchi pointed out).  So rather than
-change all of them, this patch changes just walk_page_range() to ignore
-VM_PFNMAP areas.
+This patch uses the function memalloc_noio_save to set per-process
+PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+it. When this flag is set, all allocations in the process are done with
+implied GFP_NOIO flag, thus the deadlock can't happen.
 
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
+This should be backported to stable kernels, but they don't have the
+PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+functions. So, PF_MEMALLOC should be set and restored instead.
 
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: David Sterba <dsterba@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ luis: backport to 3.5 as suggested:
+  - inlined functions memalloc_noio_save and memalloc_noio_restore
+  - replaced PF_MEMALLOC_NOIO by PF_MEMALLOC ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/pagewalk.c | 70 ++++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 36 insertions(+), 34 deletions(-)
+ drivers/md/dm-bufio.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index 6c118d0..449cad6 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
- 	return 0;
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index c0fc827..e9097af 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
+ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 			       enum data_mode *data_mode)
+ {
++	unsigned noio_flag;
++	void *ptr;
++
+ 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+ 		*data_mode = DATA_MODE_SLAB;
+ 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 	}
+ 
+ 	*data_mode = DATA_MODE_VMALLOC;
+-	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	/*
++	 * __vmalloc allocates the data pages and auxiliary structures with
++	 * gfp_flags that were specified, but pagetables are always allocated
++	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
++	 *
++	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
++	 * all allocations done by this process (including pagetables) are done
++	 * as if GFP_NOIO was specified.
++	 */
++
++	if (gfp_mask & __GFP_NORETRY) {
++		noio_flag = current->flags & PF_MEMALLOC;
++		current->flags |= PF_MEMALLOC;
++	}
++
++	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	if (gfp_mask & __GFP_NORETRY)
++		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
++
++	return ptr;
  }
  
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	return NULL;
--}
--
- static int walk_hugetlb_range(struct vm_area_struct *vma,
- 			      unsigned long addr, unsigned long end,
- 			      struct mm_walk *walk)
-@@ -198,30 +177,53 @@ int walk_page_range(unsigned long addr, unsigned long end,
- 	if (!walk->mm)
- 		return -EINVAL;
- 
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
- 
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * This function was not intended to be vma based.
-+		 * But there are vma special cases to be handled:
-+		 * - hugetlb vma's
-+		 * - VM_PFNMAP vma's
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
+ /*
 -- 
 1.8.1.2
 
