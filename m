@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab3FDUwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:52:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62483 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3FDUwf (ORCPT
+	id S1751547Ab3FDUye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:54:34 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46715 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab3FDUyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:52:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 21/21] clk: ux500: Supply provider look-up functionality to support Device Tree
-Date: Tue, 4 Jun 2013 22:52:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-22-git-send-email-lee.jones@linaro.org> <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
-In-Reply-To: <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
+	Tue, 4 Jun 2013 16:54:31 -0400
+Date: Tue, 4 Jun 2013 13:54:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130604205426.GI14916@htj.dyndns.org>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+ <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+ <20130604010737.GF29989@mtj.dyndns.org>
+ <20130604134523.GH31242@dhcp22.suse.cz>
+ <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306042252.03340.arnd@arndb.de>
-X-Provags-ID: V02:K0:8/SUhxtDMqsuX9seDVT8+ANMBDKlwvZRjqcL+k3rdTG
- mYIEmqdO8iwi+U0p3ZgCDnt5Liep20XbBIEDDbSPV3uRom4OW8
- puXr6Bldc4xkV1pMYBqpWlltN/nJlxKx+IMLGHJxGRgIwVNEzT
- eRE2MtDa+q6TlNwEYZEQnR1QGrzHf5IQqlweFH0C1ExSkMMQce
- VJsUBlt8ymV1OyU72vwtpk/EiGWgcmXEa3t0J0Y3FfciZwU4Os
- UFeG5UdCK6y7l9ui5BRV/Wa/KfUGgeFjsvCZWpCR+dZ4xfXoWZ
- p8bz6YZ7vtNzy/UihwEc4QjILpeP3ne1Fmre0EPu9gPBp7xzHB
- lWPhd7HTVojK0GhRZvRY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604204807.GA13231@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013, Linus Walleij wrote:
-> The whole thing is very different from other DT clock things
-> I've seen, usually you add a compatible node for each
-> clock type, and a node for each physical gate. But there
-> may be several ways to skin this cat...
+Hey,
+
+On Tue, Jun 04, 2013 at 10:48:07PM +0200, Michal Hocko wrote:
+> > I really don't think memcg can afford to add more mess than there
+> > already is.  Let's try to get things right with each change, please.
 > 
+> Is this really about inside vs. outside skipping? I think this is a
+> general improvement to the code. I really prefer not duplicating common
+> code and skipping handling is such a code (we have a visitor which can
+> control the walk). With a side bonus that it doesn't have to pollute
+> vmscan more than necessary.
+> 
+> Please be more specific about _what_ is so ugly about this interface so
+> that it matters so much.
 
-Based on the IRC discussion we had, I would think that the "prcc" clocks
-would best be represented using multiple clock-cells since you can describe
-them easily a tuple of register index, bit number some way to distinguish
-the two types.
+Can you please try the other approach and see how it looks?  It's just
+my general experience that you usually end up with something much
+uglier when you try to do much inside an iterator and having to add
+callbacks which need to communicate through enums is usually a pretty
+good sign that it took a wrong turn somewhere.  There sure are cases
+where such approach is necessary but I really don't see it here.  So,
+it'd be really great if you can give a shot.
 
-The "prcmu" clocks are harder, and we probably need either a more verbose
-representation using one node per clock there, or have a single node
-for the entire prcmu and not bother to describe them in DT but hardcode
-everything in the source. The current patch does the latter, which is
-easier now but means we cannot simplify the code much in the future
-when we remove ATAGS boot support.
+Thanks.
 
-I hope Mike can give some better insight to what his preferences are.
-
-	Arnd
+-- 
+tejun
