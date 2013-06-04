@@ -1,173 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab3FDMFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:05:33 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58999 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab3FDMF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:05:29 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 07/10] pinctrl: add pinctrl driver for Rockchip SoCs
-Date: Tue, 4 Jun 2013 14:05:12 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <201306030059.47611.heiko@sntech.de> <CACRpkdbBr7s1NoTQewVOotorHJHLL8Z6-_gAx5GC0x6uNUX0gw@mail.gmail.com>
-In-Reply-To: <CACRpkdbBr7s1NoTQewVOotorHJHLL8Z6-_gAx5GC0x6uNUX0gw@mail.gmail.com>
+	id S1753954Ab3FDMJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:09:58 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:64307 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab3FDMJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:09:55 -0400
+Date: Tue, 4 Jun 2013 14:09:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2][RFC] tracing/context-tracking: Add
+ preempt_schedule_context() for tracing
+Message-ID: <20130604120949.GD14973@somewhere>
+References: <1369943981.26799.43.camel@gandalf.local.home>
+ <20130531134319.GE5932@somewhere>
+ <1370013528.26799.49.camel@gandalf.local.home>
+ <20130531160101.GB5910@twins.programming.kicks-ass.net>
+ <1370050218.26799.87.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306041405.13320.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370050218.26799.87.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I'll just skip over the "right, will fix that" issues and just address the 
-unclear ones.
-
-Am Dienstag, 4. Juni 2013, 09:08:09 schrieb Linus Walleij:
-> On Mon, Jun 3, 2013 at 12:59 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > This driver adds support the Cortex-A9 based SoCs from Rockchip,
-> > so at least the RK2928, RK3066 (a and b) and RK3188.
-> > Earlier Rockchip SoCs seem to use similar mechanics for gpio
-> > handling so should be supportable with relative small changes.
-> > Pull handling on the rk3188 is currently a stub, due to it being
-> > a bit different to the earlier SoCs.
-> > 
-> > Pinmuxing as well as gpio (and interrupt-) handling tested on
-> > a rk3066a based machine.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+On Fri, May 31, 2013 at 09:30:18PM -0400, Steven Rostedt wrote:
+> Dave Jones hit the following bug report:
 > 
-> Overall this is looking very good, mainly minor comments.
-
-> > +Required properties for pin configuration node:
-> > +  - rockchip,pins: 4 integers array, represents a group of pins mux and
-> > config +    setting. The format is rockchip,pins = <PIN_BANK
-> > PIN_BANK_NUM MUX CONFIG>. +    The MUX 0 means gpio and MUX 1 to 3 mean
-> > the specific device function +
-> > +Bits used for CONFIG:
-> > +PULL_AUTO      (1 << 0): indicate this pin needs a pull setting for SoCs
-> > +                         that determine the pull up or down themselfs
+>  ===============================
+>  [ INFO: suspicious RCU usage. ]
+>  3.10.0-rc2+ #1 Not tainted
+>  -------------------------------
+>  include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+>  other info that might help us debug this:
+>  RCU used illegally from idle CPU! rcu_scheduler_active = 1, debug_locks = 0
+>  RCU used illegally from extended quiescent state!
+>  2 locks held by cc1/63645:
+>   #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816b39fd>] __schedule+0xed/0x9b0
+>   #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8109d645>] cpuacct_charge+0x5/0x1f0
 > 
-> Hm, never saw that before...
-
-Citing the original gpio driver:
-
-	/*
-	 * Values written to this register independently
-	 * control Pullup/Pulldown or not for the
-	 * corresponding data bit in GPIO.
-	 * 0: pull up/down enable, PAD type will decide
-	 * to be up or down, not related with this value
-	 * 1: pull up/down disable
-	 */
-
-So if it's a pull up or down is decided based on the mux of the pin. Calling 
-everything a "pull down" (or up) when it isn't seemed somehow wrong to me.
-
-The rk3188 on the other hand supports both pull up and down separately.
-
-Or should this be selected as PULL_UP | PULL_DOWN in the config?
-
-
-> > +uart2: serial@20064000 {
-> > +       compatible = "snps,dw-apb-uart";
-> > +       reg = <0x20064000 0x400>;
-> > +       interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+>  CPU: 1 PID: 63645 Comm: cc1 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 25/277 64369]
+>  Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+>   0000000000000000 ffff88010f78fcf8 ffffffff816ae383 ffff88010f78fd28
+>   ffffffff810b698d ffff88011c092548 000000000023d073 ffff88011c092500
+>   0000000000000001 ffff88010f78fd60 ffffffff8109d7c5 ffffffff8109d645
+>  Call Trace:
+>   [<ffffffff816ae383>] dump_stack+0x19/0x1b
+>   [<ffffffff810b698d>] lockdep_rcu_suspicious+0xfd/0x130
+>   [<ffffffff8109d7c5>] cpuacct_charge+0x185/0x1f0
+>   [<ffffffff8109d645>] ? cpuacct_charge+0x5/0x1f0
+>   [<ffffffff8108dffc>] update_curr+0xec/0x240
+>   [<ffffffff8108f528>] put_prev_task_fair+0x228/0x480
+>   [<ffffffff816b3a71>] __schedule+0x161/0x9b0
+>   [<ffffffff816b4721>] preempt_schedule+0x51/0x80
+>   [<ffffffff816b4800>] ? __cond_resched_softirq+0x60/0x60
+>   [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+>   [<ffffffff810ff3cc>] ftrace_ops_control_func+0x1dc/0x210
+>   [<ffffffff816be280>] ftrace_call+0x5/0x2f
+>   [<ffffffff816b681d>] ? retint_careful+0xb/0x2e
+>   [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+>   [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+>   [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+>  ------------[ cut here ]------------
 > 
-> Using #defines, nice!
-
-everything for bonus-points ;-)
-
-And actually it's definitly easier on me as well, as I don't have to remember 
-what each integer value means.
-
-> +++ b/drivers/pinctrl/Kconfig
-> @@ -158,6 +158,12 @@ config PINCTRL_DB8540
->         bool "DB8540 pin controller driver"
->         depends on PINCTRL_NOMADIK && ARCH_U8500
+> What happened was that the function tracer traced the schedule_user() code
+> that tells RCU that the system is coming back from userspace, and to
+> add the CPU back to the RCU monitoring.
 > 
-> +config PINCTRL_ROCKCHIP
-> +       bool
-> +       select PINMUX
-> +       select PINCONF
-> +       select GENERIC_IRQ_CHIP
+> Because the function tracer does a preempt_disable/enable_notrace() calls
+> the preempt_enable_notrace() checks the NEED_RESCHED flag. If it is set,
+> then preempt_schedule() is called. But this is called before the user_exit()
+> function can inform the kernel that the CPU is no longer in user mode and
+> needs to be accounted for by RCU.
 > 
-> Why is this super-simple pin config thing not using
-> GENERIC_PINCONF?
+> The fix is to create a new preempt_schedule_context() that checks if
+> the kernel is still in user mode and if so to switch it to kernel mode
+> before calling schedule. It also switches back to user mode coming back
+> from schedule in need be.
 > 
-> I *know* it is simpler to implement your own thing, but think of the
-> poor maintainers that have to wade through 50 identical implementations.
-> Do this, it pays off.
-
-generic pinconf sounds interesting ... will give it a try.
-
-The only problem is the pull stuff mentioned above that is either pull up or 
-down without the driver having knowledge about it. And generic_pinconf only 
-knows about them separately right now.
-
-
-> BTW: it leads to wanting to use generic pinconf DT bindings as experienced
-> by Laurent and others. We need to fix that too...
+> The only user of this currently is the preempt_enable_notrace(), which is
+> only used by the tracing subsystem.
 > 
-> (...)
+> Link: http://lkml.kernel.org/r/1369423420.6828.226.camel@gandalf.local.home
 > 
-> > +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> > +static void rockchip_pin_dbg_show(struct pinctrl_dev *pctldev,
-> > +                                       struct seq_file *s, unsigned
-> > offset) +{
-> > +       seq_printf(s, "%s", dev_name(pctldev->dev));
-> > +}
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/preempt.h   |   18 +++++++++++++++++-
+>  kernel/context_tracking.c |   38 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 55 insertions(+), 1 deletions(-)
 > 
-> Nothing else you want to say about the pins here?
-> (No big deal for sure, but....)
+> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+> index 87a03c7..f5d4723 100644
+> --- a/include/linux/preempt.h
+> +++ b/include/linux/preempt.h
+> @@ -33,9 +33,25 @@ do { \
+>  		preempt_schedule(); \
+>  } while (0)
+>  
+> +#ifdef CONFIG_CONTEXT_TRACKING
+> +
+> +void preempt_schedule_context(void);
+> +
+> +#define preempt_check_resched_context() \
+> +do { \
+> +	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+> +		preempt_schedule_context(); \
+> +} while (0)
+> +#else
+> +
+> +#define preempt_check_resched_context() preempt_check_resched()
+> +
+> +#endif /* CONFIG_CONTEXT_TRACKING */
+> +
+>  #else /* !CONFIG_PREEMPT */
+>  
+>  #define preempt_check_resched()		do { } while (0)
+> +#define preempt_check_resched_context()	do { } while (0)
+>  
+>  #endif /* CONFIG_PREEMPT */
+>  
+> @@ -88,7 +104,7 @@ do { \
+>  do { \
+>  	preempt_enable_no_resched_notrace(); \
+>  	barrier(); \
+> -	preempt_check_resched(); \
+> +	preempt_check_resched_context(); \
+>  } while (0)
+>  
+>  #else /* !CONFIG_PREEMPT_COUNT */
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 65349f0..15c9f2e 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -71,6 +71,44 @@ void user_enter(void)
+>  	local_irq_restore(flags);
+>  }
+>  
+> +/**
+> + * preempt_schedule_context - preempt_schedule called by tracing
+> + *
+> + * The tracing infrastructure uses preempt_enable_notrace to prevent
+> + * recursion and tracing preempt enabling caused by the tracing
+> + * infrastructure itself. But as tracing can happen in areas coming
+> + * from userspace or just about to enter userspace, a preempt enable
+> + * can occur before user_exit() is called. This will cause the scheduler
+> + * to be called when the system is still in usermode.
+> + *
+> + * To prevent this, the preempt_enable_notrace will use this function
+> + * instead of preempt_schedule() to exit user context if needed before
+> + * calling the scheduler.
+> + */
+> +void __sched notrace preempt_schedule_context(void)
+> +{
+> +	struct thread_info *ti = current_thread_info();
+> +	enum ctx_state prev_ctx;
+> +
+> +	if (likely(ti->preempt_count || irqs_disabled()))
+> +		return;
 
-when using pinconfig_generic, its dump_pin function should be more talkative 
-right?
+or:
+        if (!preemptible())
+                return;
+
+> +
+> +	/*
+> +	 * Need to disable preemption in case user_exit() is traced
+> +	 * and the tracer calls preempt_enable_notrace() causing
+> +	 * an infinite recursion.
+> +	 */
+> +	preempt_disable_notrace();
+> +	prev_ctx = exception_enter();
+> +	preempt_enable_no_resched_notrace();
+> +
+> +	preempt_schedule();
+> +
+> +	preempt_disable_notrace();
+> +	exception_exit(prev_ctx);
+> +	preempt_enable_notrace();
+> +}
+> +EXPORT_SYMBOL(preempt_schedule_context);
+
+That's quite a tricky change but I can't think of anything better.
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
 
-> > +
-> > +               data = readl_relaxed(reg);
-> > +               data >>= bit;
-> > +               data &= 1;
-> > +
-> > +               return !data;
+>  /**
+>   * user_exit - Inform the context tracking that the CPU is
+> -- 
+> 1.7.3.4
 > 
-> That's a bit hard to read, I'd just:
 > 
-> #include <linux/bitops.h>
-> return !(readl_relaxed(reg) & BIT(bit));
 > 
-> And skip the "data" variable. The ! operator will
-> clamp this to a bool (0/1).
-> 
-> But we all have our habits.
-
-yeah, but sometimes it's also good to try to break them ... your solution is 
-much nicer to read (and shorter).
-
-
-> All I could think of right now...
-
-Thanks for the review
-Heiko
