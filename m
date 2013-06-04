@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab3FDOIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:08:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46783 "EHLO
+	id S1756328Ab3FDOSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:18:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab3FDOIK (ORCPT
+	with ESMTP id S1756059Ab3FDOIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:10 -0400
+	Tue, 4 Jun 2013 10:08:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Leonid Yegoshin <yegoshin@mips.com>, Michal Hocko <mhocko@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
+Cc: Cliff Wickman <cpw@sgi.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, David Sterba <dsterba@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 31/70] mm compaction: fix of improper cache flush in migration code
-Date: Tue,  4 Jun 2013 15:06:47 +0100
-Message-Id: <1370354846-14213-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 38/70] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
+Date: Tue,  4 Jun 2013 15:06:54 +0100
+Message-Id: <1370354846-14213-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -33,57 +34,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
+commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
 
-Page 'new' during MIGRATION can't be flushed with flush_cache_page().
-Using flush_cache_page(vma, addr, pfn) is justified only if the page is
-already placed in process page table, and that is done right after
-flush_cache_page().  But without it the arch function has no knowledge
-of process PTE and does nothing.
+A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
+application has a VM_PFNMAP range.  It happened in-house when a
+benchmarker was trying to decipher the memory layout of his program.
 
-Besides that, flush_cache_page() flushes an application cache page, but
-the kernel has a different page virtual address and dirtied it.
+/proc/<pid>/smaps and similar walks through a user page table should not
+be looking at VM_PFNMAP areas.
 
-Replace it with flush_dcache_page(new) which is the proper usage.
+Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+assume that all the mapped PFN's are backed with page structures.  And
+this is not usually true for VM_PFNMAP areas.  This can result in panics
+on kernel page faults when attempting to address those page structures.
 
-The old page is flushed in try_to_unmap_one() before migration.
+There are a half dozen callers of walk_page_range() that walk through a
+task's entire page table (as N.  Horiguchi pointed out).  So rather than
+change all of them, this patch changes just walk_page_range() to ignore
+VM_PFNMAP areas.
 
-This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
-aliasing (but Harvard arch - separate I and D cache) in tight memory
-environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
-kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
-ON.
+The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+want to test any vma in the range.
 
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Cc: Leonid Yegoshin <yegoshin@mips.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>
+VM_PFNMAP areas are used by:
+- graphics memory manager   gpu/drm/drm_gem.c
+- global reference unit     sgi-gru/grufile.c
+- sgi special memory        char/mspec.c
+- and probably several out-of-tree modules
+
+[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: David Sterba <dsterba@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/migrate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/pagewalk.c | 70 ++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 36 insertions(+), 34 deletions(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 2e03986..65cc229 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -147,7 +147,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
- 		pte = arch_make_huge_pte(pte, vma, new, 0);
- 	}
- #endif
--	flush_cache_page(vma, addr, pte_pfn(pte));
-+	flush_dcache_page(new);
- 	set_pte_at(mm, addr, ptep, pte);
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index 6c118d0..449cad6 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 	return 0;
+ }
  
- 	if (PageHuge(new)) {
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	struct vm_area_struct *vma;
+-
+-	/* We don't need vma lookup at all. */
+-	if (!walk->hugetlb_entry)
+-		return NULL;
+-
+-	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+-		return vma;
+-
+-	return NULL;
+-}
+-
+ #else /* CONFIG_HUGETLB_PAGE */
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	return NULL;
+-}
+-
+ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 			      unsigned long addr, unsigned long end,
+ 			      struct mm_walk *walk)
+@@ -198,30 +177,53 @@ int walk_page_range(unsigned long addr, unsigned long end,
+ 	if (!walk->mm)
+ 		return -EINVAL;
+ 
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++
+ 	pgd = pgd_offset(walk->mm, addr);
+ 	do {
+-		struct vm_area_struct *vma;
++		struct vm_area_struct *vma = NULL;
+ 
+ 		next = pgd_addr_end(addr, end);
+ 
+ 		/*
+-		 * handle hugetlb vma individually because pagetable walk for
+-		 * the hugetlb page is dependent on the architecture and
+-		 * we can't handled it in the same manner as non-huge pages.
++		 * This function was not intended to be vma based.
++		 * But there are vma special cases to be handled:
++		 * - hugetlb vma's
++		 * - VM_PFNMAP vma's
+ 		 */
+-		vma = hugetlb_vma(addr, walk);
++		vma = find_vma(walk->mm, addr);
+ 		if (vma) {
+-			if (vma->vm_end < next)
++			/*
++			 * There are no page structures backing a VM_PFNMAP
++			 * range, so do not allow split_huge_page_pmd().
++			 */
++			if ((vma->vm_start <= addr) &&
++			    (vma->vm_flags & VM_PFNMAP)) {
+ 				next = vma->vm_end;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 			/*
+-			 * Hugepage is very tightly coupled with vma, so
+-			 * walk through hugetlb entries within a given vma.
++			 * Handle hugetlb vma individually because pagetable
++			 * walk for the hugetlb page is dependent on the
++			 * architecture and we can't handled it in the same
++			 * manner as non-huge pages.
+ 			 */
+-			err = walk_hugetlb_range(vma, addr, next, walk);
+-			if (err)
+-				break;
+-			pgd = pgd_offset(walk->mm, next);
+-			continue;
++			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
++			    is_vm_hugetlb_page(vma)) {
++				if (vma->vm_end < next)
++					next = vma->vm_end;
++				/*
++				 * Hugepage is very tightly coupled with vma,
++				 * so walk through hugetlb entries within a
++				 * given vma.
++				 */
++				err = walk_hugetlb_range(vma, addr, next, walk);
++				if (err)
++					break;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 		}
+ 
+ 		if (pgd_none_or_clear_bad(pgd)) {
 -- 
 1.8.1.2
 
