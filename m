@@ -1,269 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab3FDSaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:30:14 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60198
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab3FDSaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:30:03 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel support
-Date: Tue,  4 Jun 2013 12:05:07 -0700
-Message-Id: <1370372709-10098-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1370372709-10098-1-git-send-email-kys@microsoft.com>
-References: <1370372674-10046-1-git-send-email-kys@microsoft.com>
- <1370372709-10098-1-git-send-email-kys@microsoft.com>
+	id S1751791Ab3FDSaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:30:25 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33431 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab3FDSaU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 14:30:20 -0400
+Date: Tue, 4 Jun 2013 20:30:19 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OndrejZary <linux@rainbow-software.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] usbnet: mcs7830: improve workaround against unreliable link
+ status.
+Message-ID: <20130604183019.GB13186@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement multi-channel support for the storage devices.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+>From d4bf85d0c6776bf4b15a0eea7772f9c55cef3daf Mon Sep 17 00:00:00 2001
+From: Andreas Mohr <andim2@users.sourceforge.net>
+Date: Sun, 2 Jun 2013 22:24:35 +0200
+Subject: [PATCH] usbnet: mcs7830: improve workaround against unreliable link
+ status.
+
+- to guard against spurious link loss, try to improve precision
+  by taking into account full-duplex / 100Mbps bits as well
+- add actual status enums rather than using open-coded ints
+- MCS7830 status data is word-sized, thus do access it that way
 ---
- drivers/scsi/storvsc_drv.c |  131 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 127 insertions(+), 4 deletions(-)
+ drivers/net/usb/mcs7830.c |   74 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 72 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9451989..1d4d425 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -328,6 +328,8 @@ static int storvsc_timeout = 180;
+
+Realized that link state is unreliable indeed (sometimes causing
+some intermediate status changes even with that averaging happening),
+thus I was wondering how to improve it.
+First thing was to think of something which we might be doing wrong in general, but I couldn't come up with much.
+Thus I concentrated on the status bits that were incoming, where I realized
+that full-duplex / 100Mbps bits are a strong indication of an actual
+link. IOW, update code to consider link lost only if link loss bit is active
+and neither full-duplex nor 100Mbps is indicated.
+Of course a half-duplex 10Mbps connection (BNC hub?) will not be happy
+then. Sucks, but that's life.
+Anything else that someone might come up with on why status is that
+unreliable? Perhaps that's a common phenomenon with some PHY mechanisms?
+
+Tested on -rc4, checkpath.pl:d.
+
+Signed-off-by: Andreas Mohr <andim2@users.sourceforge.net>
+
+Thanks,
+
+Andreas Mohr
+
+
+diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+index 03832d3..0c1543b 100644
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -114,6 +114,43 @@ enum {
+ 	/* [7:6] reserved */
+ };
  
- #define STORVSC_MAX_IO_REQUESTS				128
- 
-+static void storvsc_on_channel_callback(void *context);
-+
- /*
-  * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
-  * reality, the path/target is not used (ie always set to 0) so our
-@@ -364,6 +366,7 @@ struct storvsc_device {
- 
- 	bool	 destroy;
- 	bool	 drain_notify;
-+	bool	 open_sub_channel;
- 	atomic_t num_outstanding_req;
- 	struct Scsi_Host *host;
- 
-@@ -755,12 +758,104 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 	return total_copied;
- }
- 
-+static void handle_sc_creation(struct vmbus_channel *new_sc)
-+{
-+	struct hv_device *device = new_sc->primary_channel->device_obj;
-+	struct storvsc_device *stor_device;
-+	struct vmstorage_channel_properties props;
-+
-+	stor_device = get_out_stor_device(device);
-+	if (!stor_device)
-+		return;
-+
-+	if (stor_device->open_sub_channel == false)
-+		return;
-+
-+	memset(&props, 0, sizeof(struct vmstorage_channel_properties));
-+
-+	vmbus_open(new_sc,
-+		   storvsc_ringbuffer_size,
-+		   storvsc_ringbuffer_size,
-+		   (void *)&props,
-+		   sizeof(struct vmstorage_channel_properties),
-+		   storvsc_on_channel_callback, new_sc);
-+}
-+
-+static void  handle_multichannel_storage(struct hv_device *device, int max_chns)
-+{
-+	struct storvsc_device *stor_device;
-+	int num_cpus = num_online_cpus();
-+	int num_sc;
-+	struct storvsc_cmd_request *request;
-+	struct vstor_packet *vstor_packet;
-+	int ret, t;
-+
-+	num_sc = ((max_chns > num_cpus) ? num_cpus : max_chns);
-+	stor_device = get_out_stor_device(device);
-+	if (!stor_device)
-+		return;
-+
-+	request = &stor_device->init_request;
-+	vstor_packet = &request->vstor_packet;
-+
-+	stor_device->open_sub_channel = true;
-+	/*
-+	 * Establish a handler for dealing with subchannels.
++/* Bits within one status word in status interrupt callback data */
++enum {
++	MCS7830_STATUS_ETHER_FRAME_OK			= 0x0001,
++	MCS7830_STATUS_RETRIES_MORE_THAN_16		= 0x0002,
++	MCS7830_STATUS_COLLISION_OCCURRED_AFTER_64BYTES	= 0x0004,
++	MCS7830_STATUS_PACKET_ABORTED_EXCESS_DEFERRAL	= 0x0008,
++	/* 9:4 reserved (all zeroes) */
++	MCS7830_STATUS_FULL_DUPLEX_EN			= 0x0400,
++	MCS7830_STATUS_SPEED_100MBPS			= 0x0800,
++	MCS7830_STATUS_MIIM_INTERRUPT			= 0x1000,
++	/* Link flag is UNRELIABLE, on both 7830 and 7832!
++	 * While pulling the cable always seems to result in a clean 0x2000,
++	 * sometimes in between (especially when transfers are interfering?)
++	 * there's 0x2XXX values as well, but they always seem to be 0x2cXX
++	 * (at least for full-duplex, 100Mbps operation).
++	 * Thus the only more reliable way to tell apart actual link loss
++	 * from pseudo loss is to query for "link loss" *and*
++	 * "both full-duplex *and* 100Mbps *not set*". Which obviously means
++	 * that a half-duplex, 10Mbps setup
++	 * likely will never be able to indicate link reliably :(
++	 * Plus, I'm wondering whether we (or the kernel?)
++	 * are simply doing something wrong which causes the device to act up
++	 * (e.g., intermingling frame transfers with status transfers
++	 * in a sufficiently problematic way [inner-device race conditions?]).
++	 * Also, averaging several status bools is not very useful since:
++	 * - it directly depends on polling frequency
++	 * - (and thus) that count may still not be enough --> mis-detection
++	 * Perhaps on link loss it's somehow doable to subsequently do
++	 * an actual PHY request (perhaps not in status callback?)
++	 * which would hopefully reliably indicate status.
 +	 */
-+	vmbus_set_sc_create_callback(device->channel, handle_sc_creation);
++	MCS7830_STATUS_MIIM_LINK_DOWN__UNRELIABLE	= 0x2000,
++	MCS7830_STATUS_TX_STATUS_VECTOR_BITS_VALID	= 0x4000,
++	MCS7830_STATUS_SRAM_HAS_FRAMES_PENDING		= 0x8000
++};
 +
-+	/*
-+	 * Check to see if sub-channels have already been created. This
-+	 * can happen when this driver is re-loaded after unloading.
-+	 */
 +
-+	if (vmbus_are_subchannels_present(device->channel))
-+		return;
-+
-+	stor_device->open_sub_channel = false;
-+	/*
-+	 * Request the host to create sub-channels.
-+	 */
-+	memset(request, 0, sizeof(struct storvsc_cmd_request));
-+	init_completion(&request->wait_event);
-+	vstor_packet->operation = VSTOR_OPERATION_CREATE_SUB_CHANNELS;
-+	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
-+	vstor_packet->sub_channel_count = num_sc;
-+
-+	ret = vmbus_sendpacket(device->channel, vstor_packet,
-+			       (sizeof(struct vstor_packet) -
-+			       vmscsi_size_delta),
-+			       (unsigned long)request,
-+			       VM_PKT_DATA_INBAND,
-+			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+
-+	if (ret != 0)
-+		return;
-+
-+	t = wait_for_completion_timeout(&request->wait_event, 10*HZ);
-+	if (t == 0)
-+		return;
-+
-+	if (vstor_packet->operation != VSTOR_OPERATION_COMPLETE_IO ||
-+	    vstor_packet->status != 0)
-+		return;
-+
-+	/*
-+	 * Now that we created the sub-channels, invoke the check; this
-+	 * may trigger the callback.
-+	 */
-+	stor_device->open_sub_channel = true;
-+	vmbus_are_subchannels_present(device->channel);
-+}
-+
- static int storvsc_channel_init(struct hv_device *device)
+ struct mcs7830_data {
+ 	u8 multi_filter[8];
+ 	u8 config;
+@@ -559,14 +596,47 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 
+ static void mcs7830_status(struct usbnet *dev, struct urb *urb)
  {
- 	struct storvsc_device *stor_device;
- 	struct storvsc_cmd_request *request;
- 	struct vstor_packet *vstor_packet;
- 	int ret, t;
-+	int max_chns;
-+	bool process_sub_channels = false;
- 
- 	stor_device = get_out_stor_device(device);
- 	if (!stor_device)
-@@ -855,6 +950,19 @@ static int storvsc_channel_init(struct hv_device *device)
- 	    vstor_packet->status != 0)
- 		goto cleanup;
- 
 +	/*
-+	 * Check to see if multi-channel support is there.
-+	 * Hosts that implement protocol version of 5.1 and above
-+	 * support multi-channel.
++	 * TODO: since status polling is very painful (>> 100 wakeups / second),
++	 * could add a module param
++	 * disable_status_poll
++	 * "Disable polling of status interrupt EP (avoid excessive wakeups)."
++	 * where one would set the .status member to NULL
++	 * (but that's currently not doable since the struct is const).
 +	 */
-+	max_chns = vstor_packet->storage_channel_properties.max_channel_cnt;
-+	if ((vmbus_proto_version != VERSION_WIN7) &&
-+	   (vmbus_proto_version != VERSION_WS2008))  {
-+		if (vstor_packet->storage_channel_properties.flags &
-+		    STORAGE_CHANNEL_SUPPORTS_MULTI_CHANNEL)
-+			process_sub_channels = true;
-+	}
 +
- 	memset(vstor_packet, 0, sizeof(struct vstor_packet));
- 	vstor_packet->operation = VSTOR_OPERATION_END_INITIALIZATION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
-@@ -879,6 +987,9 @@ static int storvsc_channel_init(struct hv_device *device)
- 	    vstor_packet->status != 0)
- 		goto cleanup;
+ 	u8 *buf = urb->transfer_buffer;
+-	bool link, link_changed;
++	u16 *statuswords = (u16 *)buf;
++	bool link_might_be_lost, link, link_changed;
+ 	struct mcs7830_data *data = mcs7830_get_data(dev);
  
-+	if (process_sub_channels)
-+		handle_multichannel_storage(device, max_chns);
-+
- 
- cleanup:
- 	return ret;
-@@ -1100,7 +1211,8 @@ static void storvsc_on_receive(struct hv_device *device,
- 
- static void storvsc_on_channel_callback(void *context)
- {
--	struct hv_device *device = (struct hv_device *)context;
-+	struct vmbus_channel *channel = (struct vmbus_channel *)context;
-+	struct hv_device *device;
- 	struct storvsc_device *stor_device;
- 	u32 bytes_recvd;
- 	u64 request_id;
-@@ -1108,13 +1220,17 @@ static void storvsc_on_channel_callback(void *context)
- 	struct storvsc_cmd_request *request;
- 	int ret;
- 
-+	if (channel->primary_channel != NULL)
-+		device = channel->primary_channel->device_obj;
-+	else
-+		device = channel->device_obj;
- 
- 	stor_device = get_in_stor_device(device);
- 	if (!stor_device)
+ 	if (urb->actual_length < 16)
  		return;
  
- 	do {
--		ret = vmbus_recvpacket(device->channel, packet,
-+		ret = vmbus_recvpacket(channel, packet,
- 				       ALIGN((sizeof(struct vstor_packet) -
- 					     vmscsi_size_delta), 8),
- 				       &bytes_recvd, &request_id);
-@@ -1155,7 +1271,7 @@ static int storvsc_connect_to_vsp(struct hv_device *device, u32 ring_size)
- 			 ring_size,
- 			 (void *)&props,
- 			 sizeof(struct vmstorage_channel_properties),
--			 storvsc_on_channel_callback, device);
-+			 storvsc_on_channel_callback, device->channel);
- 
- 	if (ret != 0)
- 		return ret;
-@@ -1207,6 +1323,7 @@ static int storvsc_do_io(struct hv_device *device,
- {
- 	struct storvsc_device *stor_device;
- 	struct vstor_packet *vstor_packet;
-+	struct vmbus_channel *outgoing_channel;
- 	int ret = 0;
- 
- 	vstor_packet = &request->vstor_packet;
-@@ -1217,6 +1334,11 @@ static int storvsc_do_io(struct hv_device *device,
- 
- 
- 	request->device  = device;
-+	/*
-+	 * Select an an appropriate channel to send the request out.
-+	 */
+-	link = !(buf[1] & 0x20);
++	netdev_dbg(dev->net,
++		"status %04x %04x %04x %04x %04x %04x %04x %04x\n",
++		statuswords[0], statuswords[1], statuswords[2], statuswords[3],
++		statuswords[4], statuswords[5], statuswords[6], statuswords[7]);
 +
-+	outgoing_channel = vmbus_get_outgoing_channel(device->channel);
- 
- 
- 	vstor_packet->flags |= REQUEST_COMPLETION_FLAG;
-@@ -1234,7 +1356,7 @@ static int storvsc_do_io(struct hv_device *device,
- 	vstor_packet->operation = VSTOR_OPERATION_EXECUTE_SRB;
- 
- 	if (request->data_buffer.len) {
--		ret = vmbus_sendpacket_multipagebuffer(device->channel,
-+		ret = vmbus_sendpacket_multipagebuffer(outgoing_channel,
- 				&request->data_buffer,
- 				vstor_packet,
- 				(sizeof(struct vstor_packet) -
-@@ -1643,6 +1765,7 @@ static int storvsc_probe(struct hv_device *device,
- 	}
- 
- 	stor_device->destroy = false;
-+	stor_device->open_sub_channel = false;
- 	init_waitqueue_head(&stor_device->waiting_to_drain);
- 	stor_device->device = device;
- 	stor_device->host = host;
++	/* For a description of the link status nightmare handled here,
++	 * see MCS7830_STATUS_MIIM_LINK_DOWN__UNRELIABLE bit.
++	 */
++	link = true; /* be optimistic :) */
++	/* Side note: MCS7830_STATUS_MIIM_LINK_DOWN__UNRELIABLE is documented
++	 * to be relevant for external-PHY configurations only.
++	 * For now we'll just assume that most (all?) adapters
++	 * do use an external PHY...
++	 */
++	link_might_be_lost =
++	  (statuswords[0] & MCS7830_STATUS_MIIM_LINK_DOWN__UNRELIABLE) != 0;
++	if (link_might_be_lost) {
++		bool special_link_attrs_active =
++		((statuswords[0] &
++		 (MCS7830_STATUS_FULL_DUPLEX_EN|MCS7830_STATUS_SPEED_100MBPS))
++			!= 0);
++		if (!special_link_attrs_active)
++			link = false;
++	}
+ 	link_changed = netif_carrier_ok(dev->net) != link;
+ 	if (link_changed) {
+ 		data->link_counter++;
 -- 
-1.7.4.1
+1.7.10.4
 
