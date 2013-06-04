@@ -1,148 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3FDQpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:45:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59670 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3FDQpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:45:07 -0400
-Date: Tue, 4 Jun 2013 17:44:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guodong Xu <guodong.xu@linaro.org>
-Cc: sameo@linux.intel.com, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@linaro.org, Haojian Zhuang <haojian.zhuang@linaro.org>
-Message-ID: <20130604164440.GE31367@sirena.org.uk>
-References: <1370356123-22357-1-git-send-email-guodong.xu@linaro.org>
- <1370356123-22357-2-git-send-email-guodong.xu@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hW3Q5Oh0pcvvyJMS"
+	id S1756094Ab3FDQpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:45:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755637Ab3FDQpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 12:45:13 -0400
+Date: Tue, 04 Jun 2013 12:44:46 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Message-ID: <1370364286-kuz8hc2j-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130603132641.GB18588@dhcp22.suse.cz>
+References: <1369770771-8447-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1369770771-8447-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130603132641.GB18588@dhcp22.suse.cz>
+Subject: [PATCH v4] migrate: add migrate_entry_wait_huge()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1370356123-22357-2-git-send-email-guodong.xu@linaro.org>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] mfd: Add hi6421 PMIC core driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Mutt-References: <20130603132641.GB18588@dhcp22.suse.cz>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here is the revised one. Andrew, could you replace the following
+patches in your tree with this?
 
---hW3Q5Oh0pcvvyJMS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  migrate-add-migrate_entry_wait_huge.patch
+  hugetlbfs-support-split-page-table-lock.patch
 
-On Tue, Jun 04, 2013 at 10:28:41PM +0800, Guodong Xu wrote:
+Thanks,
+Naoya Horiguchi
+----
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Tue, 4 Jun 2013 12:26:32 -0400
+Subject: [PATCH v4] migrate: add migrate_entry_wait_huge()
 
-> +static struct of_device_id of_hi6421_pmic_child_match_tbl[] = {
-> +	/* regulators */
-> +	{
-> +		.compatible = "hisilicon,hi6421-ldo",
-> +	},
-> +	{
-> +		.compatible = "hisilicon,hi6421-buck012",
-> +	},
-> +	{
-> +		.compatible = "hisilicon,hi6421-buck345",
-> +	},
-> +	{ /* end */ }
-> +};
+When we have a page fault for the address which is backed by a hugepage
+under migration, the kernel can't wait correctly and do busy looping on
+hugepage fault until the migration finishes.
+As a result, users who try to kick hugepage migration (via soft offlining,
+for example) occasionally experience long delay or soft lockup.
 
-I would expect this to be in the regulator driver.
+This is because pte_offset_map_lock() can't get a correct migration entry
+or a correct page table lock for hugepage.
+This patch introduces migration_entry_wait_huge() to solve this.
 
-> +/*
-> + * The PMIC register is only 8-bit.
-> + * Hisilicon SoC use hardware to map PMIC register into SoC mapping.
-> + * At here, we are accessing SoC register with 32-bit.
-> + */
-> +u32 hi6421_pmic_read(struct hi6421_pmic *pmic, int reg)
-> +{
-> +	unsigned long flags;
-> +	u32 ret;
-> +	spin_lock_irqsave(&pmic->lock, flags);
-> +	ret = readl_relaxed(pmic->regs + (reg << 2));
-> +	spin_unlock_irqrestore(&pmic->lock, flags);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(hi6421_pmic_read);
+ChangeLog v4:
+ - replace huge_pte_lockptr with &(mm)->page_table_lock
+   (postponed split page table lock patch)
+ - update description
 
-This all looks like you want to be using regmap MMIO.  This would save a
-bit of code and get you access to infrastructure like tracepoints and
-debugfs regiseter dumps as well as the regulator API helpers.
+ChangeLog v3:
+ - use huge_pte_lockptr
 
-> +	if (!devm_request_mem_region(dev, pmic->res->start,
-> +				     resource_size(pmic->res),
-> +				     pdev->name)) {
-> +		dev_err(dev, "cannot claim register memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	pmic->regs = devm_ioremap(dev, pmic->res->start,
-> +				  resource_size(pmic->res));
+ChangeLog v2:
+ - remove dup in migrate_entry_wait_huge()
 
-devm_request_and_ioremap().
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: stable@vger.kernel.org # 2.6.35
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/swapops.h |  3 +++
+ mm/hugetlb.c            |  2 +-
+ mm/migrate.c            | 23 ++++++++++++++++++-----
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
-> +	/* populate sub nodes */
-> +	of_platform_populate(np, of_hi6421_pmic_child_match_tbl, NULL, dev);
-
-You should be using the MFD API for this.
-
-> +static int hi6421_pmic_remove(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct hi6421_pmic *pmic = platform_get_drvdata(pdev);
-> +
-> +	devm_iounmap(dev, pmic->regs);
-> +	devm_release_mem_region(dev, pmic->res->start,
-> +				resource_size(pmic->res));
-> +	devm_kfree(dev, pmic);
-
-No point in cleaning up devm_ stuff, a major goal of the API is to save
-writing that code.  The only thing that's needed is to remove the MFD
-children which you're not doing.
-
-> +	platform_set_drvdata(pdev, NULL);
-
-This isn't required, it's never OK to access the driver data unless from
-code that set it.
-
-> +#define	OCP_DEB_CTRL_REG		(0x51)
-> +#define	OCP_DEB_SEL_MASK		(0x0C)
-> +#define OCP_DEB_SEL_8MS			(0x00)
-> +#define OCP_DEB_SEL_16MS		(0x04)
-> +#define OCP_DEB_SEL_32MS		(0x08)
-> +#define OCP_DEB_SEL_64MS		(0x0C)
-> +#define OCP_EN_DEBOUNCE_MASK		(0x02)
-> +#define OCP_EN_DEBOUNCE_ENABLE		(0x02)
-> +#define OCP_AUTO_STOP_MASK		(0x01)
-> +#define OCP_AUTO_STOP_ENABLE		(0x01)
-
-These should be namespaced.
-
---hW3Q5Oh0pcvvyJMS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRrhl1AAoJELSic+t+oim9b4cP/1EmwzxRfieXEJyJFCvoc9O0
-C9w5poeZS6yEElEJVWkcm1Efvo82IrOVPSBgC+kwPgTzI0bf0sAaNBMazCv1EEaU
-go4a9/e8/RDcbIK5DGhknzaBaL2TG/2d0ZFDEvTjjgPyz04c+9nL6R3z3GTTqABz
-HDPwj02u7Y5vW2D3UsuIdsJjg0rM+AtuTIKePK6gVW626gIcIKdzo7lk5RGeX2h0
-e4rNS01HGVVDwGiSd96KHc8bvMEplgrAMBvVtJMzumBJS4CfGw8d2QXRCRo4hIb/
-TxNHwy2zBqj3Ts1uAGDavbFQoxy/dK2vE1ma47YyEPexANWfUcIaukcP6SUPra/Y
-pHVex49IlLkYkD7DINZOSgJJ8ub8BS22fL0hTKhm1nQPsiVn2JBvhaqM8RoG9V+p
-0nCmx4ScppYciyYA3aHBxJLkYN9zjKeuIhcGlA7wR/L/yZNYIGUh0hXwLayBrTgL
-8dkuPHTOS7AKtSHJ2NdEfXVLhBEZ4Py/BsoDwv+1VwBhB2Bwa6DtTckjbUJLPopf
-T9DOqDiba0MX66k+BoaEhZN0eVYMxi9wD/MN5RzKsDINR3TC/YFN0yoVzns7/YsT
-3QoW2UoRDTBPFvSZOmSsrShvEWJ1OhtZ7Ux+9xMhSLcu7Dznc8JiQoOhs/8Rvv7l
-NuRijjSnS9aTzd2RX62a
-=uURk
------END PGP SIGNATURE-----
-
---hW3Q5Oh0pcvvyJMS--
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index 47ead51..c5fd30d 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -137,6 +137,7 @@ static inline void make_migration_entry_read(swp_entry_t *entry)
+ 
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
++extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
+ #else
+ 
+ #define make_migration_entry(page, write) swp_entry(0, 0)
+@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp_entry_t swp)
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
++static inline void migration_entry_wait_huge(struct mm_struct *mm,
++					pte_t *pte) { }
+ static inline int is_write_migration_entry(swp_entry_t entry)
+ {
+ 	return 0;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 463fb5e..d793c5e 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2865,7 +2865,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (ptep) {
+ 		entry = huge_ptep_get(ptep);
+ 		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait(mm, (pmd_t *)ptep, address);
++			migration_entry_wait_huge(mm, ptep);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6f2df6e..b8d56a1 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -204,15 +204,14 @@ static void remove_migration_ptes(struct page *old, struct page *new)
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+  */
+-void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+-				unsigned long address)
++static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++				spinlock_t *ptl)
+ {
+-	pte_t *ptep, pte;
+-	spinlock_t *ptl;
++	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
+ 
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	spin_lock(ptl);
+ 	pte = *ptep;
+ 	if (!is_swap_pte(pte))
+ 		goto out;
+@@ -240,6 +239,20 @@ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
++				unsigned long address)
++{
++	spinlock_t *ptl = pte_lockptr(mm, pmd);
++	pte_t *ptep = pte_offset_map(pmd, address);
++	__migration_entry_wait(mm, ptep, ptl);
++}
++
++void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
++{
++	spinlock_t *ptl = &(mm)->page_table_lock;
++	__migration_entry_wait(mm, pte, ptl);
++}
++
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
+-- 
+1.7.11.7
