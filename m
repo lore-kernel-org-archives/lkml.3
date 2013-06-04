@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3FDQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:58:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48296 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab3FDQ5R (ORCPT
+	id S1757238Ab3FDQ6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:58:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35390 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757075Ab3FDQ6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:57:17 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 14/75] USB: fix latency in uhci-hcd and ohci-hcd
-Date: Tue,  4 Jun 2013 09:54:58 -0700
-Message-Id: <1370364959-9475-15-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
-References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 4 Jun 2013 12:58:31 -0400
+Date: Tue, 4 Jun 2013 12:58:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC 2/2] USB: host: make USB_ARCH_HAS_?HCI obsolete
+In-Reply-To: <1624672.VBbVgzJXAH@wuerfel>
+Message-ID: <Pine.LNX.4.44L0.1306041257250.1093-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.2 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 4 Jun 2013, Arnd Bergmann wrote:
 
-------------------
+> On Tuesday 04 June 2013 11:22:01 Alan Stern wrote:
+> > 
+> > Instead of doing this, it makes more sense to enable USB_ARCH_HAS_HCD
+> > whenever host-side USB is enabled.  In other words,
+> > 
+> >         def_bool USB
+> 
+> The problem with this is that a lot of drivers (24 to be exact) are defined
+> like
+> 
+> config INPUT_ATI_REMOTE2
+>         tristate "ATI / Philips USB RF remote control"
+>         depends on USB_ARCH_HAS_HCD
+>         select USB
 
-From: Alan Stern <stern@rowland.harvard.edu>
+Oops.  That's a problem.
 
-commit e1944017839d7dfbf7329fac4bdec8b4050edf5e upstream.
+> so that would create a circular dependency unless we change all of them
+> at once. I did that when creating this patch, but then decided to
+> revert it for now and do smaller steps.
 
-Commits c44b225077bb1fb25ed5cd5c4f226897b91bedd4 (UHCI: implement new
-semantics for URB_ISO_ASAP) and
-6a41b4d3fe8cd4cc95181516fc6fba7b1747a27c (OHCI: implement new
-semantics for URB_ISO_ASAP) increased the latency for isochronous URBs
-in uhci-hcd and ohci-hcd respectively to 2 milliseconds, in an
-attempt to avoid underruns.  It turns out that not only was this
-unnecessary -- 1-ms latency works okay -- it also causes problems with
-certain application loads such as real-time audio.
+Okay.  Changing those 24 should be the next step.
 
-This patch changes the latency for both drivers back to 1 ms.
+> We could do
+> 
+> config USB_ARCH_HAS_HCD
+> 	def_bool USB_SUPPORT
+> 
+> or
+> 
+> config USB_ARCH_HAS_HCD
+> 	def_bool y
+> 
+> which would both have the exact same behavior as 'def_bool HAS_IOMEM'.
 
-This should be applied to -stable kernels going back to 3.8.
+I'm in favor of "def_bool y".
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Joe Rayhawk <jrayhawk@fairlystable.org>
-CC: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/host/ohci-hcd.c | 2 +-
- drivers/usb/host/uhci-q.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 180a2b0..4b6d1c8 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -233,7 +233,7 @@ static int ohci_urb_enqueue (
- 			urb->start_frame = frame;
- 		}
- 	} else if (ed->type == PIPE_ISOCHRONOUS) {
--		u16	next = ohci_frame_no(ohci) + 2;
-+		u16	next = ohci_frame_no(ohci) + 1;
- 		u16	frame = ed->last_iso + ed->interval;
- 
- 		/* Behind the scheduling threshold? */
-diff --git a/drivers/usb/host/uhci-q.c b/drivers/usb/host/uhci-q.c
-index 15921fd..3b08519 100644
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -1287,7 +1287,7 @@ static int uhci_submit_isochronous(struct uhci_hcd *uhci, struct urb *urb,
- 		return -EINVAL;		/* Can't change the period */
- 
- 	} else {
--		next = uhci->frame_number + 2;
-+		next = uhci->frame_number + 1;
- 
- 		/* Find the next unused frame */
- 		if (list_empty(&qh->queue)) {
--- 
-1.8.1.2
+Alan Stern
 
