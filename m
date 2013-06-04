@@ -1,54 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3FDOiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:38:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58482 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3FDOiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:38:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, resend] pch_phub: re-use native MAC address parser
-Date: Tue, 04 Jun 2013 16:38:11 +0200
-Message-ID: <3489856.nvZgTyoe0K@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <CAHp75VdrXdA7uwpYoo5To-niMn8wSCdwu_p6fArq+Vd6kb-0EA@mail.gmail.com>
-References: <1369756498-5670-1-git-send-email-andriy.shevchenko@linux.intel.com> <201306041603.15653.arnd@arndb.de> <CAHp75VdrXdA7uwpYoo5To-niMn8wSCdwu_p6fArq+Vd6kb-0EA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:5CkE5ybGDDXpmfQqzda6IajFHnzenXDNXrR5zenENTV
- 1xb6WnvclW4bySy5DUmN6wJevDWKvkBNmFQce9gMxZuC7w6igc
- AHPQvcwIf7Y0sy806yxQXNmmKV1G2Np5zBM0sf+nnSrb2TJjHA
- rPTY+FG37LNVLTkNpJuc3VMbukqrnRoxXVf4NCfPcL/+gluaN0
- xdwErzZ6zu9RUVzYLyZ+Ht8gjf65nnjwoS2pdDBZIbFvWbKbsG
- 9GIE/xiu2HmzlgUUTUdHQGCa2ZyrhOkHpnKo0kIC1wncdBEpgy
- PjX9gBscePbinaj4V+pZawqvWQgirWOsxZzt4KULNIfBkBSV4l
- PS7Szgs/Hmvuh+bxCUng=
+	id S1755476Ab3FDOkT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:40:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751712Ab3FDOkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:40:16 -0400
+Date: Tue, 4 Jun 2013 10:39:35 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Stefan (metze) Metzmacher" <metze@samba.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        cluster-devel@redhat.com, sage@inktank.com,
+        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
+        swhiteho@redhat.com
+Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
+Message-ID: <20130604103935.2a6afb29@corrin.poochiereds.net>
+In-Reply-To: <51ADF789.70906@samba.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-12-git-send-email-jlayton@redhat.com>
+	<51ADF789.70906@samba.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013 17:21:16 Andy Shevchenko wrote:
+--Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> > The easiest solution would be to
-> > make the entire driver "depend on NET".
-> 
-> I don't feel that is good idea. Driver is an abstraction to the ROM,
-> it doesn't mean you can't read ROM without network framework.
+On Tue, 04 Jun 2013 16:19:53 +0200
+"Stefan (metze) Metzmacher" <metze@samba.org> wrote:
 
-Right, makes sense.
+> Hi Jeff,
+>=20
+> > There's no reason we have to protect the blocked_hash and file_lock_list
+> > with the same spinlock. With the tests I have, breaking it in two gives
+> > a barely measurable performance benefit, but it seems reasonable to make
+> > this locking as granular as possible.
+>=20
+> as file_lock_{list,lock} is only used for debugging (/proc/locks) after t=
+his
+> change, I guess it would be possible to use RCU instead of a spinlock.
+>=20
+> @others: this was the related discussion on IRC
+> (http://irclog.samba.org/) about this:
+>=20
+> 16:02 < metze> jlayton: do you have time to discuss your file_lock_lock
+> changes?
+> 16:02 < jlayton> metze: sure, what's up?
+> 16:03 < jlayton> metze: note that it won't help vl's thundering herd
+> problems...
+> 16:03 < metze> is it correct that after your last patch file_lock_lock
+> is only used for /proc/locks?
+> 16:03 < jlayton> well, it's only used to protect the list that is used
+> for /proc/locks
+> 16:04 < jlayton> it still gets taken whenever a lock is acquired or
+> released in order to manipulate that list
+> 16:04 < metze> would it be a good idea to use rcu instead of a spin lock?
+> 16:04 < jlayton> I tried using RCU, but it turned out to slow everything
+> down
+> 16:04 < jlayton> this is not a read-mostly workload unfortunately
+> 16:04 < jlayton> so doing it with mutual exclusion turns out to be faster
+> 16:04 < metze> ok
+> 16:05 < jlayton> I might play around with it again sometime, but I don't
+> think it really helps. What we need to ensure is
+>                  that we optimize the code that manipulates that list,
+> and RCU list manipulations have larger overhead
+> 16:06 < jlayton> metze: that's a good question though so if you want to
+> ask it on the list, please do
+> 16:06 < jlayton> others will probably be wondering the same thing
+> 16:08 < metze> maybe it's worth a comment in commit message and the code
 
-> It seems proper solution is to move mac_pton() outside of CONFIG_NET,
-> though I don't know how to do this easily.
 
-If we want to use it outside of CONFIG_NET, it cannot be part of net/core/*.c.
-Maybe we can move the function to lib/mac_pton.c instead and create a
-Kconfig symbol that gets selected by CONFIG_NET and by any driver lib
-PCH_PHUB that needs it.
+I'm not sure it's worth commenting about RCU in the code. In the future
+it may be possible to do this -- who knows. It does seem to have been
+consistently slower in my testing here though.
 
-	Arnd
+> 16:08 < metze> btw, why don't you remove the ' /* Protects the
+> file_lock_list and the blocked_hash */' comment?
+>=20
+
+Removed in my git tree -- thanks for pointing that out.
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRrfwuAAoJEAAOaEEZVoIVYlsP/0suyZxDnd28BxQxkQHllqG5
+bxXk07dLel27h/VoWr9UUXVuGmWRx/+Ue0omtVewfMiSeBrpkUXBkYKI7dHMpoD8
+SH7qQNvUDP+A1Y1Eup/+UQlXVX8ykSFzMzn283wvPaqXtUrhCVflGQQZjXW062RG
+C7aodjNQspdcBh5+5J8XQO2s7jQA6xy/mxEvvBrlV1Rjq1/3iW8xQr59dOjGiLID
+mlMqitLPpz8Os9kX5ONp+hyffVLK+OuaA8hLaInHMiYbDH3NV08WerfhHzy7wySt
+G/hlzs7P2zub9rT77PNTXYa5Aj9UOzAYihYUFcKH9RzWqfdD2XKPsIj7JGr5KCLA
+pmEemZdmBVFqn5nKzggGrZBssju2c97mKumII51oJr62wV/M8ISS89rsPtFxdlTW
+Qs+gSi1fH+PuzUTsFJw/hC9QM0bsAo1AmB2mmT4ijbynxqmgjB7bDAe1soGp6CNI
+m/diYluiPh5gBa6WxoFpjMyJPWRrTvIv8XsUUS3NaSDiCdKWrXiN7/fYdy0q8Tkm
+Ve6w/vPuN7/2rmsqh3sJkV8S7kQHQwD2/lxcFKkD/CqGy+AyC4YCwIqxYLLwh127
+vxKCdU9Ng97qhTQUIiq4s1EZAgTC7Jpe3hdwbAxfoA1r0xgl2kfdEYKmdZ3HsYCX
+0jwGrRwaGKkUpR/ILxVq
+=qRHI
+-----END PGP SIGNATURE-----
+
+--Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+--
