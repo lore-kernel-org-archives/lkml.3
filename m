@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3FDOZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:25:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46641 "EHLO
+	id S1757312Ab3FDOZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:25:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46668 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab3FDOHk (ORCPT
+	with ESMTP id S1755373Ab3FDOHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:40 -0400
+	Tue, 4 Jun 2013 10:07:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 07/70] avr32: fix relocation check for signed 18-bit offset
-Date: Tue,  4 Jun 2013 15:06:23 +0100
-Message-Id: <1370354846-14213-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 12/70] USB: UHCI: fix for suspend of virtual HP controller
+Date: Tue,  4 Jun 2013 15:06:28 +0100
+Message-Id: <1370354846-14213-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit e68c636d88db3fda74e664ecb1a213ae0d50a7d8 upstream.
+commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc upstream.
 
-Caught by static code analysis by David.
+HP's virtual UHCI host controller takes a long time to suspend
+(several hundred microseconds), even when no devices are attached.
+This provokes a warning message from uhci-hcd in the auto-stop case.
 
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To prevent this from happening, this patch adds a test to avoid
+performing an auto-stop when the wait_for_hp quirk flag is set.  The
+controller will still suspend through the normal runtime PM mechanism.
+And since that pathway includes a 1-ms delay, the slowness of the
+virtual hardware won't matter.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/avr32/kernel/module.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/uhci-hub.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/avr32/kernel/module.c b/arch/avr32/kernel/module.c
-index 596f730..2c94129 100644
---- a/arch/avr32/kernel/module.c
-+++ b/arch/avr32/kernel/module.c
-@@ -264,7 +264,7 @@ int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
- 			break;
- 		case R_AVR32_GOT18SW:
- 			if ((relocation & 0xfffe0003) != 0
--			    && (relocation & 0xfffc0003) != 0xffff0000)
-+			    && (relocation & 0xfffc0000) != 0xfffc0000)
- 				return reloc_overflow(module, "R_AVR32_GOT18SW",
- 						     relocation);
- 			relocation >>= 2;
+diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
+index 768d542..c994655 100644
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -222,7 +222,8 @@ static int uhci_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
+ 
 -- 
 1.8.1.2
 
