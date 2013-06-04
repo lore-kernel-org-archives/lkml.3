@@ -1,163 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab3FDI4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:56:11 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:41831 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3FDI4I (ORCPT
+	id S1752449Ab3FDI5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:57:53 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:58125 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3FDI5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 04:56:08 -0400
+	Tue, 4 Jun 2013 04:57:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130604054233.GA23572@kroah.com>
-References: <20130604145700.6abe693b7e4628cf62948624@canb.auug.org.au> <20130604054233.GA23572@kroah.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Tue, 4 Jun 2013 16:55:46 +0800
-Message-ID: <CA+a=Yy4WASN0XF3tfWgZzST+tP5N-u7OvGi1EzJNkxuz484mOA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the staging tree
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAGo1xzDB-uGsMANghtqX-rX6GuhmHKo1Z=ywtC=TXfx6eM_ALQ@mail.gmail.com>
+References: <1369834407-30762-1-git-send-email-gabriel.fernandez.st@gmail.com>
+	<1369834407-30762-2-git-send-email-gabriel.fernandez.st@gmail.com>
+	<20130529155018.GE3012@gmail.com>
+	<CAGo1xzDB-uGsMANghtqX-rX6GuhmHKo1Z=ywtC=TXfx6eM_ALQ@mail.gmail.com>
+Date: Tue, 4 Jun 2013 10:57:49 +0200
+Message-ID: <CACRpkdbThH7LysDjrPcFjxg0sMDm1myTfmXkJnkY3QSS3F_GGQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ARM: ux540: Add ccu8540-uib-v3 Device Tree Machine
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 1:42 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Jun 04, 2013 at 02:57:00PM +1000, Stephen Rothwell wrote:
->> Hi Greg,
->>
->> After merging the staging tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> In file included from drivers/staging/lustre/lustre/fid/../include/linux/lustre_compat25.h:44:0,
->>                  from drivers/staging/lustre/lustre/fid/../include/linux/lvfs.h:48,
->>                  from drivers/staging/lustre/lustre/fid/../include/lvfs.h:45,
->>                  from drivers/staging/lustre/lustre/fid/../include/obd_support.h:41,
->>                  from drivers/staging/lustre/lustre/fid/../include/linux/obd.h:44,
->>                  from drivers/staging/lustre/lustre/fid/../include/obd.h:40,
->>                  from drivers/staging/lustre/lustre/fid/fid_store.c:48:
->> drivers/staging/lustre/lustre/fid/../include/linux/lustre_patchless_compat.h: In function 'truncate_complete_page':
->> drivers/staging/lustre/lustre/fid/../include/linux/lustre_patchless_compat.h:56:3: error: too few arguments to function 'page->mapping->a_ops->invalidatepage'
->>    page->mapping->a_ops->invalidatepage(page, 0);
->>    ^
->>
->> Lots of times.
->>
->> Caused by the Lustre client patches interacting with commit d47992f86b30
->> ("mm: change invalidatepage prototype to accept length") from the ext4
->> tree.
->>
->> I added this merge fix patch:
->>
->> From 3873636f50eb89ba5e4f8e4e0523fd62f681edc8 Mon Sep 17 00:00:00 2001
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Tue, 4 Jun 2013 14:41:00 +1000
->> Subject: [PATCH] staging/lustre: fix for invalidatepage() API change
->>
->> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> ---
->>  drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
->> index f050808..67c4644 100644
->> --- a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
->> +++ b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
->> @@ -53,7 +53,7 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
->>               return;
->>
->>       if (PagePrivate(page))
->> -             page->mapping->a_ops->invalidatepage(page, 0);
->> +             page->mapping->a_ops->invalidatepage(page, 0, PAGE_CACHE_SIZE);
->>
->>       cancel_dirty_page(page, PAGE_SIZE);
->>       ClearPageMappedToDisk(page);
->> --
->> 1.8.1
->>
->> diff --git a/drivers/staging/lustre/lustre/llite/rw26.c b/drivers/staging/lustre/lustre/llite/rw26.c
->> index 27e4e64..f1a1c5f 100644
->> --- a/drivers/staging/lustre/lustre/llite/rw26.c
->> +++ b/drivers/staging/lustre/lustre/llite/rw26.c
->> @@ -72,7 +72,8 @@
->>   * aligned truncate). Lustre leaves partially truncated page in the cache,
->>   * relying on struct inode::i_size to limit further accesses.
->>   */
->> -static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
->> +static void ll_invalidatepage(struct page *vmpage, unsigned int offset,
->> +                           unsigned int length)
->>  {
->>       struct inode     *inode;
->>       struct lu_env    *env;
->> @@ -89,7 +90,7 @@ static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
->>        * below because they are run with page locked and all our io is
->>        * happening with locked page too
->>        */
->> -     if (offset == 0) {
->> +     if (offset == 0 && length == PAGE_CACHE_SIZE) {
->>               env = cl_env_get(&refcheck);
->>               if (!IS_ERR(env)) {
->>                       inode = vmpage->mapping->host;
->
-> That patch makes sense.
->
-> But then:
->
->> But then got these errors:
->>
->> drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c: In function 'cfs_cpt_bind':
->> drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c:630:3: error: implicit declaration of function 'set_cpus_allowed' [-Werror=implicit-function-declaration]
->>    rc = set_cpus_allowed(current, *cpumask);
->>    ^
->> cc1: some warnings being treated as errors
->> drivers/staging/lustre/lustre/obdclass/lu_object.c: In function 'key_fini':
->> drivers/staging/lustre/lustre/obdclass/lu_object.c:1354:4: error: implicit declaration of function 'module_refcount' [-Werror=implicit-function-declaration]
->>     LINVRNT(module_refcount(key->lct_owner) > 0);
->>     ^
->> In file included from drivers/staging/lustre/include/linux/libcfs/libcfs.h:203:0,
->>                  from drivers/staging/lustre/lustre/obdclass/lu_object.c:47:
->> drivers/staging/lustre/lustre/obdclass/lu_object.c: In function 'lu_context_keys_dump':
->> drivers/staging/lustre/lustre/obdclass/lu_object.c:1936:42: error: dereferencing pointer to incomplete type
->>            key->lct_owner ? key->lct_owner->name : "",
->>                                           ^
->> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:221:41: note: in definition of macro '__CDEBUG'
->>    libcfs_debug_msg(&msgdata, format, ## __VA_ARGS__);     \
->>                                          ^
->> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:238:30: note: in expansion of macro 'CDEBUG_LIMIT'
->>  #define CERROR(format, ...)  CDEBUG_LIMIT(D_ERROR, format, ## __VA_ARGS__)
->>                               ^
->> drivers/staging/lustre/lustre/obdclass/lu_object.c:1932:4: note: in expansion of macro 'CERROR'
->>     CERROR("[%d]: %p %x (%p,%p,%p) %d %d \"%s\"@%p\n",
->>     ^
->> cc1: some warnings being treated as errors
->> drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c: In function 'ptlrpcd':
->> drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c:398:4: error: implicit declaration of function 'set_cpus_allowed' [-Werror=implicit-function-declaration]
->>     cfs_set_cpus_allowed(current,
->>     ^
->> cc1: some warnings being treated as errors
->
-> That must be some #include files needed for ppc.
->
->> So I gave up and just reverted commit 52f6317528c6 ("staging/lustre: drop
->> CONFIG_BROKEN dependency") (thus disabling the code again) for now.
->
-> That makes sense.
->
-> Any of the lustre developers want to send me patches to fix the build
-> issues up please?
-Hi Greg,
+On Thu, May 30, 2013 at 3:20 PM, Gabriel Fernandez
+<gabriel.fernandez.st@gmail.com> wrote:
 
-I have just sent you a patch fixing the build failure. It was because
-of some CONFIG_ options that Lustre was not well tested against.
+[Lee]
+>> Is it a new board, or just a UIB?
+>
+> For me it's a new board.
+>
+> ccu8540.dts is a board without uib.
+> You can can plug on this board some different uibs.
+> That's why, i created a ccu8540-uib-v3.dts board in which i included a
+> common board ccu8540.dts
 
-1. set_cpus_allowed() is not available with CONFIG_CPUMASK_OFFSTACK on
-2. CONFIG_MODULES may not be defined and it causes accessing
-module->name field to fail.
-3. CONFIG_MODULE_UNLOAD may not be defined, and it causes missing
-module_refcount()
+So that means that ccu8540.dts will boot the system even
+without any UIB if I understand correctly. Anything that
+pertains to the UIB should be in the UIB overlay.
 
---
-Thanks,
-Tao
+> Another solution is to create one *.dtsi file with all uibs for
+> ccu8540 and makes a dynamique detection.
+> Linus, Lee  what do you think about that ?
+
+I'm lost on this, dynamic detection would be done in the
+boot loader, usually this just encodes one, static tree.
+
+The first approach seems OK with me.
+
+Yours,
+Linus Walleij
