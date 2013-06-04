@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3FDJx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:53:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44281 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3FDJxy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:53:54 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "khilman@linaro.org" <khilman@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: RE: [PATCH 05/11] spi: omap2-mcspi: enhance pinctrl support
-Thread-Topic: [PATCH 05/11] spi: omap2-mcspi: enhance pinctrl support
-Thread-Index: AQHOXeczwOifcgHON0C7EqilqXbQOJkgui0AgASclOA=
-Date: Tue, 4 Jun 2013 09:53:04 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC22370@DBDE04.ent.ti.com>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
- <1369995191-20855-6-git-send-email-gururaja.hebbar@ti.com>
- <20130601192726.GS16790@sirena.org.uk>
-In-Reply-To: <20130601192726.GS16790@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1752652Ab3FDJzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:55:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51478 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738Ab3FDJzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:55:16 -0400
+Date: Tue, 4 Jun 2013 11:55:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130604095514.GC31242@dhcp22.suse.cz>
+References: <20130530150539.GA18155@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>
+ <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601102058.GA19474@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306031102480.7956@chino.kir.corp.google.com>
+ <20130603193147.GC23659@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 02, 2013 at 00:57:26, Mark Brown wrote:
-> On Fri, May 31, 2013 at 03:43:05PM +0530, Hebbar Gururaja wrote:
-> > Amend the spi omap controller to optionally take a pin control
-> > handle and set the state of the pins to:
+On Mon 03-06-13 14:17:54, David Rientjes wrote:
+> On Mon, 3 Jun 2013, Michal Hocko wrote:
+> 
+> > > What do you suggest when you read the "tasks" file and it returns -ENOMEM 
+> > > because kmalloc() fails because the userspace oom handler's memcg is also 
+> > > oom? 
 > > 
-> > - "default" on boot, resume and before performing an spi transfer
-> > - "idle" after initial default, after resume default, and after each
-> > spi xfer
-> > - "sleep" on suspend()
+> > That would require that you track kernel allocations which is currently
+> > done only for explicit caches.
+> > 
 > 
-> Looking at this code I can't really see what's OMAP-specific about it -
-> exactly the same flow should apply to pretty much any SPI controller,
-> especially given that the code will happily ignore missing states.
-> We're just setting the idle state when not actively transferring data
-> which seems sensible and generic.
+> That will not always be the case, and I think this could be a prerequisite 
+> patch for such support that we have internally. 
+
+> I'm not sure a userspace oom notifier would want to keep a
+> preallocated buffer around that is mlocked in memory for all possible
+> lengths of this file.
+
+Well, an oom handler which allocates memory under the same restricted
+memory doesn't make much sense to me. Tracking all kmem allocations
+makes it almost impossible to implement a non-trivial handler.
+
+> > > Obviously it's not a situation we want to get into, but unless you 
+> > > know that handler's exact memory usage across multiple versions, nothing 
+> > > else is sharing that memcg, and it's a perfect implementation, you can't 
+> > > guarantee it.  We need to address real world problems that occur in 
+> > > practice.
+> > 
+> > If you really need to have such a guarantee then you can have a _global_
+> > watchdog observing oom_control of all groups that provide such a vague
+> > requirements for oom user handlers.
+> > 
 > 
-> This suggests to me that we should be adding this code into the core,
-> probably joined up with the transfer_one_message stuff, so that any
-> hardware which has an idle state will be able to get the benefit.  Can
-> anyone think of a reason why we shouldn't do that?
+> The whole point is to allow the user to implement their own oom policy.
 
-Let me pull out some info about these and come back
+OK, maybe I just wasn't clear enough or I am missing your point. Your
+users _can_ implement and register their oom handlers. But as your
+requirements are rather benevolent for handlers implementation you would
+have a global watchdog which would sit on the oom_control of those
+groups (which are allowed to have own handlers - all of them in your
+case I guess) and trigger (user defined/global) timeout when it gets a
+notification. If the group was under oom always during the timeout then
+just disable oom_control until oom is settled (under_oom is 0).
 
+Why wouldn't something like this work for your use case?
+
+> If the policy was completely encapsulated in kernel code, we don't need to 
+> ever disable the oom killer even with memory.oom_control.  Users may 
+> choose to kill the largest process, the newest process, the oldest 
+> process, sacrifice children instead of parents, prevent forkbombs, 
+> implement their own priority scoring (which is what we do), kill the 
+> allocating task, etc.
 > 
+> To not merge this patch, I'd ask that you show an alternative that allows 
+> users to implement their own userspace oom handlers and not require admin 
+> intervention when things go wrong.
 
+Hohmm, so you are insisting on something that can be implemented in the
+userspace and put it into the kernel because it is more convenient for
+you and your use case. This doesn't sound like a way for accepting a
+feature.
 
-Regards, 
-Gururaja
+To make this absolutely clear. I do understand your requirements but you
+haven't shown any _argument_ why the timeout you are proposing cannot be
+implemented in the userspace. I will not ack this without this
+reasoning.
+
+And yes we should make memcg oom handling less deadlock prone and
+Johannes' work in this thread is a good step forward.
+-- 
+Michal Hocko
+SUSE Labs
