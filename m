@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3FDWpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:45:24 -0400
-Received: from 1wt.eu ([62.212.114.60]:35952 "EHLO 1wt.eu"
+	id S1754853Ab3FDWpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:45:14 -0400
+Received: from 1wt.eu ([62.212.114.60]:35947 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab3FDWpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:45:21 -0400
-Message-Id: <20130604172137.263956682@1wt.eu>
+	id S1752014Ab3FDWpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:45:10 -0400
+Message-Id: <20130604172135.450014158@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:18 +0200
+Date: Tue, 04 Jun 2013 19:23:34 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 168/184] ipv6: make fragment identifications less predictable
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 124/184] ext4: online defrag is not supported for journaled
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,186 +23,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ files
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-[ Backport of upstream commit 87c48fa3b4630905f98268dde838ee43626a060c ]
+commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
 
-Fernando Gont reported current IPv6 fragment identification generation
-was not secure, because using a very predictable system-wide generator,
-allowing various attacks.
+Proper block swap for inodes with full journaling enabled is
+truly non obvious task. In order to be on a safe side let's
+explicitly disable it for now.
 
-IPv4 uses inetpeer cache to address this problem and to get good
-performance. We'll use this mechanism when IPv6 inetpeer is stable
-enough in linux-3.1
-
-For the time being, we use jhash on destination address to provide less
-predictable identifications. Also remove a spinlock and use cmpxchg() to
-get better SMP performance.
-
-Reported-by: Fernando Gont <fernando@gont.com.ar>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[bwh: Backport further to 2.6.32]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/net/ipv6.h      | 12 +-----------
- include/net/transp_v6.h |  2 ++
- net/ipv6/af_inet6.c     |  2 ++
- net/ipv6/ip6_output.c   | 40 +++++++++++++++++++++++++++++++++++-----
- net/ipv6/udp.c          |  2 +-
- 5 files changed, 41 insertions(+), 17 deletions(-)
+ fs/ext4/move_extent.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 639bbf0..52d86da 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -449,17 +449,7 @@ static inline int ipv6_addr_diff(const struct in6_addr *a1, const struct in6_add
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
- }
- 
--static __inline__ void ipv6_select_ident(struct frag_hdr *fhdr)
--{
--	static u32 ipv6_fragmentation_id = 1;
--	static DEFINE_SPINLOCK(ip6_id_lock);
--
--	spin_lock_bh(&ip6_id_lock);
--	fhdr->identification = htonl(ipv6_fragmentation_id);
--	if (++ipv6_fragmentation_id == 0)
--		ipv6_fragmentation_id = 1;
--	spin_unlock_bh(&ip6_id_lock);
--}
-+extern void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt);
- 
- /*
-  *	Prototypes exported by ipv6
-diff --git a/include/net/transp_v6.h b/include/net/transp_v6.h
-index d65381c..8beefe1 100644
---- a/include/net/transp_v6.h
-+++ b/include/net/transp_v6.h
-@@ -16,6 +16,8 @@ extern struct proto tcpv6_prot;
- 
- struct flowi;
- 
-+extern void initialize_hashidentrnd(void);
-+
- /* extention headers */
- extern int				ipv6_exthdrs_init(void);
- extern void				ipv6_exthdrs_exit(void);
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index e127a32..835590d 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -1073,6 +1073,8 @@ static int __init inet6_init(void)
- 		goto out;
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index fe81390..da25617 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1208,7 +1208,12 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
  	}
- 
-+	initialize_hashidentrnd();
-+
- 	err = proto_register(&tcpv6_prot, 1);
- 	if (err)
- 		goto out;
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 9ad5792..6ba0fe2 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -604,6 +604,35 @@ int ip6_find_1stfragopt(struct sk_buff *skb, u8 **nexthdr)
- 	return offset;
- }
- 
-+static u32 hashidentrnd __read_mostly;
-+#define FID_HASH_SZ 16
-+static u32 ipv6_fragmentation_id[FID_HASH_SZ];
-+
-+void __init initialize_hashidentrnd(void)
-+{
-+	get_random_bytes(&hashidentrnd, sizeof(hashidentrnd));
-+}
-+
-+static u32 __ipv6_select_ident(const struct in6_addr *addr)
-+{
-+	u32 newid, oldid, hash = jhash2((u32 *)addr, 4, hashidentrnd);
-+	u32 *pid = &ipv6_fragmentation_id[hash % FID_HASH_SZ];
-+
-+	do {
-+		oldid = *pid;
-+		newid = oldid + 1;
-+		if (!(hash + newid))
-+			newid++;
-+	} while (cmpxchg(pid, oldid, newid) != oldid);
-+
-+	return hash + newid;
-+}
-+
-+void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-+{
-+	fhdr->identification = htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
-+}
-+
- static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- {
- 	struct sk_buff *frag;
-@@ -689,7 +718,7 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		skb_reset_network_header(skb);
- 		memcpy(skb_network_header(skb), tmp_hdr, hlen);
- 
--		ipv6_select_ident(fh);
-+		ipv6_select_ident(fh, rt);
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		fh->frag_off = htons(IP6_MF);
-@@ -835,7 +864,7 @@ slow_path:
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		if (!frag_id) {
--			ipv6_select_ident(fh);
-+			ipv6_select_ident(fh, rt);
- 			frag_id = fh->identification;
- 		} else
- 			fh->identification = frag_id;
-@@ -1039,7 +1068,8 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 			int getfrag(void *from, char *to, int offset, int len,
- 			int odd, struct sk_buff *skb),
- 			void *from, int length, int hh_len, int fragheaderlen,
--			int transhdrlen, int mtu,unsigned int flags)
-+			int transhdrlen, int mtu,unsigned int flags,
-+			struct rt6_info *rt)
- 
- {
- 	struct sk_buff *skb;
-@@ -1084,7 +1114,7 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 		skb_shinfo(skb)->gso_size = (mtu - fragheaderlen -
- 					     sizeof(struct frag_hdr)) & ~7;
- 		skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
--		ipv6_select_ident(&fhdr);
-+		ipv6_select_ident(&fhdr, rt);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
- 
-@@ -1233,7 +1263,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 
- 		err = ip6_ufo_append_data(sk, getfrag, from, length, hh_len,
- 					  fragheaderlen, transhdrlen, mtu,
--					  flags);
-+					  flags, rt);
- 		if (err)
- 			goto error;
- 		return 0;
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 9cc6289..d8c0374 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1162,7 +1162,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb, int features)
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr);
-+	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
- 
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
+-
++	/* TODO: This is non obvious task to swap blocks for inodes with full
++	   jornaling enabled */
++	if (ext4_should_journal_data(orig_inode) ||
++	    ext4_should_journal_data(donor_inode)) {
++		return -EINVAL;
++	}
+ 	/* Protect orig and donor inodes against a truncate */
+ 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
+ 	if (ret1 < 0)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
