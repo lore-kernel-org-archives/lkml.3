@@ -1,103 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab3FDVm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:42:58 -0400
-Received: from mail-gg0-f201.google.com ([209.85.161.201]:45650 "EHLO
-	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab3FDVmz (ORCPT
+	id S1751503Ab3FDVpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:45:06 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57578 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3FDVpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:42:55 -0400
-From: Paul Taysom <taysom@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sonny@chromium.org, olofj@chromium.org, taysom@chromium.org
-Subject: [PATCH] drivers: mmc: reordered shutdown sequence in mmc_bld_remove_req
-Date: Tue,  4 Jun 2013 14:42:40 -0700
-Message-Id: <1370382160-7576-1-git-send-email-taysom@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Tue, 4 Jun 2013 17:45:03 -0400
+Date: Tue, 4 Jun 2013 14:45:01 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
+ decompressor
+Message-ID: <20130604214501.GL599@codeaurora.org>
+References: <20130523231531.GT18614@n2100.arm.linux.org.uk>
+ <20130524220539.GB599@codeaurora.org>
+ <51AD0703.6050408@codeaurora.org>
+ <20130603222321.GP18614@n2100.arm.linux.org.uk>
+ <51AD1AB3.9050908@codeaurora.org>
+ <20130603224555.GR18614@n2100.arm.linux.org.uk>
+ <51AD1FE9.80709@codeaurora.org>
+ <alpine.LFD.2.03.1306040032510.1200@syhkavp.arg>
+ <20130604194705.GK599@codeaurora.org>
+ <alpine.LFD.2.03.1306041559440.1200@syhkavp.arg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.03.1306041559440.1200@syhkavp.arg>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a multi-partition SD-Card with two ext2 file systems. The partition
-table was getting overwritten by a race between the card removal and
-the unmount of the 2nd ext2 partition.
+On 06/04, Nicolas Pitre wrote:
+> On Tue, 4 Jun 2013, Stephen Boyd wrote:
+> 
+> > On 06/04, Nicolas Pitre wrote:
+> > > 
+> > > I've looked at the code and I think that #1 in your initial options is 
+> > > probably best here.  I agree with Russell about #2 being way too complex 
+> > > for only this case.
+> > > 
+> > > So, right before calling into cache_on, you could test if r4 - 16K >= pc 
+> > > and r4 < pc + (_end - .) then skip cache_on.
+> > > 
+> > > Something like this untested patch:
+> > 
+> > So this would cause the decompression to run without the cache on
+> > if we have to relocate the decompression code to avoid
+> > overwriting ourselves?
+> 
+> No.  What my example patch does is to simply skip setting up a page 
+> table and turning on the cache if the page table ends up in the 
+> code/data to be relocated.
+> 
+> > It seems that the memcpy is fairly quick on my hardware in comparison 
+> > to the decompression so moving the cache_on() call to right before we 
+> > run decompression keeps things pretty fast. It's very possible 
+> > different hardware will have different results.
+> 
+> "Fairly quick" is still not optimal.
+> 
+> > This is what I meant by option #1. I suppose
+> > we can make it smarter and conditionalize it on if we relocated
+> > or not?
+> 
+> Here's what I,m suggesting:
 
-What was observed:
-1. Suspend/resume would call to remove the device. The clearing
-   of the device information is done asynchronously.
-2. A request is made to unmount the file system (this is called
-   after the removal has started).
-3. The remapping table was cleared by the asynchronous part of
-   the device removal.
-4. A write request to the super block (block 0 of the partition)
-   was sent down and instead of being remapped to the partition
-   offset, it was remapped to block 0 of the device which is where
-   the partition table is located.
-5. Write was queued and written resulting in the overwriting
-   of the partition table with the ext2 super block.
-6. The mmc_queue is cleaned up.
+Yes this looks closer to what I'm saying.
 
-The mmc card device driver used to access SD cards, was calling del_gendisk
-before calling mmc_cleanup-queue. The comment in the mmc_blk_remove_req
-code indicated that it expected del_gendisk to block all further requests
-from being queued but it doesn't. The mmc driver uses the presences of the
-mmc_queue to determine if the request should be queued.
+> 
+> From f1ec55e8189c06b89d2f196929f01fe3fc40f908 Mon Sep 17 00:00:00 2001
+> From: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Date: Tue, 4 Jun 2013 17:01:30 -0400
+> Subject: [PATCH] ARM: zImage: don't overwrite ourself with a page table
+> 
+> When zImage is loaded into RAM at a low address but TEXT_OFFSET
+> is set higher, we risk overwriting ourself with the page table
+> needed to turn on the cache as it is located relative to the relocation
+> address.  Let's defer the cache setup after relocation in that case.
+> 
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> 
+> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+> index 9a94f344df..773bc35f92 100644
+> --- a/arch/arm/boot/compressed/head.S
+> +++ b/arch/arm/boot/compressed/head.S
+> @@ -178,11 +178,23 @@ not_angel:
+>  		mov	r4, pc
+>  		and	r4, r4, #0xf8000000
+>  		add	r4, r4, #TEXT_OFFSET
+> +		bl	cache_on
+>  #else
+>  		ldr	r4, =zreladdr
+> -#endif
+>  
+> -		bl	cache_on
+> +		/*
+> +		 * Set up a page table only if we don't overwrite ourself.
+> +		 * That means r4 < pc && r4 - 4K > &_end.
+> +		 * Given that r4 > &_en is most unfrequent, we add a rough
+> +		 * additional 1MB of room for a possible appended DTB.
+> +		 */
+> +		mov	r0, pc
+> +		cmp	r0, r4
+> +		ldrcc	r0, LC0+32
+> +		addcc	r0, r0, pc
+> +		cmpcc	r4, r0
+> +		blcs	cache_on
+> +#endif
 
-The fix was to clean up the mmc_queue before the rest of the
-the delete partition code is called.
+But this looks backwards? Shouldn't we put it in the
+CONFIG_AUTO_ZRELADDR case?
 
-This prevents the overwriting of the partition table.
+>  
+>  restart:	adr	r0, LC0
+>  		ldmia	r0, {r1, r2, r3, r6, r10, r11, r12}
+> @@ -464,6 +476,16 @@ not_relocated:	mov	r0, #0
+>  		cmp	r2, r3
+>  		blo	1b
+>  
+> +#if defined(CONFIG_AUTO_ZRELADDR) && defined(CONFIG_CPU_CP15)
+> +		/*
+> +		 * Did we skip the cache setup earlier?
+> +		 * Do it now if so.
+> +		 */
+> +		mrc     p15, 0, r0, c1, c0, 0	@ read control register
+> +		tst	r0, #1			@ MMU bit set?
+> +		bleq	cache_on		@ no: set it up
+> +#endif
 
-However, the umount gets an error trying to write the super block.
-The umount should be issued before the device is removed but that
-is not always possible. The umount is still needed to cleanup other
-data structures.
+Too bad we can't store one more variable into LC0 that says we
+turned the caches on. Then we could read that here and detect it
+without CP15 accessors required.
 
-Addresses the problem described in http://crbug.com/240815
+> +
+>  /*
+>   * The C runtime environment should now be setup sufficiently.
+>   * Set up some pointers, and start decompressing.
+> @@ -512,6 +534,7 @@ LC0:		.word	LC0			@ r1
+>  		.word	_got_start		@ r11
+>  		.word	_got_end		@ ip
+>  		.word	.L_user_stack_end	@ sp
+> +		.word	_end - restart + 16384 + 1024*1024
+>  		.size	LC0, . - LC0
+>  
+>  #ifdef CONFIG_ARCH_RPC
 
-Signed-off-by: Paul Taysom <taysom@chromium.org>
----
- drivers/mmc/card/block.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index dd27b07..a79f113 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -2158,6 +2158,14 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
- 	struct mmc_card *card;
- 
- 	if (md) {
-+		/*
-+		 * Flush remaining requests and free queues. It
-+		 * is freeing the queue that stops new requests
-+		 * from being accepted.
-+		 */
-+		mmc_cleanup_queue(&md->queue);
-+		if (md->flags & MMC_BLK_PACKED_CMD)
-+			mmc_packed_clean(&md->queue);
- 		card = md->queue.card;
- 		if (md->disk->flags & GENHD_FL_UP) {
- 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
-@@ -2166,14 +2174,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
- 				device_remove_file(disk_to_dev(md->disk),
- 					&md->power_ro_lock);
- 
--			/* Stop new requests from getting into the queue */
- 			del_gendisk(md->disk);
- 		}
--
--		/* Then flush out any already in there */
--		mmc_cleanup_queue(&md->queue);
--		if (md->flags & MMC_BLK_PACKED_CMD)
--			mmc_packed_clean(&md->queue);
- 		mmc_blk_put(md);
- 	}
- }
 -- 
-1.8.3
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
