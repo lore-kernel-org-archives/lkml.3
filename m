@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab3FDWmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:42:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:35382 "EHLO 1wt.eu"
+	id S1755395Ab3FDXNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:13:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:35438 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab3FDWmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:09 -0400
-Message-Id: <20130604172132.425514485@1wt.eu>
+	id S1752981Ab3FDWmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:19 -0400
+Message-Id: <20130604172131.760685135@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:21 +0200
+Date: Tue, 04 Jun 2013 19:22:05 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 051/184] x86/mm: Check if PUD is large when validating a
+Subject: [ 035/184] hugetlb: fix resv_map leak in error path
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,89 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- kernel address
 
-From: Mel Gorman <mgorman@suse.de>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
+commit c50ac050811d6485616a193eb0f37bfbd191cc89 upstream
 
-A user reported the following oops when a backup process reads
-/proc/kcore:
+When called for anonymous (non-shared) mappings, hugetlb_reserve_pages()
+does a resv_map_alloc().  It depends on code in hugetlbfs's
+vm_ops->close() to release that allocation.
 
- BUG: unable to handle kernel paging request at ffffbb00ff33b000
- IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
- [...]
+However, in the mmap() failure path, we do a plain unmap_region() without
+the remove_vma() which actually calls vm_ops->close().
 
- Call Trace:
-  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
-  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
-  [<ffffffff81151687>] vfs_read+0xc7/0x130
-  [<ffffffff811517f3>] sys_read+0x53/0xa0
-  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+This is a decent fix.  This leak could get reintroduced if new code (say,
+after hugetlb_reserve_pages() in hugetlbfs_file_mmap()) decides to return
+an error.  But, I think it would have to unroll the reservation anyway.
 
-Investigation determined that the bug triggered when reading
-system RAM at the 4G mark. On this system, that was the first
-address using 1G pages for the virt->phys direct mapping so the
-PUD is pointing to a physical address, not a PMD page.
+Christoph's test case:
 
-The problem is that the page table walker in kern_addr_valid() is
-not checking pud_large() and treats the physical address as if
-it was a PMD.  If it happens to look like pmd_none then it'll
-silently fail, probably returning zeros instead of real data. If
-the data happens to look like a present PMD though, it will be
-walked resulting in the oops above.
+	http://marc.info/?l=linux-mm&m=133728900729735
 
-This patch adds the necessary pud_large() check.
+This patch applies to 3.4 and later.  A version for earlier kernels is at
+https://lkml.org/lkml/2012/5/22/418.
 
-Unfortunately the problem was not readily reproducible and now
-they are running the backup program without accessing
-/proc/kcore so the patch has not been validated but I think it
-makes sense.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.coM>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org
-Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Christoph Lameter <cl@linux.com>
+Tested-by: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/pgtable.h | 5 +++++
- arch/x86/mm/init_64.c          | 3 +++
- 2 files changed, 8 insertions(+)
+ mm/hugetlb.c | 28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index af6fd36..1cce9d2 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -130,6 +130,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
- 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 20f9240..3d61035 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1772,6 +1772,15 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
+ 		kref_get(&reservations->refs);
  }
  
-+static inline unsigned long pud_pfn(pud_t pud)
++static void resv_map_put(struct vm_area_struct *vma)
 +{
-+	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
++	struct resv_map *reservations = vma_resv_map(vma);
++
++	if (!reservations)
++		return;
++	kref_put(&reservations->refs, resv_map_release);
 +}
 +
- #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ {
+ 	struct hstate *h = hstate_vma(vma);
+@@ -1788,7 +1797,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ 		reserve = (end - start) -
+ 			region_count(&reservations->regions, start, end);
  
- static inline int pmd_large(pmd_t pte)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 7d095ad..ccbc61b 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -839,6 +839,9 @@ int kern_addr_valid(unsigned long addr)
- 	if (pud_none(*pud))
- 		return 0;
+-		kref_put(&reservations->refs, resv_map_release);
++		resv_map_put(vma);
  
-+	if (pud_large(*pud))
-+		return pfn_valid(pud_pfn(*pud));
-+
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return 0;
+ 		if (reserve) {
+ 			hugetlb_acct_memory(h, -reserve);
+@@ -2472,12 +2481,16 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
+ 	}
+ 
+-	if (chg < 0)
+-		return chg;
++	if (chg < 0) {
++		ret = chg;
++		goto out_err;
++	}
+ 
+ 	/* There must be enough pages in the subpool for the mapping */
+-	if (hugepage_subpool_get_pages(spool, chg))
+-		return -ENOSPC;
++	if (hugepage_subpool_get_pages(spool, chg)) {
++		ret = -ENOSPC;
++		goto out_err;
++	}
+ 
+ 	/*
+ 	 * Check enough hugepages are available for the reservation.
+@@ -2486,7 +2499,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	ret = hugetlb_acct_memory(h, chg);
+ 	if (ret < 0) {
+ 		hugepage_subpool_put_pages(spool, chg);
+-		return ret;
++		goto out_err;
+ 	}
+ 
+ 	/*
+@@ -2503,6 +2516,9 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+ 		region_add(&inode->i_mapping->private_list, from, to);
+ 	return 0;
++out_err:
++	resv_map_put(vma);
++	return ret;
+ }
+ 
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
