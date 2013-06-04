@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758575Ab3FDFzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:55:47 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:45273 "EHLO
+	id S1758811Ab3FDFzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 01:55:51 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:37275 "EHLO
 	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab3FDFzo (ORCPT
+	with ESMTP id S1755698Ab3FDFzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 01:55:44 -0400
 From: Ben Chan <benchan@chromium.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>
-Subject: [PATCH v2 1/2] staging: gdm72xx: WIMAX_GDM72XX should depend on either USB or MMC
-Date: Mon,  3 Jun 2013 22:55:38 -0700
-Message-Id: <1370325339-19956-1-git-send-email-benchan@chromium.org>
+Subject: [PATCH v2 2/2] staging: gdm72xx: fix typos in Kconfig
+Date: Mon,  3 Jun 2013 22:55:39 -0700
+Message-Id: <1370325339-19956-2-git-send-email-benchan@chromium.org>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1370325339-19956-1-git-send-email-benchan@chromium.org>
+References: <1370325339-19956-1-git-send-email-benchan@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gdm72xx driver needs to have either the USB or SDIO implementation
-enabled to provide useful functionalities, so the driver should depend
-on either USB or MMC. This patch makes WIMAX_GDM72XX depend on either
-USB or MMC.
-
-Also, WIMAX_GDM72XX needs to be built as a module if its dependent
-interface, either USB or MMC, is built as a module. This patch enforces
-that in the WIMAX_GDM72XX_USB and WIMAX_GDM72XX_SDIO dependency.
-
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ben Chan <benchan@chromium.org>
 Cc: Sage Ahn <syahn@gctsemi.com>
 ---
- drivers/staging/gdm72xx/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/gdm72xx/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/gdm72xx/Kconfig b/drivers/staging/gdm72xx/Kconfig
-index 6905913..dd47bd1 100644
+index dd47bd1..dd8a391 100644
 --- a/drivers/staging/gdm72xx/Kconfig
 +++ b/drivers/staging/gdm72xx/Kconfig
-@@ -4,7 +4,7 @@
+@@ -19,7 +19,7 @@ config WIMAX_GDM72XX_K_MODE
+ 	default n
  
- menuconfig WIMAX_GDM72XX
- 	tristate "GCT GDM72xx WiMAX support"
--	depends on NET
-+	depends on NET && (USB || MMC)
- 	help
- 	  Support for the GCT GDM72xx WiMAX chip
+ config WIMAX_GDM72XX_WIMAX2
+-	bool "Enable WIMAX2 support"
++	bool "Enable WiMAX2 support"
+ 	default n
  
-@@ -27,11 +27,11 @@ choice
+ choice
+@@ -38,7 +38,7 @@ endchoice
+ if WIMAX_GDM72XX_USB
  
- config WIMAX_GDM72XX_USB
- 	bool "USB interface"
--	depends on USB
-+	depends on (USB = y || USB = WIMAX_GDM72XX)
+ config WIMAX_GDM72XX_USB_PM
+-	bool "Enable power managerment support"
++	bool "Enable power management support"
+ 	depends on PM_RUNTIME
  
- config WIMAX_GDM72XX_SDIO
- 	bool "SDIO interface"
--	depends on MMC
-+	depends on (MMC = y || MMC = WIMAX_GDM72XX)
- 
- endchoice
- 
+ endif # WIMAX_GDM72XX_USB
 -- 
 1.8.2.1
 
