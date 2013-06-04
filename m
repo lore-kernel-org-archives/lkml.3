@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab3FDORl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:17:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46844 "EHLO
+	id S1756792Ab3FDORj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:17:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46846 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab3FDOIV (ORCPT
+	with ESMTP id S1756079Ab3FDOIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 10:08:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
+Cc: Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 43/70] acpi/video_detect: blacklist samsung x360
-Date: Tue,  4 Jun 2013 15:06:59 +0100
-Message-Id: <1370354846-14213-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 42/70] tg3: Skip powering down function 0 on certain serdes devices
+Date: Tue,  4 Jun 2013 15:06:58 +0100
+Message-Id: <1370354846-14213-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,70 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corentin Chary <corentin.chary@gmail.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 084940d5b101e9ca91a689eb5048151b14076839 upstream.
+commit 44f3b503c16425c8e9db4bbaa2fc9cd0c9d0ba91 upstream.
 
-On Samsung X360, the BIOS will set a flag (VDRV) if the generic
-ACPI backlight device is used. This flag will definitively break
-the backlight interface (even the vendor interface) untill next
-reboot. It's why we should prevent video.ko from being used here
-and we can't rely on a later call to acpi_video_unregister().
+On the 5718, 5719 and 5720 serdes devices, powering down function 0
+results in all the other ports being powered down. Add code to skip
+function 0 power down.
 
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+v2:
+ - Modify tg3_phy_power_bug() function to use a switch instead of a
+   complicated if statement. Suggested by Joe Perches.
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backport to 3.5:
+  - use GET_ASIC_REV() macro instead of tg3_asic_rev() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/video_detect.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c | 32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 45d8097..841bfde 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -132,6 +132,33 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index c2450f4..99d4d07 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -2737,6 +2737,31 @@ static int tg3_5700_link_polarity(struct tg3 *tp, u32 speed)
+ 	return 0;
  }
  
-+/* Force to use vendor driver when the ACPI device is known to be
-+ * buggy */
-+static int video_detect_force_vendor(const struct dmi_system_id *d)
++static bool tg3_phy_power_bug(struct tg3 *tp)
 +{
-+	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-+	return 0;
++	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
++	case ASIC_REV_5700:
++	case ASIC_REV_5704:
++		return true;
++	case ASIC_REV_5780:
++		if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
++			return true;
++		return false;
++	case ASIC_REV_5717:
++		if (!tp->pci_fn)
++			return true;
++		return false;
++	case ASIC_REV_5719:
++	case ASIC_REV_5720:
++		if ((tp->phy_flags & TG3_PHYFLG_PHY_SERDES) &&
++		    !tp->pci_fn)
++			return true;
++		return false;
++	}
++
++	return false;
 +}
 +
-+static struct dmi_system_id video_detect_dmi_table[] = {
-+	/* On Samsung X360, the BIOS will set a flag (VDRV) if generic
-+	 * ACPI backlight device is used. This flag will definitively break
-+	 * the backlight interface (even the vendor interface) untill next
-+	 * reboot. It's why we should prevent video.ko from being used here
-+	 * and we can't rely on a later call to acpi_video_unregister().
-+	 */
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "X360",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
-+		DMI_MATCH(DMI_BOARD_NAME, "X360"),
-+		},
-+	},
-+	{ },
-+};
-+
- /*
-  * Returns the video capabilities of a specific ACPI graphics device
-  *
-@@ -164,6 +191,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
- 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
- 		 *}
- 		 */
-+
-+		dmi_check_system(video_detect_dmi_table);
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
+ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+ {
+ 	u32 val;
+@@ -2793,12 +2818,7 @@ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+ 	/* The PHY should not be powered down on some chips because
+ 	 * of bugs.
+ 	 */
+-	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5700 ||
+-	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5704 ||
+-	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5780 &&
+-	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
+-	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 &&
+-	     !tp->pci_fn))
++	if (tg3_phy_power_bug(tp))
+ 		return;
+ 
+ 	if (GET_CHIP_REV(tp->pci_chip_rev_id) == CHIPREV_5784_AX ||
 -- 
 1.8.1.2
 
