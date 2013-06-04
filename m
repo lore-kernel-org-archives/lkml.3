@@ -1,171 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab3FDPsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:48:35 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64500 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3FDPsd (ORCPT
+	id S1755400Ab3FDPvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:51:31 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:38888 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3FDPv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:48:33 -0400
-Date: Tue, 4 Jun 2013 11:45:01 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Frank Mehnert <frank.mehnert@oracle.com>
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: Handling NUMA page migration
-Message-ID: <20130604154500.GA5664@gmail.com>
-References: <201306040922.10235.frank.mehnert@oracle.com>
- <20130604115807.GF3672@sgi.com>
- <201306041414.52237.frank.mehnert@oracle.com>
+	Tue, 4 Jun 2013 11:51:29 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Subject: RE: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Topic: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Index: AQHOYJD5t4s5mkVepkqNMD/e2H+1XZkk7OKAgACn4LA=
+Date: Tue, 4 Jun 2013 15:50:17 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B010ECC@USINDEM103.corp.hds.com>
+References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
+ <1370303581.26799.109.camel@gandalf.local.home>
+In-Reply-To: <1370303581.26799.109.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="KsGdsel6WgEHnImy"
-Content-Disposition: inline
-In-Reply-To: <201306041414.52237.frank.mehnert@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-04_06:2013-06-04,2013-06-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
+ suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1306040135
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54FpeON018397
 
+> Yeah, I believe this does work. But you probably should add a comment
+> like the following:
 
---KsGdsel6WgEHnImy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OK. I will add  some  comment above " extern atomic_long_t current_idt_descr_ptr;".
 
-On Tue, Jun 04, 2013 at 02:14:45PM +0200, Frank Mehnert wrote:
-> On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
-> > This is probably more appropriate to be directed at the linux-mm
-> > mailing list.
-> > 
-> > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
-> > > Hi,
-> > > 
-> > > our memory management on Linux hosts conflicts with NUMA page migration.
-> > > I assume this problem existed for a longer time but Linux 3.8 introduced
-> > > automatic NUMA page balancing which makes the problem visible on
-> > > multi-node hosts leading to kernel oopses.
-> > > 
-> > > NUMA page migration means that the physical address of a page changes.
-> > > This is fatal if the application assumes that this never happens for
-> > > that page as it was supposed to be pinned.
-> > > 
-> > > We have two kind of pinned memory:
-> > > 
-> > > A) 1. allocate memory in userland with mmap()
-> > > 
-> > >    2. madvise(MADV_DONTFORK)
-> > >    3. pin with get_user_pages().
-> > >    4. flush dcache_page()
-> > >    5. vm_flags |= (VM_DONTCOPY | VM_LOCKED)
-> > >    
-> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > >       
-> > >        VM_DONTCOPY | VM_LOCKED | 0xff)
-> > 
-> > I don't think this type of allocation should be affected.  The
-> > get_user_pages() call should elevate the pages reference count which
-> > should prevent migration from completing.  I would, however, wait for
-> > a more definitive answer.
 > 
-> Thanks Robin! Actually case B) is more important for us so I'm waiting
-> for more feedback :)
+> /*
+>  * The current_idt_descr_ptr can only be set out of interrupt context
+>  * to avoid races. 
+
+I will introduce set_current_idt() as follows.
+
+set_current_idt(unsigned long idt)
+{
+	If (WARN_ON_ONCE(in_interrupt()))
+		return;
+
+	atomic_long_set(idt);
+
+}
+
+
+> * Once set, the load_current_idt() is called by interrupt
+>  * context either by NMI, debug, or via a smp_call_function(). That way
+>  * the IDT will always be set back to the expected descriptor.
+>  */
+
+The important thing is not "called by interrupt context" but "called with interrupt disabled"
+to avoid races.
+Actually, load_current_idt() is called in process context in irq_vector_{reg/unreg}func().
+In next patch, I will rewrite the comment.
+
+> >
+> > +extern atomic_long_t current_idt_descr_ptr;
+> > +static inline void load_current_idt(void)
+> > +{
+> > +	if (atomic_long_read(&current_idt_descr_ptr))
 > 
-> Frank
+> Also, we should probably add here:
+> 		unsigned long new_idt = atomic_long_read(&current_idt_descr_ptr);
 > 
-> > > B) 1. allocate memory with alloc_pages()
-> > > 
-> > >    2. SetPageReserved()
-> > >    3. vm_mmap() to allocate a userspace mapping
-> > >    4. vm_insert_page()
-> > >    5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
-> > >    
-> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > >       0xff)
-> > > 
-> > > At least the memory allocated like B) is affected by automatic NUMA page
-> > > migration. I'm not sure about A).
-> > > 
-> > > 1. How can I prevent automatic NUMA page migration on this memory?
-> > > 2. Can NUMA page migration also be handled on such kind of memory without
-> > > 
-> > >    preventing migration?
-> > > 
-> > > Thanks,
-> > > 
-> > > Frank
+> 		if (WARN_ON_ONCE(!validate_idt(new_idt))
+> 			return;
+> 		load_idt((const struct desc_ptr *)new_idt);
+> 
+> > +		load_idt((const struct desc_ptr *)
+> > +			 atomic_long_read(&current_idt_descr_ptr));
+> > +	else
+> > +		load_idt((const struct desc_ptr *)&idt_descr);
+> > +}
+> > +
+> 
+> Then have
+> 
+> bool validate_idt(unsigned long idt)
+> {
+> 	switch(idt) {
+> 	case (unsigned long)&trace_idt_descr:
+> 	case (unsigned long)&idt_descr:
+> 		return 0;
+> 	}
+> 	return -1;
+> }
+> 
+> This way we wont be opening up any easy root holes where if a process
+> finds a way to modify some arbitrary kernel memory, we can prevent it
+> from modifying the current_idt_descr_ptr and have a nice way to exploit
+> the IDT. Sure, one can argue that if they can modify arbitrary kernel
+> memory, we may already be lost, but lets not make it easier for them
+> than need be.
 
-I was looking at migration code lately, and while i am not an expert at all
-in this area. I think there is a bug in the way handle_mm_fault deals, or
-rather not deals, with migration entry.
+I will introduce the validate_idt() as above in a next patch.
 
-When huge page is migrated its pmd is replace with a special swp entry pmd,
-which is a non zero pmd but that does not have any of the huge pmd flag set
-so none of the handle_mm_fault path detect it as swap entry. Then believe
-its a valid pmd and try to allocate pte under it which should oops.
+Thanks.
 
-Attached patch is what i believe should be done (not even compile tested).
+Seiji
 
-Again i might be missing a subtelty somewhere else and just missed where
-huge migration entry are dealt with.
+> 
+> -- Steve
+> 
 
-Cheers,
-Jerome
-
---KsGdsel6WgEHnImy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-mm-properly-handle-fault-on-huge-page-migration.patch"
-
->From 22d00055bdd4d88eb01958828e4c0121231a9e01 Mon Sep 17 00:00:00 2001
-From: Jerome Glisse <jglisse@redhat.com>
-Date: Tue, 4 Jun 2013 11:34:14 -0400
-Subject: [PATCH] mm: properly handle fault on huge page migration
-
-When huge page is being migrated it's pmd is non zero but does not have
-any of the huge pmd flags set. It's a swap entry pmd. The handle_mm_fault
-never check for this case and thus if a fault happen in the huge page
-range while it's being migrated handle_mm_fault will interpret badly the
-pmd.
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
----
- mm/memory.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..e2a039c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3793,6 +3793,7 @@ retry:
- 							  pmd, flags);
- 	} else {
- 		pmd_t orig_pmd = *pmd;
-+		swp_entry_t entry;
- 		int ret;
- 
- 		barrier();
-@@ -3829,6 +3830,20 @@ retry:
- 
- 			return 0;
- 		}
-+
-+		swp_entry_t entry = pte_to_swp_entry((pte_t)orig_pmd);
-+		if (unlikely(non_swap_entry(entry))) {
-+			if (is_migration_entry(entry)) {
-+				migration_entry_wait(mm, pmd, address);
-+				/* Retry the fault */
-+				return 0;
-+			} else if (is_hwpoison_entry(entry)) {
-+				return VM_FAULT_HWPOISON;
-+			} else {
-+				/* Something else is wrong invalid pmd print it ? */
-+				return VM_FAULT_SIGBUS;
-+			}
-+		}
- 	}
- 
- 	if (pmd_numa(*pmd))
--- 
-1.7.11.7
-
-
---KsGdsel6WgEHnImy--
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
