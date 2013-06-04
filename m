@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3FDJ4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:56:42 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50326 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3FDJ4k (ORCPT
+	id S1753110Ab3FDJ5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:57:09 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:33304 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab3FDJ5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:56:40 -0400
-Date: Tue, 4 Jun 2013 11:56:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-Message-ID: <20130604095634.GA14012@somewhere>
-References: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
- <20130603224836.GA9388@somewhere>
- <CAKfTPtCB_ftNWjgAM9s79dX_tuS4yevjdD0YxvKfKS4dxz=LLQ@mail.gmail.com>
+	Tue, 4 Jun 2013 05:57:06 -0400
+Date: Tue, 4 Jun 2013 11:56:57 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/5] ARM: ux500: Provide auxdata to ux500 ASoC driver
+Message-ID: <20130604095657.GA9581@balto.lan>
+References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+ <1369920465-13905-5-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkda8h_zewd2M7QzvoLn15iDEUv8XYCGqro62chiCcYaM8Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtCB_ftNWjgAM9s79dX_tuS4yevjdD0YxvKfKS4dxz=LLQ@mail.gmail.com>
+In-Reply-To: <CACRpkda8h_zewd2M7QzvoLn15iDEUv8XYCGqro62chiCcYaM8Q@mail.gmail.com>
+X-Operating-System: Linux balto 3.10.0-rc2-00332-g17fdfd0 x86_64 GNU/Linux
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 10:21:06AM +0200, Vincent Guittot wrote:
-> On 4 June 2013 00:48, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Thu, May 30, 2013 at 05:23:05PM +0200, Vincent Guittot wrote:
-> >> I have faced a sequence where the Idle Load Balance was sometime not
-> >>  triggered for a while on my platform.
-> >>
-> >> CPU 0 and CPU 1 are running tasks and CPU 2 is idle
-> >>
-> >> CPU 1 kicks the Idle Load Balance
-> >> CPU 1 selects CPU 2 as the new Idle Load Balancer
-> >> CPU 1 sets NOHZ_BALANCE_KICK for CPU 2
-> >> CPU 1 sends a reschedule IPI to CPU 2
-> >> While CPU 2 wakes up, CPU 0 or CPU 1 migrates a waking task A on CPU 2
-> >> CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
-> >> Task A quickly goes back to sleep (before a tick occurs on CPU 2)
-> >> CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
-> >>
-> >> Whenever CPU 2 will be selected for the ILB, reschedule IPI will be not
-> >> sent to CPU2, which is idle, because NOHZ_BALANCE_KICK is already set
-> >> and no Idle Load Balance will be performed.
-> >>
-> >> We must wait for the sched softirq to be raised on CPU 2 thanks to
-> >> another part of the kernel to clear NOHZ_BALANCE_KICKand come back to
-> >> a normal situation.
-> >>
-> >> The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
-> >> we can't raise the sched_softirq for the Idle Load Balance.
-> >>
-> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> >> ---
-> >>  kernel/sched/core.c |    3 ++-
-> >>  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> >> index 58453b8..51fc715 100644
-> >> --- a/kernel/sched/core.c
-> >> +++ b/kernel/sched/core.c
-> >> @@ -1420,7 +1420,8 @@ void scheduler_ipi(void)
-> >>       if (unlikely(got_nohz_idle_kick() && !need_resched())) {
-> >>               this_rq()->idle_balance = 1;
-> >>               raise_softirq_irqoff(SCHED_SOFTIRQ);
-> >> -     }
-> >> +     } else
-> >> +             clear_bit(NOHZ_BALANCE_KICK, nohz_flags(smp_processor_id()));
-> >
-> > But then do we reach this if the IPI happens while running the non-idle task in
-> > CPU 2? The first got_nohz_idle_kick() test would drop us out early from scheduler_ipi()
-> > due to the idle_cpu() test. So the flag doesn't get cleared in this case.
+On Tue, Jun 04, 2013 at 11:03:41AM +0200, Linus Walleij wrote:
+> On Thu, May 30, 2013 at 3:27 PM, Fabio Baltieri
+> <fabio.baltieri@linaro.org> wrote:
 > 
-> The 1st point is that only idle cpu can be selected for idle load
-> balance. But this doesn't prevent the cpu to wake up while it is
-> kicked for idle load balance.
+> > Ux500 ASoC driver is expected to have a specific device name to get
+> > clock resources correctly.  This patch provides the necessary
+> > OF_DEV_AUXDATA to match the name in DT and non-DT cases.
+> >
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> 
+> Patch applied to my ux500-devicetree branch after some rebasing.
 
-Yep.
+Thanks!  I saw that a lot patches are stacking up in the tree, do you
+plan to send an intermediate pull request to get these on
+arm-soc/for-next (and linux-next)?
 
-> I had added the clear_bit for the 1st got_nohz_idle_kick in the draft
-> version of this patch but the test of the emptiness of the wake_list,
-> the call to smp_send_reschedule in the various way to wake up the idle
-> cpu and the results of the tests have convinced me (may be wrongly)
-> that it was not necessary.
+Thanks,
+Fabio
 
-Hmm, if the CPU is idle, get selected as an ilb, but then the CPU schedules
-a non-idle task and receive the IPI in this non-idle context then finally
-it goes back to idle for a long time. It can stay idle without ever been
-notified with this NOHZ_BALANCE_KICK flag set.
+> 
+> Yours,
+> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-But I can be missing something that clears the flag somewhere in that scenario.
-In any case it's not obvious.
+-- 
+Fabio Baltieri
