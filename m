@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab3FDRBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:01:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48452 "EHLO
+	id S1758223Ab3FDRCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:02:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48474 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab3FDRBV (ORCPT
+	with ESMTP id S1755936Ab3FDRCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:01:21 -0400
+	Tue, 4 Jun 2013 13:02:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Gomella <andrew.gomella@nih.gov>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jiri Kosina <jkosina@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 28/75] USB: ftdi_sio: Add support for Newport CONEX motor drivers
-Date: Tue,  4 Jun 2013 09:55:12 -0700
-Message-Id: <1370364959-9475-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 57/75] random: fix accounting race condition with lockless irq entropy_count update
+Date: Tue,  4 Jun 2013 09:55:41 -0700
+Message-Id: <1370364959-9475-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,62 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
+commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 upstream.
 
-Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
+Commit 902c098a3663 ("random: use lockless techniques in the interrupt
+path") turned IRQ path from being spinlock protected into lockless
+cmpxchg-retry update.
 
-The devices are the Newport Conex-AGP and Conex-CC motor controllers.
-(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
-(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
+That commit removed r->lock serialization between crediting entropy bits
+from IRQ context and accounting when extracting entropy on userspace
+read path, but didn't turn the r->entropy_count reads/updates in
+account() to use cmpxchg as well.
 
-usb-devices command yields:
+It has been observed, that under certain circumstances this leads to
+read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
+corrupted and becomes negative, which in turn results in propagating 0
+all the way from account() to the actual read() call.
 
-P:  Vendor=104d ProdID=3002 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-CC
+Convert the accounting code to be the proper lockless counterpart of
+what has been partially done by 902c098a3663.
 
-as well as
-
-P:  Vendor=104d ProdID=3006 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-AGP
-
-Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 2 ++
- 2 files changed, 4 insertions(+)
+ drivers/char/random.c | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 77f78ad..86a1892 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -191,6 +191,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 9852827..6dd7925 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -772,6 +772,8 @@
-  */
- #define NEWPORT_VID			0x104D
- #define NEWPORT_AGILIS_PID		0x3000
-+#define NEWPORT_CONEX_CC_PID		0x3002
-+#define NEWPORT_CONEX_AGP_PID		0x3006
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index ae872f8..b7dc45c 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -865,16 +865,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 	if (r->entropy_count / 8 < min + reserved) {
+ 		nbytes = 0;
+ 	} else {
++		int entropy_count, orig;
++retry:
++		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+ 		/* If limited, never pull more than available */
+-		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
+-			nbytes = r->entropy_count/8 - reserved;
+-
+-		if (r->entropy_count / 8 >= nbytes + reserved)
+-			r->entropy_count -= nbytes*8;
+-		else
+-			r->entropy_count = reserved;
++		if (r->limit && nbytes + reserved >= entropy_count / 8)
++			nbytes = entropy_count/8 - reserved;
++
++		if (entropy_count / 8 >= nbytes + reserved) {
++			entropy_count -= nbytes*8;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		} else {
++			entropy_count = reserved;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		}
  
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
+-		if (r->entropy_count < random_write_wakeup_thresh)
++		if (entropy_count < random_write_wakeup_thresh)
+ 			wakeup_write = 1;
+ 	}
+ 
 -- 
 1.8.1.2
 
