@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab3FDOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:15:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46880 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661Ab3FDOI3 (ORCPT
+	id S1756834Ab3FDOPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:15:34 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:52416 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756706Ab3FDOPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:29 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 50/70] jfs: fix a couple races
-Date: Tue,  4 Jun 2013 15:07:06 +0100
-Message-Id: <1370354846-14213-51-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
-References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 4 Jun 2013 10:15:30 -0400
+Date: Tue, 4 Jun 2013 15:15:26 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Baruch Siach <baruch@tkos.co.il>
+Subject: Re: [PATCH v2 2/4] clocksource: dw_apb_timer_of: add clock-handling
+Message-ID: <20130604141526.GB5308@maple>
+References: <201306041136.09566.heiko@sntech.de>
+ <201306041137.37036.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306041137.37036.heiko@sntech.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.14 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 04, 2013 at 11:37:36AM +0200, Heiko Stübner wrote:
+> Add the possibility to get the clock-frequency from a timer clock instead
+> of specifying it as dt property. Additionally also add the possibility
+> to also define a controlling periphal clock for the timer block.
+> 
+> The clock-frequency property is kept to act as fallback if no clocks
+> are specified.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-------------------
-
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-commit 73aaa22d5ffb2630456bac2f9a4ed9b81d0d7271 upstream.
-
-This patch fixes races uncovered by xfstests testcase 068.
-
-One race is the result of jfs_sync() trying to write a sync point to the
-journal after it has been frozen (or possibly in the process). Since
-freezing sync's the journal, there is no need to write a sync point so
-we simply want to return.
-
-The second involves jfs_write_inode() being called on a deleted inode.
-It calls jfs_flush_journal which is held up by the jfs_commit thread
-doing the final iput on the same deleted inode, which itself is
-waiting for the I_SYNC flag to be cleared. jfs_write_inode need not
-do anything when i_nlink is zero, which is the easy fix.
-
-Reported-by: Michael L. Semon <mlsemon35@gmail.com>
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/jfs/inode.c      | 2 +-
- fs/jfs/jfs_logmgr.c | 3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/jfs/inode.c b/fs/jfs/inode.c
-index 4692bf3..7e54dfd 100644
---- a/fs/jfs/inode.c
-+++ b/fs/jfs/inode.c
-@@ -125,7 +125,7 @@ int jfs_write_inode(struct inode *inode, struct writeback_control *wbc)
- {
- 	int wait = wbc->sync_mode == WB_SYNC_ALL;
- 
--	if (test_cflag(COMMIT_Nolink, inode))
-+	if (inode->i_nlink == 0)
- 		return 0;
- 	/*
- 	 * If COMMIT_DIRTY is not set, the inode isn't really dirty.
-diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
-index 2eb952c..cbe48ea 100644
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -1058,7 +1058,8 @@ static int lmLogSync(struct jfs_log * log, int hard_sync)
-  */
- void jfs_syncpt(struct jfs_log *log, int hard_sync)
- {	LOG_LOCK(log);
--	lmLogSync(log, hard_sync);
-+	if (!test_bit(log_QUIESCE, &log->flag))
-+		lmLogSync(log, hard_sync);
- 	LOG_UNLOCK(log);
- }
- 
--- 
-1.8.1.2
-
+Acked-by: Jamie Iles <jamie@jamieiles.com>
