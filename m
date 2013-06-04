@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3FDOTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:19:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46828 "EHLO
+	id S1756010Ab3FDOIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:08:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46784 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3FDOIS (ORCPT
+	with ESMTP id S1755898Ab3FDOIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:18 -0400
+	Tue, 4 Jun 2013 10:08:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 41/70] dm bufio: avoid a possible __vmalloc deadlock
-Date: Tue,  4 Jun 2013 15:06:57 +0100
-Message-Id: <1370354846-14213-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 32/70] mm/THP: use pmd_populate() to update the pmd with pgtable_t pointer
+Date: Tue,  4 Jun 2013 15:06:48 +0100
+Message-Id: <1370354846-14213-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
+commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
+set_pmd_at is used to set pmd with huge pte entries and architectures
+like ppc64, clear few flags from the pte when saving a new entry.
+Without this change we observe bad pte errors like below on ppc64 with
+THP enabled.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
-
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[ luis: backport to 3.5 as suggested:
-  - inlined functions memalloc_noio_save and memalloc_noio_restore
-  - replaced PF_MEMALLOC_NOIO by PF_MEMALLOC ]
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-bufio.c | 26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ mm/huge_memory.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index c0fc827..e9097af 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
- {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 	}
- 
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY) {
-+		noio_flag = current->flags & PF_MEMALLOC;
-+		current->flags |= PF_MEMALLOC;
-+	}
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-+
-+	return ptr;
- }
- 
- /*
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 57c4b93..7d0eb9e 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1955,7 +1955,12 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 		pte_unmap(pte);
+ 		spin_lock(&mm->page_table_lock);
+ 		BUG_ON(!pmd_none(*pmd));
+-		set_pmd_at(mm, address, pmd, _pmd);
++		/*
++		 * We can only use set_pmd_at when establishing
++		 * hugepmds and never for establishing regular pmds that
++		 * points to regular pagetables. Use pmd_populate for that
++		 */
++		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
+ 		spin_unlock(&mm->page_table_lock);
+ 		anon_vma_unlock(vma->anon_vma);
+ 		goto out;
 -- 
 1.8.1.2
 
