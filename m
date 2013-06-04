@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab3FDPhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:37:36 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43336 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3FDPhc (ORCPT
+	id S1755469Ab3FDPi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:38:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56073 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab3FDPiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:37:32 -0400
+	Tue, 4 Jun 2013 11:38:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 2/2] USB: host: make USB_ARCH_HAS_?HCI obsolete
+Date: Tue, 04 Jun 2013 17:38:45 +0200
+Message-ID: <1624672.VBbVgzJXAH@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1306041107520.1093-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1306041107520.1093-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <6466898.RnYOe3jpGG@wuerfel>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com>
- <51A5BA86.3070609@free-electrons.com> <20130530.024201.1913984663902628192.davem@davemloft.net>
- <6466898.RnYOe3jpGG@wuerfel>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Tue, 4 Jun 2013 16:36:50 +0100
-X-Google-Sender-Auth: ve36r1dYVxvWh_bnbd-bCIWIlac
-Message-ID: <CAGVrzcbRS3x5fgD1BfOk4-oTUsAY9FA2V621OvZLJQNZ01brCg@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: David Miller <davem@davemloft.net>, alexandre.belloni@free-electrons.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, shawn.guo@linaro.org,
-        kernel@pengutronix.de
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:sk4sGel3w8iC91DDWuQJ9a7q2mSThl32TnubuTmiBJV
+ f9pMT+z3cgxMmtacd60oqrJKQUzSMUNxE68oWt0d2AI5NCb/lW
+ ReqQiyB/bSezJ1ppnL/8ahwtG+zR4ytNcb+5a3IFads+3lHykt
+ iaHO3MtWMpB0r6b43/Sq8tHsZ4KRFuDdbVoAY0tpFswT7npOLG
+ /4UPXyaBpqTmPmKw7LCwgMq06KjasKxTSAbbly8ouM2rCpbVI7
+ A40VrsU84tqXJVH7hPb5weX3609P1oMYTkXVBeg8LHau4sj/JA
+ 2MK8wacQhfL2z+a2C69S9SY4N3RKn+jl6IJB+LK1rQ7oO2yDm/
+ S9ysHc+2qpfqKIBMOjYI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/4 Arnd Bergmann <arnd@arndb.de>:
->> Or you properly segregate the networking bits of the platform code so
->> that it can be built only when the necessary networking portions are
->> enabled.
->>
->> Sometimes having dummy stubs makes sense, but not in this situation.
->
-> Currently most users of this function are doing something like
->
-> static int foo_phy_fixup(struct phy_device *phydev)
-> {
->         ...
-> }
->
-> static int __init boo_board_init(void)
-> {
->          if (IS_BUILTIN(CONFIG_PHYLIB))
->                 phy_register_fixup_for_uid(phy_id, foo_phy_fixup);
-> }
->
-> which is practically the same as having a dummy stub. It leads to
-> the foo_phy_fixup() function always getting compiled and then discarded
-> by gcc when CONFIG_PHYLIB is disabled.
->
-> The method is currently broken when network drivers are enabled as
-> modules, because we are missing the fixup then.
->
-> I think we should use IS_ENABLED() here to force a build error
-> in that case, and have something like
->
-> config ARCH_FOO
->         bool "support for the foo platform"
->         select PHYLIB if NET
->
-> in the platform Kconfig file, to ensure PHYLIB is always built-in.
->
-> I still think the inline alternatives would be helpful, but using
-> if (IS_ENABLED(CONFIG_PHYLIB)) in the platform code would also
-> work.
+On Tuesday 04 June 2013 11:22:01 Alan Stern wrote:
+> 
+> Instead of doing this, it makes more sense to enable USB_ARCH_HAS_HCD
+> whenever host-side USB is enabled.  In other words,
+> 
+>         def_bool USB
 
-It seems to me that what David proposes is to have say an
-arch/arm/mach-foo/phy-fixups.c file which is only enabled when
-CONFIG_PHYLIB is set (obj-$(CONFIG_PHYLIB) += phy-fixup.o), such that
-it does not need to have any conditionnals when calling
-phy_register_fixup. This sounds a little unusual, but why not.
---
-Florian
+The problem with this is that a lot of drivers (24 to be exact) are defined
+like
+
+config INPUT_ATI_REMOTE2
+        tristate "ATI / Philips USB RF remote control"
+        depends on USB_ARCH_HAS_HCD
+        select USB
+
+so that would create a circular dependency unless we change all of them
+at once. I did that when creating this patch, but then decided to
+revert it for now and do smaller steps.
+
+We could do
+
+config USB_ARCH_HAS_HCD
+	def_bool USB_SUPPORT
+
+or
+
+config USB_ARCH_HAS_HCD
+	def_bool y
+
+which would both have the exact same behavior as 'def_bool HAS_IOMEM'.
+ 
+> The HAS_IOMEM won't matter, because USB is defined only when 
+> USB_SUPPORT is enabled, and USB_SUPPORT already depends on HAS_IOMEM.
+
+Right.
+
+> Of course, it will then be necessary to remove the dependency on 
+> USB_ARCH_HAS_HCD from the "config USB" entry.  Which is exactly what 
+> you're trying to accomplish, anyway.
+
+That dependency is redundant already, and should certainly be
+removed now.
+
+> > diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> > index e060ecf..045f9d27 100644
+> > --- a/drivers/usb/host/Kconfig
+> > +++ b/drivers/usb/host/Kconfig
+> > @@ -17,7 +17,7 @@ config USB_C67X00_HCD
+> >  
+> >  config USB_XHCI_HCD
+> >       tristate "xHCI HCD (USB 3.0) support"
+> > -     depends on USB_ARCH_HAS_XHCI
+> > +     depends on PCI
+> 
+> You probably don't want to add this dependency.  After all, one of the
+> comments removed above points out that there are non-PCI xHCI
+> controllers.
+
+Yes, that was a mistake. I noticed this myself but forgot to edit
+the file again.
+
+	Arnd
