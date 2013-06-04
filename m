@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab3FDGtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:49:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34640 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759317Ab3FDGtr (ORCPT
+	id S1759552Ab3FDGub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:50:31 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:57483 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab3FDGu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:49:47 -0400
-Date: Tue, 4 Jun 2013 08:49:40 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Hein Tibosch <hein_tibosch@yahoo.es>, netdev@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
-        linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for
- some SoC
-Message-ID: <20130604064940.GA5107@pengutronix.de>
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
- <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com>
- <51918C23.7040106@yahoo.es>
- <20130514055256.GD22508@game.jcrosoft.org>
- <51AD8611.8070102@monstr.eu>
+	Tue, 4 Jun 2013 02:50:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AD8611.8070102@monstr.eu>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:46:43 up 86 days, 16:27, 23 users,  load average: 0.33, 0.32,
- 0.23
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <51AD053B.1040403@infradead.org>
+References: <20130603163717.a6f78476e57d92fadd6f6a23@canb.auug.org.au>
+	<51ACFDF2.4040600@infradead.org>
+	<CAMuHMdUALrScFE895xRiBvgUpVa9Tvic5M7YxefrEgyeMaSjhw@mail.gmail.com>
+	<51AD053B.1040403@infradead.org>
+Date: Tue, 4 Jun 2013 08:50:27 +0200
+X-Google-Sender-Auth: Z0CZHvxusozgPYb2hFePKZAa4Js
+Message-ID: <CAMuHMdXp_7aaoxCXqtjVnTivo1Ua+ohfQQ2ZEQNO-OGn-k8iqA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jun 3 (fonts.c & vivi)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 08:15:45AM +0200, Michal Simek wrote:
-> On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > On 08:58 Tue 14 May     , Hein Tibosch wrote:
-> >> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> >>>
-> >>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
-> >>>> introduces clear-on-write on ISR register. This behavior is not always
-> >>>> implemented when using Cadence MACB/GEM and is breaking other platforms.
-> >>>> We are using a new Device Tree compatibility string and a capability
-> >>>> property to actually activate this clear-on-write behavior on ISR.
-> >>>>
-> >>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
-> >>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >>> can we detect it via the IP?
-> >>
-> >> This was my first proposal, have it based on the value of MACB's
-> >> register 'MID' (offset 0x00fc, lower 16 bits).
-> >> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
-> >>
-> >> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revision
-> >> equals to 0x00000119?
-> > so no it will not work
-> > 
-> > as the gem on sama5 is 00020119
-> > 
-> > so version 0x119 too
-> > 
-> > nico 
-> > Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> Was this added to any queue or branch?
-> I would like to enable macb for zynq and not sure if "cdns,zynq-7000-gem"
-> compatible string goes to mainline.
-> 
+On Mon, Jun 3, 2013 at 11:06 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 06/03/13 13:54, Geert Uytterhoeven wrote:
+>> On Mon, Jun 3, 2013 at 10:34 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>> On 06/02/13 23:37, Stephen Rothwell wrote:
+>>>> Changes since 20130531:
+>>> on x86_64:
+>>>
+>>> warning: (VIDEO_VIVI && USB_SISUSBVGA && SOLO6X10) selects FONT_SUPPORT which has unmet direct dependencies (HAS_IOMEM && VT)
+>>> warning: (VIDEO_VIVI && FB_VGA16 && FB_S3 && FB_VT8623 && FB_ARK && USB_SISUSBVGA_CON && SOLO6X10) selects FONT_8x16 which has unmet direct dependencies (HAS_IOMEM && VT && FONT_SUPPORT)
+>>
+>> I knew about thet warning. But I thought it was harmless, as none of the font
+>> code really depends on console support...
+>>
+>>> drivers/built-in.o: In function `vivi_init':
+>>> vivi.c:(.init.text+0x1a3da): undefined reference to `find_font'
+>>>
+>>> when CONFIG_VT is not enabled.
+>>
+>> ... but I missed that drivers/video/console is not used if CONFIG_VT=y.
+>> Sorry for that.
+>>
+>>> Just make CONFIG_VIDEO_VIVI depend on VT ?
+>>
+>> Does this (whitespace-damaged copy-and-paste) help?
+>
+> Yes, that works.  Thanks.
+>
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Hi!
+Thanks, I'll fold this into the original commit, which is destined for v3.10.
 
-This is already in next, but you can use the default compatible as the
-DCR1 is used instead of DT binding.
+>> --- a/drivers/video/Makefile
+>> +++ b/drivers/video/Makefile
+>> @@ -12,7 +12,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o
+>>                                       modedb.o fbcvt.o
+>>  fb-objs                           := $(fb-y)
+>>
+>> -obj-$(CONFIG_VT)                 += console/
+>> +obj-y                            += console/
+>>  obj-$(CONFIG_LOGO)               += logo/
+>>  obj-y                            += backlight/
+>>
+>> It shouldn't make a difference if nothing inside drivers/video/console
+>> is enabled,
+>> as all objects in drivers/video/console/Makefile are conditional.
+>>
+>> BTW, my plan was to move the font code to lib/font, but I haven't done that yet.
 
-Regards,
-Steffen
+I'l try to do that for v3.11.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
