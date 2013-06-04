@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3FDJab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:30:31 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5269 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750738Ab3FDJa3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:30:29 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
-        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 4 Jun 2013 17:30:04 +0800
-Subject: RE: A bug about system call on ARM
-Thread-Topic: A bug about system call on ARM
-Thread-Index: Ac5hAHOO7jTH3KtSQiqTdjXo/WWMfQABXi2w
-Message-ID: <35FD53F367049845BC99AC72306C23D1610991B88F@CNBJMBX05.corpusers.net>
-References: <20130530114112.GH7483@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
- <20130531084638.GB4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
- <20130531111305.GI4928@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
- <20130603095425.GA32242@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1610991B87E@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D1610991B883@CNBJMBX05.corpusers.net>
- <20130604084832.GA27516@mudshark.cambridge.arm.com>
-In-Reply-To: <20130604084832.GA27516@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751480Ab3FDJdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:33:03 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:36843 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab3FDJdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:33:01 -0400
 MIME-Version: 1.0
+In-Reply-To: <1370335914-31582-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1370335914-31582-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 4 Jun 2013 12:33:00 +0300
+Message-ID: <CAHp75Vf26xsEGvfsSRoHcvdnep0Qp58LX7vgdT84r6YJLMONXA@mail.gmail.com>
+Subject: Re: [PATCH] cris: kgdb: use native hex2bin
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Tue, Jun 4, 2013 at 11:51 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> There are kernel native helpers to convert hex ascii to the binary format:
+> hex_to_bin() and hex2bin(). Thus, no need to reimplement them customly.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Thanks for your reply,
-I see your meaning ,
-But it seems my apply for joining into 'linux-arm-kernel@lists.infradead.org'
-Is not approved ,  
-How to join in this mail-list ?
+Forgot to mention this is v2.
+Changes:
+ - rebased against today's linux-next
+ - v32 is also fixed
+ - fixed missed usage of hex() outside of hex2mem()
 
-Thanks for your help .
-
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: Tuesday, June 04, 2013 4:49 PM
-To: Wang, Yalin
-Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: A bug about system call on ARM
-
-On Tue, Jun 04, 2013 at 06:33:20AM +0100, Wang, Yalin wrote:
-> Hi  Will,
-
-Hello,
-
-> Could I know  what's your git branch is  mainly used for ?
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git
-> 
-> 
-> I mean if the branch is used for ARM arch maintenance ?
-
-I send most of my patches via Russell, and the tree above is where I keep my patches whilst they're not yet in mainline.
-
-> If yes, I think I can send future bugs about ARM to you directly, And 
-> do not need ping-pang in the mail list .
-
-Quite the opposite! Having discussions on the mailing list is key to how the kernel is developed, so please continue to send questions, bug reports and patches there. As has been pointed out previously in this thread, you need to choose the right list in the first place, rather than just sending to LKML.
-
-Of course, you can always CC me on arm/arm64 patches if you like.
-
-Cheers,
-
-Will
+--
+With Best Regards,
+Andy Shevchenko
