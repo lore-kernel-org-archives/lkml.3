@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3FDJny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:43:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53611 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab3FDJnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:43:53 -0400
-Message-ID: <51ADB6BF.6020205@ti.com>
-Date: Tue, 4 Jun 2013 15:13:27 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752846Ab3FDJoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:44:05 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:49032 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab3FDJoA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:44:00 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+In-Reply-To: <201306041029.39053.heiko@sntech.de>
+References: <201306030055.15413.heiko@sntech.de>
+	<201306030056.03522.heiko@sntech.de>
+	<CACRpkdYAvUQ+aymJm1Fw1bE1aGdO7RUqLR9byvoT7ECTk4tkpw@mail.gmail.com>
+	<201306041029.39053.heiko@sntech.de>
+Date: Tue, 4 Jun 2013 11:43:59 +0200
+Message-ID: <CACRpkdYXhsTRVaqi-KKLsuJut1Eq2kzSbSYzaZT=5FpMHSsouA@mail.gmail.com>
+Subject: Re: [PATCH 01/10] clocksource: dw_apb_timer_of: use the clocksource
+ as sched clock if necessary
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "balbi@ti.com" <balbi@ti.com>
-Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
-References: <1369911393-25747-1-git-send-email-kishon@ti.com> <20130530113247.GI5180@sirena.org.uk> <51A74D70.5060303@nvidia.com> <20130601184511.GC16790@sirena.org.uk> <51AA456E.3030307@nvidia.com> <20130601210511.GT16790@sirena.org.uk> <51ADAE78.4050900@ti.com> <20130604093816.GY31367@sirena.org.uk>
-In-Reply-To: <20130604093816.GY31367@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 4, 2013 at 10:29 AM, Heiko Stübner <heiko@sntech.de> wrote:
 
-On Tuesday 04 June 2013 03:08 PM, Mark Brown wrote:
-> On Tue, Jun 04, 2013 at 02:38:08PM +0530, Kishon Vijay Abraham I wrote:
->> On Sunday 02 June 2013 02:35 AM, Mark Brown wrote:
+> How about:
 >
->>> This is still not making any sense.  The quality of regulation and
->>> output voltage are essentially orthogonal, and obviously there's a
->>> specific API for bypass which is something different again to both
->>> mode and output voltage selection.
+> Currently the dw_apb_timer always expects a separate special timer to be
+> availbable for the sched_clock. Some devices using dw_apb_timers do not
+> have this sptimer but can use the clocksource as sched_clock instead.
 >
->> Do you recommend adding API's (similar to bypass) for BOOST and SWITCH?
->
-> No.  A boost regulator is still a voltage regulator, it just happens to
-> raise rather than lower the voltage but it's otherwise a normal
-> regulator.  I'm not sure what you mean by "SWITCH" - from the name it'd
-> just be a bypass?
+> Therefore enable the driver to distiguish between devices with and without
+> sptimer based on the devicetree data and select the correct timer as
+> sched_clock.
 
-Copy-pasting Laxman's explanation
+Allright, Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-<...>
-
-Palma have SMPS10 regulator which can generate two voltage level 3.75 
-and 5V.
-This SMPS10 has the two outputs OUT1 and OUT2 and having one input IN1.
-
-SMPS10-OUT2 is always connected to SMPS10-IN1 via following logic:
-- Through parasitic diode (no sw control)
-- In bypass mode (bit  configuration is there to enable/disable Bypass)
-- In Boost mode (bit configuration is there to enable/disable Boost mode)
-
-SMPS10-OUT1 is connected to the SMPS10-OUT2 pin through Switch (SW 
-control for enabling/disabling this switch).
-
-<...>
-
-Thanks
-Kishon
+Yours,
+Linus Walleij
