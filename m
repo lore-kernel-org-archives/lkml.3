@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab3FDQId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:08:33 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:63764 "EHLO
+	id S1756228Ab3FDQIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:08:46 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:57961 "EHLO
 	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab3FDQIc (ORCPT
+	with ESMTP id S1755425Ab3FDQIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:08:32 -0400
+	Tue, 4 Jun 2013 12:08:43 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
         Jerome Marchand <jmarchan@redhat.com>
 Cc: Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/10] zram: kill unused zram_get_num_devices()
-Date: Wed,  5 Jun 2013 00:05:59 +0800
-Message-Id: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v2 04/10] zram: destroy all devices on error recovery path in zram_init()
+Date: Wed,  5 Jun 2013 00:06:02 +0800
+Message-Id: <1370361968-8764-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
+References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there's no caller of zram_get_num_devices(), so kill it.
-And change zram_devices to static because it's only used in zram_drv.c.
+On error recovery path of zram_init(), it leaks the zram device object
+causing the failure. So change create_device() to free allocated
+resources on error path.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: stable@vger.kernel.org
 ---
- drivers/staging/zram/zram_drv.c | 7 +------
- drivers/staging/zram/zram_drv.h | 2 --
- 2 files changed, 1 insertion(+), 8 deletions(-)
+ drivers/staging/zram/zram_drv.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index e34e3fe..0a07de4 100644
+index 847d207..88a53f4 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -37,7 +37,7 @@
+@@ -595,7 +595,7 @@ static const struct block_device_operations zram_devops = {
  
- /* Globals */
- static int zram_major;
--struct zram *zram_devices;
-+static struct zram *zram_devices;
- 
- /* Module params (documentation at end) */
- static unsigned int num_devices = 1;
-@@ -669,11 +669,6 @@ static void destroy_device(struct zram *zram)
- 		blk_cleanup_queue(zram->queue);
- }
- 
--unsigned int zram_get_num_devices(void)
--{
--	return num_devices;
--}
--
- static int __init zram_init(void)
+ static int create_device(struct zram *zram, int device_id)
  {
- 	int ret, dev_id;
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 2d1a3f1..a18b66d 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -109,8 +109,6 @@ struct zram {
- 	struct zram_stats stats;
- };
+-	int ret = 0;
++	int ret = -ENOMEM;
  
--extern struct zram *zram_devices;
--unsigned int zram_get_num_devices(void);
- #ifdef CONFIG_SYSFS
- extern struct attribute_group zram_disk_attr_group;
- #endif
+ 	init_rwsem(&zram->lock);
+ 	init_rwsem(&zram->init_lock);
+@@ -605,7 +605,6 @@ static int create_device(struct zram *zram, int device_id)
+ 	if (!zram->queue) {
+ 		pr_err("Error allocating disk queue for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+ 		goto out;
+ 	}
+ 
+@@ -615,11 +614,9 @@ static int create_device(struct zram *zram, int device_id)
+ 	 /* gendisk structure */
+ 	zram->disk = alloc_disk(1);
+ 	if (!zram->disk) {
+-		blk_cleanup_queue(zram->queue);
+ 		pr_warn("Error allocating disk structure for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+-		goto out;
++		goto out_free_queue;
+ 	}
+ 
+ 	zram->disk->major = zram_major;
+@@ -648,11 +645,17 @@ static int create_device(struct zram *zram, int device_id)
+ 				&zram_disk_attr_group);
+ 	if (ret < 0) {
+ 		pr_warn("Error creating sysfs group");
+-		goto out;
++		goto out_free_disk;
+ 	}
+ 
+ 	zram->init_done = 0;
++	return 0;
+ 
++out_free_disk:
++	del_gendisk(zram->disk);
++	put_disk(zram->disk);
++out_free_queue:
++	blk_cleanup_queue(zram->queue);
+ out:
+ 	return ret;
+ }
 -- 
 1.8.1.2
 
