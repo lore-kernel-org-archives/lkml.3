@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3FDNXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:23:55 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56318 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3FDNXw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:23:52 -0400
-Date: Tue, 4 Jun 2013 14:23:22 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Khalid Aziz <khalid@gonehiking.org>, Matthew Garrett <mjg@redhat.com>,
-        Lv Zheng <lv.zheng@intel.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org, Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Message-ID: <20130604132322.GA10933@srcf.ucam.org>
-References: <cover.1348652044.git.lv.zheng@intel.com>
- <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
- <20121010174406.GA13861@srcf.ucam.org>
- <1350069843.7065.65.camel@rhapsody>
- <CACxGe6tC+=98uD=Oc=u-=NHzVKgG9r_3eg+-sG-DQYUnCGw0sA@mail.gmail.com>
+	id S1752948Ab3FDN1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:27:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415Ab3FDN1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 09:27:21 -0400
+Message-ID: <51ADEB27.4090803@redhat.com>
+Date: Tue, 04 Jun 2013 15:27:03 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6tC+=98uD=Oc=u-=NHzVKgG9r_3eg+-sG-DQYUnCGw0sA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Jiang Liu <liuj97@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 5/8] zram: avoid double free in error recovery
+ path of zram_bvec_write()
+References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-6-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1370274140-26420-6-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 11:53:56AM +0100, Grant Likely wrote:
+The patch seems right, but the title is wrong: this is not a error recovery path.
+Also, the description is missing again.
 
-> Matthew, can you point me at the license Microsoft is using for the
-> DBG2 table? I can download the document from Microsoft's site without
-> seeing any reference to it being licensed only for BIOS implementers.
-> All I see is a "this document is provided 'as-is', blah blah blah"
-> blurb at the beginning of the document. It may be that Microsoft has
-> changed the license on this document in the last 6 months.
+Jerome
 
-The DBGP spec still seems to have the restrictive license, but I can't 
-find it on DBG2.
+On 06/03/2013 05:42 PM, Jiang Liu wrote:
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/staging/zram/zram_drv.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 3d90344..66cf28a 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -272,8 +272,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  
+>  	if (page_zero_filled(uncmem)) {
+>  		kunmap_atomic(user_mem);
+> -		if (is_partial_io(bvec))
+> -			kfree(uncmem);
+>  		zram->stats.pages_zero++;
+>  		zram_set_flag(meta, index, ZRAM_ZERO);
+>  		ret = 0;
+> 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
