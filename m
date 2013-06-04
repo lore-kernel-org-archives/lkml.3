@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3FDE3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 00:29:13 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:53738 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750907Ab3FDE3K (ORCPT
+	id S1752978Ab3FDEd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 00:33:29 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53091 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3FDEd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 00:29:10 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai4NALlrrVF5LJoN/2dsb2JhbABZgwm6FYUcBAGBBBd0giMBAQU6HCMQCAMYCSUPBSUDIROIDLx9Fo1zgR0Hg1gDlz2RQYMhKg
-Date: Tue, 4 Jun 2013 14:29:05 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: CAI Qian <caiqian@redhat.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 3.9.4 Oops running xfstests (WAS Re: 3.9.3: Oops running
- xfstests)
-Message-ID: <20130604042905.GG29466@dastard>
-References: <510292845.4997401.1369279175460.JavaMail.root@redhat.com>
- <1588848128.8530921.1369885528565.JavaMail.root@redhat.com>
- <20130530052049.GK29466@dastard>
- <1824023060.8558101.1369892432333.JavaMail.root@redhat.com>
- <1462663454.9294499.1369969415681.JavaMail.root@redhat.com>
- <20130531060415.GU29466@dastard>
- <1517224799.10311874.1370228651422.JavaMail.root@redhat.com>
- <20130603040038.GX29466@dastard>
- <1317567060.11044929.1370315696270.JavaMail.root@redhat.com>
- <20130604041617.GF29466@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604041617.GF29466@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Jun 2013 00:33:26 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: arnd@arndb.de, kgene.kim@samsung.com, olof@lixom.net, patches@linaro.org
+Subject: [PATCH v2 0/3] Consolidate uncompress code for Samsung platform
+Date: Tue,  4 Jun 2013 09:49:09 +0530
+Message-Id: <1370319552-17694-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 02:16:18PM +1000, Dave Chinner wrote:
-> On Mon, Jun 03, 2013 at 11:14:56PM -0400, CAI Qian wrote:
-> > [  102.312909] =============================================================================
-> > [  102.312910] RSP: 0018:ffff88007d083e08  EFLAGS: 00010003
-> > [  102.312912] BUG kmalloc-1024 (Tainted: G      D     ): Padding overwritten. 0xffff88005b4e7ec0-0xffff88005b4e7fff
-> > [  102.312913] RAX: ffff88005b656288 RBX: ffff880079b43c80 RCX: 00000000000000a7
-> > [  102.312914] -----------------------------------------------------------------------------
-> 
-> And a memory overwrite.
-> 
-> > [  102.313009] Padding ffff88005b4e7ec0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313010] Padding ffff88005b4e7ed0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313011] Padding ffff88005b4e7ee0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313013] Padding ffff88005b4e7ef0: 00 00 00 00 00 00 00 00 00 00 00 00 00 29 01 00  .............)..
-> > [  102.313014] Padding ffff88005b4e7f00: 07 1b 04 73 65 6c 69 6e 75 78 73 79 73 74 65 6d  ...selinuxsystem
-> > [  102.313015] Padding ffff88005b4e7f10: 5f 75 3a 6f 62 6a 65 63 74 5f 72 3a 75 73 72 5f  _u:object_r:usr_
-> > [  102.313032] Padding ffff88005b4e7f20: 74 3a 73 30 00 00 00 00 49 4e 81 a4 02 02 00 00  t:s0....IN......
-> > [  102.313033] Padding ffff88005b4e7f30: 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00  ................
-> > [  102.313033] Padding ffff88005b4e7f40: 00 00 00 00 00 00 00 02 51 47 09 00 00 00 00 00  ........QG......
-> > [  102.313043] Padding ffff88005b4e7f50: 51 47 09 00 00 00 00 00 51 ac 1e 27 21 f1 4e ad  QG......Q..'!.N.
-> > [  102.313043] Padding ffff88005b4e7f60: 00 00 00 00 00 00 00 f2 00 00 00 00 00 00 00 01  ................
-> > [  102.313044] Padding ffff88005b4e7f70: 00 00 00 00 00 00 00 01 00 00 0e 01 00 00 00 00  ................
-> > [  102.313053] Padding ffff88005b4e7f80: 00 00 00 00 c1 6d 78 44 ff ff ff ff 00 00 00 00  .....mxD........
-> > [  102.313054] Padding ffff88005b4e7f90: 00 00 00 00 00 00 08 10 36 a0 00 01 00 00 00 00  ........6.......
-> > [  102.313062] Padding ffff88005b4e7fa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313063] Padding ffff88005b4e7fb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313072] Padding ffff88005b4e7fc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313073] Padding ffff88005b4e7fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313074] Padding ffff88005b4e7fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > [  102.313082] Padding ffff88005b4e7ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 29 01 00  .............)..
-> 
-> Oh, look, that contains attributes, and being at the top of a page,
-> that tallies with the attribute code copying data from the top of
-> the block down....
+The patches are based on v3.10-rc4.
 
-On second thoughts, I'm not so sure of this now. That actually has
-an inode core in it (the bit starting from "IN"), so it can't be a
-piece of code from the attribute compaction. So this piece of memory
-has been used several times by different things before the overwrite
-has triggered by the look of it.
+They are build tested for s3c2410_defconfig, s3c6400_defconfig,
+s5p64x0_defconfig, s5pc100_defconfig, s5pv210_defconfig,
+exynos4_defconfig and exynos_defconfig.
 
-Cheers,
+Since they affect all the Samsung boards, testing them on different
+machines would be essential. Unfortunately I can only test on Exynos here.
 
-Dave.
+Tested on Exynos5250 based Arndale board.
+
+Changes for v2:
+* Instead of checking for uart_base, we are now checking whether
+DEBUG_LL is enabled. This removes the ifdefs used in mach/uncompress.h
+* 3rd patch has been updated by Tomasz Figa's patch that almost does
+the same thing.
+
+Tomasz Figa (1):
+  ARM: s5p64x0: Use common uncompress.h part for plat-samsung
+
+Tushar Behera (2):
+  ARM: EXYNOS: uncompress - print debug messages if DEBUG_LL is defined
+  ARM: SAMSUNG: Consolidate uncompress subroutine
+
+ arch/arm/mach-exynos/include/mach/uncompress.h  |    3 -
+ arch/arm/mach-s3c24xx/include/mach/uncompress.h |    3 +
+ arch/arm/mach-s3c64xx/include/mach/uncompress.h |    3 +
+ arch/arm/mach-s5p64x0/include/mach/uncompress.h |  162 +----------------------
+ arch/arm/mach-s5pc100/include/mach/uncompress.h |    2 +
+ arch/arm/mach-s5pv210/include/mach/uncompress.h |    2 +
+ arch/arm/plat-samsung/include/plat/uncompress.h |   16 ++-
+ 7 files changed, 27 insertions(+), 164 deletions(-)
 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
