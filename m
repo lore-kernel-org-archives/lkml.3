@@ -1,108 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3FDRvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:51:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61944 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab3FDRvI (ORCPT
+	id S1750839Ab3FDRxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:53:11 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:60262 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3FDRxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:51:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
-Date: Tue, 4 Jun 2013 19:51:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
+	Tue, 4 Jun 2013 13:53:08 -0400
+Message-ID: <51AE2980.6010005@linaro.org>
+Date: Tue, 04 Jun 2013 10:53:04 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-References: <1370038972-2318779-1-git-send-email-arnd@arndb.de> <201306012257.02327.arnd@arndb.de> <CAL_JsqKMOy4CM=FXbsy7mQ1f0DLyK6n_cuZ92uhsSM2Mq-3B1g@mail.gmail.com>
-In-Reply-To: <CAL_JsqKMOy4CM=FXbsy7mQ1f0DLyK6n_cuZ92uhsSM2Mq-3B1g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+        Russell King <linux@arm.linux.org.uk>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCHv2 0/6] Make ARM's sched_clock generic + 64 bit friendly
+References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <51AD32A4.5070609@linaro.org> <20130604160907.GW27516@mudshark.cambridge.arm.com>
+In-Reply-To: <20130604160907.GW27516@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306041951.00447.arnd@arndb.de>
-X-Provags-ID: V02:K0:hk51sK4v9P1B7sdi57akjwyYtM/vVKKHyvfVelh51qg
- QgajTRFGauV5uyqSin/fhVnsqjp1XjaxwsA9G7CfxFZAw6CW7L
- 2+Q4aiOSN7oT7i/fu9ASs9QVhzpLhp62Na4PUUXjwvGRiDzGT3
- byQbBuwS9MUYmGJKBqXST2vlg5WL/QLS4iPN4JNaLx+EIEu0iO
- PUNEJcXNWpk25a1YSdjF6ABI8LEMojfsj1q4n/FhdO5NF/gfiH
- eI87Pr/e1S+nZXzTM+Z3pJ9jPsWRqRB/SakEe4EYoKXBvIGk/S
- SW3cm0xco7kvtharCaBYiibAhfn1lZYYQ0oJ6eV77u3TUtlrSG
- yD48Biy8hrlHtnCfIRg4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013, Rob Herring wrote:
-> On Sat, Jun 1, 2013 at 3:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Saturday 01 June 2013, Rob Herring wrote:
-> >> No, we still need empty functions. Here is what of_device.h looks like:
-> >>
-> >> http://tinyurl.com/l2azz5m
-> >>
-> >> BTW, it has your ack.
-> >>
-> >
-> > Could you add a patch on top that only puts the function declarations
-> > inside of #ifdef that don't have an inline wrapper?
-> 
-> I'm confused. You mean that DO have an inline? Like this:
-> 
-> void foo(void);
-> 
-> #ifdef CONFIG_OF
-> void bar(void);
-> #else
-> static inline void bar(void) {}
-> #endif
+On 06/04/2013 09:09 AM, Will Deacon wrote:
+> On Tue, Jun 04, 2013 at 01:19:48AM +0100, John Stultz wrote:
+>> On 06/01/2013 11:39 PM, Stephen Boyd wrote:
+>>> This is mostly a resend of a patch series I sent a little over a month
+>>> ago. I've reordered the patches so that John can pick up the first three
+>>> and get a generic sched_clock layer without having to take the 64 bit
+>>> patches. The last three patches add 64 bit support and move the architected
+>>> timers on ARM64 and ARM to use it.
+>>
+>> Yea, so from the initial look over it, I think I'm happy with queuing
+>> the first three patches, although I'd like to get some acks from arm
+>> folks on at least the first two, just so no one is surprised with it
+>> going through the -tip tree.
+> The first two patches are pretty simple so, FWIW, you can add my ack on those:
+>
+>    Acked-by: Will Deacon <will.deacon@arm.com>
+Thanks! Added to the commits.
 
-Yes, sorry. That's what I meant.
+-john
 
-> > It's really annoying to have to change the header file every time one
-> > needs to call a function from a driver in the DT-only case.
-> 
-> The functions without inlines are ones that drivers should not call
-> and should only be called from OF enabled code. That's why we have not
-> done a complete pass of adding inlines for everything.
-
-The problem is that it's a bad default. The convention in kernel code
-is not to hide declarations in #ifdef, for multiple reasons:
-
-* It avoids unnecessary code rebuilds when the symbol changes between 
-  two 'make' runs.
-
-* It lets drivers and platform code call the function from dead code
-  without causing a build error, thus improving compile coverage.
-
-* It's much nicer to read when can write your code like
-
-void __init exynos_init_io(struct map_desc *mach_desc, int size)
-{
-        if (IS_ENABLED_(CONFIG_OF) && initial_boot_params)
-                of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
-        else
-                iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
-	...
-}
-
-instead of
-
-void __init exynos_init_io(struct map_desc *mach_desc, int size)
-{
-#ifdef CONFIG_OF
-        if (initial_boot_params)
-                of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
-        else
-#endif
-                iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
-	...
-}
-
-The first one looks like actual C code, the second is really ugly,
-and an inline wrapper wouldn't even do the right thing here.
-
-	Arnd
