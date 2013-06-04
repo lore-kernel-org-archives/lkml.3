@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3FDWlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:41:35 -0400
-Received: from 1wt.eu ([62.212.114.60]:35254 "EHLO 1wt.eu"
+	id S1752787Ab3FDWly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:54 -0400
+Received: from 1wt.eu ([62.212.114.60]:35311 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3FDWl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:29 -0400
-Message-Id: <20130604172132.712738520@1wt.eu>
+	id S1751803Ab3FDWlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:49 -0400
+Message-Id: <20130604172132.301287063@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:28 +0200
+Date: Tue, 04 Jun 2013 19:22:18 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Petr Matousek <pmatouse@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 058/184] KVM: x86: invalid opcode oops on SET_SREGS with
+Cc: Romain Francoise <romain@orebokech.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 048/184] x86, random: make ARCH_RANDOM prompt if EMBEDDED,
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,74 +21,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- OSXSAVE bit set (CVE-2012-4461)
+ not EXPERT
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Romain Francoise <romain@orebokech.com>
 
-commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
+Before v2.6.38 CONFIG_EXPERT was known as CONFIG_EMBEDDED but the
+Kconfig entry was not changed to match when upstream commit
+628c6246d47b85f5357298601df2444d7f4dd3fd ("x86, random: Architectural
+inlines to get random integers with RDRAND") was backported.
 
-On hosts without the XSAVE support unprivileged local user can trigger
-oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
-cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
-ioctl.
-
-invalid opcode: 0000 [#2] SMP
-Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
-...
-Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
-EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
-EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
-EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
-ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
-task.ti=d7c62000)
-Stack:
- 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
- ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
- c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
-Call Trace:
- [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
-...
- [<c12bfb44>] ? syscall_call+0x7/0xb
-Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
-1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
-d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
-EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
-0068:d7c63e70
-
-QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
-and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
-out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
-X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
-X86_FEATURE_XSAVE even on hosts that do not support it, might be
-susceptible to this attack from inside the guest as well.
-
-Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
-
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-[bwh: Backported to 2.6.32: XSAVE is not supported at all, so always
- deny setting OSXSAVE]
+Signed-off-by: Romain Francoise <romain@orebokech.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kvm/x86.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 79905f2..ec9728f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4719,6 +4719,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
- 	int pending_vec, max_bits;
- 	struct descriptor_table dt;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index aa889d6..ee0168d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1430,7 +1430,7 @@ config ARCH_USES_PG_UNCACHED
  
-+	if (sregs->cr4 & X86_CR4_OSXSAVE)
-+		return -EINVAL;
-+
- 	vcpu_load(vcpu);
- 
- 	dt.limit = sregs->idt.limit;
+ config ARCH_RANDOM
+ 	def_bool y
+-	prompt "x86 architectural random number generator" if EXPERT
++	prompt "x86 architectural random number generator" if EMBEDDED
+ 	---help---
+ 	  Enable the x86 architectural RDRAND instruction
+ 	  (Intel Bull Mountain technology) to generate random numbers.
 -- 
 1.7.12.2.21.g234cd45.dirty
 
