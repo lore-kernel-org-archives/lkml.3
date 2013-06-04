@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab3FDU1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:27:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50995 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab3FDU1o (ORCPT
+	id S1751366Ab3FDUc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:32:57 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:45667 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab3FDUcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:27:44 -0400
-Date: Tue, 4 Jun 2013 23:26:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <stern@rowland.harvard.edu>, <arnd@arndb.de>, <adrienverge@gmail.com>,
-        <kishon@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] USB: PHY: Improve PHY selection logic
-Message-ID: <20130604202632.GF28302@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1369999743-11758-1-git-send-email-rogerq@ti.com>
- <20130603174709.GA11059@kroah.com>
- <51AD9462.4020300@ti.com>
+	Tue, 4 Jun 2013 16:32:55 -0400
+Date: Tue, 4 Jun 2013 13:32:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 2/2 v2] sata highbank: add bit-banged SGPIO driver support
+Message-ID: <20130604203251.GF14916@htj.dyndns.org>
+References: <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
+ <1370266538-14211-1-git-send-email-mark.langsdorf@calxeda.com>
+ <20130603203727.GB29989@mtj.dyndns.org>
+ <51AE0335.902@calxeda.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ExXT7PjY8AI4Hyfa"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51AD9462.4020300@ti.com>
+In-Reply-To: <51AE0335.902@calxeda.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ExXT7PjY8AI4Hyfa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello, Mark.
 
-Hi,
+On Tue, Jun 04, 2013 at 10:09:41AM -0500, Mark Langsdorf wrote:
+> > And tell ahci core sizeof(ecx_host_priv) some way, but really, just
+> > having a plain pointer should be enough, I think.
+> 
+> I think I want to do the opposite. For 90% of the AHCI EM functions,
+> I want ecx_host_priv to be an ahci_host_priv so that I can use those
+> functions without having to keep a local copy of them.
+> 
+> Would something like this:
+> struct ahci_host_priv {
+> 	/* standard AHCI existing stuff */
+> 	void *private_data;
+> };
+> 
+> I shied away from that because a private data structure having a private
+> data structure doesn't seem right.
 
-On Tue, Jun 04, 2013 at 10:16:50AM +0300, Roger Quadros wrote:
-> On 06/03/2013 08:47 PM, Greg KH wrote:
-> > On Fri, May 31, 2013 at 02:29:01PM +0300, Roger Quadros wrote:
-> >> Hi,
-> >>
-> >> Improve Kconfig so that the relevant PHY driver can be explicitely
-> >> selected by the controller driver instead of relying on the user
-> >> to do so.
-> >>
-> >> Detailed description in patch 1.
-> >=20
-> > Felipe needs to take these, not I.
-> >=20
->=20
-> Felipe,
->=20
-> Could you please take these if appropriate? Thanks.
+Aren't we talking about the same thing?  I'm perfectly fine with
+adding a pointer to ahci_host_priv.  Maybe you can name it slightly
+differently - say, *impl_data, *platform_data, whatever.
 
-it's for v3.11 merge window, right ? I think I'll enjoy the rest of my
-vacations before taking these patches ;-)
+> >> +static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+> >> +					ssize_t size)
+> >> +{
+> > ...
+> >> +	if (!hpriv->em_msg_type & EM_MSG_TYPE_LED)
+> >> +		return size;
+> > 
+> > Is this really correct?  You first negate and convert it to bool and
+> > then bit-wise and it with a mask?  How is supposed to work?
+> 
+> Am I confused about the order of operations? It's meant to be "continue
+> if hpriv->em_msg_type doesn't have EM_MSG_TYPE_LED set".
 
-I'll be back on office next monday, cheers
+Shouldn't that be
 
---=20
-balbi
+	if (!(hpriv->em_msg_type & EM_MSG_TYPE_LED))
 
---ExXT7PjY8AI4Hyfa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+! has higher priority than &.  You're converting em_msg_type to 1 or 0
+  and then and'ing EM_MSG_TYPE_LED to it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> >> -	ahci_save_initial_config(dev, hpriv, 0, 0);
+> >> +	ahci_save_initial_config(dev, (struct ahci_host_priv *) hpriv, 0, 0);
+> > 
+> > Ugh....... how is this supposed to work?  What if ahci_host_priv grows
+> > larger than ecx one in the future? :(
+> 
+> For functions like ahci_save_initial_config, I just want to use the
+> already defined ahci_ functions with my extra data along for the ride.
+> What's the best way to do that?
 
-iQIcBAEBAgAGBQJRrk14AAoJEIaOsuA1yqREfE0QAJrSD5F1pIRggSxJPV3NyZMl
-hfWJkNI2V7r2CMIsnCaesqmxfQijGTnhZSM7fYL8Vd44v+hmB9V1FuJO0xHiD/Z9
-4OXGhIMUa3cC/FMTqn7Mtp9XqLSUHYcakMq0tc0XbZH63dQrRYOrwZvQCoqlTqX2
-z3Xkll+gmrxBS4o7xDsYq8TQK2nFy+Ybg8CFTkYcPiAgKV9Mb8mMAWtlbPvHXfJI
-tBD5QHSSsx0bfhnl+qcxPAzqA/maRSZVkOx1AHZTzjYX/dgK/3cdYLSE+mzojejU
-41XwB6hMNu1oBToLAgg14Ow8RYZL9b64VcykBTp3nFPBM+JE/x8iTDVlGl+u5VD3
-sSwmJi936jaAr2vIgNp/JUVeLGXN6OIOt238xUlLNHdWhQBHRJUt5Q0NmPMOnFtz
-VzG08Ben/DM7pecZbhG/ZJy1bE4hl2WiX+Fn65U65M8sGbjyqs7xgIvK57o6KnAi
-hCFS8vWcSyaETZ1joQQtZI9g79oK6e/zfbyU5h+IyRzxehagLHZaSeXpLXeKETKo
-yPoAm3Z1AcRE0jyDvYYrM8KmE+UO2g1bZl0XtF3PSud39NGP5PiHweH2njDI3XUL
-Jfj6sKoC81/UBbUI8+fCBYBb1B7swWm1VggDLeeaAQEsvpJKqqDeo7M/mMwyJ49V
-EPTdrBSPdm09LKLNMnCb
-=XTPF
------END PGP SIGNATURE-----
+Please don't override different types on the same area.  Having the
+driver specific data in a separate struct pointed to by ahci_host_priv
+should work fine, right?
 
---ExXT7PjY8AI4Hyfa--
+Thanks.
+
+-- 
+tejun
