@@ -1,165 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab3FDV7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:59:18 -0400
-Received: from fieldses.org ([174.143.236.118]:57928 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab3FDV7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:59:16 -0400
-Date: Tue, 4 Jun 2013 17:58:39 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
- when they are really unblocked
-Message-ID: <20130604215839.GD15594@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-8-git-send-email-jlayton@redhat.com>
+	id S1751837Ab3FDWAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:00:04 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:19855
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496Ab3FDWAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:00:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zcb8kz98dI936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Tue, 4 Jun 2013 16:59:46 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: LEROY Christophe <christophe.leroy@c-s.fr>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Handling of IRQ in MPC8xx GPIO
+Message-ID: <20130604215946.GA21467@home.buserror.net>
+References: <201302211632.r1LGWaRr025445@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1370056054-25449-8-git-send-email-jlayton@redhat.com>
+In-Reply-To: <201302211632.r1LGWaRr025445@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
-> Currently, when there is a lot of lock contention the kernel spends an
-> inordinate amount of time taking blocked locks off of the global
-> blocked_list and then putting them right back on again. When all of this
-> code was protected by a single lock, then it didn't matter much, but now
-> it means a lot of file_lock_lock thrashing.
+On Thu, Feb 21, 2013 at 06:32:36AM -0000, LEROY Christophe wrote:
+> This patch allows the use IRQ to notify the change of GPIO status on the MPC8xx
+> CPM IO ports. This then allows to associate IRQs to GPIOs in the Device Tree. Ex:
+> 	CPM1_PIO_C: gpio-controller@960 {
+> 		#gpio-cells = <2>;
+> 		compatible = "fsl,cpm1-pario-bank-c";
+> 		reg = <0x960 0x10>;
+> 		interrupts = <255 255 255 255 1 2 6 9 10 11 14 15 23 24 26 31>;
+> 		interrupt-parent = <&CPM_PIC>;
+> 		gpio-controller;
+> 	};
 > 
-> Optimize this a bit by deferring the removal from the blocked_list until
-> we're either applying or cancelling the lock. By doing this, and using a
-> lockless list_empty check, we can avoid taking the file_lock_lock in
-> many cases.
-> 
-> Because the fl_link check is lockless, we must ensure that only the task
-> that "owns" the request manipulates the fl_link. Also, with this change,
-> it's possible that we'll see an entry on the blocked_list that has a
-> NULL fl_next pointer. In that event, just ignore it and continue walking
-> the list.
-
-OK, that sounds safe as in it shouldn't crash, but does the deadlock
-detection still work, or can it miss loops?
-
-Those locks that are temporarily NULL would previously not have been on
-the list at all, OK, but...  I'm having trouble reasoning about how this
-works now.
-
-Previously a single lock was held interrupted across
-posix_locks_deadlock and locks_insert_block() which guaranteed we
-shouldn't be adding a loop, is that still true?
-
---b.
-
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c |   29 +++++++++++++++++++++++------
->  1 files changed, 23 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 055c06c..fc35b9e 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -520,7 +520,6 @@ locks_delete_global_locks(struct file_lock *waiter)
->  static void __locks_delete_block(struct file_lock *waiter)
->  {
->  	list_del_init(&waiter->fl_block);
-> -	locks_delete_global_blocked(waiter);
->  	waiter->fl_next = NULL;
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+[snip]
+> @@ -581,6 +588,30 @@
+>  	spin_unlock_irqrestore(&cpm1_gc->lock, flags);
 >  }
 >  
-> @@ -704,13 +703,16 @@ EXPORT_SYMBOL(posix_test_lock);
->  /* Find a lock that the owner of the given block_fl is blocking on. */
->  static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
->  {
-> -	struct file_lock *fl;
-> +	struct file_lock *fl, *ret = NULL;
->  
->  	list_for_each_entry(fl, &blocked_list, fl_link) {
-> -		if (posix_same_owner(fl, block_fl))
-> -			return fl->fl_next;
-> +		if (posix_same_owner(fl, block_fl)) {
-> +			ret = fl->fl_next;
-> +			if (likely(ret))
-> +				break;
-> +		}
->  	}
-> -	return NULL;
-> +	return ret;
->  }
->  
->  static int posix_locks_deadlock(struct file_lock *caller_fl,
-> @@ -865,7 +867,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  				goto out;
->  			error = FILE_LOCK_DEFERRED;
->  			locks_insert_block(fl, request);
-> -			locks_insert_global_blocked(request);
-> +			if (list_empty(&request->fl_link))
-> +				locks_insert_global_blocked(request);
->  			goto out;
->    		}
->    	}
-> @@ -876,6 +879,16 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  		goto out;
->  
->  	/*
-> +	 * Now that we know the request is no longer blocked, we can take it
-> +	 * off the global list. Some callers send down partially initialized
-> +	 * requests, so we only do this if FL_SLEEP is set. Also, avoid taking
-> +	 * the lock if the list is empty, as that indicates a request that
-> +	 * never blocked.
-> +	 */
-> +	if ((request->fl_flags & FL_SLEEP) && !list_empty(&request->fl_link))
-> +		locks_delete_global_blocked(request);
+> +static int __cpm1_gpio16_to_irq(struct of_mm_gpio_chip *mm_gc,
+> +		unsigned int gpio)
+> +{
+> +	struct cpm1_gpio16_chip *cpm1_gc = to_cpm1_gpio16_chip(mm_gc);
 > +
-> +	/*
->  	 * Find the first old lock with the same owner as the new lock.
->  	 */
->  	
-> @@ -1069,6 +1082,7 @@ int posix_lock_file_wait(struct file *filp, struct file_lock *fl)
->  			continue;
+> +	return cpm1_gc->irq[gpio] ? cpm1_gc->irq[gpio] : -ENXIO;
+> +}
+
+If it's an internal function, why not just pass in cpm1_gc?
+
+Or just open-code it, as it's a one-liner and you don't use it anywhere
+else.
+
+Or fix the gpio layer to use 0 to mean "no irq" rather than -ENXIO... :-)
+
+> diff -ur linux-3.7.9/kernel/irq/irqdomain.c linux/kernel/irq/irqdomain.c
+> --- linux-3.7.9/kernel/irq/irqdomain.c	2013-02-17 19:53:32.000000000 +0100
+> +++ linux/kernel/irq/irqdomain.c	2012-12-13 19:52:38.000000000 +0100
+> @@ -763,7 +763,8 @@
+>  	BUG_ON(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR);
 >  
->  		locks_delete_block(fl);
-> +		locks_delete_global_blocked(fl);
->  		break;
->  	}
->  	return error;
-> @@ -1147,6 +1161,7 @@ int locks_mandatory_area(int read_write, struct inode *inode,
->  		}
->  
->  		locks_delete_block(&fl);
-> +		locks_delete_global_blocked(&fl);
->  		break;
->  	}
->  
-> @@ -1859,6 +1874,7 @@ static int do_lock_file_wait(struct file *filp, unsigned int cmd,
->  			continue;
->  
->  		locks_delete_block(fl);
-> +		locks_delete_global_blocked(fl);
->  		break;
->  	}
->  
-> @@ -2160,6 +2176,7 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
->  	else
->  		status = -ENOENT;
->  	spin_unlock(&inode->i_lock);
-> +	locks_delete_global_blocked(waiter);
->  	return status;
->  }
->  
-> -- 
-> 1.7.1
-> 
+>  	/* Check revmap bounds; complain if exceeded */
+> -	if (WARN_ON(hwirq >= domain->revmap_data.linear.size))
+> +	/* 255 is a trick to allow UNDEF value in DTS */
+> +	if (hwirq == 255 || WARN_ON(hwirq >= domain->revmap_data.linear.size))
+>  		return 0;
+
+NACK.  Besides the hackishness of it, 255 is valid for some interrupt
+controllers.
+
+If you need for a way to leave holes in an "interrupts" property, propose
+something non-hacky on devicetree-discuss@lists.ozlabs.org.
+
+Or, do what some other devices do, and have a different property that
+indicates which pins are connected, and only include those in the
+"interrupts" property.  See
+Documentation/devicetree/bindings/powerpc/fsl/mpic-msgr.txt and
+mpic-msgr-receive-mask as an example.
+
+-Scott
+
