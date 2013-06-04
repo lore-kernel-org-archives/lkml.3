@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab3FDVTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:19:38 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:58676 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab3FDVTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:19:35 -0400
-X-Originating-IP: 83.160.107.163
-Date: Tue, 4 Jun 2013 23:19:30 +0200
-From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-To: Javier Martinez Canillas <javier@dowhile0.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cyttsp: Fix swap of mfg_stat and mfg_cmd registers
-Message-ID: <20130604211930.GF3618@raspi>
-Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-	Javier Martinez Canillas <javier@dowhile0.org>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	id S1751969Ab3FDVUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:20:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57993 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab3FDVUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 17:20:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v4] arm: zynq: Add cpuidle support
+Date: Tue, 04 Jun 2013 23:29:28 +0200
+Message-ID: <2279402.cTvpFSuaii@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51ADDE51.6040701@linaro.org>
+References: <360abe7d7e8b8a0f785ec846c24fa5cb6658b956.1370330248.git.michal.simek@xilinx.com> <51ADDE51.6040701@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The command and status register in the driver were swapped with
-respect to the order specified in the datasheet (CY8CTMA140).
-Confirmed with Cypress that the order in the datasheet is correct.
+On Tuesday, June 04, 2013 02:32:17 PM Daniel Lezcano wrote:
+> On 06/04/2013 09:17 AM, Michal Simek wrote:
+> > Add support for cpuidle.
+> > 
+> > Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> > ---
+> 
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
----
- drivers/input/touchscreen/cyttsp_core.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Queued up for 3.11, but I *wish* the changelog were a bit more elaborate ...
 
-diff --git a/drivers/input/touchscreen/cyttsp_core.h b/drivers/input/touchscreen/cyttsp_core.h
-index 1aa3c69..f1ebde3 100644
---- a/drivers/input/touchscreen/cyttsp_core.h
-+++ b/drivers/input/touchscreen/cyttsp_core.h
-@@ -67,8 +67,8 @@ struct cyttsp_xydata {
- /* TTSP System Information interface definition */
- struct cyttsp_sysinfo_data {
- 	u8 hst_mode;
--	u8 mfg_cmd;
- 	u8 mfg_stat;
-+	u8 mfg_cmd;
- 	u8 cid[3];
- 	u8 tt_undef1;
- 	u8 uid[8];
+Thanks,
+Rafael
+
+
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
