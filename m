@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab3FDO20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:28:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46614 "EHLO
+	id S1755430Ab3FDO2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:28:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46624 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab3FDOHg (ORCPT
+	with ESMTP id S1755278Ab3FDOHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:36 -0400
+	Tue, 4 Jun 2013 10:07:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Ahmad <josef.ahmad@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 02/70] i2c: designware: fix RX FIFO overrun
-Date: Tue,  4 Jun 2013 15:06:18 +0100
-Message-Id: <1370354846-14213-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 01/70] hwmon: fix error return code in abituguru_probe()
+Date: Tue,  4 Jun 2013 15:06:17 +0100
+Message-Id: <1370354846-14213-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,92 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Ahmad <josef.ahmad@linux.intel.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit e6f34cea56f5b95498070eaa9f4aa3ba4a9e4f62 upstream.
+commit ecacb0b17c08fae89f65468727f0e4b8e91da4e1 upstream.
 
-i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
-to/from the bus into the TX FIFO.
-For master-rx transactions, the maximum amount of data that can be
-received is calculated depending solely on TX and RX FIFO load.
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-This is racy - TX FIFO may contain master-rx data yet to be
-processed, which will eventually land into the RX FIFO. This
-data is not taken into account and the function may request more
-data than the controller is actually capable of storing.
-
-This patch ensures the driver takes into account the outstanding
-master-rx data in TX FIFO to prevent RX FIFO overrun.
-
-Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-[ luis: adjust context ]
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/i2c/busses/i2c-designware-core.c | 11 ++++++++++-
- drivers/i2c/busses/i2c-designware-core.h |  2 ++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/hwmon/abituguru.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 7b8ebbe..37b1221 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -413,8 +413,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
+index a72bf25..56b178a 100644
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1410,14 +1410,18 @@ static int __devinit abituguru_probe(struct platform_device *pdev)
+ 	pr_info("found Abit uGuru\n");
  
- 		while (buf_len > 0 && tx_limit > 0 && rx_limit > 0) {
- 			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
-+
-+				/* avoid rx buffer overrun */
-+				if (rx_limit - dev->rx_outstanding <= 0)
-+					break;
-+
- 				dw_writel(dev, 0x100, DW_IC_DATA_CMD);
- 				rx_limit--;
-+				dev->rx_outstanding++;
- 			} else
- 				dw_writel(dev, *buf++, DW_IC_DATA_CMD);
- 			tx_limit--; buf_len--;
-@@ -467,8 +473,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
  
- 		rx_valid = dw_readl(dev, DW_IC_RXFLR);
- 
--		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
-+		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
- 			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
-+			dev->rx_outstanding--;
-+		}
- 
- 		if (len > 0) {
- 			dev->status |= STATUS_READ_IN_PROGRESS;
-@@ -526,6 +534,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	dev->msg_err = 0;
- 	dev->status = STATUS_IDLE;
- 	dev->abort_source = 0;
-+	dev->rx_outstanding = 0;
- 
- 	ret = i2c_dw_wait_bus_not_busy(dev);
- 	if (ret < 0)
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 9c1840e..e761ad1 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -60,6 +60,7 @@
-  * @adapter: i2c subsystem adapter node
-  * @tx_fifo_depth: depth of the hardware tx fifo
-  * @rx_fifo_depth: depth of the hardware rx fifo
-+ * @rx_outstanding: current master-rx elements in tx fifo
-  */
- struct dw_i2c_dev {
- 	struct device		*dev;
-@@ -88,6 +89,7 @@ struct dw_i2c_dev {
- 	u32			master_cfg;
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
-+	int			rx_outstanding;
- };
- 
- #define ACCESS_SWAP		0x00000001
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
 -- 
 1.8.1.2
 
