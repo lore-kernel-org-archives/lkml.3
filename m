@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab3FDLYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 07:24:41 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:60768 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3FDLYi (ORCPT
+	id S1753756Ab3FDL0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:26:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49698 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3FDL02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 07:24:38 -0400
-Message-ID: <51ADCE73.3060802@linaro.org>
-Date: Tue, 04 Jun 2013 13:24:35 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 07:26:28 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Rob Herring" <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: RE: [PATCH v2 00/14] ARM: OMAP2+: AM43x initial support
+Thread-Topic: [PATCH v2 00/14] ARM: OMAP2+: AM43x initial support
+Thread-Index: AQHOWudac+Tmm+qC2EOmKn8k0W9MJZklci1w
+Date: Tue, 4 Jun 2013 11:25:45 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EB14140@DBDE04.ent.ti.com>
+References: <cover.1369658705.git.afzal@ti.com>
+In-Reply-To: <cover.1369658705.git.afzal@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Daniel Tang <dt.tangr@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] Add TI-Nspire timer support
-References: <AE2AF524-C495-4D6B-B622-816B3254D384@gmail.com> <CACRpkdbx1xugH_T6KBnui=JtoheH9H6=iv5yR1oejc_WxUfdkQ@mail.gmail.com> <347F9A91-70C0-4CD4-B0F6-C5E1DB0C3784@gmail.com>
-In-Reply-To: <347F9A91-70C0-4CD4-B0F6-C5E1DB0C3784@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54BQZ60016075
 
-On 06/04/2013 11:37 AM, Daniel Tang wrote:
+Hi Tony,
+
+On Mon, May 27, 2013 at 20:03:27, Mohammed, Afzal wrote:
+
+> This series adds initial support for AM43x based SoC's. To boot
+> AM43x, in addition to these patches, PRCM support is also needed,
+> which would be posted later as a separate series. DT sources doesn't
+> have "ti,hwmod" entry - this would be added along with PRCM support.
 > 
-> On 04/06/2013, at 7:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> AM43x SoC's are based on ARM Cortex-A9 with one core. AM43x is similar
+> to AM335x in it's peripheral capabilities, except a few additional
+> ones, with many of the peripheral register mapping's similar. AM43x
+> has a sync timer, which is being used as clocksource. Clockevent used
+> is 1ms dmtimer.
 > 
->> On Sat, Jun 1, 2013 at 8:02 AM, Daniel Tang <dt.tangr@gmail.com> wrote:
->>
->>> The interrupt acknowledgement mechanism is a little strange because the interrupt mask and acknowledge registers are located in another memory mapped I/O peripheral. The address of this register is passed to the driver through device tree bindings.
->>
->> I can't see any linebreaks there. This looks horrible in git log.
->>
->> But I guess Daniel can fix it up directly in his tree.
->>
+> SoC has PL310 L2 cache, support for it would be added later.
 > 
-> Apologies, I can fix it up if it needs be.
+> soc_is_am43xx() is introduced to handle AM43x specific details and
+> soc_is_am437x() is a subclass of it - first member of the class.
+> 
+> AM43x is currently in pre-silicon stage and currently there are no
+> public documents.
+> 
+> This has been tested on a pre-silicon platform that emulates AM43x SoC
+> with additional changes on top of this.
+> 
+> AM335x based board (AM335x EVM) has been verfied to boot as earlier
+> with this series.
+> 
+> Baseline: v3.10-rc3
+> Dependency: "ARM: OMAP3+: am33xx id: Add new am33xx specific function to check dev_feature"
+> 		by Vaibhav Hiremath <hvaibhav@ti.com>
 
+If you have any comments on this series please let me know, else if
+you are okay with this, please consider patches 1-10 for inclusion
+in the coming merge window.
 
-It is ok, I already fixed it.
+Patch 14/14 has been taken by Benoit and patches 11-13 are to be
+dropped (as per discussion in 11/14 thread)
 
-Thanks
-  -- Daniel
+Regards
+Afzal
 
--- 
- <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
