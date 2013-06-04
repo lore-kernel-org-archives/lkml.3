@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3FDXOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:14:23 -0400
-Received: from 1wt.eu ([62.212.114.60]:35433 "EHLO 1wt.eu"
+	id S1755373Ab3FDXOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:14:54 -0400
+Received: from 1wt.eu ([62.212.114.60]:35414 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879Ab3FDWmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:18 -0400
-Message-Id: <20130604172133.000994672@1wt.eu>
+	id S1752919Ab3FDWmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:16 -0400
+Message-Id: <20130604172132.671357997@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:35 +0200
+Date: Tue, 04 Jun 2013 19:22:27 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andrew Honig <ahonig@google.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 065/184] drivers/char/ipmi: memcpy, need additional 2 bytes
+Subject: [ 057/184] KVM: Fix bounds checking in ioapic indirect register
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,47 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- to avoid memory overflow
+ reads (CVE-2013-1798)
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Andy Honig <ahonig@google.com>
 
-commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
+commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
 
-When calling memcpy, read_data and write_data need additional 2 bytes.
+If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
+that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
+that request.  ioapic_read_indirect contains an
+ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
+non-debug builds.  In recent kernels this allows a guest to cause a kernel
+oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
+guest to read from large ranges of host memory.
 
-  write_data:
-    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+Tested: tested against apic unit tests.
 
-  read_data:
-    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/char/ipmi/ipmi_bt_sm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ virt/kvm/ioapic.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-index 7b98c06..a65a574 100644
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -95,9 +95,9 @@ struct si_sm_data {
- 	enum bt_states	state;
- 	unsigned char	seq;		/* BT sequence number */
- 	struct si_sm_io	*io;
--	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		write_count;
--	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		read_count;
- 	int		truncated;
- 	long		timeout;	/* microseconds countdown */
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 9fe140b..69969ae 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -71,9 +71,12 @@ static unsigned long ioapic_read_indirect(struct kvm_ioapic *ioapic,
+ 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
+ 			u64 redir_content;
+ 
+-			ASSERT(redir_index < IOAPIC_NUM_PINS);
++			if (redir_index < IOAPIC_NUM_PINS)
++				redir_content =
++					ioapic->redirtbl[redir_index].bits;
++			else
++				redir_content = ~0ULL;
+ 
+-			redir_content = ioapic->redirtbl[redir_index].bits;
+ 			result = (ioapic->ioregsel & 0x1) ?
+ 			    (redir_content >> 32) & 0xffffffff :
+ 			    redir_content & 0xffffffff;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
