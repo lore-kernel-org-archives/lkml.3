@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3FDWqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:46:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:35954 "EHLO 1wt.eu"
+	id S1752817Ab3FDWrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:47:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:35923 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3FDWqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:46:33 -0400
-Message-Id: <20130604172137.889614525@1wt.eu>
+	id S1754199Ab3FDWom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:42 -0400
+Message-Id: <20130604172133.372622019@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:33 +0200
+Date: Tue, 04 Jun 2013 19:22:44 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Samuel Ortiz <samuel@sortiz.org>, Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 183/184] irda: Fix missing msg_namelen update in
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 074/184] staging: comedi: check s->async for poll(), read()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,41 +23,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- irda_recvmsg_dgram()
+ and write()
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+commit cc400e185c07c15a42d2635995f422de5b94b696 upstream.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about irda_recvmsg_dgram() not filling the msg_name in case it was
-set.
+Some low-level comedi drivers (incorrectly) point `dev->read_subdev` or
+`dev->write_subdev` to a subdevice that does not support asynchronous
+commands.  Comedi's poll(), read() and write() file operation handlers
+assume these subdevices do support asynchronous commands.  In
+particular, they assume `s->async` is valid (where `s` points to the
+read or write subdevice), which it won't be if it has been set
+incorrectly.  This can lead to a NULL pointer dereference.
 
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[dannf: adjusted to apply to Debian's 2.6.32]
+Check `s->async` is non-NULL in `comedi_poll()`, `comedi_read()` and
+`comedi_write()` to avoid the bug.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/irda/af_irda.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/comedi/comedi_fops.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
-index 476b24e..bfb325d 100644
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1338,6 +1338,8 @@ static int irda_recvmsg_dgram(struct kiocb *iocb, struct socket *sock,
- 	if ((err = sock_error(sk)) < 0)
- 		return err;
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 193b836..90810e8 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1498,7 +1498,7 @@ static unsigned int comedi_poll(struct file *file, poll_table * wait)
  
-+	msg->msg_namelen = 0;
-+
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &err);
- 	if (!skb)
+ 	mask = 0;
+ 	read_subdev = comedi_get_read_subdevice(dev_file_info);
+-	if (read_subdev) {
++	if (read_subdev && read_subdev->async) {
+ 		poll_wait(file, &read_subdev->async->wait_head, wait);
+ 		if (!read_subdev->busy
+ 		    || comedi_buf_read_n_available(read_subdev->async) > 0
+@@ -1508,7 +1508,7 @@ static unsigned int comedi_poll(struct file *file, poll_table * wait)
+ 		}
+ 	}
+ 	write_subdev = comedi_get_write_subdevice(dev_file_info);
+-	if (write_subdev) {
++	if (write_subdev && write_subdev->async) {
+ 		poll_wait(file, &write_subdev->async->wait_head, wait);
+ 		comedi_buf_write_alloc(write_subdev->async,
+ 				       write_subdev->async->prealloc_bufsz);
+@@ -1550,7 +1550,7 @@ static ssize_t comedi_write(struct file *file, const char *buf, size_t nbytes,
+ 	}
+ 
+ 	s = comedi_get_write_subdevice(dev_file_info);
+-	if (s == NULL) {
++	if (s == NULL || s->async == NULL) {
+ 		retval = -EIO;
+ 		goto done;
+ 	}
+@@ -1658,7 +1658,7 @@ static ssize_t comedi_read(struct file *file, char *buf, size_t nbytes,
+ 	}
+ 
+ 	s = comedi_get_read_subdevice(dev_file_info);
+-	if (s == NULL) {
++	if (s == NULL || s->async == NULL) {
+ 		retval = -EIO;
+ 		goto done;
+ 	}
 -- 
 1.7.12.2.21.g234cd45.dirty
 
