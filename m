@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997Ab3FDHVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:21:24 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:60066 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759355Ab3FDHVV (ORCPT
+	id S1760043Ab3FDHWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:22:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42297 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759355Ab3FDHWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:21:21 -0400
-Date: Tue, 4 Jun 2013 08:21:15 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: J Keerthy <j-keerthy@ti.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
-        rob@landley.net, mturquette@linaro.org, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        t-kristo@ti.com, Ian Lartey <ian@slimlogic.co.uk>
-Subject: Re: [PATCH] mfd: DT bindings for the palmas family MFD
-Message-ID: <20130604072115.GI3370@gmail.com>
-References: <1370261333-5121-1-git-send-email-j-keerthy@ti.com>
- <20130603141851.GG3370@gmail.com>
- <51ACFECA.10209@wwwdotorg.org>
+	Tue, 4 Jun 2013 03:22:15 -0400
+From: Frank Mehnert <frank.mehnert@oracle.com>
+Organization: Oracle Corporation
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Handling NUMA page migration
+Date: Tue, 4 Jun 2013 09:22:10 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51ACFECA.10209@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201306040922.10235.frank.mehnert@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Jun 2013, Stephen Warren wrote:
+Hi,
 
-> On 06/03/2013 08:18 AM, Lee Jones wrote:
-> > On Mon, 03 Jun 2013, J Keerthy wrote:
-> >> Add the various binding files for the palmas family of chips. There is a
-> >> top level MFD binding then a seperate binding for regulators IP blocks on chips.
-> 
-> >> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-> 
-> >> +Example:
-> >> +
-> >> +palmas {
-> > 
-> > Should this be 'palmas@48 {', as it has an address?
-> 
-> It's common to only include the unit-address (@48) if it's needed to
-> make the node name unique (i.e. if you had multiple palmas devices).
+our memory management on Linux hosts conflicts with NUMA page migration.
+I assume this problem existed for a longer time but Linux 3.8 introduced
+automatic NUMA page balancing which makes the problem visible on
+multi-node hosts leading to kernel oopses.
 
-I was working on the basis of, if it has a 'reg' value, it should be
-highlighted in the node name, but if this is the common way of doing
-things then fair enough.
+NUMA page migration means that the physical address of a page changes.
+This is fatal if the application assumes that this never happens for
+that page as it was supposed to be pinned.
 
-> >> diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> 
-> > See: Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-> > 
-> >> +	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
-> >> +	       2 - eco, 3 - forced pwm
-> > 
-> > I've seen lots of sleep-mode properties, can't we define a generic
-> > one?
-> 
-> Isn't it HW-specific?
+We have two kind of pinned memory:
 
-Yes, they're not all identical. I haven't studied them all in detail,
-but I assumed a we would be able to do something in order to
-consolidate them somewhat. If they are vastly different then no
-problem, it was just an idea to cut down on vendor specific
-properties. 
+A) 1. allocate memory in userland with mmap()
+   2. madvise(MADV_DONTFORK)
+   3. pin with get_user_pages().
+   4. flush dcache_page()
+   5. vm_flags |= (VM_DONTCOPY | VM_LOCKED)
+      (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+       VM_DONTCOPY | VM_LOCKED | 0xff)
 
+B) 1. allocate memory with alloc_pages()
+   2. SetPageReserved()
+   3. vm_mmap() to allocate a userspace mapping
+   4. vm_insert_page()
+   5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
+      (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND | 0xff)
+
+At least the memory allocated like B) is affected by automatic NUMA page
+migration. I'm not sure about A).
+
+1. How can I prevent automatic NUMA page migration on this memory?
+2. Can NUMA page migration also be handled on such kind of memory without
+   preventing migration?
+
+Thanks,
+
+Frank
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
+ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
+
+Hauptverwaltung: Riesstr. 25, D-80992 München
+Registergericht: Amtsgericht München, HRA 95603
+Geschäftsführer: Jürgen Kunz
+
+Komplementärin: ORACLE Deutschland Verwaltung B.V.
+Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
+Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
+Geschäftsführer: Alexander van der Ven, Astrid Kepper, Val Maher
