@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3FDQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:58:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48282 "EHLO
+	id S1757114Ab3FDQ7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:59:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48314 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756743Ab3FDQ5Q (ORCPT
+	with ESMTP id S1756570Ab3FDQ7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:57:16 -0400
+	Tue, 4 Jun 2013 12:59:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Joern Engel <joern@logfs.org>, Roland Dreier <roland@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 16/75] cfg80211: fix wiphy_register error path
-Date: Tue,  4 Jun 2013 09:55:00 -0700
-Message-Id: <1370364959-9475-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 68/75] ib_srpt: Call target_sess_cmd_list_set_waiting during shutdown_session
+Date: Tue,  4 Jun 2013 09:55:52 -0700
+Message-Id: <1370364959-9475-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -27,54 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 03cd7e4e1ea16cd151c799a33b5ca1fd41a464df upstream.
+commit 1d19f7800d643b270b28d0a969c5eca455d54397 upstream.
 
-If rfkill_register() fails in wiphy_register() the struct device
-is unregistered but everything else isn't (regulatory, debugfs)
-and we even leave the wiphy instance on all internal lists even
-though it will likely be freed soon, which is clearly a problem.
-Fix this by cleaning up properly.
+Given that srpt_release_channel_work() calls target_wait_for_sess_cmds()
+to allow outstanding se_cmd_t->cmd_kref a change to complete, the call
+to perform target_sess_cmd_list_set_waiting() needs to happen in
+srpt_shutdown_session()
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Also, this patch adds an explicit call to srpt_shutdown_session() within
+srpt_drain_channel() so that target_sess_cmd_list_set_waiting() will be
+called in the cases where TFO->shutdown_session() is not triggered
+directly by TCM.
+
+Cc: Joern Engel <joern@logfs.org>
+Cc: Roland Dreier <roland@kernel.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/wireless/core.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 32 ++++++++++++++++++++++++--------
+ drivers/infiniband/ulp/srpt/ib_srpt.h |  1 +
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/net/wireless/core.c b/net/wireless/core.c
-index b677eab..2dca5e3 100644
---- a/net/wireless/core.c
-+++ b/net/wireless/core.c
-@@ -597,17 +597,21 @@ int wiphy_register(struct wiphy *wiphy)
- 	 * cfg80211_mutex lock
- 	 */
- 	res = rfkill_register(rdev->rfkill);
--	if (res)
--		goto out_rm_dev;
-+	if (res) {
-+		device_del(&rdev->wiphy.dev);
-+
-+		mutex_lock(&cfg80211_mutex);
-+		debugfs_remove_recursive(rdev->wiphy.debugfsdir);
-+		list_del_rcu(&rdev->list);
-+		wiphy_regulatory_deregister(wiphy);
-+		mutex_unlock(&cfg80211_mutex);
-+		return res;
-+	}
- 
- 	rtnl_lock();
- 	rdev->wiphy.registered = true;
- 	rtnl_unlock();
- 	return 0;
--
--out_rm_dev:
--	device_del(&rdev->wiphy.dev);
--	return res;
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index c09d41b..b4a76d1 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2227,6 +2227,27 @@ static void srpt_close_ch(struct srpt_rdma_ch *ch)
  }
- EXPORT_SYMBOL(wiphy_register);
  
+ /**
++ * srpt_shutdown_session() - Whether or not a session may be shut down.
++ */
++static int srpt_shutdown_session(struct se_session *se_sess)
++{
++	struct srpt_rdma_ch *ch = se_sess->fabric_sess_ptr;
++	unsigned long flags;
++
++	spin_lock_irqsave(&ch->spinlock, flags);
++	if (ch->in_shutdown) {
++		spin_unlock_irqrestore(&ch->spinlock, flags);
++		return true;
++	}
++
++	ch->in_shutdown = true;
++	target_sess_cmd_list_set_waiting(se_sess);
++	spin_unlock_irqrestore(&ch->spinlock, flags);
++
++	return true;
++}
++
++/**
+  * srpt_drain_channel() - Drain a channel by resetting the IB queue pair.
+  * @cm_id: Pointer to the CM ID of the channel to be drained.
+  *
+@@ -2264,6 +2285,9 @@ static void srpt_drain_channel(struct ib_cm_id *cm_id)
+ 	spin_unlock_irq(&sdev->spinlock);
+ 
+ 	if (do_reset) {
++		if (ch->sess)
++			srpt_shutdown_session(ch->sess);
++
+ 		ret = srpt_ch_qp_err(ch);
+ 		if (ret < 0)
+ 			printk(KERN_ERR "Setting queue pair in error state"
+@@ -3467,14 +3491,6 @@ static void srpt_release_cmd(struct se_cmd *se_cmd)
+ }
+ 
+ /**
+- * srpt_shutdown_session() - Whether or not a session may be shut down.
+- */
+-static int srpt_shutdown_session(struct se_session *se_sess)
+-{
+-	return true;
+-}
+-
+-/**
+  * srpt_close_session() - Forcibly close a session.
+  *
+  * Callback function invoked by the TCM core to clean up sessions associated
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.h b/drivers/infiniband/ulp/srpt/ib_srpt.h
+index 4caf55c..3dae156 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.h
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.h
+@@ -325,6 +325,7 @@ struct srpt_rdma_ch {
+ 	u8			sess_name[36];
+ 	struct work_struct	release_work;
+ 	struct completion	*release_done;
++	bool			in_shutdown;
+ };
+ 
+ /**
 -- 
 1.8.1.2
 
