@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab3FDCdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 22:33:31 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49620 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab3FDCd3 (ORCPT
+	id S1757583Ab3FDCeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 22:34:01 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39555 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab3FDCd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 22:33:29 -0400
-Message-ID: <51AD51E3.6060307@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 10:33:07 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [DISCUSSION] removing variety rq->cpu_load ?
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com> <20130506101936.GE13861@dyad.programming.kicks-ass.net> <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com> <20130506111041.GA15446@dyad.programming.kicks-ass.net> <51889C8A.5000806@intel.com> <51AD46CA.9020609@intel.com> <51AD4808.6020507@intel.com>
-In-Reply-To: <51AD4808.6020507@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060402-1618-0000-0000-00000402DDBC
+	Mon, 3 Jun 2013 22:33:59 -0400
+Date: Tue, 4 Jun 2013 12:33:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Jingoo Han <jg1.han@samsung.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20130604123347.df8639ba69cb914069c80fd6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Jun_2013_12_33_47_+1000_rB8FBrbILt6R11I+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Alex
+--Signature=_Tue__4_Jun_2013_12_33_47_+1000_rB8FBrbILt6R11I+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 06/04/2013 09:51 AM, Alex Shi wrote:
-> resend with a new subject.
+Hi John,
 
-Forgive me but I'm a little lost on this thread...
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/wireless/ath/ath9k/debug.c between commit 27d7f47756f4 ("net:
+wireless: replace strict_strtoul() with kstrtoul()") from the net-next
+tree and commit 6e4d291eec82 ("ath9k: Print ANI statistics in debugfs")
+from the wireless-next tree.
 
-So we are planing to rely on instant 'cpu_load[0]' and decayed
-'runnable_load_avg' only, do we?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Regards,
-Michael Wang
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
->> Peter,
->>
->> I just tried to remove the variety rq.cpu_load, by the following patch. 
->> Because forkexec_idx and busy_idx are all zero, after the patch system just keep cpu_load[0]
->> and remove other values.
->> I tried the patch base 3.10-rc3 and latest tip/sched/core with benchmark dbench,tbench,
->> aim7,hackbench. and oltp of sysbench. Seems performance doesn't change clear.
->> So, for my tested machines, core2, NHM, SNB, with 2 or 4 CPU sockets, and above tested
->> benchmark. We are fine to remove the variety cpu_load. 
->> Don't know if there some other concerns on other scenarios.
->>
->> ---
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 590d535..f0ca983 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -4626,7 +4626,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
->>         if (child && child->flags & SD_PREFER_SIBLING)
->>                 prefer_sibling = 1;
->>  
->> -       load_idx = get_sd_load_idx(env->sd, env->idle);
->> +       load_idx = 0; //get_sd_load_idx(env->sd, env->idle);
->>  
->>         do {
->>                 int local_group;
->>
->>
-> 
-> 
+diff --cc drivers/net/wireless/ath/ath9k/debug.c
+index 51cc0fa,7852f6e..0000000
+--- a/drivers/net/wireless/ath/ath9k/debug.c
++++ b/drivers/net/wireless/ath/ath9k/debug.c
+@@@ -200,12 -244,15 +244,15 @@@ static ssize_t write_file_ani(struct fi
+  		return -EFAULT;
+ =20
+  	buf[len] =3D '\0';
+- 	if (kstrtoul(buf, 0, &disable_ani))
+ -	if (strict_strtoul(buf, 0, &ani))
+++	if (kstrtoul(buf, 0, &ani))
+  		return -EINVAL;
+ =20
+- 	common->disable_ani =3D !!disable_ani;
++ 	if (ani < 0 || ani > 1)
++ 		return -EINVAL;
++=20
++ 	common->disable_ani =3D !ani;
+ =20
+- 	if (disable_ani) {
++ 	if (common->disable_ani) {
+  		clear_bit(SC_OP_ANI_RUN, &sc->sc_flags);
+  		ath_stop_ani(sc);
+  	} else {
 
+--Signature=_Tue__4_Jun_2013_12_33_47_+1000_rB8FBrbILt6R11I+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRrVIQAAoJEECxmPOUX5FEeigP/3In1LFW5LdD2NkUqZC3SfFR
++6jikG1NNh31wHO7oY5TMg72W8kCDG8xk76p9UcJjuLiML62rd873aFI1D4bdeo/
+H+qt49ncMruzWP406X1DMf5QBfhZTYTofppQN5HB+agM2mhCmMJOcmJRg1qau/Ch
+apBLapN7ATtKydRWeBokKf0j/EiF7awnoReYYgx8ha8DPDf6PV/GxVZSC2kY/mCe
+70nGtFje/S7TwG/qG+OrTQZzy0AofnNbK4Mz4BEAc3wqxsi/QwR3lwI2vHR2Pju9
+ZhdR9Fhh+7RYtb1ZOAcuyOac1CYFmxZBhNfn7CGRsKgbiLtzVg+TO+nQtgmzBu8Q
+gvAuFTM7VIlt1MEnmsYuIuJXTfqaJITJP4NWc6FcwizctCVNSick672eHOPnTEx2
+oOlEEj/SOy9U9oFfEG2K2d9TD5TGcSl4soMKOZr0fd5It60aMromodi3n1tR7dmD
+aFaLZlEf3/WHihImiBbbnRK7Ci147Byt0ObZN5K5pLfR8KEhQx8cLQ/MTJJCMZIt
++Y+mqHTD2+CPsYFS+/fLKXi3dvMGWug2snVk05cTauSgnWWNZCPIdxk/1KXgPzgV
+tQQZZY2jQVMaf7U0EuQbx6HqHoKhTwZOHs5JY1sZQH3JGiTqTbDcoqFHJkIO4WnK
+TX63/IE/XF3/6bqm9DY9
+=IhqN
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Jun_2013_12_33_47_+1000_rB8FBrbILt6R11I+--
