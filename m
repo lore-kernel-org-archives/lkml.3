@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab3FDAUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 20:20:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55993 "EHLO
+	id S1756402Ab3FDAVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 20:21:17 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56003 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758642Ab3FDAUY (ORCPT
+	with ESMTP id S1754049Ab3FDAU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 20:20:24 -0400
+	Mon, 3 Jun 2013 20:20:27 -0400
 From: Rohit Vaswani <rvaswani@codeaurora.org>
 To: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
@@ -17,9 +17,9 @@ To: Grant Likely <grant.likely@linaro.org>,
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 2/3] ARM: msm: Re-organize platsmp to make it extensible
-Date: Mon,  3 Jun 2013 17:19:44 -0700
-Message-Id: <1370305185-6450-3-git-send-email-rvaswani@codeaurora.org>
+Subject: [PATCH 3/3] ARM: msm: Add SMP support for 8960
+Date: Mon,  3 Jun 2013 17:19:45 -0700
+Message-Id: <1370305185-6450-4-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1370305185-6450-1-git-send-email-rvaswani@codeaurora.org>
 References: <1370305185-6450-1-git-send-email-rvaswani@codeaurora.org>
@@ -27,70 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it easy to add SMP support for new targets.
-This patch adds the 8660 cpus bindings to make SMP work.
+Add the cpus bindings and the Krait release sequence
+to make SMP work for MSM8960
 
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 ---
- Documentation/devicetree/bindings/arm/cpus.txt     |    6 ++
- Documentation/devicetree/bindings/arm/msm/scss.txt |   15 +++
- arch/arm/boot/dts/msm8660-surf.dts                 |   21 +++++
- arch/arm/mach-msm/platsmp.c                        |   93 +++++++++++++++-----
- 4 files changed, 114 insertions(+), 21 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/msm/scss.txt
+ Documentation/devicetree/bindings/arm/cpus.txt     |    2 +
+ Documentation/devicetree/bindings/arm/msm/kpss.txt |   16 ++++++
+ arch/arm/boot/dts/msm8960-cdp.dts                  |   22 ++++++++
+ arch/arm/mach-msm/platsmp.c                        |   57 ++++++++++++++++++++
+ arch/arm/mach-msm/scm-boot.h                       |    8 ++-
+ 5 files changed, 102 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
 
 diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index f32494d..327aad2 100644
+index 327aad2..1132eac 100644
 --- a/Documentation/devicetree/bindings/arm/cpus.txt
 +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -44,6 +44,12 @@ For the ARM architecture every CPU node must contain the following properties:
- 		"marvell,mohawk"
+@@ -45,11 +45,13 @@ For the ARM architecture every CPU node must contain the following properties:
  		"marvell,xsc3"
  		"marvell,xscale"
-+		"qcom,scorpion"
-+- enable-method: Specifies the method used to enable or take the secondary cores
-+		 out of reset. This allows different reset sequence for
-+		 different types of cpus.
-+		 This should be one of:
-+		 "qcom,scss"
+ 		"qcom,scorpion"
++		"qcom,krait"
+ - enable-method: Specifies the method used to enable or take the secondary cores
+ 		 out of reset. This allows different reset sequence for
+ 		 different types of cpus.
+ 		 This should be one of:
+ 		 "qcom,scss"
++		 "qcom,kpssv1"
  
  Example:
  
-diff --git a/Documentation/devicetree/bindings/arm/msm/scss.txt b/Documentation/devicetree/bindings/arm/msm/scss.txt
+diff --git a/Documentation/devicetree/bindings/arm/msm/kpss.txt b/Documentation/devicetree/bindings/arm/msm/kpss.txt
 new file mode 100644
-index 0000000..21c3e26
+index 0000000..7272340
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/msm/scss.txt
-@@ -0,0 +1,15 @@
-+* SCSS - Scorpion Sub-system
++++ b/Documentation/devicetree/bindings/arm/msm/kpss.txt
+@@ -0,0 +1,16 @@
++* KPSS - Krait Processor Sub-system
 +
 +Properties
 +
-+- compatible : Should contain "qcom,scss".
++- compatible : Should contain "qcom,kpss".
 +
-+- reg: Specifies the base address for the SCSS registers used for
++- reg: Specifies the base address for the KPSS registers used for
 +       booting up secondary cores.
 +
 +Example:
 +
-+	scss@902000 {
-+		compatible = "qcom,scss";
-+		reg = <0x00902000 0x2000>;
++	kpss@2088000 {
++		compatible = "qcom,kpss";
++		reg = <0x02088000 0x1000
++			0x02098000 0x2000>;
 +	};
-diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-index 9bf49b3..0ede522 100644
---- a/arch/arm/boot/dts/msm8660-surf.dts
-+++ b/arch/arm/boot/dts/msm8660-surf.dts
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index 2e4d87a..fd2f3ec 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
 @@ -7,6 +7,22 @@
- 	compatible = "qcom,msm8660-surf", "qcom,msm8660";
+ 	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
  	interrupt-parent = <&intc>;
  
 +	cpus {
 +		#address-cells = <1>;
 +		#size-cells = <0>;
-+		compatible = "qcom,scorpion";
++		compatible = "qcom,krait";
 +		device_type = "cpu";
-+		enable-method = "qcom,scss";
++		enable-method = "qcom,kpssv1";
 +
 +		cpu@0 {
 +			reg = <0>;
@@ -101,149 +104,123 @@ index 9bf49b3..0ede522 100644
 +		};
 +	};
 +
- 	intc: interrupt-controller@2080000 {
- 		compatible = "qcom,msm-8660-qgic";
+ 	intc: interrupt-controller@2000000 {
+ 		compatible = "qcom,msm-qgic2";
  		interrupt-controller;
-@@ -26,6 +42,11 @@
- 		cpu-offset = <0x40000>;
+@@ -26,6 +42,12 @@
+ 		cpu-offset = <0x80000>;
  	};
  
-+	scss@902000 {
-+		compatible = "qcom,scss";
-+		reg = <0x00902000 0x2000>;
++	kpss@2088000 {
++		compatible = "qcom,kpss";
++		reg = <0x02088000 0x1000
++			0x02098000 0x2000>;
 +	};
 +
  	serial@19c400000 {
  		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
- 		reg = <0x19c40000 0x1000>,
+ 		reg = <0x16440000 0x1000>,
 diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 2028f3f..ccf4168 100644
+index ccf4168..2e9e0a1 100644
 --- a/arch/arm/mach-msm/platsmp.c
 +++ b/arch/arm/mach-msm/platsmp.c
-@@ -13,6 +13,8 @@
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/jiffies.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/smp.h>
- #include <linux/io.h>
- 
-@@ -61,35 +63,64 @@ static void __cpuinit msm_secondary_init(unsigned int cpu)
- 	spin_unlock(&boot_lock);
+@@ -88,6 +88,56 @@ static int __cpuinit scorpion_release_secondary(void)
+ 	return 0;
  }
  
--static __cpuinit void prepare_cold_cpu(unsigned int cpu)
-+static int __cpuinit scorpion_release_secondary(void)
- {
--	int ret;
--	ret = scm_set_boot_addr(virt_to_phys(msm_secondary_startup),
--				SCM_FLAG_COLDBOOT_CPU1);
--	if (ret == 0) {
--		void __iomem *sc1_base_ptr;
--		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
--		if (sc1_base_ptr) {
--			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
--			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
--			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
--			iounmap(sc1_base_ptr);
-+	void __iomem *sc1_base_ptr;
++static int __cpuinit msm8960_release_secondary(unsigned int cpu)
++{
++	void __iomem *reg;
 +	struct device_node *dn = NULL;
 +
-+	dn = of_find_compatible_node(dn, NULL, "qcom,scss");
++	if (cpu == 0 || cpu >= num_possible_cpus())
++		return -EINVAL;
++
++	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
 +	if (!dn) {
-+		pr_err("%s: Missing scss node in device tree\n", __func__);
++		pr_err("%s : Missing kpss node from device tree\n", __func__);
 +		return -ENXIO;
 +	}
 +
-+	sc1_base_ptr = of_iomap(dn, 0);
-+	if (sc1_base_ptr) {
-+		writel_relaxed(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
-+		writel_relaxed(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
-+		writel_relaxed(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
-+		mb();
-+		iounmap(sc1_base_ptr);
-+	} else {
++	reg = of_iomap(dn, cpu);
++	if (!reg)
 +		return -ENOMEM;
-+	}
 +
++	pr_debug("Starting secondary CPU %d\n", cpu);
++
++	/* Turn on CPU Rail */
++	writel_relaxed(0xA4, reg+0x1014);
++	mb();
++	udelay(512);
++
++	/* Krait bring-up sequence */
++	writel_relaxed(0x109, reg+0x04);
++	writel_relaxed(0x101, reg+0x04);
++	mb();
++	ndelay(300);
++
++	writel_relaxed(0x121, reg+0x04);
++	mb();
++	udelay(2);
++
++	writel_relaxed(0x120, reg+0x04);
++	mb();
++	udelay(2);
++
++	writel_relaxed(0x100, reg+0x04);
++	mb();
++	udelay(100);
++
++	writel_relaxed(0x180, reg+0x04);
++	mb();
++
++	iounmap(reg);
 +	return 0;
 +}
 +
-+static DEFINE_PER_CPU(int, cold_boot_done);
-+
-+static __cpuinit void boot_cold_cpu(unsigned int cpu)
-+{
-+	const char *enable_method;
-+	struct device_node *dn = NULL;
-+
-+	dn = of_find_node_by_name(dn, "cpus");
-+	if (!dn) {
-+		pr_err("%s: Missing node cpus in device tree\n", __func__);
-+		return;
-+	}
-+
-+	enable_method = of_get_property(dn, "enable-method", NULL);
-+	if (!enable_method) {
-+			pr_err("%s: cpus node is missing enable-method property\n",
-+					__func__);
-+	} else if (!strcmp(enable_method, "qcom,scss")) {
-+		if (per_cpu(cold_boot_done, cpu) == false) {
-+			scorpion_release_secondary();
-+			per_cpu(cold_boot_done, cpu) = true;
+ static DEFINE_PER_CPU(int, cold_boot_done);
+ 
+ static __cpuinit void boot_cold_cpu(unsigned int cpu)
+@@ -110,6 +160,11 @@ static __cpuinit void boot_cold_cpu(unsigned int cpu)
+ 			scorpion_release_secondary();
+ 			per_cpu(cold_boot_done, cpu) = true;
  		}
--	} else
--		printk(KERN_DEBUG "Failed to set secondary core boot "
--				  "address\n");
-+	} else {
-+		pr_err("%s: Invalid enable-method property: %s\n",
-+				__func__, enable_method);
-+	}
- }
- 
- static int __cpuinit msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
- 	unsigned long timeout;
--	static int cold_boot_done;
- 
--	/* Only need to bring cpu out of reset this way once */
--	if (cold_boot_done == false) {
--		prepare_cold_cpu(cpu);
--		cold_boot_done = true;
--	}
-+	boot_cold_cpu(cpu);
- 
- 	/*
- 	 * set synchronisation state between this boot processor
-@@ -152,8 +183,28 @@ static void __init msm_smp_init_cpus(void)
- 		set_cpu_possible(i, true);
- }
- 
-+static const int cold_boot_flags[] __initconst = {
-+	0,
-+	SCM_FLAG_COLDBOOT_CPU1,
-+};
-+
- static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
- {
-+	int cpu, map;
-+	unsigned int flags = 0;
-+
-+	for_each_present_cpu(cpu) {
-+		map = cpu_logical_map(cpu);
-+		if (map > ARRAY_SIZE(cold_boot_flags)) {
-+			set_cpu_present(cpu, false);
-+			__WARN();
-+			continue;
++	} else if (!strcmp(enable_method, "qcom,kpssv1")) {
++		if (per_cpu(cold_boot_done, cpu) == false) {
++			msm8960_release_secondary(cpu);
++			per_cpu(cold_boot_done, cpu) = true;
 +		}
-+		flags |= cold_boot_flags[map];
-+	}
-+
-+	if (scm_set_boot_addr(virt_to_phys(msm_secondary_startup), flags))
-+		pr_warn("Failed to set CPU boot address\n");
- }
+ 	} else {
+ 		pr_err("%s: Invalid enable-method property: %s\n",
+ 				__func__, enable_method);
+@@ -186,6 +241,8 @@ static void __init msm_smp_init_cpus(void)
+ static const int cold_boot_flags[] __initconst = {
+ 	0,
+ 	SCM_FLAG_COLDBOOT_CPU1,
++	SCM_FLAG_COLDBOOT_CPU2,
++	SCM_FLAG_COLDBOOT_CPU3,
+ };
  
- struct smp_operations msm_smp_ops __initdata = {
+ static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+index 7be32ff..6aabb24 100644
+--- a/arch/arm/mach-msm/scm-boot.h
++++ b/arch/arm/mach-msm/scm-boot.h
+@@ -13,9 +13,11 @@
+ #define __MACH_SCM_BOOT_H
+ 
+ #define SCM_BOOT_ADDR			0x1
+-#define SCM_FLAG_COLDBOOT_CPU1		0x1
+-#define SCM_FLAG_WARMBOOT_CPU1		0x2
+-#define SCM_FLAG_WARMBOOT_CPU0		0x4
++#define SCM_FLAG_COLDBOOT_CPU1		0x01
++#define SCM_FLAG_COLDBOOT_CPU2		0x08
++#define SCM_FLAG_COLDBOOT_CPU3		0x20
++#define SCM_FLAG_WARMBOOT_CPU0		0x04
++#define SCM_FLAG_WARMBOOT_CPU1		0x02
+ 
+ int scm_set_boot_addr(phys_addr_t addr, int flags);
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
