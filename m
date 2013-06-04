@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3FDOSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:18:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46842 "EHLO
+	id S1756051Ab3FDOIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:08:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3FDOIV (ORCPT
+	with ESMTP id S1755895Ab3FDOIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:21 -0400
+	Tue, 4 Jun 2013 10:08:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Leonid Yegoshin <yegoshin@mips.com>, Michal Hocko <mhocko@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 40/70] mwifiex: fix memory leak issue when driver unload
-Date: Tue,  4 Jun 2013 15:06:56 +0100
-Message-Id: <1370354846-14213-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 31/70] mm compaction: fix of improper cache flush in migration code
+Date: Tue,  4 Jun 2013 15:06:47 +0100
+Message-Id: <1370354846-14213-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +33,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-commit f16fdc9d2dc1e5b270e9a08377587e831e0d36ac upstream.
+commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
 
-After unregister_netdevice() call the request is queued and
-reg_state is changed to NETREG_UNREGISTERING.
-As we check for NETREG_UNREGISTERED state, free_netdev() never
-gets executed causing memory leak.
+Page 'new' during MIGRATION can't be flushed with flush_cache_page().
+Using flush_cache_page(vma, addr, pfn) is justified only if the page is
+already placed in process page table, and that is done right after
+flush_cache_page().  But without it the arch function has no knowledge
+of process PTE and does nothing.
 
-Initialize "dev->destructor" to free_netdev() to free device
-data after unregistration.
+Besides that, flush_cache_page() flushes an application cache page, but
+the kernel has a different page virtual address and dirtied it.
 
-Reported-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[ luis: backport to 3.5:
-  - adjust context: use dev instead of wdev->netdev ]
+Replace it with flush_dcache_page(new) which is the proper usage.
+
+The old page is flushed in try_to_unmap_one() before migration.
+
+This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
+aliasing (but Harvard arch - separate I and D cache) in tight memory
+environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
+kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
+ON.
+
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Leonid Yegoshin <yegoshin@mips.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/cfg80211.c | 3 ---
- drivers/net/wireless/mwifiex/main.c     | 1 +
- 2 files changed, 1 insertion(+), 3 deletions(-)
+ mm/migrate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index 4506cda..3a5b73f 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1622,9 +1622,6 @@ int mwifiex_del_virtual_intf(struct wiphy *wiphy, struct net_device *dev)
- 	if (dev->reg_state == NETREG_REGISTERED)
- 		unregister_netdevice(dev);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 2e03986..65cc229 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -147,7 +147,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+ 		pte = arch_make_huge_pte(pte, vma, new, 0);
+ 	}
+ #endif
+-	flush_cache_page(vma, addr, pte_pfn(pte));
++	flush_dcache_page(new);
+ 	set_pte_at(mm, addr, ptep, pte);
  
--	if (dev->reg_state == NETREG_UNREGISTERED)
--		free_netdev(dev);
--
- 	/* Clear the priv in adapter */
- 	priv->netdev = NULL;
- 
-diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
-index 3192855..4be4d43 100644
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -636,6 +636,7 @@ void mwifiex_init_priv_params(struct mwifiex_private *priv,
- 						struct net_device *dev)
- {
- 	dev->netdev_ops = &mwifiex_netdev_ops;
-+	dev->destructor = free_netdev;
- 	/* Initialize private structure */
- 	priv->current_key_index = 0;
- 	priv->media_connected = false;
+ 	if (PageHuge(new)) {
 -- 
 1.8.1.2
 
