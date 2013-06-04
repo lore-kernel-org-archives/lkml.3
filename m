@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab3FDXOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:14:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:35421 "EHLO 1wt.eu"
+	id S1755504Ab3FDXQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:16:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:35410 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955Ab3FDWmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:17 -0400
-Message-Id: <20130604172132.754139796@1wt.eu>
+	id S1752906Ab3FDWmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:15 -0400
+Message-Id: <20130604172132.918292146@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:29 +0200
+Date: Tue, 04 Jun 2013 19:22:33 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        Thomas Renninger <trenn@suse.de>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <JBottomley@Parallels.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 059/184] MCE: Fix vm86 handling for 32bit mce handler
+Subject: [ 063/184] PARISC: fix user-triggerable panic on parisc
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit a129a7c84582629741e5fa6f40026efcd7a65bd4 upstream.
+commit 441a179dafc0f99fc8b3a8268eef66958621082e upstream.
 
-When running on 32bit the mce handler could misinterpret
-vm86 mode as ring 0. This can affect whether it does recovery
-or not; it was possible to panic when recovery was actually
-possible.
+int sys32_rt_sigprocmask(int how, compat_sigset_t __user *set, compat_sigset_t __user *oset,
+                                    unsigned int sigsetsize)
+{
+        sigset_t old_set, new_set;
+        int ret;
 
-Fix this by always forcing vm86 to look like ring 3.
+        if (set && get_sigset32(set, &new_set, sigsetsize))
 
-[ Backport to 3.0 notes:
-Things changed there slightly:
-   - move mce_get_rip() up. It fills up m->cs and m->ip values which
-     are evaluated in mce_severity(). Therefore move it up right before
-     the mce_severity call. This seem to be another bug in 3.0?
-   - Place the backport (fix m->cs in V86 case) to where m->cs gets
-     filled which is mce_get_rip() in 3.0
-]
+...
+static int
+get_sigset32(compat_sigset_t __user *up, sigset_t *set, size_t sz)
+{
+        compat_sigset_t s;
+        int r;
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tony Luck <tony.luck@intel.com>
+        if (sz != sizeof *set) panic("put_sigset32()");
+
+In other words, rt_sigprocmask(69, (void *)69, 69) done by 32bit process
+will promptly panic the box.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/parisc/kernel/signal32.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 0f16a2b..28a7e4c8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -431,6 +431,13 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
- 	if (regs && (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV))) {
- 		m->ip = regs->ip;
- 		m->cs = regs->cs;
-+		/*
-+		 * When in VM86 mode make the cs look like ring 3
-+		 * always. This is a lie, but it's better than passing
-+		 * the additional vm86 bit around everywhere.
-+		 */
-+		if (v8086_mode(regs))
-+			m->cs |= 3;
- 	} else {
- 		m->ip = 0;
- 		m->cs = 0;
-@@ -968,6 +975,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		 */
- 		add_taint(TAINT_MACHINE_CHECK);
+diff --git a/arch/parisc/kernel/signal32.c b/arch/parisc/kernel/signal32.c
+index fb59852..32d43e7 100644
+--- a/arch/parisc/kernel/signal32.c
++++ b/arch/parisc/kernel/signal32.c
+@@ -68,7 +68,8 @@ put_sigset32(compat_sigset_t __user *up, sigset_t *set, size_t sz)
+ {
+ 	compat_sigset_t s;
  
-+		mce_get_rip(&m, regs);
- 		severity = mce_severity(&m, tolerant, NULL);
+-	if (sz != sizeof *set) panic("put_sigset32()");
++	if (sz != sizeof *set)
++		return -EINVAL;
+ 	sigset_64to32(&s, set);
  
- 		/*
-@@ -1006,7 +1014,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		if (severity == MCE_AO_SEVERITY && mce_usable_address(&m))
- 			mce_ring_add(m.addr >> PAGE_SHIFT);
+ 	return copy_to_user(up, &s, sizeof s);
+@@ -80,7 +81,8 @@ get_sigset32(compat_sigset_t __user *up, sigset_t *set, size_t sz)
+ 	compat_sigset_t s;
+ 	int r;
  
--		mce_get_rip(&m, regs);
- 		mce_log(&m);
+-	if (sz != sizeof *set) panic("put_sigset32()");
++	if (sz != sizeof *set)
++		return -EINVAL;
  
- 		if (severity > worst) {
+ 	if ((r = copy_from_user(&s, up, sz)) == 0) {
+ 		sigset_32to64(set, &s);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
