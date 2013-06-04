@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab3FDN7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:59:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35067 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3FDN7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:59:19 -0400
-Date: Tue, 4 Jun 2013 14:58:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <Will.Deacon@arm.com>,
+	id S1754103Ab3FDOCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:02:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33280 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab3FDOCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:02:32 -0400
+Date: Tue, 4 Jun 2013 16:02:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Frank Mehnert <frank.mehnert@oracle.com>
+Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/5] arm/xen: define xen_remap as ioremap_cached
-Message-ID: <20130604135857.GV18614@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com> <1370273624-26976-1-git-send-email-stefano.stabellini@eu.citrix.com> <1370337650.24512.88.camel@zakaz.uk.xensource.com> <20130604112834.GA3234@MacBook-Pro.local>
+        Hugh Dickins <hughd@google.com>
+Subject: Re: Handling NUMA page migration
+Message-ID: <20130604140230.GB31247@dhcp22.suse.cz>
+References: <201306040922.10235.frank.mehnert@oracle.com>
+ <20130604115807.GF3672@sgi.com>
+ <201306041414.52237.frank.mehnert@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130604112834.GA3234@MacBook-Pro.local>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201306041414.52237.frank.mehnert@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 12:28:34PM +0100, Catalin Marinas wrote:
-> PROT_PTE_DEVICE and PROT_SECT_DEVICE above don't contain any memory type
-> information, just attributes/permission - present, young, dirty and XN:
+On Tue 04-06-13 14:14:45, Frank Mehnert wrote:
+> On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
+> > This is probably more appropriate to be directed at the linux-mm
+> > mailing list.
+> > 
+> > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
+> > > Hi,
+> > > 
+> > > our memory management on Linux hosts conflicts with NUMA page migration.
+> > > I assume this problem existed for a longer time but Linux 3.8 introduced
+> > > automatic NUMA page balancing which makes the problem visible on
+> > > multi-node hosts leading to kernel oopses.
+> > > 
+> > > NUMA page migration means that the physical address of a page changes.
+> > > This is fatal if the application assumes that this never happens for
+> > > that page as it was supposed to be pinned.
+> > > 
+> > > We have two kind of pinned memory:
+> > > 
+> > > A) 1. allocate memory in userland with mmap()
+> > > 
+> > >    2. madvise(MADV_DONTFORK)
+> > >    3. pin with get_user_pages().
+> > >    4. flush dcache_page()
+> > >    5. vm_flags |= (VM_DONTCOPY | VM_LOCKED)
+> > >    
+> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+> > >       
+> > >        VM_DONTCOPY | VM_LOCKED | 0xff)
+> > 
+> > I don't think this type of allocation should be affected.  The
+> > get_user_pages() call should elevate the pages reference count which
+> > should prevent migration from completing.  I would, however, wait for
+> > a more definitive answer.
 > 
-> #define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_XN
-> #define PROT_SECT_DEVICE	PMD_TYPE_SECT|PMD_SECT_AP_WRITE
-> 
-> The memory type is given by the L_PTE_MT_DEV_CACHED and PMD_SECT_WB
-> macros. Let's take prot_sect first as it's simpler. For MT_DEVICE_CACHED
-> we have:
-> 
-> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_SECT_WB
-> 
-> For MT_MEMORY we have:
-> 
-> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE
-> 
-> The cache policy is added later to MT_MEMORY which is either WB or WBWA
-> (based on SMP, no particular reason as these are just processor hints;
-> for some historical reasons we enabled WBWA for ARM11MPCore but we could
-> leave it on all the time).
+> Thanks Robin! Actually case B) is more important for us so I'm waiting
+> for more feedback :)
 
-They may be reported to be just hints, but SMP, particularly ARM11MPCore,
-the SMP guys at ARM Ltd were very particular about _requiring_ and stating
-that it is required that WBWA must be used in the page tables for SMP,
-and not WB.  That suggests while the ARM ARM may say that they're hints,
-there's slightly more to it when it comes to SMP, and WBWA is a hard
-requirement there.
+The manual node migration code seems to be OK in case B as well because
+Reserved are skipped (check check_pte_range called from down the
+do_migrate_pages path).
 
-Indeed, that's something we enforce in the kernel because of the statements
-from the SMP development group.
+Maybe auto-numa code is missing this check assuming that it cannot
+encounter reserved pages.
 
-> Similarly for prot_pte, present, young, dirty are the same.
-> 
-> Regarding the type, on ARMv7 (with or without LPAE) we use TEX remapping
-> and L_PTE_MT_DEVICE has the same index (3-bit TEX[0], C, B for NMRR/PRRR
-> or TEX[2:0] for MAIR0/MAIR1 registers) as Normal Cacheable Writeback
-> memory (there is no such thing as Device memory with cacheability
-> attributes, only Normal Cacheable memory).
-
-You don't mean L_PTE_MT_DEVICE there. Thankfully, L_PTE_MT_DEVICE doesn't
-exist, so it's not that confusing.  What you mean is L_PTE_MT_DEV_CACHED,
-which _does_ map to "normal cacheable writeback memory" irrespective of
-the mappings which the kernel uses for RAM.
-
-However, that mapping type (which is used for MT_DEVICE_CACHED) should
-not be used if you really do want normal memory.  And using MT_* definitions
-_not_ in asm/io.h with ioremap() is really... silly.  It's not something
-that is intended, nor is it something which I intend to be supportable
-into the future on ARM.  That's why the definitions are separate - see
-the comments in asm/io.h about "types 4 onwards are undefined for
-ioremap" - I'm not sure how more explicit to make that statement.  And
-as I _have_ made the statement, if I see people violating it, I won't
-care about their code if/when I decide to change the ioremap() behaviour.
+migrate_misplaced_page relies on numamigrate_isolate_page which relies
+on isolate_lru_page and that one expects a LRU page. Is your Reserved
+page on the LRU list? That would be a bit unexpected.
+-- 
+Michal Hocko
+SUSE Labs
