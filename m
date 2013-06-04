@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab3FDD67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 23:58:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27792 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab3FDD65 (ORCPT
+	id S1751108Ab3FDEG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 00:06:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46490 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3FDEGY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 23:58:57 -0400
+	Tue, 4 Jun 2013 00:06:24 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-1f-51ad67bd7962
 MIME-version: 1.0
 Content-type: text/plain; charset=ISO-8859-1
-X-AuditID: cbfee690-b7f6f6d00000740c-e4-51ad65fd7c01
 Content-transfer-encoding: 8BIT
-Message-id: <51AD660F.7060508@samsung.com>
-Date: Tue, 04 Jun 2013 12:59:11 +0900
+Message-id: <51AD67CF.60300@samsung.com>
+Date: Tue, 04 Jun 2013 13:06:39 +0900
 From: Jaehoon Chung <jh80.chung@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510
  Thunderbird/17.0.6
@@ -30,40 +30,39 @@ Cc: "linux-arm-kernel@lists.infradead.org"
         Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
         devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 05/10] mmc: dw_mmc-pltfm: remove static from
- dw_mci_pltfm_remove
+Subject: Re: [PATCH 06/10] mmc: dw_mmc-pltfm: add Rockchip variant
 References: <201306030055.15413.heiko@sntech.de>
- <201306030058.27184.heiko@sntech.de>
-In-reply-to: <201306030058.27184.heiko@sntech.de>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSpPs3dW2gwdqPyhZ/Jx1jt9j+eiOb
-	xYHZD1ktDvzZwWjx/9FrVosbv9pYLc781rWY8mc5k8Wmx9dYLS7vmsNmceR/P6PF7cu8Fk8n
-	XGSzOHX9M5vF4RUHmCw+3L/IbLF501RmB0GPluYeNo/fvyYxeiz4fIXd49CVtYwed67tYfN4
-	d+4cu8fmJfUe52csZPS4cqKJ1aNvyypGj+3X5jF7fN4kF8ATxWWTkpqTWZZapG+XwJWx/2I7
-	S8E3too7/XcYGxifsHYxcnJICJhI7Ng9C8oWk7hwbz1bFyMXh5DAUkaJKxd7WGCKWlbch0os
-	YpR4Of0tO0iCV0BQ4sfke0BFHBzMAvISRy5lg4SZBXQk9rdOg6p/ySixbMY9Roh6LYkV+54x
-	gtSzCKhKTDukABJmA6rf/u04E4gtKhAmsamnGcwWETCTuHW1jRlkDrPAYlaJVW/a2UASwkBF
-	V0++ApsjJBAusXqJCojJKWAo8euiPUi5hMAZDomrC76D3c8iICDxbfIhsDMlBGQlNh1ghnhL
-	UuLgihssExjFZiF5ZhbCM7OQPLOAkXkVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmBSOP3v
-	2YQdjPcOWB9iTAbaOJFZSjQ5H5hU8kriDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1O
-	TS1ILYovKs1JLT7EyMTBKdXAaPHQt29mSsxsYSbrXWqrD+grtNfqr9+8tOfTsz3vNoidve0s
-	ebVO2VP9qtNMkQxvT5UjZQ6lH87amNszR3a4np9qxNGqtLffU3vjBy6vNPnCh0sTzgjfUcrP
-	uD15RWMtp+W5I0v0ND0Dk3YJafaesNcq2Pe/9UPCXoXFBwoumlyO2+Sbt+WzEktxRqKhFnNR
-	cSIAVgjCESADAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t9jAd2/qWsDDRZulrL4O+kYu8X21xvZ
-	LA7MfshqceDPDkaL/49es1rc+NXGanHmt67FlD/LmSw2Pb7GanF51xw2iyP/+xktbl/mtXg6
-	4SKbxanrn9ksDq84wGTx4f5FZovNm6YyOwh6tDT3sHn8/jWJ0WPB5yvsHoeurGX0uHNtD5vH
-	u3Pn2D02L6n3OD9jIaPHlRNNrB59W1Yxemy/No/Z4/MmuQCeqAZGm4zUxJTUIoXUvOT8lMy8
-	dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygz5QUyhJzSoFCAYnFxUr6dpgmhIa4
-	6VrANEbo+oYEwfUYGaCBhDWMGfsvtrMUfGOruNN/h7GB8QlrFyMnh4SAiUTLivtsELaYxIV7
-	64FsLg4hgUWMEi+nv2UHSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgI7E/tZpUPUvGSWWzbjH
-	CFGvJbFi3zNGkHoWAVWJaYcUQMJsQPXbvx1nArFFBcIkNvU0g9kiAmYSt662MYPMYRZYzCqx
-	6k072EHCQEVXT74CmyMkEC6xeokKiMkpYCjx66L9BEaBWUiOm4Vw3Cwkxy1gZF7FKJpakFxQ
-	nJSea6hXnJhbXJqXrpecn7uJEZxynkntYFzZYHGIUYCDUYmHt2LbmkAh1sSy4srcQ4wSHMxK
-	Iry9LmsDhXhTEiurUovy44tKc1KLDzEmA702kVlKNDkfmA7zSuINjU3MjCyNzA0tjIzNSRNW
-	Euc90GodKCSQnliSmp2aWpBaBLOFiYNTqoGRf/La6jbblBoliXUX1qfyxV675bHjz0+TU68S
-	sh4uaL8eKe/q992vaALfa7dvxorqXZFm0ceME68+mWEeeZfXb5/KoqX8rX2X39Tef7O/edLa
-	kDXxroqJDqfcdv963xBQbd3mrDt36mafe3ufzTr40ap3Y/N86wIBZuZJBtuN3q+cxrHa8Zmw
-	EktxRqKhFnNRcSIA4U/Ky30DAAA=
+ <201306030059.03783.heiko@sntech.de>
+In-reply-to: <201306030059.03783.heiko@sntech.de>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsWyRsSkUHdv+tpAg+27dSz+TjrGbrH99UY2
+	iwOzH7JaHPizg9Hi/6PXrBY3frWxWpz5rWsx5c9yJotNj6+xWlzeNYfN4sj/fkaL25d5LZ5O
+	uMhmcer6ZzaLwysOMFl8uH+R2WLzpqnMDoIeLc09bB6/f01i9Fjw+Qq7x6Eraxk97lzbw+bx
+	7tw5do/NS+o9zs9YyOhx5UQTq0ffllWMHtuvzWP2+LxJLoAnissmJTUnsyy1SN8ugSvj9M0l
+	LAXbxCsa1p9nb2CcI9zFyMkhIWAicXXlOXYIW0ziwr31bF2MXBxCAksZJb52LWWDKZrUcwQq
+	MZ1R4sHyq4wgCV4BQYkfk++xgNjMAjoS+1unsUHYIhIP2p9BxbUlli18zQzR/JJRonN9OxNE
+	s4bE6b+PgRIcHCwCqhK/FseDhNmA5mz/dhysRFQgTGJTTzOYLSJgJnHrahvYHGaBxawSq960
+	gy0TFnCSeNgJcamQQLjEukvrwRo4BQwl9pz4zg7SICFwhkNi/ZpWsCIWAQGJb5MPsYAslhCQ
+	ldh0gBniS0mJgytusExgFJ+F5LdZSH6bheS3WUh+W8DIsopRNLUguaA4Kb3IWK84Mbe4NC9d
+	Lzk/dxMjMJmc/vesfwfj3QPWhxiTgdZPZJYSTc4HJqO8knhDYzMjC1MTU2Mjc0sz0oSVxHnV
+	WqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTBOfmm0adO1nn8iNac//Ly4706mMdeNzd3K
+	4g+Obq7Xbn1fmSN0x9iwP2ffj2N1OydLh7udebIh/W5a42mZHS5eDyJ3eOXwnTiq57X/a4/H
+	XsdnL15w/5xzIE4qqLkt98wpDV2+r+HW631aS698ZORYanB7e5o1m2/G3V55ocfrG/7o5J+/
+	0H9NiaU4I9FQi7moOBEA9+RMTzwDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNKsWRmVeSWpSXmKPExsVy+t9jQd296WsDDZp/KVn8nXSM3WL7641s
+	FgdmP2S1OPBnB6PF/0evWS1u/GpjtTjzW9diyp/lTBabHl9jtbi8aw6bxZH//YwWty/zWjyd
+	cJHN4tT1z2wWh1ccYLL4cP8is8XmTVOZHQQ9Wpp72Dx+/5rE6LHg8xV2j0NX1jJ63Lm2h83j
+	3blz7B6bl9R7nJ+xkNHjyokmVo++LasYPbZfm8fs8XmTXABPVAOjTUZqYkpqkUJqXnJ+SmZe
+	uq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QZ0oKZYk5pUChgMTiYiV9O0wTQkPc
+	dC1gGiN0fUOC4HqMDNBAwhrGjE/b4gumiFfcOfOSvYHxl1AXIyeHhICJxKSeI2wQtpjEhXvr
+	gWwuDiGB6YwSD5ZfZQRJ8AoISvyYfI+li5GDg1lAXuLIpWyQMLOAjsT+1mlQ9S8ZJTrXtzNB
+	1GtInP77mBmknkVAVeLX4niQMBtQ/fZvx8FKRAXCJDb1NIPZIgJmEreutjGDzGEWWMwqsepN
+	O9hBwgJOEg87l4LZQgLhEusurQdr4BQwlNhz4jv7BEaBWUjOm4Vw3iwk5y1gZF7FKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJEZx0nkntYFzZYHGIUYCDUYmHt2LbmkAh1sSy4srcQ4wSHMxK
+	Iry9LmsDhXhTEiurUovy44tKc1KLDzEmAz03kVlKNDkfmBDzSuINjU3MjCyNzA0tjIzNSRNW
+	Euc90GodKCSQnliSmp2aWpBaBLOFiYNTqoExTyOFb5HWA471+c+K3BkEjNUzay4Ys30R7TTz
+	XaUisTpEzXYjQ0XK6WU8rI/evtqyNaVi+xnDa6fyy1rL/PewHetq+9TyfplIrNgfg4Qz7Oy7
+	DsjJBgpdXyyx0LKU/cLe6Ij8Xq+8H3/qusTK5m9j57ibnSlxumL3Fnb1nnV5jK5H0n++6lFi
+	Kc5INNRiLipOBAAYKxbCfgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -71,29 +70,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-
-On 06/03/2013 07:58 AM, Heiko Stübner wrote:
-> dw_mci_pltfm_remove gets exported and used by dw_mmc-exynos, so should
-> not be static.
+On 06/03/2013 07:59 AM, Heiko Stübner wrote:
+> Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
+> controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
+> always be set.
+> 
+> There also seem to be no other modifications (additional register etc)
+> present, so to keep the footprint low, add this small variant to the
+> pltfm driver.
 > 
 > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 > ---
->  drivers/mmc/host/dw_mmc-pltfm.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/mmc/host/dw_mmc-pltfm.c |   48 +++++++++++++++++++++++++++-----------
+>  1 files changed, 34 insertions(+), 14 deletions(-)
 > 
 > diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-> index 37873f1..0048da8 100644
+> index 0048da8..7d041b5 100644
 > --- a/drivers/mmc/host/dw_mmc-pltfm.c
 > +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-> @@ -68,7 +68,7 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
->  	return dw_mci_pltfm_register(pdev, NULL);
->  }
+> @@ -24,6 +24,16 @@
 >  
-> -static int dw_mci_pltfm_remove(struct platform_device *pdev)
-> +int dw_mci_pltfm_remove(struct platform_device *pdev)
+>  #include "dw_mmc.h"
+>  
+> +
+> +static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
+How about using "dw_mci_pltfm_prepare_command()"?
+Maybe HOLD_REG could be used at other SoC.
+> +{
+> +	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+> +}
+> +
+> +static const struct dw_mci_drv_data rockchip_drv_data = {
+> +	.prepare_command	= dw_mci_rockchip_prepare_command,
+> +};
+> +
+>  int dw_mci_pltfm_register(struct platform_device *pdev,
+>  				const struct dw_mci_drv_data *drv_data)
 >  {
->  	struct dw_mci *host = platform_get_drvdata(pdev);
+> @@ -63,20 +73,6 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
+>  }
+>  EXPORT_SYMBOL_GPL(dw_mci_pltfm_register);
 >  
+> -static int dw_mci_pltfm_probe(struct platform_device *pdev)
+> -{
+> -	return dw_mci_pltfm_register(pdev, NULL);
+> -}
+> -
+> -int dw_mci_pltfm_remove(struct platform_device *pdev)
+> -{
+> -	struct dw_mci *host = platform_get_drvdata(pdev);
+> -
+> -	dw_mci_remove(host);
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL_GPL(dw_mci_pltfm_remove);
+> -
+>  #ifdef CONFIG_PM_SLEEP
+>  /*
+>   * TODO: we should probably disable the clock to the card in the suspend path.
+> @@ -114,10 +110,34 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+>  
+>  static const struct of_device_id dw_mci_pltfm_match[] = {
+>  	{ .compatible = "snps,dw-mshc", },
+> +	{ .compatible = "rockchip,cortex-a9-dw-mshc",
+> +		.data = &rockchip_drv_data },
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
+>  
+> +static int dw_mci_pltfm_probe(struct platform_device *pdev)
+> +{
+> +	const struct dw_mci_drv_data *drv_data = NULL;
+> +	const struct of_device_id *match;
+> +
+> +	if (pdev->dev.of_node) {
+> +		match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
+> +		drv_data = match->data;
+> +	}
+> +
+> +	return dw_mci_pltfm_register(pdev, drv_data);
+> +}
+> +
+> +int dw_mci_pltfm_remove(struct platform_device *pdev)
+> +{
+> +	struct dw_mci *host = platform_get_drvdata(pdev);
+> +
+> +	dw_mci_remove(host);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(dw_mci_pltfm_remove);
+> +
+>  static struct platform_driver dw_mci_pltfm_driver = {
+>  	.probe		= dw_mci_pltfm_probe,
+>  	.remove		= dw_mci_pltfm_remove,
 > 
 
