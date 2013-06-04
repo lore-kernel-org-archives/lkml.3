@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab3FDRrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:47:17 -0400
-Received: from sauhun.de ([89.238.76.85]:45006 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756021Ab3FDRrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:47:15 -0400
-Date: Tue, 4 Jun 2013 19:49:02 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] i2c: Let users disable "Probe an I2C bus for certain
- devices"
-Message-ID: <20130604174900.GA2992@katana>
-References: <1370367222-19353-1-git-send-email-grygorii.strashko@ti.com>
+	id S1756236Ab3FDRtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:49:45 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:54529 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab3FDRtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:49:43 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <1370367222-19353-1-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130604154500.GA5664@gmail.com>
+References: <201306040922.10235.frank.mehnert@oracle.com>
+	<20130604115807.GF3672@sgi.com>
+	<201306041414.52237.frank.mehnert@oracle.com>
+	<20130604154500.GA5664@gmail.com>
+Date: Tue, 4 Jun 2013 13:49:42 -0400
+Message-ID: <CAH3drwZMe-6y-nVvpzOBzH28-hVJCO7QzXV5hPgM8n8SgH9kFA@mail.gmail.com>
+Subject: Re: Handling NUMA page migration
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Frank Mehnert <frank.mehnert@oracle.com>
+Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 4, 2013 at 11:45 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Tue, Jun 04, 2013 at 02:14:45PM +0200, Frank Mehnert wrote:
+>> On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
+>> > This is probably more appropriate to be directed at the linux-mm
+>> > mailing list.
+>> >
+>> > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
+>> > > Hi,
+>> > >
+>> > > our memory management on Linux hosts conflicts with NUMA page migration.
+>> > > I assume this problem existed for a longer time but Linux 3.8 introduced
+>> > > automatic NUMA page balancing which makes the problem visible on
+>> > > multi-node hosts leading to kernel oopses.
+>> > >
+>> > > NUMA page migration means that the physical address of a page changes.
+>> > > This is fatal if the application assumes that this never happens for
+>> > > that page as it was supposed to be pinned.
+>> > >
+>> > > We have two kind of pinned memory:
+>> > >
+>> > > A) 1. allocate memory in userland with mmap()
+>> > >
+>> > >    2. madvise(MADV_DONTFORK)
+>> > >    3. pin with get_user_pages().
+>> > >    4. flush dcache_page()
+>> > >    5. vm_flags |= (VM_DONTCOPY | VM_LOCKED)
+>> > >
+>> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+>> > >
+>> > >        VM_DONTCOPY | VM_LOCKED | 0xff)
+>> >
+>> > I don't think this type of allocation should be affected.  The
+>> > get_user_pages() call should elevate the pages reference count which
+>> > should prevent migration from completing.  I would, however, wait for
+>> > a more definitive answer.
+>>
+>> Thanks Robin! Actually case B) is more important for us so I'm waiting
+>> for more feedback :)
+>>
+>> Frank
+>>
+>> > > B) 1. allocate memory with alloc_pages()
+>> > >
+>> > >    2. SetPageReserved()
+>> > >    3. vm_mmap() to allocate a userspace mapping
+>> > >    4. vm_insert_page()
+>> > >    5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
+>> > >
+>> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+>> > >       0xff)
+>> > >
+>> > > At least the memory allocated like B) is affected by automatic NUMA page
+>> > > migration. I'm not sure about A).
+>> > >
+>> > > 1. How can I prevent automatic NUMA page migration on this memory?
+>> > > 2. Can NUMA page migration also be handled on such kind of memory without
+>> > >
+>> > >    preventing migration?
+>> > >
+>> > > Thanks,
+>> > >
+>> > > Frank
+>
+> I was looking at migration code lately, and while i am not an expert at all
+> in this area. I think there is a bug in the way handle_mm_fault deals, or
+> rather not deals, with migration entry.
+>
+> When huge page is migrated its pmd is replace with a special swp entry pmd,
+> which is a non zero pmd but that does not have any of the huge pmd flag set
+> so none of the handle_mm_fault path detect it as swap entry. Then believe
+> its a valid pmd and try to allocate pte under it which should oops.
+>
+> Attached patch is what i believe should be done (not even compile tested).
+>
+> Again i might be missing a subtelty somewhere else and just missed where
+> huge migration entry are dealt with.
+>
+> Cheers,
+> Jerome
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Never mind i was missing something hugetlb_fault will handle it.
 
-On Tue, Jun 04, 2013 at 08:33:42PM +0300, Grygorii Strashko wrote:
-
-> Currently the I2C devices instantiation Method 3 "Probe an I2C bus for
-> certain devices" (see Documentation/i2c/instantiating-devices) is always
-> enabled for all platforms (boards) and can't be disabled.
-
-Not true. Set .class = 0 for your adapter. I always ask authors of new
-drivers if they really need to set .class to something.
-
-
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRriiMAAoJEBQN5MwUoCm2UO4P/RZGhzuhHA6Ps/hZg45o5Ura
-DsENTFBlJNLg7hbHssv0jNkyw8RUR6S/8CY8hhHli6BwVoVd7+2WBxIAkSImmmE6
-Yx88+RvBH8nBspR4YUqqrh0XIcTVtrfjV2XM17Cb6AKFoI6mBbVw1R1iOPZbg2XU
-R0tT9P0PtE4H6lyOa2UEZv3LqBi7ywuDcwU6uaXAOeF2cKZl1/PFXEinMcJO8zXK
-B1UkWGk1z6woPIYbk6lsTGripqMDe/B7zXlJFFN/JY74rmo8q1PMJEnPGmI9bAzc
-gOHtDfiwOi59GSHJPBnJxQNNPcCIBFfME1JgQQoOuJBDMAk0U4fCmLJx7XAinzKx
-Ih1KovGz2uqdUVU2nL20nXsErvPLKKp5g8f436pIUGEi/qGmF0YoSH4eahRcLZoE
-8eihODJAhBP/gY4xB1vmO8vKSayIbFkTvN9zOcVTtTBTmSQ5vkzkvWOkVJFgj9kj
-zxq+YsYCCigr3QBJLfVtauvcZcN6+QPpuw7REbgPmn5Hv9vy9Poo+3UsS7AVhvDB
-ZYIHHVM5kSDlD+Ym0FMjlVpCYMZGlBZNcntQGP5y9cQng9xDNFoY4pZno0hUkX6C
-5CusnbUw6SYmd2BPHaSBPq7kzdRUK1eZmLVumUrJD/edjtSGYlG4glKjV6GcdgIO
-bTWtMOUM4AH6eQXIh2tK
-=dmQs
------END PGP SIGNATURE-----
-
---HlL+5n6rz5pIUxbD--
+Cheers,
+Jerome
