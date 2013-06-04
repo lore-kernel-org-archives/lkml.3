@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab3FDRNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:13:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48280 "EHLO
+	id S1757733Ab3FDRNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:13:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48281 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab3FDQ5Q (ORCPT
+	with ESMTP id S1756727Ab3FDQ5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 12:57:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 19/75] usb, chipidea: fix link error when USB_EHCI_HCD is a module
-Date: Tue,  4 Jun 2013 09:55:03 -0700
-Message-Id: <1370364959-9475-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 13/75] USB: UHCI: fix for suspend of virtual HP controller
+Date: Tue,  4 Jun 2013 09:54:57 -0700
+Message-Id: <1370364959-9475-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,38 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7c8bfed7aaeba690de30835fe89882e1047a55fd upstream.
+commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc upstream.
 
-Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
+HP's virtual UHCI host controller takes a long time to suspend
+(several hundred microseconds), even when no devices are attached.
+This provokes a warning message from uhci-hcd in the auto-stop case.
 
-	drivers/built-in.o: In function `ci_hdrc_host_init':
-	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
+To prevent this from happening, this patch adds a test to avoid
+performing an auto-stop when the wait_for_hp quirk flag is set.  The
+controller will still suspend through the normal runtime PM mechanism.
+And since that pathway includes a 1-ms delay, the slowness of the
+virtual hardware won't matter.
 
-as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
-ChipIdea host a normal EHCI driver").
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/chipidea/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/uhci-hub.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
-index 608a2ae..b2df442 100644
---- a/drivers/usb/chipidea/Kconfig
-+++ b/drivers/usb/chipidea/Kconfig
-@@ -20,7 +20,7 @@ config USB_CHIPIDEA_UDC
- config USB_CHIPIDEA_HOST
- 	bool "ChipIdea host controller"
- 	depends on USB=y || USB=USB_CHIPIDEA
--	depends on USB_EHCI_HCD
-+	depends on USB_EHCI_HCD=y
- 	select USB_EHCI_ROOT_HUB_TT
- 	help
- 	  Say Y here to enable host controller functionality of the
+diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
+index 15d1322..eda1f2e 100644
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
+ 
 -- 
 1.8.1.2
 
