@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3FDQPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:15:50 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50766 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab3FDQPs (ORCPT
+	id S1755599Ab3FDQRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:17:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46277 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753813Ab3FDQRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:15:48 -0400
-Message-ID: <51AE12B2.5050504@linaro.org>
-Date: Tue, 04 Jun 2013 09:15:46 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 12:17:08 -0400
+X-Sasl-enc: ixGmODwln7dalQWx6OgG02xsT+7PfEvvYnjR58xcFVJP 1370362625
+Date: Tue, 4 Jun 2013 09:17:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
+Message-ID: <20130604161704.GB23637@kroah.com>
+References: <20130604024959.GA10697@kroah.com>
+ <Pine.LNX.4.44L0.1306041007410.1093-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Marcus Gelderie <redmnic@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] kernel:time Export symbols of functions declared
- in linux/alarmtimer.h
-References: <1370104746-20993-1-git-send-email-redmnic@gmail.com> <51ACECB2.40407@linaro.org> <20130604072455.GA4096@cantor.Speedport_W_503V_Typ_C> <20130604073140.GB4096@cantor.Speedport_W_503V_Typ_C>
-In-Reply-To: <20130604073140.GB4096@cantor.Speedport_W_503V_Typ_C>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1306041007410.1093-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 12:32 AM, Marcus Gelderie wrote:
-> On Mon, Jun 03, 2013 at 12:21:22PM -0700, John Stultz wrote:
->> These probably should be EXPORT_SYMBOL_GPL, no? Also there's a bunch of
->> new alarm functions that Todd Poynor that I have queued, which will
->> probably need similar.
->>
->> thanks
->> -john
-> Opps, yes they should, thanks. I've corrected that.
->
-> Your new alarm functions are not in the tree yet, are they? At least I didn't
-> find them.
-No, not yet.
+On Tue, Jun 04, 2013 at 10:13:47AM -0400, Alan Stern wrote:
+> On Mon, 3 Jun 2013, Greg KH wrote:
+> 
+> > On Mon, May 27, 2013 at 02:28:51PM +0200, Bj?rn Mork wrote:
+> > > But, IMHO, a nicer approach would be to make the allocation completely
+> > > dynamic, using e.g. the idr subsystem. Static tables are always feel
+> > > like straight jackets to me, no matter how big they are :)
+> > 
+> > You are right, I didn't change the code to use idr (it predates idr by
+> > about a decade or so), because I thought we needed the "rage" logic that
+> > the usb-serial minor reservation does.
+> > 
+> > But I'm not so sure anymore, so here's a patch to change to use the idr
+> > code, and should remove all minor number limitations (well 65k is the
+> > limit the tty core should be setting I think.)
+> > 
+> > Tobias, can you test this patch out?  Note, I only compiled it, did not
+> > get the chance to actually run it, so it might not work at all.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> 
+> > @@ -61,59 +62,52 @@ static LIST_HEAD(usb_serial_driver_list);
+> >  struct usb_serial *usb_serial_get_by_index(unsigned index)
+> >  {
+> >  	struct usb_serial *serial;
+> > +	struct usb_serial_port *port;
+> >  
+> >  	mutex_lock(&table_lock);
+> > -	serial = serial_table[index];
+> > -
+> > -	if (serial) {
+> > -		mutex_lock(&serial->disc_mutex);
+> > -		if (serial->disconnected) {
+> > -			mutex_unlock(&serial->disc_mutex);
+> > -			serial = NULL;
+> > -		} else {
+> > -			kref_get(&serial->kref);
+> > -		}
+> > -	}
+> > +	port = idr_find(&serial_minors, index);
+> >  	mutex_unlock(&table_lock);
+> > +	if (!port)
+> > +		return NULL;
+> > +
+> > +	serial = port->serial;
+> > +	kref_get(&serial->kref);
+> >  	return serial;
+> >  }
+> 
+> The test for serial->disconnected got lost.  And the locking isn't 
+> right; the routine is documented to return with serial->disc_mutex held 
+> (in the case where the device hasn't been disconnected).
+> 
+> Also, the kref_get() needs to occur within the scope of the table_lock.
 
-Anyway, I went ahead and queued your patch and added the other exports.
+Thanks, for some reason I ignored this when converting the code, that's
+what I get for not even testing...
 
-thanks for the patch!
--john
+> I didn't check the rest of the patch for similar errors.  Finding three 
+> in the first function seemed like enough.  :-)
 
+Fair enough, I've now fixed this up, and will see if it runs properly.
+
+thanks,
+
+greg k-h
