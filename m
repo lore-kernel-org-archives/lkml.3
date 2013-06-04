@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3FDJiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:38:25 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57496 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab3FDJiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:38:21 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: John Stultz <john.stultz@linaro.org>
-Subject: [PATCH v2 3/4] clocksource: dw_apb_timer_of: select DW_APB_TIMER
-Date: Tue, 4 Jun 2013 11:38:11 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Baruch Siach <baruch@tkos.co.il>
-References: <201306041136.09566.heiko@sntech.de>
-In-Reply-To: <201306041136.09566.heiko@sntech.de>
+	id S1753503Ab3FDJib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:38:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49703 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab3FDJiX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:38:23 -0400
+Date: Tue, 4 Jun 2013 11:38:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH RFC -tip 0/6] perf: IRQ-bound performance events
+Message-ID: <20130604093802.GK8923@twins.programming.kicks-ass.net>
+References: <20130603094132.GB30878@dhcp-26-207.brq.redhat.com>
+ <20130603133618.GK30878@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306041138.11447.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603133618.GK30878@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dw_apb_timer_of is the driver part facing devicetree platforms and
-calls into dw_apb_timer with the data gathered from the dt.
+On Mon, Jun 03, 2013 at 03:36:19PM +0200, Alexander Gordeev wrote:
+> On Mon, Jun 03, 2013 at 11:41:32AM +0200, Alexander Gordeev wrote:
+> > # ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k sleep 1
+> > 
+> >  Performance counter stats for process id '8':
+> > 
+> >                  0 L1-dcache-load-misses                                       
+> > 
+> >        1.001235781 seconds time elapsed
+> > 
+> > # ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
+> > Mon 03 Jun 2013 04:42:59 AM EDT  -0.891274 seconds
+> > 
+> >  Performance counter stats for process id '8':
+> 
+> Oops, the most interesting part did not make it in. Very sorry :) Here:
+> 
+> # ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
+> Mon 03 Jun 2013 09:32:49 AM EDT  -0.719514 seconds
+> 
+>  Performance counter stats for process id '8':
+> 
+>                447 L1-dcache-load-misses                                       
 
-Currently the two platforms using the dw_apb_timer_of select both
-the options for the core timer and the dt addon.
-
-As dw_apb_timer_of always depends on dw_apb_timer let it select
-DW_APB_TIMER itself without the need for every platform to do it.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- arch/arm/mach-picoxcell/Kconfig |    1 -
- arch/arm/mach-socfpga/Kconfig   |    1 -
- drivers/clocksource/Kconfig     |    1 +
- 3 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
-index 13bae78..b1022f4 100644
---- a/arch/arm/mach-picoxcell/Kconfig
-+++ b/arch/arm/mach-picoxcell/Kconfig
-@@ -4,7 +4,6 @@ config ARCH_PICOXCELL
- 	select ARM_PATCH_PHYS_VIRT
- 	select ARM_VIC
- 	select CPU_V6K
--	select DW_APB_TIMER
- 	select DW_APB_TIMER_OF
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_TCM
-diff --git a/arch/arm/mach-socfpga/Kconfig b/arch/arm/mach-socfpga/Kconfig
-index 566e804..a279fb3 100644
---- a/arch/arm/mach-socfpga/Kconfig
-+++ b/arch/arm/mach-socfpga/Kconfig
-@@ -7,7 +7,6 @@ config ARCH_SOCFPGA
- 	select CLKDEV_LOOKUP
- 	select COMMON_CLK
- 	select CPU_V7
--	select DW_APB_TIMER
- 	select DW_APB_TIMER_OF
- 	select GENERIC_CLOCKEVENTS
- 	select GPIO_PL061 if GPIOLIB
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index f151c6c..48a0f2e 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -21,6 +21,7 @@ config DW_APB_TIMER
- 
- config DW_APB_TIMER_OF
- 	bool
-+	select DW_APB_TIMER
- 
- config ARMADA_370_XP_TIMER
- 	bool
--- 
-1.7.2.3
-
+I think that is very much expected; except in the case where you spend
+_all_ your time in IRQ handlers, they'll pretty much always miss l1
+cache.
