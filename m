@@ -1,122 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab3FDGzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:55:05 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:55215 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191Ab3FDGzC (ORCPT
+	id S1759687Ab3FDGzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:55:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44698 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3FDGzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:55:02 -0400
-Message-ID: <51AD8F43.4090107@monstr.eu>
-Date: Tue, 04 Jun 2013 08:54:59 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Hein Tibosch <hein_tibosch@yahoo.es>, netdev@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
-        linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <51AD8611.8070102@monstr.eu> <20130604064940.GA5107@pengutronix.de>
-In-Reply-To: <20130604064940.GA5107@pengutronix.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2FKLTDHLEDVWRKPLTTRHN"
+	Tue, 4 Jun 2013 02:55:45 -0400
+Date: Tue, 4 Jun 2013 16:55:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <koverstreet@google.com>, Tejun Heo <tj@kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130604165533.d3704b1927cefe6413c52ea7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Jun_2013_16_55_33_+1000_MYv7Nk7=+CTuqp+f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2FKLTDHLEDVWRKPLTTRHN
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Tue__4_Jun_2013_16_55_33_+1000_MYv7Nk7=+CTuqp+f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 06/04/2013 08:49 AM, Steffen Trumtrar wrote:
-> On Tue, Jun 04, 2013 at 08:15:45AM +0200, Michal Simek wrote:
->> On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
->>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.co=
-m> wrote:
->>>>>
->>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>>>> introduces clear-on-write on ISR register. This behavior is not al=
-ways
->>>>>> implemented when using Cadence MACB/GEM and is breaking other plat=
-forms.
->>>>>> We are using a new Device Tree compatibility string and a capabili=
-ty
->>>>>> property to actually activate this clear-on-write behavior on ISR.=
+Hi Andrew,
 
->>>>>>
->>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> can we detect it via the IP?
->>>>
->>>> This was my first proposal, have it based on the value of MACB's
->>>> register 'MID' (offset 0x00fc, lower 16 bits).
->>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
->>>>
->>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revis=
-ion
->>>> equals to 0x00000119?
->>> so no it will not work
->>>
->>> as the gem on sama5 is 00020119
->>>
->>> so version 0x119 too
->>>
->>> nico=20
->>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>
->> Was this added to any queue or branch?
->> I would like to enable macb for zynq and not sure if "cdns,zynq-7000-g=
-em"
->> compatible string goes to mainline.
->>
->=20
-> Hi!
->=20
-> This is already in next, but you can use the default compatible as the
-> DCR1 is used instead of DT binding.
+After merging the akpm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Ah ok. It was added there without cdns,zynq-7000-gem compatible string.
+fs/aio.c: In function 'put_ioctx':
+fs/aio.c:386:6: error: void value not ignored as it ought to be
+  if (percpu_ref_put(&ctx->users))
+      ^
+fs/aio.c: In function 'ioctx_alloc':
+fs/aio.c:427:2: error: too few arguments to function 'percpu_ref_init'
+  percpu_ref_init(&ctx->users);
+  ^
+In file included from fs/aio.c:40:0:
+include/linux/percpu-refcount.h:69:5: note: declared here
+ int percpu_ref_init(struct percpu_ref *, percpu_ref_release *);
+     ^
+fs/aio.c: In function 'kill_ioctx':
+fs/aio.c:510:6: error: void value not ignored as it ought to be
+  if (percpu_ref_kill(&ctx->users)) {
+      ^
+fs/aio.c: In function 'exit_aio':
+fs/aio.c:577:8: error: void value not ignored as it ought to be
+    if (percpu_ref_kill(&ctx[i]->users)) {
+        ^
+fs/aio.c: In function 'aio_read_events':
+fs/aio.c:978:2: error: implicit declaration of function 'percpu_ref_dead' [=
+-Werror=3Dimplicit-function-declaration]
+  if (unlikely(percpu_ref_dead(&ctx->users)))
+  ^
+cc1: some warnings being treated as errors
 
-BTW: I have asked Soren to update your patch on the top of his clock chan=
-ges.
+Caused by commit 215e262f2aeb ("percpu: implement generic percpu
+refcounting") from the percpu tree interacting with commit 4a375d552122
+("aio: percpu ioctx refcount") from the akpm tree.
 
-Thanks,
-Michal
+I removed the following patches from the akpm tree:
 
+aio: reqs_active -> reqs_available
+aio: percpu reqs_available
+aio: percpu ioctx refcount
+aio: use xchg() instead of completion_lock
+block: prep work for batch completion
+block-prep-work-for-batch-completion-fix-2
+block-prep-work-for-batch-completion-fix-3
+block-prep-work-for-batch-completion-fix-3-fix
+block-prep-work-for-batch-completion-fix-99
+block-prep-work-for-batch-completion-fix-4
+block-prep-work-for-batch-completion-fix-101
+block, aio: batch completion for bios/kiocbs
+aio: fix kioctx not being freed after cancellation at exit time
+block-aio-batch-completion-for-bios-kiocbs-fix
+virtio-blk: convert to batch completion
+mtip32xx: convert to batch completion
+aio: convert the ioctx list to radix tree
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-
-------enig2FKLTDHLEDVWRKPLTTRHN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Tue__4_Jun_2013_16_55_33_+1000_MYv7Nk7=+CTuqp+f
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iEYEARECAAYFAlGtj0MACgkQykllyylKDCG++QCgmy5yJFwoDfxEzAUfG/99EA+S
-A+EAniC0l05MdYBA8opbWkFj8uEjCR4A
-=gFG1
+iQIcBAEBCAAGBQJRrY9pAAoJEECxmPOUX5FEPAsP+wZELsjMPi+fxBJEmz1cuHZE
+XmvC+zHrtFJepDyiN9o38/Ia2hxpFtIfNiIJTCF1I7acTbGLhP4CA8gtX7Bie9Xc
+T7n5SZaycFbRo4DB8DmvLylg5bZ/gd+OslpzP+XrKHhHLIx5zeBZpwfRrR73yJ+l
+pfbubLZ0wpbA08eh1ERtrhVLzZQvKJWe1QDS0ovCbSqHSWrHQjOLyD/e575tQzED
+/c+gom+yqSpw0fi8kXrQGUj74TUUFNuPgX4R4ab5FXLJqlzRmeH0UroH+Gdb1YxY
+UJ9Z595cdvIJZzUaPyiar5A1WMKSOLx8WkC55MKw6r9+R1AKpztC/yHLrk8F9jI9
+q0UgZAaW+GyBUrq33vpdr+WYQfkJTpKBA+ilYJWux0Sji/wwoO/8P9GrlOIYktMa
+cNTb05S/64Hlp3G0fkSf6F7S9hfbR0ZOZKNwRIS14X2++p8CMB4VhA8p9wHnoYx6
+QGpdHpBD48rEvEkmF9Zi25ThLaTauZMrrfSxUMLJPT0szZrGihtyRXDbgUaEfWqK
+HEiqPtoRBx9cPxtH3VhlA+UcvG+UD/glESS88b7lBk4pUBxKcx9WB7XkEGh4fNCZ
+uPUMg5R2mqpUqlEpSktSrG5pOD/38faTo7PAeBJ7l88WWfG6ha3f+jzhibPT1+1g
+Cqn3lYceJeVd1V+zi49v
+=yXWi
 -----END PGP SIGNATURE-----
 
-------enig2FKLTDHLEDVWRKPLTTRHN--
+--Signature=_Tue__4_Jun_2013_16_55_33_+1000_MYv7Nk7=+CTuqp+f--
