@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab3FDJq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:46:27 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:44672 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3FDJqY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:46:24 -0400
-From: Mischa Jonker <Mischa.Jonker@synopsys.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        Vineet.Gupta1@synopsys.com
-Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: [PATCH] perf: add const qualifier to perf_pmu_register's 'name' arg
-Date: Tue,  4 Jun 2013 11:45:48 +0200
-Message-Id: <1370339148-5566-1-git-send-email-mjonker@synopsys.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752794Ab3FDJsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:48:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53703 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391Ab3FDJsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:48:13 -0400
+Message-ID: <51ADB7D5.8070708@ti.com>
+Date: Tue, 4 Jun 2013 12:48:05 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Alan Stern <stern@rowland.harvard.edu>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <swarren@nvidia.com>
+Subject: Re: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
+References: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org> <519E2BD4.9020906@ti.com> <20130603175108.GA11188@kroah.com>
+In-Reply-To: <20130603175108.GA11188@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to use pdev->name for registering a PMU device.
-IMO the name is not supposed to be changed anyway.
+On 06/03/2013 08:51 PM, Greg KH wrote:
+> On Thu, May 23, 2013 at 05:46:44PM +0300, Roger Quadros wrote:
+>> On 05/23/2013 05:11 PM, Alan Stern wrote:
+>>> On Thu, 23 May 2013, Roger Quadros wrote:
+>>>
+>>>> Device tree probed devices don't get dma_mask set. Previously
+>>>> we were setting the dma_mask pointer only if it was NULL.
+>>>> However, the address of 'omap_ehci_dma_mask' would change
+>>>> each time the module is unloaded and loaded back thus causing
+>>>> the devices dma_mask pointer to be invalid on the next load.
+>>>>
+>>>> This will cause page faults if any driver tries to access the
+>>>> old dma_mask pointer.
+>>>>
+>>>> Unconditionally re-setting the dma_mask pointer fixes this problem.
+>>>
+>>>> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+>>>> index 3d1491b..b33e306 100644
+>>>> --- a/drivers/usb/host/ehci-omap.c
+>>>> +++ b/drivers/usb/host/ehci-omap.c
+>>>> @@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>>>>  	 * Since shared usb code relies on it, set it here for now.
+>>>>  	 * Once we have dma capability bindings this can go away.
+>>>>  	 */
+>>>> -	if (!pdev->dev.dma_mask)
+>>>> -		pdev->dev.dma_mask = &omap_ehci_dma_mask;
+>>>> +	pdev->dev.dma_mask = &omap_ehci_dma_mask;
+>>>
+>>> Is this the solution that people have agreed on?  There has been a lot 
+>>> of discussion on this topic.  In particular, there has been talk about 
+>>> fixing it in the DT core.
+>>
+>> Fixing it in DT core would be best.
+> 
+> Then please do that.
+>
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
----
- arch/metag/kernel/perf/perf_event.c |    2 +-
- include/linux/perf_event.h          |    4 ++--
- kernel/events/core.c                |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+It seems [1] went into 3.10-rc3 so this issue is fixed for 3.10.
 
-diff --git a/arch/metag/kernel/perf/perf_event.c b/arch/metag/kernel/perf/perf_event.c
-index 3665694..5b18888 100644
---- a/arch/metag/kernel/perf/perf_event.c
-+++ b/arch/metag/kernel/perf/perf_event.c
-@@ -882,7 +882,7 @@ static int __init init_hw_perf_events(void)
- 	}
- 
- 	register_cpu_notifier(&metag_pmu_notifier);
--	ret = perf_pmu_register(&pmu, (char *)metag_pmu->name, PERF_TYPE_RAW);
-+	ret = perf_pmu_register(&pmu, metag_pmu->name, PERF_TYPE_RAW);
- out:
- 	return ret;
- }
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f463a46..65a462c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -188,7 +188,7 @@ struct pmu {
- 
- 	struct device			*dev;
- 	const struct attribute_group	**attr_groups;
--	char				*name;
-+	const char			*name;
- 	int				type;
- 
- 	int * __percpu			pmu_disable_count;
-@@ -518,7 +518,7 @@ struct perf_output_handle {
- 
- #ifdef CONFIG_PERF_EVENTS
- 
--extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
-+extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
- extern void perf_pmu_unregister(struct pmu *pmu);
- 
- extern int perf_num_counters(void);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9dc297f..7003d6f 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5952,7 +5952,7 @@ free_dev:
- static struct lock_class_key cpuctx_mutex;
- static struct lock_class_key cpuctx_lock;
- 
--int perf_pmu_register(struct pmu *pmu, char *name, int type)
-+int perf_pmu_register(struct pmu *pmu, const char *name, int type)
- {
- 	int cpu, ret;
- 
--- 
-1.7.0.4
+[1] https://patchwork.kernel.org/patch/2537021/
 
+cheers,
+-roger
