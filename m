@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547Ab3FDUye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:54:34 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:46715 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3FDUyb (ORCPT
+	id S1751690Ab3FDU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:58:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12574 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab3FDU6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:54:31 -0400
-Date: Tue, 4 Jun 2013 13:54:26 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130604205426.GI14916@htj.dyndns.org>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <1370254735-13012-5-git-send-email-mhocko@suse.cz>
- <20130604010737.GF29989@mtj.dyndns.org>
- <20130604134523.GH31242@dhcp22.suse.cz>
- <20130604193619.GA14916@htj.dyndns.org>
- <20130604204807.GA13231@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604204807.GA13231@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Jun 2013 16:58:13 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=8UkHzMSrflQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ITzkURZ2-D4A:10 a=scEZ3zhL6hPtsaF1EPsA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370379489.9844.7.camel@gandalf.local.home>
+Subject: Re: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Date: Tue, 04 Jun 2013 16:58:09 -0400
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41B011681@USINDEM103.corp.hds.com>
+References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
+	 <1370303581.26799.109.camel@gandalf.local.home>
+	 <51AE2EDF.3000505@zytor.com> <1370370763.9844.6.camel@gandalf.local.home>
+	 <A5ED84D3BB3A384992CBB9C77DEDA4D41B011681@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On Tue, Jun 04, 2013 at 10:48:07PM +0200, Michal Hocko wrote:
-> > I really don't think memcg can afford to add more mess than there
-> > already is.  Let's try to get things right with each change, please.
+On Tue, 2013-06-04 at 20:20 +0000, Seiji Aguchi wrote:
+> Steven,
 > 
-> Is this really about inside vs. outside skipping? I think this is a
-> general improvement to the code. I really prefer not duplicating common
-> code and skipping handling is such a code (we have a visitor which can
-> control the walk). With a side bonus that it doesn't have to pollute
-> vmscan more than necessary.
+> > 
+> > Hmm, maybe we can do it. Have two counters, a debug_idt_ctr and a
+> > trace_idt_ctr, then have a function that basically does this:
+> > 
+> > 	if (this_cpu_read(debug_idt_ctr))
 > 
-> Please be more specific about _what_ is so ugly about this interface so
-> that it matters so much.
+> I think we can use "debug_stack_use_ctr"  for the checking.
+> Is it correct?
+> Or, do I need to introduce a new debug_idt_ctr?
+> 
 
-Can you please try the other approach and see how it looks?  It's just
-my general experience that you usually end up with something much
-uglier when you try to do much inside an iterator and having to add
-callbacks which need to communicate through enums is usually a pretty
-good sign that it took a wrong turn somewhere.  There sure are cases
-where such approach is necessary but I really don't see it here.  So,
-it'd be really great if you can give a shot.
+No, it's the same variable. I was thinking we should rename it too, as
+debug_stack_use_ctr, doesn't really describe what is happening anymore.
 
-Thanks.
+-- Steve
 
--- 
-tejun
+
