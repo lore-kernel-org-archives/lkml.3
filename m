@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3FDKui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 06:50:38 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:45655 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3FDKuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 06:50:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370267175-8117-1-git-send-email-lee.jones@linaro.org>
-References: <1370267175-8117-1-git-send-email-lee.jones@linaro.org>
-Date: Tue, 4 Jun 2013 12:50:29 +0200
-Message-ID: <CACRpkdYE75qwqjaFGNgyJB+JuUFHf8rtRePW=sasi3jsX79jww@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Remove SSP AUXDATA pertaining to DMA bindings
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1751969Ab3FDKwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 06:52:25 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58306 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210Ab3FDKwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 06:52:24 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 1/4] clocksource: dw_apb_timer_of: enable the use the clocksource as sched clock
+Date: Tue, 4 Jun 2013 12:52:07 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Walleij <linus.walleij@linaro.org>,
+        Baruch Siach <baruch@tkos.co.il>
+References: <201306041136.09566.heiko@sntech.de> <201306041137.03319.heiko@sntech.de>
+In-Reply-To: <201306041137.03319.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306041252.07877.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 3:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Am Dienstag, 4. Juni 2013, 11:37:02 schrieb Heiko Stübner:
+> Currently the dw_apb_timer always expects a separate special timer to be
+> availbable for the sched_clock. Some devices using dw_apb_timers do not
+> have this sptimer but can use the clocksource as sched_clock instead.
+> 
+> Therefore enable the driver to distiguish between devices with and without
+> sptimer based on the devicetree data and select the correct timer as
+> sched_clock.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-> These are now cared for from the Device Tree.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+in the original thread "arm: add basic support for Rockchip Cortex-A9 SoCs" 
+this patch with the updated description now also got a
 
-These are not only used for the DMA bindings, so
-the clock patches need to be finalized before this
-patch I think...
 
-git grep ssp0 drivers/clk/ux500/
-drivers/clk/ux500/u8500_clk.c:  clk_register_clkdev(clk, "apb_pclk", "ssp0");
-drivers/clk/ux500/u8500_clk.c:  clk =
-clk_reg_prcc_kclk("p3_ssp0_kclk", "sspclk",
-drivers/clk/ux500/u8500_clk.c:  clk_register_clkdev(clk, NULL, "ssp0");
-
-Yours,
-Linus Walleij
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
