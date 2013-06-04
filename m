@@ -1,89 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab3FDVx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:53:28 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24394 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3FDVxY (ORCPT
+	id S1751272Ab3FDVzC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:55:02 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46997 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3FDVzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:53:24 -0400
-Date: Tue, 4 Jun 2013 14:53:04 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] PVH: vcpu info placement, load selectors,
- and remove debug printk.
-Message-ID: <20130604145304.117ac60f@mantra.us.oracle.com>
-In-Reply-To: <51ADC0F702000078000DAF5A@nat28.tlf.novell.com>
-References: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
-	<51ADC0F702000078000DAF5A@nat28.tlf.novell.com>
+	Tue, 4 Jun 2013 17:55:00 -0400
+From: Frank Mehnert <frank.mehnert@oracle.com>
 Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: Handling NUMA page migration
+Date: Tue, 4 Jun 2013 23:54:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
+Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+References: <201306040922.10235.frank.mehnert@oracle.com> <20130604140230.GB31247@dhcp22.suse.cz> <201306042017.08828.frank.mehnert@oracle.com>
+In-Reply-To: <201306042017.08828.frank.mehnert@oracle.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart5400784.Waqc3BKeRJ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Message-Id: <201306042354.45984.frank.mehnert@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Jun 2013 09:27:03 +0100
-"Jan Beulich" <JBeulich@suse.com> wrote:
+--nextPart5400784.Waqc3BKeRJ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-> >>> On 04.06.13 at 02:43, Mukesh Rathor <mukesh.rathor@oracle.com>
-> >>> wrote:
-> > @@ -1327,6 +1329,18 @@ static void __init
-> > xen_setup_stackprotector(void) /* PVH TBD/FIXME: investigate
-> > setup_stack_canary_segment */ if
-> > (xen_feature(XENFEAT_auto_translated_physmap))
-> > { switch_to_new_gdt(0); +
-> > +		/* xen started us with null selectors. load them
-> > now */
-> > +		__asm__ __volatile__ (
-> > +			"movl %0,%%ds\n"
-> > +			"movl %0,%%ss\n"
-> > +			"pushq %%rax\n"
-> > +			"leaq 1f(%%rip),%%rax\n"
-> > +			"pushq %%rax\n"
-> > +			"retfq\n"
-> > +			"1:\n"
-> > +			: : "r" (__KERNEL_DS), "a" (__KERNEL_CS) :
-> > "memory"); +
-> 
-> I can see why you want CS to be reloaded (and CS, other than the
-> comment says, clearly hasn't been holding a null selector up to here.
-> 
-> I can't immediately see why you'd need SS to be other than null, and
-> it completely escapes me why you'd need to DS (but not ES) to be
-> non-null.
-> 
-> Furthermore, is there any reason why you use "retfq" (Intel syntax)
-> when all assembly code otherwise uses AT&T syntax (the proper
-> equivalent here would be "lretq")?
-> 
-> And finally, please consistently use %<number> (which, once
-> fixed, will make clear that the second constraint really can be "r"),
-> and avoid using suffixes on moves to/from selector registers
-> (which, once fixed, will make clear that at least the first constraint
-> really can be relaxed to "rm").
+On Tuesday 04 June 2013 20:17:02 Frank Mehnert wrote:
+> On Tuesday 04 June 2013 16:02:30 Michal Hocko wrote:
+> > On Tue 04-06-13 14:14:45, Frank Mehnert wrote:
+> > > On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
+> > > > This is probably more appropriate to be directed at the linux-mm
+> > > > mailing list.
+> > > >=20
+> > > > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
+> > > > > Hi,
+> > > > >=20
+> > > > > our memory management on Linux hosts conflicts with NUMA page
+> > > > > migration. I assume this problem existed for a longer time but
+> > > > > Linux 3.8 introduced automatic NUMA page balancing which makes the
+> > > > > problem visible on multi-node hosts leading to kernel oopses.
+> > > > >=20
+> > > > > NUMA page migration means that the physical address of a page
+> > > > > changes. This is fatal if the application assumes that this never
+> > > > > happens for that page as it was supposed to be pinned.
+> > > > >=20
+> > > > > We have two kind of pinned memory:
+> > > > >=20
+> > > > > A) 1. allocate memory in userland with mmap()
+> > > > >=20
+> > > > >    2. madvise(MADV_DONTFORK)
+> > > > >    3. pin with get_user_pages().
+> > > > >    4. flush dcache_page()
+> > > > >    5. vm_flags |=3D (VM_DONTCOPY | VM_LOCKED)
+> > > > >   =20
+> > > > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP |
+> > > > >       VM_DONTEXPAND
+> > > > >      =20
+> > > > >        VM_DONTCOPY | VM_LOCKED | 0xff)
+> > > >=20
+> > > > I don't think this type of allocation should be affected.  The
+> > > > get_user_pages() call should elevate the pages reference count which
+> > > > should prevent migration from completing.  I would, however, wait f=
+or
+> > > > a more definitive answer.
+> > >=20
+> > > Thanks Robin! Actually case B) is more important for us so I'm waiting
+> > > for more feedback :)
+> >=20
+> > The manual node migration code seems to be OK in case B as well because
+> > Reserved are skipped (check check_pte_range called from down the
+> > do_migrate_pages path).
+> >=20
+> > Maybe auto-numa code is missing this check assuming that it cannot
+> > encounter reserved pages.
+> >=20
+> > migrate_misplaced_page relies on numamigrate_isolate_page which relies
+> > on isolate_lru_page and that one expects a LRU page. Is your Reserved
+> > page on the LRU list? That would be a bit unexpected.
+>=20
+> I will check this.
 
-Following OK? :
+I tested this now. When the Oops happens, PageLRU() of the corresponding
+page struct is NOT set! I've patched the kernel to find that out. This is
+case B from my original mail (alloc_pages(), SetPageReserved(), vm_mmap(),
+vm_insert_page(), vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)) and PageLRU()
+was clear after vm_insert_page().
 
-        if (xen_feature(XENFEAT_auto_translated_physmap)) {
-                switch_to_new_gdt(0);
+Example of such an oops (the present bits of PMD and PTE are clear):
 
-                asm volatile (
-                        "pushq %%rax\n"
-                        "leaq 1f(%%rip),%%rax\n"
-                        "pushq %%rax\n"
-                        "lretq\n"
-                        "1:\n"
-                        : : "a" (__KERNEL_CS) : "memory");
+BUG: unable to handle kernel paging request at 00007ff493c7eff8=20
+IP: [<ffffffffa039e17f>] 0xffffffffa039e17e
+PGD 201b068067 PUD 381c082067 PMD 20063d2166 PTE 8000002005da9166
+Oops: 0000 [#1] SMP=20
+Modules linked in: pci_stub vboxpci(OF) vboxnetadp(OF) vboxnetflt(OF)=20
+vboxdrv(OF) md4 nls_utf8 cifs fscache vesafb kvm_amd kvm psmouse serio_raw=
+=20
+microcode ib_mthca ib_mad ib_core amd64_edac_mod edac_core k10temp=20
+edac_mce_amd joydev shpchp mac_hid lp parport i2c_nforce2 hid_generic usbhi=
+d=20
+hid mptsas mptscsih mptbase scsi_transport_sas e1000 pata_acpi pata_amd=20
+CPU 24=20
+Pid: 2058, comm: EMT Tainted: GF          O 3.8.0-23-generic #34 Sun=20
+Microsystems     Sun Fire X4600 M2/Sun Fire X4600 M2
+RIP: 0010:[<ffffffffa039e17f>]  [<ffffffffa039e17f>] 0xffffffffa039e17e
+RSP: 0018:ffff88381bac1968  EFLAGS: 00010202
+RAX: 00007ff493c7eff8 RBX: ffff88381bac1998 RCX: 0000000000000000
+RDX: 0000000000000ff8 RSI: 0000000000000000 RDI: ffff88381bac1a18
+RBP: ffff88381bac1988 R08: ffffc90029981000 R09: ffffc9002999c000
+R10: ffff88381bac1998 R11: ffffffffa037aee0 R12: ffffc9002999c000
+R13: ffffffffa002f98d R14: ffffffffa002f98d R15: ffffc9002999c000
+=46S:  00007ff4f59b7700(0000) GS:ffff883827c00000(0000) knlGS:0000000000000=
+000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007ff493c7eff8 CR3: 000000201b06f000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process EMT (pid: 2058, threadinfo ffff88381bac0000, task ffff88381b840000)=
+=20
+Stack:
+ 0000000000000000 ffff88381bac1a60 ffff88381bac1ab8 ffffffffa002f98d
+ ffff88381bac1a28 ffffffffa039e5bd ffffffffa002f98d 0000000000000000
+ 0000000000000000 0000000000000000 00007ff493c7e000 00007ff493c7eff8
 
-                return;
-        }
+Any more ideas? I'm happy to perform more tests.
 
-thanks,
-Mukesh
+Thanks,
 
+=46rank
+
+> In the meantime I verified that my testcase does not fail if I pass
+> 'numa_balancing=3Dfalse' to the kernel, so it's definitely a NUMA balanci=
+ng
+> problem.
+>=20
+> I also did 'get_page()' on all pages of method B but the testcase so this
+> didn't help.
+>=20
+> Frank
+
+=2D-=20
+Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
+ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
+
+Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
+Registergericht: Amtsgericht M=FCnchen, HRA 95603
+Gesch=E4ftsf=FChrer: J=FCrgen Kunz
+
+Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
+Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
+Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
+Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
+
+--nextPart5400784.Waqc3BKeRJ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iEYEABECAAYFAlGuYiUACgkQ6z8pigLf3EehZQCggdbaPoHAy1Q9ZLtqEvLR7A8A
+wC4Anif6qRo2nk9Nd64cYNxhPEIQaViU
+=w3de
+-----END PGP SIGNATURE-----
+
+--nextPart5400784.Waqc3BKeRJ--
