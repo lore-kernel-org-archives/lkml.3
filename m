@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3FDJCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:02:23 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40702 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab3FDJCU (ORCPT
+	id S1752022Ab3FDJDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:03:13 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:45735 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3FDJDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:02:20 -0400
-Message-ID: <51ADAD0E.4010001@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 14:32:06 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 4 Jun 2013 05:03:12 -0400
+X-AuditID: 9c93017d-b7c04ae00000207d-b1-51adad4e8669
+Date: Tue, 4 Jun 2013 18:03:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 2/8] zram: avoid invalid memory access in
+ zram_exit()
+Message-ID: <20130604090309.GB28551@blaptop>
+References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com>
+ <1370274140-26420-3-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
-        cbouatmailru@gmail.com, keescook@chromium.org
-Subject: Re: [PATCH v3 8/8] powerpc/pseries: Read common partition via pstore
-References: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420> <20130425101908.21017.32553.stgit@aruna-ThinkPad-T420> <1370062367.3766.30.camel@pasglop>
-In-Reply-To: <1370062367.3766.30.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060408-2674-0000-0000-0000093A2E62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370274140-26420-3-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 01 June 2013 10:22 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-04-25 at 15:49 +0530, Aruna Balakrishnaiah wrote:
->
->> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
->> index 8d4fb65..88cc050 100644
->> --- a/fs/pstore/inode.c
->> +++ b/fs/pstore/inode.c
->> @@ -330,6 +330,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->>   	case PSTORE_TYPE_PPC_OF:
->>   		sprintf(name, "of-%s-%lld", psname, id);
->>   		break;
-> Call this powerpc-ofw-... Does it even contain something we use in Linux
-> at all ? Last I looked we only used the common one right ? Also it's
-> format afaik is defined in the CHRP bindings so it's not generic OFW
-> stuff, hence the powerpc prefix.
->
->> +	case PSTORE_TYPE_PPC_COMMON:
->> +		sprintf(name, "common-%s-%lld", psname, id);
->> +		break;
-> Same deal, call that powerpc-common
+On Mon, Jun 03, 2013 at 11:42:14PM +0800, Jiang Liu wrote:
+> Memory for zram->disk object may have already been freed after returning
+> from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
+> to access zram->disk again.
+> 
+> Fix it by holding an extra reference to zram->disk before calling
+> destroy_device(zram).
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/staging/zram/zram_drv.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index e34e3fe..ee6b67d 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -727,8 +727,10 @@ static void __exit zram_exit(void)
+>  	for (i = 0; i < num_devices; i++) {
+>  		zram = &zram_devices[i];
+>  
+> +		get_disk(zram->disk);
+>  		destroy_device(zram);
+>  		zram_reset_device(zram);
+> +		put_disk(zram->disk);
 
-Sure. Will change it to powerpc prefix.
+Can't we simple reverse calling order of above two functions?
 
->>   	case PSTORE_TYPE_UNKNOWN:
->>   		sprintf(name, "unknown-%s-%lld", psname, id);
->>   		break;
->> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
->> index 615dc18..656699f 100644
->> --- a/include/linux/pstore.h
->> +++ b/include/linux/pstore.h
->> @@ -38,6 +38,7 @@ enum pstore_type_id {
->>   	/* PPC64 partition types */
->>   	PSTORE_TYPE_PPC_RTAS	= 4,
->>   	PSTORE_TYPE_PPC_OF	= 5,
->> +	PSTORE_TYPE_PPC_COMMON	= 6,
->>   	PSTORE_TYPE_UNKNOWN	= 255
->>   };
-> Do we expose anything else or keep it hidden ?
+        zram_reset_device(zram);
+        destroy_device(zram);
 
-We are exposing oops, rtas, of-config and common partition of nvram.
-
-> Cheers,
-> Ben.
->
->
-
+-- 
+Kind regards,
+Minchan Kim
