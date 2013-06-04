@@ -1,176 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272Ab3FDVzC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:55:02 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46997 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3FDVzA (ORCPT
+	id S1751616Ab3FDVzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:55:38 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:56243
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811Ab3FDVzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:55:00 -0400
-From: Frank Mehnert <frank.mehnert@oracle.com>
-Organization: Oracle Corporation
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: Handling NUMA page migration
-Date: Tue, 4 Jun 2013 23:54:45 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <201306040922.10235.frank.mehnert@oracle.com> <20130604140230.GB31247@dhcp22.suse.cz> <201306042017.08828.frank.mehnert@oracle.com>
-In-Reply-To: <201306042017.08828.frank.mehnert@oracle.com>
+	Tue, 4 Jun 2013 17:55:35 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+X-WSS-ID: 0MNW28B-02-8KN-02
+X-M-MSG: 
+Date: Tue, 4 Jun 2013 16:55:21 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/microcode] x86, microcode, amd: Fix warnings and errors
+ on with CONFIG_MICROCODE=m
+Message-ID: <20130604215521.GA5819@jshin-Toonie>
+References: <20130531150241.GA12006@jshin-Toonie>
+ <tip-6b3389ac21b5e557b957f1497d0ff22bf733e8c3@git.kernel.org>
+ <CAE9FiQUJOfcoU8c_Xwhosb1=9=dyaH6mXkERX-zxCUmEXjeNUg@mail.gmail.com>
+ <20130604213600.GA5021@jshin-Toonie>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5400784.Waqc3BKeRJ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306042354.45984.frank.mehnert@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130604213600.GA5021@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5400784.Waqc3BKeRJ
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 04, 2013 at 04:36:00PM -0500, Jacob Shin wrote:
+> On Tue, Jun 04, 2013 at 02:02:43PM -0700, Yinghai Lu wrote:
+> > On Fri, May 31, 2013 at 2:59 PM, tip-bot for Jacob Shin
+> > <tipbot@zytor.com> wrote:
+> > > Commit-ID:  6b3389ac21b5e557b957f1497d0ff22bf733e8c3
+> > > Gitweb:     http://git.kernel.org/tip/6b3389ac21b5e557b957f1497d0ff22bf733e8c3
+> > > Author:     Jacob Shin <jacob.shin@amd.com>
+> > > AuthorDate: Fri, 31 May 2013 01:53:24 -0500
+> > > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > > CommitDate: Fri, 31 May 2013 13:56:58 -0700
+> > >
+> > > x86, microcode, amd: Fix warnings and errors on with CONFIG_MICROCODE=m
+> > >
+> > > Fix section mismatch warnings on microcode_amd_early.
+> > > Compile error occurs when CONFIG_MICROCODE=m, change so that early
+> > > loading depends on microcode_core.
+> > >
+> > > Reported-by: Yinghai Lu <yinghai@kernel.org>
+> > > Reported-by: Borislav Petkov <bp@alien8.de>
+> > > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > > Link: http://lkml.kernel.org/r/20130531150241.GA12006@jshin-Toonie
+> > > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > > ---
+> > >  arch/x86/Kconfig                      | 2 +-
+> > >  arch/x86/include/asm/microcode_amd.h  | 2 +-
+> > >  arch/x86/kernel/microcode_amd_early.c | 8 ++++----
+> > >  3 files changed, 6 insertions(+), 6 deletions(-)
+> > >
+> > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > index 28dba52..2705532 100644
+> > > --- a/arch/x86/Kconfig
+> > > +++ b/arch/x86/Kconfig
+> > > @@ -1065,7 +1065,7 @@ config MICROCODE_AMD_EARLY
+> > >
+> > >  config MICROCODE_EARLY
+> > >         bool "Early load microcode"
+> > > -       depends on (MICROCODE_INTEL || MICROCODE_AMD) && BLK_DEV_INITRD
+> > > +       depends on MICROCODE=y && BLK_DEV_INITRD
+> > >         select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
+> > >         select MICROCODE_AMD_EARLY if MICROCODE_AMD
+> > >         default y
+> > > diff --git a/arch/x86/include/asm/microcode_amd.h b/arch/x86/include/asm/microcode_amd.h
+> > > index 24254aa..c6b043f 100644
+> > > --- a/arch/x86/include/asm/microcode_amd.h
+> > > +++ b/arch/x86/include/asm/microcode_amd.h
+> > > @@ -64,7 +64,7 @@ extern enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
+> > >  #ifdef CONFIG_MICROCODE_AMD_EARLY
+> > >  #ifdef CONFIG_X86_32
+> > >  #define MPB_MAX_SIZE PAGE_SIZE
+> > > -extern u8 __cpuinitdata amd_bsp_mpb[MPB_MAX_SIZE];
+> > > +extern u8 amd_bsp_mpb[MPB_MAX_SIZE];
+> > >  #endif
+> > >  extern void __init load_ucode_amd_bsp(void);
+> > >  extern void __cpuinit load_ucode_amd_ap(void);
+> > > diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/microcode_amd_early.c
+> > > index 7e54d97..9618805 100644
+> > > --- a/arch/x86/kernel/microcode_amd_early.c
+> > > +++ b/arch/x86/kernel/microcode_amd_early.c
+> > > @@ -21,9 +21,9 @@ static u32 ucode_new_rev;
+> > >   * Microcode patch container file is prepended to the initrd in cpio format.
+> > >   * See Documentation/x86/early-microcode.txt
+> > >   */
+> > > -static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> > > +static __cpuinitdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> > >
+> > > -static struct cpio_data __init find_ucode_in_initrd(void)
+> > > +static struct cpio_data __cpuinit find_ucode_in_initrd(void)
+> > >  {
+> > >         long offset = 0;
+> > >         struct cpio_data cd;
+> > 
+> > does not like right fix.
+> > 
+> > find_ucode_in_initrd should be __init.
+> > 
+> > > @@ -62,7 +62,7 @@ static struct cpio_data __init find_ucode_in_initrd(void)
+> > >   * load_microcode_amd() to save equivalent cpu table and microcode patches in
+> > >   * kernel heap memory.
+> > >   */
+> > > -static void __init apply_ucode_in_initrd(void)
+> > > +static void __cpuinit apply_ucode_in_initrd(void)
+> > >  {
+> > >         struct cpio_data cd;
+> > >         struct equiv_cpu_entry *eq;
+> > 
+> > it should not call find_ucode_in_initrd or
+> > it should be __init.
+> 
+> It's because the load_ucode_amd_ap() (which is __cpuinit because it
+> can be called during CPU hotplug on).
 
-On Tuesday 04 June 2013 20:17:02 Frank Mehnert wrote:
-> On Tuesday 04 June 2013 16:02:30 Michal Hocko wrote:
-> > On Tue 04-06-13 14:14:45, Frank Mehnert wrote:
-> > > On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
-> > > > This is probably more appropriate to be directed at the linux-mm
-> > > > mailing list.
-> > > >=20
-> > > > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
-> > > > > Hi,
-> > > > >=20
-> > > > > our memory management on Linux hosts conflicts with NUMA page
-> > > > > migration. I assume this problem existed for a longer time but
-> > > > > Linux 3.8 introduced automatic NUMA page balancing which makes the
-> > > > > problem visible on multi-node hosts leading to kernel oopses.
-> > > > >=20
-> > > > > NUMA page migration means that the physical address of a page
-> > > > > changes. This is fatal if the application assumes that this never
-> > > > > happens for that page as it was supposed to be pinned.
-> > > > >=20
-> > > > > We have two kind of pinned memory:
-> > > > >=20
-> > > > > A) 1. allocate memory in userland with mmap()
-> > > > >=20
-> > > > >    2. madvise(MADV_DONTFORK)
-> > > > >    3. pin with get_user_pages().
-> > > > >    4. flush dcache_page()
-> > > > >    5. vm_flags |=3D (VM_DONTCOPY | VM_LOCKED)
-> > > > >   =20
-> > > > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP |
-> > > > >       VM_DONTEXPAND
-> > > > >      =20
-> > > > >        VM_DONTCOPY | VM_LOCKED | 0xff)
-> > > >=20
-> > > > I don't think this type of allocation should be affected.  The
-> > > > get_user_pages() call should elevate the pages reference count which
-> > > > should prevent migration from completing.  I would, however, wait f=
-or
-> > > > a more definitive answer.
-> > >=20
-> > > Thanks Robin! Actually case B) is more important for us so I'm waiting
-> > > for more feedback :)
-> >=20
-> > The manual node migration code seems to be OK in case B as well because
-> > Reserved are skipped (check check_pte_range called from down the
-> > do_migrate_pages path).
-> >=20
-> > Maybe auto-numa code is missing this check assuming that it cannot
-> > encounter reserved pages.
-> >=20
-> > migrate_misplaced_page relies on numamigrate_isolate_page which relies
-> > on isolate_lru_page and that one expects a LRU page. Is your Reserved
-> > page on the LRU list? That would be a bit unexpected.
->=20
-> I will check this.
+Sorry, let me clarify. find_ucode_in_initrd() is called by
+load_ucode_amd_ap() during cold boot. However, since
+load_ucode_amd_ap() is also called during suspend/resume (CPU hotplug)
+it has to be __cpuinit. Of course during suspend/resume code path,
+find_ucode_in_initrd() is not called, since it is no longer there in memory.
 
-I tested this now. When the Oops happens, PageLRU() of the corresponding
-page struct is NOT set! I've patched the kernel to find that out. This is
-case B from my original mail (alloc_pages(), SetPageReserved(), vm_mmap(),
-vm_insert_page(), vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)) and PageLRU()
-was clear after vm_insert_page().
+> 
+> Hm.. but yes, I do agree with you, I'm waiting for feedback on this
+> follow up patch to allow multiple concatanated microcode files:
+> 
+>   https://lkml.org/lkml/2013/5/31/664
+> 
+> I'll submit multi-patch patchset to address your feedback as well.
+> 
+> Thank you,
 
-Example of such an oops (the present bits of PMD and PTE are clear):
-
-BUG: unable to handle kernel paging request at 00007ff493c7eff8=20
-IP: [<ffffffffa039e17f>] 0xffffffffa039e17e
-PGD 201b068067 PUD 381c082067 PMD 20063d2166 PTE 8000002005da9166
-Oops: 0000 [#1] SMP=20
-Modules linked in: pci_stub vboxpci(OF) vboxnetadp(OF) vboxnetflt(OF)=20
-vboxdrv(OF) md4 nls_utf8 cifs fscache vesafb kvm_amd kvm psmouse serio_raw=
-=20
-microcode ib_mthca ib_mad ib_core amd64_edac_mod edac_core k10temp=20
-edac_mce_amd joydev shpchp mac_hid lp parport i2c_nforce2 hid_generic usbhi=
-d=20
-hid mptsas mptscsih mptbase scsi_transport_sas e1000 pata_acpi pata_amd=20
-CPU 24=20
-Pid: 2058, comm: EMT Tainted: GF          O 3.8.0-23-generic #34 Sun=20
-Microsystems     Sun Fire X4600 M2/Sun Fire X4600 M2
-RIP: 0010:[<ffffffffa039e17f>]  [<ffffffffa039e17f>] 0xffffffffa039e17e
-RSP: 0018:ffff88381bac1968  EFLAGS: 00010202
-RAX: 00007ff493c7eff8 RBX: ffff88381bac1998 RCX: 0000000000000000
-RDX: 0000000000000ff8 RSI: 0000000000000000 RDI: ffff88381bac1a18
-RBP: ffff88381bac1988 R08: ffffc90029981000 R09: ffffc9002999c000
-R10: ffff88381bac1998 R11: ffffffffa037aee0 R12: ffffc9002999c000
-R13: ffffffffa002f98d R14: ffffffffa002f98d R15: ffffc9002999c000
-=46S:  00007ff4f59b7700(0000) GS:ffff883827c00000(0000) knlGS:0000000000000=
-000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007ff493c7eff8 CR3: 000000201b06f000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process EMT (pid: 2058, threadinfo ffff88381bac0000, task ffff88381b840000)=
-=20
-Stack:
- 0000000000000000 ffff88381bac1a60 ffff88381bac1ab8 ffffffffa002f98d
- ffff88381bac1a28 ffffffffa039e5bd ffffffffa002f98d 0000000000000000
- 0000000000000000 0000000000000000 00007ff493c7e000 00007ff493c7eff8
-
-Any more ideas? I'm happy to perform more tests.
-
-Thanks,
-
-=46rank
-
-> In the meantime I verified that my testcase does not fail if I pass
-> 'numa_balancing=3Dfalse' to the kernel, so it's definitely a NUMA balanci=
-ng
-> problem.
->=20
-> I also did 'get_page()' on all pages of method B but the testcase so this
-> didn't help.
->=20
-> Frank
-
-=2D-=20
-Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
-
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
---nextPart5400784.Waqc3BKeRJ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlGuYiUACgkQ6z8pigLf3EehZQCggdbaPoHAy1Q9ZLtqEvLR7A8A
-wC4Anif6qRo2nk9Nd64cYNxhPEIQaViU
-=w3de
------END PGP SIGNATURE-----
-
---nextPart5400784.Waqc3BKeRJ--
