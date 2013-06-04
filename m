@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab3FDOLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:11:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46952 "EHLO
+	id S1756462Ab3FDOIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:08:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498Ab3FDOIp (ORCPT
+	with ESMTP id S1756279Ab3FDOIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:45 -0400
+	Tue, 4 Jun 2013 10:08:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Liu <wei.liu2@citrix.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Hans Schillstrom <hans@schillstrom.com>, Simon Horman <horms@verge.net.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 63/70] xen-netback: coalesce slots in TX path and fix regressions
-Date: Tue,  4 Jun 2013 15:07:19 +0100
-Message-Id: <1370354846-14213-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 49/70] ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
+Date: Tue,  4 Jun 2013 15:07:05 +0100
+Message-Id: <1370354846-14213-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -27,548 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Hans Schillstrom <hans@schillstrom.com>
 
-commit 2810e5b9a7731ca5fce22bfbe12c96e16ac44b6f upstream.
+commit f7a1dd6e3ad59f0cfd51da29dfdbfd54122c5916 upstream.
 
-This patch tries to coalesce tx requests when constructing grant copy
-structures. It enables netback to deal with situation when frontend's
-MAX_SKB_FRAGS is larger than backend's MAX_SKB_FRAGS.
+The reason for this patch is crash in kmemdup
+caused by returning from get_callid with uniialized
+matchoff and matchlen.
 
-With the help of coalescing, this patch tries to address two regressions
-avoid reopening the security hole in XSA-39.
+Removing Zero check of matchlen since it's done by ct_sip_get_header()
 
-Regression 1. The reduction of the number of supported ring entries (slots)
-per packet (from 18 to 17). This regression has been around for some time but
-remains unnoticed until XSA-39 security fix. This is fixed by coalescing
-slots.
+BUG: unable to handle kernel paging request at ffff880457b5763f
+IP: [<ffffffff810df7fc>] kmemdup+0x2e/0x35
+PGD 27f6067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: xt_state xt_helper nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_mangle xt_connmark xt_conntrack ip6_tables nf_conntrack_ftp ip_vs_ftp nf_nat xt_tcpudp iptable_mangle xt_mark ip_tables x_tables ip_vs_rr ip_vs_lblcr ip_vs_pe_sip ip_vs nf_conntrack_sip nf_conntrack bonding igb i2c_algo_bit i2c_core
+CPU 5
+Pid: 0, comm: swapper/5 Not tainted 3.9.0-rc5+ #5                  /S1200KP
+RIP: 0010:[<ffffffff810df7fc>]  [<ffffffff810df7fc>] kmemdup+0x2e/0x35
+RSP: 0018:ffff8803fea03648  EFLAGS: 00010282
+RAX: ffff8803d61063e0 RBX: 0000000000000003 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: ffff880457b5763f RDI: ffff8803d61063e0
+RBP: ffff8803fea03658 R08: 0000000000000008 R09: 0000000000000011
+R10: 0000000000000011 R11: 00ffffffff81a8a3 R12: ffff880457b5763f
+R13: ffff8803d67f786a R14: ffff8803fea03730 R15: ffffffffa0098e90
+FS:  0000000000000000(0000) GS:ffff8803fea00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff880457b5763f CR3: 0000000001a0c000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/5 (pid: 0, threadinfo ffff8803ee18c000, task ffff8803ee18a480)
+Stack:
+ ffff8803d822a080 000000000000001c ffff8803fea036c8 ffffffffa000937a
+ ffffffff81f0d8a0 000000038135fdd5 ffff880300000014 ffff880300110000
+ ffffffff150118ac ffff8803d7e8a000 ffff88031e0118ac 0000000000000000
+Call Trace:
+ <IRQ>
 
-Regression 2. The XSA-39 security fix turning "too many frags" errors from
-just dropping the packet to a fatal error and disabling the VIF. This is fixed
-by coalescing slots (handling 18 slots when backend's MAX_SKB_FRAGS is 17)
-which rules out false positive (using 18 slots is legit) and dropping packets
-using 19 to `max_skb_slots` slots.
+ [<ffffffffa000937a>] ip_vs_sip_fill_param+0x13a/0x187 [ip_vs_pe_sip]
+ [<ffffffffa007b209>] ip_vs_sched_persist+0x2c6/0x9c3 [ip_vs]
+ [<ffffffff8107dc53>] ? __lock_acquire+0x677/0x1697
+ [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
+ [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
+ [<ffffffff810649bc>] ? sched_clock_cpu+0x43/0xcf
+ [<ffffffffa007bb1e>] ip_vs_schedule+0x181/0x4ba [ip_vs]
+...
 
-To avoid reopening security hole in XSA-39, frontend sending packet using more
-than max_skb_slots is considered malicious.
-
-The behavior of netback for packet is thus:
-
-    1-18            slots: valid
-   19-max_skb_slots slots: drop and respond with an error
-   max_skb_slots+   slots: fatal error
-
-max_skb_slots is configurable by admin, default value is 20.
-
-Also change variable name from "frags" to "slots" in netbk_count_requests.
-
-Please note that RX path still has dependency on MAX_SKB_FRAGS. This will be
-fixed with separate patch.
-
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/xen-netback/netback.c | 275 +++++++++++++++++++++++++++++++-------
- include/xen/interface/io/netif.h  |  18 +++
- 2 files changed, 242 insertions(+), 51 deletions(-)
+ net/netfilter/ipvs/ip_vs_pe_sip.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index c2a3786..c0b3ba1 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -46,11 +46,25 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/page.h>
- 
-+/*
-+ * This is the maximum slots a skb can have. If a guest sends a skb
-+ * which exceeds this limit it is considered malicious.
-+ */
-+#define MAX_SKB_SLOTS_DEFAULT 20
-+static unsigned int max_skb_slots = MAX_SKB_SLOTS_DEFAULT;
-+module_param(max_skb_slots, uint, 0444);
-+
-+typedef unsigned int pending_ring_idx_t;
-+#define INVALID_PENDING_RING_IDX (~0U)
-+
- struct pending_tx_info {
--	struct xen_netif_tx_request req;
-+	struct xen_netif_tx_request req; /* coalesced tx request */
- 	struct xenvif *vif;
-+	pending_ring_idx_t head; /* head != INVALID_PENDING_RING_IDX
-+				  * if it is head of one or more tx
-+				  * reqs
-+				  */
- };
--typedef unsigned int pending_ring_idx_t;
- 
- struct netbk_rx_meta {
- 	int id;
-@@ -101,7 +115,11 @@ struct xen_netbk {
- 	atomic_t netfront_count;
- 
- 	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
--	struct gnttab_copy tx_copy_ops[MAX_PENDING_REQS];
-+	/* Coalescing tx requests before copying makes number of grant
-+	 * copy ops greater or equal to number of slots required. In
-+	 * worst case a tx request consumes 2 gnttab_copy.
-+	 */
-+	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
- 
- 	u16 pending_ring[MAX_PENDING_REQS];
- 
-@@ -117,6 +135,16 @@ struct xen_netbk {
- static struct xen_netbk *xen_netbk;
- static int xen_netbk_group_nr;
- 
-+/*
-+ * If head != INVALID_PENDING_RING_IDX, it means this tx request is head of
-+ * one or more merged tx requests, otherwise it is the continuation of
-+ * previous tx request.
-+ */
-+static inline int pending_tx_is_head(struct xen_netbk *netbk, RING_IDX idx)
-+{
-+	return netbk->pending_tx_info[idx].head != INVALID_PENDING_RING_IDX;
-+}
-+
- void xen_netbk_add_xenvif(struct xenvif *vif)
- {
- 	int i;
-@@ -249,6 +277,7 @@ static int max_required_rx_slots(struct xenvif *vif)
- {
- 	int max = DIV_ROUND_UP(vif->dev->mtu, PAGE_SIZE);
- 
-+	/* XXX FIXME: RX path dependent on MAX_SKB_FRAGS */
- 	if (vif->can_sg || vif->gso || vif->gso_prefix)
- 		max += MAX_SKB_FRAGS + 1; /* extra_info + frags */
- 
-@@ -626,6 +655,7 @@ static void xen_netbk_rx_action(struct xen_netbk *netbk)
- 		__skb_queue_tail(&rxq, skb);
- 
- 		/* Filled the batch queue? */
-+		/* XXX FIXME: RX path dependent on MAX_SKB_FRAGS */
- 		if (count + MAX_SKB_FRAGS >= XEN_NETIF_RX_RING_SIZE)
+diff --git a/net/netfilter/ipvs/ip_vs_pe_sip.c b/net/netfilter/ipvs/ip_vs_pe_sip.c
+index 1aa5cac..55add93 100644
+--- a/net/netfilter/ipvs/ip_vs_pe_sip.c
++++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
+@@ -37,14 +37,10 @@ static int get_callid(const char *dptr, unsigned int dataoff,
+ 		if (ret > 0)
  			break;
+ 		if (!ret)
+-			return 0;
++			return -EINVAL;
+ 		dataoff += *matchoff;
  	}
-@@ -869,47 +899,78 @@ static void netbk_fatal_tx_err(struct xenvif *vif)
  
- static int netbk_count_requests(struct xenvif *vif,
- 				struct xen_netif_tx_request *first,
-+				RING_IDX first_idx,
- 				struct xen_netif_tx_request *txp,
- 				int work_to_do)
- {
- 	RING_IDX cons = vif->tx.req_cons;
--	int frags = 0;
-+	int slots = 0;
-+	int drop_err = 0;
- 
- 	if (!(first->flags & XEN_NETTXF_more_data))
- 		return 0;
- 
- 	do {
--		if (frags >= work_to_do) {
--			netdev_err(vif->dev, "Need more frags\n");
-+		if (slots >= work_to_do) {
-+			netdev_err(vif->dev,
-+				   "Asked for %d slots but exceeds this limit\n",
-+				   work_to_do);
- 			netbk_fatal_tx_err(vif);
- 			return -ENODATA;
- 		}
- 
--		if (unlikely(frags >= MAX_SKB_FRAGS)) {
--			netdev_err(vif->dev, "Too many frags\n");
-+		/* This guest is really using too many slots and
-+		 * considered malicious.
-+		 */
-+		if (unlikely(slots >= max_skb_slots)) {
-+			netdev_err(vif->dev,
-+				   "Malicious frontend using %d slots, threshold %u\n",
-+				   slots, max_skb_slots);
- 			netbk_fatal_tx_err(vif);
- 			return -E2BIG;
- 		}
- 
--		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
-+		/* Xen network protocol had implicit dependency on
-+		 * MAX_SKB_FRAGS. XEN_NETIF_NR_SLOTS_MIN is set to the
-+		 * historical MAX_SKB_FRAGS value 18 to honor the same
-+		 * behavior as before. Any packet using more than 18
-+		 * slots but less than max_skb_slots slots is dropped
-+		 */
-+		if (!drop_err && slots >= XEN_NETIF_NR_SLOTS_MIN) {
-+			if (net_ratelimit())
-+				netdev_dbg(vif->dev,
-+					   "Too many slots (%d) exceeding limit (%d), dropping packet\n",
-+					   slots, XEN_NETIF_NR_SLOTS_MIN);
-+			drop_err = -E2BIG;
-+		}
-+
-+		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + slots),
- 		       sizeof(*txp));
- 		if (txp->size > first->size) {
--			netdev_err(vif->dev, "Frag is bigger than frame.\n");
-+			netdev_err(vif->dev,
-+				   "Invalid tx request, slot size %u > remaining size %u\n",
-+				   txp->size, first->size);
- 			netbk_fatal_tx_err(vif);
- 			return -EIO;
- 		}
- 
- 		first->size -= txp->size;
--		frags++;
-+		slots++;
- 
- 		if (unlikely((txp->offset + txp->size) > PAGE_SIZE)) {
--			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
-+			netdev_err(vif->dev, "Cross page boundary, txp->offset: %x, size: %u\n",
- 				 txp->offset, txp->size);
- 			netbk_fatal_tx_err(vif);
- 			return -EINVAL;
- 		}
- 	} while ((txp++)->flags & XEN_NETTXF_more_data);
--	return frags;
-+
-+	if (drop_err) {
-+		netbk_tx_err(vif, first, first_idx + slots);
-+		return drop_err;
-+	}
-+
-+	return slots;
- }
- 
- static struct page *xen_netbk_alloc_page(struct xen_netbk *netbk,
-@@ -933,48 +994,114 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	skb_frag_t *frags = shinfo->frags;
- 	u16 pending_idx = *((u16 *)skb->data);
--	int i, start;
-+	u16 head_idx = 0;
-+	int slot, start;
-+	struct page *page;
-+	pending_ring_idx_t index, start_idx = 0;
-+	uint16_t dst_offset;
-+	unsigned int nr_slots;
-+	struct pending_tx_info *first = NULL;
-+
-+	/* At this point shinfo->nr_frags is in fact the number of
-+	 * slots, which can be as large as XEN_NETIF_NR_SLOTS_MIN.
-+	 */
-+	nr_slots = shinfo->nr_frags;
- 
- 	/* Skip first skb fragment if it is on same page as header fragment. */
- 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
- 
--	for (i = start; i < shinfo->nr_frags; i++, txp++) {
--		struct page *page;
--		pending_ring_idx_t index;
-+	/* Coalesce tx requests, at this point the packet passed in
-+	 * should be <= 64K. Any packets larger than 64K have been
-+	 * handled in netbk_count_requests().
-+	 */
-+	for (shinfo->nr_frags = slot = start; slot < nr_slots;
-+	     shinfo->nr_frags++) {
- 		struct pending_tx_info *pending_tx_info =
- 			netbk->pending_tx_info;
- 
--		index = pending_index(netbk->pending_cons++);
--		pending_idx = netbk->pending_ring[index];
--		page = xen_netbk_alloc_page(netbk, pending_idx);
-+		page = alloc_page(GFP_KERNEL|__GFP_COLD);
- 		if (!page)
- 			goto err;
- 
--		gop->source.u.ref = txp->gref;
--		gop->source.domid = vif->domid;
--		gop->source.offset = txp->offset;
+-	/* Empty callid is useless */
+-	if (!*matchlen)
+-		return -EINVAL;
 -
--		gop->dest.u.gmfn = virt_to_mfn(page_address(page));
--		gop->dest.domid = DOMID_SELF;
--		gop->dest.offset = txp->offset;
--
--		gop->len = txp->size;
--		gop->flags = GNTCOPY_source_gref;
-+		dst_offset = 0;
-+		first = NULL;
-+		while (dst_offset < PAGE_SIZE && slot < nr_slots) {
-+			gop->flags = GNTCOPY_source_gref;
-+
-+			gop->source.u.ref = txp->gref;
-+			gop->source.domid = vif->domid;
-+			gop->source.offset = txp->offset;
-+
-+			gop->dest.domid = DOMID_SELF;
-+
-+			gop->dest.offset = dst_offset;
-+			gop->dest.u.gmfn = virt_to_mfn(page_address(page));
-+
-+			if (dst_offset + txp->size > PAGE_SIZE) {
-+				/* This page can only merge a portion
-+				 * of tx request. Do not increment any
-+				 * pointer / counter here. The txp
-+				 * will be dealt with in future
-+				 * rounds, eventually hitting the
-+				 * `else` branch.
-+				 */
-+				gop->len = PAGE_SIZE - dst_offset;
-+				txp->offset += gop->len;
-+				txp->size -= gop->len;
-+				dst_offset += gop->len; /* quit loop */
-+			} else {
-+				/* This tx request can be merged in the page */
-+				gop->len = txp->size;
-+				dst_offset += gop->len;
-+
-+				index = pending_index(netbk->pending_cons++);
-+
-+				pending_idx = netbk->pending_ring[index];
-+
-+				memcpy(&pending_tx_info[pending_idx].req, txp,
-+				       sizeof(*txp));
-+				xenvif_get(vif);
-+
-+				pending_tx_info[pending_idx].vif = vif;
-+
-+				/* Poison these fields, corresponding
-+				 * fields for head tx req will be set
-+				 * to correct values after the loop.
-+				 */
-+				netbk->mmap_pages[pending_idx] = (void *)(~0UL);
-+				pending_tx_info[pending_idx].head =
-+					INVALID_PENDING_RING_IDX;
-+
-+				if (!first) {
-+					first = &pending_tx_info[pending_idx];
-+					start_idx = index;
-+					head_idx = pending_idx;
-+				}
-+
-+				txp++;
-+				slot++;
-+			}
- 
--		gop++;
-+			gop++;
-+		}
- 
--		memcpy(&pending_tx_info[pending_idx].req, txp, sizeof(*txp));
--		xenvif_get(vif);
--		pending_tx_info[pending_idx].vif = vif;
--		frag_set_pending_idx(&frags[i], pending_idx);
-+		first->req.offset = 0;
-+		first->req.size = dst_offset;
-+		first->head = start_idx;
-+		set_page_ext(page, netbk, head_idx);
-+		netbk->mmap_pages[head_idx] = page;
-+		frag_set_pending_idx(&frags[shinfo->nr_frags], head_idx);
- 	}
- 
-+	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
-+
- 	return gop;
- err:
- 	/* Unwind, freeing all pages and sending error responses. */
--	while (i-- > start) {
--		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
--				      XEN_NETIF_RSP_ERROR);
-+	while (shinfo->nr_frags-- > start) {
-+		xen_netbk_idx_release(netbk,
-+				frag_get_pending_idx(&frags[shinfo->nr_frags]),
-+				XEN_NETIF_RSP_ERROR);
- 	}
- 	/* The head too, if necessary. */
- 	if (start)
-@@ -990,8 +1117,10 @@ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
- 	struct gnttab_copy *gop = *gopp;
- 	u16 pending_idx = *((u16 *)skb->data);
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
-+	struct pending_tx_info *tx_info;
- 	int nr_frags = shinfo->nr_frags;
- 	int i, err, start;
-+	u16 peek; /* peek into next tx request */
- 
- 	/* Check status of header. */
- 	err = gop->status;
-@@ -1003,11 +1132,20 @@ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
- 
- 	for (i = start; i < nr_frags; i++) {
- 		int j, newerr;
-+		pending_ring_idx_t head;
- 
- 		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
-+		tx_info = &netbk->pending_tx_info[pending_idx];
-+		head = tx_info->head;
- 
- 		/* Check error status: if okay then remember grant handle. */
--		newerr = (++gop)->status;
-+		do {
-+			newerr = (++gop)->status;
-+			if (newerr)
-+				break;
-+			peek = netbk->pending_ring[pending_index(++head)];
-+		} while (!pending_tx_is_head(netbk, peek));
-+
- 		if (likely(!newerr)) {
- 			/* Had a previous error? Invalidate this fragment. */
- 			if (unlikely(err))
-@@ -1232,11 +1370,12 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
- 	struct sk_buff *skb;
- 	int ret;
- 
--	while (((nr_pending_reqs(netbk) + MAX_SKB_FRAGS) < MAX_PENDING_REQS) &&
-+	while ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
-+		< MAX_PENDING_REQS) &&
- 		!list_empty(&netbk->net_schedule_list)) {
- 		struct xenvif *vif;
- 		struct xen_netif_tx_request txreq;
--		struct xen_netif_tx_request txfrags[MAX_SKB_FRAGS];
-+		struct xen_netif_tx_request txfrags[max_skb_slots];
- 		struct page *page;
- 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
- 		u16 pending_idx;
-@@ -1297,7 +1436,8 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
- 				continue;
- 		}
- 
--		ret = netbk_count_requests(vif, &txreq, txfrags, work_to_do);
-+		ret = netbk_count_requests(vif, &txreq, idx,
-+					   txfrags, work_to_do);
- 		if (unlikely(ret < 0))
- 			continue;
- 
-@@ -1324,7 +1464,7 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
- 		pending_idx = netbk->pending_ring[index];
- 
- 		data_len = (txreq.size > PKT_PROT_LEN &&
--			    ret < MAX_SKB_FRAGS) ?
-+			    ret < XEN_NETIF_NR_SLOTS_MIN) ?
- 			PKT_PROT_LEN : txreq.size;
- 
- 		skb = alloc_skb(data_len + NET_SKB_PAD + NET_IP_ALIGN,
-@@ -1374,6 +1514,7 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
- 		memcpy(&netbk->pending_tx_info[pending_idx].req,
- 		       &txreq, sizeof(txreq));
- 		netbk->pending_tx_info[pending_idx].vif = vif;
-+		netbk->pending_tx_info[pending_idx].head = index;
- 		*((u16 *)skb->data) = pending_idx;
- 
- 		__skb_put(skb, data_len);
-@@ -1504,7 +1645,10 @@ static void xen_netbk_idx_release(struct xen_netbk *netbk, u16 pending_idx,
- {
- 	struct xenvif *vif;
- 	struct pending_tx_info *pending_tx_info;
--	pending_ring_idx_t index;
-+	pending_ring_idx_t head;
-+	u16 peek; /* peek into next tx request */
-+
-+	BUG_ON(netbk->mmap_pages[pending_idx] == (void *)(~0UL));
- 
- 	/* Already complete? */
- 	if (netbk->mmap_pages[pending_idx] == NULL)
-@@ -1513,19 +1657,40 @@ static void xen_netbk_idx_release(struct xen_netbk *netbk, u16 pending_idx,
- 	pending_tx_info = &netbk->pending_tx_info[pending_idx];
- 
- 	vif = pending_tx_info->vif;
-+	head = pending_tx_info->head;
- 
--	make_tx_response(vif, &pending_tx_info->req, status);
-+	BUG_ON(!pending_tx_is_head(netbk, head));
-+	BUG_ON(netbk->pending_ring[pending_index(head)] != pending_idx);
- 
--	index = pending_index(netbk->pending_prod++);
--	netbk->pending_ring[index] = pending_idx;
-+	do {
-+		pending_ring_idx_t index;
-+		pending_ring_idx_t idx = pending_index(head);
-+		u16 info_idx = netbk->pending_ring[idx];
- 
--	xenvif_put(vif);
-+		pending_tx_info = &netbk->pending_tx_info[info_idx];
-+		make_tx_response(vif, &pending_tx_info->req, status);
-+
-+		/* Setting any number other than
-+		 * INVALID_PENDING_RING_IDX indicates this slot is
-+		 * starting a new packet / ending a previous packet.
-+		 */
-+		pending_tx_info->head = 0;
-+
-+		index = pending_index(netbk->pending_prod++);
-+		netbk->pending_ring[index] = netbk->pending_ring[info_idx];
- 
--	netbk->mmap_pages[pending_idx]->mapping = NULL;
-+		xenvif_put(vif);
-+
-+		peek = netbk->pending_ring[pending_index(++head)];
-+
-+	} while (!pending_tx_is_head(netbk, peek));
-+
-+	netbk->mmap_pages[pending_idx]->mapping = 0;
- 	put_page(netbk->mmap_pages[pending_idx]);
- 	netbk->mmap_pages[pending_idx] = NULL;
- }
- 
-+
- static void make_tx_response(struct xenvif *vif,
- 			     struct xen_netif_tx_request *txp,
- 			     s8       st)
-@@ -1578,8 +1743,9 @@ static inline int rx_work_todo(struct xen_netbk *netbk)
- static inline int tx_work_todo(struct xen_netbk *netbk)
- {
- 
--	if (((nr_pending_reqs(netbk) + MAX_SKB_FRAGS) < MAX_PENDING_REQS) &&
--			!list_empty(&netbk->net_schedule_list))
-+	if ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
-+	     < MAX_PENDING_REQS) &&
-+	     !list_empty(&netbk->net_schedule_list))
- 		return 1;
- 
- 	return 0;
-@@ -1662,6 +1828,13 @@ static int __init netback_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
-+	if (max_skb_slots < XEN_NETIF_NR_SLOTS_MIN) {
-+		printk(KERN_INFO
-+		       "xen-netback: max_skb_slots too small (%d), bump it to XEN_NETIF_NR_SLOTS_MIN (%d)\n",
-+		       max_skb_slots, XEN_NETIF_NR_SLOTS_MIN);
-+		max_skb_slots = XEN_NETIF_NR_SLOTS_MIN;
-+	}
-+
- 	xen_netbk_group_nr = num_online_cpus();
- 	xen_netbk = vzalloc(sizeof(struct xen_netbk) * xen_netbk_group_nr);
- 	if (!xen_netbk)
-diff --git a/include/xen/interface/io/netif.h b/include/xen/interface/io/netif.h
-index cb94668..a36c87a 100644
---- a/include/xen/interface/io/netif.h
-+++ b/include/xen/interface/io/netif.h
-@@ -13,6 +13,24 @@
- #include "../grant_table.h"
- 
- /*
-+ * Older implementation of Xen network frontend / backend has an
-+ * implicit dependency on the MAX_SKB_FRAGS as the maximum number of
-+ * ring slots a skb can use. Netfront / netback may not work as
-+ * expected when frontend and backend have different MAX_SKB_FRAGS.
-+ *
-+ * A better approach is to add mechanism for netfront / netback to
-+ * negotiate this value. However we cannot fix all possible
-+ * frontends, so we need to define a value which states the minimum
-+ * slots backend must support.
-+ *
-+ * The minimum value derives from older Linux kernel's MAX_SKB_FRAGS
-+ * (18), which is proved to work with most frontends. Any new backend
-+ * which doesn't negotiate with frontend should expect frontend to
-+ * send a valid packet using slots up to this value.
-+ */
-+#define XEN_NETIF_NR_SLOTS_MIN 18
-+
-+/*
-  * Notifications after enqueuing any type of message should be conditional on
-  * the appropriate req_event or rsp_event field in the shared ring.
-  * If the client sends notification for rx requests then it should specify
+ 	/* Too large is useless */
+ 	if (*matchlen > IP_VS_PEDATA_MAXLEN)
+ 		return -EINVAL;
 -- 
 1.8.1.2
 
