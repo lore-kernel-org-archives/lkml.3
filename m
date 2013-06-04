@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab3FDOyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:54:17 -0400
-Received: from fieldses.org ([174.143.236.118]:47230 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab3FDOyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:54:15 -0400
-Date: Tue, 4 Jun 2013 10:53:22 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Jeff Layton <jlayton@redhat.com>, viro@zeniv.linux.org.uk,
-        matthew@wil.cx, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        cluster-devel@redhat.com, sage@inktank.com,
-        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
-        swhiteho@redhat.com
-Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
-Message-ID: <20130604145322.GH2109@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-12-git-send-email-jlayton@redhat.com>
- <51ADF789.70906@samba.org>
- <20130604144640.GA7730@infradead.org>
+	id S1757043Ab3FDO4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:56:20 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52971 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab3FDO4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:56:18 -0400
+Message-ID: <51AE0101.20408@linux.vnet.ibm.com>
+Date: Tue, 04 Jun 2013 20:30:17 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604144640.GA7730@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 12/19]  xen: Enable PV ticketlocks on HVM Xen
+References: <20130601192125.5966.35563.sendpatchset@codeblue> <20130601192503.5966.70501.sendpatchset@codeblue> <20130603155759.GE4224@phenom.dumpdata.com> <51AD9465.6000508@linux.vnet.ibm.com> <20130604144419.GE7110@phenom.dumpdata.com>
+In-Reply-To: <20130604144419.GE7110@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060414-4790-0000-0000-0000089FEC63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 07:46:40AM -0700, Christoph Hellwig wrote:
-> Having RCU for modification mostly workloads never is a good idea, so
-> I don't think it makes sense to mention it here.
-> 
-> If you care about the overhead it's worth trying to use per-cpu lists,
-> though.
+On 06/04/2013 08:14 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 04, 2013 at 12:46:53PM +0530, Raghavendra K T wrote:
+>> On 06/03/2013 09:27 PM, Konrad Rzeszutek Wilk wrote:
+>>> On Sun, Jun 02, 2013 at 12:55:03AM +0530, Raghavendra K T wrote:
+>>>> xen: Enable PV ticketlocks on HVM Xen
+>>>
+>>> There is more to it. You should also revert 70dd4998cb85f0ecd6ac892cc7232abefa432efb
+>>>
+>>
+>> Yes, true. Do you expect the revert to be folded into this patch itself?
+>>
+>
+> I can do them. I would drop this patch and just mention in
+> the cover letter that Konrad would have to revert two git commits
+> to re-enable it on PVHVM.
+>
 
-Yes.  The lock and unlock could happen on different CPU's--but I think
-you can make the rule that the lock stays associated with the list it
-was first put on, and then it's correct in general and hopefully quick
-in the common case.
+Thanks. will do that.
 
---b.
