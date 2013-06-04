@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab3FDWvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:51:39 -0400
-Received: from 1wt.eu ([62.212.114.60]:35834 "EHLO 1wt.eu"
+	id S1754404Ab3FDWvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:51:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:35831 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab3FDWoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:01 -0400
-Message-Id: <20130604172133.249243991@1wt.eu>
+	id S1754286Ab3FDWoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:00 -0400
+Message-Id: <20130604172134.870479477@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:41 +0200
+Date: Tue, 04 Jun 2013 19:23:20 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ian Abbott <abbotti@mev.co.uk>,
+Cc: Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 071/184] staging: comedi: s626: dont dereference insn->data
+Subject: [ 110/184] USB: io_ti: Fix NULL dereference in chase_port()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,35 +24,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Wolfgang Frisch <wfpub@roembden.net>
 
-commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
+commit 1ee0a224bc9aad1de496c795f96bc6ba2c394811 upstream
 
-`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
-is a pointer to user memory.  It should be dereferencing the separate
-`data` parameter that points to a copy of the data in kernel memory.
+The tty is NULL when the port is hanging up.
+chase_port() needs to check for this.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+This patch is intended for stable series.
+The behavior was observed and tested in Linux 3.2 and 3.7.1.
+
+Johan Hovold submitted a more elaborate patch for the mainline kernel.
+
+[   56.277883] usb 1-1: edge_bulk_in_callback - nonzero read bulk status received: -84
+[   56.278811] usb 1-1: USB disconnect, device number 3
+[   56.278856] usb 1-1: edge_bulk_in_callback - stopping read!
+[   56.279562] BUG: unable to handle kernel NULL pointer dereference at 00000000000001c8
+[   56.280536] IP: [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.281212] PGD 1dc1b067 PUD 1e0f7067 PMD 0
+[   56.282085] Oops: 0002 [#1] SMP
+[   56.282744] Modules linked in:
+[   56.283512] CPU 1
+[   56.283512] Pid: 25, comm: khubd Not tainted 3.7.1 #1 innotek GmbH VirtualBox/VirtualBox
+[   56.283512] RIP: 0010:[<ffffffff8144e62a>]  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512] RSP: 0018:ffff88001fa99ab0  EFLAGS: 00010046
+[   56.283512] RAX: 0000000000000046 RBX: 00000000000001c8 RCX: 0000000000640064
+[   56.283512] RDX: 0000000000010000 RSI: ffff88001fa99b20 RDI: 00000000000001c8
+[   56.283512] RBP: ffff88001fa99b20 R08: 0000000000000000 R09: 0000000000000000
+[   56.283512] R10: 0000000000000000 R11: ffffffff812fcb4c R12: ffff88001ddf53c0
+[   56.283512] R13: 0000000000000000 R14: 00000000000001c8 R15: ffff88001e19b9f4
+[   56.283512] FS:  0000000000000000(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+[   56.283512] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   56.283512] CR2: 00000000000001c8 CR3: 000000001dc51000 CR4: 00000000000006e0
+[   56.283512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   56.283512] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   56.283512] Process khubd (pid: 25, threadinfo ffff88001fa98000, task ffff88001fa94f80)
+[   56.283512] Stack:
+[   56.283512]  0000000000000046 00000000000001c8 ffffffff810578ec ffffffff812fcb4c
+[   56.283512]  ffff88001e19b980 0000000000002710 ffffffff812ffe81 0000000000000001
+[   56.283512]  ffff88001fa94f80 0000000000000202 ffffffff00000001 0000000000000296
+[   56.283512] Call Trace:
+[   56.283512]  [<ffffffff810578ec>] ? add_wait_queue+0x12/0x3c
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff812ffe81>] ? chase_port+0x84/0x2d6
+[   56.283512]  [<ffffffff81063f27>] ? try_to_wake_up+0x199/0x199
+[   56.283512]  [<ffffffff81263a5c>] ? tty_ldisc_hangup+0x222/0x298
+[   56.283512]  [<ffffffff81300171>] ? edge_close+0x64/0x129
+[   56.283512]  [<ffffffff810612f7>] ? __wake_up+0x35/0x46
+[   56.283512]  [<ffffffff8106135b>] ? should_resched+0x5/0x23
+[   56.283512]  [<ffffffff81264916>] ? tty_port_shutdown+0x39/0x44
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff8125d38c>] ? __tty_hangup+0x307/0x351
+[   56.283512]  [<ffffffff812e6ddc>] ? usb_hcd_flush_endpoint+0xde/0xed
+[   56.283512]  [<ffffffff8144e625>] ? _raw_spin_lock_irqsave+0x14/0x35
+[   56.283512]  [<ffffffff812fd361>] ? usb_serial_disconnect+0x57/0xc2
+[   56.283512]  [<ffffffff812ea99b>] ? usb_unbind_interface+0x5c/0x131
+[   56.283512]  [<ffffffff8128d738>] ? __device_release_driver+0x7f/0xd5
+[   56.283512]  [<ffffffff8128d9cd>] ? device_release_driver+0x1a/0x25
+[   56.283512]  [<ffffffff8128d393>] ? bus_remove_device+0xd2/0xe7
+[   56.283512]  [<ffffffff8128b7a3>] ? device_del+0x119/0x167
+[   56.283512]  [<ffffffff812e8d9d>] ? usb_disable_device+0x6a/0x180
+[   56.283512]  [<ffffffff812e2ae0>] ? usb_disconnect+0x81/0xe6
+[   56.283512]  [<ffffffff812e4435>] ? hub_thread+0x577/0xe82
+[   56.283512]  [<ffffffff8144daa7>] ? __schedule+0x490/0x4be
+[   56.283512]  [<ffffffff8105798f>] ? abort_exclusive_wait+0x79/0x79
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff810570b4>] ? kthread+0x81/0x89
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512]  [<ffffffff8145387c>] ? ret_from_fork+0x7c/0xb0
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512] Code: 8b 7c 24 08 e8 17 0b c3 ff 48 8b 04 24 48 83 c4 10 c3 53 48 89 fb 41 50 e8 e0 0a c3 ff 48 89 04 24 e8 e7 0a c3 ff ba 00 00 01 00
+<f0> 0f c1 13 48 8b 04 24 89 d1 c1 ea 10 66 39 d1 74 07 f3 90 66
+[   56.283512] RIP  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512]  RSP <ffff88001fa99ab0>
+[   56.283512] CR2: 00000000000001c8
+[   56.283512] ---[ end trace 49714df27e1679ce ]---
+
+Signed-off-by: Wolfgang Frisch <wfpub@roembden.net>
+Cc: Johan Hovold <jhovold@gmail.com>
+Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/staging/comedi/drivers/s626.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/io_ti.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 80d2787..7a7c29f 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -2330,7 +2330,7 @@ static int s626_enc_insn_config(struct comedi_device *dev,
- 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 14d51e6..cf515f0 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -574,6 +574,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
+ 	wait_queue_t wait;
+ 	unsigned long flags;
  
- 	k->SetMode(dev, k, Setup, TRUE);
--	Preload(dev, k, *(insn->data));
-+	Preload(dev, k, data[0]);
- 	k->PulseIndex(dev, k);
- 	SetLatchSource(dev, k, valueSrclatch);
- 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
++	if (!tty)
++		return;
++
+ 	if (!timeout)
+ 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
