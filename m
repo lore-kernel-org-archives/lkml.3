@@ -1,239 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3FDLEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 07:04:15 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:46279 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab3FDLEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 07:04:12 -0400
-Date: Tue, 4 Jun 2013 13:04:01 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
-Message-ID: <20130604110401.GA2566@localhost>
-References: <1369721825.2776.36@driftwood>
- <51A327A4.7020908@linuxdingsda.de>
- <87obbwbo8s.fsf@nemi.mork.no>
- <51A332E2.1090403@linuxdingsda.de>
- <20130604024959.GA10697@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130604024959.GA10697@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753364Ab3FDLJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:09:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab3FDLJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 07:09:43 -0400
+Date: Tue, 4 Jun 2013 07:09:02 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v1 03/11] locks: comment cleanups and clarifications
+Message-ID: <20130604070902.07f0caee@tlielax.poochiereds.net>
+In-Reply-To: <20130603220024.GF2109@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-4-git-send-email-jlayton@redhat.com>
+	<20130603220024.GF2109@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 07:49:59PM -0700, Greg KH wrote:
-> On Mon, May 27, 2013 at 02:28:51PM +0200, Bjørn Mork wrote:
-> > But, IMHO, a nicer approach would be to make the allocation completely
-> > dynamic, using e.g. the idr subsystem. Static tables are always feel
-> > like straight jackets to me, no matter how big they are :)
+On Mon, 3 Jun 2013 18:00:24 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Fri, May 31, 2013 at 11:07:26PM -0400, Jeff Layton wrote:
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/locks.c         |   24 +++++++++++++++++++-----
+> >  include/linux/fs.h |    6 ++++++
+> >  2 files changed, 25 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index e3140b8..a7d2253 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -150,6 +150,16 @@ static int target_leasetype(struct file_lock *fl)
+> >  int leases_enable = 1;
+> >  int lease_break_time = 45;
+> >  
+> > +/*
+> > + * The i_flock list is ordered by:
+> > + *
+> > + * 1) lock type -- FL_LEASEs first, then FL_FLOCK, and finally FL_POSIX
+> > + * 2) lock owner
+> > + * 3) lock range start
+> > + * 4) lock range end
+> > + *
+> > + * Obviously, the last two criteria only matter for POSIX locks.
+> > + */
 > 
-> You are right, I didn't change the code to use idr (it predates idr by
-> about a decade or so), because I thought we needed the "rage" logic that
-> the usb-serial minor reservation does.
+> Thanks, yes, that needs documenting!  Though I wonder if this is the
+> place people will look for it.
 > 
-> But I'm not so sure anymore, so here's a patch to change to use the idr
-> code, and should remove all minor number limitations (well 65k is the
-> limit the tty core should be setting I think.)
+
+Agreed. If you can think of a better spot to put this, I'd be happy to
+move it in the next iteration of this series.
+
+> >  #define for_each_lock(inode, lockp) \
+> >  	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
+> >  
+> > @@ -806,6 +816,11 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  	}
+> >  
+> >  	lock_flocks();
+> > +	/*
+> > +	 * New lock request. Walk all POSIX locks and look for conflicts. If
+> > +	 * there are any, either return -EAGAIN or put the request on the
+> > +	 * blocker's list of waiters.
+> > +	 */
 > 
-> Tobias, can you test this patch out?  Note, I only compiled it, did not
-> get the chance to actually run it, so it might not work at all.
-
-I'm afraid this won't work in it's current form. Several drivers and
-parts of usb-serial core still depend on the minor numbers being
-consecutive for multi-port devices. There are also still references to
-SERIAL_TTY_NO_MINOR (255) as well as SERIAL_TTY_MINORS that need to be
-addressed.
-
+> This though, seems a) not 100% accurate (it could also return EDEADLCK,
+> for example), b) mostly redundant with respect to the following code.
 > 
-> thanks,
+
+Good point -- I'll fix that up. That one was mostly for my own benefit
+while trying to figure out how this code works. It's still probably worth
+some more verbose comments here since this certainly wasn't 100%
+obvious to me when I first dove into this code.
+
+> >  	if (request->fl_type != F_UNLCK) {
+> >  		for_each_lock(inode, before) {
+> >  			fl = *before;
+> > @@ -844,7 +859,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  		before = &fl->fl_next;
+> >  	}
+> >  
+> > -	/* Process locks with this owner.  */
+> > +	/* Process locks with this owner. */
+> >  	while ((fl = *before) && posix_same_owner(request, fl)) {
+> >  		/* Detect adjacent or overlapping regions (if same lock type)
+> >  		 */
+> > @@ -930,10 +945,9 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  	}
+> >  
+> >  	/*
+> > -	 * The above code only modifies existing locks in case of
+> > -	 * merging or replacing.  If new lock(s) need to be inserted
+> > -	 * all modifications are done bellow this, so it's safe yet to
+> > -	 * bail out.
+> > +	 * The above code only modifies existing locks in case of merging or
+> > +	 * replacing. If new lock(s) need to be inserted all modifications are
+> > +	 * done below this, so it's safe yet to bail out.
+> >  	 */
+> >  	error = -ENOLCK; /* "no luck" */
+> >  	if (right && left == right && !new_fl2)
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index b9d7816..ae377e9 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -926,6 +926,12 @@ int locks_in_grace(struct net *);
+> >  /* that will die - we need it for nfs_lock_info */
+> >  #include <linux/nfs_fs_i.h>
+> >  
+> > +/*
+> > + * struct file_lock represents a generic "file lock". It's used to represent
+> > + * POSIX byte range locks, BSD (flock) locks, and leases. It's important to
+> > + * note that the same struct is used to represent both a request for a lock and
+> > + * the lock itself, but the same object is never used for both.
 > 
-> greg k-h
+> Yes, and I do find that confusing.  I wonder if there's a sensible way
+> to use separate structs for the different uses.
 > 
-> Subject: [PATCH] usb: serial: remove minor number limitation of 255
+> --b.
 > 
-> 
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
->  drivers/usb/serial/usb-serial.c |   86 +++++++++++++++++-----------------------
->  1 file changed, 38 insertions(+), 48 deletions(-)
-> 
-> diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-> index 4753c00..74b6f08 100644
-> --- a/drivers/usb/serial/usb-serial.c
-> +++ b/drivers/usb/serial/usb-serial.c
-> @@ -37,6 +37,7 @@
->  #include <linux/usb.h>
->  #include <linux/usb/serial.h>
->  #include <linux/kfifo.h>
-> +#include <linux/idr.h>
->  #include "pl2303.h"
->  
->  #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
-> @@ -49,7 +50,7 @@
->     drivers depend on it.
->  */
->  
-> -static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
-> +static DEFINE_IDR(serial_minors);
->  static DEFINE_MUTEX(table_lock);
->  static LIST_HEAD(usb_serial_driver_list);
->  
-> @@ -61,59 +62,52 @@ static LIST_HEAD(usb_serial_driver_list);
->  struct usb_serial *usb_serial_get_by_index(unsigned index)
->  {
->  	struct usb_serial *serial;
-> +	struct usb_serial_port *port;
->  
->  	mutex_lock(&table_lock);
-> -	serial = serial_table[index];
-> -
-> -	if (serial) {
-> -		mutex_lock(&serial->disc_mutex);
-> -		if (serial->disconnected) {
-> -			mutex_unlock(&serial->disc_mutex);
-> -			serial = NULL;
-> -		} else {
-> -			kref_get(&serial->kref);
-> -		}
-> -	}
-> +	port = idr_find(&serial_minors, index);
->  	mutex_unlock(&table_lock);
-> +	if (!port)
-> +		return NULL;
-> +
-> +	serial = port->serial;
-> +	kref_get(&serial->kref);
->  	return serial;
->  }
 
-We would still need to handle disconnect, and make sure to return with
-the disc_mutex held unless disconnected.
+Yeah. I think that latter point accounts for a lot of the difficulty for
+the uninitiated to understand this code.
 
->  
-> -static struct usb_serial *get_free_serial(struct usb_serial *serial,
-> -					int num_ports, unsigned int *minor)
-> +static int get_free_port(struct usb_serial_port *port)
->  {
-> -	unsigned int i, j;
-> -	int good_spot;
-> -
-> -	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-> +	int i;
->  
-> -	*minor = 0;
->  	mutex_lock(&table_lock);
-> -	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
-> -		if (serial_table[i])
-> -			continue;
-> +	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
-> +	if (i < 0)
+I considered creating a "struct lock_request" too. If I were designing
+this code from scratch I certainly would do so, but it's harder to
+justify such a change to the existing code.
 
-Missing mutex unlock (as already Dave noted).
+It would mean a lot of churn in fs-specific lock routines, and we'd
+have to completely revamp things like locks_copy_lock. I just don't see
+that giving us a lot of benefit in the near term and I really want this
+set to focus on concrete benefits.
 
-> +		return -EEXIST;
-> +	port->number = i;
-> +	mutex_unlock(&table_lock);
-> +	return i;
-> +}
->  
-> -		good_spot = 1;
-> -		for (j = 1; j <= num_ports-1; ++j)
-> -			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
-> -				good_spot = 0;
-> -				i += j;
-> -				break;
-> -			}
-> -		if (good_spot == 0)
-> -			continue;
-> +static int get_free_serial(struct usb_serial *serial, int num_ports,
-> +			   unsigned int *minor)
-> +{
-> +	unsigned int i;
-> +	unsigned int x;
->  
-> -		*minor = i;
-> -		j = 0;
-> -		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
-> -		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i) {
-> -			serial_table[i] = serial;
-> -			serial->port[j++]->number = i;
-> -		}
-> -		mutex_unlock(&table_lock);
-> -		return serial;
-> +	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-> +
-> +	*minor = 0xffffffff;
-> +	for (i = 0; i < num_ports; ++i) {
-> +		x = get_free_port(serial->port[i]);
-> +		if (x < 0)
-> +			goto error;
-> +		if (*minor == 0xffffffff)
-> +			*minor = x;
->  	}
-> -	mutex_unlock(&table_lock);
-> -	return NULL;
-> +	return 0;
-> +error:
-> +	// FIXME unwind the already allocated minors
-> +	return -ENODEV;
->  }
+We might consider it in the future though. I'll add a FIXME comment
+here so we can record the idea for posterity.
 
-As mentioned above, usb-serial core and several drivers currently depend
-on us returning the first minor in a consecutive range. It's mostly used
-to determine the per device port index, so storing that index in the port
-structure could possibly be sufficient.
+Thanks for the comments!
 
->  
->  static void return_serial(struct usb_serial *serial)
-> @@ -122,7 +116,7 @@ static void return_serial(struct usb_serial *serial)
->  
->  	mutex_lock(&table_lock);
->  	for (i = 0; i < serial->num_ports; ++i)
-> -		serial_table[serial->minor + i] = NULL;
-> +		idr_remove(&serial_minors, serial->port[i]->number);
->  	mutex_unlock(&table_lock);
->  }
->  
-> @@ -1041,7 +1035,7 @@ static int usb_serial_probe(struct usb_interface *interface,
->  	 */
->  	serial->disconnected = 1;
->  
-> -	if (get_free_serial(serial, num_ports, &minor) == NULL) {
-> +	if (get_free_serial(serial, num_ports, &minor)) {
->  		dev_err(ddev, "No more free serial devices\n");
->  		goto probe_error;
->  	}
-> @@ -1225,7 +1219,6 @@ static struct usb_driver usb_serial_driver = {
->  
->  static int __init usb_serial_init(void)
->  {
-> -	int i;
->  	int result;
->  
->  	usb_serial_tty_driver = alloc_tty_driver(SERIAL_TTY_MINORS);
-> @@ -1233,9 +1226,6 @@ static int __init usb_serial_init(void)
->  		return -ENOMEM;
->  
->  	/* Initialize our global data */
+> > + */
+> >  struct file_lock {
+> >  	struct file_lock *fl_next;	/* singly linked list for this inode  */
+> >  	struct list_head fl_link;	/* doubly linked list of all locks */
+> > -- 
+> > 1.7.1
+> > 
 
-You could remove the above comment as well.
 
-> -	for (i = 0; i < SERIAL_TTY_MINORS; ++i)
-> -		serial_table[i] = NULL;
-> -
->  	result = bus_register(&usb_serial_bus_type);
->  	if (result) {
->  		pr_err("%s - registering bus driver failed\n", __func__);
-
-Thanks,
-Johan
+-- 
+Jeff Layton <jlayton@redhat.com>
