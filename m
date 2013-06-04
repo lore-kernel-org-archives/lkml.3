@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab3FDRCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:02:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48474 "EHLO
+	id S1758245Ab3FDRCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:02:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab3FDRCA (ORCPT
+	with ESMTP id S1755936Ab3FDRCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:02:00 -0400
+	Tue, 4 Jun 2013 13:02:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Kosina <jkosina@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Joseph Qi <joseph.qi@huawei.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 57/75] random: fix accounting race condition with lockless irq entropy_count update
-Date: Tue,  4 Jun 2013 09:55:41 -0700
-Message-Id: <1370364959-9475-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 58/75] ocfs2: goto out_unlock if ocfs2_get_clusters_nocache() failed in ocfs2_fiemap()
+Date: Tue,  4 Jun 2013 09:55:42 -0700
+Message-Id: <1370364959-9475-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -29,74 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 upstream.
+commit b4ca2b4b577c3530e34dcfaafccb2cc680ce95d1 upstream.
 
-Commit 902c098a3663 ("random: use lockless techniques in the interrupt
-path") turned IRQ path from being spinlock protected into lockless
-cmpxchg-retry update.
+Last time we found there is lock/unlock bug in ocfs2_file_aio_write, and
+then we did a thorough search for all lock resources in
+ocfs2_inode_info, including rw, inode and open lockres and found this
+bug.  My kernel version is 3.0.13, and it is also in the lastest version
+3.9.  In ocfs2_fiemap, once ocfs2_get_clusters_nocache failed, it should
+goto out_unlock instead of out, because we need release buffer head, up
+read alloc sem and unlock inode.
 
-That commit removed r->lock serialization between crediting entropy bits
-from IRQ context and accounting when extracting entropy on userspace
-read path, but didn't turn the r->entropy_count reads/updates in
-account() to use cmpxchg as well.
-
-It has been observed, that under certain circumstances this leads to
-read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
-corrupted and becomes negative, which in turn results in propagating 0
-all the way from account() to the actual read() call.
-
-Convert the accounting code to be the proper lockless counterpart of
-what has been partially done by 902c098a3663.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Acked-by: Sunil Mushran <sunil.mushran@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/random.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ fs/ocfs2/extent_map.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index ae872f8..b7dc45c 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -865,16 +865,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	if (r->entropy_count / 8 < min + reserved) {
- 		nbytes = 0;
- 	} else {
-+		int entropy_count, orig;
-+retry:
-+		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 		/* If limited, never pull more than available */
--		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
--			nbytes = r->entropy_count/8 - reserved;
--
--		if (r->entropy_count / 8 >= nbytes + reserved)
--			r->entropy_count -= nbytes*8;
--		else
--			r->entropy_count = reserved;
-+		if (r->limit && nbytes + reserved >= entropy_count / 8)
-+			nbytes = entropy_count/8 - reserved;
-+
-+		if (entropy_count / 8 >= nbytes + reserved) {
-+			entropy_count -= nbytes*8;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		} else {
-+			entropy_count = reserved;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		}
+diff --git a/fs/ocfs2/extent_map.c b/fs/ocfs2/extent_map.c
+index f487aa3..c5bfb4c 100644
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -791,7 +791,7 @@ int ocfs2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 						 &hole_size, &rec, &is_last);
+ 		if (ret) {
+ 			mlog_errno(ret);
+-			goto out;
++			goto out_unlock;
+ 		}
  
--		if (r->entropy_count < random_write_wakeup_thresh)
-+		if (entropy_count < random_write_wakeup_thresh)
- 			wakeup_write = 1;
- 	}
- 
+ 		if (rec.e_blkno == 0ULL) {
 -- 
 1.8.1.2
 
