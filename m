@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab3FDWVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:21:21 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62342 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3FDWVR (ORCPT
+	id S1751540Ab3FDWYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:24:53 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:59971 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab3FDWYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:21:17 -0400
+	Tue, 4 Jun 2013 18:24:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <0000013f0b7b993c-35844ed2-81be-4146-ab3c-6c803006576b-000000@email.amazonses.com>
-References: <1364010673.6345.156.camel@gandalf.local.home>
-	<1364227073.6345.182.camel@gandalf.local.home>
-	<1364228039.6345.183.camel@gandalf.local.home>
-	<0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
-	<1364234613.6345.184.camel@gandalf.local.home>
-	<0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
-	<1364236355.6345.185.camel@gandalf.local.home>
-	<20130327025957.GA17125@lge.com>
-	<1364355032.6345.200.camel@gandalf.local.home>
-	<20130327061351.GB17125@lge.com>
-	<alpine.DEB.2.02.1303281227520.16200@gentwo.org>
-	<0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
-	<1369751967.15552.12.camel@gandalf.local.home>
-	<alpine.DEB.2.02.1305281121420.1627@gentwo.org>
-	<0000013eec62261a-77052f34-f1cb-41b2-ae90-7575a2d0472c-000000@email.amazonses.com>
-	<CAAmzW4M8rX9WGo_FYeyBQ8=Ht-mRnQz1TGhLfbFuKhm3r8grGA@mail.gmail.com>
-	<0000013f0b7b993c-35844ed2-81be-4146-ab3c-6c803006576b-000000@email.amazonses.com>
-Date: Wed, 5 Jun 2013 07:21:14 +0900
-Message-ID: <CAAmzW4MakOx_SA6eA=BYP4rq76np4yOS6RANpNObQP6dDDqYQg@mail.gmail.com>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
+In-Reply-To: <201306041951.00447.arnd@arndb.de>
+References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
+	<201306012257.02327.arnd@arndb.de>
+	<CAL_JsqKMOy4CM=FXbsy7mQ1f0DLyK6n_cuZ92uhsSM2Mq-3B1g@mail.gmail.com>
+	<201306041951.00447.arnd@arndb.de>
+Date: Tue, 4 Jun 2013 17:24:51 -0500
+Message-ID: <CAL_JsqLRJ1cEWBfAdHEyngJHQKauJ6XzWH2JwXh1qDusMkzUGA@mail.gmail.com>
+Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/4 Christoph Lameter <cl@linux.com>:
-> On Tue, 4 Jun 2013, JoonSoo Kim wrote:
+On Tue, Jun 4, 2013 at 12:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 04 June 2013, Rob Herring wrote:
+>> On Sat, Jun 1, 2013 at 3:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Saturday 01 June 2013, Rob Herring wrote:
+>> >> No, we still need empty functions. Here is what of_device.h looks like:
+>> >>
+>> >> http://tinyurl.com/l2azz5m
+>> >>
+>> >> BTW, it has your ack.
+>> >>
+>> >
+>> > Could you add a patch on top that only puts the function declarations
+>> > inside of #ifdef that don't have an inline wrapper?
+>>
+>> I'm confused. You mean that DO have an inline? Like this:
+>>
+>> void foo(void);
+>>
+>> #ifdef CONFIG_OF
+>> void bar(void);
+>> #else
+>> static inline void bar(void) {}
+>> #endif
 >
->> And I re-read Steven initial problem report in RT kernel and find that
->> unfreeze_partial() do lock and unlock several times. This means that
->> each page in cpu partial list doesn't come from same node. Why do we
->> add other node's slab to this cpu partial list? This is also not good
->> for general case. How about considering node affinity in __slab_free()?
->> IMHO, if we implement this, Steven's problem can be solved.
+> Yes, sorry. That's what I meant.
 >
-> We may need the other nodes pages if we consistently allocate from there.
-> __slab_alloc() ensures that only pages from the correct node are used. It
-> will drop pages that do not come from the proper nodes.
+>> > It's really annoying to have to change the header file every time one
+>> > needs to call a function from a driver in the DT-only case.
+>>
+>> The functions without inlines are ones that drivers should not call
+>> and should only be called from OF enabled code. That's why we have not
+>> done a complete pass of adding inlines for everything.
 >
-> Filtering in __slab_free would mean that we cannot improve performance on
-> remote frees.
+> The problem is that it's a bad default. The convention in kernel code
+> is not to hide declarations in #ifdef, for multiple reasons:
 >
+> * It avoids unnecessary code rebuilds when the symbol changes between
+>   two 'make' runs.
+>
+> * It lets drivers and platform code call the function from dead code
+>   without causing a build error, thus improving compile coverage.
+>
+> * It's much nicer to read when can write your code like
+>
+> void __init exynos_init_io(struct map_desc *mach_desc, int size)
+> {
+>         if (IS_ENABLED_(CONFIG_OF) && initial_boot_params)
+>                 of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
+>         else
+>                 iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
+>         ...
+> }
+>
+> instead of
+>
+> void __init exynos_init_io(struct map_desc *mach_desc, int size)
+> {
+> #ifdef CONFIG_OF
+>         if (initial_boot_params)
+>                 of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
+>         else
+> #endif
+>                 iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
+>         ...
+> }
+>
+> The first one looks like actual C code, the second is really ugly,
+> and an inline wrapper wouldn't even do the right thing here.
 
-Sorry for poor explanation.
-I knew that we need the other nodes pages if we consistently allocate
-from there.
-In allocation path, it is reasonable.
-But, in free path, it is not reasonable that we put other nodes' page
-to cpu partial list.
-In this case, we don't need other nodes pages, because there is
-no allocation request for other nodes. Putting other node's page to
-cpu partial list and
-using this other node's page for normal allocation request(it doesn't
-specify node affinity)
-makes system performance degradation. Below is quick implementation of
-this idea.
+Right. I get all that. You still have to go add inlines if you want to make:
 
----------------------->8-------------------
-diff --git a/mm/slub.c b/mm/slub.c
-index 57707f0..7f614f4 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2495,7 +2495,8 @@ static void __slab_free(struct kmem_cache *s,
-struct page *page,
-                new.inuse--;
-                if ((!new.inuse || !prior) && !was_frozen) {
+if (IS_ENABLED(CONFIG_OF))
+    of_foo();
 
--                       if (!kmem_cache_debug(s) && !prior)
-+                       if (!kmem_cache_debug(s) && !prior &&
-+                               node_match(page,
-cpu_to_node(smp_processor_id())))
+just be:
 
-                                /*
-                                 * Slab was on no list before and will
-be partially empty
-@@ -2550,8 +2551,9 @@ static void __slab_free(struct kmem_cache *s,
-struct page *page,
-         * Objects left in the slab. If it was not on the partial list before
-         * then add it.
-         */
--       if (kmem_cache_debug(s) && unlikely(!prior)) {
--               remove_full(s, page);
-+       if (!prior) {
-+               if (kmem_cache_debug(s))
-+                       remove_full(s, page);
-                add_partial(n, page, DEACTIVATE_TO_TAIL);
-                stat(s, FREE_ADD_PARTIAL);
-        }
+of_foo();
+
+There are situations for both and only inlines cover both cases. I
+don't see a reason we would want to allow the first case and not allow
+the second case. I am tired of taking patches adding the inlines 1 by
+1, so perhaps we need to refactor the OF headers to better separate
+core infrastructure includes vs. driver only includes if that is
+really a concern.
+
+Rob
