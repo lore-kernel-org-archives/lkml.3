@@ -1,163 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3FDMgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:36:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32132 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab3FDMgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:36:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,799,1363158000"; 
-   d="scan'208";a="347856257"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 2/4] dma: move dw_dmac driver to an own directory
-Date: Tue,  4 Jun 2013 15:36:20 +0300
-Message-Id: <1370349382-20914-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1370349382-20914-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370349382-20914-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753296Ab3FDMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:42:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54079 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab3FDMmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:42:53 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <tony@atomide.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Fabio Stevam <festevam@gmail.com>
+Subject: [PATCHv3 1/3] arm: introduce config HAS_BANDGAP
+Date: Tue, 4 Jun 2013 08:42:09 -0400
+Message-ID: <1370349729-10517-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <51ADDE7A.6090205@ti.com>
+References: <51ADDE7A.6090205@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac driver is going to be split into multiple files. To make this more
-convenient move it to an own directory.
+Bandgap is a device used to measure temperature on
+electronic equipments. It is widely used in digital
+integrated circuits. It is based on the dependency
+between silicon voltage and temperature.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+This patch introduce HAS_BANDGAP config entry.
+This config is a boolean value so that arch
+code can flag if they feature a bandgap device.
+
+This config entry follows the same idea behind
+ARCH_HAS_CPUFREQ.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Fabio Stevam <festevam@gmail.com>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- MAINTAINERS                         |  3 +--
- drivers/dma/Kconfig                 | 20 +-------------------
- drivers/dma/Makefile                |  2 +-
- drivers/dma/dw/Kconfig              | 23 +++++++++++++++++++++++
- drivers/dma/dw/Makefile             |  1 +
- drivers/dma/{ => dw}/dw_dmac.c      |  2 +-
- drivers/dma/{ => dw}/dw_dmac_regs.h |  0
- 7 files changed, 28 insertions(+), 23 deletions(-)
- create mode 100644 drivers/dma/dw/Kconfig
- create mode 100644 drivers/dma/dw/Makefile
- rename drivers/dma/{ => dw}/dw_dmac.c (99%)
- rename drivers/dma/{ => dw}/dw_dmac_regs.h (100%)
+ arch/arm/Kconfig            | 3 +++
+ arch/arm/mach-omap2/Kconfig | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c488924..e0b03a9 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6995,8 +6995,7 @@ SYNOPSYS DESIGNWARE DMAC DRIVER
- M:	Viresh Kumar <viresh.linux@gmail.com>
- S:	Maintained
- F:	include/linux/dw_dmac.h
--F:	drivers/dma/dw_dmac_regs.h
--F:	drivers/dma/dw_dmac.c
-+F:	drivers/dma/dw/
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d423d58..bcbdec9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
+ 	  and that the relevant menu configurations are displayed for
+ 	  it.
  
- SYNOPSYS DESIGNWARE MMC/SD/SDIO DRIVER
- M:	Seungwon Jeon <tgih.jun@samsung.com>
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index e992489..146a1d8 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -79,25 +79,7 @@ config INTEL_IOP_ADMA
- 	help
- 	  Enable support for the Intel(R) IOP Series RAID engines.
- 
--config DW_DMAC
--	tristate "Synopsys DesignWare AHB DMA support"
--	depends on GENERIC_HARDIRQS
--	select DMA_ENGINE
--	default y if CPU_AT32AP7000
--	help
--	  Support the Synopsys DesignWare AHB DMA controller.  This
--	  can be integrated in chips such as the Atmel AT32ap7000.
--
--config DW_DMAC_BIG_ENDIAN_IO
--	bool "Use big endian I/O register access"
--	default y if AVR32
--	depends on DW_DMAC
--	help
--	  Say yes here to use big endian I/O access when reading and writing
--	  to the DMA controller registers. This is needed on some platforms,
--	  like the Atmel AVR32 architecture.
--
--	  If unsure, use the default setting.
-+source "drivers/dma/dw/Kconfig"
- 
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index a2b0df5..ac44ca0 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -15,7 +15,7 @@ obj-$(CONFIG_FSL_DMA) += fsldma.o
- obj-$(CONFIG_MPC512X_DMA) += mpc512x_dma.o
- obj-$(CONFIG_PPC_BESTCOMM) += bestcomm/
- obj-$(CONFIG_MV_XOR) += mv_xor.o
--obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-+obj-$(CONFIG_DW_DMAC) += dw/
- obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
- obj-$(CONFIG_MX3_IPU) += ipu/
- obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
-diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
-new file mode 100644
-index 0000000..38a215a
---- /dev/null
-+++ b/drivers/dma/dw/Kconfig
-@@ -0,0 +1,23 @@
-+#
-+# DMA engine configuration for dw
-+#
++config ARCH_HAS_BANDGAP
++	bool
 +
-+config DW_DMAC
-+	tristate "Synopsys DesignWare AHB DMA support"
-+	depends on GENERIC_HARDIRQS
-+	select DMA_ENGINE
-+	default y if CPU_AT32AP7000
-+	help
-+	  Support the Synopsys DesignWare AHB DMA controller. This
-+	  can be integrated in chips such as the Atmel AT32ap7000.
-+
-+config DW_DMAC_BIG_ENDIAN_IO
-+	bool "Use big endian I/O register access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes here to use big endian I/O access when reading and writing
-+	  to the DMA controller registers. This is needed on some platforms,
-+	  like the Atmel AVR32 architecture.
-+
-+	  If unsure, use the default setting.
-diff --git a/drivers/dma/dw/Makefile b/drivers/dma/dw/Makefile
-new file mode 100644
-index 0000000..dd8d993
---- /dev/null
-+++ b/drivers/dma/dw/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw/dw_dmac.c
-similarity index 99%
-rename from drivers/dma/dw_dmac.c
-rename to drivers/dma/dw/dw_dmac.c
-index 2b65ba6..15f3f4f 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw/dw_dmac.c
-@@ -28,8 +28,8 @@
- #include <linux/acpi.h>
- #include <linux/acpi_dma.h>
- 
-+#include "../dmaengine.h"
- #include "dw_dmac_regs.h"
--#include "dmaengine.h"
- 
- /*
-  * This supports the Synopsys "DesignWare AHB Central DMA Controller",
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw/dw_dmac_regs.h
-similarity index 100%
-rename from drivers/dma/dw_dmac_regs.h
-rename to drivers/dma/dw/dw_dmac_regs.h
+ config GENERIC_HWEIGHT
+ 	bool
+ 	default y
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index f49cd51..8620ab5 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -4,6 +4,7 @@ config ARCH_OMAP
+ config ARCH_OMAP2PLUS
+ 	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
+ 	select ARCH_HAS_CPUFREQ
++	select ARCH_HAS_BANDGAP
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_OMAP
+ 	select ARCH_REQUIRE_GPIOLIB
 -- 
-1.8.2.rc0.22.gb3600c3
+1.8.2.1.342.gfa7285d
 
