@@ -1,209 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab3FDCuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 22:50:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab3FDCuA (ORCPT
+	id S1757966Ab3FDCxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 22:53:03 -0400
+Received: from smtp106.biz.mail.gq1.yahoo.com ([98.137.12.181]:22731 "HELO
+	smtp106.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755384Ab3FDCw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 22:50:00 -0400
-Date: Mon, 3 Jun 2013 19:49:59 -0700
-From: Greg KH <greg@kroah.com>
-To: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
-Message-ID: <20130604024959.GA10697@kroah.com>
+	Mon, 3 Jun 2013 22:52:59 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: qf9KpfkVM1l4g1HQm_k3ZzQcjJwJduxr1bVDl.D1i5khOnG
+ 4poBc6bvT6GvxaJVCwuAYxTV8y6zkq8iGQtSHA29aMuDKE5nSVzrTBvEGxkn
+ zfGv5ypN0b9h.pAniBhGQhKwRS5h0XoyCDpXfTFJwwf353kW7uF4IUfciAmo
+ kuFzi8PBl0s4nrG3.YbRhCOK_buSi7LcgIfODV3OUXAccn80lSGVB7uD5uBB
+ aNrtBcY2peWTEdPyhlPmNsuSEWiXmpQQDdshGh37_4Q3cdj24qCYh8YjlfgR
+ GuZGbtirY4MpeEFX9XXM_5pzXJHlvS5ife8C21ZasjcENrxMVJDwaOx8T7Qw
+ mHrZD2Aj8uZRFgHGM1ob9EZ8BZKRIm8qoY4CNQ3fkyDOtJ2sc5uDuU536Owm
+ 5uP6jUUYVUWDF93vff8v17XS8.T4jS6wnItjP3QsYpDs3PhNUgoF.chyvMo6
+ H4aVSDc.8Qo26Lx3MffLOeUfaFYYjyJDNq3quayysJ.OF9I6U_15Erya9DJI
+ VvjIWfsU-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
+        by smtp106.biz.mail.gq1.yahoo.com with SMTP; 03 Jun 2013 19:52:58 -0700 PDT
+Message-ID: <51AD5689.6080706@schaufler-ca.com>
+Date: Mon, 03 Jun 2013 19:52:57 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1369721825.2776.36@driftwood>
- <51A327A4.7020908@linuxdingsda.de>
- <87obbwbo8s.fsf@nemi.mork.no>
- <51A332E2.1090403@linuxdingsda.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Paris <eparis@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, sds@tycho.nsa.gov,
+        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
+Subject: Re: [RFC PATCH 2/2] SELinux: cache inode checks inside struct inode
+References: <1370285941-18367-1-git-send-email-eparis@redhat.com>  <1370285941-18367-2-git-send-email-eparis@redhat.com>  <alpine.LFD.2.03.1306040628420.25797@pixel.linux-foundation.org> <1370301501.19018.9.camel@localhost>
+In-Reply-To: <1370301501.19018.9.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 02:28:51PM +0200, Bjørn Mork wrote:
-> But, IMHO, a nicer approach would be to make the allocation completely
-> dynamic, using e.g. the idr subsystem. Static tables are always feel
-> like straight jackets to me, no matter how big they are :)
+On 6/3/2013 4:18 PM, Eric Paris wrote:
+> On Tue, 2013-06-04 at 06:31 +0900, Linus Torvalds wrote:
+>>
+>> On Mon, 3 Jun 2013, Eric Paris wrote:
+>>>  
+>>>  #ifdef CONFIG_SECURITY
+>>> +     seqcount_t              i_security_seqcount;
+>>> +     u32                     i_last_task_sid;
+>>> +     u32                     i_last_granting;
+>>> +     u32                     i_last_perms;
+>>> +     u32                     i_audit_allow;
+>>>       void                    *i_security;
+>>>  #endif
+>> This is much too big. I was really hoping for "another word that the 
+>> security layer can use" or similar.
+> Not sure how that can work   :-(
+>
+>> Something this big would be acceptable if it would be a *generic* security 
+>> cache, and others could use it too, and would avoid ever actually calling 
+>> into any security layer at all (ie we could do the checks entirely at the 
+>> VFS layer). Then it would be fine. But for just the fact that SELinux is 
+>> too slow? No.
+> There is nothing about it that can't be VFS-erized.  The fields are:
+>
+> readlockless way to get the data
+> which task was allowed
+> which perms were allowed
+> what generation of security policy allowed it
+> what perms should be forced to call security hook anyway
 
-You are right, I didn't change the code to use idr (it predates idr by
-about a decade or so), because I thought we needed the "rage" logic that
-the usb-serial minor reservation does.
+You've defined all of these things as u32 (that is, secids).
+Secids are an SELinux artifact and do not belong in general
+purpose interfaces.
 
-But I'm not so sure anymore, so here's a patch to change to use the idr
-code, and should remove all minor number limitations (well 65k is the
-limit the tty core should be setting I think.)
+> defining "perms" from a VFS PoV is hard.
 
-Tobias, can you test this patch out?  Note, I only compiled it, did not
-get the chance to actually run it, so it might not work at all.
+Yes, it is. But I think that for this to work we can't
+be looking at the perms, we have to be looking at a previous
+determination that can be used to accurately predict what the
+outcome would be if we did look at the perms. If, for example,
+we saved the pid (in a reuse safe way) of the last process to
+successfully access the inode you wouldn't need to look at any
+perms (unless the configuration changed) for that pid again.
 
-thanks,
+Yeah, yeah, I know that is an oversimplification that would
+likely gain precious little advantage.I seriously doubt it would
+be worth doing.
 
-greg k-h
+> doing any of this with 'stacking' is hard.  Then again, I'm only so so
+> on the value of stacking.  I've waffled a few times...
 
-Subject: [PATCH] usb: serial: remove minor number limitation of 255
+That's another reason why cashing certain attributes isn't a good idea,
+but that caching a result might have value.
 
+> I can do it entirely inside selinux, but we are still going to have the
+> cache hit you were originally seeing as we dereference isec to get the
+> info....
+>
+>
+>
+> --
+> This message was distributed to subscribers of the selinux mailing list.
+> If you no longer wish to subscribe, send mail to majordomo@tycho.nsa.gov with
+> the words "unsubscribe selinux" without quotes as the message.
+>
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
- drivers/usb/serial/usb-serial.c |   86 +++++++++++++++++-----------------------
- 1 file changed, 38 insertions(+), 48 deletions(-)
-
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index 4753c00..74b6f08 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -37,6 +37,7 @@
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
- #include <linux/kfifo.h>
-+#include <linux/idr.h>
- #include "pl2303.h"
- 
- #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
-@@ -49,7 +50,7 @@
-    drivers depend on it.
- */
- 
--static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
-+static DEFINE_IDR(serial_minors);
- static DEFINE_MUTEX(table_lock);
- static LIST_HEAD(usb_serial_driver_list);
- 
-@@ -61,59 +62,52 @@ static LIST_HEAD(usb_serial_driver_list);
- struct usb_serial *usb_serial_get_by_index(unsigned index)
- {
- 	struct usb_serial *serial;
-+	struct usb_serial_port *port;
- 
- 	mutex_lock(&table_lock);
--	serial = serial_table[index];
--
--	if (serial) {
--		mutex_lock(&serial->disc_mutex);
--		if (serial->disconnected) {
--			mutex_unlock(&serial->disc_mutex);
--			serial = NULL;
--		} else {
--			kref_get(&serial->kref);
--		}
--	}
-+	port = idr_find(&serial_minors, index);
- 	mutex_unlock(&table_lock);
-+	if (!port)
-+		return NULL;
-+
-+	serial = port->serial;
-+	kref_get(&serial->kref);
- 	return serial;
- }
- 
--static struct usb_serial *get_free_serial(struct usb_serial *serial,
--					int num_ports, unsigned int *minor)
-+static int get_free_port(struct usb_serial_port *port)
- {
--	unsigned int i, j;
--	int good_spot;
--
--	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-+	int i;
- 
--	*minor = 0;
- 	mutex_lock(&table_lock);
--	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
--		if (serial_table[i])
--			continue;
-+	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
-+	if (i < 0)
-+		return -EEXIST;
-+	port->number = i;
-+	mutex_unlock(&table_lock);
-+	return i;
-+}
- 
--		good_spot = 1;
--		for (j = 1; j <= num_ports-1; ++j)
--			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
--				good_spot = 0;
--				i += j;
--				break;
--			}
--		if (good_spot == 0)
--			continue;
-+static int get_free_serial(struct usb_serial *serial, int num_ports,
-+			   unsigned int *minor)
-+{
-+	unsigned int i;
-+	unsigned int x;
- 
--		*minor = i;
--		j = 0;
--		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
--		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i) {
--			serial_table[i] = serial;
--			serial->port[j++]->number = i;
--		}
--		mutex_unlock(&table_lock);
--		return serial;
-+	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-+
-+	*minor = 0xffffffff;
-+	for (i = 0; i < num_ports; ++i) {
-+		x = get_free_port(serial->port[i]);
-+		if (x < 0)
-+			goto error;
-+		if (*minor == 0xffffffff)
-+			*minor = x;
- 	}
--	mutex_unlock(&table_lock);
--	return NULL;
-+	return 0;
-+error:
-+	// FIXME unwind the already allocated minors
-+	return -ENODEV;
- }
- 
- static void return_serial(struct usb_serial *serial)
-@@ -122,7 +116,7 @@ static void return_serial(struct usb_serial *serial)
- 
- 	mutex_lock(&table_lock);
- 	for (i = 0; i < serial->num_ports; ++i)
--		serial_table[serial->minor + i] = NULL;
-+		idr_remove(&serial_minors, serial->port[i]->number);
- 	mutex_unlock(&table_lock);
- }
- 
-@@ -1041,7 +1035,7 @@ static int usb_serial_probe(struct usb_interface *interface,
- 	 */
- 	serial->disconnected = 1;
- 
--	if (get_free_serial(serial, num_ports, &minor) == NULL) {
-+	if (get_free_serial(serial, num_ports, &minor)) {
- 		dev_err(ddev, "No more free serial devices\n");
- 		goto probe_error;
- 	}
-@@ -1225,7 +1219,6 @@ static struct usb_driver usb_serial_driver = {
- 
- static int __init usb_serial_init(void)
- {
--	int i;
- 	int result;
- 
- 	usb_serial_tty_driver = alloc_tty_driver(SERIAL_TTY_MINORS);
-@@ -1233,9 +1226,6 @@ static int __init usb_serial_init(void)
- 		return -ENOMEM;
- 
- 	/* Initialize our global data */
--	for (i = 0; i < SERIAL_TTY_MINORS; ++i)
--		serial_table[i] = NULL;
--
- 	result = bus_register(&usb_serial_bus_type);
- 	if (result) {
- 		pr_err("%s - registering bus driver failed\n", __func__);
