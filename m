@@ -1,232 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750784Ab3FDT1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 15:27:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52399 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3FDTZm (ORCPT
+	id S1751879Ab3FDT1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 15:27:44 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:56609 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3FDT1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 15:25:42 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH 09/12] ARM: msm: Remove clock-7x30.h include file
-Date: Tue,  4 Jun 2013 12:25:35 -0700
-Message-Id: <1370373938-32417-10-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
-In-Reply-To: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
-References: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
+	Tue, 4 Jun 2013 15:27:12 -0400
+Date: Tue, 4 Jun 2013 21:27:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130604192708.GD9321@dhcp22.suse.cz>
+References: <20130531081052.GA32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305310316210.27716@chino.kir.corp.google.com>
+ <20130531112116.GC32491@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com>
+ <20130601061151.GC15576@cmpxchg.org>
+ <20130603153432.GC18588@dhcp22.suse.cz>
+ <20130603164839.GG15576@cmpxchg.org>
+ <20130603183018.GJ15576@cmpxchg.org>
+ <20130604091749.GB31242@dhcp22.suse.cz>
+ <20130604184852.GO15576@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604184852.GO15576@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is not used outside of the two users in the clock-7x30
-array. Those two clocks are virtual "source" clocks that don't
-really need to exist outside of the clock driver. Let's remove
-them from the array, since they're not doing anything anyway, and
-then remove the clock-7x30.h include file along with it.
+On Tue 04-06-13 14:48:52, Johannes Weiner wrote:
+> On Tue, Jun 04, 2013 at 11:17:49AM +0200, Michal Hocko wrote:
+[...]
+> > > diff --git a/mm/memory.c b/mm/memory.c
+> > > index 6dc1882..ff5e2d7 100644
+> > > --- a/mm/memory.c
+> > > +++ b/mm/memory.c
+> > > @@ -1815,7 +1815,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+> > >  			while (!(page = follow_page_mask(vma, start,
+> > >  						foll_flags, &page_mask))) {
+> > >  				int ret;
+> > > -				unsigned int fault_flags = 0;
+> > > +				unsigned int fault_flags = FAULT_FLAG_KERNEL;
+> > >  
+> > >  				/* For mlock, just skip the stack guard page. */
+> > >  				if (foll_flags & FOLL_MLOCK) {
+> > 
+> > This is also a bit tricky. Say there is an unlikely situation when a
+> > task fails to charge because of memcg OOM, it couldn't lock the oom
+> > so it ended up with current->memcg_oom set and __get_user_pages will
+> > turn VM_FAULT_OOM into ENOMEM but memcg_oom is still there. Then the
+> > following global OOM condition gets confused (well the oom will be
+> > triggered by somebody else so it shouldn't end up in the endless loop
+> > but still...), doesn't it?
+> 
+> But current->memcg_oom is not set up unless current->in_userfault.
+> And get_user_pages does not set this flag.
 
-Cc: Saravana Kannan <skannan@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/clock-7x30.h      | 155 ------------------------------------
- arch/arm/mach-msm/devices-msm7x30.c |   3 -
- 2 files changed, 158 deletions(-)
- delete mode 100644 arch/arm/mach-msm/clock-7x30.h
+And my selective blindness strikes again :/ For some reason I have read
+those places as they enable the fault flag. Which would make some sense
+if there was a post handling...
 
-diff --git a/arch/arm/mach-msm/clock-7x30.h b/arch/arm/mach-msm/clock-7x30.h
-deleted file mode 100644
-index 1410445..0000000
---- a/arch/arm/mach-msm/clock-7x30.h
-+++ /dev/null
-@@ -1,155 +0,0 @@
--/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef __ARCH_ARM_MACH_MSM_CLOCK_7X30_H
--#define __ARCH_ARM_MACH_MSM_CLOCK_7X30_H
--
--enum {
--	L_7X30_NONE_CLK = -1,
--	L_7X30_ADM_CLK,
--	L_7X30_I2C_CLK,
--	L_7X30_I2C_2_CLK,
--	L_7X30_QUP_I2C_CLK,
--	L_7X30_UART1DM_CLK,
--	L_7X30_UART1DM_P_CLK,
--	L_7X30_UART2DM_CLK,
--	L_7X30_UART2DM_P_CLK,
--	L_7X30_EMDH_CLK,
--	L_7X30_EMDH_P_CLK,
--	L_7X30_PMDH_CLK,
--	L_7X30_PMDH_P_CLK,
--	L_7X30_GRP_2D_CLK,
--	L_7X30_GRP_2D_P_CLK,
--	L_7X30_GRP_3D_SRC_CLK,
--	L_7X30_GRP_3D_CLK,
--	L_7X30_GRP_3D_P_CLK,
--	L_7X30_IMEM_CLK,
--	L_7X30_SDC1_CLK,
--	L_7X30_SDC1_P_CLK,
--	L_7X30_SDC2_CLK,
--	L_7X30_SDC2_P_CLK,
--	L_7X30_SDC3_CLK,
--	L_7X30_SDC3_P_CLK,
--	L_7X30_SDC4_CLK,
--	L_7X30_SDC4_P_CLK,
--	L_7X30_MDP_CLK,
--	L_7X30_MDP_P_CLK,
--	L_7X30_MDP_LCDC_PCLK_CLK,
--	L_7X30_MDP_LCDC_PAD_PCLK_CLK,
--	L_7X30_MDP_VSYNC_CLK,
--	L_7X30_MI2S_CODEC_RX_M_CLK,
--	L_7X30_MI2S_CODEC_RX_S_CLK,
--	L_7X30_MI2S_CODEC_TX_M_CLK,
--	L_7X30_MI2S_CODEC_TX_S_CLK,
--	L_7X30_MI2S_M_CLK,
--	L_7X30_MI2S_S_CLK,
--	L_7X30_LPA_CODEC_CLK,
--	L_7X30_LPA_CORE_CLK,
--	L_7X30_LPA_P_CLK,
--	L_7X30_MIDI_CLK,
--	L_7X30_MDC_CLK,
--	L_7X30_ROTATOR_IMEM_CLK,
--	L_7X30_ROTATOR_P_CLK,
--	L_7X30_SDAC_M_CLK,
--	L_7X30_SDAC_CLK,
--	L_7X30_UART1_CLK,
--	L_7X30_UART2_CLK,
--	L_7X30_UART3_CLK,
--	L_7X30_TV_CLK,
--	L_7X30_TV_DAC_CLK,
--	L_7X30_TV_ENC_CLK,
--	L_7X30_HDMI_CLK,
--	L_7X30_TSIF_REF_CLK,
--	L_7X30_TSIF_P_CLK,
--	L_7X30_USB_HS_SRC_CLK,
--	L_7X30_USB_HS_CLK,
--	L_7X30_USB_HS_CORE_CLK,
--	L_7X30_USB_HS_P_CLK,
--	L_7X30_USB_HS2_CLK,
--	L_7X30_USB_HS2_CORE_CLK,
--	L_7X30_USB_HS2_P_CLK,
--	L_7X30_USB_HS3_CLK,
--	L_7X30_USB_HS3_CORE_CLK,
--	L_7X30_USB_HS3_P_CLK,
--	L_7X30_VFE_CLK,
--	L_7X30_VFE_P_CLK,
--	L_7X30_VFE_MDC_CLK,
--	L_7X30_VFE_CAMIF_CLK,
--	L_7X30_CAMIF_PAD_P_CLK,
--	L_7X30_CAM_M_CLK,
--	L_7X30_JPEG_CLK,
--	L_7X30_JPEG_P_CLK,
--	L_7X30_VPE_CLK,
--	L_7X30_MFC_CLK,
--	L_7X30_MFC_DIV2_CLK,
--	L_7X30_MFC_P_CLK,
--	L_7X30_SPI_CLK,
--	L_7X30_SPI_P_CLK,
--	L_7X30_CSI0_CLK,
--	L_7X30_CSI0_VFE_CLK,
--	L_7X30_CSI0_P_CLK,
--	L_7X30_CSI1_CLK,
--	L_7X30_CSI1_VFE_CLK,
--	L_7X30_CSI1_P_CLK,
--	L_7X30_GLBL_ROOT_CLK,
--
--	L_7X30_AXI_LI_VG_CLK,
--	L_7X30_AXI_LI_GRP_CLK,
--	L_7X30_AXI_LI_JPEG_CLK,
--	L_7X30_AXI_GRP_2D_CLK,
--	L_7X30_AXI_MFC_CLK,
--	L_7X30_AXI_VPE_CLK,
--	L_7X30_AXI_LI_VFE_CLK,
--	L_7X30_AXI_LI_APPS_CLK,
--	L_7X30_AXI_MDP_CLK,
--	L_7X30_AXI_IMEM_CLK,
--	L_7X30_AXI_LI_ADSP_A_CLK,
--	L_7X30_AXI_ROTATOR_CLK,
--
--	L_7X30_NR_CLKS
--};
--
--struct clk_ops;
--extern struct clk_ops clk_ops_7x30;
--
--struct clk_ops *clk_7x30_is_local(uint32_t id);
--int clk_7x30_init(void);
--
--void pll_enable(uint32_t pll);
--void pll_disable(uint32_t pll);
--
--extern int internal_pwr_rail_ctl_auto(unsigned rail_id, bool enable);
--
--#define CLK_7X30(clk_name, clk_id, clk_dev, clk_flags) {	\
--	.con_id = clk_name, \
--	.dev_id = clk_dev, \
--	.clk = &(struct clk){ \
--		.id = L_7X30_##clk_id, \
--		.remote_id = P_##clk_id, \
--		.flags = clk_flags, \
--		.dbg_name = #clk_id, \
--	}, \
--	}
--
--#define CLK_7X30S(clk_name, l_id, r_id, clk_dev, clk_flags) {	\
--	.con_id = clk_name, \
--	.dev_id = clk_dev, \
--	.clk = &(struct clk){ \
--		.id = L_7X30_##l_id, \
--		.remote_id = P_##r_id, \
--		.flags = clk_flags, \
--		.dbg_name = #l_id, \
--		.ops = &clk_ops_pcom, \
--	}, \
--	}
--
--#endif
-diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
-index 12f482c..d233c51 100644
---- a/arch/arm/mach-msm/devices-msm7x30.c
-+++ b/arch/arm/mach-msm/devices-msm7x30.c
-@@ -29,7 +29,6 @@
- #include <asm/mach/flash.h>
- 
- #include "clock-pcom.h"
--#include "clock-7x30.h"
- 
- #include <linux/platform_data/mmc-msm_sdcc.h>
- 
-@@ -177,7 +176,6 @@ struct clk_lookup msm_clocks_7x30[] = {
- 	CLK_PCOM("grp_2d_pclk",	GRP_2D_P_CLK,	NULL, 0),
- 	CLK_PCOM("grp_clk",	GRP_3D_CLK,	NULL, 0),
- 	CLK_PCOM("grp_pclk",	GRP_3D_P_CLK,	NULL, 0),
--	CLK_7X30S("grp_src_clk", GRP_3D_SRC_CLK, GRP_3D_CLK,	NULL, 0),
- 	CLK_PCOM("hdmi_clk",	HDMI_CLK,	NULL, 0),
- 	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
- 	CLK_PCOM("jpeg_clk",	JPEG_CLK,	NULL, OFF),
-@@ -210,7 +208,6 @@ struct clk_lookup msm_clocks_7x30[] = {
- 	CLK_PCOM("sdac_clk",	SDAC_CLK,	NULL, OFF),
- 	CLK_PCOM("spi_clk",	SPI_CLK,	NULL, 0),
- 	CLK_PCOM("spi_pclk",	SPI_P_CLK,	NULL, 0),
--	CLK_7X30S("tv_src_clk",	TV_CLK, 	TV_ENC_CLK,	NULL, 0),
- 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
- 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
- 	CLK_PCOM("uart_clk",	UART2_CLK,	"msm_serial.1", 0),
+Anyway, I will get back to the updated patch tomorrow with a clean and
+fresh head.
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Michal Hocko
+SUSE Labs
