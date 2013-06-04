@@ -1,99 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3FDQRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:17:10 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46277 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753813Ab3FDQRI (ORCPT
+	id S1756030Ab3FDQSu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:18:50 -0400
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:35577 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754915Ab3FDQSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:17:08 -0400
-X-Sasl-enc: ixGmODwln7dalQWx6OgG02xsT+7PfEvvYnjR58xcFVJP 1370362625
-Date: Tue, 4 Jun 2013 09:17:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
-Message-ID: <20130604161704.GB23637@kroah.com>
-References: <20130604024959.GA10697@kroah.com>
- <Pine.LNX.4.44L0.1306041007410.1093-100000@iolanthe.rowland.org>
+	Tue, 4 Jun 2013 12:18:48 -0400
+Message-ID: <1613.41.133.205.235.1370362719.squirrel@webmail.mbnet.fi>
+Date: Tue, 4 Jun 2013 19:18:39 +0300 (EEST)
+Subject: Investment Business Proposal
+From: "Jusu Tiusanen" <jusu@mbnet.fi>
+Reply-To: margretzuta@gmail.com
+User-Agent: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1306041007410.1093-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;boundary="----=_20130604191839_70316"
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 10:13:47AM -0400, Alan Stern wrote:
-> On Mon, 3 Jun 2013, Greg KH wrote:
-> 
-> > On Mon, May 27, 2013 at 02:28:51PM +0200, Bj?rn Mork wrote:
-> > > But, IMHO, a nicer approach would be to make the allocation completely
-> > > dynamic, using e.g. the idr subsystem. Static tables are always feel
-> > > like straight jackets to me, no matter how big they are :)
-> > 
-> > You are right, I didn't change the code to use idr (it predates idr by
-> > about a decade or so), because I thought we needed the "rage" logic that
-> > the usb-serial minor reservation does.
-> > 
-> > But I'm not so sure anymore, so here's a patch to change to use the idr
-> > code, and should remove all minor number limitations (well 65k is the
-> > limit the tty core should be setting I think.)
-> > 
-> > Tobias, can you test this patch out?  Note, I only compiled it, did not
-> > get the chance to actually run it, so it might not work at all.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> 
-> > @@ -61,59 +62,52 @@ static LIST_HEAD(usb_serial_driver_list);
-> >  struct usb_serial *usb_serial_get_by_index(unsigned index)
-> >  {
-> >  	struct usb_serial *serial;
-> > +	struct usb_serial_port *port;
-> >  
-> >  	mutex_lock(&table_lock);
-> > -	serial = serial_table[index];
-> > -
-> > -	if (serial) {
-> > -		mutex_lock(&serial->disc_mutex);
-> > -		if (serial->disconnected) {
-> > -			mutex_unlock(&serial->disc_mutex);
-> > -			serial = NULL;
-> > -		} else {
-> > -			kref_get(&serial->kref);
-> > -		}
-> > -	}
-> > +	port = idr_find(&serial_minors, index);
-> >  	mutex_unlock(&table_lock);
-> > +	if (!port)
-> > +		return NULL;
-> > +
-> > +	serial = port->serial;
-> > +	kref_get(&serial->kref);
-> >  	return serial;
-> >  }
-> 
-> The test for serial->disconnected got lost.  And the locking isn't 
-> right; the routine is documented to return with serial->disc_mutex held 
-> (in the case where the device hasn't been disconnected).
-> 
-> Also, the kref_get() needs to occur within the scope of the table_lock.
+------=_20130604191839_70316
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 
-Thanks, for some reason I ignored this when converting the code, that's
-what I get for not even testing...
 
-> I didn't check the rest of the patch for similar errors.  Finding three 
-> in the first function seemed like enough.  :-)
 
-Fair enough, I've now fixed this up, and will see if it runs properly.
+Investment Business Proposal
 
-thanks,
+see attached letter
 
-greg k-h
+------=_20130604191839_70316
+Content-Type: application/pdf; name="Margret Zuta.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Margret Zuta.pdf"
+
+JVBERi0xLjUKJeLjz9MKMSAwIG9iago8PCAKICAgL1R5cGUgL0NhdGFsb2cKICAgL1BhZ2VzIDIg
+MCBSCiAgIC9QYWdlTGF5b3V0IC9PbmVDb2x1bW4KICAgL1BhZ2VNb2RlIC9Vc2VOb25lCiAgIC9P
+Q1Byb3BlcnRpZXMgPDwgCiAgIC9EIDw8IAogICAvT3JkZXIgW10KICAgL0FTIFs8PCAKICAgL0V2
+ZW50IC9WaWV3CiAgIC9DYXRlZ29yeSBbL1ZpZXcgXQo+PiA8PCAKICAgL0V2ZW50IC9QcmludAog
+ICAvQ2F0ZWdvcnkgWy9QcmludCBdCj4+IDw8IAogICAvRXZlbnQgL0V4cG9ydAogICAvQ2F0ZWdv
+cnkgWy9FeHBvcnQgXQo+PiBdCj4+Cj4+Cj4+CmVuZG9iagoyIDAgb2JqCjw8IAogICAvVHlwZSAv
+UGFnZXMKICAgL0tpZHMgWzMgMCBSIF0KICAgL0NvdW50IDEKPj4KZW5kb2JqCjMgMCBvYmoKPDwg
+CiAgIC9UeXBlIC9QYWdlCiAgIC9QYXJlbnQgMiAwIFIKICAgL1Jlc291cmNlcyA8PCAKICAgL1By
+b2NTZXQgWy9QREYgL1RleHQgXQogICAvRm9udCA8PCAKICAgL0YxIDYgMCBSCj4+Cj4+CiAgIC9N
+ZWRpYUJveCBbMCAwIDYxMiA3OTJdCiAgIC9Db250ZW50cyA0IDAgUgo+PgplbmRvYmoKNCAwIG9i
+ago8PCAKICAgL0ZpbHRlciAvRmxhdGVEZWNvZGUKICAgL0xlbmd0aCAyNjE0Cj4+CnN0cmVhbQp4
+Xq1abW8ctxH+fr9CQF9wBHrrJfe9QNHabZImSIumVVK0RVGsKp/kxJadrZ0g+fXlM+QMh7d7ssQY
+ghZ3u7x5n2eGw/129+3u2eXuycf2wtqqbqbp4vK4qy/wt9zs6mqaRkvf7MXgLoZ6qtr24vLV7l/7
+n5mD21vT70f/7/z/hRn3z5bXpt3P18b5r/++uPxs99Hl7otHMLGuq7qc0d88o3r/1lNfnoMnXd6W
+Ue9cNY4Z9UIxu65yOaFPzWHavzQHW+9hg+/MofOiFhEfhsq6DyCl91g/Rgp/9ZKRYP/DB7IhHHbl
+PTXf+cs3uPMr46XH7c/MYaDVt/wc//Qr+j1+9s7/LzfmMPqflUhnx7GyfZKwXMdurLqegyVoCeEQ
+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
+ATaLKXoZwmC3po6zNOkfjE/Sn3JYOnlFP4DdvKfdINNdabjS+xVkpzlh3kZdIPffGNvkOMmKRoOn
+Pc96g5wq3qybQ23ahX8gL63op8pDUncycIvGz7bVqiMkAUhVRliR7UHnvyWmb23t91TK+g/xoN30
+YNfiZQYicmvSm2EQ/de+dtBrcXQhFdOFbDVnWxwYDR/0y13UeSfjkiPJ30STTgJuyUol8juHCbFW
+gbE0SEd8oclv/dbhl14bbCwIWN9y5PwGl6+w0QjP8Qos/Afk/ZpWhDHOGFbSG0fPsJREV+fR9LiO
+dIosifef3mvNPFbJnPhdPqYUa5GDHUbSbe+AljVeWVme746PCreuoRMxbejygHOjvDbzeDP9KAmb
+nZjp1+uUod5GhNk48SRqWd/xxNguAgmhDEbu/wFBfaCDz/RTFp1+8PK89f0G3kdo26KVKDN+Y3v8
+WNvtIcbfxuu6EdAPHbiU/tCPpV5bI+AnMBJ/OTkSTdWscDIxUHuiJStWDy9081vOz/JWCpLTYeLm
+TqfwRd/GYTqjuZaL3smUbP3eZvE7m+glngYKbggl+vMiCe1Ew3Ql5T+K6MDNdavplFvMpxYf04e0
+XdQJLnwOsOAJYen8bahyTr/zFiU2gSWmItx2WHuKKkUsR+pGNU9toi92/wderbJzCmVuZHN0cmVh
+bQplbmRvYmoKNSAwIG9iago8PCAKICAgL1Byb2R1Y2VyIDxGRUZGMDA2NDAwNkYwMDUwMDA0NDAw
+NDYwMDIwMDA1NjAwNjUwMDcyMDAyMDAwMzcwMDJFMDAzMjAwMjAwMDQyMDA3NTAwNjkwMDZDMDA2
+NDAwMjAwMDMzMDAzNzAwMzYwMDIwMDAyODAwNTcwMDY5MDA2RTAwNjQwMDZGMDA3NzAwNzMwMDIw
+MDA1ODAwNTAwMDIwMDA1MDAwNzIwMDZGMDA2NjAwNjUwMDczMDA3MzAwNjkwMDZGMDA2RTAwNjEw
+MDZDMDAyMDAwNDUwMDY0MDA2OTAwNzQwMDY5MDA2RjAwNkUwMDIwMDAyMDAwMjgwMDUzMDA1MDAw
+MjAwMDMyMDAyOTAwMjAwMDJEMDAyMDAwNTYwMDY1MDA3MjAwNzMwMDY5MDA2RjAwNkUwMDNBMDAy
+MDAwMzUwMDJFMDAzMTAwMkUwMDMyMDAzNjAwMzAwMDMwMDAyMDAwMjgwMDc4MDAzODAwMzYwMDI5
+MDAyOT4KICAgL0NyZWF0aW9uRGF0ZSAoRDoyMDEzMDYwNDEwNDAyMCswMicwMCcpCj4+CmVuZG9i
+ago2IDAgb2JqCjw8IAogICAvVHlwZSAvRm9udAogICAvU3VidHlwZSAvVHJ1ZVR5cGUKICAgL0Zv
+bnREZXNjcmlwdG9yIDcgMCBSCiAgIC9CYXNlRm9udCAvQ2FsaWJyaQogICAvRmlyc3RDaGFyIDAK
+ICAgL0xhc3RDaGFyIDI1NQogICAvV2lkdGhzIDggMCBSCiAgIC9FbmNvZGluZyAvV2luQW5zaUVu
+Y29kaW5nCj4+CmVuZG9iago3IDAgb2JqCjw8IAogICAvVHlwZSAvRm9udERlc2NyaXB0b3IKICAg
+L0ZvbnROYW1lIC9DYWxpYnJpCiAgIC9Bc2NlbnQgNzUwCiAgIC9DYXBIZWlnaHQgNjMyCiAgIC9E
+ZXNjZW50IC0yNTAKICAgL0ZsYWdzIDMyCiAgIC9Gb250QkJveCBbLTQ3NiAtMTk0IDEyMTQgOTUy
+XQogICAvSXRhbGljQW5nbGUgMAogICAvU3RlbVYgODcKICAgL1hIZWlnaHQgNDY0Cj4+CmVuZG9i
+ago4IDAgb2JqCls1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3IDUw
+NyA1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3
+IDUwNyA1MDcgNTA3IDUwNyA1MDcgNTA3IDIyNiAzMjYgNDAxIDQ5OCA1MDcgNzE1IDY4MiAyMjEg
+MzAzIDMwMyA0OTggNDk4IDI1MCAzMDYgMjUyIDM4NiA1MDcgNTA3IDUwNyA1MDcgNTA3IDUwNyA1
+MDcgNTA3IDUwNyA1MDcgMjY4IDI2OCA0OTggNDk4IDQ5OCA0NjMgODk0IDU3OSA1NDQgNTMzIDYx
+NSA0ODggNDU5IDYzMSA2MjMgMjUyIDMxOSA1MjAgNDIwIDg1NSA2NDYgNjYyIDUxNyA2NzMgNTQz
+IDQ1OSA0ODcgNjQyIDU2NyA4OTAgNTE5IDQ4NyA0NjggMzA3IDM4NiAzMDcgNDk4IDQ5OCAyOTEg
+NDc5IDUyNSA0MjMgNTI1IDQ5OCAzMDUgNDcxIDUyNSAyMjkgMjM5IDQ1NSAyMjkgNzk5IDUyNSA1
+MjcgNTI1IDUyNSAzNDkgMzkxIDMzNSA1MjUgNDUyIDcxNSA0MzMgNDUzIDM5NSAzMTQgNDYwIDMx
+NCA0OTggNDk4IDUwNyA0OTggMjUwIDQ5OCA0MTggNjkwIDQ5OCA0OTggMzk1IDEwMzggNDU5IDMz
+OSA4NjcgNDk4IDQ2OCA0OTggNDk4IDI1MCAyNTAgNDE4IDQxOCA0OTggNDk4IDkwNSA0NTAgNzA1
+IDM5MSAzMzkgODUwIDQ5OCAzOTUgNDg3IDIyNiAzMjYgNDk4IDUwNyA0OTggNTA3IDQ5OCA0OTgg
+MzkzIDgzNCA0MDIgNTEyIDQ5OCAzMDYgNTA3IDM5NCAzMzkgNDk4IDMzNiAzMzQgMjkyIDU1MCA1
+ODYgMjUyIDMwNyAyNDYgNDIyIDUxMiA2MzYgNjcxIDY3NSA0NjMgNTc5IDU3OSA1NzkgNTc5IDU3
+OSA1NzkgNzYzIDUzMyA0ODggNDg4IDQ4OCA0ODggMjUyIDI1MiAyNTIgMjUyIDYyNSA2NDYgNjYy
+IDY2MiA2NjIgNjYyIDY2MiA0OTggNjY0IDY0MiA2NDIgNjQyIDY0MiA0ODcgNTE3IDUyNyA0Nzkg
+NDc5IDQ3OSA0NzkgNDc5IDQ3OSA3NzMgNDIzIDQ5OCA0OTggNDk4IDQ5OCAyMjkgMjI5IDIyOSAy
+MjkgNTI1IDUyNSA1MjcgNTI3IDUyNyA1MjcgNTI3IDQ5OCA1MjkgNTI1IDUyNSA1MjUgNTI1IDQ1
+MyA1MjUgNDUzIF0KZW5kb2JqCnhyZWYKMCA5IAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAw
+MTUgMDAwMDAgbiAKMDAwMDAwMDMyMCAwMDAwMCBuIAowMDAwMDAwMzg4IDAwMDAwIG4gCjAwMDAw
+MDA1NjQgMDAwMDAgbiAKMDAwMDAwMzI1OCAwMDAwMCBuIAowMDAwMDAzNzA3IDAwMDAwIG4gCjAw
+MDAwMDM4OTMgMDAwMDAgbiAKMDAwMDAwNDEwNiAwMDAwMCBuIAp0cmFpbGVyCjw8IAogICAvUm9v
+dCAxIDAgUgogICAvSW5mbyA1IDAgUgogICAvU2l6ZSA5Cj4+CnN0YXJ0eHJlZgo1MTQ5CiUlRU9G
+Cg==
+------=_20130604191839_70316--
+
+
