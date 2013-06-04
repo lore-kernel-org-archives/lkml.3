@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab3FDRMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:12:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48350 "EHLO
+	id S1757744Ab3FDRMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:12:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48334 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab3FDQ76 (ORCPT
+	with ESMTP id S1757207Ab3FDQ7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:59:58 -0400
+	Tue, 4 Jun 2013 12:59:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 60/75] ata_piix: add PCI IDs for Intel BayTail
-Date: Tue,  4 Jun 2013 09:55:44 -0700
-Message-Id: <1370364959-9475-61-git-send-email-kamal@canonical.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 72/75] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
+Date: Tue,  4 Jun 2013 09:55:56 -0700
+Message-Id: <1370364959-9475-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,67 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+From: Finn Thain <fthain@telegraphics.com.au>
 
-commit fca8c90d519dedd4f4b19901d005c243f7f0bf2e upstream.
+commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
 
-Adds IDE-mode SATA Device IDs for the Intel BayTrail platform.
+The present code does not wait for the SCC to finish resetting itself
+before trying to initialise the device. The result is that the SCC
+interrupt sources become enabled (if they weren't already). This leads to
+an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
+this by adding a delay. A successful reset disables the interrupt sources.
 
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Also, after the reset for channel A setup, the SCC then gets a second
+reset for channel B setup which leaves channel A uninitialised again. Fix
+this by performing the reset only once.
+
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ata_piix.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/m68k/kernel/head.S | 29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 78283bb..12fb576 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -151,6 +151,7 @@ enum piix_controller_ids {
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
- 	ich8_2port_sata_snb,
-+	ich8_2port_sata_byt,
- };
+diff --git a/arch/m68k/kernel/head.S b/arch/m68k/kernel/head.S
+index d197e7f..ac85f16 100644
+--- a/arch/m68k/kernel/head.S
++++ b/arch/m68k/kernel/head.S
+@@ -2752,11 +2752,9 @@ func_return	get_new_page
+ #ifdef CONFIG_MAC
  
- struct piix_map_db {
-@@ -334,6 +335,9 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (BayTrail) */
-+	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
-+	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ L(scc_initable_mac):
+-	.byte	9,12		/* Reset */
+ 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
+ 	.byte	3,0xc0		/* receiver: 8 bpc */
+ 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
+-	.byte	9,0		/* no interrupts */
+ 	.byte	10,0		/* NRZ */
+ 	.byte	11,0x50		/* use baud rate generator */
+ 	.byte	12,1,13,0	/* 38400 baud */
+@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	is_not_mac(L(serial_init_not_mac))
  
- 	{ }	/* terminate list */
- };
-@@ -441,6 +445,7 @@ static const struct piix_map_db *piix_map_db_table[] = {
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
- 	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
-+	[ich8_2port_sata_byt]	= &ich8_2port_map_db,
- };
- 
- static struct pci_bits piix_enable_bits[] = {
-@@ -1254,6 +1259,16 @@ static struct ata_port_info piix_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &piix_sata_ops,
- 	},
+ #ifdef SERIAL_DEBUG
 +
-+	[ich8_2port_sata_byt] =
-+	{
-+		.flags          = PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-+		.pio_mask       = ATA_PIO4,
-+		.mwdma_mask     = ATA_MWDMA2,
-+		.udma_mask      = ATA_UDMA6,
-+		.port_ops       = &piix_sata_ops,
-+	},
-+
- };
+ /* You may define either or both of these. */
+ #define MAC_USE_SCC_A /* Modem port */
+ #define MAC_USE_SCC_B /* Printer port */
+@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ #define mac_scc_cha_b_data_offset	0x4
+ #define mac_scc_cha_a_data_offset	0x6
  
- #define AHCI_PCI_BAR 5
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
++	movel	%pc@(L(mac_sccbase)),%a0
++	/* Reset SCC device */
++	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
++	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
++	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
++	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
++	movel	#35,%d0
++5:
++	subq	#1,%d0
++	jne	5b
++#endif
++
+ #ifdef MAC_USE_SCC_A
+ 	/* Initialize channel A */
+-	movel	%pc@(L(mac_sccbase)),%a0
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 5:	moveb	%a1@+,%d0
+ 	jmi	6f
+@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 
+ #ifdef MAC_USE_SCC_B
+ 	/* Initialize channel B */
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a0
+-#endif	/* MAC_USE_SCC_A */
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 7:	moveb	%a1@+,%d0
+ 	jmi	8f
+@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	jra	7b
+ 8:
+ #endif	/* MAC_USE_SCC_B */
++
+ #endif	/* SERIAL_DEBUG */
+ 
+ 	jra	L(serial_init_done)
+@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
+ 
+ #ifdef SERIAL_DEBUG
+ 
+-#ifdef MAC_USE_SCC_A
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
+ 	movel	%pc@(L(mac_sccbase)),%a1
++#endif
++
++#ifdef MAC_USE_SCC_A
+ 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
+ 	jeq	3b
+ 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
+ #endif	/* MAC_USE_SCC_A */
+ 
+ #ifdef MAC_USE_SCC_B
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a1
+-#endif	/* MAC_USE_SCC_A */
+ 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
+ 	jeq	4b
+ 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
 -- 
 1.8.1.2
 
