@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab3FDQKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:10:12 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:51856 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab3FDQKH (ORCPT
+	id S1756600Ab3FDQKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:10:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56821 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755879Ab3FDQKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:10:07 -0400
+	Tue, 4 Jun 2013 12:10:20 -0400
+Date: Tue, 4 Jun 2013 17:09:07 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCHv2 0/6] Make ARM's sched_clock generic + 64 bit friendly
+Message-ID: <20130604160907.GW27516@mudshark.cambridge.arm.com>
+References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
+ <51AD32A4.5070609@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1394174.ONngHnHYKL@wuerfel>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com>
- <6466898.RnYOe3jpGG@wuerfel> <CAGVrzcbRS3x5fgD1BfOk4-oTUsAY9FA2V621OvZLJQNZ01brCg@mail.gmail.com>
- <1394174.ONngHnHYKL@wuerfel>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Tue, 4 Jun 2013 17:09:26 +0100
-X-Google-Sender-Auth: CDbAFGVY9fti3X3TNrwz3RSN15Y
-Message-ID: <CAGVrzcZcVB5+NqLop+ALrX4Jx_SyNatczLt4oNzXr7bjgKMXhg@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "alexandre.belloni" <alexandre.belloni@free-electrons.com>,
-        kernel <kernel@pengutronix.de>, "shawn.guo" <shawn.guo@linaro.org>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AD32A4.5070609@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/4 Arnd Bergmann <arnd@arndb.de>:
-> On Tuesday 04 June 2013 16:36:50 Florian Fainelli wrote:
->> It seems to me that what David proposes is to have say an
->> arch/arm/mach-foo/phy-fixups.c file which is only enabled when
->> CONFIG_PHYLIB is set (obj-$(CONFIG_PHYLIB) += phy-fixup.o), such that
->> it does not need to have any conditionnals when calling
->> phy_register_fixup. This sounds a little unusual, but why not.
->
-> I don't think it would actually help us, because then we still need
-> to declare a local function that gets called from the board init
-> code. Instead of doing
->
->         if (IS_ENABLED(CONFIG_PHYLIB))
->                  phy_register_fixup_for_uid(phy_id, foo_phy_fixup);
->
-> we would then do
->
->         if (IS_ENABLED(CONFIG_PHYLIB))
->                 foo_phy_fixup_register();
->
-> which is not much different at all.
+On Tue, Jun 04, 2013 at 01:19:48AM +0100, John Stultz wrote:
+> On 06/01/2013 11:39 PM, Stephen Boyd wrote:
+> > This is mostly a resend of a patch series I sent a little over a month
+> > ago. I've reordered the patches so that John can pick up the first three
+> > and get a generic sched_clock layer without having to take the 64 bit
+> > patches. The last three patches add 64 bit support and move the architected
+> > timers on ARM64 and ARM to use it.
+> 
+> 
+> Yea, so from the initial look over it, I think I'm happy with queuing 
+> the first three patches, although I'd like to get some acks from arm 
+> folks on at least the first two, just so no one is surprised with it 
+> going through the -tip tree.
 
-You would just need to define a stub for your arch_foo_phy_fixup()
-which has a different definition depending on whether CONFIG_PHYLIB is
-defined or not.
+The first two patches are pretty simple so, FWIW, you can add my ack on those:
 
-This would be just one function, instead of the whole bunch of stubs
-needed for phylib. Right now its probably 1 vs 3, so it does not make
-that much of a difference but who knows, if we had more phylib stubs
-and forget to update the stubs? (which tends to happen pretty often).
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-The size savings are exactly the same in both approaches anyway.
---
-Florian
+Will
