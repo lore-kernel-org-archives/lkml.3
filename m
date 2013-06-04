@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab3FDUA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:00:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab3FDUAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:00:55 -0400
-Date: Tue, 4 Jun 2013 21:57:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
-	proc_task_readdir() paths
-Message-ID: <20130604195700.GA31933@redhat.com>
-References: <20130603190705.GA11517@redhat.com> <877giarg81.fsf@xmission.com> <20130604171435.GA20416@redhat.com> <20130604173917.GB13110@ZenIV.linux.org.uk>
+	id S1751272Ab3FDUHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:07:37 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:15435 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab3FDUHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 16:07:35 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y2+bsZKRiOQ==
+X-RZG-CLASS-ID: mo05
+Message-ID: <51AE4969.8050709@gmx.net>
+Date: Tue, 04 Jun 2013 22:09:13 +0200
+From: Arne Jansen <sensille@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604173917.GB13110@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Chris Mason <clmason@fusionio.com>
+CC: Christoph Hellwig <hch@infradead.org>, J??rn Engel <joern@logfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+References: <1370280485-10047-1-git-send-email-joern@logfs.org> <20130603204930.GA28299@infradead.org> <20130603193647.GB10200@logfs.org> <20130603195555.GC10200@logfs.org> <20130604144856.GA12302@infradead.org> <20130604145322.4088.78915@localhost.localdomain>
+In-Reply-To: <20130604145322.4088.78915@localhost.localdomain>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04, Al Viro wrote:
->
-> On Tue, Jun 04, 2013 at 07:14:35PM +0200, Oleg Nesterov wrote:
-> > > There is another bug in here as well that we may return really crazy
-> > > things in the case of seek simultaneous with readdir.
-> >
-> > i_mutex? both vfs_readdir() and default_llseek() take it... Anyway, this
-> > is another issue.
->
-> That's part of the reasons for the series I've mentioned (vfs.git#experimental);
-> seriously, check that up.
+On 06/04/13 16:53, Chris Mason wrote:
+> Quoting Christoph Hellwig (2013-06-04 10:48:56)
+>> On Mon, Jun 03, 2013 at 03:55:55PM -0400, J??rn Engel wrote:
+>>> Actually, when I compare the two invocations, I prefer the
+>>> list_for_each_entry_del() variant over list_pop_entry().
+>>>
+>>>         while ((ref = list_pop_entry(&prefs, struct __prelim_ref, list))) {
+>>>         list_for_each_entry_del(ref, &prefs, list) {
+>>>
+>>> Christoph?
+>>
+>> I really don't like something that looks like an iterator (*for_each*)
+>> to modify a list.  Maybe it's just me, so I'd love to hear others chime
+>> in.
+> 
+> Have to agree with Christoph.  I just couldn't put my finger on why I
+> didn't like it until I saw the list_pop_entry suggestion.
 
-Will do... but so far I am confused.
+list_pop_each_entry?
 
-I do not see how they could race (I mean /proc/pid/task only). OK, OK,
-the usage of ->f_pos in sys_getdents() looks "obviously wrong", but this
-is another story? And "put f_pos in a local variable" can't help.
-
-But if you meant other problems with readdir in general, then I seem
-to understand, thanks.
-
-Oleg.
+> 
+> -chris
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
