@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3FDWlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:41:06 -0400
-Received: from 1wt.eu ([62.212.114.60]:35136 "EHLO 1wt.eu"
+	id S1752072Ab3FDWlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:35135 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab3FDWkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751728Ab3FDWkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:40:41 -0400
-Message-Id: <20130604172131.303348510@1wt.eu>
+Message-Id: <20130604172131.553536735@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:54 +0200
+Date: Tue, 04 Jun 2013 19:22:00 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Colin King <colin.king@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 024/184] wake_up_process() should be never used to wakeup a
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 030/184] Driver core: treat unregistered bus_types as having
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +23,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- TASK_STOPPED/TRACED task
+ no devices
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
+commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
 
-CVE-2013-0871
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-BugLink: http://bugs.launchpad.net/bugs/1129192
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
 
-wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
-Change it to use TASK_NORMAL and add the WARN_ON().
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
 
-TASK_ALL has no other users, probably can be killed.
+Joonsoo reported a problem when panicking before PCI was initialized.
+I think this patch should be sufficient to replace the patch he posted
+here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+reboot_fixups in early boot phase")
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-(backported from commit 9067ac85d533651b98c2ff903182a20cbb361fcb)
-
-Conflicts:
-	kernel/sched/core.c
-
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Colin King <colin.king@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Reported-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/sched.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/base/bus.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0591df8..42bf6a6 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2618,7 +2618,8 @@ out:
-  */
- int wake_up_process(struct task_struct *p)
- {
--	return try_to_wake_up(p, TASK_ALL, 0);
-+	WARN_ON(task_is_stopped_or_traced(p));
-+	return try_to_wake_up(p, TASK_NORMAL, 0);
- }
- EXPORT_SYMBOL(wake_up_process);
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 63c143e..6f1ba10 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -289,7 +289,7 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
+ 	struct device *dev;
+ 	int error = 0;
  
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -323,7 +323,7 @@ struct device *bus_find_device(struct bus_type *bus,
+ 	struct klist_iter i;
+ 	struct device *dev;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 -- 
 1.7.12.2.21.g234cd45.dirty
 
