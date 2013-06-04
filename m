@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab3FDCp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 22:45:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43360 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab3FDCpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 22:45:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,796,1363158000"; 
-   d="scan'208";a="311838150"
-Message-ID: <51AD549A.9010903@intel.com>
-Date: Tue, 04 Jun 2013 10:44:42 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1757694Ab3FDCtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 22:49:21 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:44286 "EHLO
+	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab3FDCtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 22:49:17 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jun 2013 22:49:17 EDT
+Message-ID: <51AD5443.8050900@atmel.com>
+Date: Tue, 4 Jun 2013 10:43:15 +0800
+From: Yang Wenyou <wenyou.yang@atmel.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [DISCUSSION] removing variety rq->cpu_load ?
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com> <20130506101936.GE13861@dyad.programming.kicks-ass.net> <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com> <20130506111041.GA15446@dyad.programming.kicks-ass.net> <51889C8A.5000806@intel.com> <51AD46CA.9020609@intel.com> <51AD4808.6020507@intel.com> <51AD51E3.6060307@linux.vnet.ibm.com>
-In-Reply-To: <51AD51E3.6060307@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] spi: atmel: convert to dma_request_slave_channel_compat()
+References: <1370012520-30539-1-git-send-email-richard.genoud@gmail.com>
+In-Reply-To: <1370012520-30539-1-git-send-email-richard.genoud@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 10:33 AM, Michael Wang wrote:
-> Hi, Alex
-> 
-> On 06/04/2013 09:51 AM, Alex Shi wrote:
->> resend with a new subject.
-> 
-> Forgive me but I'm a little lost on this thread...
-> 
-> So we are planing to rely on instant 'cpu_load[0]' and decayed
-> 'runnable_load_avg' only, do we?
-
-cpu_load is a kind of time decay for cpu load, but after runnable load introduced, 
-the decay functionality is a kind duplicate with it.
-So, remove them will make code simple. The idea were mentioned by Paul, Peter and I.
-
-the following is Peter's word of this affair.
-
-> Agreed, esp. the plethora of weird idx things we currently have. If we need to
-> re-introduce something it would likely only be the busy case and for that we
-> can immediately link to the balance interval or so.
-
-
+Richard Genoud wrote:
+> Use generic DMA DT helper.
+> Platforms booting with or without DT populated are both supported.
 >
-> 
-> Regards,
-> Michael Wang
-> 
->>
->>> Peter,
->>>
->>> I just tried to remove the variety rq.cpu_load, by the following patch. 
->>> Because forkexec_idx and busy_idx are all zero, after the patch system just keep cpu_load[0]
->>> and remove other values.
->>> I tried the patch base 3.10-rc3 and latest tip/sched/core with benchmark dbench,tbench,
->>> aim7,hackbench. and oltp of sysbench. Seems performance doesn't change clear.
->>> So, for my tested machines, core2, NHM, SNB, with 2 or 4 CPU sockets, and above tested
->>> benchmark. We are fine to remove the variety cpu_load. 
->>> Don't know if there some other concerns on other scenarios.
->>>
->>> ---
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 590d535..f0ca983 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -4626,7 +4626,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
->>>         if (child && child->flags & SD_PREFER_SIBLING)
->>>                 prefer_sibling = 1;
->>>  
->>> -       load_idx = get_sd_load_idx(env->sd, env->idle);
->>> +       load_idx = 0; //get_sd_load_idx(env->sd, env->idle);
->>>  
->>>         do {
->>>                 int local_group;
->>>
->>>
->>
->>
-> 
+> Based on Ludovic Desroches <ludovic.desroches@atmel.com> patchset
+> "ARM: at91: move to generic DMA device tree binding"
+>
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/spi/spi-atmel.c |   42 +++++++++++++++++++++++++++---------------
+>  1 file changed, 27 insertions(+), 15 deletions(-)
+>
+> rebased on linux-next next-20130531
+>   
+Tested on at91sam9g25ek,
+Based on linux-next, next-20130603
+plus Ludovic Desroches' patch "ARM: at91: dt: add header to define 
+at_hdmac configuration"
 
+Tested-by: Wenyou Yang<wenyou.yang@atmel.com>
+> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+> index 31cfc87..ea1ec00 100644
+> --- a/drivers/spi/spi-atmel.c
+> +++ b/drivers/spi/spi-atmel.c
+> @@ -424,10 +424,15 @@ static int atmel_spi_dma_slave_config(struct atmel_spi *as,
+>  	return err;
+>  }
+>  
+> -static bool filter(struct dma_chan *chan, void *slave)
+> +static bool filter(struct dma_chan *chan, void *pdata)
+>  {
+> -	struct	at_dma_slave *sl = slave;
+> +	struct atmel_spi_dma *sl_pdata = pdata;
+> +	struct at_dma_slave *sl;
+>  
+> +	if (!sl_pdata)
+> +		return false;
+> +
+> +	sl = &sl_pdata->dma_slave;
+>  	if (sl->dma_dev == chan->device->dev) {
+>  		chan->private = sl;
+>  		return true;
+> @@ -438,24 +443,31 @@ static bool filter(struct dma_chan *chan, void *slave)
+>  
+>  static int atmel_spi_configure_dma(struct atmel_spi *as)
+>  {
+> -	struct at_dma_slave *sdata = &as->dma.dma_slave;
+>  	struct dma_slave_config	slave_config;
+> +	struct device *dev = &as->pdev->dev;
+>  	int err;
+>  
+> -	if (sdata && sdata->dma_dev) {
+> -		dma_cap_mask_t mask;
+> +	dma_cap_mask_t mask;
+> +	dma_cap_zero(mask);
+> +	dma_cap_set(DMA_SLAVE, mask);
+>  
+> -		/* Try to grab two DMA channels */
+> -		dma_cap_zero(mask);
+> -		dma_cap_set(DMA_SLAVE, mask);
+> -		as->dma.chan_tx = dma_request_channel(mask, filter, sdata);
+> -		if (as->dma.chan_tx)
+> -			as->dma.chan_rx =
+> -				dma_request_channel(mask, filter, sdata);
+> +	as->dma.chan_tx = dma_request_slave_channel_compat(mask, filter,
+> +							   &as->dma,
+> +							   dev, "tx");
+> +	if (!as->dma.chan_tx) {
+> +		dev_err(dev,
+> +			"DMA TX channel not available, SPI unable to use DMA\n");
+> +		err = -EBUSY;
+> +		goto error;
+>  	}
+> -	if (!as->dma.chan_rx || !as->dma.chan_tx) {
+> -		dev_err(&as->pdev->dev,
+> -			"DMA channel not available, SPI unable to use DMA\n");
+> +
+> +	as->dma.chan_rx = dma_request_slave_channel_compat(mask, filter,
+> +							   &as->dma,
+> +							   dev, "rx");
+> +
+> +	if (!as->dma.chan_rx) {
+> +		dev_err(dev,
+> +			"DMA RX channel not available, SPI unable to use DMA\n");
+>  		err = -EBUSY;
+>  		goto error;
+>  	}
+>   
 
--- 
-Thanks
-    Alex
