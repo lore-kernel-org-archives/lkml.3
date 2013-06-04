@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3FDWtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:49:45 -0400
-Received: from 1wt.eu ([62.212.114.60]:35868 "EHLO 1wt.eu"
+	id S1754831Ab3FDWuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:50:13 -0400
+Received: from 1wt.eu ([62.212.114.60]:35843 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab3FDWoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:17 -0400
-Message-Id: <20130604172136.190033789@1wt.eu>
+	id S1754333Ab3FDWoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:04 -0400
+Message-Id: <20130604172136.066346020@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:52 +0200
+Date: Tue, 04 Jun 2013 19:23:49 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 142/184] kernel panic when mount NFSv4
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Willy Tarreau <w@1wt.eu>
+Subject: [ 139/184] NLS: improve UTF8 -> UTF16 string conversion routine
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,171 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-On Tue, 2010-12-14 at 16:58 +0800, Mi Jinlong wrote:
-> Hi,
->
-> When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
-> at NFS client's __rpc_create_common function.
->
-> The panic place is:
->   rpc_mkpipe
->     __rpc_lookup_create()          <=== find pipefile *idmap*
->     __rpc_mkpipe()                 <=== pipefile is *idmap*
->       __rpc_create_common()
->        ******  BUG_ON(!d_unhashed(dentry)); ******    *panic*
->
-> It means that the dentry's d_flags have be set DCACHE_UNHASHED,
-> but it should not be set here.
->
-> Is someone known this bug? or give me some idea?
->
-> A reproduce program is append, but it can't reproduce the bug every time.
-> the export is: "/nfsroot       *(rw,no_root_squash,fsid=0,insecure)"
->
-> And the panic message is append.
->
-> ============================================================================
-> #!/bin/sh
->
-> LOOPTOTAL=768
-> LOOPCOUNT=0
-> ret=0
->
-> while [ $LOOPCOUNT -ne $LOOPTOTAL ]
-> do
-> 	((LOOPCOUNT += 1))
-> 	service nfs restart
-> 	/usr/sbin/rpc.idmapd
-> 	mount -t nfs4 127.0.0.1:/ /mnt|| return 1;
-> 	ls -l /var/lib/nfs/rpc_pipefs/nfs/*/
-> 	umount /mnt
-> 	echo $LOOPCOUNT
-> done
->
-> ===============================================================================
-> Code: af 60 01 00 00 89 fa 89 f0 e8 64 cf 89 f0 e8 5c 7c 64 cf 31 c0 8b 5c 24 10 8b
-> 74 24 14 8b 7c 24 18 8b 6c 24 1c 83 c4 20 c3 <0f> 0b eb fc 8b 46 28 c7 44 24 08 20
-> de ee f0 c7 44 24 04 56 ea
-> EIP:[<f0ee92ea>] __rpc_create_common+0x8a/0xc0 [sunrpc] SS:ESP 0068:eccb5d28
-> ---[ end trace 8f5606cd08928ed2]---
-> Kernel panic - not syncing: Fatal exception
-> Pid:7131, comm: mount.nfs4 Tainted: G     D   -------------------2.6.32 #1
-> Call Trace:
->  [<c080ad18>] ? panic+0x42/0xed
->  [<c080e42c>] ? oops_end+0xbc/0xd0
->  [<c040b090>] ? do_invalid_op+0x0/0x90
->  [<c040b10f>] ? do_invalid_op+0x7f/0x90
->  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
->  [<f0edc433>] ? rpc_free_task+0x33/0x70[sunrpc]
->  [<f0ed6508>] ? prc_call_sync+0x48/0x60[sunrpc]
->  [<f0ed656e>] ? rpc_ping+0x4e/0x60[sunrpc]
->  [<f0ed6eaf>] ? rpc_create+0x38f/0x4f0[sunrpc]
->  [<c080d80b>] ? error_code+0x73/0x78
->  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
->  [<c0532bda>] ? d_lookup+0x2a/0x40
->  [<f0ee94b1>] ? rpc_mkpipe+0x111/0x1b0[sunrpc]
->  [<f10a59f4>] ? nfs_create_rpc_client+0xb4/0xf0[nfs]
->  [<f10d6c6d>] ? nfs_fscache_get_client_cookie+0x1d/0x50[nfs]
->  [<f10d3fcb>] ? nfs_idmap_new+0x7b/0x140[nfs]
->  [<c05e76aa>] ? strlcpy+0x3a/0x60
->  [<f10a60ca>] ? nfs4_set_client+0xea/0x2b0[nfs]
->  [<f10a6d0c>] ? nfs4_create_server+0xac/0x1b0[nfs]
->  [<c04f1400>] ? krealloc+0x40/0x50
->  [<f10b0e8b>] ? nfs4_remote_get_sb+0x6b/0x250[nfs]
->  [<c04f14ec>] ? kstrdup+0x3c/0x60
->  [<c0520739>] ? vfs_kern_mount+0x69/0x170
->  [<f10b1a3c>] ? nfs_do_root_mount+0x6c/0xa0[nfs]
->  [<f10b1b47>] ? nfs4_try_mount+0x37/0xa0[nfs]
->  [<f10afe6d>] ? nfs4_validate_text_mount_data+-x7d/0xf0[nfs]
->  [<f10b1c42>] ? nfs4_get_sb+0x92/0x2f0
->  [<c0520739>] ? vfs_kern_mount+0x69/0x170
->  [<c05366d2>] ? get_fs_type+0x32/0xb0
->  [<c052089f>] ? do_kern_mount+0x3f/0xe0
->  [<c053954f>] ? do_mount+0x2ef/0x740
->  [<c0537740>] ? copy_mount_options+0xb0/0x120
->  [<c0539a0e>] ? sys_mount+0x6e/0xa0
+commit 0720a06a7518c9d0c0125bd5d1f3b6264c55c3dd upstream.
 
-Hi,
+The utf8s_to_utf16s conversion routine needs to be improved.  Unlike
+its utf16s_to_utf8s sibling, it doesn't accept arguments specifying
+the maximum length of the output buffer or the endianness of its
+16-bit output.
 
-Does the following patch fix the problem?
+This patch (as1501) adds the two missing arguments, and adjusts the
+only two places in the kernel where the function is called.  A
+follow-on patch will add a third caller that does utilize the new
+capabilities.
 
-Cheers
-  Trond
+The two conversion routines are still annoyingly inconsistent in the
+way they handle invalid byte combinations.  But that's a subject for a
+different patch.
 
---------------------------
-SUNRPC: Fix a BUG in __rpc_create_common
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-Mi Jinlong reports:
-
-When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
-at NFS client's __rpc_create_common function.
-
-The panic place is:
-  rpc_mkpipe
-      __rpc_lookup_create()          <=== find pipefile *idmap*
-      __rpc_mkpipe()                 <=== pipefile is *idmap*
-        __rpc_create_common()
-         ******  BUG_ON(!d_unhashed(dentry)); ****** *panic*
-
-The test is wrong: we can find ourselves with a hashed negative dentry here
-if the idmapper tried to look up the file before we got round to creating
-it.
-
-Just replace the BUG_ON() with a d_drop(dentry).
-
-[2.6.32 background info from Jonathan below]
-> Hi Willy et al,
->
-> Please consider
->
->   beb0f0a9fba1 kernel panic when mount NFSv4, 2010-12-20
->
-> for application to kernel.org's 2.6.32.y and 2.6.34.y trees.  The
-> patch was applied upstream during the 2.6.38 merge window, so newer
-> kernels don't need it.
->
-> (Context: <http://bugs.debian.org/695872>.)  Tom Downes (cc-ed)
-> experienced the bug on a Debian kernel close to 2.6.32.58 and
-> confirmed that the patch doesn't seem to hurt.
->
-> The patch is part of Fedora 13's 2.6.34-based and Fedora 14's
-> 2.6.35-based kernels[1].  It was also included in the RHEL kernel at
-> some point between 2.6.32-71.29.1.el6 and 2.6.32-131.0.15.el6[2].
->
-> Thoughts of all kinds welcome, as always.
->
-> Regards,
-> Jonathan
->
-> [1] https://bugzilla.redhat.com/673207
-> [2] https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=8028cccdc4b1
-
-Reported-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-(cherry picked from commit beb0f0a9fba1fa98b378329a9a5b0a73f25097ae)
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[bwh: Bakckported to 2.6.32: drop Hyper-V change]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sunrpc/rpc_pipe.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fat/namei_vfat.c |  3 ++-
+ fs/nls/nls_base.c   | 43 +++++++++++++++++++++++++++++++++----------
+ include/linux/nls.h |  5 +++--
+ 3 files changed, 38 insertions(+), 13 deletions(-)
 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index ea1e6de..43aa601 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -459,7 +459,7 @@ static int __rpc_create_common(struct inode *dir, struct dentry *dentry,
- {
- 	struct inode *inode;
+diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+index 67b3df1..4251f35 100644
+--- a/fs/fat/namei_vfat.c
++++ b/fs/fat/namei_vfat.c
+@@ -499,7 +499,8 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+ 	int charlen;
  
--	BUG_ON(!d_unhashed(dentry));
-+	d_drop(dentry);
- 	inode = rpc_get_inode(dir->i_sb, mode);
- 	if (!inode)
- 		goto out_err;
+ 	if (utf8) {
+-		*outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
++		*outlen = utf8s_to_utf16s(name, len, UTF16_HOST_ENDIAN,
++				(wchar_t *) outname, FAT_LFN_LEN + 2);
+ 		if (*outlen < 0)
+ 			return *outlen;
+ 		else if (*outlen > FAT_LFN_LEN)
+diff --git a/fs/nls/nls_base.c b/fs/nls/nls_base.c
+index 44a88a9..0eb059e 100644
+--- a/fs/nls/nls_base.c
++++ b/fs/nls/nls_base.c
+@@ -114,34 +114,57 @@ int utf32_to_utf8(unicode_t u, u8 *s, int maxlen)
+ }
+ EXPORT_SYMBOL(utf32_to_utf8);
+ 
+-int utf8s_to_utf16s(const u8 *s, int len, wchar_t *pwcs)
++static inline void put_utf16(wchar_t *s, unsigned c, enum utf16_endian endian)
++{
++	switch (endian) {
++	default:
++		*s = (wchar_t) c;
++		break;
++	case UTF16_LITTLE_ENDIAN:
++		*s = __cpu_to_le16(c);
++		break;
++	case UTF16_BIG_ENDIAN:
++		*s = __cpu_to_be16(c);
++		break;
++	}
++}
++
++int utf8s_to_utf16s(const u8 *s, int len, enum utf16_endian endian,
++		wchar_t *pwcs, int maxlen)
+ {
+ 	u16 *op;
+ 	int size;
+ 	unicode_t u;
+ 
+ 	op = pwcs;
+-	while (*s && len > 0) {
++	while (len > 0 && maxlen > 0 && *s) {
+ 		if (*s & 0x80) {
+ 			size = utf8_to_utf32(s, len, &u);
+ 			if (size < 0)
+ 				return -EINVAL;
++			s += size;
++			len -= size;
+ 
+ 			if (u >= PLANE_SIZE) {
++				if (maxlen < 2)
++					break;
+ 				u -= PLANE_SIZE;
+-				*op++ = (wchar_t) (SURROGATE_PAIR |
+-						((u >> 10) & SURROGATE_BITS));
+-				*op++ = (wchar_t) (SURROGATE_PAIR |
++				put_utf16(op++, SURROGATE_PAIR |
++						((u >> 10) & SURROGATE_BITS),
++						endian);
++				put_utf16(op++, SURROGATE_PAIR |
+ 						SURROGATE_LOW |
+-						(u & SURROGATE_BITS));
++						(u & SURROGATE_BITS),
++						endian);
++				maxlen -= 2;
+ 			} else {
+-				*op++ = (wchar_t) u;
++				put_utf16(op++, u, endian);
++				maxlen--;
+ 			}
+-			s += size;
+-			len -= size;
+ 		} else {
+-			*op++ = *s++;
++			put_utf16(op++, *s++, endian);
+ 			len--;
++			maxlen--;
+ 		}
+ 	}
+ 	return op - pwcs;
+diff --git a/include/linux/nls.h b/include/linux/nls.h
+index d47beef..5dc635f 100644
+--- a/include/linux/nls.h
++++ b/include/linux/nls.h
+@@ -43,7 +43,7 @@ enum utf16_endian {
+ 	UTF16_BIG_ENDIAN
+ };
+ 
+-/* nls.c */
++/* nls_base.c */
+ extern int register_nls(struct nls_table *);
+ extern int unregister_nls(struct nls_table *);
+ extern struct nls_table *load_nls(char *);
+@@ -52,7 +52,8 @@ extern struct nls_table *load_nls_default(void);
+ 
+ extern int utf8_to_utf32(const u8 *s, int len, unicode_t *pu);
+ extern int utf32_to_utf8(unicode_t u, u8 *s, int maxlen);
+-extern int utf8s_to_utf16s(const u8 *s, int len, wchar_t *pwcs);
++extern int utf8s_to_utf16s(const u8 *s, int len,
++		enum utf16_endian endian, wchar_t *pwcs, int maxlen);
+ extern int utf16s_to_utf8s(const wchar_t *pwcs, int len,
+ 		enum utf16_endian endian, u8 *s, int maxlen);
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
