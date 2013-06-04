@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3FDXKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:10:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:35499 "EHLO 1wt.eu"
+	id S1755250Ab3FDXLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:11:13 -0400
+Received: from 1wt.eu ([62.212.114.60]:35494 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225Ab3FDWmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:31 -0400
-Message-Id: <20130604172134.042467140@1wt.eu>
+	id S1753092Ab3FDWma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:30 -0400
+Message-Id: <20130604172133.538760934@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:00 +0200
+Date: Tue, 04 Jun 2013 19:22:48 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?ISO-8859-15?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Bork <tom@eisfair.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 090/184] r8169: remove the obsolete and incorrect AMD
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        Ben Hutchings <ben@decadent.org.uk>, Thomas Bork <tom@eisfair.net>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 078/184] scsi: Silence unnecessary warnings about ioctl to
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- workaround
+ partition
 
-From: =?latin1?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
+commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
 
-This was introduced in commit 6dccd16 "r8169: merge with version
-6.001.00 of Realtek's r8169 driver". I did not find the version
-6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
-this hunk is no longer present.
+Sometimes, warnings about ioctls to partition happen often enough that they
+form majority of the warnings in the kernel log and users complain. In some
+cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+the warnings completely as they can ease debugging of userspace problems
+when ioctl is refused.
 
-Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
-rev d" claims to have fixed this issue otherwise.
+Since I have seen warnings from lots of commands, including some proprietary
+userspace applications, I don't think disallowing the ioctls for processes
+with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
 
-The magic compare mask of 0xfffe000 is dubious as it masks
-parts of the Reserved part, and parts of the VLAN tag. But this
-does not make much sense as the VLAN tag parts are perfectly
-valid there. In matter of fact this seems to be triggered with
-any VLAN tagged packet as RxVlanTag bit is matched. I would
-suspect 0xfffe0000 was intended to test reserved part only.
-
-Finally, this hunk is evil as it can cause more packets to be
-handled than what was NAPI quota causing net/core/dev.c:
-net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
-mess up the NAPI state causing device to hang.
-
-As result, any system using VLANs and having high receive
-traffic (so that NAPI poll budget limits rtl_rx) would result
-in device hang.
-
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-(cherry picked from commit 3a42cce923b0242d0293cae0a162601afa89d552)
+CC: Paolo Bonzini <pbonzini@redhat.com>
+CC: James Bottomley <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[bwh: Backported to 3.2: use ENOTTY, not ENOIOCTLCMD]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from commit f45c9a6eec20cd712421c442785e7a4e9215a230)
 Cc: Thomas Bork <tom@eisfair.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/r8169.c | 7 -------
- 1 file changed, 7 deletions(-)
+ block/scsi_ioctl.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 6197140..b22623d 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -4571,13 +4571,6 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
- 			dev->stats.rx_bytes += pkt_size;
- 			dev->stats.rx_packets++;
- 		}
--
--		/* Work around for AMD plateform. */
--		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
--		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
--			desc->opts2 = 0;
--			cur_rx++;
--		}
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 2be0a97..123eb17 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -720,11 +720,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 		break;
  	}
  
- 	count = cur_rx - tp->cur_rx;
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
++
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
++	return -ENOTTY;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
