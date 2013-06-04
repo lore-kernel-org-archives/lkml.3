@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab3FDWnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:43:37 -0400
-Received: from 1wt.eu ([62.212.114.60]:35730 "EHLO 1wt.eu"
+	id S1753573Ab3FDWnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:35624 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab3FDWn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:26 -0400
-Message-Id: <20130604172136.395217777@1wt.eu>
+	id S1753497Ab3FDWm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:59 -0400
+Message-Id: <20130604172136.892217862@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:57 +0200
+Date: Tue, 04 Jun 2013 19:24:09 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 147/184] af_packet: remove BUG statement in
+Subject: [ 159/184] tcp: fix MSG_SENDPAGE_NOTLAST logic
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,54 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- tpacket_destruct_skb
 
-From: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 7f5c3e3a80e6654cf48dfba7cf94f88c6b505467 ]
+[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
 
-Here's a quote of the comment about the BUG macro from asm-generic/bug.h:
+commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
+frags but the last one for a splice() call.
 
- Don't use BUG() or BUG_ON() unless there's really no way out; one
- example might be detecting data structure corruption in the middle
- of an operation that can't be backed out of.  If the (sub)system
- can somehow continue operating, perhaps with reduced functionality,
- it's probably not BUG-worthy.
+The condition used to set the flag in pipe_to_sendpage() relied on
+splice() user passing the exact number of bytes present in the pipe,
+or a smaller one.
 
- If you're tempted to BUG(), think again:  is completely giving up
- really the *only* solution?  There are usually better options, where
- users don't need to reboot ASAP and can mostly shut down cleanly.
+But some programs pass an arbitrary high value, and the test fails.
 
-In our case, the status flag of a ring buffer slot is managed from both sides,
-the kernel space and the user space. This means that even though the kernel
-side might work as expected, the user space screws up and changes this flag
-right between the send(2) is triggered when the flag is changed to
-TP_STATUS_SENDING and a given skb is destructed after some time. Then, this
-will hit the BUG macro. As David suggested, the best solution is to simply
-remove this statement since it cannot be used for kernel side internal
-consistency checks. I've tested it and the system still behaves /stable/ in
-this case, so in accordance with the above comment, we should rather remove it.
+The effect of this bug is a lack of tcp_push() at the end of a
+splice(pipe -> socket) call, and possibly very slow or erratic TCP
+sessions.
 
-Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+We should both test sd->total_len and fact that another fragment
+is in the pipe (pipe->nrbufs > 1)
+
+Many thanks to Willy for providing very clear bug report, bisection
+and test programs.
+
+Reported-by: Willy Tarreau <w@1wt.eu>
+Bisected-by: Willy Tarreau <w@1wt.eu>
+Tested-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/packet/af_packet.c | 1 -
- 1 file changed, 1 deletion(-)
+ fs/splice.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 35cfa79..728c080 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -828,7 +828,6 @@ static void tpacket_destruct_skb(struct sk_buff *skb)
- 
- 	if (likely(po->tx_ring.pg_vec)) {
- 		ph = skb_shinfo(skb)->destructor_arg;
--		BUG_ON(__packet_get_status(po, ph) != TP_STATUS_SENDING);
- 		BUG_ON(atomic_read(&po->tx_ring.pending) == 0);
- 		atomic_dec(&po->tx_ring.pending);
- 		__packet_set_status(po, ph, TP_STATUS_AVAILABLE);
+diff --git a/fs/splice.c b/fs/splice.c
+index f5d5a2b..cdad986 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -639,8 +639,10 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
+ 	ret = buf->ops->confirm(pipe, buf);
+ 	if (!ret) {
+ 		more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+-		if (sd->len < sd->total_len)
++
++		if (sd->len < sd->total_len && pipe->nrbufs > 1)
+ 			more |= MSG_SENDPAGE_NOTLAST;
++
+ 		if (file->f_op && file->f_op->sendpage)
+ 			ret = file->f_op->sendpage(file, buf->page, buf->offset,
+ 						   sd->len, &pos, more);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
