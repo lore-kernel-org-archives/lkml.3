@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab3FDSyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:54:23 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:49992 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3FDSyV (ORCPT
+	id S1751422Ab3FDS47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:56:59 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8129 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3FDS45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:54:21 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: Mathias Krause <minipli@googlemail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] x86, mce: fix "braodcast" typo
-Date: Tue,  4 Jun 2013 20:54:14 +0200
-Message-Id: <1370372054-16635-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130604091203.GC23640@pd.tnic>
-References: <20130604091203.GC23640@pd.tnic>
+	Tue, 4 Jun 2013 14:56:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 04 Jun 2013 11:56:31 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>,
+        <thierry.reding@avionic-design.de>, <bhelgaas@google.com>,
+        <ldewangan@nvidia.com>, <olof@lixom.net>, <hdoyu@nvidia.com>,
+        <pgaikwad@nvidia.com>, <mturquette@linaro.org>,
+        <pdeschrijver@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>
+CC: <jtukkinen@nvidia.com>, <kthota@nvidia.com>, <jagarwal@nvidia.com>
+Subject: [PATCH V3 1/4] ARM: tegra30: clocks: Fix pciex clock registration
+Date: Wed, 5 Jun 2013 00:27:29 +0530
+Message-ID: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the typo in MCJ_IRQ_BRAODCAST.
+Registering pciex as peripheral clock instead of fixed clock
+as tegra_perih_reset_assert(deassert) api of this clock api
+gives warning and ultimately does not succeed to assert(deassert).
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
 ---
- arch/x86/include/asm/mce.h              |    2 +-
- arch/x86/kernel/cpu/mcheck/mce-inject.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this.
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index fa5f71e..6b52980 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -61,7 +61,7 @@
- #define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
- #define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
- #define MCJ_EXCEPTION		0x8  /* raise as exception */
--#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
-+#define MCJ_IRQ_BROADCAST	0x10 /* do IRQ broadcasting */
+Changes in V3:
+- Avoid removing pciex duplicate clock as per review comment
+- Corrected tegra pcie driver name for duplicate clocks
+
+ drivers/clk/tegra/clk-tegra30.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index c6921f5..edb2b9b 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -1598,6 +1598,12 @@ static void __init tegra30_periph_clk_init(void)
+ 	clk_register_clkdev(clk, "afi", "tegra-pcie");
+ 	clks[afi] = clk;
  
- #define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
++	/* pciex */
++	clk = tegra_clk_register_periph_gate("pciex", "pll_e", 0, clk_base, 0,
++				    74, &periph_u_regs, periph_clk_enb_refcnt);
++	clk_register_clkdev(clk, "pciex", "tegra-pcie");
++	clks[pciex] = clk;
++
+ 	/* kfuse */
+ 	clk = tegra_clk_register_periph_gate("kfuse", "clk_m",
+ 				    TEGRA_PERIPH_ON_APB,
+@@ -1716,11 +1722,6 @@ static void __init tegra30_fixed_clk_init(void)
+ 				1, 0, &cml_lock);
+ 	clk_register_clkdev(clk, "cml1", NULL);
+ 	clks[cml1] = clk;
+-
+-	/* pciex */
+-	clk = clk_register_fixed_rate(NULL, "pciex", "pll_e", 0, 100000000);
+-	clk_register_clkdev(clk, "pciex", NULL);
+-	clks[pciex] = clk;
+ }
  
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index ddc72f8..5ac2d1f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -153,7 +153,7 @@ static void raise_mce(struct mce *m)
- 		return;
- 
- #ifdef CONFIG_X86_LOCAL_APIC
--	if (m->inject_flags & (MCJ_IRQ_BRAODCAST | MCJ_NMI_BROADCAST)) {
-+	if (m->inject_flags & (MCJ_IRQ_BROADCAST | MCJ_NMI_BROADCAST)) {
- 		unsigned long start;
- 		int cpu;
- 
-@@ -167,7 +167,7 @@ static void raise_mce(struct mce *m)
- 				cpumask_clear_cpu(cpu, mce_inject_cpumask);
- 		}
- 		if (!cpumask_empty(mce_inject_cpumask)) {
--			if (m->inject_flags & MCJ_IRQ_BRAODCAST) {
-+			if (m->inject_flags & MCJ_IRQ_BROADCAST) {
- 				/*
- 				 * don't wait because mce_irq_ipi is necessary
- 				 * to be sync with following raise_local
+ static void __init tegra30_osc_clk_init(void)
+@@ -1942,8 +1943,8 @@ static struct tegra_clk_duplicate tegra_clk_duplicates[] = {
+ 	TEGRA_CLK_DUPLICATE(bsea, "tegra-aes", "bsea"),
+ 	TEGRA_CLK_DUPLICATE(bsea, "nvavp", "bsea"),
+ 	TEGRA_CLK_DUPLICATE(cml1, "tegra_sata_cml", NULL),
+-	TEGRA_CLK_DUPLICATE(cml0, "tegra_pcie", "cml"),
+-	TEGRA_CLK_DUPLICATE(pciex, "tegra_pcie", "pciex"),
++	TEGRA_CLK_DUPLICATE(cml0, "tegra-pcie", "cml"),
++	TEGRA_CLK_DUPLICATE(pciex, "tegra-pcie", "pciex"),
+ 	TEGRA_CLK_DUPLICATE(vcp, "nvavp", "vcp"),
+ 	TEGRA_CLK_DUPLICATE(clk_max, NULL, NULL), /* MUST be the last entry */
+ };
 -- 
-1.7.10.4
+1.7.0.4
 
