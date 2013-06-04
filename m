@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab3FDWmC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:42:02 -0400
-Received: from 1wt.eu ([62.212.114.60]:35334 "EHLO 1wt.eu"
+	id S1752705Ab3FDWlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:35271 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab3FDWlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:55 -0400
-Message-Id: <20130604172132.177051798@1wt.eu>
+	id S1751803Ab3FDWlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:36 -0400
+Message-Id: <20130604172131.427118554@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:15 +0200
+Date: Tue, 04 Jun 2013 19:21:57 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 045/184] ALSA: ac97 - Fix missing NULL check in
+Subject: [ 027/184] ring-buffer: Fix race between integrity check and
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,34 +23,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- snd_ac97_cvol_new()
+ readers
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 733a48e5ae5bf28b046fad984d458c747cbb8c21 upstream.
+commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44721
+The function rb_check_pages() was added to make sure the ring buffer's
+pages were sane. This check is done when the ring buffer size is modified
+as well as when the iterator is released (closing the "trace" file),
+as that was considered a non fast path and a good place to do a sanity
+check.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The problem is that the check does not have any locks around it.
+If one process were to read the trace file, and another were to read
+the raw binary file, the check could happen while the reader is reading
+the file.
+
+The issues with this is that the check requires to clear the HEAD page
+before doing the full check and it restores it afterward. But readers
+require the HEAD page to exist before it can read the buffer, otherwise
+it gives a nasty warning and disables the buffer.
+
+By adding the reader lock around the check, this keeps the race from
+happening.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/pci/ac97/ac97_codec.c | 2 ++
+ kernel/trace/ring_buffer.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/ac97/ac97_codec.c b/sound/pci/ac97/ac97_codec.c
-index 78288db..5f295f7 100644
---- a/sound/pci/ac97/ac97_codec.c
-+++ b/sound/pci/ac97/ac97_codec.c
-@@ -1252,6 +1252,8 @@ static int snd_ac97_cvol_new(struct snd_card *card, char *name, int reg, unsigne
- 		tmp.index = ac97->num;
- 		kctl = snd_ctl_new1(&tmp, ac97);
- 	}
-+	if (!kctl)
-+		return -ENOMEM;
- 	if (reg >= AC97_PHONE && reg <= AC97_PCM)
- 		set_tlv_db_scale(kctl, db_scale_5bit_12db_max);
- 	else
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index e749a05..6024960 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2876,6 +2876,8 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = reader->list.next;
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
