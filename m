@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab3FDF6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:58:49 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:51107 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3FDF6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 01:58:47 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jun 2013 01:58:46 EDT
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEactrFOkxARSLB12SU2w=
-X-RZG-CLASS-ID: mo05
-Message-ID: <51AD80A5.20308@denx.de>
-Date: Tue, 04 Jun 2013 07:52:37 +0200
-From: Stefan Roese <sr@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758941Ab3FDGBB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:01:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:40410 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755133Ab3FDGAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 02:00:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ben Greear <greearb@candelatech.com>,
+        Joe Lawrence <joe.lawrence@stratus.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: Please add to stable:  module: don't unlink the module until we've removed all exposure.
+In-Reply-To: <51ACC60B.8090504@candelatech.com>
+References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com> <51ACBD6A.1030304@candelatech.com> <51ACC60B.8090504@candelatech.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 04 Jun 2013 15:26:28 +0930
+Message-ID: <87d2s2to4z.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] net: sun4i-emac: remove erroneous assignment
-References: <3298610.K0DeJZEM4E@wuerfel>
-In-Reply-To: <3298610.K0DeJZEM4E@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 11:36 PM, Arnd Bergmann wrote:
-> The newly added sun4i-emac driver causes a build error when
-> CONFIG_NET_POLL_CONTROLLER is set, because it attempts to
-> assign a pointer to netdev->poll_controller, which has
-> been replaced with ops->ndo_poll_controller in 2.6.31!
-> 
-> The correct assignment is present as well, so we just need
-> to remove the wrong one.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Stefan Roese <sr@denx.de>
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Cc: Richard Genoud <richard.genoud@gmail.com>
+Ben Greear <greearb@candelatech.com> writes:
+>> It at least works around the problem for me as well.  But, a more rare
+>> migration/[0-3] (I think) related lockup still exists in 3.9.4 for me,
+>> so I will also try applying that other kobject patch and continue testing
+>> today...
+>
+> Well, that other kobject patch is already in 3.9.4, so I think it's still
+> a good idea to include the
+> "module: don't unlink the module until we've removed all exposure."
+> patch in stable.  I have a decent test case to reproduce the crash, so if someone
+> wants me to test other patches instead, then I will do so.
 
-Thanks for fixing this:
+OK, I cannot reproduce on 3.9.4.  I #if 0'd out the WARNs in sysfs and
+kobject, and did this (which reliably broke on 3.8):
 
-Acked-by: Stefan Roese <sr@denx.de>
+# M=`modinfo -F filename e1000`
+# for i in `seq 10000`; do insmod $M; rmmod e1000; done >/dev/null 2>&1 & for i in `seq 10000`; do insmod $M; rmmod e1000; done > /dev/null 2>&1 & for i in `seq 10000`; do insmod $M; rmmod e1000; done > /dev/null 2>&1 & for i in `seq 10000`; do insmod $M; rmmod e1000; done >/dev/null 2>&1 &
+# 
+
+This was under kvm, 4-way SMP, init=/bin/bash.
+
+Do you have a backtrace of the 3.9.4 crash?  You can add "CFLAGS_module.o
+= -O0" to get a clearer backtrace if you want...
 
 Thanks,
-Stefan
-
+Rusty.
