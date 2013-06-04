@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3FDW6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:58:41 -0400
-Received: from 1wt.eu ([62.212.114.60]:35723 "EHLO 1wt.eu"
+	id S1753743Ab3FDWnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:21 -0400
+Received: from 1wt.eu ([62.212.114.60]:35684 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab3FDWnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:24 -0400
-Message-Id: <20130604172136.975797600@1wt.eu>
+	id S1753640Ab3FDWnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:13 -0400
+Message-Id: <20130604172136.519104713@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:11 +0200
+Date: Tue, 04 Jun 2013 19:24:00 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Paul Moore <pmoore@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 161/184] unix: fix a race condition in unix_release()
+Cc: Benjamin LaHaise <bcrl@kvack.org>, Willy Tarreau <w@1wt.eu>
+Subject: [ 150/184] ipv4: check rt_genid in dst_check
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,69 +22,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-[ Upstream commit ded34e0fe8fe8c2d595bfa30626654e4b87621e0 ]
+commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92
+Author: Timo Teräs <timo.teras@iki.fi>
+Date:   Thu Mar 18 23:20:20 2010 +0000
 
-As reported by Jan, and others over the past few years, there is a
-race condition caused by unix_release setting the sock->sk pointer
-to NULL before properly marking the socket as dead/orphaned.  This
-can cause a problem with the LSM hook security_unix_may_send() if
-there is another socket attempting to write to this partially
-released socket in between when sock->sk is set to NULL and it is
-marked as dead/orphaned.  This patch fixes this by only setting
-sock->sk to NULL after the socket has been marked as dead; I also
-take the opportunity to make unix_release_sock() a void function
-as it only ever returned 0/success.
+    ipv4: check rt_genid in dst_check
 
-Dave, I think this one should go on the -stable pile.
+    Xfrm_dst keeps a reference to ipv4 rtable entries on each
+    cached bundle. The only way to renew xfrm_dst when the underlying
+    route has changed, is to implement dst_check for this. This is
+    what ipv6 side does too.
 
-Special thanks to Jan for coming up with a reproducer for this
-problem.
+    The problems started after 87c1e12b5eeb7b30b4b41291bef8e0b41fc3dde9
+    ("ipsec: Fix bogus bundle flowi") which fixed a bug causing xfrm_dst
+    to not get reused, until that all lookups always generated new
+    xfrm_dst with new route reference and path mtu worked. But after the
+    fix, the old routes started to get reused even after they were expired
+    causing pmtu to break (well it would occationally work if the rtable
+    gc had run recently and marked the route obsolete causing dst_check to
+    get called).
 
-Reported-by: Jan Stancek <jan.stancek@gmail.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Signed-off-by: Timo Teras <timo.teras@iki.fi>
+    Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+This commit is based on the above, with the addition of verifying blackhole
+routes in the same manner.
+
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/unix/af_unix.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/ipv4/route.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index db8d51a..d146b76 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -370,7 +370,7 @@ static void unix_sock_destructor(struct sock *sk)
- #endif
- }
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 58f141b..f16d19b 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1412,7 +1412,7 @@ void ip_rt_redirect(__be32 old_gw, __be32 daddr, __be32 new_gw,
+ 					dev_hold(rt->u.dst.dev);
+ 				if (rt->idev)
+ 					in_dev_hold(rt->idev);
+-				rt->u.dst.obsolete	= 0;
++				rt->u.dst.obsolete	= -1;
+ 				rt->u.dst.lastuse	= jiffies;
+ 				rt->u.dst.path		= &rt->u.dst;
+ 				rt->u.dst.neighbour	= NULL;
+@@ -1477,7 +1477,7 @@ static struct dst_entry *ipv4_negative_advice(struct dst_entry *dst)
+ 	struct dst_entry *ret = dst;
  
--static int unix_release_sock(struct sock *sk, int embrion)
-+static void unix_release_sock(struct sock *sk, int embrion)
+ 	if (rt) {
+-		if (dst->obsolete) {
++		if (dst->obsolete > 0) {
+ 			ip_rt_put(rt);
+ 			ret = NULL;
+ 		} else if ((rt->rt_flags & RTCF_REDIRECTED) ||
+@@ -1700,7 +1700,9 @@ static void ip_rt_update_pmtu(struct dst_entry *dst, u32 mtu)
+ 
+ static struct dst_entry *ipv4_dst_check(struct dst_entry *dst, u32 cookie)
  {
- 	struct unix_sock *u = unix_sk(sk);
- 	struct dentry *dentry;
-@@ -445,8 +445,6 @@ static int unix_release_sock(struct sock *sk, int embrion)
- 
- 	if (unix_tot_inflight)
- 		unix_gc();		/* Garbage collect fds */
--
--	return 0;
+-	return NULL;
++	if (rt_is_expired((struct rtable *)dst))
++		return NULL;
++	return dst;
  }
  
- static int unix_listen(struct socket *sock, int backlog)
-@@ -660,9 +658,10 @@ static int unix_release(struct socket *sock)
- 	if (!sk)
- 		return 0;
+ static void ipv4_dst_destroy(struct dst_entry *dst)
+@@ -1862,7 +1864,8 @@ static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+ 	if (!rth)
+ 		goto e_nobufs;
  
-+	unix_release_sock(sk, 0);
- 	sock->sk = NULL;
+-	rth->u.dst.output= ip_rt_bug;
++	rth->u.dst.output = ip_rt_bug;
++	rth->u.dst.obsolete = -1;
  
--	return unix_release_sock(sk, 0);
-+	return 0;
- }
+ 	atomic_set(&rth->u.dst.__refcnt, 1);
+ 	rth->u.dst.flags= DST_HOST;
+@@ -2023,6 +2026,7 @@ static int __mkroute_input(struct sk_buff *skb,
+ 	rth->fl.oif 	= 0;
+ 	rth->rt_spec_dst= spec_dst;
  
- static int unix_autobind(struct socket *sock)
++	rth->u.dst.obsolete = -1;
+ 	rth->u.dst.input = ip_forward;
+ 	rth->u.dst.output = ip_output;
+ 	rth->rt_genid = rt_genid(dev_net(rth->u.dst.dev));
+@@ -2187,6 +2191,7 @@ local_input:
+ 		goto e_nobufs;
+ 
+ 	rth->u.dst.output= ip_rt_bug;
++	rth->u.dst.obsolete = -1;
+ 	rth->rt_genid = rt_genid(net);
+ 
+ 	atomic_set(&rth->u.dst.__refcnt, 1);
+@@ -2411,7 +2416,8 @@ static int __mkroute_output(struct rtable **result,
+ 	rth->rt_gateway = fl->fl4_dst;
+ 	rth->rt_spec_dst= fl->fl4_src;
+ 
+-	rth->u.dst.output=ip_output;
++	rth->u.dst.output = ip_output;
++	rth->u.dst.obsolete = -1;
+ 	rth->rt_genid = rt_genid(dev_net(dev_out));
+ 
+ 	RT_CACHE_STAT_INC(out_slow_tot);
+@@ -2741,6 +2747,7 @@ static int ipv4_dst_blackhole(struct net *net, struct rtable **rp, struct flowi
+ 	if (rt) {
+ 		struct dst_entry *new = &rt->u.dst;
+ 
++		new->obsolete = -1;
+ 		atomic_set(&new->__refcnt, 1);
+ 		new->__use = 1;
+ 		new->input = dst_discard;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
