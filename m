@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3FDJX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:23:27 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59281 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab3FDJWT (ORCPT
+	id S1752955Ab3FDJYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:24:30 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:31344 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab3FDJY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:22:19 -0400
-X-AuditID: 9c93017d-b7c30ae0000063eb-dd-51adb1ca578c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/6] perf gtk/hists: Use GtkTreeStore instead of GtkListStore
-Date: Tue,  4 Jun 2013 18:22:12 +0900
-Message-Id: <1370337737-30812-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1370337737-30812-1-git-send-email-namhyung@kernel.org>
-References: <1370337737-30812-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 4 Jun 2013 05:24:29 -0400
+X-IronPort-AV: E=Sophos;i="4.87,798,1363132800"; 
+   d="scan'208";a="5292384"
+Message-ID: <1370337866.24512.90.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v2 2/5] arm64/xen: introduce asm/xen header files on
+ arm64
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>
+Date: Tue, 4 Jun 2013 10:24:26 +0100
+In-Reply-To: <1370273624-26976-2-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
+	 <1370273624-26976-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 2013-06-03 at 16:33 +0100, Stefano Stabellini wrote:
+> asm/xen/hypercall.h, asm/xen/hypervisor.h, asm/xen/interface.h and
+> asm/xen/page.h are indentical so to avoid code duplication we are just
 
-The GtkTreeStore can save items in a tree-like way.  This is a
-preparation for supporting callgraphs in the hist browser.
+"identical"
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/gtk/hists.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+> including the original arm header files here.
+> 
+> asm/xen/events.h is slightly different, so introduce a different file
+> here (use xchg to implement xchg_xen_ulong and pass regs->pstate to
+> raw_irqs_disabled_flags).
+> 
+> Also introduce asm/hypervisor.h and asm/sync_bitops.h.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 9708dd5fb8f3..cb6a9b45f789 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -131,7 +131,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	GType col_types[MAX_COLUMNS];
- 	GtkCellRenderer *renderer;
- 	struct sort_entry *se;
--	GtkListStore *store;
-+	GtkTreeStore *store;
- 	struct rb_node *nd;
- 	GtkWidget *view;
- 	int col_idx;
-@@ -156,7 +156,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		col_types[nr_cols++] = G_TYPE_STRING;
- 	}
- 
--	store = gtk_list_store_newv(nr_cols, col_types);
-+	store = gtk_tree_store_newv(nr_cols, col_types);
- 
- 	view = gtk_tree_view_new();
- 
-@@ -199,7 +199,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		if (percent < min_pcnt)
- 			continue;
- 
--		gtk_list_store_append(store, &iter);
-+		gtk_tree_store_append(store, &iter, NULL);
- 
- 		col_idx = 0;
- 
-@@ -209,7 +209,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 			else
- 				fmt->entry(&hpp, h);
- 
--			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
- 
- 		list_for_each_entry(se, &hist_entry__sort_list, list) {
-@@ -219,7 +219,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 			se->se_snprintf(h, s, ARRAY_SIZE(s),
- 					hists__col_len(hists, se->se_width_idx));
- 
--			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
- 	}
- 
--- 
-1.7.11.7
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+[...]
+> +/* sync_bitops functions are equivalent to the SMP implementation of the
+> + * original functions, independently from CONFIG_SMP being defined.
+> + *
+> + * We need them because _set_bit etc are not SMP safe if !CONFIG_SMP. But
+> + * under Xen you might be communicating with a completely external entity
+> + * who might be on another CPU (e.g. two uniprocessor guests communicating
+> + * via event channels and grant tables). So we need a variant of the bit
+> + * ops which are SMP safe even on a UP kernel.
+> + */
+> +
+> +#define sync_set_bit(nr, p)            set_bit(nr, p)
+
+Oh, arm64 seems to have optimised bitops now, which means I can ditch
+the skanky versions in Xen in favour of these. Nice.
+
+Ian.
+
 
