@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3FDLf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 07:35:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60230 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3FDLfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 07:35:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,799,1363132800"; 
-   d="scan'208";a="27705125"
-Date: Tue, 4 Jun 2013 12:35:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 1/5] arm/xen: define xen_remap as ioremap_cached
-In-Reply-To: <20130604112834.GA3234@MacBook-Pro.local>
-Message-ID: <alpine.DEB.2.02.1306041230080.4589@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com> <1370273624-26976-1-git-send-email-stefano.stabellini@eu.citrix.com> <1370337650.24512.88.camel@zakaz.uk.xensource.com> <20130604112834.GA3234@MacBook-Pro.local>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753876Ab3FDLg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:36:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59916 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab3FDLgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 07:36:23 -0400
+Message-ID: <51ADD031.2090808@ti.com>
+Date: Tue, 4 Jun 2013 14:32:01 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Kevin Hilman <khilman@linaro.org>
+CC: <rtc-linux@googlegroups.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linaro-kernel@lists.linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rtc: rtc-twl: ensure IRQ is wakeup enabled
+References: <1370039827-25033-1-git-send-email-khilman@linaro.org>
+In-Reply-To: <1370039827-25033-1-git-send-email-khilman@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jun 2013, Catalin Marinas wrote:
-> On Tue, Jun 04, 2013 at 10:20:50AM +0100, Ian Campbell wrote:
-> > On Mon, 2013-06-03 at 16:33 +0100, Stefano Stabellini wrote:
-> > > Define xen_remap as ioremap_cache (MT_MEMORY and MT_DEVICE_CACHED end up
-> > > having the same AttrIndx encoding).
-> > 
-> > The entries in static struct mem_type mem_types[] look entirely
-> > different to me.  What am I missing?
-> > 	[MT_DEVICE_CACHED] = {	  /* ioremap_cached */
-> > 		.prot_pte	= PROT_PTE_DEVICE | L_PTE_MT_DEV_CACHED,
-> > 		.prot_l1	= PMD_TYPE_TABLE,
-> > 		.prot_sect	= PROT_SECT_DEVICE | PMD_SECT_WB,
-> > 		.domain		= DOMAIN_IO,
-> > 	},
-> > 	[MT_MEMORY] = {
-> > 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY,
-> > 		.prot_l1   = PMD_TYPE_TABLE,
-> > 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE,
-> > 		.domain    = DOMAIN_KERNEL,
-> > 	},
-> > 
-> > I can see in pgtable-3level.h how L_PTE_MT_DEV_CACHED and
-> > L_PTE_MT_WRITEBACK are the same but not where the MT_WRITEBACK comes
-> > from for MT_MEMORY. Things are less clear in pgtable-2level.h, where one
-> > is 0x3 and the other is 0xb. I can see that the entries are the same in
-> > armv6_mt_table but how that would apply to a v7 processor?
-> 
-> PROT_PTE_DEVICE and PROT_SECT_DEVICE above don't contain any memory type
-> information, just attributes/permission - present, young, dirty and XN:
-> 
-> #define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_XN
-> #define PROT_SECT_DEVICE	PMD_TYPE_SECT|PMD_SECT_AP_WRITE
-> 
-> The memory type is given by the L_PTE_MT_DEV_CACHED and PMD_SECT_WB
-> macros. Let's take prot_sect first as it's simpler. For MT_DEVICE_CACHED
-> we have:
-> 
-> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_SECT_WB
-> 
-> For MT_MEMORY we have:
-> 
-> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE
-> 
-> The cache policy is added later to MT_MEMORY which is either WB or WBWA
-> (based on SMP, no particular reason as these are just processor hints;
-> for some historical reasons we enabled WBWA for ARM11MPCore but we could
-> leave it on all the time).
-> 
-> Similarly for prot_pte, present, young, dirty are the same.
-> 
-> Regarding the type, on ARMv7 (with or without LPAE) we use TEX remapping
-> and L_PTE_MT_DEVICE has the same index (3-bit TEX[0], C, B for NMRR/PRRR
-> or TEX[2:0] for MAIR0/MAIR1 registers) as Normal Cacheable Writeback
-> memory (there is no such thing as Device memory with cacheability
-> attributes, only Normal Cacheable memory).
-> 
-> We have XN in addition for MT_DEVICE_CACHED to prevent speculative
-> instruction fetches. However, you still get speculative D-cache line
-> fills since the memory is Normal Cacheable.
-> 
-> > Anyhow, even if I'm prepared to believe that MT_MEMORY and
-> > MT_DEVICE_CACHED end up being the same thing (which TBH I am) it seems
-> > that the level of abstraction involved makes us vulnerable to future
-> > changes subtly breaking things for us. What about:
-> > 
-> >         /* Device shared memory */
-> >         #define ioremap_shm(cookie,size)		__arm_ioremap((cookie), (size), MT_MEMORY)
-> 
-> For my understanding, what is Xen doing with such mapping? I would
-> rather make ioremap_cached() use MT_MEMORY on ARMv6/v7 (or make it
-> closer to that, I'm not sure about the implications on ARMv5 and earlier
-> but for newer architectures I don't see the point in pretending to have
-> Cacheable Device memory). That's however for Russell to comment.
+Hi Kevin,
 
-Xen guests share these pages with one another and place a lockless ring
-buffer on it for bidirectional communication. So the page that is being
-ioremapped actually belongs to another guest and it's RAM.
+On 06/01/2013 01:37 AM, Kevin Hilman wrote:
+> Currently, the RTC IRQ is never wakeup-enabled so is not capable of
+> bringing the system out of suspend.
+>
+> On OMAP platforms, we have gotten by without this because the TWL RTC
+> is on an I2C-connected chip which is capable of waking up the OMAP via
+> the IO ring when the OMAP is in low-power states.
+>
+> However, if the OMAP suspends without hitting the low-power states
+> (and the IO ring is not enabled), RTC wakeups will not work because
+> the IRQ is not wakeup enabled.
+As I understand, IRQ wake up capabilities are set/clear simultaneously with
+IRQ unmasking/masking on OMAP4+ in omap-wakeupgen.c.
+So, it should work without this patch on OMAP4+.
+But if TWL is used on non OMAP4+ platform then it is needed.
+(OMAP3: I haven't found the place where IRQ wakeup capabilities are 
+configured,
+would be appreciate if you can point me on)
+>
+> To fix, ensure the RTC IRQ is wakeup enabled whenever the RTC alarm is
+> set.
+>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>   drivers/rtc/rtc-twl.c | 16 ++++++++++++++--
+>   1 file changed, 14 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> index 8751a52..bbda0fd 100644
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -213,12 +213,24 @@ static int mask_rtc_irq_bit(unsigned char bit)
+>   
+>   static int twl_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
+>   {
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	int irq = platform_get_irq(pdev, 0);
+> +	static bool twl_rtc_wake_enabled;
+>   	int ret;
+>   
+> -	if (enabled)
+> +	if (enabled) {
+>   		ret = set_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
+> -	else
+> +		if (device_can_wakeup(dev) && !twl_rtc_wake_enabled) {
+> +			enable_irq_wake(irq);
+> +			twl_rtc_wake_enabled = true;
+> +		}
+> +	} else {
+>   		ret = mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
+> +		if (twl_rtc_wake_enabled) {
+> +			disable_irq_wake(irq);
+> +			twl_rtc_wake_enabled = false;
+> +		}
+> +	}
+>   
+>   	return ret;
+>   }
+twl-rtc has suspend/resume callbacks implemented, so I think it's the 
+better place
+for this code and twl_rtc_wake_enabled can be dropped.
+
