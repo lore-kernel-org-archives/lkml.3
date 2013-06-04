@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3FDJDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:03:13 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:45735 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab3FDJDM (ORCPT
+	id S1752048Ab3FDJDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:03:43 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:63595 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3FDJDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:03:12 -0400
-X-AuditID: 9c93017d-b7c04ae00000207d-b1-51adad4e8669
-Date: Tue, 4 Jun 2013 18:03:09 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 2/8] zram: avoid invalid memory access in
- zram_exit()
-Message-ID: <20130604090309.GB28551@blaptop>
-References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com>
- <1370274140-26420-3-git-send-email-jiang.liu@huawei.com>
+	Tue, 4 Jun 2013 05:03:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370274140-26420-3-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1369920465-13905-5-git-send-email-fabio.baltieri@linaro.org>
+References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+	<1369920465-13905-5-git-send-email-fabio.baltieri@linaro.org>
+Date: Tue, 4 Jun 2013 11:03:41 +0200
+Message-ID: <CACRpkda8h_zewd2M7QzvoLn15iDEUv8XYCGqro62chiCcYaM8Q@mail.gmail.com>
+Subject: Re: [PATCH 4/5] ARM: ux500: Provide auxdata to ux500 ASoC driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:42:14PM +0800, Jiang Liu wrote:
-> Memory for zram->disk object may have already been freed after returning
-> from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
-> to access zram->disk again.
-> 
-> Fix it by holding an extra reference to zram->disk before calling
-> destroy_device(zram).
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  drivers/staging/zram/zram_drv.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index e34e3fe..ee6b67d 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -727,8 +727,10 @@ static void __exit zram_exit(void)
->  	for (i = 0; i < num_devices; i++) {
->  		zram = &zram_devices[i];
->  
-> +		get_disk(zram->disk);
->  		destroy_device(zram);
->  		zram_reset_device(zram);
-> +		put_disk(zram->disk);
+On Thu, May 30, 2013 at 3:27 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-Can't we simple reverse calling order of above two functions?
+> Ux500 ASoC driver is expected to have a specific device name to get
+> clock resources correctly.  This patch provides the necessary
+> OF_DEV_AUXDATA to match the name in DT and non-DT cases.
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-        zram_reset_device(zram);
-        destroy_device(zram);
+Patch applied to my ux500-devicetree branch after some rebasing.
 
--- 
-Kind regards,
-Minchan Kim
+Yours,
+Linus Walleij
