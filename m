@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759552Ab3FDGub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:50:31 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:57483 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab3FDGu1 (ORCPT
+	id S1759594Ab3FDGwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:52:55 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:38321 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759292Ab3FDGww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:50:27 -0400
+	Tue, 4 Jun 2013 02:52:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <51AD053B.1040403@infradead.org>
-References: <20130603163717.a6f78476e57d92fadd6f6a23@canb.auug.org.au>
-	<51ACFDF2.4040600@infradead.org>
-	<CAMuHMdUALrScFE895xRiBvgUpVa9Tvic5M7YxefrEgyeMaSjhw@mail.gmail.com>
-	<51AD053B.1040403@infradead.org>
-Date: Tue, 4 Jun 2013 08:50:27 +0200
-X-Google-Sender-Auth: Z0CZHvxusozgPYb2hFePKZAa4Js
-Message-ID: <CAMuHMdXp_7aaoxCXqtjVnTivo1Ua+ohfQQ2ZEQNO-OGn-k8iqA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 3 (fonts.c & vivi)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51AD87D0.7020300@linux.vnet.ibm.com>
+References: <51AD87A8.6080608@linux.vnet.ibm.com> <51AD87D0.7020300@linux.vnet.ibm.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 3 Jun 2013 23:52:20 -0700
+Message-ID: <CAPM31RJfWWJuMg-2Byb7uGFQPQY1v+8OWVpwO2Ggz_mtTYpjVQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] sched: don't repeat the initialization in sched_init()
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 11:06 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 06/03/13 13:54, Geert Uytterhoeven wrote:
->> On Mon, Jun 3, 2013 at 10:34 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>> On 06/02/13 23:37, Stephen Rothwell wrote:
->>>> Changes since 20130531:
->>> on x86_64:
->>>
->>> warning: (VIDEO_VIVI && USB_SISUSBVGA && SOLO6X10) selects FONT_SUPPORT which has unmet direct dependencies (HAS_IOMEM && VT)
->>> warning: (VIDEO_VIVI && FB_VGA16 && FB_S3 && FB_VT8623 && FB_ARK && USB_SISUSBVGA_CON && SOLO6X10) selects FONT_8x16 which has unmet direct dependencies (HAS_IOMEM && VT && FONT_SUPPORT)
->>
->> I knew about thet warning. But I thought it was harmless, as none of the font
->> code really depends on console support...
->>
->>> drivers/built-in.o: In function `vivi_init':
->>> vivi.c:(.init.text+0x1a3da): undefined reference to `find_font'
->>>
->>> when CONFIG_VT is not enabled.
->>
->> ... but I missed that drivers/video/console is not used if CONFIG_VT=y.
->> Sorry for that.
->>
->>> Just make CONFIG_VIDEO_VIVI depend on VT ?
->>
->> Does this (whitespace-damaged copy-and-paste) help?
+On Mon, Jun 3, 2013 at 11:23 PM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> In sched_init(), there is no need to initialize 'root_task_group.shares' and
+> 'root_task_group.cfs_bandwidth' repeatedly.
 >
-> Yes, that works.  Thanks.
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/core.c |   46 +++++++++++++++++++++++++---------------------
+>  1 files changed, 25 insertions(+), 21 deletions(-)
 >
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 58453b8..c0c3716 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6955,6 +6955,31 @@ void __init sched_init(void)
+>
+>  #endif /* CONFIG_CGROUP_SCHED */
+>
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +       root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+> +
+> +       /*
+> +        * How much cpu bandwidth does root_task_group get?
+> +        *
+> +        * In case of task-groups formed thr' the cgroup filesystem, it
+> +        * gets 100% of the cpu resources in the system. This overall
+> +        * system cpu resource is divided among the tasks of
+> +        * root_task_group and its child task-groups in a fair manner,
+> +        * based on each entity's (task or task-group's) weight
+> +        * (se->load.weight).
+> +        *
+> +        * In other words, if root_task_group has 10 tasks of weight
+> +        * 1024) and two child groups A0 and A1 (of weight 1024 each),
+> +        * then A0's share of the cpu resource is:
+> +        *
+> +        *      A0's bandwidth = 1024 / (10*1024 + 1024 + 1024) = 8.33%
+> +        *
+> +        * We achieve this by letting root_task_group's tasks sit
+> +        * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+> +        */
 
-Thanks, I'll fold this into the original commit, which is destined for v3.10.
+This comment has become unglued from what it's supposed to be attached
+to (it's tied to root_task_group.shares & init_tg_cfs_entry, not
+init_cfs_bandwidth).
 
->> --- a/drivers/video/Makefile
->> +++ b/drivers/video/Makefile
->> @@ -12,7 +12,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o
->>                                       modedb.o fbcvt.o
->>  fb-objs                           := $(fb-y)
->>
->> -obj-$(CONFIG_VT)                 += console/
->> +obj-y                            += console/
->>  obj-$(CONFIG_LOGO)               += logo/
->>  obj-y                            += backlight/
->>
->> It shouldn't make a difference if nothing inside drivers/video/console
->> is enabled,
->> as all objects in drivers/video/console/Makefile are conditional.
->>
->> BTW, my plan was to move the font code to lib/font, but I haven't done that yet.
-
-I'l try to do that for v3.11.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> +       init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+> +#endif
+> +
+>         for_each_possible_cpu(i) {
+>                 struct rq *rq;
+>
+> @@ -6966,28 +6991,7 @@ void __init sched_init(void)
+>                 init_cfs_rq(&rq->cfs);
+>                 init_rt_rq(&rq->rt, rq);
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> -               root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+>                 INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+> -               /*
+> -                * How much cpu bandwidth does root_task_group get?
+> -                *
+> -                * In case of task-groups formed thr' the cgroup filesystem, it
+> -                * gets 100% of the cpu resources in the system. This overall
+> -                * system cpu resource is divided among the tasks of
+> -                * root_task_group and its child task-groups in a fair manner,
+> -                * based on each entity's (task or task-group's) weight
+> -                * (se->load.weight).
+> -                *
+> -                * In other words, if root_task_group has 10 tasks of weight
+> -                * 1024) and two child groups A0 and A1 (of weight 1024 each),
+> -                * then A0's share of the cpu resource is:
+> -                *
+> -                *      A0's bandwidth = 1024 / (10*1024 + 1024 + 1024) = 8.33%
+> -                *
+> -                * We achieve this by letting root_task_group's tasks sit
+> -                * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+> -                */
+> -               init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+>                 init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+>
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
