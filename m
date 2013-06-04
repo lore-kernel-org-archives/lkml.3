@@ -1,70 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3FDWFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:05:45 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:56033 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab3FDWFm (ORCPT
+	id S1751207Ab3FDWI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:08:29 -0400
+Received: from mout.gmx.net ([212.227.15.15]:54927 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab3FDWI2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:05:42 -0400
+	Tue, 4 Jun 2013 18:08:28 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+xPuF7geix9vKIpIZMmgIjWbmn/URziKBWAHicCp
+	yEGSikHWmvzWQs
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v3] drivers/tpm: add xen tpmfront interface
+Date: Wed, 5 Jun 2013 00:14:28 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8.11; KDE/4.9.5; x86_64; ; )
+Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>, linux-kernel@vger.kernel.org,
+        leosilva@linux.vnet.ibm.com, shpedoikal@gmail.com,
+        konrad.wilk@oracle.com, xen-devel@lists.xen.org, mail@srajiv.net,
+        adlai@linux.vnet.ibm.com, tpmdd@sirrix.com
+References: <1369755632-2753-1-git-send-email-dgdegra@tycho.nsa.gov>
+In-Reply-To: <1369755632-2753-1-git-send-email-dgdegra@tycho.nsa.gov>
 MIME-Version: 1.0
-In-Reply-To: <20130604215521.GA5819@jshin-Toonie>
-References: <20130531150241.GA12006@jshin-Toonie>
-	<tip-6b3389ac21b5e557b957f1497d0ff22bf733e8c3@git.kernel.org>
-	<CAE9FiQUJOfcoU8c_Xwhosb1=9=dyaH6mXkERX-zxCUmEXjeNUg@mail.gmail.com>
-	<20130604213600.GA5021@jshin-Toonie>
-	<20130604215521.GA5819@jshin-Toonie>
-Date: Tue, 4 Jun 2013 15:05:41 -0700
-X-Google-Sender-Auth: q9v-QruR365Jfrbp38w3-eqIhOQ
-Message-ID: <CAE9FiQVqR2KEv5ZWsuL+-guOx6_NEWKMkATfY-Tb8CAV26XMNw@mail.gmail.com>
-Subject: Re: [tip:x86/microcode] x86, microcode, amd: Fix warnings and errors
- on with CONFIG_MICROCODE=m
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201306050014.29162.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 2:55 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> On Tue, Jun 04, 2013 at 04:36:00PM -0500, Jacob Shin wrote:
->>
->> It's because the load_ucode_amd_ap() (which is __cpuinit because it
->> can be called during CPU hotplug on).
->
-> Sorry, let me clarify. find_ucode_in_initrd() is called by
-> load_ucode_amd_ap() during cold boot. However, since
-> load_ucode_amd_ap() is also called during suspend/resume (CPU hotplug)
-> it has to be __cpuinit. Of course during suspend/resume code path,
-> find_ucode_in_initrd() is not called, since it is no longer there in memory.
->
->>
->> Hm.. but yes, I do agree with you, I'm waiting for feedback on this
->> follow up patch to allow multiple concatanated microcode files:
->>
->>   https://lkml.org/lkml/2013/5/31/664
->>
->> I'll submit multi-patch patchset to address your feedback as well.
+Hi Daniel,
 
-Those microcode should be with initrd.
+thanks for this v3.
+It's really nice to see the progress and I really like that 
+sparse/smatch/clang/coccicheck do not complain at all - nice job!
 
-During first BP finding and apply it, it is still with initrd that is loaded by
-bootloader.
+Konrad already did an excellent job at reviewing the driver (thanks for that), 
+and all previously pointed out issues are fixed.
 
-then kernel may move the initrd to mapped range.
+Unfortunately I haven't had the opportunity to test it yet, but 
+the driver looks clean from the TPM perspective.
 
-then AP will use those moved blob or saved blob during booting path and
-hot-add path.
 
-so the find_.._in_initrd should be __init and you just need one pointer
-to the blob original or moved.
+However I do have some minor comments from a general perspective - see below.
 
-Thanks
 
-Yinghai
+>From the TPM point of view I'd say it is fine.
+(I'm currently _not_ the (official) maintainer of the tpm subsystem but at least 
+take care of the incoming stuff as an interim)
+
+
+So if the comments are addressed you can add:
+Acked-by: Peter Huewe <peterhuewe@gmx.de>
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+
+@Konrad: I can stage the driver and push it to James or you can take it.
+As it lives in drivers/tpm maybe it should go through the tpm (interim ;) 
+maintainer and james' tree.
+
+
+So here are my comments:
+
+Am Dienstag, 28. Mai 2013, 17:40:32 schrieb Daniel De Graaf:
+> This is a complete rewrite of the Xen TPM frontend driver, taking
+> advantage of a simplified frontend/backend interface and adding support
+> for cancellation and timeouts.  The backend for this driver is provided
+> by a vTPM stub domain using the interface in Xen 4.3.
+> 
+> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+
+> diff --git a/Documentation/xen-tpmfront.txt
+> b/Documentation/xen-tpmfront.txt new file mode 100644
+> index 0000000..8a61d6f
+> --- /dev/null
+> +++ b/Documentation/xen-tpmfront.txt
+> @@ -0,0 +1,116 @@
+> +Copyright (c) 2010-2012 United States Government, as represented by
+> +the Secretary of Defense.  All rights reserved.
+
+I'm not 100% sure if this can stay this way, as it doesn't permit any changes 
+to the documentation itself.
+
+
+> + * Linux DomU: The Linux based guest that wants to use a vTPM. There many
+> be +	       more than one of these.
+-* Linux DomU: The Linux based guest that wants to use a vTPM. There many
++* Linux DomU: The Linux based guest that wants to use a vTPM. There may
+Just a minor typo
+
+
+> diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> index dbfd564..205ed35 100644
+> --- a/drivers/char/tpm/Kconfig
+> +++ b/drivers/char/tpm/Kconfig
+> @@ -91,4 +91,15 @@ config TCG_ST33_I2C
+>          To compile this driver as a module, choose M here; the module will
+> be called tpm_stm_st33_i2c.
+> 
+> +config TCG_XEN
+Maybe TCG_XEN_TPM would be better, but TCG_XEN is okay for me.
+
+
+> +static int vtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
+> +{
+> +	struct tpm_private *priv = TPM_VPRIV(chip);
+> +	struct vtpm_shared_page *shr = priv->shr;
+> +	unsigned int offset = shr_data_offset(shr);
+> +
+> +	u32 ordinal;
+> +	unsigned long duration;
+> +
+> +	if (offset > PAGE_SIZE)
+> +		return -EIO;
+Maybe -EINVAL?
+> +
+> +	if (offset + count > PAGE_SIZE)
+> +		return -EIO;
+Maybe -EINVAL?
+> +
+
+
+> +/*************************************************************************
+> ***** + * tpmif.h
+> + *
+> + * TPM I/O interface for Xen guest OSes, v2
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> copy + * of this software and associated documentation files (the
+> "Software"), to + * deal in the Software without restriction, including
+> without limitation the + * rights to use, copy, modify, merge, publish,
+> distribute, sublicense, and/or + * sell copies of the Software, and to
+> permit persons to whom the Software is + * furnished to do so, subject to
+> the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included
+> in + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+> OR + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> MERCHANTABILITY, + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+> IN NO EVENT SHALL THE + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+> CLAIM, DAMAGES OR OTHER + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+> TORT OR OTHERWISE, ARISING + * FROM, OUT OF OR IN CONNECTION WITH THE
+> SOFTWARE OR THE USE OR OTHER + * DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+
+Also not sure if this license is correct/compliant with the kernel as it 
+indicates no clear license to me.
+
+Peter
