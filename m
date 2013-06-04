@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759718Ab3FDBum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 21:50:42 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44483 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759638Ab3FDBuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 21:50:40 -0400
-X-AuditID: 9c930197-b7be3ae000000eab-d5-51ad47eede8f
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH v3 1/4] perf util: Add parse_nsec_time() function
-Date: Tue,  4 Jun 2013 10:50:29 +0900
-Message-Id: <1370310629-9642-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <51ACBA6C.9010902@gmail.com>
-References: <51ACBA6C.9010902@gmail.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1759638Ab3FDBvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 21:51:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16082 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758531Ab3FDBvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jun 2013 21:51:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,796,1363158000"; 
+   d="scan'208";a="347597143"
+Message-ID: <51AD4808.6020507@intel.com>
+Date: Tue, 04 Jun 2013 09:51:04 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: [DISCUSSION] removing variety rq->cpu_load ?
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com> <20130506101936.GE13861@dyad.programming.kicks-ass.net> <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com> <20130506111041.GA15446@dyad.programming.kicks-ass.net> <51889C8A.5000806@intel.com> <51AD46CA.9020609@intel.com>
+In-Reply-To: <51AD46CA.9020609@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+resend with a new subject.
 
-The parse_nsec_time() function is for parsing a string of time into
-64-bit nsec value.  It's a preparation of time filtering in some of
-perf commands.
+> Peter,
+> 
+> I just tried to remove the variety rq.cpu_load, by the following patch. 
+> Because forkexec_idx and busy_idx are all zero, after the patch system just keep cpu_load[0]
+> and remove other values.
+> I tried the patch base 3.10-rc3 and latest tip/sched/core with benchmark dbench,tbench,
+> aim7,hackbench. and oltp of sysbench. Seems performance doesn't change clear.
+> So, for my tested machines, core2, NHM, SNB, with 2 or 4 CPU sockets, and above tested
+> benchmark. We are fine to remove the variety cpu_load. 
+> Don't know if there some other concerns on other scenarios.
+> 
+> ---
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 590d535..f0ca983 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4626,7 +4626,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+>         if (child && child->flags & SD_PREFER_SIBLING)
+>                 prefer_sibling = 1;
+>  
+> -       load_idx = get_sd_load_idx(env->sd, env->idle);
+> +       load_idx = 0; //get_sd_load_idx(env->sd, env->idle);
+>  
+>         do {
+>                 int local_group;
+> 
+> 
 
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/util.c | 33 +++++++++++++++++++++++++++++++++
- tools/perf/util/util.h |  2 ++
- 2 files changed, 35 insertions(+)
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 59d868add275..205972f6addb 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -269,3 +269,36 @@ void perf_debugfs_set_path(const char *mntpt)
- 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
- 	set_tracing_events_path(mntpt);
- }
-+
-+int parse_nsec_time(const char *str, u64 *ptime)
-+{
-+	u64 time_sec, time_nsec;
-+	char *end;
-+
-+	time_sec = strtoul(str, &end, 10);
-+	if (*end != '.' && *end != '\0')
-+		return -1;
-+
-+	if (*end == '.') {
-+		int i;
-+		char nsec_buf[10];
-+
-+		if (strlen(++end) > 9)
-+			return -1;
-+
-+		strncpy(nsec_buf, end, 9);
-+		nsec_buf[9] = '\0';
-+
-+		/* make it nsec precision */
-+		for (i = strlen(nsec_buf); i < 9; i++)
-+			nsec_buf[i] = '0';
-+
-+		time_nsec = strtoul(nsec_buf, &end, 10);
-+		if (*end != '\0')
-+			return -1;
-+	} else
-+		time_nsec = 0;
-+
-+	*ptime = time_sec * NSEC_PER_SEC + time_nsec;
-+	return 0;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7a484c97e500..6c8baf312c8a 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -204,6 +204,8 @@ static inline int has_extension(const char *filename, const char *ext)
- #define NSEC_PER_MSEC	1000000L
- #endif
- 
-+int parse_nsec_time(const char *str, u64 *ptime);
-+
- extern unsigned char sane_ctype[256];
- #define GIT_SPACE		0x01
- #define GIT_DIGIT		0x02
 -- 
-1.7.11.7
-
+Thanks
+    Alex
