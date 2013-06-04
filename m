@@ -1,173 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3FDIuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:50:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43559 "EHLO bear.ext.ti.com"
+	id S1752222Ab3FDIwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:52:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44085 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab3FDIuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 04:50:09 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <swarren@wwwdotorg.org>, <broonie@opensource.wolfsonmicro.com>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <sameo@linux.intel.com>,
-        <wim@iguana.be>, <lgirdwood@gmail.com>, <gg@slimlogic.co.uk>,
-        <t-kristo@ti.com>, <lee.jones@linaro.org>,
-        J Keerthy <j-keerthy@ti.com>, Ian Lartey <ian@slimlogic.co.uk>
-Subject: [PATCH v2] mfd: DT bindings for the palmas family MFD
-Date: Tue, 4 Jun 2013 14:11:49 +0530
-Message-ID: <1370335309-6319-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751460Ab3FDIwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 04:52:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,798,1363158000"; 
+   d="scan'208";a="347746399"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] cris: kgdb: use native hex2bin
+Date: Tue,  4 Jun 2013 11:51:54 +0300
+Message-Id: <1370335914-31582-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <gg@slimlogic.co.uk>
+There are kernel native helpers to convert hex ascii to the binary format:
+hex_to_bin() and hex2bin(). Thus, no need to reimplement them customly.
 
-Add the various binding files for the palmas family of chips. There is a
-top level MFD binding then a seperate binding for regulators IP blocks on chips.
-
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
-Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
-Changes from v1:
-* Corrected ti,ldo6_vibrator property ---> ti,ldo6-vibrator
-* Added the irq.h header file inclusion for defining type of interrupt
+ arch/cris/arch-v10/kernel/kgdb.c | 36 +++----------------------
+ arch/cris/arch-v32/kernel/kgdb.c | 57 +++++++---------------------------------
+ 2 files changed, 14 insertions(+), 79 deletions(-)
 
- Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++++
- .../devicetree/bindings/regulator/palmas-pmic.txt  |   65 ++++++++++++++++++++
- 2 files changed, 114 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-
-diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-new file mode 100644
-index 0000000..c6c5e78
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-@@ -0,0 +1,49 @@
-+* palmas device tree bindings
-+
-+The TI palmas family current members :-
-+twl6035 (palmas)
-+twl6037 (palmas)
-+tps65913 (palmas)
-+tps65914 (palmas)
-+
-+Required properties:
-+- compatible : Should be from the list
-+  ti,twl6035
-+  ti,twl6036
-+  ti,twl6037
-+  ti,tps65913
-+  ti,tps65914
-+  ti,tps80036
-+and also the generic series names
-+  ti,palmas
-+- interrupt-controller : palmas has its own internal IRQs
-+- #interrupt-cells : should be set to 2 for IRQ number and flags
-+  The first cell is the IRQ number.
-+  The second cell is the flags, encoded as the trigger masks from
-+  Documentation/devicetree/bindings/interrupts.txt
-+- interrupt-parent : The parent interrupt controller.
-+
-+Optional properties:
-+  ti,mux_padX : set the pad register X (1-2) to the correct muxing for the
-+  		hardware, if not set will use muxing in OTP.
-+
-+Example:
-+
-+palmas {
-+	compatible = "ti,twl6035", "ti,palmas";
-+	reg = <0x48>
-+	interrupt-parent = <&intc>;
-+	interrupt-controller;
-+	#interrupt-cells = <2>;
-+
-+	ti,mux-pad1 = <0>;
-+	ti,mux-pad2 = <0>;
-+
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	pmic {
-+		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
-+		....
-+	};
-+}
-diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-new file mode 100644
-index 0000000..a0ccdf2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-@@ -0,0 +1,65 @@
-+* palmas regulator IP block devicetree bindings
-+
-+Required properties:
-+- compatible : Should be from the list
-+  ti,twl6035-pmic
-+  ti,twl6036-pmic
-+  ti,twl6037-pmic
-+  ti,tps65913-pmic
-+  ti,tps65914-pmic
-+and also the generic series names
-+  ti,palmas-pmic
-+
-+Optional properties:
-+- ti,ldo6-vibrator : ldo6 is in vibrator mode
-+
-+Optional nodes:
-+- regulators : should contain the constrains and init information for the
-+	       regulators. It should contain a subnode per regulator from the
-+	       list.
-+	       For ti,palmas-pmic - smps12, smps123, smps3 depending on OTP,
-+	       smps45, smps457, smps7 depending on varient, smps6, smps[8-10],
-+	       ldo[1-9], ldoln, ldousb
-+
-+	       optional chip specific regulator fields :-
-+	       ti,warm-reset - maintain voltage during warm reset(boolean)
-+	       ti,roof-floor - control voltage selection by pin(boolean)
-+	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
-+	       2 - eco, 3 - forced pwm
-+	       ti,tstep - slope control 0 - Jump, 1 10mV/us, 2 5mV/us, 3 2.5mV/us
-+	       ti,smps-range - OTP has the wrong range set for the hardware so override
-+	       0 - low range, 1 - high range
-+
-+Example:
-+
-+#include <include/dt-bindings/interrupt-controller/irq.h>
-+
-+pmic {
-+	compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
-+	interrupt-parent = <&palmas>;
-+	interrupts = <14 IRQ_TYPE_NONE>;
-+	interrupt-name = "short-irq";
-+
-+	ti,ldo6-vibrator;
-+
-+	regulators {
-+		smps12_reg : smps12 {
-+			regulator-name = "smps12";
-+			regulator-min-microvolt = < 600000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-always-on;
-+			regulator-boot-on;
-+			ti,warm-reset;
-+			ti,roof-floor;
-+			ti,mode-sleep = <0>;
-+			ti,tstep = <0>;
-+			ti,smps-range = <1>;
-+		};
-+
-+		ldo1_reg: ldo1 {
-+			regulator-name = "ldo1";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <2800000>;
-+		};
-+	};
-+};
+diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+index 22d846b..dbd4ba8 100644
+--- a/arch/cris/arch-v10/kernel/kgdb.c
++++ b/arch/cris/arch-v10/kernel/kgdb.c
+@@ -413,18 +413,6 @@ gdb_cris_strtol (const char *s, char **endptr, int base)
+ }
+ 
+ /********************************** Packet I/O ******************************/
+-/* Returns the integer equivalent of a hexadecimal character. */
+-static int
+-hex (char ch)
+-{
+-	if ((ch >= 'a') && (ch <= 'f'))
+-		return (ch - 'a' + 10);
+-	if ((ch >= '0') && (ch <= '9'))
+-		return (ch - '0');
+-	if ((ch >= 'A') && (ch <= 'F'))
+-		return (ch - 'A' + 10);
+-	return (-1);
+-}
+ 
+ /* Convert the memory, pointed to by mem into hexadecimal representation.
+    Put the result in buf, and return a pointer to the last character
+@@ -455,22 +443,6 @@ mem2hex(char *buf, unsigned char *mem, int count)
+ 	return (buf);
+ }
+ 
+-/* Convert the array, in hexadecimal representation, pointed to by buf into
+-   binary representation. Put the result in mem, and return a pointer to
+-   the character after the last byte written. */
+-static unsigned char*
+-hex2mem (unsigned char *mem, char *buf, int count)
+-{
+-	int i;
+-	unsigned char ch;
+-	for (i = 0; i < count; i++) {
+-		ch = hex (*buf++) << 4;
+-		ch = ch + hex (*buf++);
+-		*mem++ = ch;
+-	}
+-	return (mem);
+-}
+-
+ /* Put the content of the array, in binary representation, pointed to by buf
+    into memory pointed to by mem, and return a pointer to the character after
+    the last byte written.
+@@ -524,8 +496,8 @@ getpacket (char *buffer)
+ 		buffer[count] = '\0';
+ 		
+ 		if (ch == '#') {
+-			xmitcsum = hex (getDebugChar ()) << 4;
+-			xmitcsum += hex (getDebugChar ());
++			xmitcsum = hex_to_bin(getDebugChar()) << 4;
++			xmitcsum += hex_to_bin(getDebugChar());
+ 			if (checksum != xmitcsum) {
+ 				/* Wrong checksum */
+ 				putDebugChar ('-');
+@@ -760,7 +732,7 @@ handle_exception (int sigval)
+ 				   Each byte of register data  is described by two hex digits.
+ 				   Success: OK
+ 				   Failure: void. */
+-				hex2mem((char *)&cris_reg, &remcomInBuffer[1], sizeof(registers));
++				hex2bin((char *)&cris_reg, &remcomInBuffer[1], sizeof(registers));
+ 				gdb_cris_strcpy (remcomOutBuffer, "OK");
+ 				break;
+ 				
+@@ -835,7 +807,7 @@ handle_exception (int sigval)
+ 					int length = gdb_cris_strtol(lenptr+1, &dataptr, 16);
+ 					if (*lenptr == ',' && *dataptr == ':') {
+ 						if (remcomInBuffer[0] == 'M') {
+-							hex2mem(addr, dataptr + 1, length);
++							hex2bin(addr, dataptr + 1, length);
+ 						}
+ 						else /* X */ {
+ 							bin2mem(addr, dataptr + 1, length);
+diff --git a/arch/cris/arch-v32/kernel/kgdb.c b/arch/cris/arch-v32/kernel/kgdb.c
+index b06813a..590c11b 100644
+--- a/arch/cris/arch-v32/kernel/kgdb.c
++++ b/arch/cris/arch-v32/kernel/kgdb.c
+@@ -384,19 +384,11 @@ int getDebugChar(void);
+ /* Serial port, writes one character. ETRAX 100 specific. from debugport.c */
+ void putDebugChar(int val);
+ 
+-/* Returns the integer equivalent of a hexadecimal character. */
+-static int hex(char ch);
+-
+ /* Convert the memory, pointed to by mem into hexadecimal representation.
+    Put the result in buf, and return a pointer to the last character
+    in buf (null). */
+ static char *mem2hex(char *buf, unsigned char *mem, int count);
+ 
+-/* Convert the array, in hexadecimal representation, pointed to by buf into
+-   binary representation. Put the result in mem, and return a pointer to
+-   the character after the last byte written. */
+-static unsigned char *hex2mem(unsigned char *mem, char *buf, int count);
+-
+ /* Put the content of the array, in binary representation, pointed to by buf
+    into memory pointed to by mem, and return a pointer to
+    the character after the last byte written. */
+@@ -547,7 +539,7 @@ write_register(int regno, char *val)
+ 
+         if (regno >= R0 && regno <= ACR) {
+ 		/* Consecutive 32-bit registers. */
+-		hex2mem((unsigned char *)&reg.r0 + (regno - R0) * sizeof(unsigned int),
++		hex2bin((unsigned char *)&reg.r0 + (regno - R0) * sizeof(unsigned int),
+ 			val, sizeof(unsigned int));
+ 
+ 	} else if (regno == BZ || regno == VR || regno == WZ || regno == DZ) {
+@@ -557,15 +549,15 @@ write_register(int regno, char *val)
+ 	} else if (regno == PID) {
+ 		/* 32-bit register. (Even though we already checked SRS and WZ, we cannot
+ 		   combine this with the EXS - SPC write since SRS and WZ have different size.) */
+-		hex2mem((unsigned char *)&reg.pid, val, sizeof(unsigned int));
++		hex2bin((unsigned char *)&reg.pid, val, sizeof(unsigned int));
+ 
+ 	} else if (regno == SRS) {
+ 		/* 8-bit register. */
+-		hex2mem((unsigned char *)&reg.srs, val, sizeof(unsigned char));
++		hex2bin((unsigned char *)&reg.srs, val, sizeof(unsigned char));
+ 
+ 	} else if (regno >= EXS && regno <= SPC) {
+ 		/* Consecutive 32-bit registers. */
+-		hex2mem((unsigned char *)&reg.exs + (regno - EXS) * sizeof(unsigned int),
++		hex2bin((unsigned char *)&reg.exs + (regno - EXS) * sizeof(unsigned int),
+ 			 val, sizeof(unsigned int));
+ 
+        } else if (regno == PC) {
+@@ -574,7 +566,7 @@ write_register(int regno, char *val)
+ 
+        } else if (regno >= S0 && regno <= S15) {
+                /* 32-bit registers. */
+-               hex2mem((unsigned char *)&sreg.s0_0 + (reg.srs * 16 * sizeof(unsigned int)) + (regno - S0) * sizeof(unsigned int), val, sizeof(unsigned int));
++               hex2bin((unsigned char *)&sreg.s0_0 + (reg.srs * 16 * sizeof(unsigned int)) + (regno - S0) * sizeof(unsigned int), val, sizeof(unsigned int));
+ 	} else {
+ 		/* Non-existing register. */
+ 		status = E05;
+@@ -630,19 +622,6 @@ read_register(char regno, unsigned int *valptr)
+ }
+ 
+ /********************************** Packet I/O ******************************/
+-/* Returns the integer equivalent of a hexadecimal character. */
+-static int
+-hex(char ch)
+-{
+-	if ((ch >= 'a') && (ch <= 'f'))
+-		return (ch - 'a' + 10);
+-	if ((ch >= '0') && (ch <= '9'))
+-		return (ch - '0');
+-	if ((ch >= 'A') && (ch <= 'F'))
+-		return (ch - 'A' + 10);
+-	return -1;
+-}
+-
+ /* Convert the memory, pointed to by mem into hexadecimal representation.
+    Put the result in buf, and return a pointer to the last character
+    in buf (null). */
+@@ -689,22 +668,6 @@ mem2hex_nbo(char *buf, unsigned char *mem, int count)
+ 	return buf;
+ }
+ 
+-/* Convert the array, in hexadecimal representation, pointed to by buf into
+-   binary representation. Put the result in mem, and return a pointer to
+-   the character after the last byte written. */
+-static unsigned char*
+-hex2mem(unsigned char *mem, char *buf, int count)
+-{
+-	int i;
+-	unsigned char ch;
+-	for (i = 0; i < count; i++) {
+-		ch = hex (*buf++) << 4;
+-		ch = ch + hex (*buf++);
+-		*mem++ = ch;
+-	}
+-	return mem;
+-}
+-
+ /* Put the content of the array, in binary representation, pointed to by buf
+    into memory pointed to by mem, and return a pointer to the character after
+    the last byte written.
+@@ -763,8 +726,8 @@ getpacket(char *buffer)
+ 		buffer[count] = 0;
+ 
+ 		if (ch == '#') {
+-			xmitcsum = hex(getDebugChar()) << 4;
+-			xmitcsum += hex(getDebugChar());
++			xmitcsum = hex_to_bin(getDebugChar()) << 4;
++			xmitcsum += hex_to_bin(getDebugChar());
+ 			if (checksum != xmitcsum) {
+ 				/* Wrong checksum */
+ 				putDebugChar('-');
+@@ -1306,9 +1269,9 @@ handle_exception(int sigval)
+ 				   Success: OK
+ 				   Failure: void. */
+ 				/* General and special registers. */
+-				hex2mem((char *)&reg, &input_buffer[1], sizeof(registers));
++				hex2bin((char *)&reg, &input_buffer[1], sizeof(registers));
+ 				/* Support registers. */
+-				hex2mem((char *)&sreg + (reg.srs * 16 * sizeof(unsigned int)),
++				hex2bin((char *)&sreg + (reg.srs * 16 * sizeof(unsigned int)),
+ 					&input_buffer[1] + sizeof(registers),
+ 					16 * sizeof(unsigned int));
+ 				gdb_cris_strcpy(output_buffer, "OK");
+@@ -1389,7 +1352,7 @@ handle_exception(int sigval)
+ 					int len = gdb_cris_strtol(lenptr+1, &dataptr, 16);
+ 					if (*lenptr == ',' && *dataptr == ':') {
+ 						if (input_buffer[0] == 'M') {
+-							hex2mem(addr, dataptr + 1, len);
++							hex2bin(addr, dataptr + 1, len);
+ 						} else /* X */ {
+ 							bin2mem(addr, dataptr + 1, len);
+ 						}
 -- 
-1.7.5.4
+1.8.2.rc0.22.gb3600c3
+
