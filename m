@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab3FDOIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:08:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46698 "EHLO
+	id S1756909Ab3FDOWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:22:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46743 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510Ab3FDOHx (ORCPT
+	with ESMTP id S1755701Ab3FDOID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:53 -0400
+	Tue, 4 Jun 2013 10:08:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Gomella <andrew.gomella@nih.gov>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 17/70] USB: ftdi_sio: Add support for Newport CONEX motor drivers
-Date: Tue,  4 Jun 2013 15:06:33 +0100
-Message-Id: <1370354846-14213-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 26/70] perf: net_dropmonitor: Fix trace parameter order
+Date: Tue,  4 Jun 2013 15:06:42 +0100
+Message-Id: <1370354846-14213-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
+commit 140c3c6a2bcd2c31e2f7f5a8d59689724776c8e5 upstream.
 
-Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
+This works much better if we don't treat protocol numbers as addresses.
 
-The devices are the Newport Conex-AGP and Conex-CC motor controllers.
-(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
-(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
-
-usb-devices command yields:
-
-P:  Vendor=104d ProdID=3002 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-CC
-
-as well as
-
-P:  Vendor=104d ProdID=3006 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-AGP
-
-Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 2 ++
- 2 files changed, 4 insertions(+)
+ tools/perf/scripts/python/net_dropmonitor.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index d5b9a74..45e80a7 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 9852827..6dd7925 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -772,6 +772,8 @@
-  */
- #define NEWPORT_VID			0x104D
- #define NEWPORT_AGILIS_PID		0x3000
-+#define NEWPORT_CONEX_CC_PID		0x3002
-+#define NEWPORT_CONEX_AGP_PID		0x3006
+diff --git a/tools/perf/scripts/python/net_dropmonitor.py b/tools/perf/scripts/python/net_dropmonitor.py
+index a4ffc95..adbfbf0 100755
+--- a/tools/perf/scripts/python/net_dropmonitor.py
++++ b/tools/perf/scripts/python/net_dropmonitor.py
+@@ -64,7 +64,7 @@ def trace_end():
  
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
+ # called from perf, when it finds a correspoinding event
+ def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
+-			skbaddr, protocol, location):
++		   skbaddr, location, protocol):
+ 	slocation = str(location)
+ 	try:
+ 		drop_log[slocation] = drop_log[slocation] + 1
 -- 
 1.8.1.2
 
