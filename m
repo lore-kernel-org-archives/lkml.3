@@ -1,211 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760077Ab3FDHZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:25:43 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:52266 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759644Ab3FDHZj (ORCPT
+	id S1759971Ab3FDH1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:27:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60135 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab3FDH12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:25:39 -0400
-Message-ID: <1370330732.8307.3.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH] clean up scary strncpy(dst, src, strlen(src)) uses
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, devel@driverdev.osuosl.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Date: Tue, 04 Jun 2013 09:25:32 +0200
-In-Reply-To: <OF1F22772E.CA553233-ONC1257B80.002841B9-C1257B80.00284FD3@de.ibm.com>
-References: <OF1F22772E.CA553233-ONC1257B80.002841B9-C1257B80.00284FD3@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Jun 2013 03:27:28 -0400
+Date: Tue, 4 Jun 2013 17:27:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Lorenzo Colitti <lorenzo@google.com>
+Subject: linux-next: build warning after merge of the final tree (net tree
+ related)
+Message-Id: <20130604172700.a98a93d8743f32153d0c93f2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060407-1948-0000-0000-000005549DC8
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Jun_2013_17_27_00_+1000_cLGzmPIL_NgkMxNN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 31, 2013 09:18:07 AM Kees Cook wrote:
-> Fix various weird constructions of strncpy(dst, src, strlen(src)).
-> Length
-> limits should be about the space available in the destination, not
-> repurposed as a method to either always include or always exclude
-> a trailing NULL byte. Either the NULL should always be copied
-> (using strlcpy), or it should not be copied (using something like
-> memcpy). Readable code should not depend on the weird behavior of
-> strncpy
-> when it hits the length limit. Better to avoid the anti-pattern
-> entirely.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+--Signature=_Tue__4_Jun_2013_17_27_00_+1000_cLGzmPIL_NgkMxNN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For the s390-part:
+Hi all,
 
-Acked-by: Ursula Braun <ursula.braun@de.ibm.com>
+After merging the final tree, today's linux-next build (i386_defconfig,
+sparc64_defconfig) produced this warning:
 
-> ---
-> This is a follow-up to the anti-pattern being fixed in iscsi-target,
-> which was exploitable:
-> "iscsi-target: fix heap buffer overflow on error"
-> http://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?id=cea4dcfdad926a27a18e188720efe0f2c9403456
-> ---
-> Documentation/accounting/getdelays.c             |    3 ++-
-> drivers/acpi/sysfs.c                             |    3 +--
-> drivers/s390/net/qeth_l3_sys.c                   |    6 ++----
-> drivers/staging/tidspbridge/rmgr/drv_interface.c |    3 +--
-> fs/hppfs/hppfs.c                                 |   11 ++++++-----
-> 5 files changed, 12 insertions(+), 14 deletions(-)
-> 
-> diff --git a/Documentation/accounting/getdelays.c
-> b/Documentation/accounting/getdelays.c
-> index f8ebcde..5e4773d 100644
-> --- a/Documentation/accounting/getdelays.c
-> +++ b/Documentation/accounting/getdelays.c
-> @@ -23,6 +23,7 @@
-> #include <sys/socket.h>
-> #include <sys/wait.h>
-> #include <signal.h>
-> +#include <bsd/string.h>
-> 
-> #include <linux/genetlink.h>
-> #include <linux/taskstats.h>
-> @@ -299,7 +300,7 @@ int main(int argc, char *argv[])
->                                                    break;
->                                   case 'C':
->                                                    containerset = 1;
-> -
-> strncpy(containerpath, optarg, strlen(optarg) + 1);
-> +
-> strlcpy(containerpath, optarg, sizeof(containerpath));
->                                                    break;
->                                   case 'w':
->                                                    logfile =
-> strdup(optarg);
-> diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
-> index fcae5fa..193745d 100644
-> --- a/drivers/acpi/sysfs.c
-> +++ b/drivers/acpi/sysfs.c
-> @@ -677,10 +677,9 @@ void acpi_irq_stats_init(void)
->                                   else
->                                                    sprintf(buffer,
-> "bug%02X", i);
-> 
-> -                                  name = kzalloc(strlen(buffer) + 1,
-> GFP_KERNEL);
-> +                                  name = kstrdup(buffer, GFP_KERNEL);
->                                   if (name == NULL)
->                                                    goto fail;
-> -                                  strncpy(name, buffer,
-> strlen(buffer) + 1);
-> 
-> 
-> sysfs_attr_init(&counter_attrs[i].attr);
->                                   counter_attrs[i].attr.name = name;
-> diff --git a/drivers/s390/net/qeth_l3_sys.c
-> b/drivers/s390/net/qeth_l3_sys.c
-> index e70af24..d1c8025 100644
-> --- a/drivers/s390/net/qeth_l3_sys.c
-> +++ b/drivers/s390/net/qeth_l3_sys.c
-> @@ -315,10 +315,8 @@ static ssize_t qeth_l3_dev_hsuid_store(struct
-> device *dev,
->                  if (qeth_configure_cq(card, QETH_CQ_ENABLED))
->                                   return -EPERM;
-> 
-> -                 for (i = 0; i < 8; i++)
-> -                                  card->options.hsuid[i] = ' ';
-> -                 card->options.hsuid[8] = '\0';
-> -                 strncpy(card->options.hsuid, tmp, strlen(tmp));
-> +                 snprintf(card->options.hsuid,
-> sizeof(card->options.hsuid),
-> +                                   "%-8s", tmp);
->                  ASCEBC(card->options.hsuid, 8);
->                  if (card->dev)
->                                   memcpy(card->dev->perm_addr,
-> card->options.hsuid, 9);
-> diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> index df0f37e..c4d632c 100644
-> --- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> +++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-> @@ -421,12 +421,11 @@ static int omap3_bridge_startup(struct
-> platform_device *pdev)
->                  drv_datap->tc_wordswapon = tc_wordswapon;
-> 
->                  if (base_img) {
-> -                                  drv_datap->base_img =
-> kmalloc(strlen(base_img) + 1, GFP_KERNEL);
-> +                                  drv_datap->base_img =
-> kstrdup(base_img, GFP_KERNEL);
->                                   if (!drv_datap->base_img) {
->                                                    err = -ENOMEM;
->                                                    goto err2;
->                                   }
-> -                                  strncpy(drv_datap->base_img,
-> base_img, strlen(base_img) + 1);
->                  }
-> 
->                  dev_set_drvdata(bridge, drv_datap);
-> diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
-> index cd3e389..d619b83 100644
-> --- a/fs/hppfs/hppfs.c
-> +++ b/fs/hppfs/hppfs.c
-> @@ -69,7 +69,7 @@ static char *dentry_name(struct dentry *dentry, int
-> extra)
->                  struct dentry *parent;
->                  char *root, *name;
->                  const char *seg_name;
-> -                 int len, seg_len;
-> +                 int len, seg_len, root_len;
-> 
->                  len = 0;
->                  parent = dentry;
-> @@ -81,7 +81,8 @@ static char *dentry_name(struct dentry *dentry, int
-> extra)
->                  }
-> 
->                  root = "proc";
-> -                 len += strlen(root);
-> +                 root_len = strlen(root);
-> +                 len += root_len;
->                  name = kmalloc(len + extra + 1, GFP_KERNEL);
->                  if (name == NULL)
->                                   return NULL;
-> @@ -91,7 +92,7 @@ static char *dentry_name(struct dentry *dentry, int
-> extra)
->                  while (parent->d_parent != parent) {
->                                   if (is_pid(parent)) {
->                                                    seg_name = "pid";
-> -                                                   seg_len =
-> strlen("pid");
-> +                                                   seg_len =
-> strlen(seg_name);
->                                   }
->                                   else {
->                                                    seg_name =
-> parent->d_name.name;
-> @@ -100,10 +101,10 @@ static char *dentry_name(struct dentry *dentry,
-> int extra)
-> 
->                                   len -= seg_len + 1;
->                                   name[len] = '/';
-> -                                  strncpy(&name[len + 1], seg_name,
-> seg_len);
-> +                                  memcpy(&name[len + 1], seg_name,
-> seg_len);
->                                   parent = parent->d_parent;
->                  }
-> -                 strncpy(name, root, strlen(root));
-> +                 memcpy(name, root, root_len);
->                  return name;
-> }
-> 
-> -- 
-> 1.7.9.5
-> 
-> 
+net/ipv6/ping.c: In function 'pingv6_init':
+net/ipv6/ping.c:87:27: warning: assignment from incompatible pointer type [=
+enabled by default]
 
+Probably caused by commit 2a7851bffb00 ("netfilter: add nf_ipv6_ops hook
+to fix xt_addrtype with IPv6") interacting with commit 6d0bfe226116
+("net: ipv6: Add IPv6 support to the ping socket") from the net-next tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__4_Jun_2013_17_27_00_+1000_cLGzmPIL_NgkMxNN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRrZbIAAoJEECxmPOUX5FE2fIP/2UXQqsck/r3Q46+AL+AXZ9N
+ABLCB7PLFEAtjYCZQq43YA4R0NBKXJe6ECNfN1mLETnvH9OBSdl7WeNKq1TRgQa6
+WiQFcgoJoLYdmrAuB6xy9iwnRSGupeyknRQo3q7S+FZ2NxjWkeulqlNU2Q/M0bIU
+w+c9ZQtItiIPpAYwNkEFGHG70ruqtL0mNYDWPlvmfhMIXwPbKWVRfIPJDmou93dq
+rWDBm0a9kLgF1U1TPALTUaZ8t6C3EMsNJ3/Mzz40NC4Hj0Lx4VKC9Mjeki00yZ3q
+mmjMGy188ONvPEyspHeXKjSwyLaJ6mzIhXWGLdLiJFdAeP/Fv+xNqk01uxC5Ik0n
+/kxm2nQtT7E6AinhcVUYSePrgecxYTzR5zY47Xe5ovaoISvLMCrRmGz1sLEQLfUD
++ymybwczP0xDfAD5NT51gjt4LJ21k9lF04PYCccBXNfS/iWHSiP5YbmAPwroRXsY
+eglpy10vMftQjScoQnvpMJmDeW5VwQFHZTpIfeWQiLvpPVRXidRPvQ7h0rPat1/Y
+a0tMVW92ErOIDr8Vn0DZ50fXX3htUMWppzN5S+EQqW3PsHULX6t9kirBiNyFLf0l
+isR6UKJuZgvUwRTm1jafuOQrAr9wv8KGI+TSFRJzijz59mk/JGdmZMwJGVQNOjz8
+GbvPZQMgmdoyNDIOLf53
+=PEn0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Jun_2013_17_27_00_+1000_cLGzmPIL_NgkMxNN--
