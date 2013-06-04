@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab3FDVCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:02:04 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:48599 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3FDVCA (ORCPT
+	id S1751843Ab3FDVCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:02:18 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40093 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3FDVCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:02:00 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
-Thread-Topic: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
-Thread-Index: AQHOYJD5t4s5mkVepkqNMD/e2H+1XZkk7OKAgAE0KoCAAAStgP//2pQQgABODoD//71Q0A==
-Date: Tue, 4 Jun 2013 21:01:09 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B011739@USINDEM103.corp.hds.com>
-References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
-	 <1370303581.26799.109.camel@gandalf.local.home>
-	 <51AE2EDF.3000505@zytor.com> <1370370763.9844.6.camel@gandalf.local.home>
-	 <A5ED84D3BB3A384992CBB9C77DEDA4D41B011681@USINDEM103.corp.hds.com>
- <1370379489.9844.7.camel@gandalf.local.home>
-In-Reply-To: <1370379489.9844.7.camel@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 4 Jun 2013 17:02:03 -0400
+Date: Tue, 4 Jun 2013 22:01:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130604210137.GV31367@sirena.org.uk>
+References: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-06-04_07:2013-06-04,2013-06-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
- suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1306040211
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1xJJiECQTZ8+YlWm"
+Content-Disposition: inline
+In-Reply-To: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC] regmap: Add regmap_field APIs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54L2CXp020814
 
-OK, I will rename  debug_stack_use_ctr to debug_idt_ctr.
-Thanks.
 
-Seiji
+--1xJJiECQTZ8+YlWm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> Sent: Tuesday, June 04, 2013 4:58 PM
-> To: Seiji Aguchi
-> Cc: H. Peter Anvin; linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de; mingo@elte.hu; bp@alien8.de; linux-
-> edac@vger.kernel.org; tony.luck@intel.com; dle-develop@lists.sourceforge.net; Tomoki Sekiyama
-> Subject: Re: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
-> 
-> On Tue, 2013-06-04 at 20:20 +0000, Seiji Aguchi wrote:
-> > Steven,
-> >
-> > >
-> > > Hmm, maybe we can do it. Have two counters, a debug_idt_ctr and a
-> > > trace_idt_ctr, then have a function that basically does this:
-> > >
-> > > 	if (this_cpu_read(debug_idt_ctr))
-> >
-> > I think we can use "debug_stack_use_ctr"  for the checking.
-> > Is it correct?
-> > Or, do I need to introduce a new debug_idt_ctr?
-> >
-> 
-> No, it's the same variable. I was thinking we should rename it too, as
-> debug_stack_use_ctr, doesn't really describe what is happening anymore.
-> 
-> -- Steve
-> 
+On Tue, May 28, 2013 at 03:58:00PM +0100, Srinivas KANDAGATLA wrote:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +#define REGMAP_FIELD_INIT(regmap, reg, lsb, msb) { 	\
+> +				.regmap = regmap, 	\
+> +				.reg = reg, 		\
+> +				.lsb = lsb, 		\
+> +				.msb = msb, 		\
+> +			}
+
+Having a macro for this is really odd since macros are generally only
+used at compile time but the regmap is only available at runtime and
+this...
+
+> +static inline void regmap_field_init(struct regmap_field *field,
+> +	struct regmap *regmap,	unsigned int reg,
+> +	unsigned int lsb, unsigned int msb)
+> +{
+> +	field->regmap = regmap;
+> +	field->reg = reg;
+> +	field->lsb = lsb;
+> +	field->msb = msb;
+> +}
+
+...is a bit awkward since you can't use it with static data.  I think
+either the read/write/modify APIs should be changed to take both the map
+and the field as arguments (with the field only containing the bitfield
+definitions) or the init function should be something that allocates a
+new, runtime only structure from static data.
+
+--1xJJiECQTZ8+YlWm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRrlWoAAoJELSic+t+oim9SDUP/AjLLTu5p8xbpfkzYNKqdHUJ
+FgfASm9DFJrPcyCrdAUOpOGAqtFccmKlbqG1lnSM+XcGeP8q7rj9nFhengqhGaAm
+uNmTQAaa31PnIs0PjjqLRu2d5rU4cDTSLj2cG4VsGQaElvaYw7Qyx22Zs7xY3Lbc
+xctAHuKudy5osWJ10igA+1YZiJhKUw/IN2Pam2og8ql6v6mA5mBQwz+mBpXsJ4nB
+lAeZu3H11QMXOzLFFl8VQ3ZSnAy3jb1sD1+JEjdwGmCeFdGEye98wCyBTzIzc/ph
+hgRNes3w2TFFs2QInZQny2rmbqEL7JBM5XncBTAZl4KTQq/ih7KjLBDVLNJt8EOl
+WmtEXBKvz1y/7VxhOK/PfjEk53inh60d6Tyy1k5pOPo9adZDWvgSpPXN9werTReY
+XlQXx2/MoJh3ZvcHM+BSUeSMeA9fVzwHB7aIYzGEJITBzYKxgB3vX5437oOIpKlF
+Fcr76FdKNH1PbpTakO24NyeVRwGGu6jpEGB6Dv7+dnTaF2NdCRXYepkVZwAd+Yhz
+yzNK0yWOl8vHqj/rsWTmb8vc9AC6artOgqW52mgpB8XgRyX2VHebDT16u9ASrk3R
+scocQXcpJdHi3XuN3ObLwuNMowlDNwxwP/UYObFBMIppqcZiy2J20uJW6pCZJSH4
+SPYF+X2VhK1nUiNh6HBO
+=TGmk
+-----END PGP SIGNATURE-----
+
+--1xJJiECQTZ8+YlWm--
