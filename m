@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab3FDSRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:17:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36636 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab3FDSRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:17:32 -0400
-Message-ID: <51AE2EDF.3000505@zytor.com>
-Date: Tue, 04 Jun 2013 11:15:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751295Ab3FDSZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:25:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58255 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3FDSZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 14:25:38 -0400
+Message-ID: <51AE311F.5060900@lvivier.info>
+Date: Tue, 04 Jun 2013 20:25:35 +0200
+From: Laurent Vivier <Laurent@lvivier.info>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Seiji Aguchi <seiji.aguchi@hds.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
-        linux-edac@vger.kernel.org, tony.luck@intel.com,
-        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
-Subject: Re: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
-References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com> <1370303581.26799.109.camel@gandalf.local.home>
-In-Reply-To: <1370303581.26799.109.camel@gandalf.local.home>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] swim: Release memory region after incorrect return/goto
+References: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
+In-Reply-To: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:0lxmM15TK+emNWheD8/pkRE+aT3YOFyA0tS9WZcWjn/
+ CqPzSkVUEVxDn9l1K6imLdLn4ZMPfFFWIveNuz+oZFBfXxIxJV
+ v6iQj9oF5o5dgiuAeKN1upRQx+gdXl308WdAe8aY4NqWq8wBqv
+ FRo2EkpHwPR5X99lm7J2MPtRxy3rXlg5OO1GqMP+fVRnkp7doN
+ anh6+R4gAuV5EPveLixOLOMfGs5THHqvytqmQ5d1tRNvxZlZRY
+ irtUpporwEexDxsHoZB++RwMDlpYTugDtErVVevP0bM5txaIeD
+ pr5Zv1Wnrtht72K/V8QW8HS6pl8Lh2/R7XXNktGTo+YzoyHJ42
+ JfhXRP1jBRsooXOwuJH4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 04:53 PM, Steven Rostedt wrote:
-> 
-> This way we wont be opening up any easy root holes where if a process
-> finds a way to modify some arbitrary kernel memory, we can prevent it
-> from modifying the current_idt_descr_ptr and have a nice way to exploit
-> the IDT. Sure, one can argue that if they can modify arbitrary kernel
-> memory, we may already be lost, but lets not make it easier for them
-> than need be.
-> 
+Le 04/06/2013 16:44, Joe Perches a écrit :
+> The code uses
+>
+> 	return foo;
+> 	goto err_type;
+>
+> when instead the form should have been
+>
+> 	ret = foo;
+> 	goto err_type;
+>
+> Here this causes a useful release_mem_region to be skipped.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>   drivers/block/swim.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/block/swim.c b/drivers/block/swim.c
+> index 2f445b7..8ed6ccb 100644
+> --- a/drivers/block/swim.c
+> +++ b/drivers/block/swim.c
+> @@ -893,7 +893,7 @@ static int swim_probe(struct platform_device *dev)
+>   
+>   	swim_base = ioremap(res->start, resource_size(res));
+>   	if (!swim_base) {
+> -		return -ENOMEM;
+> +		ret = -ENOMEM;
+>   		goto out_release_io;
+>   	}
+>   
 
-I don't like current_idt_descr_ptr if we can avoid it.  It is a direct
-proxy for reading and writing the original IDT, in other words, it
-really hasn't really addressed the issue.
-
-What I'm thinking we really should have is a function that returns the
-IDT that we currently should be using, based on the current state.  If
-that state is, say, tracing on/off and NMI on/off, then that can be
-indicated by bits in a state vector.
-
-The point is that the IDT address itself should not be mutable state if
-it can be at all avoided.
-
-	-hpa
-
-
-
+Reviewed-by: Laurent Vivier <Laurent@Vivier.EU>
