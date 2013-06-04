@@ -1,86 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3FEMqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:46:51 -0400
-Received: from fieldses.org ([174.143.236.118]:37851 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab3FEMqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:46:49 -0400
-Date: Wed, 5 Jun 2013 08:46:11 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 08/11] locks: convert fl_link to a hlist_node
-Message-ID: <20130605124611.GB24193@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-9-git-send-email-jlayton@redhat.com>
- <20130604215950.GE15594@fieldses.org>
- <20130605074309.051ff75f@corrin.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605074309.051ff75f@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754130Ab3FEMrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:47:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44704 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab3FEMrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:47:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: JBeulich@suse.com, roger.pau@citrix.com, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
+Subject: [PATCH] xen/blkback: Check for insane amounts of request on the ring.
+Date: Tue,  4 Jun 2013 15:57:06 -0400
+Message-Id: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 07:43:09AM -0400, Jeff Layton wrote:
-> On Tue, 4 Jun 2013 17:59:50 -0400
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Fri, May 31, 2013 at 11:07:31PM -0400, Jeff Layton wrote:
-> > > Testing has shown that iterating over the blocked_list for deadlock
-> > > detection turns out to be a bottleneck. In order to alleviate that,
-> > > begin the process of turning it into a hashtable. We start by turning
-> > > the fl_link into a hlist_node and the global lists into hlists. A later
-> > > patch will do the conversion of the blocked_list to a hashtable.
-> > 
-> > Even simpler would be if we could add a pointer to the (well, a) lock
-> > that a lockowner is blocking on, and then we'd just have to follow a
-> > pointer.  I haven't thought that through, though, perhaps that's hard ot
-> > make work....
-> > 
-> > --b.
-> > 
-> 
-> I considered that as well and it makes sense for the simple local
-> filesystem case where you just track ownership based on fl_owner_t.
-> 
-> But...what about lockd? It considers ownership to be a tuple of the
-> nlm_host and the pid sent in a lock request. I can't seem to wrap my
-> brain around how to make such an approach work there.
+Check that the ring does not have an insane amount of requests
+(more than there could fit on the ring).
 
-I wonder if we could do something vaguely like
+If we detect this case we will stop processing the requests
+and wait until the XenBus disconnects the ring.
 
-	struct lock_owner_common {
-		struct file_lock *blocker;
-	};
+Looking at the code, one would expect that the existing check
+RING_REQUEST_CONS_OVERFLOW which checks for how many responses we
+have created in the past (rsp_prod_pvt) vs requests consumed (req_cons)
+and that difference between is greater or equal to the size of the
+ring. If that condition is satisfied that means we should not be
+processing more requests as we still have a backlog of responses
+to finish. Note that both of those values (rsp_prod_pvt and req_cons)
+are not exposed on the shared ring.
 
-	struct nlmsvc_lock_owner {
-		struct lock_owner_common owner;
-		unsigned int client_pid;
-	};
+To understand this problem a mini crash course in ring protocol
+response/request updates.
 
-and make fl_owner a (struct lock_owner_common *) and have lockd create
-nlmsvc_lock_owners as necessary on the fly.  The lm_compare_owner
-callback could then be replaced by a pointer comparison.  I'm not sure
-what kind of locking or refcounting might be needed.  But...
+There are four entries: req_prod and rsp_prod; req_event and rsp_event.
+We are only concerned about the first two - which set the tone of
+this bug.
 
-> I'll confess though that I haven't tried *too* hard yet
+The req_prod is a value incremented by frontend for each request put
+on the ring. Conversely the rsp_prod is a value incremented by the backend
+for each response put on the ring (rsp_prod gets set by rsp_prod_pvt when
+pushing the responses on the ring).  Both values can
+wrap and are modulo the size of the ring (in block case that is 32).
+Please see RING_GET_REQUEST and RING_GET_RESPONSE for the more details.
 
-... me neither, so...
+The culprit here is that if the difference between the
+req_prod and req_cons is greater than the ring size we have a problem.
+Fortunately for us, the '__do_block_io_op' loop:
 
-> though since I had bigger problems to sort through at the time. Maybe
-> we can consider that for a later set?
+	rc = blk_rings->common.req_cons;
+	rp = blk_rings->common.sring->req_prod;
 
-sounds fine.
+	while (rc != rp) {
 
---b.
+		..
+		blk_rings->common.req_cons = ++rc; /* before make_response() */
+
+	}
+
+will loop up to the point when rc == rp. The macros inside of the
+loop (RING_GET_REQUEST) is smart and is indexing based on the modulo
+of the ring size. If the frontend has provided a bogus req_prod value
+we will loop until the 'rc == rp' - which means we could be processing
+already processed requests (or responses) often.
+
+The reason the RING_REQUEST_CONS_OVERFLOW is not helping here is
+b/c it only tracks how many responses we have internally produced
+and whether we would should process more. The astute reader will
+notice that the macro RING_REQUEST_CONS_OVERFLOW provides two
+arguments - more on this later.
+
+For example, if we were to enter this function with these values:
+
+       	blk_rings->common.sring->req_prod =  X+31415 (X is the value from
+		the last time __do_block_io_op was called).
+        blk_rings->common.req_cons = X
+        blk_rings->common.rsp_prod_pvt = X
+
+The RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, blk_rings->common.req_cons)
+is doing:
+
+	req_cons - sring->rsp_prod_pvt >= 32
+
+Which is,
+	X - X >= 32 or 0 >= 32
+
+And that is false, so we continue on looping (this bug).
+
+If we re-use said macro RING_REQUEST_CONS_OVERFLOW and pass in the rp
+instead (sring->req_prod) of rc, the this macro can do the check:
+
+     req_prod - sring->rsp_prov_pvt >= 32
+
+Which is,
+       X + 31415 - X >= 32 , or 31415 >= 32
+
+which is true, so we can error out and break out of the function.
+
+Cc: stable@vger.kernel.org
+[v1: Move the check outside the loop]
+[v2: Add a pr_warn as suggested by David]
+[v3: Use RING_REQUEST_CONS_OVERFLOW as suggested by Jan]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkback/blkback.c | 14 ++++++++++++--
+ drivers/block/xen-blkback/common.h  |  2 ++
+ drivers/block/xen-blkback/xenbus.c  |  2 ++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index d81dfca..c4b23be 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -397,7 +397,7 @@ int xen_blkif_schedule(void *arg)
+ {
+ 	struct xen_blkif *blkif = arg;
+ 	struct xen_vbd *vbd = &blkif->vbd;
+-
++	int rc = 0;
+ 	xen_blkif_get(blkif);
+ 
+ 	while (!kthread_should_stop()) {
+@@ -417,8 +417,12 @@ int xen_blkif_schedule(void *arg)
+ 		blkif->waiting_reqs = 0;
+ 		smp_mb(); /* clear flag *before* checking for work */
+ 
+-		if (do_block_io_op(blkif))
++		rc = do_block_io_op(blkif);
++		if (rc > 0)
+ 			blkif->waiting_reqs = 1;
++		if (rc == -EACCES)
++			wait_event_interruptible(blkif->shutdown_wq,
++						 kthread_should_stop());
+ 
+ 		if (log_stats && time_after(jiffies, blkif->st_print))
+ 			print_stats(blkif);
+@@ -778,6 +782,12 @@ __do_block_io_op(struct xen_blkif *blkif)
+ 	rp = blk_rings->common.sring->req_prod;
+ 	rmb(); /* Ensure we see queued requests up to 'rp'. */
+ 
++	/* N.B. 'rp', not 'rc'. */
++	if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rp)) {
++		pr_warn(DRV_PFX "Frontend provided bogus ring requests (%d - %d = %d). Halting ring processing on dev=%04x\n",
++			rp, rc, rp - rc, blkif->vbd.pdevice);
++		return -EACCES;
++	}
+ 	while (rc != rp) {
+ 
+ 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 60103e2..43ef7f2 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -231,6 +231,8 @@ struct xen_blkif {
+ 	unsigned long long			st_wr_sect;
+ 
+ 	wait_queue_head_t	waiting_to_free;
++	/* Thread shutdown wait queue. */
++	wait_queue_head_t	shutdown_wq;
+ };
+ 
+ 
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 8bfd1bc..00f2573 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -118,6 +118,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+ 	blkif->st_print = jiffies;
+ 	init_waitqueue_head(&blkif->waiting_to_free);
+ 	blkif->persistent_gnts.rb_node = NULL;
++	init_waitqueue_head(&blkif->shutdown_wq);
+ 
+ 	return blkif;
+ }
+@@ -177,6 +178,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+ static void xen_blkif_disconnect(struct xen_blkif *blkif)
+ {
+ 	if (blkif->xenblkd) {
++		wake_up(&blkif->shutdown_wq);
+ 		kthread_stop(blkif->xenblkd);
+ 		blkif->xenblkd = NULL;
+ 	}
+-- 
+1.8.1.4
+
