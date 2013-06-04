@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3FDJo6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:44:58 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53802 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3FDJo4 (ORCPT
+	id S1752601Ab3FDJq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:46:27 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:44672 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3FDJqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:44:56 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        John Stultz <john.stultz@linaro.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH] rtc: rtc-hid-sensor-time: fix possible bug on driver_remove
-Date: Tue,  4 Jun 2013 11:38:42 +0200
-Message-Id: <1370338722-3646-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
-References: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
+	Tue, 4 Jun 2013 05:46:24 -0400
+From: Mischa Jonker <Mischa.Jonker@synopsys.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        Vineet.Gupta1@synopsys.com
+Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>
+Subject: [PATCH] perf: add const qualifier to perf_pmu_register's 'name' arg
+Date: Tue,  4 Jun 2013 11:45:48 +0200
+Message-Id: <1370339148-5566-1-git-send-email-mjonker@synopsys.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The work we schedule on register deletes himself. Therefor we cannot
-use cancel_work_sync() because that calls flush_work() but still uses
-the pointer to the (now deleted) work afterwards (for clear_work_data)
-which ends up in a bug.
-Replacing cancel_work_sync() with flush_work() fixes that.
+This allows us to use pdev->name for registering a PMU device.
+IMO the name is not supposed to be changed anyway.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
 ---
+ arch/metag/kernel/perf/perf_event.c |    2 +-
+ include/linux/perf_event.h          |    4 ++--
+ kernel/events/core.c                |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
- This patch applies on top of PATCH 3/4 or 4/4 of the small series of 4 patches
- for rtc-hid-sensor-time, which was already merged into the -mm tree.
-
- drivers/rtc/rtc-hid-sensor-time.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index 4aca12d..acb2bc2 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -414,9 +414,8 @@ static int hid_time_remove(struct platform_device *pdev)
- 	struct hid_time_state *time_state = platform_get_drvdata(pdev);
- 
- 	if (time_state->workts) {
--		cancel_work_sync(&time_state->workts->work);
--		kfree(time_state->workts);
--		time_state->workts = NULL;
-+		flush_work(&time_state->workts->work);
-+		BUG_ON(time_state->workts != NULL);
+diff --git a/arch/metag/kernel/perf/perf_event.c b/arch/metag/kernel/perf/perf_event.c
+index 3665694..5b18888 100644
+--- a/arch/metag/kernel/perf/perf_event.c
++++ b/arch/metag/kernel/perf/perf_event.c
+@@ -882,7 +882,7 @@ static int __init init_hw_perf_events(void)
  	}
- 	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
+ 
+ 	register_cpu_notifier(&metag_pmu_notifier);
+-	ret = perf_pmu_register(&pmu, (char *)metag_pmu->name, PERF_TYPE_RAW);
++	ret = perf_pmu_register(&pmu, metag_pmu->name, PERF_TYPE_RAW);
+ out:
+ 	return ret;
+ }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index f463a46..65a462c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -188,7 +188,7 @@ struct pmu {
+ 
+ 	struct device			*dev;
+ 	const struct attribute_group	**attr_groups;
+-	char				*name;
++	const char			*name;
+ 	int				type;
+ 
+ 	int * __percpu			pmu_disable_count;
+@@ -518,7 +518,7 @@ struct perf_output_handle {
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
+-extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
++extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
+ extern void perf_pmu_unregister(struct pmu *pmu);
+ 
+ extern int perf_num_counters(void);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9dc297f..7003d6f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5952,7 +5952,7 @@ free_dev:
+ static struct lock_class_key cpuctx_mutex;
+ static struct lock_class_key cpuctx_lock;
+ 
+-int perf_pmu_register(struct pmu *pmu, char *name, int type)
++int perf_pmu_register(struct pmu *pmu, const char *name, int type)
+ {
+ 	int cpu, ret;
  
 -- 
-1.8.1.5
+1.7.0.4
 
