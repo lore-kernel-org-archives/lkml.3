@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab3FDDg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 23:36:26 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:46575 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab3FDDgZ (ORCPT
+	id S1758168Ab3FDD67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 23:58:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27792 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab3FDD65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 23:36:25 -0400
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "rja@sgi.com" <rja@sgi.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
+	Mon, 3 Jun 2013 23:58:57 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+X-AuditID: cbfee690-b7f6f6d00000740c-e4-51ad65fd7c01
+Content-transfer-encoding: 8BIT
+Message-id: <51AD660F.7060508@samsung.com>
+Date: Tue, 04 Jun 2013 12:59:11 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510
+ Thunderbird/17.0.6
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oneukum@suse.de" <oneukum@suse.de>
-In-Reply-To: <1370277079.6315.14.camel@x230.lan>
-References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
-	 <1370276021.30695.4.camel@linux-s257.site>
-	 <1370277079.6315.14.camel@x230.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Jun 2013 11:35:33 +0800
-Message-ID: <1370316933.30695.7.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+        Rob Herring <rob.herring@calxeda.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Olof Johansson <olof@lixom.net>, John Stultz <john.stultz@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 05/10] mmc: dw_mmc-pltfm: remove static from
+ dw_mci_pltfm_remove
+References: <201306030055.15413.heiko@sntech.de>
+ <201306030058.27184.heiko@sntech.de>
+In-reply-to: <201306030058.27184.heiko@sntech.de>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSpPs3dW2gwdqPyhZ/Jx1jt9j+eiOb
+	xYHZD1ktDvzZwWjx/9FrVosbv9pYLc781rWY8mc5k8Wmx9dYLS7vmsNmceR/P6PF7cu8Fk8n
+	XGSzOHX9M5vF4RUHmCw+3L/IbLF501RmB0GPluYeNo/fvyYxeiz4fIXd49CVtYwed67tYfN4
+	d+4cu8fmJfUe52csZPS4cqKJ1aNvyypGj+3X5jF7fN4kF8ATxWWTkpqTWZZapG+XwJWx/2I7
+	S8E3too7/XcYGxifsHYxcnJICJhI7Ng9C8oWk7hwbz1bFyMXh5DAUkaJKxd7WGCKWlbch0os
+	YpR4Of0tO0iCV0BQ4sfke0BFHBzMAvISRy5lg4SZBXQk9rdOg6p/ySixbMY9Roh6LYkV+54x
+	gtSzCKhKTDukABJmA6rf/u04E4gtKhAmsamnGcwWETCTuHW1jRlkDrPAYlaJVW/a2UASwkBF
+	V0++ApsjJBAusXqJCojJKWAo8euiPUi5hMAZDomrC76D3c8iICDxbfIhsDMlBGQlNh1ghnhL
+	UuLgihssExjFZiF5ZhbCM7OQPLOAkXkVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmBSOP3v
+	2YQdjPcOWB9iTAbaOJFZSjQ5H5hU8kriDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1O
+	TS1ILYovKs1JLT7EyMTBKdXAaPHQt29mSsxsYSbrXWqrD+grtNfqr9+8tOfTsz3vNoidve0s
+	ebVO2VP9qtNMkQxvT5UjZQ6lH87amNszR3a4np9qxNGqtLffU3vjBy6vNPnCh0sTzgjfUcrP
+	uD15RWMtp+W5I0v0ND0Dk3YJafaesNcq2Pe/9UPCXoXFBwoumlyO2+Sbt+WzEktxRqKhFnNR
+	cSIAVgjCESADAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t9jAd2/qWsDDRZulrL4O+kYu8X21xvZ
+	LA7MfshqceDPDkaL/49es1rc+NXGanHmt67FlD/LmSw2Pb7GanF51xw2iyP/+xktbl/mtXg6
+	4SKbxanrn9ksDq84wGTx4f5FZovNm6YyOwh6tDT3sHn8/jWJ0WPB5yvsHoeurGX0uHNtD5vH
+	u3Pn2D02L6n3OD9jIaPHlRNNrB59W1Yxemy/No/Z4/MmuQCeqAZGm4zUxJTUIoXUvOT8lMy8
+	dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygz5QUyhJzSoFCAYnFxUr6dpgmhIa4
+	6VrANEbo+oYEwfUYGaCBhDWMGfsvtrMUfGOruNN/h7GB8QlrFyMnh4SAiUTLivtsELaYxIV7
+	64FsLg4hgUWMEi+nv2UHSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgI7E/tZpUPUvGSWWzbjH
+	CFGvJbFi3zNGkHoWAVWJaYcUQMJsQPXbvx1nArFFBcIkNvU0g9kiAmYSt662MYPMYRZYzCqx
+	6k072EHCQEVXT74CmyMkEC6xeokKiMkpYCjx66L9BEaBWUiOm4Vw3Cwkxy1gZF7FKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJEZxynkntYFzZYHGIUYCDUYmHt2LbmkAh1sSy4srcQ4wSHMxK
+	Iry9LmsDhXhTEiurUovy44tKc1KLDzEmA702kVlKNDkfmA7zSuINjU3MjCyNzA0tjIzNSRNW
+	Euc90GodKCSQnliSmp2aWpBaBLOFiYNTqoGRf/La6jbblBoliXUX1qfyxV675bHjz0+TU68S
+	sh4uaL8eKe/q992vaALfa7dvxorqXZFm0ceME68+mWEeeZfXb5/KoqX8rX2X39Tef7O/edLa
+	kDXxroqJDqfcdv963xBQbd3mrDt36mafe3ufzTr40ap3Y/N86wIBZuZJBtuN3q+cxrHa8Zmw
+	EktxRqKhFnNRcSIA4U/Ky30DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2013-06-03 於 16:31 +0000，Matthew Garrett 提到：
-> On Tue, 2013-06-04 at 00:13 +0800, joeyli wrote:
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+
+On 06/03/2013 07:58 AM, Heiko St�bner wrote:
+> dw_mci_pltfm_remove gets exported and used by dw_mmc-exynos, so should
+> not be static.
 > 
-> > Oliver raised a question for if power fails between that succesful
-> > attempt and the deletion?
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>  drivers/mmc/host/dw_mmc-pltfm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> It's a pretty tiny window, but sure. Making sure we delete it seems
-> sensible. In that case we should make the GUID a #define rather than
-> write it out twice.
+> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+> index 37873f1..0048da8 100644
+> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+> @@ -68,7 +68,7 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
+>  	return dw_mci_pltfm_register(pdev, NULL);
+>  }
+>  
+> -static int dw_mci_pltfm_remove(struct platform_device *pdev)
+> +int dw_mci_pltfm_remove(struct platform_device *pdev)
+>  {
+>  	struct dw_mci *host = platform_get_drvdata(pdev);
+>  
 > 
-
-Base on your patch, the following diff moved DUMMY GUID to #define, and
-add a static efi name string:
-
-
-Thanks a lot!
-Joey Lee
-
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 63e167a..cc3cfe8 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -53,6 +53,11 @@
- 
- #define EFI_DEBUG	1
- 
-+#define EFI_DUMMY_GUID \
-+	EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e, 0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92, 0xa9)
-+
-+static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
-+
- struct efi __read_mostly efi = {
- 	.mps        = EFI_INVALID_TABLE_ADDR,
- 	.acpi       = EFI_INVALID_TABLE_ADDR,
-@@ -981,6 +986,9 @@ void __init efi_enter_virtual_mode(void)
- 		runtime_code_page_mkexec();
- 
- 	kfree(new_memmap);
-+
-+	/* clean DUMMY object */
-+	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID, 0, 0, NULL);
- }
- 
- /*
-@@ -1051,21 +1059,17 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 		 */
- 		unsigned long dummy_size = remaining_size + 1024;
- 		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
--		efi_char16_t efi_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
--		efi_guid_t guid = EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e,
--					   0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92,
--					   0xa9);
- 
--		status = efi.set_variable(efi_name, &guid, attributes,
--					  dummy_size, dummy);
-+		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-+					  attributes, dummy_size, dummy);
- 
- 		if (status == EFI_SUCCESS) {
- 			/*
- 			 * This should have failed, so if it didn't make sure
- 			 * that we delete it...
- 			 */
--			efi.set_variable(efi_name, &guid, attributes, 0,
--					 dummy);
-+			efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-+					 attributes, 0, dummy);
- 		}
- 
- 		/*
 
