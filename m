@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab3FDWzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:55:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:35782 "EHLO 1wt.eu"
+	id S1753827Ab3FDWnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:43 -0400
+Received: from 1wt.eu ([62.212.114.60]:35745 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab3FDWno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:44 -0400
-Message-Id: <20130604172137.643220285@1wt.eu>
+	id S1753890Ab3FDWnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:31 -0400
+Message-Id: <20130604172137.725419704@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:27 +0200
+Date: Tue, 04 Jun 2013 19:24:29 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 177/184] isdnloop: fix and simplify isdnloop_init()
+Subject: [ 179/184] llc: fix info leak via getsockname()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 77f00f6324cb97cf1df6f9c4aaeea6ada23abdb2 ]
+[ Upstream commit 3592aaeb80290bda0f2cf0b5456c97bfc638b192 ]
 
-Fix a buffer overflow bug by removing the revision and printk.
+The LLC code wrongly returns 0, i.e. "success", when the socket is
+zapped. Together with the uninitialized uaddrlen pointer argument from
+sys_getsockname this leads to an arbitrary memory leak of up to 128
+bytes kernel stack via the getsockname() syscall.
 
-[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7
-[   22.097508] isdnloop: (loop0) virtual card added
-[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
-[   22.174400]
-[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
-[   22.624071] Call Trace:
-[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
-[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
-[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
-[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
-[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+Return an error instead when the socket is zapped to prevent the info
+leak. Also remove the unnecessary memset(0). We don't directly write to
+the memory pointed by uaddr but memcpy() a local structure at the end of
+the function that is properly initialized.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 12 ------------
- 1 file changed, 12 deletions(-)
+ net/llc/af_llc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index a335c85..22446f7 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -15,7 +15,6 @@
- #include <linux/sched.h>
- #include "isdnloop.h"
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 2da8d14..606b6ad 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -912,14 +912,13 @@ static int llc_ui_getname(struct socket *sock, struct sockaddr *uaddr,
+ 	struct sockaddr_llc sllc;
+ 	struct sock *sk = sock->sk;
+ 	struct llc_sock *llc = llc_sk(sk);
+-	int rc = 0;
++	int rc = -EBADF;
  
--static char *revision = "$Revision: 1.11.6.7 $";
- static char *isdnloop_id = "loop0";
- 
- MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
-@@ -1493,17 +1492,6 @@ isdnloop_addcard(char *id1)
- static int __init
- isdnloop_init(void)
- {
--	char *p;
--	char rev[10];
--
--	if ((p = strchr(revision, ':'))) {
--		strcpy(rev, p + 1);
--		p = strchr(rev, '$');
--		*p = 0;
--	} else
--		strcpy(rev, " ??? ");
--	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
--
- 	if (isdnloop_id)
- 		return (isdnloop_addcard(isdnloop_id));
- 
+ 	memset(&sllc, 0, sizeof(sllc));
+ 	lock_sock(sk);
+ 	if (sock_flag(sk, SOCK_ZAPPED))
+ 		goto out;
+ 	*uaddrlen = sizeof(sllc);
+-	memset(uaddr, 0, *uaddrlen);
+ 	if (peer) {
+ 		rc = -ENOTCONN;
+ 		if (sk->sk_state != TCP_ESTABLISHED)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
