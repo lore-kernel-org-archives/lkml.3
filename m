@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3FDQIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:08:42 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:36734 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab3FDQIg (ORCPT
+	id S1755935Ab3FDQMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:12:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50470 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753813Ab3FDQMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:08:36 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 02/10] zram: avoid invalid memory access in zram_exit()
-Date: Wed,  5 Jun 2013 00:06:00 +0800
-Message-Id: <1370361968-8764-2-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
-References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 4 Jun 2013 12:12:38 -0400
+X-Sasl-enc: 5k7/gcVwcGem1o2DlERPhlUo2aDdk9Ls2TVatZkLUHAR 1370362355
+Date: Tue, 4 Jun 2013 09:12:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Dave Jones <davej@redhat.com>, Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
+Message-ID: <20130604161234.GA23637@kroah.com>
+References: <1369721825.2776.36@driftwood>
+ <51A327A4.7020908@linuxdingsda.de>
+ <87obbwbo8s.fsf@nemi.mork.no>
+ <51A332E2.1090403@linuxdingsda.de>
+ <20130604024959.GA10697@kroah.com>
+ <20130604025907.GA3991@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130604025907.GA3991@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory for zram->disk object may have already been freed after returning
-from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
-to access zram->disk again.
+On Mon, Jun 03, 2013 at 10:59:08PM -0400, Dave Jones wrote:
+> On Mon, Jun 03, 2013 at 07:49:59PM -0700, Greg Kroah-Hartman wrote:
+>  > On Mon, May 27, 2013 at 02:28:51PM +0200, Bjørn Mork wrote:
+>  > > But, IMHO, a nicer approach would be to make the allocation completely
+>  > > dynamic, using e.g. the idr subsystem. Static tables are always feel
+>  > > like straight jackets to me, no matter how big they are :)
+>  > 
+>  > You are right, I didn't change the code to use idr (it predates idr by
+>  > about a decade or so), because I thought we needed the "rage" logic that
+>  > the usb-serial minor reservation does.
+> 
+> Rage logic sounds like my kinda code.
 
-We can't solve this bug by flipping the order of destroy_device(zram)
-and zram_reset_device(zram), that will cause deadlock issues to the
-zram sysfs handler.
+Late nite typo :)
 
-So fix it by holding an extra reference to zram->disk before calling
-destroy_device(zram).
+>  > +static int get_free_port(struct usb_serial_port *port)
+>  >  {
+>  > -	unsigned int i, j;
+>  > -	int good_spot;
+>  > -
+>  > -	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
+>  > +	int i;
+>  >  
+>  > -	*minor = 0;
+>  >  	mutex_lock(&table_lock);
+>  > -	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
+>  > -		if (serial_table[i])
+>  > -			continue;
+>  > +	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
+>  > +	if (i < 0)
+>  > +		return -EEXIST;
+>  > +	port->number = i;
+>  > +	mutex_unlock(&table_lock);
+>  > +	return i;
+>  > +}
+> 
+> -EEXIST case misses the mutex unlock.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: stable@vger.kernel.org
----
- drivers/staging/zram/zram_drv.c | 2 ++
- 1 file changed, 2 insertions(+)
+Thanks, now fixed.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 0a07de4..5a2f20b 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -722,8 +722,10 @@ static void __exit zram_exit(void)
- 	for (i = 0; i < num_devices; i++) {
- 		zram = &zram_devices[i];
- 
-+		get_disk(zram->disk);
- 		destroy_device(zram);
- 		zram_reset_device(zram);
-+		put_disk(zram->disk);
- 	}
- 
- 	unregister_blkdev(zram_major, "zram");
--- 
-1.8.1.2
-
+greg k-h
