@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3FDWnE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:43:04 -0400
-Received: from 1wt.eu ([62.212.114.60]:35624 "EHLO 1wt.eu"
+	id S1754358Ab3FDWoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:44:03 -0400
+Received: from 1wt.eu ([62.212.114.60]:35817 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab3FDWm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:59 -0400
-Message-Id: <20130604172136.892217862@1wt.eu>
+	id S1754231Ab3FDWn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:56 -0400
+Message-Id: <20130604172137.063236718@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:09 +0200
+Date: Tue, 04 Jun 2013 19:24:13 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Tommi Rantala <tt.rantala@gmail.com>, Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 159/184] tcp: fix MSG_SENDPAGE_NOTLAST logic
+Subject: [ 163/184] sctp: fix memory leak in sctp_datamsg_from_user()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,58 +24,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ when copy from user space fails
 
-From: Eric Dumazet <edumazet@google.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
+[ Upstream commit be364c8c0f17a3dd42707b5a090b318028538eb9 ]
 
-commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
-frags but the last one for a splice() call.
+Trinity (the syscall fuzzer) discovered a memory leak in SCTP,
+reproducible e.g. with the sendto() syscall by passing invalid
+user space pointer in the second argument:
 
-The condition used to set the flag in pipe_to_sendpage() relied on
-splice() user passing the exact number of bytes present in the pipe,
-or a smaller one.
+ #include <string.h>
+ #include <arpa/inet.h>
+ #include <sys/socket.h>
 
-But some programs pass an arbitrary high value, and the test fails.
+ int main(void)
+ {
+         int fd;
+         struct sockaddr_in sa;
 
-The effect of this bug is a lack of tcp_push() at the end of a
-splice(pipe -> socket) call, and possibly very slow or erratic TCP
-sessions.
+         fd = socket(AF_INET, SOCK_STREAM, 132 /*IPPROTO_SCTP*/);
+         if (fd < 0)
+                 return 1;
 
-We should both test sd->total_len and fact that another fragment
-is in the pipe (pipe->nrbufs > 1)
+         memset(&sa, 0, sizeof(sa));
+         sa.sin_family = AF_INET;
+         sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+         sa.sin_port = htons(11111);
 
-Many thanks to Willy for providing very clear bug report, bisection
-and test programs.
+         sendto(fd, NULL, 1, 0, (struct sockaddr *)&sa, sizeof(sa));
 
-Reported-by: Willy Tarreau <w@1wt.eu>
-Bisected-by: Willy Tarreau <w@1wt.eu>
-Tested-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+         return 0;
+ }
+
+As far as I can tell, the leak has been around since ~2003.
+
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/splice.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/sctp/chunk.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/splice.c b/fs/splice.c
-index f5d5a2b..cdad986 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -639,8 +639,10 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
- 	ret = buf->ops->confirm(pipe, buf);
- 	if (!ret) {
- 		more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
--		if (sd->len < sd->total_len)
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index acf7c4d..b29621d 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -272,7 +272,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 			goto errout;
+ 		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
+ 		if (err < 0)
+-			goto errout;
++			goto errout_chunk_free;
+ 
+ 		offset += len;
+ 
+@@ -308,7 +308,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 		__skb_pull(chunk->skb, (__u8 *)chunk->chunk_hdr
+ 			   - (__u8 *)chunk->skb->data);
+ 		if (err < 0)
+-			goto errout;
++			goto errout_chunk_free;
+ 
+ 		sctp_datamsg_assign(msg, chunk);
+ 		list_add_tail(&chunk->frag_list, &msg->chunks);
+@@ -316,6 +316,9 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 
+ 	return msg;
+ 
++errout_chunk_free:
++	sctp_chunk_free(chunk);
 +
-+		if (sd->len < sd->total_len && pipe->nrbufs > 1)
- 			more |= MSG_SENDPAGE_NOTLAST;
-+
- 		if (file->f_op && file->f_op->sendpage)
- 			ret = file->f_op->sendpage(file, buf->page, buf->offset,
- 						   sd->len, &pos, more);
+ errout:
+ 	list_for_each_safe(pos, temp, &msg->chunks) {
+ 		list_del_init(pos);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
