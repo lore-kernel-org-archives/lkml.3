@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab3FDQJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:09:08 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44981 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755792Ab3FDQJD (ORCPT
+	id S1756479Ab3FDQJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:09:28 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53662 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab3FDQJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:09:03 -0400
+	Tue, 4 Jun 2013 12:09:26 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
         Jerome Marchand <jmarchan@redhat.com>
 Cc: Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/10] zram: minor code cleanup
-Date: Wed,  5 Jun 2013 00:06:07 +0800
-Message-Id: <1370361968-8764-9-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v2 10/10] zram: use atomic64_xxx() to replace zram_stat64_xxx()
+Date: Wed,  5 Jun 2013 00:06:08 +0800
+Message-Id: <1370361968-8764-10-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
 References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
@@ -23,59 +23,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor code cleanup for zram.
+Use atomic64_xxx() to replace open-coded zram_stat64_xxx().
+Some architectures have native support of atomic64 operations,
+so we can get rid of the spin_lock() in zram_stat64_xxx().
+On the other hand, for platforms use generic version of atomic64
+implement, it may cause an extra save/restore of the interrupt
+flag.  So it's a tradeoff.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/staging/zram/zram_drv.c   | 11 ++++-------
- drivers/staging/zram/zram_sysfs.c |  3 +--
- 2 files changed, 5 insertions(+), 9 deletions(-)
+ drivers/staging/zram/zram_drv.c   | 36 ++++++++----------------------------
+ drivers/staging/zram/zram_drv.h   | 14 +++++++-------
+ drivers/staging/zram/zram_sysfs.c | 21 +++++----------------
+ 3 files changed, 20 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index a4595ca..088bd6a 100644
+index 088bd6a..d174f60 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -481,13 +481,11 @@ static void __zram_reset_device(struct zram *zram)
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
- 		unsigned long handle = meta->table[index].handle;
--		if (!handle)
--			continue;
+@@ -42,25 +42,6 @@ static struct zram *zram_devices;
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+ 
+-static void zram_stat64_add(struct zram *zram, u64 *v, u64 inc)
+-{
+-	spin_lock(&zram->stat64_lock);
+-	*v = *v + inc;
+-	spin_unlock(&zram->stat64_lock);
+-}
 -
--		zs_free(meta->mem_pool, handle);
-+		if (handle)
-+			zs_free(meta->mem_pool, handle);
+-static void zram_stat64_sub(struct zram *zram, u64 *v, u64 dec)
+-{
+-	spin_lock(&zram->stat64_lock);
+-	*v = *v - dec;
+-	spin_unlock(&zram->stat64_lock);
+-}
+-
+-static void zram_stat64_inc(struct zram *zram, u64 *v)
+-{
+-	zram_stat64_add(zram, v, 1);
+-}
+-
+ static int zram_test_flag(struct zram_meta *meta, u32 index,
+ 			enum zram_pageflags flag)
+ {
+@@ -120,8 +101,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 	if (size <= PAGE_SIZE / 2)
+ 		zram->stats.good_compress--;
+ 
+-	zram_stat64_sub(zram, &zram->stats.compr_size,
+-			meta->table[index].size);
++	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
+ 	zram->stats.pages_stored--;
+ 
+ 	meta->table[index].handle = 0;
+@@ -172,7 +152,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+-		zram_stat64_inc(zram, &zram->stats.failed_reads);
++		atomic64_inc(&zram->stats.failed_reads);
+ 		return ret;
  	}
  
--	zram_meta_free(zram->meta);
-+	zram_meta_free(meta);
- 	zram->meta = NULL;
- 	/* Reset stats */
- 	memset(&zram->stats, 0, sizeof(zram->stats));
-@@ -686,8 +684,7 @@ static int __init zram_init(void)
- 	int ret, dev_id;
+@@ -326,7 +306,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	meta->table[index].size = clen;
  
- 	if (num_devices > max_num_devices) {
--		pr_warn("Invalid value for num_devices: %u\n",
--				num_devices);
-+		pr_warn("Invalid value for num_devices: %u\n", num_devices);
- 		ret = -EINVAL;
- 		goto out;
- 	}
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index e239d94..2ae6b50 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -187,8 +187,7 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	return sprintf(buf, "%llu\n", val);
+ 	/* Update stats */
+-	zram_stat64_add(zram, &zram->stats.compr_size, clen);
++	atomic64_add(clen, &zram->stats.compr_size);
+ 	zram->stats.pages_stored++;
+ 	if (clen <= PAGE_SIZE / 2)
+ 		zram->stats.good_compress++;
+@@ -336,7 +316,7 @@ out:
+ 		kfree(uncmem);
+ 
+ 	if (ret)
+-		zram_stat64_inc(zram, &zram->stats.failed_writes);
++		atomic64_inc(&zram->stats.failed_writes);
+ 	return ret;
  }
  
--static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
--		disksize_show, disksize_store);
-+static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR, disksize_show, disksize_store);
- static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
- static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
- static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
+@@ -373,10 +353,10 @@ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+ 
+ 	switch (rw) {
+ 	case READ:
+-		zram_stat64_inc(zram, &zram->stats.num_reads);
++		atomic64_inc(&zram->stats.num_reads);
+ 		break;
+ 	case WRITE:
+-		zram_stat64_inc(zram, &zram->stats.num_writes);
++		atomic64_inc(&zram->stats.num_writes);
+ 		break;
+ 	}
+ 
+@@ -453,7 +433,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+-		zram_stat64_inc(zram, &zram->stats.invalid_io);
++		atomic64_inc(&zram->stats.invalid_io);
+ 		goto error;
+ 	}
+ 
+@@ -590,7 +570,7 @@ static void zram_slot_free_notify(struct block_device *bdev,
+ 	down_write(&zram->lock);
+ 	zram_free_page(zram, index);
+ 	up_write(&zram->lock);
+-	zram_stat64_inc(zram, &zram->stats.notify_free);
++	atomic64_inc(&zram->stats.notify_free);
+ }
+ 
+ static const struct block_device_operations zram_devops = {
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index a18b66d..581caf0 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -70,13 +70,13 @@ struct table {
+ } __aligned(4);
+ 
+ struct zram_stats {
+-	u64 compr_size;		/* compressed size of pages stored */
+-	u64 num_reads;		/* failed + successful */
+-	u64 num_writes;		/* --do-- */
+-	u64 failed_reads;	/* should NEVER! happen */
+-	u64 failed_writes;	/* can happen when memory is too low */
+-	u64 invalid_io;		/* non-page-aligned I/O requests */
+-	u64 notify_free;	/* no. of swap slot free notifications */
++	atomic64_t compr_size;	/* compressed size of pages stored */
++	atomic64_t num_reads;	/* failed + successful */
++	atomic64_t num_writes;	/* --do-- */
++	atomic64_t failed_reads;	/* should NEVER! happen */
++	atomic64_t failed_writes;	/* can happen when memory is too low */
++	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
++	atomic64_t notify_free;	/* no. of swap slot free notifications */
+ 	u32 pages_zero;		/* no. of zero filled pages */
+ 	u32 pages_stored;	/* no. of pages currently stored */
+ 	u32 good_compress;	/* % of pages with compression ratio<=50% */
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index 2ae6b50..ab02d35 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -19,17 +19,6 @@
+ 
+ #include "zram_drv.h"
+ 
+-static u64 zram_stat64_read(struct zram *zram, u64 *v)
+-{
+-	u64 val;
+-
+-	spin_lock(&zram->stat64_lock);
+-	val = *v;
+-	spin_unlock(&zram->stat64_lock);
+-
+-	return val;
+-}
+-
+ static inline struct zram *dev_to_zram(struct device *dev)
+ {
+ 	return (struct zram *)dev_to_disk(dev)->private_data;
+@@ -116,7 +105,7 @@ static ssize_t num_reads_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		zram_stat64_read(zram, &zram->stats.num_reads));
++			(u64)atomic64_read(&zram->stats.num_reads));
+ }
+ 
+ static ssize_t num_writes_show(struct device *dev,
+@@ -125,7 +114,7 @@ static ssize_t num_writes_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		zram_stat64_read(zram, &zram->stats.num_writes));
++			(u64)atomic64_read(&zram->stats.num_writes));
+ }
+ 
+ static ssize_t invalid_io_show(struct device *dev,
+@@ -134,7 +123,7 @@ static ssize_t invalid_io_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		zram_stat64_read(zram, &zram->stats.invalid_io));
++			(u64)atomic64_read(&zram->stats.invalid_io));
+ }
+ 
+ static ssize_t notify_free_show(struct device *dev,
+@@ -143,7 +132,7 @@ static ssize_t notify_free_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		zram_stat64_read(zram, &zram->stats.notify_free));
++			(u64)atomic64_read(&zram->stats.notify_free));
+ }
+ 
+ static ssize_t zero_pages_show(struct device *dev,
+@@ -169,7 +158,7 @@ static ssize_t compr_data_size_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		zram_stat64_read(zram, &zram->stats.compr_size));
++			(u64)atomic64_read(&zram->stats.compr_size));
+ }
+ 
+ static ssize_t mem_used_total_show(struct device *dev,
 -- 
 1.8.1.2
 
