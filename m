@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3FDXQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:16:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:35374 "EHLO 1wt.eu"
+	id S1755548Ab3FDXRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:17:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:35368 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab3FDWmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:07 -0400
-Message-Id: <20130604172131.136042108@1wt.eu>
+	id S1752864Ab3FDWmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:06 -0400
+Message-Id: <20130604172131.469153460@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:50 +0200
+Date: Tue, 04 Jun 2013 19:21:58 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>,
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Colin King <colin.king@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 020/184] ptrace: ensure arch_ptrace/ptrace_request can never
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 028/184] genalloc: stop crashing the system when destroying a
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,178 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- race with SIGKILL
+ pool
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL
+commit eedce141cd2dad8d0cefc5468ef41898949a7031 upstream.
 
-CVE-2013-0871
+The genalloc code uses the bitmap API from include/linux/bitmap.h and
+lib/bitmap.c, which is based on long values.  Both bitmap_set from
+lib/bitmap.c and bitmap_set_ll, which is the lockless version from
+genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
+the bitmap.
 
-BugLink: http://bugs.launchpad.net/bugs/1129192
+That one uses (1 << bits) - 1, 0b111, if you are setting the first three
+bits.  This means that the API counts from the least significant bits
+(LSB from now on) to the MSB.  The LSB in the first long is bit 0, then.
+The same works for the lookup functions.
 
-putreg() assumes that the tracee is not running and pt_regs_access() can
-safely play with its stack.  However a killed tracee can return from
-ptrace_stop() to the low-level asm code and do RESTORE_REST, this means
-that debugger can actually read/modify the kernel stack until the tracee
-does SAVE_REST again.
+The genalloc code uses longs for the bitmap, as it should.  In
+include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
+bits[0] as its last member.  When allocating the struct, genalloc should
+reserve enough space for the bitmap.  This should be a proper number of
+longs that can fit the amount of bits in the bitmap.
 
-set_task_blockstep() can race with SIGKILL too and in some sense this
-race is even worse, the very fact the tracee can be woken up breaks the
-logic.
+However, genalloc allocates an integer number of bytes that fit the
+amount of bits, but may not be an integer amount of longs.  9 bytes, for
+example, could be allocated for 70 bits.
 
-As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
-call, this ensures that nobody can ever wakeup the tracee while the
-debugger looks at it.  Not only this fixes the mentioned problems, we
-can do some cleanups/simplifications in arch_ptrace() paths.
+This is a problem in itself if the Least Significat Bit in a long is in
+the byte with the largest address, which happens in Big Endian machines.
+This means genalloc is not allocating the byte in which it will try to
+set or check for a bit.
 
-Probably ptrace_unfreeze_traced() needs more callers, for example it
-makes sense to make the tracee killable for oom-killer before
-access_process_vm().
+This may end up in memory corruption, where genalloc will try to set the
+bits it has not allocated.  In fact, genalloc may not set these bits
+because it may find them already set, because they were not zeroed since
+they were not allocated.  And that's what causes a BUG when
+gen_pool_destroy is called and check for any set bits.
 
-While at it, add the comment into may_ptrace_stop() to explain why
-ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
+What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
+on gen_pool_add_virt.  With SLAB and SLUB, this means the whole slab
+will be cleared, not only the requested bytes.  Since struct
+gen_pool_chunk has a size that is a multiple of 8, and slab sizes are
+multiples of 8, we get lucky and allocate and clear the right amount of
+bytes.
 
-Reported-by: Salman Qazi <sqazi@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Hower, this is not the case with SLOB or with older code that did memset
+after allocating instead of using __GFP_ZERO.
+
+So, a simple module as this (running 3.6.0), will cause a crash when
+rmmod'ed.
+
+  [root@phantom-lp2 foo]# cat foo.c
+  #include <linux/kernel.h>
+  #include <linux/module.h>
+  #include <linux/init.h>
+  #include <linux/genalloc.h>
+
+  MODULE_LICENSE("GPL");
+  MODULE_VERSION("0.1");
+
+  static struct gen_pool *foo_pool;
+
+  static __init int foo_init(void)
+  {
+          int ret;
+          foo_pool = gen_pool_create(10, -1);
+          if (!foo_pool)
+                  return -ENOMEM;
+          ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
+          if (ret) {
+                  gen_pool_destroy(foo_pool);
+                  return ret;
+          }
+          return 0;
+  }
+
+  static __exit void foo_exit(void)
+  {
+          gen_pool_destroy(foo_pool);
+  }
+
+  module_init(foo_init);
+  module_exit(foo_exit);
+  [root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
+  CONFIG_SLOB=y
+  [root@phantom-lp2 foo]# insmod ./foo.ko
+  [root@phantom-lp2 foo]# rmmod foo
+  ------------[ cut here ]------------
+  kernel BUG at lib/genalloc.c:243!
+  cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
+      pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
+      lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
+      sp: c0000000bb0e7be0
+     msr: 8000000000029032
+    current = 0xc0000000bb0e0000
+    paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
+      pid   = 13044, comm = rmmod
+  kernel BUG at lib/genalloc.c:243!
+  [c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
+  [c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
+  [c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
+  --- Exception: c00 (System Call) at 000000800753d1a0
+  SP (fffd0b0e640) is in userspace
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-(backported from commit 9899d11f654474d2d54ea52ceaa2a1f4db3abd68)
-
-Conflicts:
-	arch/x86/kernel/step.c
-	kernel/ptrace.c
-	kernel/signal.c
-
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Colin King <colin.king@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/ptrace.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++-----------
- kernel/signal.c |  4 ++++
- 2 files changed, 55 insertions(+), 12 deletions(-)
+ lib/genalloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 37850f9..d0036f0 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -80,6 +80,36 @@ void __ptrace_unlink(struct task_struct *child)
- 		ptrace_untrace(child);
- }
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index eed2bdb..c1fb257 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -52,7 +52,7 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
+ 	struct gen_pool_chunk *chunk;
+ 	int nbits = size >> pool->min_alloc_order;
+ 	int nbytes = sizeof(struct gen_pool_chunk) +
+-				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
++				BITS_TO_LONGS(nbits) * sizeof(long);
  
-+/* Ensure that nothing can wake it up, even SIGKILL */
-+static bool ptrace_freeze_traced(struct task_struct *task)
-+{
-+	bool ret = false;
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
-+		task->state = __TASK_TRACED;
-+		ret = true;
-+	}
-+	spin_unlock_irq(&task->sighand->siglock);
-+
-+	return ret;
-+}
-+
-+static void ptrace_unfreeze_traced(struct task_struct *task)
-+{
-+	if (task->state != __TASK_TRACED)
-+		return;
-+
-+	WARN_ON(!task->ptrace || task->parent != current);
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (__fatal_signal_pending(task))
-+		wake_up_state(task, __TASK_TRACED);
-+	else
-+		task->state = TASK_TRACED;
-+	spin_unlock_irq(&task->sighand->siglock);
-+}
-+
- /*
-  * Check that we have indeed attached to the thing..
-  */
-@@ -95,25 +125,29 @@ int ptrace_check_attach(struct task_struct *child, int kill)
- 	 * be changed by us so it's not changing right after this.
- 	 */
- 	read_lock(&tasklist_lock);
--	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
--		ret = 0;
-+	if (child->ptrace && child->parent == current) {
-+		WARN_ON(child->state == __TASK_TRACED);
- 		/*
- 		 * child->sighand can't be NULL, release_task()
- 		 * does ptrace_unlink() before __exit_signal().
- 		 */
--		spin_lock_irq(&child->sighand->siglock);
--		if (task_is_stopped(child))
--			child->state = TASK_TRACED;
--		else if (!task_is_traced(child) && !kill)
--			ret = -ESRCH;
--		spin_unlock_irq(&child->sighand->siglock);
-+		if (kill || ptrace_freeze_traced(child))
-+			ret = 0;
- 	}
- 	read_unlock(&tasklist_lock);
- 
--	if (!ret && !kill)
--		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
-+	if (!ret && !kill) {
-+		if (!wait_task_inactive(child, __TASK_TRACED)) {
-+			/*
-+			 * This can only happen if may_ptrace_stop() fails and
-+			 * ptrace_stop() changes ->state back to TASK_RUNNING,
-+			 * so we should not worry about leaking __TASK_TRACED.
-+			 */
-+			WARN_ON(child->state == __TASK_TRACED);
-+			ret = -ESRCH;
-+		}
-+	}
- 
--	/* All systems go.. */
- 	return ret;
- }
- 
-@@ -637,6 +671,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
- 		goto out_put_task_struct;
- 
- 	ret = arch_ptrace(child, request, addr, data);
-+	if (ret || request != PTRACE_DETACH)
-+		ptrace_unfreeze_traced(child);
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-@@ -752,8 +788,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 	}
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL);
--	if (!ret)
-+	if (!ret) {
- 		ret = compat_arch_ptrace(child, request, addr, data);
-+		if (ret || request != PTRACE_DETACH)
-+			ptrace_unfreeze_traced(child);
-+	}
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index b40f4f0..1929014 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1527,6 +1527,10 @@ static inline int may_ptrace_stop(void)
- 	 * If SIGKILL was already sent before the caller unlocked
- 	 * ->siglock we must see ->core_state != NULL. Otherwise it
- 	 * is safe to enter schedule().
-+	 *
-+	 * This is almost outdated, a task with the pending SIGKILL can't
-+	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
-+	 * after SIGKILL was already dequeued.
- 	 */
- 	if (unlikely(current->mm->core_state) &&
- 	    unlikely(current->mm == current->parent->mm))
+ 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+ 	if (unlikely(chunk == NULL))
 -- 
 1.7.12.2.21.g234cd45.dirty
 
