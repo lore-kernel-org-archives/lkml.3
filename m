@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3FDEYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 00:24:01 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:33912 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3FDEX6 convert rfc822-to-8bit (ORCPT
+	id S1752553Ab3FDE3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 00:29:13 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:53738 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750907Ab3FDE3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 00:23:58 -0400
+	Tue, 4 Jun 2013 00:29:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai4NALlrrVF5LJoN/2dsb2JhbABZgwm6FYUcBAGBBBd0giMBAQU6HCMQCAMYCSUPBSUDIROIDLx9Fo1zgR0Hg1gDlz2RQYMhKg
+Date: Tue, 4 Jun 2013 14:29:05 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 3.9.4 Oops running xfstests (WAS Re: 3.9.3: Oops running
+ xfstests)
+Message-ID: <20130604042905.GG29466@dastard>
+References: <510292845.4997401.1369279175460.JavaMail.root@redhat.com>
+ <1588848128.8530921.1369885528565.JavaMail.root@redhat.com>
+ <20130530052049.GK29466@dastard>
+ <1824023060.8558101.1369892432333.JavaMail.root@redhat.com>
+ <1462663454.9294499.1369969415681.JavaMail.root@redhat.com>
+ <20130531060415.GU29466@dastard>
+ <1517224799.10311874.1370228651422.JavaMail.root@redhat.com>
+ <20130603040038.GX29466@dastard>
+ <1317567060.11044929.1370315696270.JavaMail.root@redhat.com>
+ <20130604041617.GF29466@dastard>
 MIME-Version: 1.0
-In-Reply-To: <1370312366.3600.3.camel@kjgkr>
-References: <1370253854-15084-1-git-send-email-huajun.li@intel.com>
-	<1370312366.3600.3.camel@kjgkr>
-Date: Tue, 4 Jun 2013 13:23:57 +0900
-Message-ID: <CAKYAXd-87rGatnEC8wbocR_wt6Qdpec3HzZaH9ukpzmst6DK=A@mail.gmail.com>
-Subject: Re: [RFC 0/5] Enable f2fs support inline data
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Huajun Li <huajun.li@intel.com>
-Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
-        huajun.li.lee@gmail.com, namjae.jeon@samsung.com,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604041617.GF29466@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Huajun.
+On Tue, Jun 04, 2013 at 02:16:18PM +1000, Dave Chinner wrote:
+> On Mon, Jun 03, 2013 at 11:14:56PM -0400, CAI Qian wrote:
+> > [  102.312909] =============================================================================
+> > [  102.312910] RSP: 0018:ffff88007d083e08  EFLAGS: 00010003
+> > [  102.312912] BUG kmalloc-1024 (Tainted: G      D     ): Padding overwritten. 0xffff88005b4e7ec0-0xffff88005b4e7fff
+> > [  102.312913] RAX: ffff88005b656288 RBX: ffff880079b43c80 RCX: 00000000000000a7
+> > [  102.312914] -----------------------------------------------------------------------------
+> 
+> And a memory overwrite.
+> 
+> > [  102.313009] Padding ffff88005b4e7ec0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313010] Padding ffff88005b4e7ed0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313011] Padding ffff88005b4e7ee0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313013] Padding ffff88005b4e7ef0: 00 00 00 00 00 00 00 00 00 00 00 00 00 29 01 00  .............)..
+> > [  102.313014] Padding ffff88005b4e7f00: 07 1b 04 73 65 6c 69 6e 75 78 73 79 73 74 65 6d  ...selinuxsystem
+> > [  102.313015] Padding ffff88005b4e7f10: 5f 75 3a 6f 62 6a 65 63 74 5f 72 3a 75 73 72 5f  _u:object_r:usr_
+> > [  102.313032] Padding ffff88005b4e7f20: 74 3a 73 30 00 00 00 00 49 4e 81 a4 02 02 00 00  t:s0....IN......
+> > [  102.313033] Padding ffff88005b4e7f30: 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00  ................
+> > [  102.313033] Padding ffff88005b4e7f40: 00 00 00 00 00 00 00 02 51 47 09 00 00 00 00 00  ........QG......
+> > [  102.313043] Padding ffff88005b4e7f50: 51 47 09 00 00 00 00 00 51 ac 1e 27 21 f1 4e ad  QG......Q..'!.N.
+> > [  102.313043] Padding ffff88005b4e7f60: 00 00 00 00 00 00 00 f2 00 00 00 00 00 00 00 01  ................
+> > [  102.313044] Padding ffff88005b4e7f70: 00 00 00 00 00 00 00 01 00 00 0e 01 00 00 00 00  ................
+> > [  102.313053] Padding ffff88005b4e7f80: 00 00 00 00 c1 6d 78 44 ff ff ff ff 00 00 00 00  .....mxD........
+> > [  102.313054] Padding ffff88005b4e7f90: 00 00 00 00 00 00 08 10 36 a0 00 01 00 00 00 00  ........6.......
+> > [  102.313062] Padding ffff88005b4e7fa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313063] Padding ffff88005b4e7fb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313072] Padding ffff88005b4e7fc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313073] Padding ffff88005b4e7fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313074] Padding ffff88005b4e7fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > [  102.313082] Padding ffff88005b4e7ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 29 01 00  .............)..
+> 
+> Oh, look, that contains attributes, and being at the top of a page,
+> that tallies with the attribute code copying data from the top of
+> the block down....
 
-I agree jaegeuk's opinion.
-Additionally, It is better that you describe the effect in change-log
-when this feature is added to f2fs.
-e.g.
-    1. how much space is saved when storing kernel-tree(small files) ?
-    2. small files creation performance test.
-    3. file look-up performance test.
-    4. other performance tools 's result.
+On second thoughts, I'm not so sure of this now. That actually has
+an inode core in it (the bit starting from "IN"), so it can't be a
+piece of code from the attribute compaction. So this piece of memory
+has been used several times by different things before the overwrite
+has triggered by the look of it.
 
-Thanks.
+Cheers,
 
-2013/6/4 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi,
->
-> This feature is one of my todo items. ;)
-> Thank you for the contribution.
->
-> Before reviewing the below code intensively, we need to check the
-> following issues.
->
-> - deadlock conditions
-> - FS consistency
-> - recovery routine
->
-> Could you check one more time?
-> Thanks again,
->
-> 2013-06-03 (월), 18:04 +0800, Huajun Li:
->> f2fs inode is so large, small files can be stored directly in the inode,
->> rather than just storing a single block address and storing the data elsewhere.
->>
->> This RFC patch set is just to enable f2fs support inline data: files less than
->> about 3.6K can be stored directly in inode block.
->>
->> TODO: make small dirs inline too.
->>
->>
->> Haicheng Li (3):
->>   f2fs: Add helper functions and flag to support inline data
->>   f2fs: Add interface for inline data support
->>   f2fs: add tracepoints to debug inline data operations
->>
->> Huajun Li (2):
->>   f2fs: Handle inline data read and write
->>   f2fs: Key functions to handle inline data
->>
->>  fs/f2fs/Kconfig             |   10 +++
->>  fs/f2fs/Makefile            |    1 +
->>  fs/f2fs/data.c              |   78 +++++++++++++++++++++-
->>  fs/f2fs/f2fs.h              |   70 +++++++++++++++++++
->>  fs/f2fs/file.c              |    9 ++-
->>  fs/f2fs/inline.c            |  156 +++++++++++++++++++++++++++++++++++++++++++
->>  fs/f2fs/inode.c             |    8 +++
->>  include/linux/f2fs_fs.h     |    5 ++
->>  include/trace/events/f2fs.h |   69 +++++++++++++++++++
->>  9 files changed, 402 insertions(+), 4 deletions(-)
->>  create mode 100644 fs/f2fs/inline.c
->>
->
-> --
-> Jaegeuk Kim
-> Samsung
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
