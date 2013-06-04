@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3FDOT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:19:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46807 "EHLO
+	id S1756572Ab3FDOTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:19:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46801 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab3FDOIP (ORCPT
+	with ESMTP id S1755902Ab3FDOIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:15 -0400
+	Tue, 4 Jun 2013 10:08:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Jiri Kosina <jkosina@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 35/70] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
-Date: Tue,  4 Jun 2013 15:06:51 +0100
-Message-Id: <1370354846-14213-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 36/70] random: fix accounting race condition with lockless irq entropy_count update
+Date: Tue,  4 Jun 2013 15:06:52 +0100
+Message-Id: <1370354846-14213-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -30,155 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
+commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 upstream.
 
-nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
+Commit 902c098a3663 ("random: use lockless techniques in the interrupt
+path") turned IRQ path from being spinlock protected into lockless
+cmpxchg-retry update.
 
-DESCRIPTION:
- There are use-cases when NILFS2 file system (formatted with block size
-lesser than 4 KB) can be remounted in RO mode because of encountering of
-"broken bmap" issue.
+That commit removed r->lock serialization between crediting entropy bits
+from IRQ context and accounting when extracting entropy on userspace
+read path, but didn't turn the r->entropy_count reads/updates in
+account() to use cmpxchg as well.
 
-The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
- "The machine I've been trialling nilfs on is running Debian Testing,
-  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
-  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
-  also reproduced it (identically) with Debian Unstable amd64 and Debian
-  Experimental (using the 3.8-trunk kernel).  The problematic partitions
-  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
+It has been observed, that under certain circumstances this leads to
+read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
+corrupted and becomes negative, which in turn results in propagating 0
+all the way from account() to the actual read() call.
 
-SYMPTOMS:
-(1) System log contains error messages likewise:
+Convert the accounting code to be the proper lockless counterpart of
+what has been partially done by 902c098a3663.
 
-    [63102.496756] nilfs_direct_assign: invalid pointer: 0
-    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
-    [63102.496798]
-    [63102.524403] Remounting filesystem read-only
-
-(2) The NILFS2 file system is remounted in RO mode.
-
-REPRODUSING PATH:
-(1) Create volume group with name "unencrypted" by means of vgcreate utility.
-(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
-
-----------------[BEGIN SCRIPT]--------------------
-
-VG=unencrypted
-lvcreate --size 2G --name ntest $VG
-mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
-mkdir /var/tmp/n
-mkdir /var/tmp/n/ntest
-mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
-mkdir /var/tmp/n/ntest/thedir
-cd /var/tmp/n/ntest/thedir
-sleep 2
-date
-darcs init
-sleep 2
-dmesg|tail -n 5
-date
-darcs whatsnew || true
-date
-sleep 2
-dmesg|tail -n 5
-----------------[END SCRIPT]--------------------
-
-REPRODUCIBILITY: 100%
-
-INVESTIGATION:
-As it was discovered, the issue takes place during segment
-construction after executing such sequence of user-space operations:
-
-  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
-  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-  ftruncate(7, 60)
-
-The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
-bmap (inode number=28)" takes place because of trying to get block
-number for third block of the file with logical offset #3072 bytes.  As
-it is possible to see from above output, the file has 60 bytes of the
-whole size.  So, it is enough one block (1 KB in size) allocation for
-the whole file.  Trying to operate with several blocks instead of one
-takes place because of discovering several dirty buffers for this file
-in nilfs_segctor_scan_file() method.
-
-The root cause of this issue is in nilfs_set_page_dirty function which
-is called just before writing to an mmapped page.
-
-When nilfs_page_mkwrite function handles a page at EOF boundary, it
-fills hole blocks only inside EOF through __block_page_mkwrite().
-
-The __block_page_mkwrite() function calls set_page_dirty() after filling
-hole blocks, thus nilfs_set_page_dirty function (=
-a_ops->set_page_dirty) is called.  However, the current implementation
-of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
-at EOF boundary.
-
-As a result, buffers outside EOF are inconsistently marked dirty and
-queued for write even though they are not mapped with nilfs_get_block
-function.
-
-FIX:
-This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
-
-Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
-for this issue.
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
-Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Greg KH <greg@kroah.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nilfs2/inode.c | 27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ drivers/char/random.c | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
-index 7cc6446..ba5128d 100644
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *page, struct writeback_control *wbc)
- 
- static int nilfs_set_page_dirty(struct page *page)
- {
--	int ret = __set_page_dirty_buffers(page);
-+	int ret = __set_page_dirty_nobuffers(page);
- 
--	if (ret) {
-+	if (page_has_buffers(page)) {
- 		struct inode *inode = page->mapping->host;
--		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
-+		unsigned nr_dirty = 0;
-+		struct buffer_head *bh, *head;
- 
--		nilfs_set_file_dirty(inode, nr_dirty);
-+		/*
-+		 * This page is locked by callers, and no other thread
-+		 * concurrently marks its buffers dirty since they are
-+		 * only dirtied through routines in fs/buffer.c in
-+		 * which call sites of mark_buffer_dirty are protected
-+		 * by page lock.
-+		 */
-+		bh = head = page_buffers(page);
-+		do {
-+			/* Do not mark hole blocks dirty */
-+			if (buffer_dirty(bh) || !buffer_mapped(bh))
-+				continue;
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 91abbc4..395d2e8 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -868,16 +868,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 	if (r->entropy_count / 8 < min + reserved) {
+ 		nbytes = 0;
+ 	} else {
++		int entropy_count, orig;
++retry:
++		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+ 		/* If limited, never pull more than available */
+-		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
+-			nbytes = r->entropy_count/8 - reserved;
+-
+-		if (r->entropy_count / 8 >= nbytes + reserved)
+-			r->entropy_count -= nbytes*8;
+-		else
+-			r->entropy_count = reserved;
++		if (r->limit && nbytes + reserved >= entropy_count / 8)
++			nbytes = entropy_count/8 - reserved;
 +
-+			set_buffer_dirty(bh);
-+			nr_dirty++;
-+		} while (bh = bh->b_this_page, bh != head);
-+
-+		if (nr_dirty)
-+			nilfs_set_file_dirty(inode, nr_dirty);
++		if (entropy_count / 8 >= nbytes + reserved) {
++			entropy_count -= nbytes*8;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		} else {
++			entropy_count = reserved;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		}
+ 
+-		if (r->entropy_count < random_write_wakeup_thresh)
++		if (entropy_count < random_write_wakeup_thresh)
+ 			wakeup_write = 1;
  	}
- 	return ret;
- }
+ 
 -- 
 1.8.1.2
 
