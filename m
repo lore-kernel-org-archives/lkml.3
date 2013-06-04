@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab3FDTZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 15:25:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52411 "EHLO
+	id S1751433Ab3FDTZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 15:25:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52385 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab3FDTZl (ORCPT
+	with ESMTP id S1750791Ab3FDTZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 15:25:41 -0400
+	Tue, 4 Jun 2013 15:25:40 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 06/12] msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
-Date: Tue,  4 Jun 2013 12:25:32 -0700
-Message-Id: <1370373938-32417-7-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Saravana Kannan <skannan@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 00/12] Convert MSM to common clock framework
+Date: Tue,  4 Jun 2013 12:25:26 -0700
+Message-Id: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
-In-Reply-To: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
-References: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling clk_set_min_rate() is no better than just calling
-clk_set_rate() because MSM clock code already takes care of
-calling the min_rate ops if the clock really needs
-clk_set_min_rate() called on it.
+This patchset moves the existing MSM clock code and affected drivers to the
+common clock framework. A prerequisite of moving to the common clock
+framework is to use clk_prepare() and clk_enable() so the first
+few patches migrate drivers to that call (clk_prepare() is a no-op on MSM
+right now). It also removes some custom clock APIs that MSM provides
+and finally moves the proc_comm clock code to the common struct clk.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/iommu/msm_iommu_dev.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+This patch series will be used as the foundation of the MSM 8660/8960
+clock code that I plan to send out after this series.
 
-diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
-index d344f6a..9144a6b 100644
---- a/drivers/iommu/msm_iommu_dev.c
-+++ b/drivers/iommu/msm_iommu_dev.c
-@@ -29,7 +29,6 @@
- 
- #include <mach/iommu_hw-8xxx.h>
- #include <mach/iommu.h>
--#include <mach/clk.h>
- 
- struct iommu_ctx_iter_data {
- 	/* input */
-@@ -168,7 +167,7 @@ static int msm_iommu_probe(struct platform_device *pdev)
- 
- 	if (!IS_ERR(iommu_clk))	{
- 		if (clk_get_rate(iommu_clk) == 0)
--			clk_set_min_rate(iommu_clk, 1);
-+			clk_set_rate(iommu_clk, 1);
- 
- 		ret = clk_prepare_enable(iommu_clk);
- 		if (ret) {
+Stephen Boyd (12):
+  msm_serial: Convert to clk_prepare/unprepare
+  msm_serial: Use devm_clk_get() and properly return errors
+  usb: otg: msm: Convert to clk_prepare/unprepare
+  msm_sdcc: Convert to clk_prepare/unprepare
+  msm: iommu: Convert to clk_prepare/unprepare
+  msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
+  ARM: msm: Remove custom clk_set_flags() API
+  ARM: msm: Remove custom clk_set_{max,min}_rate() API
+  ARM: msm: Remove clock-7x30.h include file
+  ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
+  ARM: msm: Make proc_comm clock control into a platform driver
+  ARM: msm: Migrate to common clock framework
+
+ arch/arm/Kconfig                       |   2 +-
+ arch/arm/mach-msm/Makefile             |  10 +-
+ arch/arm/mach-msm/board-halibut.c      |   2 +-
+ arch/arm/mach-msm/board-msm7x30.c      |   2 +-
+ arch/arm/mach-msm/board-qsd8x50.c      |   2 +-
+ arch/arm/mach-msm/board-trout-panel.c  |  19 ++--
+ arch/arm/mach-msm/board-trout.c        |   3 +-
+ arch/arm/mach-msm/clock-7x30.h         | 155 ------------------------------
+ arch/arm/mach-msm/clock-debug.c        | 130 --------------------------
+ arch/arm/mach-msm/clock-pcom.c         | 149 ++++++++++++++++++-----------
+ arch/arm/mach-msm/clock-pcom.h         |  31 +++---
+ arch/arm/mach-msm/clock.c              | 166 +--------------------------------
+ arch/arm/mach-msm/clock.h              |  51 +++-------
+ arch/arm/mach-msm/devices-msm7x00.c    |  12 ++-
+ arch/arm/mach-msm/devices-msm7x30.c    |  14 ++-
+ arch/arm/mach-msm/devices-qsd8x50.c    |  11 ++-
+ arch/arm/mach-msm/devices.h            |  15 +--
+ arch/arm/mach-msm/dma.c                |   5 +-
+ arch/arm/mach-msm/include/mach/board.h |   5 -
+ arch/arm/mach-msm/include/mach/clk.h   |   9 --
+ drivers/iommu/msm_iommu_dev.c          |  20 ++--
+ drivers/mmc/host/msm_sdcc.c            |  14 ++-
+ drivers/tty/serial/msm_serial.c        |  35 +++----
+ drivers/usb/phy/phy-msm-usb.c          |  38 ++++----
+ 24 files changed, 241 insertions(+), 659 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/clock-7x30.h
+ delete mode 100644 arch/arm/mach-msm/clock-debug.c
+
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
