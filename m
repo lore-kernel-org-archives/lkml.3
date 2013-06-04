@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab3FDOOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:14:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46908 "EHLO
+	id S1756605Ab3FDOPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:15:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46880 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298Ab3FDOIe (ORCPT
+	with ESMTP id S1755661Ab3FDOI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:34 -0400
+	Tue, 4 Jun 2013 10:08:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 51/70] cifs: fix potential buffer overrun when composing a new options string
-Date: Tue,  4 Jun 2013 15:07:07 +0100
-Message-Id: <1370354846-14213-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 50/70] jfs: fix a couple races
+Date: Tue,  4 Jun 2013 15:07:06 +0100
+Message-Id: <1370354846-14213-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 166faf21bd14bc5c5295a44874bf7f3930c30b20 upstream.
+commit 73aaa22d5ffb2630456bac2f9a4ed9b81d0d7271 upstream.
 
-Consider the case where we have a very short ip= string in the original
-mount options, and when we chase a referral we end up with a very long
-IPv6 address. Be sure to allow for that possibility when estimating the
-size of the string to allocate.
+This patch fixes races uncovered by xfstests testcase 068.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+One race is the result of jfs_sync() trying to write a sync point to the
+journal after it has been frozen (or possibly in the process). Since
+freezing sync's the journal, there is no need to write a sync point so
+we simply want to return.
+
+The second involves jfs_write_inode() being called on a deleted inode.
+It calls jfs_flush_journal which is held up by the jfs_commit thread
+doing the final iput on the same deleted inode, which itself is
+waiting for the I_SYNC flag to be cleared. jfs_write_inode need not
+do anything when i_nlink is zero, which is the easy fix.
+
+Reported-by: Michael L. Semon <mlsemon35@gmail.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/cifs_dfs_ref.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/jfs/inode.c      | 2 +-
+ fs/jfs/jfs_logmgr.c | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
-index 2263144..d0e5fc5 100644
---- a/fs/cifs/cifs_dfs_ref.c
-+++ b/fs/cifs/cifs_dfs_ref.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <linux/vfs.h>
- #include <linux/fs.h>
-+#include <linux/inet.h>
- #include "cifsglob.h"
- #include "cifsproto.h"
- #include "cifsfs.h"
-@@ -150,7 +151,8 @@ char *cifs_compose_mount_options(const char *sb_mountdata,
- 	 * assuming that we have 'unc=' and 'ip=' in
- 	 * the original sb_mountdata
- 	 */
--	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12;
-+	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12 +
-+			INET6_ADDRSTRLEN;
- 	mountdata = kzalloc(md_len+1, GFP_KERNEL);
- 	if (mountdata == NULL) {
- 		rc = -ENOMEM;
+diff --git a/fs/jfs/inode.c b/fs/jfs/inode.c
+index 4692bf3..7e54dfd 100644
+--- a/fs/jfs/inode.c
++++ b/fs/jfs/inode.c
+@@ -125,7 +125,7 @@ int jfs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+ 	int wait = wbc->sync_mode == WB_SYNC_ALL;
+ 
+-	if (test_cflag(COMMIT_Nolink, inode))
++	if (inode->i_nlink == 0)
+ 		return 0;
+ 	/*
+ 	 * If COMMIT_DIRTY is not set, the inode isn't really dirty.
+diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
+index 2eb952c..cbe48ea 100644
+--- a/fs/jfs/jfs_logmgr.c
++++ b/fs/jfs/jfs_logmgr.c
+@@ -1058,7 +1058,8 @@ static int lmLogSync(struct jfs_log * log, int hard_sync)
+  */
+ void jfs_syncpt(struct jfs_log *log, int hard_sync)
+ {	LOG_LOCK(log);
+-	lmLogSync(log, hard_sync);
++	if (!test_bit(log_QUIESCE, &log->flag))
++		lmLogSync(log, hard_sync);
+ 	LOG_UNLOCK(log);
+ }
+ 
 -- 
 1.8.1.2
 
