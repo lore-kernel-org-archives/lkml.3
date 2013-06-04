@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3FDOob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:44:31 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:58083 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab3FDOo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:44:28 -0400
-MIME-Version: 1.0
-Date: Tue, 4 Jun 2013 22:44:27 +0800
-Message-ID: <CAPgLHd9eC=4Q45OKuh0mjUwkpQgLZnaoNCw0NhyVvo9mb43dXw@mail.gmail.com>
-Subject: [PATCH] pch_phub: fix error return code in pch_phub_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757171Ab3FDOo5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:44:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47168 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755311Ab3FDOox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:44:53 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Subject: [PATCH 2/4] inkern: iio_device_put after incorrect return/goto
+Date: Tue,  4 Jun 2013 07:44:48 -0700
+Message-Id: <d0f7d0eef677250c457c08c8f8ca7e125811f754.1370356776.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
+References: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+The code uses
 
-Error code had been assigned to retval in some error handling case
-but never use it, 0 is always returned in those case, this patch
-fix them to return a negative error code.
+    return foo;
+    goto err_type;
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+when instead the form should have been
+
+    ret = foo;
+    goto err_type;
+
+Here this causes a useful iio_device_put to be skipped.
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/misc/pch_phub.c | 36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ drivers/iio/inkern.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index 931e635..6888450 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -669,8 +669,6 @@ static struct bin_attribute pch_bin_attr = {
- static int pch_phub_probe(struct pci_dev *pdev,
- 				    const struct pci_device_id *id)
- {
--	int retval;
--
- 	int ret;
- 	struct pch_phub_reg *chip;
- 
-@@ -713,13 +711,13 @@ static int pch_phub_probe(struct pci_dev *pdev,
- 	if (id->driver_data == 1) { /* EG20T PCH */
- 		const char *board_name;
- 
--		retval = sysfs_create_file(&pdev->dev.kobj,
--					   &dev_attr_pch_mac.attr);
--		if (retval)
-+		ret = sysfs_create_file(&pdev->dev.kobj,
-+					&dev_attr_pch_mac.attr);
-+		if (ret)
- 			goto err_sysfs_create;
- 
--		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
--		if (retval)
-+		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (ret)
- 			goto exit_bin_attr;
- 
- 		pch_phub_read_modify_write_reg(chip,
-@@ -743,8 +741,8 @@ static int pch_phub_probe(struct pci_dev *pdev,
- 		chip->pch_opt_rom_start_address = PCH_PHUB_ROM_START_ADDR_EG20T;
- 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_EG20T;
- 	} else if (id->driver_data == 2) { /* ML7213 IOH */
--		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
--		if (retval)
-+		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (ret)
- 			goto err_sysfs_create;
- 		/* set the prefech value
- 		 * Device2(USB OHCI #1/ USB EHCI #1/ USB Device):a
-@@ -766,12 +764,12 @@ static int pch_phub_probe(struct pci_dev *pdev,
- 						 PCH_PHUB_ROM_START_ADDR_ML7223;
- 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
- 	} else if (id->driver_data == 4) { /* ML7223 IOH Bus-n*/
--		retval = sysfs_create_file(&pdev->dev.kobj,
--					   &dev_attr_pch_mac.attr);
--		if (retval)
-+		ret = sysfs_create_file(&pdev->dev.kobj,
-+					&dev_attr_pch_mac.attr);
-+		if (ret)
- 			goto err_sysfs_create;
--		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
--		if (retval)
-+		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (ret)
- 			goto exit_bin_attr;
- 		/* set the prefech value
- 		 * Device2(USB OHCI #0,1,2,3/ USB EHCI #0):a
-@@ -783,13 +781,13 @@ static int pch_phub_probe(struct pci_dev *pdev,
- 						 PCH_PHUB_ROM_START_ADDR_ML7223;
- 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
- 	} else if (id->driver_data == 5) { /* ML7831 */
--		retval = sysfs_create_file(&pdev->dev.kobj,
--					   &dev_attr_pch_mac.attr);
--		if (retval)
-+		ret = sysfs_create_file(&pdev->dev.kobj,
-+					&dev_attr_pch_mac.attr);
-+		if (ret)
- 			goto err_sysfs_create;
- 
--		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
--		if (retval)
-+		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (ret)
- 			goto exit_bin_attr;
- 
- 		/* set the prefech value */
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index 795d100..dca4eed 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -124,7 +124,7 @@ static int __of_iio_channel_get(struct iio_channel *channel,
+ 	channel->indio_dev = indio_dev;
+ 	index = iiospec.args_count ? iiospec.args[0] : 0;
+ 	if (index >= indio_dev->num_channels) {
+-		return -EINVAL;
++		err = -EINVAL;
+ 		goto err_put;
+ 	}
+ 	channel->channel = &indio_dev->channels[index];
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
