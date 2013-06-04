@@ -1,148 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab3FDVjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:39:17 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:28765 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3FDVjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:39:12 -0400
-Message-ID: <1370381931.20051.101.camel@ejdallLaptop>
-Subject: Re: [PATCH v2 3/3] PCI/AER: Provide reset_link for firmware first
- root port
-From: Betty Dall <betty.dall@hp.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: rjw@sisk.pl, bhelgaas@google.com, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Date: Tue, 04 Jun 2013 15:38:51 -0600
-In-Reply-To: <20130604083644.GD20448@gchen.bj.intel.com>
-References: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
-	 <1369924769-17183-4-git-send-email-betty.dall@hp.com>
-	 <20130604083644.GD20448@gchen.bj.intel.com>
+	id S1751450Ab3FDVlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:41:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59003 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751186Ab3FDVlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 17:41:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,802,1363158000"; 
+   d="scan'208";a="348153887"
+Message-ID: <1370382051.8432.16.camel@ideak-mobl>
+Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
+From: Imre Deak <imre.deak@intel.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Lukas Czerner <lczerner@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Jun 2013 00:40:51 +0300
+In-Reply-To: <1370381717.8432.14.camel@ideak-mobl>
+References: <20130604192818.GA31316@redhat.com>
+	 <1370381717.8432.14.camel@ideak-mobl>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-04 at 04:36 -0400, Chen Gong wrote:
-> On Thu, May 30, 2013 at 08:39:29AM -0600, Betty Dall wrote:
-> > Date:	Thu, 30 May 2013 08:39:29 -0600
-> > From: Betty Dall <betty.dall@hp.com>
-> > To: rjw@sisk.pl, bhelgaas@google.com
-> > Cc: ying.huang@intel.com, linux-acpi@vger.kernel.org,
-> >  linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org, Betty Dall
-> >  <betty.dall@hp.com>
-> > Subject: [PATCH v2 3/3] PCI/AER: Provide reset_link for firmware first root
-> >  port
-> > X-Mailer: git-send-email 1.7.7.6
+On Wed, 2013-06-05 at 00:35 +0300, Imre Deak wrote:
+> On Tue, 2013-06-04 at 21:28 +0200, Oleg Nesterov wrote:
+> > Hello,
 > > 
-> > The firmware first path does not install the aerdrv root port
-> > service driver, so the firmware first root port does not have
-> > a reset_link callback. When a firmware first root port does not have
-> > a reset_link callback, use a new default reset_link similar to what
-> > we already do for the default_downstream_reset_link(). The firmware
-> > first default reset_link brings the root port out of SBR if firmware
-> > left it in SBR.
+> > Just noticed this commit...
 > > 
-> > Changes since v1:
-> > Removed incorrect setting of p2p_ctrl after the read.
+> > commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
+> > Author: Imre Deak <imre.deak@intel.com>
+> > Date:   Fri May 24 15:55:09 2013 -0700
 > > 
-> > Signed-off-by: Betty Dall <betty.dall@hp.com>
-> > ---
+> >     Many callers of the wait_event_timeout() and
+> >     wait_event_interruptible_timeout() expect that the return value will be
+> >     positive if the specified condition becomes true before the timeout
+> >     elapses.  However, at the moment this isn't guaranteed.  If the wake-up
+> >     handler is delayed enough, the time remaining until timeout will be
+> >     calculated as 0 - and passed back as a return value - even if the
+> >     condition became true before the timeout has passed.
 > > 
-> >  drivers/pci/pcie/aer/aerdrv_core.c |   36 ++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 36 insertions(+), 0 deletions(-)
+> > OK, agreed.
 > > 
+> > 	--- a/include/linux/wait.h
+> > 	+++ b/include/linux/wait.h
+> > 	@@ -217,6 +217,8 @@ do {						\
+> > 			if (!ret)						\
+> > 				break;						\
+> > 		}								\
+> > 	+	if (!ret && (condition))					\
+> > 	+		ret = 1;						\
+> > 		finish_wait(&wq, &__wait);					\
+> > 	 } while (0)
 > > 
-> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> > index 8ec8b4f..72f76cd 100644
-> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> > @@ -413,6 +413,39 @@ static pci_ers_result_t default_downstream_reset_link(struct pci_dev *dev)
-> >  	return PCI_ERS_RESULT_RECOVERED;
-> >  }
-> >  
-> > +/**
-> > + * default_ff_root_port_reset_link - default reset function for firmware
-> > + *		first Root Port
-> > + * @dev: pointer to root port's pci_dev data structure
-> > + *
-> > + * Invoked when performing link reset at Root Port w/ no aer driver.
-> > + * This happens through the firmware first path. Firmware may leave
-> > + * the Root Port in SBR and it is the OS responsiblity to bring it out
-> > + * of SBR.
-> > + */
-> > +static pci_ers_result_t default_ff_root_port_reset_link(struct pci_dev *dev)
-> > +{
-> > +	u16 p2p_ctrl;
-> > +
-> > +	/* Read Secondary Bus Reset */
-> > +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &p2p_ctrl);
-> > +
-> > +	/* De-assert Secondary Bus Reset, if it is set */
-> > +	if (p2p_ctrl & PCI_BRIDGE_CTL_BUS_RESET) {
-> > +		p2p_ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-> > +		pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
-> > +
-> > +		/*
-> > +		 * System software must wait for at least 100ms from the end
-> > +		 * of a reset of one or more device before it is permitted
-> > +		 * to issue Configuration Requests to those devices.
-> > +		 */
-> > +		msleep(200);
-> > +		dev_dbg(&dev->dev, "Root Port link has been reset\n");
-> > +	}
-> > +	return PCI_ERS_RESULT_RECOVERED;
-> > +}
+> > Well, this evaluates "condition" twice, perhaps it would be more
+> > clean to do, say,
+> > 
+> > 	#define __wait_event_timeout(wq, condition, ret)			\
+> > 	do {									\
+> > 		DEFINE_WAIT(__wait);						\
+> > 										\
+> > 		for (;;) {							\
+> > 			prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+> > 			if (condition) {					\
+> > 				if (!ret)					\
+> > 					ret = 1;				\
+> > 				break;						\
+> > 			} else if (!ret)					\
+> > 				break;						\
+> > 			ret = schedule_timeout(ret);				\
+> > 		}								\
+> > 		finish_wait(&wq, &__wait);					\
+> > 	} while (0)
+> > 
+> > but this is minor.
+> > 
+> > 	@@ -233,8 +235,9 @@ do {						\
+> > 	  * wake_up() has to be called after changing any variable that could
+> > 	  * change the result of the wait condition.
+> > 	  *
+> > 	- * The function returns 0 if the @timeout elapsed, and the remaining
+> > 	- * jiffies if the condition evaluated to true before the timeout elapsed.
+> > 	+ * The function returns 0 if the @timeout elapsed, or the remaining
+> > 	+ * jiffies (at least 1) if the @condition evaluated to %true before
+> > 	+ * the @timeout elapsed.
+> > 
+> > This is still not true if timeout == 0.
+> > 
+> > Shouldn't we also change wait_event_timeout() ? Say,
+> > 
+> > 	#define wait_event_timeout(wq, condition, timeout)			\
+> > 	({									\
+> > 		long __ret = timeout;						\
+> > 		if (!(condition))						\
+> > 			__wait_event_timeout(wq, condition, __ret);		\
+> > 		else if (!__ret)						\
+> > 			__ret = 1;						\
+> > 		__ret;								\
+> > 	})
+> > 
+> > Or wait_event_timeout(timeout => 0) is not legal in a non-void context?
+> > 
+> > To me the code like
+> > 
+> > 	long wait_for_something(bool nonblock)
+> > 	{
+> > 		timeout = nonblock ? 0 : DEFAULT_TIMEOUT;
+> > 		return wait_event_timeout(..., timeout);
+> > 	}
+> > 
+> > looks reasonable and correct. But it is not?
 > 
-> I don't think this function is OK.
-> 1) You don't really reset the 2nd Bus but just checking its status.
-> I think you should have following steps to reset 2nd Bus:
-> 
-> a. Assert 2nd Bus Reset
-> b. wait for some time until this message has been broadcasted well
-> c. De-assert 2nd Bus Reset
-> d. wait for Trst time
-> 
-> IOW, since we have aer_do_secondary_bus_reset to perform secondary bus
-> reset, why you repeat it again?
-> 
-> 2) msleep(200) is too long for kernel. You'd better yield the CPU when
-> sleep.
+> I don't see why it would be not legal. Note though that in the above
+> form wait_event_timeout(cond, 0) would still schedule() if cond is
+> false, which is not what I'd expect from a non-blocking function.
 
-The firmware first path currently has no reset_link. I want to make a
-minimal change since resetting the link could be considered firmware's
-job in the firmware first path. This change is to just check if SBR is
-set, and bring the link out of reset only if it is in SBR.  This way, if
-a another firmware first platform is already resetting the link, it
-won't be done twice. I took the msleep and the code from
-aer_do_sercondary_bus_reset() as you noticed. 
+Ah sorry, if you also rewrite __wait_event_timeout() then timeout=>0
+wouldn't schedule(), so things would work as expected.
 
-
--Betty
-
-> > +
-> >  static int find_aer_service_iter(struct device *device, void *data)
-> >  {
-> >  	struct pcie_port_service_driver *service_driver, **drv;
-> > @@ -460,6 +493,9 @@ static pci_ers_result_t reset_link(struct pci_dev *dev)
-> >  		status = driver->reset_link(udev);
-> >  	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_DOWNSTREAM) {
-> >  		status = default_downstream_reset_link(udev);
-> > +	} else if (pci_pcie_type(udev) == PCI_EXP_TYPE_ROOT_PORT &&
-> > +		pcie_aer_get_firmware_first(udev)) {
-> > +		status = default_ff_root_port_reset_link(udev);
-> >  	} else {
-> >  		dev_printk(KERN_DEBUG, &dev->dev,
-> >  			"no link-reset support at upstream device %s\n",
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+--Imre
 
 
