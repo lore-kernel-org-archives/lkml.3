@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab3FDOWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:22:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46731 "EHLO
+	id S1756970Ab3FDOWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:22:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46742 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755676Ab3FDOIB (ORCPT
+	with ESMTP id S1755510Ab3FDOID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:01 -0400
+	Tue, 4 Jun 2013 10:08:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 25/70] SUNRPC: Prevent an rpc_task wakeup race
-Date: Tue,  4 Jun 2013 15:06:41 +0100
-Message-Id: <1370354846-14213-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 27/70] perf: net_dropmonitor: Fix symbol-relative addresses
+Date: Tue,  4 Jun 2013 15:06:43 +0100
+Message-Id: <1370354846-14213-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit a3c3cac5d31879cd9ae2de7874dc6544ca704aec upstream.
+commit 5a1e99dd2028e00998d42029be86835d8ef4a46e upstream.
 
-The lockless RPC_IS_QUEUED() test in __rpc_execute means that we need to
-be careful about ordering the calls to rpc_test_and_set_running(task) and
-rpc_clear_queued(task). If we get the order wrong, then we may end up
-testing the RPC_TASK_RUNNING flag after __rpc_execute() has looped
-and changed the state of the rpc_task.
+The comparison between traced and symbol addresses is backwards: if
+the traced address doesn't exactly match a symbol (which we don't
+expect it to), we'll show the next symbol and the offset to it,
+whereas we should show the previous symbol and the offset from it.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/sched.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ tools/perf/scripts/python/net_dropmonitor.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index 38cca32..c393017 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -305,11 +305,17 @@ EXPORT_SYMBOL_GPL(__rpc_wait_for_completion_task);
-  * Note: If the task is ASYNC, and is being made runnable after sitting on an
-  * rpc_wait_queue, this must be called with the queue spinlock held to protect
-  * the wait queue operation.
-+ * Note the ordering of rpc_test_and_set_running() and rpc_clear_queued(),
-+ * which is needed to ensure that __rpc_execute() doesn't loop (due to the
-+ * lockless RPC_IS_QUEUED() test) before we've had a chance to test
-+ * the RPC_TASK_RUNNING flag.
-  */
- static void rpc_make_runnable(struct rpc_task *task)
- {
-+	bool need_wakeup = !rpc_test_and_set_running(task);
-+
- 	rpc_clear_queued(task);
--	if (rpc_test_and_set_running(task))
-+	if (!need_wakeup)
- 		return;
- 	if (RPC_IS_ASYNC(task)) {
- 		INIT_WORK(&task->u.tk_work, rpc_async_schedule);
+diff --git a/tools/perf/scripts/python/net_dropmonitor.py b/tools/perf/scripts/python/net_dropmonitor.py
+index adbfbf0..4c11605 100755
+--- a/tools/perf/scripts/python/net_dropmonitor.py
++++ b/tools/perf/scripts/python/net_dropmonitor.py
+@@ -40,9 +40,9 @@ def get_kallsyms_table():
+ 
+ def get_sym(sloc):
+ 	loc = int(sloc)
+-	for i in kallsyms:
+-		if (i['loc'] >= loc):
+-			return (i['name'], i['loc']-loc)
++	for i in kallsyms[::-1]:
++		if loc >= i['loc']:
++			return (i['name'], loc - i['loc'])
+ 	return (None, 0)
+ 
+ def print_drop_table():
 -- 
 1.8.1.2
 
