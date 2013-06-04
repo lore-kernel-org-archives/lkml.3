@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758481Ab3FDRD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:03:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48613 "EHLO
+	id S1758829Ab3FDRDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:03:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756455Ab3FDRDT (ORCPT
+	with ESMTP id S1758219Ab3FDRDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:03:19 -0400
+	Tue, 4 Jun 2013 13:03:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 36/75] drm/i915: Adding more reserved PCI IDs for Haswell.
-Date: Tue,  4 Jun 2013 09:55:20 -0700
-Message-Id: <1370364959-9475-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 43/75] ARM: at91/dt: fix macb pinctrl_macb_rmii_mii_alt definition
+Date: Tue,  4 Jun 2013 09:55:27 -0700
+Message-Id: <1370364959-9475-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -30,109 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+From: Boris BREZILLON <b.brezillon@overkiz.com>
 
-commit 1c98b4871cca4b7ce07e19f92f934d47cf7210b0 upstream.
+commit f6d35d67d0a5c159f767a20f4fcc1d295a7314b1 upstream.
 
-At DDX commit Chris mentioned the tendency we have of finding out more
-PCI IDs only when users report. So Let's add all new reserved Haswell IDs.
+The PA24 pin is wrongly assigned to peripheral B.
+In the current config there is 2 ETX3 pins (PA11 and PA24) and
+no ETXER pin (PA22).
 
-This patch also fix GT3 names. I'no not sending in separated patche because
-names are only in few comments and not in variable names.
-
-v2: Fix some mobile ids (by Paulo)
-
-References: http://bugs.freedesktop.org/show_bug.cgi?id=63701
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_drv.c | 46 +++++++++++++++++++++++++++++++----------
- 1 file changed, 35 insertions(+), 11 deletions(-)
+ arch/arm/boot/dts/at91sam9260.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 4bc789e..41e02dc 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -352,40 +352,64 @@ static const struct pci_device_id pciidlist[] = {		/* aka */
- 	INTEL_VGA_DEVICE(0x016a, &intel_ivybridge_d_info), /* GT2 server */
- 	INTEL_VGA_DEVICE(0x0402, &intel_haswell_d_info), /* GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0412, &intel_haswell_d_info), /* GT2 desktop */
--	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT3 desktop */
- 	INTEL_VGA_DEVICE(0x040a, &intel_haswell_d_info), /* GT1 server */
- 	INTEL_VGA_DEVICE(0x041a, &intel_haswell_d_info), /* GT2 server */
--	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT2 server */
-+	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT3 server */
- 	INTEL_VGA_DEVICE(0x0406, &intel_haswell_m_info), /* GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0416, &intel_haswell_m_info), /* GT2 mobile */
- 	INTEL_VGA_DEVICE(0x0426, &intel_haswell_m_info), /* GT2 mobile */
-+	INTEL_VGA_DEVICE(0x040B, &intel_haswell_d_info), /* GT1 reserved */
-+	INTEL_VGA_DEVICE(0x041B, &intel_haswell_d_info), /* GT2 reserved */
-+	INTEL_VGA_DEVICE(0x042B, &intel_haswell_d_info), /* GT3 reserved */
-+	INTEL_VGA_DEVICE(0x040E, &intel_haswell_d_info), /* GT1 reserved */
-+	INTEL_VGA_DEVICE(0x041E, &intel_haswell_d_info), /* GT2 reserved */
-+	INTEL_VGA_DEVICE(0x042E, &intel_haswell_d_info), /* GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0C02, &intel_haswell_d_info), /* SDV GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0C12, &intel_haswell_d_info), /* SDV GT2 desktop */
--	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0C0A, &intel_haswell_d_info), /* SDV GT1 server */
- 	INTEL_VGA_DEVICE(0x0C1A, &intel_haswell_d_info), /* SDV GT2 server */
--	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT2 server */
-+	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT3 server */
- 	INTEL_VGA_DEVICE(0x0C06, &intel_haswell_m_info), /* SDV GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0C16, &intel_haswell_m_info), /* SDV GT2 mobile */
--	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0C0B, &intel_haswell_d_info), /* SDV GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0C1B, &intel_haswell_d_info), /* SDV GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0C2B, &intel_haswell_d_info), /* SDV GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0C0E, &intel_haswell_d_info), /* SDV GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0C1E, &intel_haswell_d_info), /* SDV GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0C2E, &intel_haswell_d_info), /* SDV GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0A02, &intel_haswell_d_info), /* ULT GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0A12, &intel_haswell_d_info), /* ULT GT2 desktop */
--	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0A0A, &intel_haswell_d_info), /* ULT GT1 server */
- 	INTEL_VGA_DEVICE(0x0A1A, &intel_haswell_d_info), /* ULT GT2 server */
--	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT2 server */
-+	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT3 server */
- 	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
--	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0A0B, &intel_haswell_d_info), /* ULT GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0A1B, &intel_haswell_d_info), /* ULT GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0A2B, &intel_haswell_d_info), /* ULT GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0A0E, &intel_haswell_m_info), /* ULT GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0A1E, &intel_haswell_m_info), /* ULT GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0A2E, &intel_haswell_m_info), /* ULT GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0D02, &intel_haswell_d_info), /* CRW GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT2 desktop */
--	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0D0A, &intel_haswell_d_info), /* CRW GT1 server */
- 	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT2 server */
--	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT2 server */
-+	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT3 server */
- 	INTEL_VGA_DEVICE(0x0D06, &intel_haswell_m_info), /* CRW GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT2 mobile */
--	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0D0B, &intel_haswell_d_info), /* CRW GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0D1B, &intel_haswell_d_info), /* CRW GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0D2B, &intel_haswell_d_info), /* CRW GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0D0E, &intel_haswell_d_info), /* CRW GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0D1E, &intel_haswell_d_info), /* CRW GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0D2E, &intel_haswell_d_info), /* CRW GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
- 	INTEL_VGA_DEVICE(0x0f31, &intel_valleyview_m_info),
- 	INTEL_VGA_DEVICE(0x0f32, &intel_valleyview_m_info),
+diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+index 02b70a4..755a61e 100644
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -264,7 +264,7 @@
+ 						atmel,pins =
+ 							<0 10 0x2 0x0	/* PA10 periph B */
+ 							 0 11 0x2 0x0	/* PA11 periph B */
+-							 0 24 0x2 0x0	/* PA24 periph B */
++							 0 22 0x2 0x0	/* PA22 periph B */
+ 							 0 25 0x2 0x0	/* PA25 periph B */
+ 							 0 26 0x2 0x0	/* PA26 periph B */
+ 							 0 27 0x2 0x0	/* PA27 periph B */
 -- 
 1.8.1.2
 
