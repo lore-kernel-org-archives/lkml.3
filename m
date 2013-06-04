@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3FDOmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:42:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31390 "EHLO
+	id S1756025Ab3FDOoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:44:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16219 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3FDOmW (ORCPT
+	with ESMTP id S1755205Ab3FDOn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:42:22 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pOOK0n4x9skA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=U0Jj00tbnlYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=_Elu6U7uDwz5ZpqZ7YIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 4 Jun 2013 10:43:59 -0400
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UfnZSsE0JEEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Ss263ASI6nMA:10 a=ayC55rCoAAAA:8 a=VNlkHCOS18w3GnkVV0oA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1370356941.26799.120.camel@gandalf.local.home>
-Subject: Re: [07/65] dm bufio: avoid a possible __vmalloc deadlock
+Message-ID: <1370357038.26799.121.camel@gandalf.local.home>
+Subject: Re: [09/65] math64: New div64_u64_rem helper
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, stable@kernel.org,
-        Alasdair G Kergon <agk@redhat.com>
-Date: Tue, 04 Jun 2013 10:42:21 -0400
-In-Reply-To: <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 04 Jun 2013 10:43:58 -0400
+In-Reply-To: <20130604134508.GB17229@redhat.com>
 References: <20130603221016.243553628@goodmis.org>
-	 <20130603221153.315507011@goodmis.org>
-	 <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+	 <20130603221153.655422077@goodmis.org> <20130604134508.GB17229@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
@@ -30,105 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-04 at 08:59 -0400, Mikulas Patocka wrote:
-> 
-> On Mon, 3 Jun 2013, Steven Rostedt wrote:
-> 
+On Tue, 2013-06-04 at 15:45 +0200, Stanislaw Gruszka wrote:
+> On Mon, Jun 03, 2013 at 06:10:25PM -0400, Steven Rostedt wrote:
 > > 3.6.11.5 stable review patch.
 > > If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Mikulas Patocka <mpatocka@redhat.com>
-> > 
-> > [ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
-> > 
-> > This patch uses memalloc_noio_save to avoid a possible deadlock in
-> > dm-bufio.  (it could happen only with large block size, at most
-> > PAGE_SIZE << MAX_ORDER (typically 8MiB).
-> > 
-> > __vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-> > used for allocation of requested pages, structures vmap_area, vmap_block
-> > and vm_struct and the radix tree nodes.
-> > 
-> > However, the kernel pagetables are allocated always with GFP_KERNEL.
-> > Thus the allocation of pagetables can recurse back to the I/O layer and
-> > cause a deadlock.
-> > 
-> > This patch uses the function memalloc_noio_save to set per-process
-> > PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-> > it. When this flag is set, all allocations in the process are done with
-> > implied GFP_NOIO flag, thus the deadlock can't happen.
-> > 
-> > This should be backported to stable kernels, but they don't have the
-> > PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-> > functions. So, PF_MEMALLOC should be set and restored instead.
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > Cc: stable@kernel.org
-> > Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-> > [ Set and clear PF_MEMALLOC manually - SR ]
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
-> >  1 file changed, 25 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-> > index c0fc827..a1f2487 100644
-> > --- a/drivers/md/dm-bufio.c
-> > +++ b/drivers/md/dm-bufio.c
-> > @@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
-> >  static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
-> >  			       enum data_mode *data_mode)
-> >  {
-> > +	unsigned noio_flag;
-> > +	void *ptr;
-> > +
-> >  	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
-> >  		*data_mode = DATA_MODE_SLAB;
-> >  		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-> > @@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
-> >  	}
-> >  
-> >  	*data_mode = DATA_MODE_VMALLOC;
-> > -	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-> > +
-> > +	/*
-> > +	 * __vmalloc allocates the data pages and auxiliary structures with
-> > +	 * gfp_flags that were specified, but pagetables are always allocated
-> > +	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-> > +	 *
-> > +	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-> > +	 * all allocations done by this process (including pagetables) are done
-> > +	 * as if GFP_NOIO was specified.
-> > +	 */
-> > +
-> > +	if (gfp_mask & __GFP_NORETRY) {
-> > +		noio_flag = current->flags;
 > 
-> There should be noio_flag = current->flags & PF_MEMALLOC; because we don't 
-> want to restore other flags.
+> If you will not pull other commits (I do not see them in the set):
+> 
+> d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
+> 55eaa7c1f511af5fb6ef808b5328804f4d4e5243
+> 772c808a252594692972773f6ee41c289b8e0b2a
+> f3002134158092178be81339ec5a22ff80e6c308
+> 68aa8efcd1ab961e4684ef5af32f72a6ec1911deA
 
-Thanks for the review. Will fix.
+Yeah, they didn't apply well at all.
+
+> 
+> this one is not necessary and actually hit performance a bit.
+
+Thanks, I'll remove it.
 
 -- Steve
-
-> 
-> > +		current->flags |= PF_MEMALLOC;
-> > +	}
-> > +
-> > +	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-> > +
-> > +	if (gfp_mask & __GFP_NORETRY)
-> > +		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-> > +
-> > +	return ptr;
-> >  }
-> >  
-> >  /*
-> > -- 
-> > 1.7.10.4
-> 
-> Mikulas
 
 
