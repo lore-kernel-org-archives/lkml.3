@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab3FDMPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:15:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47410 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3FDMPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:15:03 -0400
-From: Frank Mehnert <frank.mehnert@oracle.com>
-Organization: Oracle Corporation
-To: Robin Holt <holt@sgi.com>
-Subject: Re: Handling NUMA page migration
-Date: Tue, 4 Jun 2013 14:14:45 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
-Cc: linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <201306040922.10235.frank.mehnert@oracle.com> <20130604115807.GF3672@sgi.com>
-In-Reply-To: <20130604115807.GF3672@sgi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4158253.W4x4OHcdpD";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1754278Ab3FDMP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:15:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab3FDMP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:15:56 -0400
+Date: Tue, 4 Jun 2013 08:15:17 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jim Rees <rees@umich.edu>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, viro@zeniv.linux.org.uk,
+        matthew@wil.cx, dhowells@redhat.com, sage@inktank.com,
+        smfrench@gmail.com, swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: Re: [PATCH v1 00/11] locks: scalability improvements for file
+ locking
+Message-ID: <20130604081517.0ad9f983@corrin.poochiereds.net>
+In-Reply-To: <20130604115644.GA4180@umich.edu>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<20130603213101.GC2109@fieldses.org>
+	<20130604065417.46080a57@tlielax.poochiereds.net>
+	<20130604115644.GA4180@umich.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306041414.52237.frank.mehnert@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4158253.W4x4OHcdpD
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 4 Jun 2013 07:56:44 -0400
+Jim Rees <rees@umich.edu> wrote:
 
-On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
-> This is probably more appropriate to be directed at the linux-mm
-> mailing list.
->=20
-> On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
-> > Hi,
-> >=20
-> > our memory management on Linux hosts conflicts with NUMA page migration.
-> > I assume this problem existed for a longer time but Linux 3.8 introduced
-> > automatic NUMA page balancing which makes the problem visible on
-> > multi-node hosts leading to kernel oopses.
-> >=20
-> > NUMA page migration means that the physical address of a page changes.
-> > This is fatal if the application assumes that this never happens for
-> > that page as it was supposed to be pinned.
-> >=20
-> > We have two kind of pinned memory:
-> >=20
-> > A) 1. allocate memory in userland with mmap()
-> >=20
-> >    2. madvise(MADV_DONTFORK)
-> >    3. pin with get_user_pages().
-> >    4. flush dcache_page()
-> >    5. vm_flags |=3D (VM_DONTCOPY | VM_LOCKED)
-> >   =20
-> >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> >      =20
-> >        VM_DONTCOPY | VM_LOCKED | 0xff)
->=20
-> I don't think this type of allocation should be affected.  The
-> get_user_pages() call should elevate the pages reference count which
-> should prevent migration from completing.  I would, however, wait for
-> a more definitive answer.
+> Jeff Layton wrote:
+> 
+>   > Might be nice to look at some profiles to confirm all of that.  I'd also
+>   > be curious how much variation there was in the results above, as they're
+>   > pretty close.
+>   > 
+>   
+>   The above is just a random representative sample. The results are
+>   pretty close when running this test, but I can average up several runs
+>   and present the numbers. I plan to get a bare-metal test box on which
+>   to run some more detailed testing and maybe some profiling this week.
+> 
+> Just contributing more runs into the mean doesn't tell us anything about the
+> variance. With numbers that close you need the variance to tell whether it's
+> a significant change.
 
-Thanks Robin! Actually case B) is more important for us so I'm waiting
-for more feedback :)
+Thanks. I'll see if I can get some standard deviation numbers here, and
+I'll do it on some bare metal to ensure that virtualization doesn't
+skew any results.
 
-=46rank
+FWIW, they were all consistently very close to one another when I ran
+these tests, and the times were all consistently shorter than the
+unpatched kernel.
 
-> > B) 1. allocate memory with alloc_pages()
-> >=20
-> >    2. SetPageReserved()
-> >    3. vm_mmap() to allocate a userspace mapping
-> >    4. vm_insert_page()
-> >    5. vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)
-> >   =20
-> >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> >       0xff)
-> >=20
-> > At least the memory allocated like B) is affected by automatic NUMA page
-> > migration. I'm not sure about A).
-> >=20
-> > 1. How can I prevent automatic NUMA page migration on this memory?
-> > 2. Can NUMA page migration also be handled on such kind of memory witho=
-ut
-> >=20
-> >    preventing migration?
-> >=20
-> > Thanks,
-> >=20
-> > Frank
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That said, this test is pretty rough. Doing this with "time" measures
+other things that aren't related to locking. So I'll also see if I
+can come up with a way to measure the actual locking performance more
+accurately too.
 
-=2D-=20
-Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
-
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
---nextPart4158253.W4x4OHcdpD
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlGt2jwACgkQ6z8pigLf3EeBhACfWdr/FHrGL56lylmiX4Vuhb4I
-5iUAn1y2LOnXJpRbvKAcKDFUBv640YH6
-=l1BW
------END PGP SIGNATURE-----
-
---nextPart4158253.W4x4OHcdpD--
+-- 
+Jeff Layton <jlayton@redhat.com>
