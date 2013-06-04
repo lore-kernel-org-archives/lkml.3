@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517Ab3FDQ7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:59:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48283 "EHLO
+	id S1757442Ab3FDQ66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:58:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48282 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744Ab3FDQ5Q (ORCPT
+	with ESMTP id S1756743Ab3FDQ5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 12:57:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 17/75] mac80211: fix AP-mode frame matching
-Date: Tue,  4 Jun 2013 09:55:01 -0700
-Message-Id: <1370364959-9475-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 16/75] cfg80211: fix wiphy_register error path
+Date: Tue,  4 Jun 2013 09:55:00 -0700
+Message-Id: <1370364959-9475-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -29,34 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 2b9ccd4e4308272e5aec614b77c5385e7ec2ec90 upstream.
+commit 03cd7e4e1ea16cd151c799a33b5ca1fd41a464df upstream.
 
-In AP mode, ignore frames with mis-matched BSSID that aren't
-multicast or sent to the correct destination. This fixes
-reporting public action frames to userspace multiple times
-on multiple virtual AP interfaces.
+If rfkill_register() fails in wiphy_register() the struct device
+is unregistered but everything else isn't (regulatory, debugfs)
+and we even leave the wiphy instance on all internal lists even
+though it will likely be freed soon, which is clearly a problem.
+Fix this by cleaning up properly.
 
-Reported-by: Jouni Malinen <j@w1.fi>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/rx.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/wireless/core.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 580704e..bed1b09 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -2950,6 +2950,9 @@ static int prepare_for_handlers(struct ieee80211_rx_data *rx,
- 			 * and location updates. Note that mac80211
- 			 * itself never looks at these frames.
- 			 */
-+			if (!multicast &&
-+			    !ether_addr_equal(sdata->vif.addr, hdr->addr1))
-+				return 0;
- 			if (ieee80211_is_public_action(hdr, skb->len))
- 				return 1;
- 			if (!ieee80211_is_beacon(hdr->frame_control))
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index b677eab..2dca5e3 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -597,17 +597,21 @@ int wiphy_register(struct wiphy *wiphy)
+ 	 * cfg80211_mutex lock
+ 	 */
+ 	res = rfkill_register(rdev->rfkill);
+-	if (res)
+-		goto out_rm_dev;
++	if (res) {
++		device_del(&rdev->wiphy.dev);
++
++		mutex_lock(&cfg80211_mutex);
++		debugfs_remove_recursive(rdev->wiphy.debugfsdir);
++		list_del_rcu(&rdev->list);
++		wiphy_regulatory_deregister(wiphy);
++		mutex_unlock(&cfg80211_mutex);
++		return res;
++	}
+ 
+ 	rtnl_lock();
+ 	rdev->wiphy.registered = true;
+ 	rtnl_unlock();
+ 	return 0;
+-
+-out_rm_dev:
+-	device_del(&rdev->wiphy.dev);
+-	return res;
+ }
+ EXPORT_SYMBOL(wiphy_register);
+ 
 -- 
 1.8.1.2
 
