@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab3FDWtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:49:10 -0400
-Received: from 1wt.eu ([62.212.114.60]:35883 "EHLO 1wt.eu"
+	id S1754376Ab3FDWtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:49:45 -0400
+Received: from 1wt.eu ([62.212.114.60]:35868 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754233Ab3FDWoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:24 -0400
-Message-Id: <20130604172135.367032999@1wt.eu>
+	id S1754464Ab3FDWoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:17 -0400
+Message-Id: <20130604172136.190033789@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:32 +0200
+Date: Tue, 04 Jun 2013 19:23:52 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 122/184] ext4: Fix max file size and logical block counting
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 142/184] kernel panic when mount NFSv4
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,267 +22,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- of extent format file
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit f17722f917b2f21497deb6edc62fb1683daa08e6 upstream
+On Tue, 2010-12-14 at 16:58 +0800, Mi Jinlong wrote:
+> Hi,
+>
+> When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
+> at NFS client's __rpc_create_common function.
+>
+> The panic place is:
+>   rpc_mkpipe
+>     __rpc_lookup_create()          <=== find pipefile *idmap*
+>     __rpc_mkpipe()                 <=== pipefile is *idmap*
+>       __rpc_create_common()
+>        ******  BUG_ON(!d_unhashed(dentry)); ******    *panic*
+>
+> It means that the dentry's d_flags have be set DCACHE_UNHASHED,
+> but it should not be set here.
+>
+> Is someone known this bug? or give me some idea?
+>
+> A reproduce program is append, but it can't reproduce the bug every time.
+> the export is: "/nfsroot       *(rw,no_root_squash,fsid=0,insecure)"
+>
+> And the panic message is append.
+>
+> ============================================================================
+> #!/bin/sh
+>
+> LOOPTOTAL=768
+> LOOPCOUNT=0
+> ret=0
+>
+> while [ $LOOPCOUNT -ne $LOOPTOTAL ]
+> do
+> 	((LOOPCOUNT += 1))
+> 	service nfs restart
+> 	/usr/sbin/rpc.idmapd
+> 	mount -t nfs4 127.0.0.1:/ /mnt|| return 1;
+> 	ls -l /var/lib/nfs/rpc_pipefs/nfs/*/
+> 	umount /mnt
+> 	echo $LOOPCOUNT
+> done
+>
+> ===============================================================================
+> Code: af 60 01 00 00 89 fa 89 f0 e8 64 cf 89 f0 e8 5c 7c 64 cf 31 c0 8b 5c 24 10 8b
+> 74 24 14 8b 7c 24 18 8b 6c 24 1c 83 c4 20 c3 <0f> 0b eb fc 8b 46 28 c7 44 24 08 20
+> de ee f0 c7 44 24 04 56 ea
+> EIP:[<f0ee92ea>] __rpc_create_common+0x8a/0xc0 [sunrpc] SS:ESP 0068:eccb5d28
+> ---[ end trace 8f5606cd08928ed2]---
+> Kernel panic - not syncing: Fatal exception
+> Pid:7131, comm: mount.nfs4 Tainted: G     D   -------------------2.6.32 #1
+> Call Trace:
+>  [<c080ad18>] ? panic+0x42/0xed
+>  [<c080e42c>] ? oops_end+0xbc/0xd0
+>  [<c040b090>] ? do_invalid_op+0x0/0x90
+>  [<c040b10f>] ? do_invalid_op+0x7f/0x90
+>  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
+>  [<f0edc433>] ? rpc_free_task+0x33/0x70[sunrpc]
+>  [<f0ed6508>] ? prc_call_sync+0x48/0x60[sunrpc]
+>  [<f0ed656e>] ? rpc_ping+0x4e/0x60[sunrpc]
+>  [<f0ed6eaf>] ? rpc_create+0x38f/0x4f0[sunrpc]
+>  [<c080d80b>] ? error_code+0x73/0x78
+>  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
+>  [<c0532bda>] ? d_lookup+0x2a/0x40
+>  [<f0ee94b1>] ? rpc_mkpipe+0x111/0x1b0[sunrpc]
+>  [<f10a59f4>] ? nfs_create_rpc_client+0xb4/0xf0[nfs]
+>  [<f10d6c6d>] ? nfs_fscache_get_client_cookie+0x1d/0x50[nfs]
+>  [<f10d3fcb>] ? nfs_idmap_new+0x7b/0x140[nfs]
+>  [<c05e76aa>] ? strlcpy+0x3a/0x60
+>  [<f10a60ca>] ? nfs4_set_client+0xea/0x2b0[nfs]
+>  [<f10a6d0c>] ? nfs4_create_server+0xac/0x1b0[nfs]
+>  [<c04f1400>] ? krealloc+0x40/0x50
+>  [<f10b0e8b>] ? nfs4_remote_get_sb+0x6b/0x250[nfs]
+>  [<c04f14ec>] ? kstrdup+0x3c/0x60
+>  [<c0520739>] ? vfs_kern_mount+0x69/0x170
+>  [<f10b1a3c>] ? nfs_do_root_mount+0x6c/0xa0[nfs]
+>  [<f10b1b47>] ? nfs4_try_mount+0x37/0xa0[nfs]
+>  [<f10afe6d>] ? nfs4_validate_text_mount_data+-x7d/0xf0[nfs]
+>  [<f10b1c42>] ? nfs4_get_sb+0x92/0x2f0
+>  [<c0520739>] ? vfs_kern_mount+0x69/0x170
+>  [<c05366d2>] ? get_fs_type+0x32/0xb0
+>  [<c052089f>] ? do_kern_mount+0x3f/0xe0
+>  [<c053954f>] ? do_mount+0x2ef/0x740
+>  [<c0537740>] ? copy_mount_options+0xb0/0x120
+>  [<c0539a0e>] ? sys_mount+0x6e/0xa0
 
-Kazuya Mio reported that he was able to hit BUG_ON(next == lblock)
-in ext4_ext_put_gap_in_cache() while creating a sparse file in extent
-format and fill the tail of file up to its end. We will hit the BUG_ON
-when we write the last block (2^32-1) into the sparse file.
+Hi,
 
-The root cause of the problem lies in the fact that we specifically set
-s_maxbytes so that block at s_maxbytes fit into on-disk extent format,
-which is 32 bit long. However, we are not storing start and end block
-number, but rather start block number and length in blocks. It means
-that in order to cover extent from 0 to EXT_MAX_BLOCK we need
-EXT_MAX_BLOCK+1 to fit into len (because we counting block 0 as well) -
-and it does not.
+Does the following patch fix the problem?
 
-The only way to fix it without changing the meaning of the struct
-ext4_extent members is, as Kazuya Mio suggested, to lower s_maxbytes
-by one fs block so we can cover the whole extent we can get by the
-on-disk extent format.
+Cheers
+  Trond
 
-Also in many places EXT_MAX_BLOCK is used as length instead of maximum
-logical block number as the name suggests, it is all a bit messy. So
-this commit renames it to EXT_MAX_BLOCKS and change its usage in some
-places to actually be maximum number of blocks in the extent.
+--------------------------
+SUNRPC: Fix a BUG in __rpc_create_common
 
-The bug which this commit fixes can be reproduced as follows:
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
- dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-2))
- sync
- dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-1))
+Mi Jinlong reports:
 
-Reported-by: Kazuya Mio <k-mio@sx.jp.nec.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[dannf: Applied the backport from RHEL6 to Debian's 2.6.32]
+When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
+at NFS client's __rpc_create_common function.
+
+The panic place is:
+  rpc_mkpipe
+      __rpc_lookup_create()          <=== find pipefile *idmap*
+      __rpc_mkpipe()                 <=== pipefile is *idmap*
+        __rpc_create_common()
+         ******  BUG_ON(!d_unhashed(dentry)); ****** *panic*
+
+The test is wrong: we can find ourselves with a hashed negative dentry here
+if the idmapper tried to look up the file before we got round to creating
+it.
+
+Just replace the BUG_ON() with a d_drop(dentry).
+
+[2.6.32 background info from Jonathan below]
+> Hi Willy et al,
+>
+> Please consider
+>
+>   beb0f0a9fba1 kernel panic when mount NFSv4, 2010-12-20
+>
+> for application to kernel.org's 2.6.32.y and 2.6.34.y trees.  The
+> patch was applied upstream during the 2.6.38 merge window, so newer
+> kernels don't need it.
+>
+> (Context: <http://bugs.debian.org/695872>.)  Tom Downes (cc-ed)
+> experienced the bug on a Debian kernel close to 2.6.32.58 and
+> confirmed that the patch doesn't seem to hurt.
+>
+> The patch is part of Fedora 13's 2.6.34-based and Fedora 14's
+> 2.6.35-based kernels[1].  It was also included in the RHEL kernel at
+> some point between 2.6.32-71.29.1.el6 and 2.6.32-131.0.15.el6[2].
+>
+> Thoughts of all kinds welcome, as always.
+>
+> Regards,
+> Jonathan
+>
+> [1] https://bugzilla.redhat.com/673207
+> [2] https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=8028cccdc4b1
+
+Reported-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+(cherry picked from commit beb0f0a9fba1fa98b378329a9a5b0a73f25097ae)
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext4/ext4_extents.h |  7 +++++--
- fs/ext4/extents.c      | 39 +++++++++++++++++++--------------------
- fs/ext4/move_extent.c  | 10 +++++-----
- fs/ext4/super.c        | 15 ++++++++++++---
- 4 files changed, 41 insertions(+), 30 deletions(-)
+ net/sunrpc/rpc_pipe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
-index bdb6ce7..24fa647 100644
---- a/fs/ext4/ext4_extents.h
-+++ b/fs/ext4/ext4_extents.h
-@@ -137,8 +137,11 @@ typedef int (*ext_prepare_callback)(struct inode *, struct ext4_ext_path *,
- #define EXT_BREAK      1
- #define EXT_REPEAT     2
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index ea1e6de..43aa601 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -459,7 +459,7 @@ static int __rpc_create_common(struct inode *dir, struct dentry *dentry,
+ {
+ 	struct inode *inode;
  
--/* Maximum logical block in a file; ext4_extent's ee_block is __le32 */
--#define EXT_MAX_BLOCK	0xffffffff
-+/*
-+ * Maximum number of logical blocks in a file; ext4_extent's ee_block is
-+ * __le32.
-+ */
-+#define EXT_MAX_BLOCKS	0xffffffff
- 
- /*
-  * EXT_INIT_MAX_LEN is the maximum number of blocks we can have in an
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index b4402c8..f4b471d 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1331,7 +1331,7 @@ got_index:
- 
- /*
-  * ext4_ext_next_allocated_block:
-- * returns allocated block in subsequent extent or EXT_MAX_BLOCK.
-+ * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
-  * NOTE: it considers block number from index entry as
-  * allocated block. Thus, index entries have to be consistent
-  * with leaves.
-@@ -1345,7 +1345,7 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
- 	depth = path->p_depth;
- 
- 	if (depth == 0 && path->p_ext == NULL)
--		return EXT_MAX_BLOCK;
-+		return EXT_MAX_BLOCKS;
- 
- 	while (depth >= 0) {
- 		if (depth == path->p_depth) {
-@@ -1362,12 +1362,12 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
- 		depth--;
- 	}
- 
--	return EXT_MAX_BLOCK;
-+	return EXT_MAX_BLOCKS;
- }
- 
- /*
-  * ext4_ext_next_leaf_block:
-- * returns first allocated block from next leaf or EXT_MAX_BLOCK
-+ * returns first allocated block from next leaf or EXT_MAX_BLOCKS
-  */
- static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
- 					struct ext4_ext_path *path)
-@@ -1379,7 +1379,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
- 
- 	/* zero-tree has no leaf blocks at all */
- 	if (depth == 0)
--		return EXT_MAX_BLOCK;
-+		return EXT_MAX_BLOCKS;
- 
- 	/* go to index block */
- 	depth--;
-@@ -1392,7 +1392,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
- 		depth--;
- 	}
- 
--	return EXT_MAX_BLOCK;
-+	return EXT_MAX_BLOCKS;
- }
- 
- /*
-@@ -1572,13 +1572,13 @@ unsigned int ext4_ext_check_overlap(struct inode *inode,
- 	 */
- 	if (b2 < b1) {
- 		b2 = ext4_ext_next_allocated_block(path);
--		if (b2 == EXT_MAX_BLOCK)
-+		if (b2 == EXT_MAX_BLOCKS)
- 			goto out;
- 	}
- 
- 	/* check for wrap through zero on extent logical start block*/
- 	if (b1 + len1 < b1) {
--		len1 = EXT_MAX_BLOCK - b1;
-+		len1 = EXT_MAX_BLOCKS - b1;
- 		newext->ee_len = cpu_to_le16(len1);
- 		ret = 1;
- 	}
-@@ -1654,7 +1654,7 @@ repeat:
- 	fex = EXT_LAST_EXTENT(eh);
- 	next = ext4_ext_next_leaf_block(inode, path);
- 	if (le32_to_cpu(newext->ee_block) > le32_to_cpu(fex->ee_block)
--	    && next != EXT_MAX_BLOCK) {
-+	    && next != EXT_MAX_BLOCKS) {
- 		ext_debug("next leaf block - %d\n", next);
- 		BUG_ON(npath != NULL);
- 		npath = ext4_ext_find_extent(inode, next, NULL);
-@@ -1772,7 +1772,7 @@ int ext4_ext_walk_space(struct inode *inode, ext4_lblk_t block,
- 	BUG_ON(func == NULL);
- 	BUG_ON(inode == NULL);
- 
--	while (block < last && block != EXT_MAX_BLOCK) {
-+	while (block < last && block != EXT_MAX_BLOCKS) {
- 		num = last - block;
- 		/* find extent for this block */
- 		down_read(&EXT4_I(inode)->i_data_sem);
-@@ -1900,7 +1900,7 @@ ext4_ext_put_gap_in_cache(struct inode *inode, struct ext4_ext_path *path,
- 	if (ex == NULL) {
- 		/* there is no extent yet, so gap is [0;-] */
- 		lblock = 0;
--		len = EXT_MAX_BLOCK;
-+		len = EXT_MAX_BLOCKS;
- 		ext_debug("cache gap(whole file):");
- 	} else if (block < le32_to_cpu(ex->ee_block)) {
- 		lblock = block;
-@@ -2145,8 +2145,8 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 		path[depth].p_ext = ex;
- 
- 		a = ex_ee_block > start ? ex_ee_block : start;
--		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCK ?
--			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCK;
-+		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCKS ?
-+			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCKS;
- 
- 		ext_debug("  border %u:%u\n", a, b);
- 
-@@ -3783,15 +3783,14 @@ static int ext4_ext_fiemap_cb(struct inode *inode, struct ext4_ext_path *path,
- 		flags |= FIEMAP_EXTENT_UNWRITTEN;
- 
- 	/*
--	 * If this extent reaches EXT_MAX_BLOCK, it must be last.
-+	 * If this extent reaches EXT_MAX_BLOCKS, it must be last.
- 	 *
--	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCK,
-+	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCKS,
- 	 * this also indicates no more allocated blocks.
- 	 *
--	 * XXX this might miss a single-block extent at EXT_MAX_BLOCK
- 	 */
--	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCK ||
--	    newex->ec_block + newex->ec_len - 1 == EXT_MAX_BLOCK) {
-+	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCKS ||
-+	    newex->ec_block + newex->ec_len == EXT_MAX_BLOCKS) {
- 		loff_t size = i_size_read(inode);
- 		loff_t bs = EXT4_BLOCK_SIZE(inode->i_sb);
- 
-@@ -3871,8 +3870,8 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 
- 		start_blk = start >> inode->i_sb->s_blocksize_bits;
- 		last_blk = (start + len - 1) >> inode->i_sb->s_blocksize_bits;
--		if (last_blk >= EXT_MAX_BLOCK)
--			last_blk = EXT_MAX_BLOCK-1;
-+		if (last_blk >= EXT_MAX_BLOCKS)
-+			last_blk = EXT_MAX_BLOCKS-1;
- 		len_blks = ((ext4_lblk_t) last_blk) - start_blk + 1;
- 
- 		/*
-diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-index a73ed78..fe81390 100644
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -1001,12 +1001,12 @@ mext_check_arguments(struct inode *orig_inode,
- 		return -EINVAL;
- 	}
- 
--	if ((orig_start > EXT_MAX_BLOCK) ||
--	    (donor_start > EXT_MAX_BLOCK) ||
--	    (*len > EXT_MAX_BLOCK) ||
--	    (orig_start + *len > EXT_MAX_BLOCK))  {
-+	if ((orig_start >= EXT_MAX_BLOCKS) ||
-+	    (donor_start >= EXT_MAX_BLOCKS) ||
-+	    (*len > EXT_MAX_BLOCKS) ||
-+	    (orig_start + *len >= EXT_MAX_BLOCKS))  {
- 		ext4_debug("ext4 move extent: Can't handle over [%u] blocks "
--			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCK,
-+			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCKS,
- 			orig_inode->i_ino, donor_inode->i_ino);
- 		return -EINVAL;
- 	}
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index f1e7077..3ce77c5 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1975,6 +1975,12 @@ static void ext4_orphan_cleanup(struct super_block *sb,
-  * in the vfs.  ext4 inode has 48 bits of i_block in fsblock units,
-  * so that won't be a limiting factor.
-  *
-+ * However there is other limiting factor. We do store extents in the form
-+ * of starting block and length, hence the resulting length of the extent
-+ * covering maximum file size must fit into on-disk format containers as
-+ * well. Given that length is always by 1 unit bigger than max unit (because
-+ * we count 0 as well) we have to lower the s_maxbytes by one fs block.
-+ *
-  * Note, this does *not* consider any metadata overhead for vfs i_blocks.
-  */
- static loff_t ext4_max_size(int blkbits, int has_huge_files)
-@@ -1996,10 +2002,13 @@ static loff_t ext4_max_size(int blkbits, int has_huge_files)
- 		upper_limit <<= blkbits;
- 	}
- 
--	/* 32-bit extent-start container, ee_block */
--	res = 1LL << 32;
-+	/*
-+	 * 32-bit extent-start container, ee_block. We lower the maxbytes
-+	 * by one fs block, so ee_len can cover the extent of maximum file
-+	 * size
-+	 */
-+	res = (1LL << 32) - 1;
- 	res <<= blkbits;
--	res -= 1;
- 
- 	/* Sanity check against vm- & vfs- imposed limits */
- 	if (res > upper_limit)
+-	BUG_ON(!d_unhashed(dentry));
++	d_drop(dentry);
+ 	inode = rpc_get_inode(dir->i_sb, mode);
+ 	if (!inode)
+ 		goto out_err;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
