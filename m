@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3FDWsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:48:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:35891 "EHLO 1wt.eu"
+	id S1754551Ab3FDWtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:49:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:35887 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab3FDWoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754357Ab3FDWoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:44:25 -0400
-Message-Id: <20130604172137.684540988@1wt.eu>
+Message-Id: <20130604172131.510859183@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:28 +0200
+Date: Tue, 04 Jun 2013 19:21:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: T Makphaibulchoke <tmac@hp.com>, Paul Gortmaker <paul.gortmaker@gmail.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 178/184] iucv: Fix missing msg_namelen update in
+Subject: [ 029/184] kernel/resource.c: fix stack overflow in
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- iucv_sock_recvmsg()
+ __reserve_region_with_split()
 
-From: Mathias Krause <minipli@googlemail.com>
+From: T Makphaibulchoke <tmac@hp.com>
 
-[ Upstream commit a5598bd9c087dc0efc250a5221e5d0e6f584ee88 ]
+commit 4965f5667f36a95b41cda6638875bc992bd7d18b upstream.
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+Using a recursive call add a non-conflicting region in
+__reserve_region_with_split() could result in a stack overflow in the case
+that the recursive calls are too deep.  Convert the recursive calls to an
+iterative loop to avoid the problem.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about iucv_sock_recvmsg() not filling the msg_name in case it was set.
+Tested on a machine containing 135 regions.  The kernel no longer panicked
+with stack overflow.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Also tested with code arbitrarily adding regions with no conflict,
+embedding two consecutive conflicts and embedding two non-consecutive
+conflicts.
+
+Signed-off-by: T Makphaibulchoke <tmac@hp.com>
+Reviewed-by: Ram Pai <linuxram@us.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@gmail.com>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/iucv/af_iucv.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/resource.c | 50 ++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 12 deletions(-)
 
-diff --git a/net/iucv/af_iucv.c b/net/iucv/af_iucv.c
-index bada1b9..f605b23 100644
---- a/net/iucv/af_iucv.c
-+++ b/net/iucv/af_iucv.c
-@@ -1160,6 +1160,8 @@ static int iucv_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct sk_buff *skb, *rskb, *cskb;
- 	int err = 0;
+diff --git a/kernel/resource.c b/kernel/resource.c
+index fb11a58..207915a 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -533,6 +533,7 @@ static void __init __reserve_region_with_split(struct resource *root,
+ 	struct resource *parent = root;
+ 	struct resource *conflict;
+ 	struct resource *res = kzalloc(sizeof(*res), GFP_ATOMIC);
++	struct resource *next_res = NULL;
  
-+	msg->msg_namelen = 0;
+ 	if (!res)
+ 		return;
+@@ -542,21 +543,46 @@ static void __init __reserve_region_with_split(struct resource *root,
+ 	res->end = end;
+ 	res->flags = IORESOURCE_BUSY;
+ 
+-	conflict = __request_resource(parent, res);
+-	if (!conflict)
+-		return;
++	while (1) {
+ 
+-	/* failed, split and try again */
+-	kfree(res);
++		conflict = __request_resource(parent, res);
++		if (!conflict) {
++			if (!next_res)
++				break;
++			res = next_res;
++			next_res = NULL;
++			continue;
++		}
+ 
+-	/* conflict covered whole area */
+-	if (conflict->start <= start && conflict->end >= end)
+-		return;
++		/* conflict covered whole area */
++		if (conflict->start <= res->start &&
++				conflict->end >= res->end) {
++			kfree(res);
++			WARN_ON(next_res);
++			break;
++		}
 +
- 	if ((sk->sk_state == IUCV_DISCONN || sk->sk_state == IUCV_SEVERED) &&
- 	    skb_queue_empty(&iucv->backlog_skb_q) &&
- 	    skb_queue_empty(&sk->sk_receive_queue) &&
++		/* failed, split and try again */
++		if (conflict->start > res->start) {
++			end = res->end;
++			res->end = conflict->start - 1;
++			if (conflict->end < end) {
++				next_res = kzalloc(sizeof(*next_res),
++						GFP_ATOMIC);
++				if (!next_res) {
++					kfree(res);
++					break;
++				}
++				next_res->name = name;
++				next_res->start = conflict->end + 1;
++				next_res->end = end;
++				next_res->flags = IORESOURCE_BUSY;
++			}
++		} else {
++			res->start = conflict->end + 1;
++		}
++	}
+ 
+-	if (conflict->start > start)
+-		__reserve_region_with_split(root, start, conflict->start-1, name);
+-	if (conflict->end < end)
+-		__reserve_region_with_split(root, conflict->end+1, end, name);
+ }
+ 
+ void __init reserve_region_with_split(struct resource *root,
 -- 
 1.7.12.2.21.g234cd45.dirty
 
