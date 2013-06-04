@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab3FDRIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:08:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48505 "EHLO
+	id S1758369Ab3FDRJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:09:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758091Ab3FDRCb (ORCPT
+	with ESMTP id S1755644Ab3FDRBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:02:31 -0400
+	Tue, 4 Jun 2013 13:01:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>,
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 61/75] libata: make ata_exec_internal_sg honor DMADIR
-Date: Tue,  4 Jun 2013 09:55:45 -0700
-Message-Id: <1370364959-9475-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 26/75] ath9k_hw: Use helper routines to simplify ar9003_hw_init_cal()
+Date: Tue,  4 Jun 2013 09:55:10 -0700
+Message-Id: <1370364959-9475-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,92 +28,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Pelletier <plr.vincent@gmail.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit e771451c0a831d96a7c14b0ca8a8ec671d98567b upstream.
+commit 96da6fdd5ae28568be63ccf1f70b14a72135d493 upstream.
 
-libata honors DMADIR for regular commands, but not for internal commands
-used (among other) during device initialisation.
-
-This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
-(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
-after a few tries.
-
-Log output of the bridge being hot-plugged with an ATAPI drive:
-
-  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
-  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9631.212939] ata1: hard resetting link
-  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
-  [ 9632.106407] ata1.00: applying bridge limits
-  [ 9632.108151] ata1.00: configured for UDMA/33
-  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
-  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9637.105335] ata1: hard resetting link
-  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9638.047878] ata1.00: configured for UDMA/33
-  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
-  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
-  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
-  [ 9643.044979] ata1: hard resetting link
-  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9643.987471] ata1.00: configured for UDMA/33
-  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
-  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9648.984619] ata1.00: disabled
-  [ 9649.000593] ata1: hard resetting link
-  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9649.955864] ata1: EH complete
-
-With this patch, the drive enumerates correctly when libata is loaded with
-atapi_dmadir=1:
-
-  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
-  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9891.810900] ata1: hard resetting link
-  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
-  [ 9892.763558] ata1.00: applying bridge limits
-  [ 9892.765393] ata1.00: configured for UDMA/33
-  [ 9892.786063] ata1: EH complete
-  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
-  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
-  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
-  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
-
-Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
-http://marc.info/?l=linux-ide&m=136121147832295&w=2
-
-tj: minor formatting changes.
-
-Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-core.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c | 92 ++++++++++++++++-----------
+ drivers/net/wireless/ath/ath9k/hw.h           |  1 +
+ 2 files changed, 55 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 501c209..3b3afa8 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -1602,6 +1602,12 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
- 	qc->tf = *tf;
- 	if (cdb)
- 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_calib.c b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
+index e99f481..87fb0bb 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
+@@ -959,22 +959,68 @@ static void ar9003_hw_manual_peak_cal(struct ath_hw *ah, u8 chain, bool is_2g)
+ 		      AR_PHY_65NM_RXRF_AGC_AGC_CAL_OVR, 0);
+ }
+ 
++static void ar9003_hw_do_manual_peak_cal(struct ath_hw *ah,
++					 struct ath9k_channel *chan)
++{
++	int i;
 +
-+	/* some SATA bridges need us to indicate data xfer direction */
-+	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
-+	    dma_dir == DMA_FROM_DEVICE)
-+		qc->tf.feature |= ATAPI_DMADIR;
++	if (!AR_SREV_9462(ah) && !AR_SREV_9565(ah))
++		return;
 +
- 	qc->flags |= ATA_QCFLAG_RESULT_TF;
- 	qc->dma_dir = dma_dir;
- 	if (dma_dir != DMA_NONE) {
++	for (i = 0; i < AR9300_MAX_CHAINS; i++) {
++		if (!(ah->rxchainmask & (1 << i)))
++			continue;
++		ar9003_hw_manual_peak_cal(ah, i, IS_CHAN_2GHZ(chan));
++	}
++}
++
++static void ar9003_hw_cl_cal_post_proc(struct ath_hw *ah, bool is_reusable)
++{
++	u32 cl_idx[AR9300_MAX_CHAINS] = { AR_PHY_CL_TAB_0,
++					  AR_PHY_CL_TAB_1,
++					  AR_PHY_CL_TAB_2 };
++	struct ath9k_hw_cal_data *caldata = ah->caldata;
++	bool txclcal_done = false;
++	int i, j;
++
++	if (!caldata || !(ah->enabled_cals & TX_CL_CAL))
++		return;
++
++	txclcal_done = !!(REG_READ(ah, AR_PHY_AGC_CONTROL) &
++			  AR_PHY_AGC_CONTROL_CLC_SUCCESS);
++
++	if (caldata->done_txclcal_once) {
++		for (i = 0; i < AR9300_MAX_CHAINS; i++) {
++			if (!(ah->txchainmask & (1 << i)))
++				continue;
++			for (j = 0; j < MAX_CL_TAB_ENTRY; j++)
++				REG_WRITE(ah, CL_TAB_ENTRY(cl_idx[i]),
++					  caldata->tx_clcal[i][j]);
++		}
++	} else if (is_reusable && txclcal_done) {
++		for (i = 0; i < AR9300_MAX_CHAINS; i++) {
++			if (!(ah->txchainmask & (1 << i)))
++				continue;
++			for (j = 0; j < MAX_CL_TAB_ENTRY; j++)
++				caldata->tx_clcal[i][j] =
++					REG_READ(ah, CL_TAB_ENTRY(cl_idx[i]));
++		}
++		caldata->done_txclcal_once = true;
++	}
++}
++
+ static bool ar9003_hw_init_cal(struct ath_hw *ah,
+ 			       struct ath9k_channel *chan)
+ {
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 	struct ath9k_hw_cal_data *caldata = ah->caldata;
+-	bool txiqcal_done = false, txclcal_done = false;
++	bool txiqcal_done = false;
+ 	bool is_reusable = true, status = true;
+ 	bool run_rtt_cal = false, run_agc_cal;
+ 	bool rtt = !!(ah->caps.hw_caps & ATH9K_HW_CAP_RTT);
+ 	u32 agc_ctrl = 0, agc_supp_cals = AR_PHY_AGC_CONTROL_OFFSET_CAL |
+ 					  AR_PHY_AGC_CONTROL_FLTR_CAL   |
+ 					  AR_PHY_AGC_CONTROL_PKDET_CAL;
+-	int i, j;
+-	u32 cl_idx[AR9300_MAX_CHAINS] = { AR_PHY_CL_TAB_0,
+-					  AR_PHY_CL_TAB_1,
+-					  AR_PHY_CL_TAB_2 };
+ 
+ 	/* Use chip chainmask only for calibration */
+ 	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
+@@ -1060,14 +1106,8 @@ skip_tx_iqcal:
+ 		status = ath9k_hw_wait(ah, AR_PHY_AGC_CONTROL,
+ 				       AR_PHY_AGC_CONTROL_CAL,
+ 				       0, AH_WAIT_TIMEOUT);
+-		if (AR_SREV_9462(ah) || AR_SREV_9565(ah)) {
+-			for (i = 0; i < AR9300_MAX_CHAINS; i++) {
+-				if (!(ah->rxchainmask & (1 << i)))
+-					continue;
+-				ar9003_hw_manual_peak_cal(ah, i,
+-							  IS_CHAN_2GHZ(chan));
+-			}
+-		}
++
++		ar9003_hw_do_manual_peak_cal(ah, chan);
+ 	}
+ 
+ 	if (ath9k_hw_mci_is_enabled(ah) && IS_CHAN_2GHZ(chan) && run_agc_cal)
+@@ -1092,31 +1132,7 @@ skip_tx_iqcal:
+ 	else if (caldata && caldata->done_txiqcal_once)
+ 		ar9003_hw_tx_iq_cal_reload(ah);
+ 
+-#define CL_TAB_ENTRY(reg_base)	(reg_base + (4 * j))
+-	if (caldata && (ah->enabled_cals & TX_CL_CAL)) {
+-		txclcal_done = !!(REG_READ(ah, AR_PHY_AGC_CONTROL) &
+-					   AR_PHY_AGC_CONTROL_CLC_SUCCESS);
+-		if (caldata->done_txclcal_once) {
+-			for (i = 0; i < AR9300_MAX_CHAINS; i++) {
+-				if (!(ah->txchainmask & (1 << i)))
+-					continue;
+-				for (j = 0; j < MAX_CL_TAB_ENTRY; j++)
+-					REG_WRITE(ah, CL_TAB_ENTRY(cl_idx[i]),
+-						  caldata->tx_clcal[i][j]);
+-			}
+-		} else if (is_reusable && txclcal_done) {
+-			for (i = 0; i < AR9300_MAX_CHAINS; i++) {
+-				if (!(ah->txchainmask & (1 << i)))
+-					continue;
+-				for (j = 0; j < MAX_CL_TAB_ENTRY; j++)
+-					caldata->tx_clcal[i][j] =
+-						REG_READ(ah,
+-						  CL_TAB_ENTRY(cl_idx[i]));
+-			}
+-			caldata->done_txclcal_once = true;
+-		}
+-	}
+-#undef CL_TAB_ENTRY
++	ar9003_hw_cl_cal_post_proc(ah, is_reusable);
+ 
+ 	if (run_rtt_cal && caldata) {
+ 		if (is_reusable) {
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 9d26fc5..a3d681d 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -397,6 +397,7 @@ enum ath9k_int {
+ #define MAX_RTT_TABLE_ENTRY     6
+ #define MAX_IQCAL_MEASUREMENT	8
+ #define MAX_CL_TAB_ENTRY	16
++#define CL_TAB_ENTRY(reg_base)	(reg_base + (4 * j))
+ 
+ struct ath9k_hw_cal_data {
+ 	u16 channel;
 -- 
 1.8.1.2
 
