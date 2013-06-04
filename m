@@ -1,221 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3FDIzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:55:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47011 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab3FDIzC convert rfc822-to-8bit (ORCPT
+	id S1752177Ab3FDI4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:56:11 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:41831 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3FDI4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 04:55:02 -0400
-Message-ID: <51ADAB5F.70902@arm.com>
-Date: Tue, 04 Jun 2013 09:54:55 +0100
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 4 Jun 2013 04:56:08 -0400
 MIME-Version: 1.0
-To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v4 2/6] staging: android: binder: fix binder interface
- for 64bit compat layer
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com> <1369217581-16285-3-git-send-email-serban.constantinescu@arm.com> <CAMP5XgfTmNZ_N6P-EGtCD++0KCi2fmQVQFht6kg6Gs_2saMLbg@mail.gmail.com>
-In-Reply-To: <CAMP5XgfTmNZ_N6P-EGtCD++0KCi2fmQVQFht6kg6Gs_2saMLbg@mail.gmail.com>
-X-OriginalArrivalTime: 04 Jun 2013 08:54:56.0174 (UTC) FILETIME=[2F98FCE0:01CE6101]
-X-MC-Unique: 113060409545900601
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130604054233.GA23572@kroah.com>
+References: <20130604145700.6abe693b7e4628cf62948624@canb.auug.org.au> <20130604054233.GA23572@kroah.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Tue, 4 Jun 2013 16:55:46 +0800
+Message-ID: <CA+a=Yy4WASN0XF3tfWgZzST+tP5N-u7OvGi1EzJNkxuz484mOA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the staging tree
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/13 22:41, Arve Hjønnevåg wrote:
-> On Wed, May 22, 2013 at 3:12 AM, Serban Constantinescu
-> <serban.constantinescu@arm.com> wrote:
->> The changes in this patch will fix the binder interface for use on 64bit
->> machines and stand as the base of the 64bit compat support. The changes
->> apply to the structures that are passed between the kernel and
->> userspace.
+On Tue, Jun 4, 2013 at 1:42 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Jun 04, 2013 at 02:57:00PM +1000, Stephen Rothwell wrote:
+>> Hi Greg,
 >>
->> Most of the  changes applied mirror the change to struct binder_version
->> where there is no need for a 64bit wide protocol_version(on 64bit
->> machines). The change inlines with the existing 32bit userspace(the
->> structure has the same size) and simplifies the compat layer such that
->> the same handler can service the BINDER_VERSION ioctl.
+>> After merging the staging tree, today's linux-next build (x86_64
+>> allmodconfig) failed like this:
 >>
->> Other changes make use of kernel types as well as user-exportable ones
->> and fix format specifier issues.
+>> In file included from drivers/staging/lustre/lustre/fid/../include/linux/lustre_compat25.h:44:0,
+>>                  from drivers/staging/lustre/lustre/fid/../include/linux/lvfs.h:48,
+>>                  from drivers/staging/lustre/lustre/fid/../include/lvfs.h:45,
+>>                  from drivers/staging/lustre/lustre/fid/../include/obd_support.h:41,
+>>                  from drivers/staging/lustre/lustre/fid/../include/linux/obd.h:44,
+>>                  from drivers/staging/lustre/lustre/fid/../include/obd.h:40,
+>>                  from drivers/staging/lustre/lustre/fid/fid_store.c:48:
+>> drivers/staging/lustre/lustre/fid/../include/linux/lustre_patchless_compat.h: In function 'truncate_complete_page':
+>> drivers/staging/lustre/lustre/fid/../include/linux/lustre_patchless_compat.h:56:3: error: too few arguments to function 'page->mapping->a_ops->invalidatepage'
+>>    page->mapping->a_ops->invalidatepage(page, 0);
+>>    ^
 >>
->> The changes do not affect existing 32bit ABI.
+>> Lots of times.
 >>
->> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+>> Caused by the Lustre client patches interacting with commit d47992f86b30
+>> ("mm: change invalidatepage prototype to accept length") from the ext4
+>> tree.
+>>
+>> I added this merge fix patch:
+>>
+>> From 3873636f50eb89ba5e4f8e4e0523fd62f681edc8 Mon Sep 17 00:00:00 2001
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Tue, 4 Jun 2013 14:41:00 +1000
+>> Subject: [PATCH] staging/lustre: fix for invalidatepage() API change
+>>
+>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 >> ---
->>   drivers/staging/android/binder.c |   20 ++++++++++----------
->>   drivers/staging/android/binder.h |    8 ++++----
->>   2 files changed, 14 insertions(+), 14 deletions(-)
+>>  drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
->> index ce70909..ca79084 100644
->> --- a/drivers/staging/android/binder.c
->> +++ b/drivers/staging/android/binder.c
->> @@ -1271,7 +1271,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
->>                  case BINDER_TYPE_WEAK_HANDLE: {
->>                          struct binder_ref *ref = binder_get_ref(proc, fp->handle);
->>                          if (ref == NULL) {
->> -                               pr_err("transaction release %d bad handle %ld\n",
->> +                               pr_err("transaction release %d bad handle %d\n",
->>                                   debug_id, fp->handle);
->>                                  break;
->>                          }
->> @@ -1283,13 +1283,13 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+>> diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
+>> index f050808..67c4644 100644
+>> --- a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
+>> +++ b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
+>> @@ -53,7 +53,7 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+>>               return;
 >>
->>                  case BINDER_TYPE_FD:
->>                          binder_debug(BINDER_DEBUG_TRANSACTION,
->> -                                    "        fd %ld\n", fp->handle);
->> +                                    "        fd %d\n", fp->handle);
->>                          if (failed_at)
->>                                  task_close_fd(proc, fp->handle);
->>                          break;
+>>       if (PagePrivate(page))
+>> -             page->mapping->a_ops->invalidatepage(page, 0);
+>> +             page->mapping->a_ops->invalidatepage(page, 0, PAGE_CACHE_SIZE);
 >>
->>                  default:
->> -                       pr_err("transaction release %d bad object type %lx\n",
->> +                       pr_err("transaction release %d bad object type %x\n",
->>                                  debug_id, fp->type);
->>                          break;
->>                  }
->> @@ -1547,7 +1547,7 @@ static void binder_transaction(struct binder_proc *proc,
->>                  case BINDER_TYPE_WEAK_HANDLE: {
->>                          struct binder_ref *ref = binder_get_ref(proc, fp->handle);
->>                          if (ref == NULL) {
->> -                               binder_user_error("%d:%d got transaction with invalid handle, %ld\n",
->> +                               binder_user_error("%d:%d got transaction with invalid handle, %d\n",
->>                                                  proc->pid,
->>                                                  thread->pid, fp->handle);
->>                                  return_error = BR_FAILED_REPLY;
->> @@ -1590,13 +1590,13 @@ static void binder_transaction(struct binder_proc *proc,
->>
->>                          if (reply) {
->>                                  if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
->> -                                       binder_user_error("%d:%d got reply with fd, %ld, but target does not allow fds\n",
->> +                                       binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
->>                                                  proc->pid, thread->pid, fp->handle);
->>                                          return_error = BR_FAILED_REPLY;
->>                                          goto err_fd_not_allowed;
->>                                  }
->>                          } else if (!target_node->accept_fds) {
->> -                               binder_user_error("%d:%d got transaction with fd, %ld, but target does not allow fds\n",
->> +                               binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
->>                                          proc->pid, thread->pid, fp->handle);
->>                                  return_error = BR_FAILED_REPLY;
->>                                  goto err_fd_not_allowed;
->> @@ -1604,7 +1604,7 @@ static void binder_transaction(struct binder_proc *proc,
->>
->>                          file = fget(fp->handle);
->>                          if (file == NULL) {
->> -                               binder_user_error("%d:%d got transaction with invalid fd, %ld\n",
->> +                               binder_user_error("%d:%d got transaction with invalid fd, %d\n",
->>                                          proc->pid, thread->pid, fp->handle);
->>                                  return_error = BR_FAILED_REPLY;
->>                                  goto err_fget_failed;
->> @@ -1618,13 +1618,13 @@ static void binder_transaction(struct binder_proc *proc,
->>                          task_fd_install(target_proc, target_fd, file);
->>                          trace_binder_transaction_fd(t, fp->handle, target_fd);
->>                          binder_debug(BINDER_DEBUG_TRANSACTION,
->> -                                    "        fd %ld -> %d\n", fp->handle, target_fd);
->> +                                    "        fd %d -> %d\n", fp->handle, target_fd);
->>                          /* TODO: fput? */
->>                          fp->handle = target_fd;
->>                  } break;
->>
->>                  default:
->> -                       binder_user_error("%d:%d got transaction with invalid object type, %lx\n",
->> +                       binder_user_error("%d:%d got transaction with invalid object type, %x\n",
->>                                  proc->pid, thread->pid, fp->type);
->>                          return_error = BR_FAILED_REPLY;
->>                          goto err_bad_object_type;
->> @@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->>                          goto err;
->>                  }
->>                  binder_debug(BINDER_DEBUG_READ_WRITE,
->> -                            "%d:%d write %zd at %08lx, read %zd at %08lx\n",
->> +                            "%d:%d write %zd at %016lx, read %zd at %016lx\n",
->>                               proc->pid, thread->pid, bwr.write_size,
->>                               bwr.write_buffer, bwr.read_size, bwr.read_buffer);
->>
->> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
->> index edab249..2f94d16 100644
->> --- a/drivers/staging/android/binder.h
->> +++ b/drivers/staging/android/binder.h
->> @@ -48,13 +48,13 @@ enum {
->>    */
->>   struct flat_binder_object {
->>          /* 8 bytes for large_flat_header. */
->> -       unsigned long           type;
->> -       unsigned long           flags;
->> +       __u32           type;
->> +       __u32           flags;
->>
->>          /* 8 bytes of data. */
->>          union {
->>                  void __user     *binder;        /* local object */
->> -               signed long     handle;         /* remote object */
->> +               __s32       handle;             /* remote object */
->
-> This should be unsigned to match the handle in binder_transaction_data
-> and other uses in the driver, but it is currently also used to pass
-> file descriptors. Perhaps this is better (if sou also change size of
-> the handle in binder_transaction_data to match):
-> __u32 handle; /* remote object */
-> __s32 fd; /* file descriptor */
-
-I will add this union and fix any uses of remote object/ file descriptor 
-accordingly.
-
->
->>          };
->>
->>          /* extra data associated with local object */
->> @@ -78,7 +78,7 @@ struct binder_write_read {
->>   /* Use with BINDER_VERSION, driver fills in fields. */
->>   struct binder_version {
->>          /* driver protocol version -- increment with incompatible change */
->> -       signed long     protocol_version;
->> +       __s32       protocol_version;
->>   };
->>
->>   /* This is the current protocol version. */
+>>       cancel_dirty_page(page, PAGE_SIZE);
+>>       ClearPageMappedToDisk(page);
 >> --
->> 1.7.9.5
+>> 1.8.1
 >>
+>> diff --git a/drivers/staging/lustre/lustre/llite/rw26.c b/drivers/staging/lustre/lustre/llite/rw26.c
+>> index 27e4e64..f1a1c5f 100644
+>> --- a/drivers/staging/lustre/lustre/llite/rw26.c
+>> +++ b/drivers/staging/lustre/lustre/llite/rw26.c
+>> @@ -72,7 +72,8 @@
+>>   * aligned truncate). Lustre leaves partially truncated page in the cache,
+>>   * relying on struct inode::i_size to limit further accesses.
+>>   */
+>> -static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
+>> +static void ll_invalidatepage(struct page *vmpage, unsigned int offset,
+>> +                           unsigned int length)
+>>  {
+>>       struct inode     *inode;
+>>       struct lu_env    *env;
+>> @@ -89,7 +90,7 @@ static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
+>>        * below because they are run with page locked and all our io is
+>>        * happening with locked page too
+>>        */
+>> -     if (offset == 0) {
+>> +     if (offset == 0 && length == PAGE_CACHE_SIZE) {
+>>               env = cl_env_get(&refcheck);
+>>               if (!IS_ERR(env)) {
+>>                       inode = vmpage->mapping->host;
 >
-> I still think the protocol_version size change on 64 bit systems
-> should go after all your other changes that affect 64 bits systems.
-> That way you don't have to change the protocol version later.
-At the end of this patch set we will have support for 32/32 and 64/64 
-binder calls. This patch does not add compat support for 64/32 systems 
-and will not work for this configuration.
+> That patch makes sense.
+>
+> But then:
+>
+>> But then got these errors:
+>>
+>> drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c: In function 'cfs_cpt_bind':
+>> drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c:630:3: error: implicit declaration of function 'set_cpus_allowed' [-Werror=implicit-function-declaration]
+>>    rc = set_cpus_allowed(current, *cpumask);
+>>    ^
+>> cc1: some warnings being treated as errors
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c: In function 'key_fini':
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1354:4: error: implicit declaration of function 'module_refcount' [-Werror=implicit-function-declaration]
+>>     LINVRNT(module_refcount(key->lct_owner) > 0);
+>>     ^
+>> In file included from drivers/staging/lustre/include/linux/libcfs/libcfs.h:203:0,
+>>                  from drivers/staging/lustre/lustre/obdclass/lu_object.c:47:
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c: In function 'lu_context_keys_dump':
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1936:42: error: dereferencing pointer to incomplete type
+>>            key->lct_owner ? key->lct_owner->name : "",
+>>                                           ^
+>> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:221:41: note: in definition of macro '__CDEBUG'
+>>    libcfs_debug_msg(&msgdata, format, ## __VA_ARGS__);     \
+>>                                          ^
+>> drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h:238:30: note: in expansion of macro 'CDEBUG_LIMIT'
+>>  #define CERROR(format, ...)  CDEBUG_LIMIT(D_ERROR, format, ## __VA_ARGS__)
+>>                               ^
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1932:4: note: in expansion of macro 'CERROR'
+>>     CERROR("[%d]: %p %x (%p,%p,%p) %d %d \"%s\"@%p\n",
+>>     ^
+>> cc1: some warnings being treated as errors
+>> drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c: In function 'ptlrpcd':
+>> drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c:398:4: error: implicit declaration of function 'set_cpus_allowed' [-Werror=implicit-function-declaration]
+>>     cfs_set_cpus_allowed(current,
+>>     ^
+>> cc1: some warnings being treated as errors
+>
+> That must be some #include files needed for ppc.
+>
+>> So I gave up and just reverted commit 52f6317528c6 ("staging/lustre: drop
+>> CONFIG_BROKEN dependency") (thus disabling the code again) for now.
+>
+> That makes sense.
+>
+> Any of the lustre developers want to send me patches to fix the build
+> issues up please?
+Hi Greg,
 
-However until we add:
+I have just sent you a patch fixing the build failure. It was because
+of some CONFIG_ options that Lustre was not well tested against.
 
-> static const struct file_operations binder_fops = {
->         .owner = THIS_MODULE,
->         .poll = binder_poll,
->         .unlocked_ioctl = binder_ioctl,
-> +       .compat_ioctl = binder_ioctl,
->         .mmap = binder_mmap,
->         .open = binder_open,
->         .flush = binder_flush,
+1. set_cpus_allowed() is not available with CONFIG_CPUMASK_OFFSTACK on
+2. CONFIG_MODULES may not be defined and it causes accessing
+module->name field to fail.
+3. CONFIG_MODULE_UNLOAD may not be defined, and it causes missing
+module_refcount()
 
-The return value for any binder ioctl from a 32bit userspace running on 
-top of a 64bit kernel will be EINVAL (this happens only for 64/32 
-systems). Once we have the compat layer upstreamed we will add the above 
-change, but until that point querying the binder version or any other 
-binder iocall will fail (on 64/32).
-
-Let me know if you consider that changing the binder version to use 
-__s32 when adding the compat layer would be better.
-
-
-Thanks for your feedback and help,
-Serban
-
+--
+Thanks,
+Tao
