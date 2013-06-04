@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab3FDXSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:18:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:35335 "EHLO 1wt.eu"
+	id S1754465Ab3FDXST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:18:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:35339 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752740Ab3FDWlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:55 -0400
-Message-Id: <20130604172131.595128103@1wt.eu>
+	id S1752757Ab3FDWl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:56 -0400
+Message-Id: <20130604172132.836205446@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:01 +0200
+Date: Tue, 04 Jun 2013 19:22:31 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 031/184] cgroup: remove incorrect dget/dput() pair in
+Subject: [ 061/184] PCI/PM: Clean up PME state when removing a device
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,74 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- cgroup_create_dir()
 
-From: Tejun Heo <tj@kernel.org>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 175431635ec09b1d1bba04979b006b99e8305a83 upstream.
+commit 249bfb83cf8ba658955f0245ac3981d941f746ee upstream.
 
-cgroup_create_dir() does weird dancing with dentry refcnt.  On
-success, it gets and then puts it achieving nothing.  On failure, it
-puts but there isn't no matching get anywhere leading to the following
-oops if cgroup_create_file() fails for whatever reason.
+Devices are added to pci_pme_list when drivers use pci_enable_wake()
+or pci_wake_from_d3(), but they aren't removed from the list unless
+the driver explicitly disables wakeup.  Many drivers never disable
+wakeup, so their devices remain on the list even after they are
+removed, e.g., via hotplug.  A subsequent PME poll will oops when
+it tries to touch the device.
 
-  ------------[ cut here ]------------
-  kernel BUG at /work/os/work/fs/dcache.c:552!
-  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in:
-  CPU 2
-  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
-  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
-  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
-  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
-  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
-  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
-  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
-  Stack:
-   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
-   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
-   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
-  Call Trace:
-   [<ffffffff811cc889>] done_path_create+0x19/0x50
-   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
-   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
-   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
-  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
-  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-   RSP <ffff88001a3ebef8>
-  ---[ end trace 1277bcfd9561ddb0 ]---
+This patch disables PME# on a device before removing it, which removes
+the device from pci_pme_list.  This is safe even if the device never
+had PME# enabled.
 
-Fix it by dropping the unnecessary dget/dput() pair.
+This oops can be triggered by unplugging a Thunderbolt ethernet adapter
+on a Macbook Pro, as reported by Daniel below.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
+[bhelgaas: changelog]
+Reference: http://lkml.kernel.org/r/CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com
+Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/cgroup.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/pci/remove.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1fbcc74..04a9704 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1992,9 +1992,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
- 		dentry->d_fsdata = cgrp;
- 		inc_nlink(parent->d_inode);
- 		rcu_assign_pointer(cgrp->dentry, dentry);
--		dget(dentry);
- 	}
--	dput(dentry);
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 176615e..27ae1f9 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -19,6 +19,8 @@ static void pci_free_resources(struct pci_dev *dev)
  
- 	return error;
- }
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
++	pci_pme_active(dev, false);
++
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
