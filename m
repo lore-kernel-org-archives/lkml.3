@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FDVAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:00:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42280 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab3FDVAL (ORCPT
+	id S1751777Ab3FDVCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:02:04 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:48599 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3FDVCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:00:11 -0400
-Date: Tue, 4 Jun 2013 16:56:30 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arend@broadcom.com
-Subject: Re: pull request: wireless 2013-06-03
-Message-ID: <20130604205630.GA11199@tuxdriver.com>
-References: <20130603184817.GD2727@tuxdriver.com>
- <20130604.131813.134898245916084893.davem@davemloft.net>
+	Tue, 4 Jun 2013 17:02:00 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Subject: RE: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Topic: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Index: AQHOYJD5t4s5mkVepkqNMD/e2H+1XZkk7OKAgAE0KoCAAAStgP//2pQQgABODoD//71Q0A==
+Date: Tue, 4 Jun 2013 21:01:09 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B011739@USINDEM103.corp.hds.com>
+References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
+	 <1370303581.26799.109.camel@gandalf.local.home>
+	 <51AE2EDF.3000505@zytor.com> <1370370763.9844.6.camel@gandalf.local.home>
+	 <A5ED84D3BB3A384992CBB9C77DEDA4D41B011681@USINDEM103.corp.hds.com>
+ <1370379489.9844.7.camel@gandalf.local.home>
+In-Reply-To: <1370379489.9844.7.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604.131813.134898245916084893.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-04_07:2013-06-04,2013-06-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
+ suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1306040211
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54L2CXp020814
 
-On Tue, Jun 04, 2013 at 01:18:13PM -0700, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Mon, 3 Jun 2013 14:48:17 -0400
-> 
-> > Please let me know if there are problems!
-> 
-> Sorry, the broadcom brcmfmac changes need to go.
-> 
-> Some of those commits are cleanups, and some of them have the worst
-> commit log messages ever, the last one for example:
-> 
-> 0017-brcmsmac-fix-regression-observed-in-3.10-rc1.patch
-> 
-> has no explanation whatsoever of what the actual problem or regression
-> is, what aspect of the logic in that function is causing the problem,
-> and no explanation why making this function always return 'false' is a
-> reasonable fix.
-> 
-> That entire series is of very low quality, and even if it was in good
-> shape, at least half the changes are not appropriate at all this late
-> in the -rc series.
+OK, I will rename  debug_stack_use_ctr to debug_idt_ctr.
+Thanks.
 
-OK, sorry Dave -- I knew better...
+Seiji
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> -----Original Message-----
+> From: Steven Rostedt [mailto:rostedt@goodmis.org]
+> Sent: Tuesday, June 04, 2013 4:58 PM
+> To: Seiji Aguchi
+> Cc: H. Peter Anvin; linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de; mingo@elte.hu; bp@alien8.de; linux-
+> edac@vger.kernel.org; tony.luck@intel.com; dle-develop@lists.sourceforge.net; Tomoki Sekiyama
+> Subject: Re: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+> 
+> On Tue, 2013-06-04 at 20:20 +0000, Seiji Aguchi wrote:
+> > Steven,
+> >
+> > >
+> > > Hmm, maybe we can do it. Have two counters, a debug_idt_ctr and a
+> > > trace_idt_ctr, then have a function that basically does this:
+> > >
+> > > 	if (this_cpu_read(debug_idt_ctr))
+> >
+> > I think we can use "debug_stack_use_ctr"  for the checking.
+> > Is it correct?
+> > Or, do I need to introduce a new debug_idt_ctr?
+> >
+> 
+> No, it's the same variable. I was thinking we should rename it too, as
+> debug_stack_use_ctr, doesn't really describe what is happening anymore.
+> 
+> -- Steve
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
