@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab3FDIV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:21:26 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:38508 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3FDIVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 04:21:10 -0400
-Message-ID: <51ADA36D.7070607@monstr.eu>
-Date: Tue, 04 Jun 2013 10:21:01 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] net: emaclite: include linux/of_irq.h
-References: <2244203.EL457oABTU@wuerfel>
-In-Reply-To: <2244203.EL457oABTU@wuerfel>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2GGOIMXJELOKLAAWSJRCO"
+	id S1751458Ab3FDI1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:27:11 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58876 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab3FDI1I convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 4 Jun 2013 04:27:08 -0400
+Message-Id: <51ADC0F702000078000DAF5A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 04 Jun 2013 09:27:03 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Mukesh Rathor" <mukesh.rathor@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] PVH: vcpu info placement, load
+ selectors, and remove debug printk.
+References: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2GGOIMXJELOKLAAWSJRCO
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>>> On 04.06.13 at 02:43, Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+> @@ -1327,6 +1329,18 @@ static void __init xen_setup_stackprotector(void)
+>  	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
+>  	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+>  		switch_to_new_gdt(0);
+> +
+> +		/* xen started us with null selectors. load them now */
+> +		__asm__ __volatile__ (
+> +			"movl %0,%%ds\n"
+> +			"movl %0,%%ss\n"
+> +			"pushq %%rax\n"
+> +			"leaq 1f(%%rip),%%rax\n"
+> +			"pushq %%rax\n"
+> +			"retfq\n"
+> +			"1:\n"
+> +			: : "r" (__KERNEL_DS), "a" (__KERNEL_CS) : "memory");
+> +
 
-On 06/03/2013 11:39 PM, Arnd Bergmann wrote:
-> The emaclite driver now calls of_irq_to_resource, which is
-> declared in linux/of_irq.h. Without this patch, I get a build
-> error on ARM.
+I can see why you want CS to be reloaded (and CS, other than the
+comment says, clearly hasn't been holding a null selector up to here.
 
-What about to just change it to use platform_get_resource()?
-I will test it.
+I can't immediately see why you'd need SS to be other than null, and
+it completely escapes me why you'd need to DS (but not ES) to be
+non-null.
 
-Thanks,
-Michal
+Furthermore, is there any reason why you use "retfq" (Intel syntax)
+when all assembly code otherwise uses AT&T syntax (the proper
+equivalent here would be "lretq")?
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+And finally, please consistently use %<number> (which, once
+fixed, will make clear that the second constraint really can be "r"),
+and avoid using suffixes on moves to/from selector registers
+(which, once fixed, will make clear that at least the first constraint
+really can be relaxed to "rm").
 
+Jan
 
-
-------enig2GGOIMXJELOKLAAWSJRCO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGto20ACgkQykllyylKDCEkiACfUHL50VF0a6Toi/EJ6lJcvrM9
-SHsAn3BQVe4amTEYMR0PYkYLVo2KBYwO
-=qimI
------END PGP SIGNATURE-----
-
-------enig2GGOIMXJELOKLAAWSJRCO--
