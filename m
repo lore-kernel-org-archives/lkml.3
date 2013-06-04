@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab3FDDJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 23:09:18 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62580 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab3FDDJP (ORCPT
+	id S1758261Ab3FDDJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 23:09:24 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43176 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab3FDDJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 23:09:15 -0400
+	Mon, 3 Jun 2013 23:09:20 -0400
+Message-ID: <51AD5A51.1000808@linux.vnet.ibm.com>
+Date: Tue, 04 Jun 2013 11:09:05 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130603222514.GA9082@roeck-us.net>
-References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
-	<20130603152725.GA2644@roeck-us.net>
-	<CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
-	<20130603222514.GA9082@roeck-us.net>
-Date: Tue, 4 Jun 2013 08:39:10 +0530
-Message-ID: <CAK7N6vpZB-bYohKFAjS55GVZO0MP8bHrLwBEja7EpqOXeqSW3g@mail.gmail.com>
-Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
- timesout when delay very less
-From: anish singh <anish198519851985@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>, randy.dunlap@oracle.com,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Shi <alex.shi@intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [DISCUSSION] removing variety rq->cpu_load ?
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com> <20130506101936.GE13861@dyad.programming.kicks-ass.net> <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com> <20130506111041.GA15446@dyad.programming.kicks-ass.net> <51889C8A.5000806@intel.com> <51AD46CA.9020609@intel.com> <51AD4808.6020507@intel.com> <51AD51E3.6060307@linux.vnet.ibm.com> <51AD549A.9010903@intel.com>
+In-Reply-To: <51AD549A.9010903@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060403-2674-0000-0000-0000093943B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 3:55 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Mon, Jun 03, 2013 at 10:23:04PM +0530, anish singh wrote:
->> On Mon, Jun 3, 2013 at 8:57 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > On Sun, Jun 02, 2013 at 03:43:07PM +0530, anish kumar wrote:
->> >> Certain watchdog drivers use a timer to keep kicking the watchdog at
->> >> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
->> >> we can't guarantee that watchdog will be pinged fast enough
->> >> for all system loads, especially if timeout is configured for
->> >> less than or equal to 1 second(basically small values).
->> >>
->> >> As suggested by Wim Van Sebroeck & Guenter Roeck we should
->> >> add this functionality of individual watchdog drivers in the core
->> >> watchdog core.
->> >>
->> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
->> >
->> > Not exactly what I had in mind. My idea was to enable the softdog only if
->> > the hardware watchdog's maximum timeout was low (say, less than a couple
->> > of minutes), and if a timeout larger than its maximum value was configured.
+On 06/04/2013 10:44 AM, Alex Shi wrote:
+> On 06/04/2013 10:33 AM, Michael Wang wrote:
+>> Hi, Alex
 >>
->> watchdog_timeout_invalid wouldn't this check will fail if the user space tries
->> to set maximum timeout more that what driver can support?It would work
->> for pika_wdt.c as it is old watchdog driver and doesn't register with watchdog
->> framwork but new drivers has to pass this api.
+>> On 06/04/2013 09:51 AM, Alex Shi wrote:
+>>> resend with a new subject.
 >>
->> OR
+>> Forgive me but I'm a little lost on this thread...
 >>
->> Do you want to remove this check and go as explained by you?I would
->> favour this approach though.
->>
-> One would still have a check, but the enforced limits would no longer be
-> the driver limits, but larger limits implemented in the watchdog core.
-How much larger would be the big question here?Should it be configurable
-property(sysfs?) or some hardcoding based on existing drivers?
+>> So we are planing to rely on instant 'cpu_load[0]' and decayed
+>> 'runnable_load_avg' only, do we?
+> 
+> cpu_load is a kind of time decay for cpu load, but after runnable load introduced, 
+> the decay functionality is a kind duplicate with it.
+> So, remove them will make code simple. The idea were mentioned by Paul, Peter and I.
 
-Before going for next patch, it would be better for me to wait for some
-more comments.
->
->> > In that case, I would have set the hardware watchdog to its maximum value
->> > and use the softdog to ping it at a rate of, say, 50% of this maximum.
->> >
->> > If userspace would not ping the watchdog within its configured value,
->> > I would stop pinging the hardware watchdog and let it time out.
+Nice, what about make a patch 9 and clean up all those stuff?
+
+I suppose we will get more benefit :)
+
+Regards,
+Michael Wang
+
+> 
+> the following is Peter's word of this affair.
+> 
+>> Agreed, esp. the plethora of weird idx things we currently have. If we need to
+>> re-introduce something it would likely only be the busy case and for that we
+>> can immediately link to the balance interval or so.
+> 
+> 
 >>
->> One more question.Why is the return value of watchdog_ping int? Anyway
->> we discard it.
->
-> I can not answer that question.
->
-> Guenter
+>>
+>> Regards,
+>> Michael Wang
+>>
+>>>
+>>>> Peter,
+>>>>
+>>>> I just tried to remove the variety rq.cpu_load, by the following patch. 
+>>>> Because forkexec_idx and busy_idx are all zero, after the patch system just keep cpu_load[0]
+>>>> and remove other values.
+>>>> I tried the patch base 3.10-rc3 and latest tip/sched/core with benchmark dbench,tbench,
+>>>> aim7,hackbench. and oltp of sysbench. Seems performance doesn't change clear.
+>>>> So, for my tested machines, core2, NHM, SNB, with 2 or 4 CPU sockets, and above tested
+>>>> benchmark. We are fine to remove the variety cpu_load. 
+>>>> Don't know if there some other concerns on other scenarios.
+>>>>
+>>>> ---
+>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>> index 590d535..f0ca983 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -4626,7 +4626,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+>>>>         if (child && child->flags & SD_PREFER_SIBLING)
+>>>>                 prefer_sibling = 1;
+>>>>  
+>>>> -       load_idx = get_sd_load_idx(env->sd, env->idle);
+>>>> +       load_idx = 0; //get_sd_load_idx(env->sd, env->idle);
+>>>>  
+>>>>         do {
+>>>>                 int local_group;
+>>>>
+>>>>
+>>>
+>>>
+>>
+> 
+> 
+
