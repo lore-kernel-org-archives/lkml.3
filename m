@@ -1,216 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab3FDJ7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:59:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55376 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268Ab3FDJ6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:58:37 -0400
-From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-To: <khilman@linaro.org>, <j-keerthy@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: [PATCH v2 1/2] PM / AVS: SmartReflex: use devm_* API to initialize SmartReflex
-Date: Tue, 4 Jun 2013 12:58:32 +0300
-Message-ID: <1370339913-16135-2-git-send-email-andrii.tseglytskyi@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370339913-16135-1-git-send-email-andrii.tseglytskyi@ti.com>
-References: <1370339913-16135-1-git-send-email-andrii.tseglytskyi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752276Ab3FDKDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 06:03:45 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:52414 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3FDKDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 06:03:43 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH] net: emaclite: Use platform resource table
+Date: Tue,  4 Jun 2013 12:03:27 +0200
+Message-Id: <6ece0a9ee777b987ca777a338cc146ed67897529.1370340196.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-1278-1370340207-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of of devm_* API for resource allocation provides benefits such
-as auto handling of resource free. This reduces possibility have
-memory leaks in case of wrong error handling. All direct release
-calls should be removed to avoid races.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Reported-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+--=_mimegpg-monstr-desktop-1278-1370340207-0001
+
+Read data directly from platform recource table
+and do not use of_irq_to_resource().
+Also use devm_request_and_ioremap() for probe
+functions simplification.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/power/avs/smartreflex.c |   76 +++++++++++----------------------------
- 1 file changed, 21 insertions(+), 55 deletions(-)
+Based on my discussion with Arnd
+"[PATCH] net: emaclite: include linux/of_irq.h"
 
-diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
-index 6b2238b..fd71d5a 100644
---- a/drivers/power/avs/smartreflex.c
-+++ b/drivers/power/avs/smartreflex.c
-@@ -27,7 +27,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/power/smartreflex.h>
- 
--#define SMARTREFLEX_NAME_LEN	16
-+#define SMARTREFLEX_NAME_LEN	32
- #define NVALUE_NAME_LEN		40
- #define SR_DISABLE_TIMEOUT	200
- 
-@@ -207,12 +207,11 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
- static int sr_late_init(struct omap_sr *sr_info)
+---
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c | 67 +++++++++------------------
+ 1 file changed, 22 insertions(+), 45 deletions(-)
+
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index aa14d8a..f87d11c 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -1074,13 +1074,14 @@ static int xemaclite_send(struct sk_buff *orig_skb, struct net_device *dev)
+  * This function un maps the IO region of the Emaclite device and frees the net
+  * device.
+  */
+-static void xemaclite_remove_ndev(struct net_device *ndev)
++static void xemaclite_remove_ndev(struct net_device *ndev,
++				  struct platform_device *pdev)
  {
- 	struct omap_sr_data *pdata = sr_info->pdev->dev.platform_data;
--	struct resource *mem;
- 	int ret = 0;
- 
- 	if (sr_class->notify && sr_class->notify_flags && sr_info->irq) {
--		ret = request_irq(sr_info->irq, sr_interrupt,
--				  0, sr_info->name, sr_info);
-+		ret = devm_request_irq(&sr_info->pdev->dev, sr_info->irq,
-+				       sr_interrupt, 0, sr_info->name, sr_info);
- 		if (ret)
- 			goto error;
- 		disable_irq(sr_info->irq);
-@@ -224,14 +223,10 @@ static int sr_late_init(struct omap_sr *sr_info)
- 	return ret;
- 
- error:
--	iounmap(sr_info->base);
--	mem = platform_get_resource(sr_info->pdev, IORESOURCE_MEM, 0);
--	release_mem_region(mem->start, resource_size(mem));
- 	list_del(&sr_info->node);
- 	dev_err(&sr_info->pdev->dev, "%s: ERROR in registering"
- 		"interrupt handler. Smartreflex will"
- 		"not function as desired\n", __func__);
--	kfree(sr_info);
- 
- 	return ret;
- }
-@@ -847,34 +842,33 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 	struct dentry *nvalue_dir;
- 	int i, ret = 0;
- 
--	sr_info = kzalloc(sizeof(struct omap_sr), GFP_KERNEL);
-+	sr_info = devm_kzalloc(&pdev->dev, sizeof(struct omap_sr), GFP_KERNEL);
- 	if (!sr_info) {
- 		dev_err(&pdev->dev, "%s: unable to allocate sr_info\n",
- 			__func__);
- 		return -ENOMEM;
+ 	if (ndev) {
+ 		struct net_local *lp = netdev_priv(ndev);
+
+ 		if (lp->base_addr)
+-			iounmap((void __iomem __force *) (lp->base_addr));
++			devm_iounmap(&pdev->dev, lp->base_addr);
+ 		free_netdev(ndev);
  	}
- 
-+	sr_info->name = devm_kzalloc(&pdev->dev,
-+				     SMARTREFLEX_NAME_LEN, GFP_KERNEL);
-+	if (!sr_info->name) {
-+		dev_err(&pdev->dev, "%s: unable to allocate SR instance name\n",
-+			__func__);
-+		return -ENOMEM;
-+	}
+ }
+@@ -1126,8 +1127,7 @@ static struct net_device_ops xemaclite_netdev_ops;
+  */
+ static int xemaclite_of_probe(struct platform_device *ofdev)
+ {
+-	struct resource r_irq; /* Interrupt resources */
+-	struct resource r_mem; /* IO mem resources */
++	struct resource *res;
+ 	struct net_device *ndev = NULL;
+ 	struct net_local *lp = NULL;
+ 	struct device *dev = &ofdev->dev;
+@@ -1137,20 +1137,6 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+
+ 	dev_info(dev, "Device Tree Probing\n");
+
+-	/* Get iospace for the device */
+-	rc = of_address_to_resource(ofdev->dev.of_node, 0, &r_mem);
+-	if (rc) {
+-		dev_err(dev, "invalid address\n");
+-		return rc;
+-	}
+-
+-	/* Get IRQ for the device */
+-	rc = of_irq_to_resource(ofdev->dev.of_node, 0, &r_irq);
+-	if (!rc) {
+-		dev_err(dev, "no IRQ found\n");
+-		return rc;
+-	}
+-
+ 	/* Create an ethernet device instance */
+ 	ndev = alloc_etherdev(sizeof(struct net_local));
+ 	if (!ndev)
+@@ -1159,29 +1145,25 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+ 	dev_set_drvdata(dev, ndev);
+ 	SET_NETDEV_DEV(ndev, &ofdev->dev);
+
+-	ndev->irq = r_irq.start;
+-	ndev->mem_start = r_mem.start;
+-	ndev->mem_end = r_mem.end;
+-
+ 	lp = netdev_priv(ndev);
+ 	lp->ndev = ndev;
+
+-	if (!request_mem_region(ndev->mem_start,
+-				ndev->mem_end - ndev->mem_start + 1,
+-				DRIVER_NAME)) {
+-		dev_err(dev, "Couldn't lock memory region at %p\n",
+-			(void *)ndev->mem_start);
+-		rc = -EBUSY;
+-		goto error2;
++	/* Get IRQ for the device */
++	res = platform_get_resource(ofdev, IORESOURCE_IRQ, 0);
++	if (!res) {
++		dev_err(dev, "no IRQ found\n");
++		goto error;
+ 	}
+
+-	/* Get the virtual base address for the device */
+-	lp->base_addr = ioremap(r_mem.start, resource_size(&r_mem));
+-	if (NULL == lp->base_addr) {
+-		dev_err(dev, "EmacLite: Could not allocate iomem\n");
+-		rc = -EIO;
+-		goto error1;
+-	}
++	ndev->irq = res->start;
 +
- 	platform_set_drvdata(pdev, sr_info);
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "%s: platform data missing\n", __func__);
--		ret = -EINVAL;
--		goto err_free_devinfo;
-+		return -EINVAL;
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "%s: no mem resource\n", __func__);
--		ret = -ENODEV;
--		goto err_free_devinfo;
--	}
--
--	mem = request_mem_region(mem->start, resource_size(mem),
--					dev_name(&pdev->dev));
--	if (!mem) {
--		dev_err(&pdev->dev, "%s: no mem region\n", __func__);
--		ret = -EBUSY;
--		goto err_free_devinfo;
-+	sr_info->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(sr_info->base)) {
-+		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
-+		return PTR_ERR(sr_info->base);
- 	}
- 
- 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-@@ -882,13 +876,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 	pm_runtime_enable(&pdev->dev);
- 	pm_runtime_irq_safe(&pdev->dev);
- 
--	sr_info->name = kasprintf(GFP_KERNEL, "%s", pdata->name);
--	if (!sr_info->name) {
--		dev_err(&pdev->dev, "%s: Unable to alloc SR instance name\n",
--			__func__);
--		ret = -ENOMEM;
--		goto err_release_region;
--	}
-+	snprintf(sr_info->name, SMARTREFLEX_NAME_LEN, "%s", pdata->name);
- 
- 	sr_info->pdev = pdev;
- 	sr_info->srid = pdev->id;
-@@ -905,13 +893,6 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 	sr_info->autocomp_active = false;
- 	sr_info->ip_type = pdata->ip_type;
- 
--	sr_info->base = ioremap(mem->start, resource_size(mem));
--	if (!sr_info->base) {
--		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
--		ret = -ENOMEM;
--		goto err_free_name;
--	}
--
- 	if (irq)
- 		sr_info->irq = irq->start;
- 
-@@ -927,7 +908,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 		ret = sr_late_init(sr_info);
- 		if (ret) {
- 			pr_warning("%s: Error in SR late init\n", __func__);
--			goto err_iounmap;
-+			goto err_list_del;
- 		}
- 	}
- 
-@@ -938,7 +919,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 			ret = PTR_ERR(sr_dbg_dir);
- 			pr_err("%s:sr debugfs dir creation failed(%d)\n",
- 				__func__, ret);
--			goto err_iounmap;
-+			goto err_list_del;
- 		}
- 	}
- 
-@@ -991,16 +972,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 
- err_debugfs:
- 	debugfs_remove_recursive(sr_info->dbg_dir);
--err_iounmap:
-+err_list_del:
- 	list_del(&sr_info->node);
--	iounmap(sr_info->base);
--err_free_name:
--	kfree(sr_info->name);
--err_release_region:
--	release_mem_region(mem->start, resource_size(mem));
--err_free_devinfo:
--	kfree(sr_info);
--
- 	return ret;
- }
- 
-@@ -1008,7 +981,6 @@ static int omap_sr_remove(struct platform_device *pdev)
- {
- 	struct omap_sr_data *pdata = pdev->dev.platform_data;
- 	struct omap_sr *sr_info;
--	struct resource *mem;
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "%s: platform data missing\n", __func__);
-@@ -1028,12 +1000,6 @@ static int omap_sr_remove(struct platform_device *pdev)
- 		debugfs_remove_recursive(sr_info->dbg_dir);
- 
- 	list_del(&sr_info->node);
--	iounmap(sr_info->base);
--	kfree(sr_info->name);
--	kfree(sr_info);
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(mem->start, resource_size(mem));
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
++	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
++	lp->base_addr = devm_request_and_ioremap(&ofdev->dev, res);
++	if (!lp->base_addr)
++		goto error;
++
++	ndev->mem_start = res->start;
++	ndev->mem_end = res->end;
 
+ 	spin_lock_init(&lp->reset_lock);
+ 	lp->next_tx_buf_to_use = 0x0;
+@@ -1219,7 +1201,7 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+ 	if (rc) {
+ 		dev_err(dev,
+ 			"Cannot register network device, aborting\n");
+-		goto error1;
++		goto error;
+ 	}
+
+ 	dev_info(dev,
+@@ -1228,11 +1210,8 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+ 		 (unsigned int __force)lp->base_addr, ndev->irq);
+ 	return 0;
+
+-error1:
+-	release_mem_region(ndev->mem_start, resource_size(&r_mem));
+-
+-error2:
+-	xemaclite_remove_ndev(ndev);
++error:
++	xemaclite_remove_ndev(ndev, ofdev);
+ 	return rc;
+ }
+
+@@ -1267,9 +1246,7 @@ static int xemaclite_of_remove(struct platform_device *of_dev)
+ 		of_node_put(lp->phy_node);
+ 	lp->phy_node = NULL;
+
+-	release_mem_region(ndev->mem_start, ndev->mem_end-ndev->mem_start + 1);
+-
+-	xemaclite_remove_ndev(ndev);
++	xemaclite_remove_ndev(ndev, of_dev);
+ 	dev_set_drvdata(dev, NULL);
+
+ 	return 0;
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-1278-1370340207-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGtu28ACgkQykllyylKDCGkZgCeMwrc6Xt4Br8Wc1MXwJ1Itgix
+BVwAn0MvjvKvtDqU9wUQUAalPYt8FA8P
+=BTIY
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-1278-1370340207-0001--
