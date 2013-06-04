@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab3FDW4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:56:55 -0400
-Received: from 1wt.eu ([62.212.114.60]:35754 "EHLO 1wt.eu"
+	id S1753096Ab3FDWnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:35702 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753757Ab3FDWne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:34 -0400
-Message-Id: <20130604172134.501702619@1wt.eu>
+	id S1753684Ab3FDWnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:19 -0400
+Message-Id: <20130604172136.354293911@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:11 +0200
+Date: Tue, 04 Jun 2013 19:23:56 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 101/184] Bluetooth: L2CAP - Fix info leak via getsockname()
+Cc: Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>,
+        Tom Herbert <therbert@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 146/184] softirq: reduce latencies
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +24,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 792039c73cf176c8e39a6e8beef2c94ff46522ed upstream.
+In various network workloads, __do_softirq() latencies can be up
+to 20 ms if HZ=1000, and 200 ms if HZ=100.
 
-The L2CAP code fails to initialize the l2_bdaddr_type member of struct
-sockaddr_l2 and the padding byte added for alignment. It that for leaks
-two bytes kernel stack via the getsockname() syscall. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+This is because we iterate 10 times in the softirq dispatcher,
+and some actions can consume a lot of cycles.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
+This patch changes the fallback to ksoftirqd condition to :
+
+- A time limit of 2 ms.
+- need_resched() being set on current task
+
+When one of this condition is met, we wakeup ksoftirqd for further
+softirq processing if we still have pending softirqs.
+
+Using need_resched() as the only condition can trigger RCU stalls,
+as we can keep BH disabled for too long.
+
+I ran several benchmarks and got no significant difference in
+throughput, but a very significant reduction of latencies (one order
+of magnitude) :
+
+In following bench, 200 antagonist "netperf -t TCP_RR" are started in
+background, using all available cpus.
+
+Then we start one "netperf -t TCP_RR", bound to the cpu handling the NIC
+IRQ (hard+soft)
+
+Before patch :
+
+RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
+to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
+RT_LATENCY=550110.424
+MIN_LATENCY=146858
+MAX_LATENCY=997109
+P50_LATENCY=305000
+P90_LATENCY=550000
+P99_LATENCY=710000
+MEAN_LATENCY=376989.12
+STDDEV_LATENCY=184046.92
+
+After patch :
+
+RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
+to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
+RT_LATENCY=40545.492
+MIN_LATENCY=9834
+MAX_LATENCY=78366
+P50_LATENCY=33583
+P90_LATENCY=59000
+P99_LATENCY=69000
+MEAN_LATENCY=38364.67
+STDDEV_LATENCY=12865.26
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 2.6.32: adjust filename]
+(cherry picked from commit c10d73671ad30f54692f7f69f0e09e75d3a8926a)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/bluetooth/l2cap.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/softirq.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 71120ee..1c20bd9 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1184,6 +1184,7 @@ static int l2cap_sock_getname(struct socket *sock, struct sockaddr *addr, int *l
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 04a0252..d75c136 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -194,21 +194,21 @@ void local_bh_enable_ip(unsigned long ip)
+ EXPORT_SYMBOL(local_bh_enable_ip);
  
- 	BT_DBG("sock %p, sk %p", sock, sk);
+ /*
+- * We restart softirq processing MAX_SOFTIRQ_RESTART times,
+- * and we fall back to softirqd after that.
++ * We restart softirq processing for at most 2 ms,
++ * and if need_resched() is not set.
+  *
+- * This number has been established via experimentation.
++ * These limits have been established via experimentation.
+  * The two things to balance is latency against fairness -
+  * we want to handle softirqs as soon as possible, but they
+  * should not be able to lock up the box.
+  */
+-#define MAX_SOFTIRQ_RESTART 10
++#define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
  
-+	memset(la, 0, sizeof(struct sockaddr_l2));
- 	addr->sa_family = AF_BLUETOOTH;
- 	*len = sizeof(struct sockaddr_l2);
+ asmlinkage void __do_softirq(void)
+ {
+ 	struct softirq_action *h;
+ 	__u32 pending;
+-	int max_restart = MAX_SOFTIRQ_RESTART;
++	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
+ 	int cpu;
+ 
+ 	pending = local_softirq_pending();
+@@ -253,11 +253,12 @@ restart:
+ 	local_irq_disable();
+ 
+ 	pending = local_softirq_pending();
+-	if (pending && --max_restart)
+-		goto restart;
++	if (pending) {
++		if (time_before(jiffies, end) && !need_resched())
++			goto restart;
+ 
+-	if (pending)
+ 		wakeup_softirqd();
++	}
+ 
+ 	lockdep_softirq_exit();
  
 -- 
 1.7.12.2.21.g234cd45.dirty
