@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab3FDG23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:28:29 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39672 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759114Ab3FDG21 (ORCPT
+	id S1759191Ab3FDGer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:34:47 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:38711 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab3FDGep convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:28:27 -0400
-Message-ID: <51AD8902.60603@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 14:28:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 4 Jun 2013 02:34:45 -0400
 MIME-Version: 1.0
-To: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Shi <alex.shi@intel.com>,
-        fenghua.yu@intel.com
-Subject: [PATCH] code clean in __flush_tlb_one()
+In-Reply-To: <201306030056.03522.heiko@sntech.de>
+References: <201306030055.15413.heiko@sntech.de>
+	<201306030056.03522.heiko@sntech.de>
+Date: Tue, 4 Jun 2013 08:34:44 +0200
+Message-ID: <CACRpkdYAvUQ+aymJm1Fw1bE1aGdO7RUqLR9byvoT7ECTk4tkpw@mail.gmail.com>
+Subject: Re: [PATCH 01/10] clocksource: dw_apb_timer_of: use the clocksource
+ as sched clock if necessary
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060406-2000-0000-0000-00000C5D9E09
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the extra space in __flush_tlb_one()
+On Mon, Jun 3, 2013 at 12:56 AM, Heiko Stübner <heiko@sntech.de> wrote:
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Alex Shi <alex.shi@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- arch/x86/include/asm/tlbflush.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Currently the dw_apb_timer always expects a separate special timer to be
+> availbable for the sched_clock. Some devices using dw_apb_timers do not
+> have the sptimer but can use the clocksource as sched_clock.
+> Therefore this patch adds using the clocksource timer as
+> a fallback if no usable sched timer is found.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-diff --git a/arch/x86/include/asm/tlbflush.h
-b/arch/x86/include/asm/tlbflush.h
-index 50a7fc0..cf51200 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -62,7 +62,7 @@ static inline void __flush_tlb_all(void)
+Is this really what the patch does? I mean "ass the clocksourse as
+fallback", it seems more like that is controlled from the device tree,
+this looks more like some more careful handling of the device tree
+input making the sched_timer optional, it doesn't really "add"
+anything, does it?
 
- static inline void __flush_tlb_one(unsigned long addr)
- {
--		__flush_tlb_single(addr);
-+	__flush_tlb_single(addr);
- }
-
- #define TLB_FLUSH_ALL	-1UL
--- 
-1.7.4.1
-
+Yours,
+Linus Walleij
