@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3FDRhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:37:55 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53572 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab3FDRhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:37:53 -0400
-Date: Tue, 4 Jun 2013 18:37:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        spi-devel-general@lists.sourceforge.net
-Message-ID: <20130604173749.GN31367@sirena.org.uk>
-References: <041d7ca272ef9499fab630294e3395110b3e31ac.1370354549.git.michal.simek@xilinx.com>
- <85e2cc9ef188d475c531780d9ee338705a1df673.1370354549.git.michal.simek@xilinx.com>
+	id S1755750Ab3FDRiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754464Ab3FDRix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:38:53 -0400
+Date: Tue, 4 Jun 2013 19:35:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
+	proc_task_readdir() paths
+Message-ID: <20130604173500.GB22223@redhat.com>
+References: <20130603190640.GA11481@redhat.com> <20130603190705.GA11517@redhat.com> <20130604005853.GA13110@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i6ZTfQE1Row3TVml"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <85e2cc9ef188d475c531780d9ee338705a1df673.1370354549.git.michal.simek@xilinx.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] spi: spi-xilinx: Add run run-time endian detection
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130604005853.GA13110@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/04, Al Viro wrote:
+>
+> On Mon, Jun 03, 2013 at 09:07:05PM +0200, Oleg Nesterov wrote:
+> > 1. proc_task_readdir() truncates f_pos to long, this can lead
+> >    to wrong result on 32bit.
+> >
+> > 2. first_tid() truncates f_pos to int, this is wrong even on
+> >    64bit.
+> >
+> >    We could check that f_pos < PID_MAX or even INT_MAX in
+> >    proc_task_readdir(), but this patch simply checks the
+> >    potential overflow in first_tid(), this check is nop on
+> >    64bit. We do not care if it was negative and the new
+> >    unsigned value is huge, all we need to ensure is that we
+> >    never wrongly return !NULL.
+> >
+> > 3. Remove the 2nd "nr != 0" check before get_nr_threads(),
+> >    nr_threads == 0 is not distinguishable from !pid_task()
+> >    above.
+>
+> Oleg, please take a look at the series in vfs.git#experimental; at the very
+> least, we don't want to access file->f_pos in any foo_readdir() - it's too
+> messy and race-prone.  It's pretty much independent from the issues you
+> are dealing with, but let's avoid creating pointless conflicts...
 
---i6ZTfQE1Row3TVml
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, thanks.
 
-On Tue, Jun 04, 2013 at 04:02:36PM +0200, Michal Simek wrote:
-> Do not load endian value from platform data
-> and rather autodetect it.
+Sadly, 3/4 conflicts with 08c35e10 too. I'll rediff/resend this
+cleanup later then.
 
-Applied, thanks.
+Oleg.
 
---i6ZTfQE1Row3TVml
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRriXqAAoJELSic+t+oim9drQP/0PYdm0lZnLnnS8NqfgAWuuT
-Lvit7fiNGEjF5AvAj5FtF2MOZazBZGMmIV1TrmtLfupgde0ezoITZexaQFIQYxas
-XAjCvp6kVRYVvlfeG6igGo7+d9Sh9/yUWm5plrnPG7XK74dffhof72YfIueLPVqa
-zcz+6hnTyauzhKWevVCtIkCvO+9h4qIi2lHwMqCYZd06CqFDLn5bo45KJLR08PSy
-70zrw6rNVbxOCedHxurLnELmba5XiTBOSHlDppt0SANV8Jh/MF0BTVCElqYj3omW
-UFUXoVwbfS9ePUDVRHnP7SYhCkJZv/+sJPv9Zw8PoajEY3vLPwYCxAfUfS17e3Ev
-mRLv7kp12Nje+rKEtDg0IbnFhBOY9QQ4yyC34B7K4FipX36Avp3m2kdD4pbGN5Me
-/eHVL9b1cfkcvrokq5j9yVOfe0LRwGKuW2UugUPvIGai5jnUPS0nBhPP4bmlAUcH
-S3WxV3FmW+PbCZee9Qp3cvX+BEPyvxopuwwqOPpL7NS84u5Lsr2XfYvfda0H3Hhf
-xS2HfdhRbPb4H+Pqz3/p3MsMGFMFW+04YbZ7DRvnHV8zzASnUS384QXv2CXwr8XJ
-XfVrRp3TAVaHxRyl+WtuomhZz833i2Juoza+joMj2Njg8kfO2AdLAPSN7IJMGP0a
-fhLenXAFpZ9jleItdJbZ
-=y3NL
------END PGP SIGNATURE-----
-
---i6ZTfQE1Row3TVml--
